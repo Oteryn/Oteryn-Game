@@ -498,7 +498,11 @@ fn file_declarations(src: &str) -> Vec<Declaration> {
         let at = i + off;
         let end = bracket_end(&code, skip_ws(&code, at + 1));
         let attr = compact(&code[at..end]);
-        if attr.windows(5).any(|w| w == b"path=") {
+        // `cfg_attr(test, ..)` cannot change production file loading. In particular, it
+        // may set an inline module's directory for its test-only children without loading
+        // any file itself. Macro-carried attributes remain untrusted tokens.
+        let test_only_attr = attr.starts_with(b"#[cfg_attr(test,") && !in_macro(at);
+        if attr.windows(5).any(|w| w == b"path=") && !test_only_attr {
             let decl = match literal(at, end) {
                 Some(path) if attr == b"#[path=]" && !in_macro(at) => {
                     let mut blocks: Vec<&(usize, usize, String)> = inline
@@ -906,6 +910,8 @@ fn test_named_files_are_skipped_only_when_test_only() {
         "macro_rules! m { ($n:ident) => { mod $n; }; }\nm!(live_tests);",
         "m! { #[cfg(test)] mod live_tests; }",
         "#[cfg(not(test))]\nmod live_tests;",
+        "#[cfg_attr(test, path = \"other.rs\")]\nmod live_tests;",
+        "m! { #[cfg_attr(test, path = \"other.rs\")] mod live; }",
         // `#[cfg(test)]` on a macro invocation is not trusted to gate what it expands to.
         "#[cfg(test)]\ninclude!(\"live_tests.rs\");",
     ] {
@@ -914,6 +920,11 @@ fn test_named_files_are_skipped_only_when_test_only() {
     // Test-only declarations, transitively, or none at all keep it out of production.
     for (decl, extra) in [
         ("#[cfg(test)]\nmod live_tests;", &[][..]),
+        (
+            "#[cfg_attr(test, path = \"test_directory\")]\nmod platform {}\n\
+             #[cfg(test)]\n#[path = \"live_tests.rs\"]\nmod fixtures;",
+            &[],
+        ),
         ("#[cfg(test)]\nmod outer {\n    mod live_tests;\n}", &[]),
         (
             "#[cfg(test)]\n#[path = \"../src/live_tests.rs\"]\nmod live;",
