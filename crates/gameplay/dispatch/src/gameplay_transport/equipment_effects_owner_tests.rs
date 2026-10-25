@@ -123,6 +123,8 @@ mod ability_tests;
 mod armor_tests;
 #[path = "equipment_effects_owner_tests/committed_moves_tests.rs"]
 mod committed_moves_tests;
+#[path = "equipment_effects_owner_tests/defence_tests.rs"]
+mod defence_tests;
 #[path = "equipment_effects_owner_tests/first_entry_tests.rs"]
 mod first_entry_tests;
 #[path = "equipment_effects_owner_tests/postgres_scenario.rs"]

@@ -314,7 +314,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let attacked = std::cell::Cell::new(None);
             let dispatch = melee_owner.think(
                 &mut runtime,
-                &mut *states,
+                &mut super::attack::player_block::PlayerBiteVitals {
+                    states: &mut states,
+                    attack: &mut attack,
+                },
                 *actor,
                 sequence,
                 monster.definition,

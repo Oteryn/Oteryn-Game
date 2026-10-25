@@ -18,6 +18,7 @@
 
 mod attack_chase_search;
 mod drain;
+pub(super) mod player_block;
 mod shared_experience;
 
 use crate::foundation::encode_state_delta;
@@ -195,6 +196,8 @@ struct ActorAttack {
     /// Bumped by every equipment move, so a read that raced one is not stored.
     weapon_epoch: u64,
     shared_experience_activity: Option<SharedExperienceActivity>,
+    /// SHIELD-DEFENCE-1: the player's block budget, created at the first creature hit.
+    defence_blocks: Option<BlockBudget>,
 }
 
 impl ActorAttack {
@@ -556,6 +559,7 @@ impl ChannelAttackStates {
                     weapon: None,
                     weapon_epoch: 0,
                     shared_experience_activity: None,
+                    defence_blocks: None,
                 });
                 self.entries.len() - 1
             }

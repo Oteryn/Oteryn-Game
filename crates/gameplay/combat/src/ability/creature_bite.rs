@@ -24,6 +24,7 @@ use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition};
 use oteryn_gameplay_combat_rules::attack::AttackConstants;
 use oteryn_gameplay_combat_rules::resolution::player_armor_mitigated;
+use oteryn_gameplay_combat_rules::resolution::player_defence::player_defence_mitigated;
 
 /// Retained bite state per Channel owner: `CREATUREAI0-RL-04`, the creature actors one Channel
 /// admits (Foundation's `CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX`; a Foundation test holds the
@@ -59,17 +60,20 @@ pub struct AiBiteIntent {
     pub(super) target_session: GameSessionId,
     /// ARMOR-MITIGATION-1: the think occurrence's draw of the target's armor reduction.
     pub(super) armor_draw: u64,
+    /// SHIELD-DEFENCE-1: the same occurrence's draw of the target's blocked-hit defence.
+    pub(super) defence_draw: u64,
 }
 
 impl AiAbilityAdapter {
     /// The bite a think occurrence `(issuer, think_sequence)` proposes against `target`, with
-    /// that occurrence's armor reduction draw.
+    /// that occurrence's armor reduction and defence draws.
     pub fn bite(
         issuer: ExactActorRef,
         think_sequence: u64,
         target: ExactActorRef,
         target_session: GameSessionId,
         armor_draw: u64,
+        defence_draw: u64,
     ) -> AiBiteIntent {
         AiBiteIntent {
             issuer,
@@ -77,6 +81,7 @@ impl AiAbilityAdapter {
             target,
             target_session,
             armor_draw,
+            defence_draw,
         }
     }
 }
@@ -182,6 +187,19 @@ pub trait CreatureBiteVitals {
         target: ExactActorRef,
         target_session: GameSessionId,
     ) -> u32;
+
+    /// SHIELD-DEFENCE-1: the defence bounds of the committed player's blocked hit at `now`
+    /// (`Creature::blockHit`), spending one of the player's blocks; `None` when the hit is not
+    /// blocked or the player defends with nothing installed.
+    fn target_defence(
+        &mut self,
+        _runtime: &ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _target_session: GameSessionId,
+        _now: SemanticTimeMicros,
+    ) -> Option<(u32, u32)> {
+        None
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -319,11 +337,17 @@ fn resolve_and_apply(
         }
         _ => return Err(BiteRejection::InvalidPlan),
     };
-    // ARMOR-MITIGATION-1: worn armor blocks before the vitals owner's reductions and mana
-    // shield (`game.cpp` `combatBlockHit` precedes `combatChangeHealth`).
+    // ARMOR-MITIGATION-1 / SHIELD-DEFENCE-1: a blocked hit's defence, then worn armor, reduce
+    // the hit before the vitals owner's reductions and mana shield (`game.cpp`
+    // `combatBlockHit` precedes `combatChangeHealth`).
     let constants = AttackConstants::checked_in().ok_or(BiteRejection::InvalidPlan)?;
+    let defended = vitals
+        .target_defence(runtime, intent.target, intent.target_session, now)
+        .map_or(magnitude, |bounds| {
+            player_defence_mitigated(magnitude, bounds, intent.defence_draw)
+        });
     let armor = vitals.target_armor(runtime, intent.target, intent.target_session);
-    let mitigated = player_armor_mitigated(constants, magnitude, armor, intent.armor_draw);
+    let mitigated = player_armor_mitigated(constants, defended, armor, intent.armor_draw);
     let hit = vitals
         .apply_creature_damage(
             runtime,

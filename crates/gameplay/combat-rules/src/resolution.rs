@@ -8,6 +8,8 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+pub mod player_defence;
+
 /// How often the attacker's own connection re-reads its swing weapon while it holds a target.
 pub const WEAPON_REFRESH_MICROS: u64 = 1_000_000;
 

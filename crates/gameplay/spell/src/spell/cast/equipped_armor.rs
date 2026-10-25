@@ -1,6 +1,8 @@
-//! ARMOR-MITIGATION-1: the worn armor total a creature hit on the player reads.
+//! ARMOR-MITIGATION-1 / SHIELD-DEFENCE-1: the worn armor total and the hands' defence a
+//! creature hit on the player reads.
 
 use super::PlayerSpellState;
+use oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence;
 
 impl PlayerSpellState {
     /// The armor of the worn equipment (`Player::getArmor`), installed at admission and after
@@ -13,6 +15,18 @@ impl PlayerSpellState {
     /// Replace the worn armor with the total of a fresh committed equipment read.
     pub fn install_equipped_armor(&mut self, armor: u32) {
         self.equipped_armor = armor;
+    }
+
+    /// What the hands defend with (`Player::getShieldAndWeapon`), installed with the armor;
+    /// `None` before any install or while a held item's weapon facts are not known.
+    #[must_use]
+    pub const fn equipped_defence(&self) -> Option<HandDefence> {
+        self.equipped_defence
+    }
+
+    /// Replace the hands' defence with that of a fresh committed equipment read.
+    pub fn install_equipped_defence(&mut self, defence: Option<HandDefence>) {
+        self.equipped_defence = defence;
     }
 }
 

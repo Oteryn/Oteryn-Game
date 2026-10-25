@@ -3,6 +3,8 @@
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{ReferenceEquipmentSlot, ReferenceItemField};
 use crate::durability::character_equipment::EquipmentSnapshot;
+use oteryn_gameplay_combat_rules::attack::AttackConstants;
+use oteryn_gameplay_combat_rules::resolution::player_defence::{HandDefence, hand_defence};
 use oteryn_gameplay_content::content::item_abilities::item_ability_profile;
 use oteryn_gameplay_domain::domain::death::EquipmentSlot;
 use oteryn_gameplay_items::equipment_effects::{
@@ -118,6 +120,31 @@ pub(in crate::gameplay_transport) fn equipped_armor(
     })
 }
 
+/// SHIELD-DEFENCE-1 (`Player::getShieldAndWeapon`, `Player::getDefense`): what the hands
+/// defend with. `None` for the same unreadable equipment [`equipment_effects`] refuses;
+/// `Some(None)` while a held item's weapon facts are not known, so the hands defend with nothing.
+pub(in crate::gameplay_transport) fn equipped_defence(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<Option<HandDefence>> {
+    if equipment.content_digest != content.source_digest() {
+        return None;
+    }
+    let constants = AttackConstants::checked_in()?;
+    Some(hand_defence(content, constants, |slot| {
+        equipment
+            .items
+            .iter()
+            .find(|item| item.slot == slot && item.definition.family == "Item")
+            .map(|item| {
+                (
+                    item.definition.production_key.as_str(),
+                    item.definition.revision_ref.as_str(),
+                )
+            })
+    }))
+}
+
 /// The 413 equippable production profiles have known zero raw speed. The two potion profiles
 /// (i266, i285) have unknown native attributes and are never equippable, so never contribute.
 /// Preserve unavailable speed on contributors; the raw value never supplies a sum.
@@ -128,12 +155,16 @@ pub(in crate::gameplay_transport) fn speed_term(
     i32::try_from(equipment_effects_inner(equipment, content, true)?.speed).ok()
 }
 
+/// The suppressions, worn armor and hands' defence one admission installs.
+pub(in crate::gameplay_transport) type AdmissionEffects =
+    (EquipmentEffects, u32, Option<HandDefence>);
+
 /// EQUIP-0 §4: read under the caller's spell lane, before its runtime lock.
 impl super::super::ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn read_admission_effects(
         &self,
         session: crate::foundation::GameSessionId,
-    ) -> Result<Option<(EquipmentEffects, u32)>, ()> {
+    ) -> Result<Option<AdmissionEffects>, ()> {
         let Some(native) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -145,7 +176,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             .ok_or(())?;
         let effects = equipment_effects(&equipment, native).ok_or(())?;
         let armor = equipped_armor(&equipment, native).ok_or(())?;
-        Ok(Some((effects, armor)))
+        let defence = equipped_defence(&equipment, native).ok_or(())?;
+        Ok(Some((effects, armor, defence)))
     }
 
     /// The caller holds the spell lane and runtime; lock only spell state here.
@@ -154,13 +186,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         runtime: &crate::foundation::ChannelRuntimeV1,
         actor: crate::foundation::ExactActorRef,
         session: crate::foundation::GameSessionId,
-        effects: Option<(EquipmentEffects, u32)>,
+        effects: Option<AdmissionEffects>,
     ) -> Option<()> {
-        if let Some((effects, armor)) = effects {
+        if let Some((effects, armor, defence)) = effects {
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             install_suppressions(state, effects);
             state.install_equipped_armor(armor);
+            state.install_equipped_defence(defence);
         }
         Some(())
     }
