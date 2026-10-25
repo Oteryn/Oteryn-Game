@@ -104,7 +104,7 @@ where
     // like an unregistered one, before any decode or authority call.
     // OPS-SAVE-2: the permit is held while the command runs, not while its result is
     // written, so the shutdown snapshot waits for the effect only.
-    let input_permit = authority.enter_input().await;
+    let mut input_permit = authority.enter_input().await;
     if input_permit.is_none() && session.reconcile_original_bank {
         // No current input grant: do not run money work, and do not falsely terminate an
         // accepted original command whose retained Bank status has not been classified.
@@ -143,6 +143,7 @@ where
         npc_relocation,
         training_logged_out: false,
     };
+    let walk_target = autowalk::target(session, command);
     let mut dispatch = if let Some(outcome) = retained_bank {
         Dispatch::Npc(
             outcome.disposition,
@@ -171,6 +172,39 @@ where
     } else {
         route::execute(stream, authority, session, command, &mut outcome).await?
     };
+    let mut no_path = false;
+    if autowalk::too_far(&dispatch)
+        && let Some(target) = walk_target
+    {
+        // Pacing waits must not hold shutdown's player-input permit. The walk takes one
+        // permit per actual step, and the original action reacquires one before its retry.
+        drop(input_permit.take());
+        let walked = Box::pin(autowalk::walk(
+            stream,
+            authority,
+            session,
+            command.command_id,
+            target,
+        ))
+        .await?;
+        input_permit = authority.enter_input().await;
+        match walked {
+            autowalk::WalkOutcome::Arrived if input_permit.is_some() => {
+                // Exactly one retry of the original CommandId and bytes. Source identity,
+                // custody, reach, capacity and fences are read by the existing route.
+                dispatch = Box::pin(route::execute(
+                    stream,
+                    authority,
+                    session,
+                    command,
+                    &mut outcome,
+                ))
+                .await?;
+            }
+            autowalk::WalkOutcome::Arrived | autowalk::WalkOutcome::Cancelled => {}
+            autowalk::WalkOutcome::NoPath => no_path = true,
+        }
+    }
     dispatch = bank_inventory(authority, session, dispatch).await?;
     drop(input_permit);
     if matches!(dispatch, Dispatch::Appearance(None) | Dispatch::House(None)) {
@@ -190,7 +224,19 @@ where
     outbound::finish(
         stream, authority, session, command, dispatch, result, outcome,
     )
-    .await
+    .await?;
+    if no_path {
+        use oteryn_protocol_oteryn::tutorial_notices::TutorialNotice;
+        tutorial_notices_transport::emit_notice(
+            stream,
+            &mut session.admitted,
+            &mut session.sequence,
+            &TutorialNotice::StatusText("There is no way.".into()),
+        )
+        .await
+        .ok_or(ServeEnd::Disconnected)?;
+    }
+    Ok(())
 }
 
 async fn bank_inventory<A>(

@@ -310,6 +310,45 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.tutorial_paced_step(actor, session, direction).await
     }
 
+    async fn item_walk_route(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        target: AutoWalkTarget,
+    ) -> Result<Option<AutoWalkRoute>, ()> {
+        ComposedFreshAdmission::item_walk_route(self, actor, session, target).await
+    }
+
+    async fn item_walk_step(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        expected: crate::foundation::MovementPositionSnapshot,
+        direction: StepDirection,
+    ) -> (
+        StepOutcome,
+        Option<Duration>,
+        Option<crate::foundation::MovementPositionSnapshot>,
+    ) {
+        ComposedFreshAdmission::item_walk_step(self, actor, session, expected, direction).await
+    }
+
+    async fn item_walk_valid(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        expected: crate::foundation::MovementPositionSnapshot,
+    ) -> bool {
+        let mut runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        !states.is_dead(actor)
+            && !self.states.newhaven_travel.held(session)
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+            && runtime.borrow_movement_position().read(actor) == Ok(expected)
+    }
+
     /// CHASE-1 (RANGED-0 §8): the owner's chase step (`attack::chase_step_now`).
     async fn chase_step(
         &self,
