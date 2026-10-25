@@ -238,7 +238,10 @@ revision on CHAR-REV-SEQ-1.
 **Amendment (DEPOT-0, 2026-09-30), pending on acceptance of DEPOT-0.** Once DEPOT-0 is accepted,
 rule 1 also covers `CharacterDepot` locations of the acting
 character (`OTERYN_GAME_DEPOT0_CHARACTER_DEPOT_DECISION_2026-09-30.md` §7.2): an item-only
-transaction between its backpack and its depot does not advance `CharacterRevision`. No runtime
+transaction between its backpack and its depot does not advance `CharacterRevision`. The accepted
+SUPPLY-STASH-0 §9 amendment extends this rule to stash stow/withdrawal: these
+conversions hold the acting Character root and item fence and do not advance
+`CharacterRevision`. No runtime
 scope owns the depot, so rule 2's DUR-03 §32 binding does not apply.
 Rule 4's lock order: `character_root`, then the items in ItemInstanceId order, then the
 container-slot row.

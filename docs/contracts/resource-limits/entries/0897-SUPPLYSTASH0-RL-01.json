@@ -1,0 +1,23 @@
+{
+  "id": "SUPPLYSTASH0-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_SUPPLY_STASH0_SUPPLY_STASH_DECISION_2026-10-03.md",
+  "resource": "Stash units per definition and revision",
+  "unit": "units",
+  "hard_maximum": 1000000000,
+  "configurable_range": {
+    "minimum": 1000000000,
+    "maximum": 1000000000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Bounded before value mutation; no truncated conversion.",
+  "client_visible": true,
+  "boundary_tests": [
+    "stash_strict_codecs_and_limits",
+    "stash_session_dispatch_conserves_and_replays"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/stash.rs",
+    "crates/gameplay/durability/src/durability/character_stash.rs"
+  ],
+  "notes": "Whole main-backpack item stow and <=20 output stacks; other source shapes deferred."
+}

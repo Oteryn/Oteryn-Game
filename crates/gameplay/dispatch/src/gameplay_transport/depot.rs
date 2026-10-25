@@ -24,7 +24,7 @@ fn empty(intent: DepotIntent, outcome: DepotOutcome) -> DepotReply {
 }
 
 /// The nearest visible authored locker, with deterministic position/ordinal tie-breaking.
-fn locker(at: &super::bundle_map_position::BundleMapPosition<'_>) -> Option<u16> {
+pub(super) fn locker(at: &super::bundle_map_position::BundleMapPosition<'_>) -> Option<u16> {
     let mut found = Vec::new();
     for dy in -1..=1 {
         for dx in -1..=1 {

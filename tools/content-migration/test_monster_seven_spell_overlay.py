@@ -33,7 +33,8 @@ class AcceptedOverlayTests(unittest.TestCase):
         self.assertEqual(len(looks['item_appearances']),6)
     def test_registration_replays_all_current_outputs(self):
         actual=registration.outputs(ROOT)
-        self.assertEqual(len(actual),36)
+        self.assertEqual(len(actual),37)
+        self.assertIn('content/items/readable-profiles.json',actual)
         for path,data in actual.items():
             self.assertEqual(data,(ROOT/path).read_bytes(),path)
     def test_consumable_overlay_carries_only_the_selected_source_fact(self):

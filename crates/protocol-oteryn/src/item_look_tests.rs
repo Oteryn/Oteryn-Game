@@ -12,7 +12,7 @@ fn request_reuses_existing_item_target_bytes() {
         let intent = ItemLookIntent {
             target: ItemLookTarget::Item(NonZeroU64::new(value).unwrap()),
         };
-        let bytes = encode_item_look_intent_for(intent, EXTENDED).unwrap();
+        let bytes = encode_item_look_intent_for(intent.clone(), EXTENDED).unwrap();
         assert_eq!(bytes, encode_item_target(NonZeroU64::new(value).unwrap()));
         assert_eq!(decode_item_look_intent_for(&bytes, EXTENDED), Ok(intent));
     }
@@ -153,7 +153,7 @@ fn creature_uses_native_spatial_entity_ref_and_full_generation_width() {
         let intent = ItemLookIntent {
             target: ItemLookTarget::Creature(entity),
         };
-        let encoded = encode_item_look_intent_for(intent, EXTENDED).unwrap();
+        let encoded = encode_item_look_intent_for(intent.clone(), EXTENDED).unwrap();
         assert_eq!(decode_item_look_intent_for(&encoded, EXTENDED), Ok(intent));
         let mut expected_reference = vec![10, 16];
         expected_reference.extend_from_slice(&identity);
@@ -166,7 +166,7 @@ fn creature_uses_native_spatial_entity_ref_and_full_generation_width() {
         assert_eq!(encoded, expected);
         assert!(encoded.len() <= MAX_ITEM_LOOK_TARGET_BYTES);
         if generation == u64::MAX {
-            assert_eq!(encoded.len(), MAX_ITEM_LOOK_TARGET_BYTES);
+            assert_eq!(encoded.len(), MAX_CREATURE_LOOK_TARGET_BYTES);
         }
     }
 }
@@ -230,7 +230,7 @@ fn creature_target_refuses_malformed_identity_generation_and_trailing_fields() {
     overflow_at_bound.push(2);
     let mut payload = Vec::new();
     push_message_field(&mut payload, 2, &overflow_at_bound);
-    assert_eq!(payload.len(), MAX_ITEM_LOOK_TARGET_BYTES);
+    assert_eq!(payload.len(), MAX_CREATURE_LOOK_TARGET_BYTES);
     assert_eq!(
         decode_item_look_intent_for(&payload, EXTENDED),
         Err(ItemLookWireError::Malformed)
@@ -299,13 +299,13 @@ fn legacy_selection_preserves_item_bytes_and_refuses_creature_requests() {
         let intent = ItemLookIntent {
             target: ItemLookTarget::Item(handle),
         };
-        let legacy = encode_item_look_intent(intent).unwrap();
+        let legacy = encode_item_look_intent(intent.clone()).unwrap();
         assert_eq!(legacy, encode_item_target(handle));
         assert_eq!(
-            encode_item_look_intent_for(intent, EXTENDED),
+            encode_item_look_intent_for(intent.clone(), EXTENDED),
             Ok(legacy.clone())
         );
-        assert_eq!(decode_item_look_intent(&legacy), Ok(intent));
+        assert_eq!(decode_item_look_intent(&legacy), Ok(intent.clone()));
         assert_eq!(decode_item_look_intent_for(&legacy, EXTENDED), Ok(intent));
     }
     for generation in [0, 1, u64::MAX] {
@@ -315,9 +315,9 @@ fn legacy_selection_preserves_item_bytes_and_refuses_creature_requests() {
                 generation,
             }),
         };
-        let bytes = encode_item_look_intent_for(intent, EXTENDED).unwrap();
+        let bytes = encode_item_look_intent_for(intent.clone(), EXTENDED).unwrap();
         assert_eq!(
-            encode_item_look_intent(intent),
+            encode_item_look_intent(intent.clone()),
             Err(ItemLookWireError::Malformed)
         );
         assert_eq!(
@@ -370,7 +370,7 @@ fn generation_zero_stays_wire_representable_but_is_never_current_admission() {
     let intent = ItemLookIntent {
         target: ItemLookTarget::Creature(reference),
     };
-    let bytes = encode_item_look_intent_for(intent, EXTENDED).unwrap();
+    let bytes = encode_item_look_intent_for(intent.clone(), EXTENDED).unwrap();
     assert_eq!(decode_item_look_intent_for(&bytes, EXTENDED), Ok(intent));
     assert_eq!(
         known_creature_generation(reference),
@@ -468,7 +468,7 @@ fn fuzz_decode_item_look_intent() {
             target: ItemLookTarget::Item(NonZeroU64::new(rng.u64().max(1)).expect("handle")),
         },
         decode_item_look_intent,
-        |v| encode_item_look_intent(*v).expect("intent"),
+        |v| encode_item_look_intent(v.clone()).expect("intent"),
     );
 }
 
@@ -492,13 +492,103 @@ fn fuzz_item_look_selected_codecs() {
                 target: ItemLookTarget::Item(NonZeroU64::new(rng.u64().max(1)).expect("handle")),
             },
             |b| decode_item_look_intent_for(b, selection),
-            |v| encode_item_look_intent_for(*v, selection).expect("intent"),
+            |v| encode_item_look_intent_for(v.clone(), selection).expect("intent"),
         );
         crate::decoder_fuzz_support::codec(
             "decode_item_look_result_for",
             |rng| ItemLookResult::Text("é".repeat((rng.below(256) + 1) as usize)),
             |b| decode_item_look_result_for(b, selection),
             |v| encode_item_look_result_for(v, selection).expect("result"),
+        );
+    }
+}
+
+#[test]
+fn world_object_look_round_trip_golden_and_selection() {
+    let intent = ItemLookIntent {
+        target: ItemLookTarget::WorldObject(WorldObjectTarget {
+            placement: vec![0xab, 0xcd],
+            expected_revision: 7,
+        }),
+    };
+    let bytes = encode_item_look_intent_for(intent.clone(), EXTENDED).unwrap();
+    assert_eq!(bytes, [26, 6, 10, 2, 0xab, 0xcd, 16, 7]);
+    assert_eq!(
+        decode_item_look_intent_for(&bytes, EXTENDED),
+        Ok(intent.clone())
+    );
+    assert_eq!(
+        encode_item_look_intent(intent),
+        Err(ItemLookWireError::Malformed)
+    );
+    assert_eq!(
+        decode_item_look_intent(&bytes),
+        Err(ItemLookWireError::Malformed)
+    );
+    // Same inner bytes as Use; default scalar omission keeps initial revision 0.
+    let omitted = [26, 3, 10, 1, 9];
+    assert_eq!(
+        decode_item_look_intent_for(&omitted, EXTENDED),
+        Ok(ItemLookIntent {
+            target: ItemLookTarget::WorldObject(WorldObjectTarget {
+                placement: vec![9],
+                expected_revision: 0
+            })
+        })
+    );
+}
+
+#[test]
+fn world_object_look_bounds_and_strict_oneof() {
+    for size in [40, 512, 513] {
+        let target = WorldObjectTarget {
+            placement: vec![5; size],
+            expected_revision: u64::MAX,
+        };
+        let intent = ItemLookIntent {
+            target: ItemLookTarget::WorldObject(target.clone()),
+        };
+        let encoded = encode_item_look_intent_for(intent.clone(), EXTENDED);
+        if size == 513 {
+            assert_eq!(encoded, Err(ItemLookWireError::LimitExceeded));
+            let mut inner = Vec::new();
+            push_message_field(&mut inner, 1, &target.placement);
+            let mut bytes = Vec::new();
+            push_message_field(&mut bytes, 3, &inner);
+            assert_eq!(
+                decode_item_look_intent_for(&bytes, EXTENDED),
+                Err(ItemLookWireError::LimitExceeded)
+            );
+        } else {
+            let bytes = encoded.unwrap();
+            assert_eq!(decode_item_look_intent_for(&bytes, EXTENDED), Ok(intent));
+            if size == 512 {
+                assert_eq!(bytes.len(), MAX_ITEM_LOOK_TARGET_BYTES);
+            }
+            let mut use_bytes = crate::world_object::encode_use_intent(&target).unwrap();
+            use_bytes[0] = 26;
+            assert_eq!(bytes, use_bytes);
+        }
+    }
+    for inner in [
+        vec![10, 1, 1, 10, 1, 2],
+        vec![16, 0, 16, 1],
+        vec![24, 1],
+        vec![10, 2, 0],
+    ] {
+        let mut bytes = Vec::new();
+        push_message_field(&mut bytes, 3, &inner);
+        assert_eq!(
+            decode_item_look_intent_for(&bytes, EXTENDED),
+            Err(ItemLookWireError::Malformed)
+        );
+    }
+    for suffix in [&[8, 1][..], &[18, 0], &[26, 0], &[32, 1]] {
+        let mut bytes = vec![26, 0];
+        bytes.extend_from_slice(suffix);
+        assert_eq!(
+            decode_item_look_intent_for(&bytes, EXTENDED),
+            Err(ItemLookWireError::Malformed)
         );
     }
 }

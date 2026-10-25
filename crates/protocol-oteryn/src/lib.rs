@@ -54,6 +54,7 @@ pub mod server_save_countdown;
 pub mod spectate;
 pub mod spell_presentation_candidate;
 pub mod staff;
+pub mod stash;
 #[cfg(test)]
 #[path = "tests/lib_tests.rs"]
 mod tests;
