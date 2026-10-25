@@ -49,6 +49,7 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             imported_charms: self.imported_charms,
             states: ChannelSessionStates::default(),
             clock_origin: std::time::Instant::now(),
+            pinned_now: None,
             revision_sequencer:
                 crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
             quest_catalogue: None,

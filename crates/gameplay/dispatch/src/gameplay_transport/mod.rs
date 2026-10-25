@@ -495,6 +495,10 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub clock_origin: std::time::Instant,
+    /// Tests only: the owner time `owner_now` returns instead of reading `clock_origin`, so a
+    /// test steps owner time exactly, without the runner's wall-clock time leaking in.
+    #[cfg(test)]
+    pub pinned_now: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
     pub states: channel_states::ChannelSessionStates,
     /// One revision-advancing write in flight per Character (CHAR-REV-SEQ-1). Never awaited
     /// while `runtime` is locked.

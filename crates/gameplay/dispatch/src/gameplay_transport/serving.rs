@@ -41,6 +41,8 @@ pub async fn serve_gameplay(
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
         clock_origin: std::time::Instant::now(),
+        #[cfg(test)]
+        pinned_now: None,
         states: channel_states::ChannelSessionStates::default(),
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),

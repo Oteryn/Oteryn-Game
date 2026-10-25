@@ -3,6 +3,7 @@ use super::party_xp::{self, Case};
 use crate::bestiary_postgres_harness::{Harness, TestResult, debug};
 use crate::foundation::{ExactActorRef, GameSessionId};
 use crate::gameplay_transport::{ComposedFreshAdmission, actor_spell::TrainingSave};
+use oteryn_simulation_determinism::SemanticTimeMicros;
 use std::time::Duration;
 
 #[path = "../../../../../../apps/game-server/tests/support/stamina_postgres_cases.rs"]
@@ -73,7 +74,14 @@ pub(super) async fn qualify(
     }
     // Keep the content-owned rat alive between genuine swings; health is fixture setup,
     // while damage, hit qualification and the hunting signal use production dispatch.
-    for _ in 0..66 {
+    // Owner time is pinned to exactly 3s per swing, so the minutes spent depend on the swings
+    // alone and never on how fast the runner executes them.
+    const SWING_MICROS: u64 = 3_000_000;
+    let start = owner.owner_now();
+    for swing in 0..66 {
+        owner.pinned_now = Some(SemanticTimeMicros::from_micros(
+            start.get() + swing * SWING_MICROS,
+        ));
         owner
             .runtime
             .lock()
@@ -82,11 +90,12 @@ pub(super) async fn qualify(
             .map_err(debug)?;
         owner.refresh_attack_weapon(actor, session).await;
         owner.drain_auto_attacks().await;
-        owner.clock_origin = owner
-            .clock_origin
-            .checked_sub(Duration::from_secs(3))
-            .ok_or("clock")?;
     }
+    // The real clock resumes one swing after the last pinned one.
+    owner.clock_origin = std::time::Instant::now()
+        .checked_sub(Duration::from_micros(start.get() + 66 * SWING_MICROS))
+        .ok_or("clock")?;
+    owner.pinned_now = None;
     let live = owner
         .states
         .spell_states

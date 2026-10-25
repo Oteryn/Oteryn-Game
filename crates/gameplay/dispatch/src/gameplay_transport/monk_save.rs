@@ -41,6 +41,10 @@ pub(super) enum MonkSave {
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// The owner time of the Channel runtime (spell cast §2): process-local and monotonic.
     pub(super) fn owner_now(&self) -> SemanticTimeMicros {
+        #[cfg(test)]
+        if let Some(now) = self.pinned_now {
+            return now;
+        }
         SemanticTimeMicros::from_micros(
             u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX),
         )
