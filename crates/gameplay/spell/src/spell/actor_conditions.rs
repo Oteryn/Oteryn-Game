@@ -634,6 +634,7 @@ pub fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     }
     state.regen_health_ms = 0;
     state.regen_mana_ms = 0;
+    state.soul_window = None;
     if let Some(monk) = state.monk.as_mut() {
         monk.clear_on_death();
     }
@@ -1207,6 +1208,7 @@ fn stage_cycle(
     world: Option<&dyn super::harmony::SereneWorld>,
 ) -> Result<Option<ConditionCycle>, SpellCastDisposition> {
     let mut next = state.clone();
+    next.credit_soul_window(now.get());
     if let Some(world) = world {
         next.tick_with_world(now, world)
             .map_err(|_| SpellCastDisposition::Rejected)?;

@@ -35,6 +35,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             _ => false,
         };
         if let Ok(mut sessions) = self.states.premium_sessions.lock() {
+            sessions.2.insert(session, promoted);
             sessions.1.insert(
                 session,
                 oteryn_gameplay_progression::promotion::login_projection(promoted, premium),
@@ -48,6 +49,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 pub struct PremiumSessions(
     std::collections::HashMap<[u8; 16], std::collections::HashSet<GameSessionId>>,
     pub(super) std::collections::HashMap<GameSessionId, bool>,
+    /// VITALS-SOUL-1: the stored promotion read at admission, for the soul cadence only.
+    std::collections::HashMap<GameSessionId, bool>,
 );
 
 impl PremiumSessions {
@@ -64,8 +67,13 @@ impl PremiumSessions {
             .find_map(|(account, sessions)| sessions.contains(&session).then_some(*account))
     }
 
+    pub(super) fn promoted(&self, session: GameSessionId) -> bool {
+        self.2.get(&session).copied().unwrap_or(false)
+    }
+
     pub(super) fn release(&mut self, account_id: [u8; 16], session: GameSessionId) -> bool {
         self.1.remove(&session);
+        self.2.remove(&session);
         let Some(sessions) = self.0.get_mut(&account_id) else {
             return false;
         };
