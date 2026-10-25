@@ -87,14 +87,22 @@ const fn side_of(side: NpcTradeSide) -> npc_trade::NpcTradeSide {
     }
 }
 
-/// Whether the committed trade answered this intent: the same offer, side, quantity and price (the
-/// occurrence already binds the NPC actor).
-fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent) -> bool {
-    receipt.catalogue_revision == intent.catalogue_revision
+/// Whether the committed trade answered this intent: the same kind, offer, side, quantity and price
+/// (the occurrence already binds the NPC actor). A sell-all's stored quantity is the units it sold.
+fn answers(receipt: &NpcTradeReceipt, intent: &NpcTradeIntent, sell_all: bool) -> bool {
+    receipt.sell_all == sell_all
+        && receipt.catalogue_revision == intent.catalogue_revision
         && receipt.offer_index == intent.offer_index
         && receipt.side == side_of(intent.side)
-        && receipt.quantity == intent.quantity
+        && (sell_all || receipt.quantity == intent.quantity)
         && receipt.unit_price == u64::from(intent.expected_unit_price)
+}
+
+/// What a sell-all sold: the units and the gold paid for them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct SoldUnits {
+    pub(super) units: u32,
+    pub(super) gold: u64,
 }
 
 pub(super) fn unix_ms_now() -> i64 {
@@ -113,14 +121,30 @@ pub(super) async fn npc_trade(
     command: UseCommand,
     intent: NpcTradeIntent,
 ) -> NpcTradeStep {
+    match trade(admission, actor, command, intent, false).await {
+        Ok(_) => NpcTradeStep::Traded,
+        Err(step) => step,
+    }
+}
+
+/// One trade command: command 8 (`sell_all` false) or an NPC-TRADE-SELLALL-1 sell-all of a count-1
+/// SELL offer (`intent.quantity` 1). `Ok` carries what a sell-all sold; `Err` is the step of a
+/// command that committed nothing now or by replay.
+pub(super) async fn trade(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    intent: NpcTradeIntent,
+    sell_all: bool,
+) -> Result<SoldUnits, NpcTradeStep> {
     let session = command.game_session_id;
     // Without an item fence no trade can commit or have committed for the session.
     let (Some(fence), Ok(command_id)) = (command.item_fence, CommandId::new(command.command_id))
     else {
-        return NpcTradeStep::rejected();
+        return Err(NpcTradeStep::rejected());
     };
     let Some(_permit) = admission.spell_lane_permit().await else {
-        return NpcTradeStep::Unknown;
+        return Err(NpcTradeStep::Unknown);
     };
     let command_ref = CommandRef::new(session, command_id);
     let occurrence = occurrence(session, command.command_id, intent.npc_actor);
@@ -134,14 +158,19 @@ pub(super) async fn npc_trade(
         )
         .await
     {
-        Ok(Some(receipt)) if answers(&receipt, &intent) => return NpcTradeStep::Traded,
+        Ok(Some(receipt)) if answers(&receipt, &intent, sell_all) => {
+            return Ok(SoldUnits {
+                units: receipt.quantity,
+                gold: u64::from(receipt.quantity).saturating_mul(receipt.unit_price),
+            });
+        }
         Ok(None) => {}
-        Err(NpcTradeError::Unavailable(_)) => return NpcTradeStep::Unknown,
-        Ok(Some(_)) | Err(_) => return NpcTradeStep::rejected(),
+        Err(NpcTradeError::Unavailable(_)) => return Err(NpcTradeStep::Unknown),
+        Ok(Some(_)) | Err(_) => return Err(NpcTradeStep::rejected()),
     }
 
     if !admission.states.player_trades.physical_service(session) {
-        return NpcTradeStep::rejected();
+        return Err(NpcTradeStep::rejected());
     }
     let (offer, coins) = {
         let runtime = admission.runtime.lock().await;
@@ -155,7 +184,7 @@ pub(super) async fn npc_trade(
             index,
         ) {
             Ok(offer) => offer,
-            Err(refusal) => return NpcTradeStep::Refused(*refusal),
+            Err(refusal) => return Err(NpcTradeStep::Refused(*refusal)),
         };
         let coin = |coin: Coin| {
             let production_key = coin.production_key();
@@ -170,7 +199,7 @@ pub(super) async fn npc_trade(
         let (Some(gold), Some(platinum), Some(crystal)) =
             (coin(Coin::Gold), coin(Coin::Platinum), coin(Coin::Crystal))
         else {
-            return NpcTradeStep::rejected();
+            return Err(NpcTradeStep::rejected());
         };
         (
             offer,
@@ -185,7 +214,7 @@ pub(super) async fn npc_trade(
         .active_generation
         .and_then(ActiveGeneration::native_gameplay)
     else {
-        return NpcTradeStep::rejected();
+        return Err(NpcTradeStep::rejected());
     };
     let Ok(item) = generation_item_facts(
         native,
@@ -195,7 +224,7 @@ pub(super) async fn npc_trade(
             revision_ref: offer.item_revision.clone(),
         },
     ) else {
-        return NpcTradeStep::rejected();
+        return Err(NpcTradeStep::rejected());
     };
     let backpack = match admission
         .root
@@ -204,11 +233,11 @@ pub(super) async fn npc_trade(
     {
         Ok(Some(current)) => match generation_item_facts(native, &current.backpack.definition) {
             Ok(facts) => facts,
-            Err(_) => return NpcTradeStep::rejected(),
+            Err(_) => return Err(NpcTradeStep::rejected()),
         },
-        Ok(None) => return NpcTradeStep::rejected(),
-        Err(ItemTransferError::Unavailable(_)) => return NpcTradeStep::Unknown,
-        Err(_) => return NpcTradeStep::rejected(),
+        Ok(None) => return Err(NpcTradeStep::rejected()),
+        Err(ItemTransferError::Unavailable(_)) => return Err(NpcTradeStep::Unknown),
+        Err(_) => return Err(NpcTradeStep::rejected()),
     };
     let id = |tag: &[u8]| derived(tag, session, command.command_id);
     let request = NpcTradeRequest {
@@ -235,21 +264,40 @@ pub(super) async fn npc_trade(
         coins,
         backpack,
     };
-    step_of(
+    let result = if sell_all {
+        admission
+            .root
+            .commit_npc_sell_all(admission.character, admission.holder, fence, request)
+            .await
+    } else {
         admission
             .root
             .commit_npc_trade(admission.character, admission.holder, fence, request)
-            .await,
-    )
+            .await
+    };
+    step_of(result)
 }
 
 /// The step of a commit result: any committed outcome is `OK`; a storage failure is unknown; every
 /// refusal wrote nothing and is `REJECTED`.
-fn step_of(result: Result<npc_trade::NpcTradeOutcome, NpcTradeError>) -> NpcTradeStep {
+fn step_of(
+    result: Result<npc_trade::NpcTradeOutcome, NpcTradeError>,
+) -> Result<SoldUnits, NpcTradeStep> {
     match result {
-        Ok(_) => NpcTradeStep::Traded,
-        Err(NpcTradeError::Unavailable(_)) => NpcTradeStep::Unknown,
-        Err(_) => NpcTradeStep::rejected(),
+        Ok(
+            npc_trade::NpcTradeOutcome::Committed(trade)
+            | npc_trade::NpcTradeOutcome::AlreadyCommitted(trade),
+        ) => Ok(SoldUnits {
+            units: trade
+                .lines
+                .iter()
+                .filter(|line| line.kind == npc_trade::NpcTradeLineKind::ItemBurn)
+                .map(|line| line.quantity_before.saturating_sub(line.quantity_after))
+                .sum(),
+            gold: trade.total_gold_units,
+        }),
+        Err(NpcTradeError::Unavailable(_)) => Err(NpcTradeStep::Unknown),
+        Err(_) => Err(NpcTradeStep::rejected()),
     }
 }
 
