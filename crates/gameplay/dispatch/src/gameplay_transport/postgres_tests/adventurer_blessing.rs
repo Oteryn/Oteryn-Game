@@ -38,6 +38,7 @@ async fn seed(
     world_type: i16,
     forfeited: bool,
     red_skull: bool,
+    regular_blessing: bool,
 ) -> TestResult {
     pvp_source_death_fixture::seed_root(&h.pool, 41, 60, 42).await?;
     // Only initial state is a fixture. Every successor, loss and receipt below
@@ -49,8 +50,10 @@ async fn seed(
     sqlx::query("UPDATE game_character_progression_state SET level=$2,total_experience=$3 WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).bind(i64::from(level)).bind(i64::from(level-1)*100_000)
         .execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_character_blessings(character_id,blessing_key,provenance) VALUES(encode($1,'hex')::uuid,'spiritual_shielding','fixture')")
-        .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    if regular_blessing {
+        sqlx::query("INSERT INTO game_character_blessings(character_id,blessing_key,provenance) VALUES(encode($1,'hex')::uuid,'spiritual_shielding','fixture')")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    }
     tx.commit().await?;
     sqlx::query("INSERT INTO game_character_pvp_state(character_id,world_id,adventurer_forfeited,skull,skull_until) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,CASE WHEN $4=0 THEN NULL ELSE clock_timestamp()+interval '1 day' END)")
         .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(forfeited).bind(if red_skull { 1_i16 } else { 0_i16 })
@@ -73,6 +76,7 @@ fn boundary(
     world_type: i16,
     forfeited: bool,
     red_skull: bool,
+    regular_blessing: bool,
 ) -> TestResult {
     run(async |admin| {
         reset();
@@ -86,7 +90,7 @@ fn boundary(
             .open_character_authority(&seal)
             .await
             .map_err(|e| format!("adventurer authority: {e:?}"))?;
-        seed(&h, level, world_type, forfeited, red_skull).await?;
+        seed(&h, level, world_type, forfeited, red_skull, regular_blessing).await?;
         let dependencies = Dependencies::new()?;
         let owner = dependencies.owner(&h, &authority);
         if pvp {
@@ -137,7 +141,10 @@ fn boundary(
             };
             current.expected_character_revision = receipt.committed_character_revision;
         }
-        let request = request(90, pvp)?;
+        let mut request = request(90, pvp)?;
+        if !regular_blessing {
+            request.held_blessings.clear();
+        }
         let death = owner
             .settle_source_player_death(current, request.clone(), Some(&formula), None)
             .await
@@ -149,22 +156,22 @@ fn boundary(
             assert_eq!(death.experience_after, death.experience_before);
             assert_eq!(death.level_after, level);
             assert_eq!(death.blessings_after, request.held_blessings);
-            assert!(death.build_loss.is_none());
-            assert_eq!(
-                h.root
-                    .read_character_build_state(&authority, current.character_id)
-                    .await
-                    .map_err(debug)?,
-                trained
-            );
         } else {
-            assert!(death.experience_lost.get() > 0, "level {level}");
+            let expected_loss = i64::try_from(
+                crate::domain::death::death_experience_loss(level, u8::from(regular_blessing), false)
+                    .map_err(debug)?,
+            )?.min(death.experience_before.get());
+            assert!(expected_loss > 0);
+            assert_eq!(death.experience_lost.get(), expected_loss, "level {level}");
+            assert_eq!(death.experience_after.get(), death.experience_before.get() - expected_loss);
             assert!(death.blessings_after.is_empty());
-            assert!(
-                death.build_loss.is_some(),
-                "unprotected trained death must lose build progress"
-            );
         }
+        assert!(death.build_loss.is_none());
+        assert_eq!(
+            h.root.read_character_build_state(&authority, current.character_id).await.map_err(debug)?,
+            trained,
+            "every PvE/PvP death preserves all build families and progress"
+        );
         let held: Vec<String> = sqlx::query_scalar("SELECT blessing_key FROM game_character_blessings WHERE character_id=encode($1,'hex')::uuid ORDER BY blessing_key LIMIT 33")
             .bind(id(41).as_slice()).fetch_all(&h.pool).await?;
         assert_eq!(held, death.blessings_after);
@@ -191,32 +198,37 @@ fn boundary(
 
 #[test]
 fn adventurer_blessing_pvp_level_20() -> TestResult {
-    boundary(20, true, 2, false, false)
+    boundary(20, true, 2, false, false, true)
 }
 #[test]
 fn adventurer_blessing_pvp_level_21() -> TestResult {
-    boundary(21, true, 2, false, false)
+    boundary(21, true, 2, false, false, true)
 }
 #[test]
 fn adventurer_blessing_pvp_level_22() -> TestResult {
-    boundary(22, true, 2, false, false)
+    boundary(22, true, 2, false, false, true)
 }
 #[test]
 fn adventurer_blessing_does_not_protect_pve() -> TestResult {
-    boundary(20, false, 2, false, false)
+    boundary(20, false, 2, false, false, true)
 }
 #[test]
 fn adventurer_blessing_stays_forfeited() -> TestResult {
-    boundary(20, true, 2, true, false)
+    boundary(20, true, 2, true, false, true)
 }
 #[test]
 fn adventurer_blessing_is_open_only() -> TestResult {
-    boundary(20, true, 3, false, false)
+    boundary(20, true, 3, false, false, true)
 }
 
 #[test]
 fn adventurer_blessing_red_skull_does_not_override_loss() -> TestResult {
-    boundary(20, true, 2, false, true)
+    boundary(20, true, 2, false, true, true)
+}
+
+#[test]
+fn adventurer_blessing_unprotected_pvp_preserves_trained_build_and_d58_xp_loss() -> TestResult {
+    boundary(22, true, 2, false, false, false)
 }
 
 #[test]
@@ -242,7 +254,7 @@ fn permanence(award: bool) -> TestResult {
             .open_character_authority(&seal)
             .await
             .map_err(|e| format!("adventurer authority: {e:?}"))?;
-        seed(&h, if award { 20 } else { 21 }, 2, false, false).await?;
+        seed(&h, if award { 20 } else { 21 }, 2, false, false, true).await?;
         let dependencies = Dependencies::new()?;
         let owner = dependencies.owner(&h, &authority);
         let mut current = fence(1)?;

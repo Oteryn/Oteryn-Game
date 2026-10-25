@@ -14,8 +14,13 @@
       "id": "stamina-and-experience-boosts",
       "oteryn": "Not modelled: the base experience is awarded unchanged.",
       "reference": "Stamina and experience boosts change the experience a kill awards."
+    },
+    {
+      "id": "no-skill-or-magic-level-loss-on-death",
+      "oteryn": "Death never changes skill levels, magic level or their progress, in PvE or PvP, with or without blessings (D58 / baseline difference 2; NIGHT-W1 decision 19 supersedes SKILLS-0 section 3.6).",
+      "reference": "Global death can reduce skill and magic-level progress (characters.md 5.1.11)."
     }
   ],
-  "revision": "character-progression-differences-v1-ef6cf947697868f9c9e32148ffa89b30",
+  "revision": "character-progression-differences-v1-4407e080e604c47099d3d7dbcf661f8a",
   "schema": "OTERYN_GAME_CHARACTER_PROGRESSION_DIFFERENCES/v1"
 }

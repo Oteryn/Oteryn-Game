@@ -48,7 +48,7 @@ pub(super) fn death(tag: u8) -> TestResult<CharacterDeathRequest<50>> {
 }
 
 #[test]
-fn train_lowering_death_respawn_then_train_save_commits() -> TestResult {
+fn train_preserving_death_respawn_then_train_save_commits() -> TestResult {
     let Some(admin) = harness::configured_admin() else {
         return Ok(());
     };
@@ -147,7 +147,7 @@ async fn train_die_respawn_train(h: &Harness) -> TestResult {
         .map_err(debug)?;
     assert_eq!(trained.skills()[2].0, 11);
 
-    // A death that lowers the build: revision 3 to 4, then its respawn is consumed.
+    // A death that preserves the build: revision 3 to 4, then its respawn is consumed.
     let request = death(82)?;
     let committed = h
         .root
@@ -162,9 +162,15 @@ async fn train_die_respawn_train(h: &Harness) -> TestResult {
         )
         .await
         .map_err(debug)?;
-    let lowered = committed.build_loss.ok_or("death lowered no build")?;
-    assert_eq!(lowered.before, trained);
-    assert!(lowered.after.skills()[2].0 < trained.skills()[2].0);
+    assert!(committed.build_loss.is_none());
+    assert_eq!(committed.experience_lost.get(), 1_000);
+    assert_eq!(
+        h.root
+            .read_character_build_state(&authority, fence(4)?.character_id)
+            .await
+            .map_err(debug)?,
+        trained
+    );
     h.root
         .consume_pending_respawn(&authority, &h.node, fence(4)?, Some(request.occurrence))
         .await
@@ -172,17 +178,17 @@ async fn train_die_respawn_train(h: &Harness) -> TestResult {
         .ok_or("missing pending respawn")?;
     assert_eq!(h.root_revision().await?, "4");
 
-    // Without the rebase the save submits the pre-death build and is refused (the owner's
-    // `Unknown`), writing nothing.
+    // A checkpoint based on a different build remains refused, writing nothing.
     let mut stale = actor.clone();
     stale
         .train_skill(SkillFamily::Sword, 3, &formula, |_| 1)
         .map_err(debug)?;
-    let refused = stale
+    let mut refused = stale
         .prepare_training_checkpoint(4, &formula, occurrence(83)?, true)
         .map_err(debug)?
         .ok_or("no stale training to save")?;
     assert_eq!(refused.request.before, trained);
+    refused.request.before = druid;
     assert!(
         h.root
             .commit_character_build(&authority, &h.node, fence(4)?, refused.request, &formula)
@@ -191,11 +197,11 @@ async fn train_die_respawn_train(h: &Harness) -> TestResult {
     );
     assert_eq!(h.root_revision().await?, "4");
 
-    // The respawn's rebase: the next training save commits on the lowered build.
-    actor.rebase_after_death(&lowered.after);
+    // A respawn rebase on the unchanged build still permits the next training save.
+    actor.rebase_after_death(&trained);
     assert_eq!(
         actor.character_facts().magic_level,
-        u32::from(lowered.after.magic().0)
+        u32::from(trained.magic().0)
     );
     assert!(!actor.has_training_to_flush());
     actor
@@ -205,7 +211,7 @@ async fn train_die_respawn_train(h: &Harness) -> TestResult {
         .prepare_training_checkpoint(4, &formula, occurrence(84)?, true)
         .map_err(debug)?
         .ok_or("no training to save after respawn")?;
-    assert_eq!(prepared.request.before, lowered.after);
+    assert_eq!(prepared.request.before, trained);
     let BuildCommitOutcome::Committed(receipt) = h
         .root
         .commit_character_build(
@@ -227,13 +233,10 @@ async fn train_die_respawn_train(h: &Harness) -> TestResult {
     Ok(())
 }
 
-/// DEATH-ML-LOSS-1 (CP D1439, A13 §4.6, SKILLS-0 §3.6): a trained level 50 druid whose death
-/// takes one third of its experience loses one third of every family's cumulative progress in
-/// the death commit itself. The receipt binds the before and after build under binding
-/// version 2, the respawned actor continues from the lowered build, and a relog through a
-/// restarted root admits the same lowered magic level and skills and trains on them.
+/// D58 / NIGHT-W1 decision 19: XP drops by the same amount while every trained
+/// level and progress accumulator survives respawn, replay and restarted admission.
 #[test]
-fn trained_death_lowers_magic_and_skills_and_both_survive_respawn_and_relog() -> TestResult {
+fn trained_death_preserves_magic_and_skills_through_respawn_and_relog() -> TestResult {
     let Some(admin) = harness::configured_admin() else {
         return Ok(());
     };
@@ -243,44 +246,6 @@ fn trained_death_lowers_magic_and_skills_and_both_survive_respawn_and_relog() ->
         h.cleanup().await?;
         result
     })
-}
-
-/// Independent restatement of SKILLS-0 §3.6: sum the paid requirements and current progress,
-/// remove `floor(total * lost / before)` and re-level from the family floor.
-fn expected_loss(
-    formula: &dyn BuildFormula,
-    before: &DurableBuildState,
-    experience_before: u64,
-    experience_lost: u64,
-) -> TestResult<DurableBuildState> {
-    let vocation = before.vocation();
-    let mut families = [before.magic(); 8];
-    families[1..].copy_from_slice(&before.skills());
-    for (family, (level, progress)) in families.iter_mut().enumerate() {
-        let floor = if family == 0 { 0 } else { 10 };
-        let mut total = *progress;
-        for next in floor + 1..=*level {
-            total += formula
-                .required(vocation, family, next)
-                .ok_or("paid requirement")?;
-        }
-        let removed = u64::try_from(
-            u128::from(total) * u128::from(experience_lost) / u128::from(experience_before),
-        )?;
-        let mut remaining = total - removed;
-        let mut relevelled = floor;
-        while let Some(required) = formula.required(vocation, family, relevelled + 1) {
-            if remaining < required {
-                break;
-            }
-            remaining -= required;
-            relevelled += 1;
-        }
-        (*level, *progress) = (relevelled, remaining);
-    }
-    let mut skills = [(0, 0); 7];
-    skills.copy_from_slice(&families[1..]);
-    Ok(DurableBuildState::new(vocation, families[0], skills).map_err(debug)?)
 }
 
 async fn die_respawn_relog(h: &Harness) -> TestResult {
@@ -431,7 +396,7 @@ async fn die_respawn_relog(h: &Harness) -> TestResult {
         .map_err(debug)?;
     assert_eq!(flushed.skills()[2].1, trained.skills()[2].1 + 1);
 
-    // The death: XP and build loss in one commit, 5 to 6.
+    // The death: XP loss with build preserved, 5 to 6.
     let request = death(95)?;
     let committed = h
         .root
@@ -449,43 +414,37 @@ async fn die_respawn_relog(h: &Harness) -> TestResult {
     assert_eq!(committed.experience_before.get(), i64::try_from(total)?);
     assert_eq!(committed.experience_lost.get(), i64::try_from(loss)?);
     assert_eq!(h.root_revision().await?, "6");
-    let lowered = committed
-        .build_loss
-        .clone()
-        .ok_or("death lowered no build")?;
-    let expected = expected_loss(table, &flushed, total, loss)?;
-    assert_eq!(lowered.before, flushed);
-    assert_eq!(lowered.after, expected);
-    assert_eq!(lowered.formula_digest, table.digest());
-    assert_eq!(lowered.after.vocation(), "druid");
-    assert!(lowered.after.magic() < flushed.magic());
-    assert!(lowered.after.skills()[2] < flushed.skills()[2]);
-    // Families at their seed have no progress to lose.
-    assert_eq!(lowered.after.skills()[0], flushed.skills()[0]);
+    assert!(committed.build_loss.is_none());
+    assert_eq!(
+        committed.experience_after.get(),
+        i64::try_from(total - loss)?
+    );
+    let expected = flushed;
+    assert_eq!(expected.vocation(), "druid");
+    assert_eq!(
+        h.root
+            .read_character_build_state(&authority, character)
+            .await
+            .map_err(debug)?,
+        expected
+    );
 
-    // The receipt holds both builds under the bumped binding version.
-    let row: (i64, i64, i64, i64, i64, i64, i64, i64, i64) = sqlx::query_as(
-        "SELECT get_byte(command_binding, 0)::bigint, \
-                magic_level_before::bigint, mana_spent_before::bigint, \
-                magic_level_after::bigint, mana_spent_after::bigint, \
-                sword_level_before::bigint, sword_tries_before::bigint, \
-                sword_level_after::bigint, sword_tries_after::bigint \
+    // Unchanged builds use the existing v1 binding and NULL build payload.
+    let row: (i32, bool) = sqlx::query_as(
+        "SELECT get_byte(command_binding, 0), vocation IS NULL AND \
+                magic_level_before IS NULL AND mana_spent_before IS NULL AND \
+                magic_level_after IS NULL AND mana_spent_after IS NULL AND \
+                sword_level_before IS NULL AND sword_tries_before IS NULL AND \
+                sword_level_after IS NULL AND sword_tries_after IS NULL \
            FROM game_character_death_receipts \
           WHERE death_occurrence_id = encode($1,'hex')::uuid",
     )
     .bind(id(95).as_slice())
     .fetch_one(&h.pool)
     .await?;
-    let wide = |(level, progress): (u16, u64)| -> TestResult<(i64, i64)> {
-        Ok((i64::from(level), i64::try_from(progress)?))
-    };
-    assert_eq!(row.0, 2);
-    assert_eq!((row.1, row.2), wide(flushed.magic())?);
-    assert_eq!((row.3, row.4), wide(expected.magic())?);
-    assert_eq!((row.5, row.6), wide(flushed.skills()[2])?);
-    assert_eq!((row.7, row.8), wide(expected.skills()[2])?);
+    assert_eq!(row, (1, true));
 
-    // Respawn: the pending respawn is consumed and the actor rebased on the lowered build.
+    // Respawn: the pending respawn is consumed and the actor rebased on the preserved build.
     h.root
         .consume_pending_respawn(&authority, &h.node, fence(6)?, Some(request.occurrence))
         .await
@@ -499,7 +458,7 @@ async fn die_respawn_relog(h: &Harness) -> TestResult {
     assert!(!actor.has_training_to_flush());
 
     // Relog through a restarted root: the death replays the same loss, admission reads the
-    // lowered magic level and build, and a new actor trains on them.
+    // preserved magic level and build, and a new actor trains on them.
     let restarted = DurabilityRoot::connect_test_runtime(&h.database.url)?;
     assert!(restarted.maintain_ready_once().await?);
     let relogged = restarted

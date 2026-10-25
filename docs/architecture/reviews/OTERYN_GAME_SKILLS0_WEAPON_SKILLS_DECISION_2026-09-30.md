@@ -154,6 +154,11 @@ take?
 
 ### 3.6 Death (amends A13 §4.6)
 
+**Superseded:** [NIGHT-W1 owner decision 19 (2026-10-25)](OTERYN_GAME_NIGHT_W1_OWNER_DECISIONS_2026-10-25.md)
+restores D58 / baseline difference 2: death never changes skills, magic level or
+any of their progress. The training flush remains required; the loss rules below
+are historical, including their before/after receipt format. XP loss is unchanged.
+
 - The flush before death includes pending tries.
 - The death receipt's nullable build fields gain the before and after values of the seven skills.
   All build fields stay all NULL or all non-NULL.

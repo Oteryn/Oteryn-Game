@@ -6,7 +6,6 @@
 
 use super::character_build::{
     BuildFormula, DeathBuildState, MAX_BUILD_LEVEL, MAX_BUILD_PROGRESS, MIN_SKILL_LEVEL,
-    cumulative_progress, relevel,
 };
 use oteryn_simulation_determinism::{
     DecisionError, DecisionOccurrenceId, ExactI64, GameplayDecisionRoot, deterministic_decision_u64,
@@ -18,12 +17,10 @@ pub enum DeathBuildLossError {
     InvalidBuild,
 }
 
-/// SKILLS-0 §3.6 (accepted through ACCEPT-BATCH-2026-10-15 §6): each of the eight
-/// families loses `floor(cumulative_progress * experience_lost / experience_before)`.
-/// The caller supplies the actual capped XP loss and the current content formula;
-/// this calculation neither resolves current authority nor writes a receipt.
-/// Growth, saturation and re-levelling reuse the existing native build arithmetic.
-/// Vocation stays unchanged. An unchanged result requires NULL death-build fields.
+/// D58 / NIGHT-W1 decision 19: death preserves all eight build families exactly.
+/// The caller supplies the actual capped XP loss and current content formula;
+/// existing input validation still applies. Vocation, levels and progress stay
+/// unchanged, so new deaths require NULL death-build fields.
 pub fn calculate_death_build_loss<S: DeathBuildState>(
     formula: &dyn BuildFormula,
     before: &S,
@@ -49,7 +46,7 @@ pub fn calculate_death_build_loss<S: DeathBuildState>(
 /// writers compiled in an independent test crate use the same arithmetic without
 /// substituting a second copy of the durable Rust types for the library's types.
 pub fn calculate_death_build_family_loss(
-    mut families: [(u16, u64); 8],
+    families: [(u16, u64); 8],
     experience_before: ExactI64,
     experience_lost: ExactI64,
     required: impl Fn(usize, u16) -> Option<u64>,
@@ -61,7 +58,7 @@ pub fn calculate_death_build_family_loss(
     if lost > experience {
         return Err(DeathBuildLossError::InvalidExperienceLoss);
     }
-    for (family, (level, progress)) in families.iter_mut().enumerate() {
+    for (family, (level, progress)) in families.iter().enumerate() {
         let floor = if family == 0 { 0 } else { MIN_SKILL_LEVEL };
         let required = |next| required(family, next);
         // A missing requirement above the current level is the accepted ceiling,
@@ -74,18 +71,6 @@ pub fn calculate_death_build_family_loss(
                 && required(*level + 1).is_some_and(|value| value == 0 || *progress >= value))
         {
             return Err(DeathBuildLossError::InvalidBuild);
-        }
-        // Preserve exact values when no progress is taken, including states whose
-        // cumulative sum saturates. Zero XP has ratio zero, never division by zero.
-        if lost == 0 {
-            continue;
-        }
-        let total = cumulative_progress(*level, *progress, floor, required);
-        // Each operand is at most i64::MAX, so the product fits in u128.
-        let removed = u64::try_from(u128::from(total) * u128::from(lost) / u128::from(experience))
-            .map_err(|_| DeathBuildLossError::InvalidExperienceLoss)?;
-        if removed != 0 {
-            (*level, *progress) = relevel(total - removed, floor, required);
         }
     }
     Ok(families)
