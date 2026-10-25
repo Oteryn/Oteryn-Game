@@ -412,8 +412,10 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 drop(runtime);
                 if assert_far {
                     assert_eq!(
-                        item_move(&owner, deps.actor, command, &payload, SELECTION, &mut items)
-                            .await,
+                        item_move(
+                            &owner, deps.actor, command, &payload, SELECTION, false, &mut items
+                        )
+                        .await,
                         ItemMoveStep::Result(ItemMoveOutcome::TooFar, vec![])
                     );
                     assert_eq!(footprint(&harness.pool).await?, before);
@@ -421,7 +423,10 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 }
             }
             assert_eq!(
-                item_move(&owner, deps.actor, command, &payload, SELECTION, &mut items).await,
+                item_move(
+                    &owner, deps.actor, command, &payload, SELECTION, false, &mut items
+                )
+                .await,
                 ItemMoveStep::Result(ItemMoveOutcome::NoRoom, vec![])
             );
             assert_eq!(footprint(&harness.pool).await?, before);
@@ -455,7 +460,10 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 )
                 .map_err(debug)?;
                 assert_eq!(
-                    item_move(&owner, deps.actor, command, &payload, SELECTION, &mut items).await,
+                    item_move(
+                        &owner, deps.actor, command, &payload, SELECTION, false, &mut items
+                    )
+                    .await,
                     ItemMoveStep::Result(ItemMoveOutcome::Stale, vec![])
                 );
                 assert_eq!(footprint(&harness.pool).await?, before);
@@ -483,7 +491,10 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 sqlx::raw_sql("CREATE FUNCTION test_map_pickup_crash() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'map pickup crash boundary'; END $$; CREATE TRIGGER test_map_pickup_crash BEFORE INSERT ON game_item_loop_move_receipts FOR EACH ROW EXECUTE FUNCTION test_map_pickup_crash()")
                 .execute(&harness.pool).await?;
                 assert_eq!(
-                    item_move(&owner, deps.actor, command, &payload, SELECTION, &mut items).await,
+                    item_move(
+                        &owner, deps.actor, command, &payload, SELECTION, false, &mut items
+                    )
+                    .await,
                     ItemMoveStep::Disconnect
                 );
                 assert_eq!(mint_and_move_counts(&harness.pool).await?, (1, 0, 1));
@@ -512,13 +523,19 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 sqlx::raw_sql("DROP TRIGGER test_map_pickup_crash ON game_item_loop_move_receipts; DROP FUNCTION test_map_pickup_crash()") .execute(&harness.pool).await?;
             }
             assert!(matches!(
-                item_move(&owner, deps.actor, command, &payload, SELECTION, &mut items).await,
+                item_move(
+                    &owner, deps.actor, command, &payload, SELECTION, false, &mut items
+                )
+                .await,
                 ItemMoveStep::Result(ItemMoveOutcome::Moved, _)
             ));
             assert_eq!(mint_and_move_counts(&harness.pool).await?, (1, 1, 0));
             let moved = footprint(&harness.pool).await?;
             assert!(matches!(
-                item_move(&owner, deps.actor, command, &payload, SELECTION, &mut items).await,
+                item_move(
+                    &owner, deps.actor, command, &payload, SELECTION, false, &mut items
+                )
+                .await,
                 ItemMoveStep::Result(ItemMoveOutcome::Moved, _)
             ));
             assert_eq!(footprint(&harness.pool).await?, moved);
@@ -527,7 +544,10 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
                 ..command
             };
             assert_eq!(
-                item_move(&owner, deps.actor, second, &payload, SELECTION, &mut items).await,
+                item_move(
+                    &owner, deps.actor, second, &payload, SELECTION, false, &mut items
+                )
+                .await,
                 ItemMoveStep::Result(ItemMoveOutcome::Stale, vec![])
             );
             assert_eq!(footprint(&harness.pool).await?, moved);

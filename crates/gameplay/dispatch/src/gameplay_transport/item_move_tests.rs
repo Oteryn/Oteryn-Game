@@ -541,7 +541,16 @@ async fn step(
     payload: &[u8],
     selection: ItemMoveSelection,
 ) -> ItemMoveStep {
-    item_move(authority, actor(), use_command(1), payload, selection, view).await
+    item_move(
+        authority,
+        actor(),
+        use_command(1),
+        payload,
+        selection,
+        false,
+        view,
+    )
+    .await
 }
 
 fn result(outcome: ItemMoveOutcome) -> ItemMoveStep {
@@ -1137,6 +1146,7 @@ fn a_ground_drop_goes_to_the_loop_owner_and_an_equipped_item_is_not_supported() 
                 1,
                 LoopMove {
                     item: instance(2),
+                    count: None,
                     target: LoopTarget::Ground(TILE),
                 }
             )]
@@ -1188,6 +1198,7 @@ fn a_container_move_goes_to_the_loop_owner_by_its_server_internal_keys() -> Test
                     1,
                     LoopMove {
                         item: instance(1),
+                        count: None,
                         target,
                     }
                 )]
@@ -1824,6 +1835,7 @@ fn capabilities_12_and_14_nest_drop_and_refuse_by_command_9() -> TestResult {
                         1,
                         LoopMove {
                             item: instance(1),
+                            count: None,
                             target,
                         }
                     )]
@@ -1956,10 +1968,55 @@ fn map_base_pickup_routes_only_to_the_carried_tree() -> TestResult {
             if supported {
                 assert_eq!(
                     authority.loop_moves.borrow()[0].1,
-                    LoopMove { item: key, target }
+                    LoopMove {
+                        item: key,
+                        count: None,
+                        target
+                    }
                 );
             }
         }
+        Ok(())
+    })
+}
+
+#[test]
+fn stack_quantity_refuses_equipment_and_corpse_paths_before_a_write() -> TestResult {
+    run(async {
+        let authority = MoveAuthority::new(Replay::Nothing, Vec::new());
+        let mut view = opened();
+        for (source, destination) in [
+            (
+                entry(&view, 1),
+                ItemMoveDestination::Equipment(EquipmentSlot::Head),
+            ),
+            (entry(&view, 5), ItemMoveDestination::MainBackpack),
+        ] {
+            let mut payload = encode_item_move_intent_for(
+                &ItemMoveIntent {
+                    source,
+                    destination,
+                },
+                TREE,
+            )
+            .map_err(fault)?;
+            payload.extend([0x30, 1]);
+            assert_eq!(
+                item_move(
+                    &authority,
+                    actor(),
+                    use_command(1),
+                    &payload,
+                    TREE,
+                    true,
+                    &mut view
+                )
+                .await,
+                result(ItemMoveOutcome::NotSupported)
+            );
+        }
+        assert!(authority.equip_moves.borrow().is_empty());
+        assert!(authority.loop_moves.borrow().is_empty());
         Ok(())
     })
 }

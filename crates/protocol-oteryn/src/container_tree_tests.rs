@@ -3,7 +3,8 @@
 use super::*;
 use crate::item_view::{
     COMMAND_TYPE_ITEM_MOVE_INTENT, ItemMoveDestination, ItemMoveIntent, ItemMoveSelection,
-    MAX_ITEM_MOVE_INTENT_BYTES, MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES, decode_item_move_intent_for,
+    MAX_ITEM_MOVE_INTENT_BYTES, MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES,
+    MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES, decode_item_move_intent_for,
     decode_item_move_intent_with_equip_drop, encode_item_move_intent_for,
 };
 use serde_json::Value;
@@ -530,12 +531,12 @@ fn registries_bind_capability_14_and_its_limits() {
         command["max_result_payload_bytes"].as_u64(),
         Some(MAX_CONTAINER_VIEW_RESULT_BYTES as u64)
     );
-    // Command 9 keeps its owner and its bound: the container destination fits within it.
+    // Command 9 keeps its owner; its aggregate bound now includes capability 61 count.
     let move_command = find("command_types", COMMAND_TYPE_ITEM_MOVE_INTENT);
     assert_eq!(move_command["capability"], 4);
     assert_eq!(
         move_command["max_payload_bytes"].as_u64(),
-        Some(MAX_ITEM_MOVE_INTENT_EQUIP_DROP_BYTES as u64)
+        Some(MAX_ITEM_MOVE_INTENT_STACK_COUNT_BYTES as u64)
     );
 
     let domain = find("state_domains", STATE_DOMAIN_CONTAINER_VIEWS);
