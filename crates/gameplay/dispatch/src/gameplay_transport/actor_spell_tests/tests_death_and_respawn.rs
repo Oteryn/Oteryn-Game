@@ -62,7 +62,7 @@ fn bite_at(
         ledger,
         runtime,
         states,
-        AiAbilityAdapter::bite(creature, sequence, actor, session),
+        AiAbilityAdapter::bite(creature, sequence, actor, session, 0),
         CreatureBiteDefinition::new(2_000_000, 8).expect("definition"),
         RevisionSet::new(
             "ruleset:ai-v1",

@@ -689,6 +689,9 @@ fn a_disconnect_mid_fight_stays_a_creature_target_and_a_monster_hit_extends_the_
                 death: None,
             })
         }
+        fn target_armor(&self, _: &ChannelRuntimeV1, _: ExactActorRef, _: GameSessionId) -> u32 {
+            0
+        }
     }
 
     let mut owner = owner();

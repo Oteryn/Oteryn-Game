@@ -48,6 +48,16 @@ impl CreatureBiteVitals for Vitals {
             death: (damage.health_after == 0).then_some(uuid_v7(0x99)),
         })
     }
+
+    // This owner's player wears nothing.
+    fn target_armor(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _target_session: GameSessionId,
+    ) -> u32 {
+        0
+    }
 }
 
 struct Owner {
@@ -128,7 +138,7 @@ fn bite(
         ledger,
         owner.0,
         vitals,
-        AiAbilityAdapter::bite(issuer, sequence, owner.1, owner.2),
+        AiAbilityAdapter::bite(issuer, sequence, owner.1, owner.2, 0),
         bite_definition(),
         revisions(),
         protection,
@@ -245,7 +255,7 @@ fn the_bite_interval_gates_the_next_think_occurrence() {
             &mut ledger,
             &mut owner.runtime,
             &mut vitals,
-            AiAbilityAdapter::bite(owner.creature, 2, owner.creature, owner.session),
+            AiAbilityAdapter::bite(owner.creature, 2, owner.creature, owner.session, 0),
             bite_definition(),
             revisions(),
             UNPROTECTED,
@@ -313,7 +323,7 @@ fn a_stale_target_or_a_distant_one_gets_no_bite() {
             &mut ledger,
             &mut owner.runtime,
             &mut vitals,
-            AiAbilityAdapter::bite(owner.creature, 1, owner.player, other),
+            AiAbilityAdapter::bite(owner.creature, 1, owner.player, other, 0),
             bite_definition(),
             revisions(),
             UNPROTECTED,

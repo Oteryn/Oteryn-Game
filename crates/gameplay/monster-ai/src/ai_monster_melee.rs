@@ -145,6 +145,14 @@ impl MonsterMeleeOwner {
                     0,
                 )
                 .map_err(|_| BiteRejection::InvalidPlan)?;
+                // ARMOR-MITIGATION-1: the same occurrence draws the target's armor reduction.
+                let armor_draw = deterministic_decision_u64(
+                    &input.decision_root,
+                    input.occurrence,
+                    "ai.monster.melee.armor",
+                    0,
+                )
+                .map_err(|_| BiteRejection::InvalidPlan)?;
                 let width = u64::from(definition.maximum) - u64::from(definition.minimum) + 1;
                 let magnitude = definition.minimum
                     + u32::try_from(draw % width).map_err(|_| BiteRejection::InvalidPlan)?;
@@ -157,7 +165,7 @@ impl MonsterMeleeOwner {
                         &mut self.bites,
                         runtime,
                         vitals,
-                        AiAbilityAdapter::bite(issuer, sequence, target, session),
+                        AiAbilityAdapter::bite(issuer, sequence, target, session, armor_draw),
                         bite,
                         revisions,
                         protection,
@@ -241,6 +249,7 @@ mod tests {
     struct Vitals {
         health: u32,
         revision: u64,
+        armor: u32,
     }
     impl CreatureBiteVitals for Vitals {
         fn apply_creature_damage(
@@ -264,6 +273,9 @@ mod tests {
                 vitals_revision: self.revision,
                 death: (damage.health_after == 0).then_some([7; 16]),
             })
+        }
+        fn target_armor(&self, _: &ChannelRuntimeV1, _: ExactActorRef, _: GameSessionId) -> u32 {
+            self.armor
         }
     }
     fn uuid(tag: u8) -> [u8; 16] {
@@ -369,6 +381,7 @@ mod tests {
         let mut vitals = Vitals {
             health: 20,
             revision: 0,
+            armor: 0,
         };
         let def = definition(&runtime, 1_000_000)?;
         let resolve = |_| {
@@ -469,12 +482,67 @@ mod tests {
         Ok(())
     }
     #[test]
+    fn the_targets_worn_armor_blocks_before_the_vitals_write() -> Result<(), String> {
+        let (mut runtime, issuer, target, session) = fixture()?;
+        let def = definition(&runtime, 1_000_000)?;
+        let resolve = |_| {
+            Some((
+                target,
+                session,
+                ReentryProtection {
+                    protected_until: None,
+                },
+            ))
+        };
+        let bite = |armor, runtime: &mut ChannelRuntimeV1| {
+            let mut owner = MonsterMeleeOwner::default();
+            let mut vitals = Vitals {
+                health: 20,
+                revision: 0,
+                armor,
+            };
+            let result = owner
+                .think(
+                    runtime,
+                    &mut vitals,
+                    issuer,
+                    1,
+                    def,
+                    input(1),
+                    &perceived(),
+                    resolve,
+                    revisions()?,
+                    SemanticTimeMicros::from_micros(0),
+                )
+                .map_err(|error| format!("{error:?}"))?;
+            Ok::<_, String>((result, vitals.health, vitals.revision))
+        };
+        let (result, health, revision) = bite(2, &mut runtime)?;
+        let Dispatch::Bite(Ok(applied)) = result else {
+            return Err(format!("armor 2 bite: {result:?}"));
+        };
+        assert_eq!((applied.requested, applied.damage.applied), (8, 7));
+        assert_eq!((health, revision), (13, 1), "armor 1..=3 takes one point");
+        let (result, health, revision) = bite(40, &mut runtime)?;
+        let Dispatch::Bite(Ok(applied)) = result else {
+            return Err(format!("armor 40 bite: {result:?}"));
+        };
+        assert_eq!((applied.requested, applied.damage.applied), (8, 0));
+        assert_eq!(
+            (health, revision),
+            (20, 0),
+            "a fully blocked hit writes nothing"
+        );
+        Ok(())
+    }
+    #[test]
     fn failed_chance_and_protected_targets_never_damage_or_retry_later() -> Result<(), String> {
         let (mut runtime, issuer, target, session) = fixture()?;
         let mut owner = MonsterMeleeOwner::default();
         let mut vitals = Vitals {
             health: 20,
             revision: 0,
+            armor: 0,
         };
         let def = definition(&runtime, 0)?;
         let result = owner
@@ -563,6 +631,7 @@ mod tests {
         let mut vitals = Vitals {
             health: 20,
             revision: 0,
+            armor: 0,
         };
         let mut def = definition(&runtime, 1_000_000)?;
         def.content_digest[0] ^= 1;
@@ -639,6 +708,7 @@ mod tests {
         let mut vitals = Vitals {
             health: 1_000,
             revision: 0,
+            armor: 0,
         };
         let def = definition(&runtime, 1_000_000)?;
         let resolve = |_| {
