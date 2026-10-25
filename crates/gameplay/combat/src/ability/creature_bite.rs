@@ -310,23 +310,7 @@ fn resolve_and_apply(
     protection: ReentryProtection,
     now: SemanticTimeMicros,
 ) -> Result<AppliedBite, BiteRejection> {
-    runtime
-        .player_control_facts(intent.target, intent.target_session)
-        .map_err(|_| BiteRejection::StaleTarget)?;
-    let issuer_at = runtime
-        .read_actor_position(intent.issuer)
-        .map_err(|_| BiteRejection::OutOfRange)?;
-    let target_at = runtime
-        .read_actor_position(intent.target)
-        .map_err(|_| BiteRejection::OutOfRange)?;
-    if issuer_at.context() != target_at.context()
-        || !adjacent(issuer_at.position(), target_at.position())
-    {
-        return Err(BiteRejection::OutOfRange);
-    }
-    if protection.protects_at(now) {
-        return Err(BiteRejection::TargetProtected);
-    }
+    bite_reaches(runtime, intent, protection, now)?;
     if now < entry.ready_at {
         return Err(BiteRejection::CoolingDown);
     }
@@ -366,6 +350,51 @@ fn resolve_and_apply(
 }
 
 /// Range 1 (§4.6): one tile apart, diagonals included, on one floor.
+/// ZERO-BITE-BLOCK-1 (`Game::combatBlockHit`, `Creature::blockHit`): a bite that draws 0 still
+/// meets the committed player's defence when it reaches them, spending one of the player's
+/// blocks (and training shielding through `vitals`). Nothing reaches the player's health and no
+/// bite cooldown is kept. `false` when the bite does not reach the player.
+pub fn meet_zero_bite(
+    runtime: &ChannelRuntimeV1,
+    vitals: &mut dyn CreatureBiteVitals,
+    intent: AiBiteIntent,
+    protection: ReentryProtection,
+    now: SemanticTimeMicros,
+) -> bool {
+    if bite_reaches(runtime, intent, protection, now).is_err() {
+        return false;
+    }
+    let _ = vitals.target_defence(runtime, intent.target, intent.target_session, now);
+    true
+}
+
+/// The bite reaches its target: a committed player, adjacent on the same context, unprotected.
+fn bite_reaches(
+    runtime: &ChannelRuntimeV1,
+    intent: AiBiteIntent,
+    protection: ReentryProtection,
+    now: SemanticTimeMicros,
+) -> Result<(), BiteRejection> {
+    runtime
+        .player_control_facts(intent.target, intent.target_session)
+        .map_err(|_| BiteRejection::StaleTarget)?;
+    let issuer_at = runtime
+        .read_actor_position(intent.issuer)
+        .map_err(|_| BiteRejection::OutOfRange)?;
+    let target_at = runtime
+        .read_actor_position(intent.target)
+        .map_err(|_| BiteRejection::OutOfRange)?;
+    if issuer_at.context() != target_at.context()
+        || !adjacent(issuer_at.position(), target_at.position())
+    {
+        return Err(BiteRejection::OutOfRange);
+    }
+    if protection.protects_at(now) {
+        return Err(BiteRejection::TargetProtected);
+    }
+    Ok(())
+}
+
 fn adjacent(from: MovementLocalPosition, to: MovementLocalPosition) -> bool {
     let dx = (i64::from(to.x) - i64::from(from.x)).abs();
     let dy = (i64::from(to.y) - i64::from(from.y)).abs();
