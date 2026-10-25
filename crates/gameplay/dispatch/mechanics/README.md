@@ -37,7 +37,7 @@ routing::example::route(authority, &session.admitted, command).await
 - `offer` optionally contributes a capability-offer filter: numeric order, transport
   function path, and authority availability method. Orders are unique. Preserve existing
   ordering dependencies; current hooks are appearance (10), daily reward (20), Cyclopedia
-  (30), after the weather-source filter. This registry does not reorder owner transactions
+  (30), charm progression (40), after the weather-source filter. This registry does not reorder owner transactions
   or actor lifecycle operations.
 - `[route]` is copied verbatim into the generated match arm. A reply-only route can return
   `Dispatch::Reply(CommandStatus, Vec<u8>)`, using the existing command-result encoder.
