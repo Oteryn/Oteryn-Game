@@ -96,8 +96,8 @@ mod tests {
     }
 
     #[test]
-    fn creature_push_strict_fields_and_bounds() {
-        let bytes = encode_creature_push_intent(&intent()).unwrap();
+    fn creature_push_strict_fields_and_bounds() -> Result<(), WorldSpatialError> {
+        let bytes = encode_creature_push_intent(&intent())?;
         assert!(bytes.len() <= MAX_CREATURE_PUSH_BYTES, "{}", bytes.len());
         assert_eq!(decode_creature_push_intent(&bytes), Ok(intent()));
         let target_len = usize::from(bytes[1]);
@@ -126,5 +126,6 @@ mod tests {
             decode_creature_push_intent(&[0; MAX_CREATURE_PUSH_BYTES + 1]),
             Err(WorldSpatialError::LimitExceeded)
         );
+        Ok(())
     }
 }
