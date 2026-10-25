@@ -1764,6 +1764,7 @@ fn floor_exhaust_pauses_due_attack_without_clearing_target_or_consuming_swing() 
         weapon: SwingWeapon::Fists,
         content_digest: digest,
         read_at: at(T0 + STAIRHOP_MICROS),
+        ranged: None,
     });
     assert!(
         super::drain::select_swing(

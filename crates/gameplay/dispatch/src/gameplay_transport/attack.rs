@@ -9,6 +9,9 @@
 //! ATTACK-2: the swing uses the held melee weapon's attack (fists otherwise), and the creature
 //! meets it with its block budget, its source defence and its armor (§4, §5).
 //! Player targets use the same physical batch with current PvP legality and durable harm.
+//! RANGED-ATTACK-1 resolves ranged Item authoring alongside that melee projection: launcher
+//! range and matching ammo, throwing break rules, or a wand/rod's element, bounds and mana.
+//! These shots retain the same timer, target, fenced damage and skill-training owners.
 //!
 //! CHASE-1 (RANGED-0 §8): with `chase=CHASE` and a held target the owner steps the player towards
 //! the nearest tile next to it, one Movement-owner step at a time on the player's own pacing
@@ -19,6 +22,7 @@
 mod attack_chase_search;
 mod drain;
 pub(super) mod player_block;
+pub(in crate::gameplay_transport) mod ranged;
 mod shared_experience;
 pub(super) mod skill_training;
 
@@ -155,9 +159,10 @@ pub use oteryn_gameplay_combat_rules::resolution::WEAPON_REFRESH_MICROS;
 pub use oteryn_gameplay_combat_rules::resolution::SwingWeapon;
 
 /// The swing weapon read from the equipment owner under `content_digest` at `read_at`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct WeaponFacts {
     weapon: SwingWeapon,
+    ranged: Option<Arc<ranged::RangedLoadout>>,
     content_digest: [u8; 32],
     read_at: SemanticTimeMicros,
 }
@@ -496,7 +501,7 @@ impl ChannelAttackStates {
     ) -> Option<u64> {
         let entry = &self.entries[self.index(actor, session)?];
         entry.state.target()?;
-        let fresh = entry.weapon.is_some_and(|facts| {
+        let fresh = entry.weapon.as_ref().is_some_and(|facts| {
             &facts.content_digest == digest
                 && now
                     .elapsed_since(facts.read_at)
@@ -1206,6 +1211,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if equipment.content_digest != digest || content.source_digest() != digest {
             return;
         }
+        let Some(ranged) = ranged::loadout(content, &equipment) else {
+            return;
+        };
         let Some(weapon) = swing_weapon(content, &equipment.items) else {
             return;
         };
@@ -1215,6 +1223,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             epoch,
             WeaponFacts {
                 weapon,
+                ranged,
                 content_digest: digest,
                 read_at: now,
             },

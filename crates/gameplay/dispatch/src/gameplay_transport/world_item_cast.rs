@@ -540,6 +540,7 @@ async fn prepare_item_grant(
         .header
         .identity;
     let request = SpellItemTransactionRequest {
+        swing_ordinal: None,
         command,
         spell: crate::durability::item_mint::TypedDefinitionRef {
             family: "Spell".into(),

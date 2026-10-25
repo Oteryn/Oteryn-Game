@@ -1010,6 +1010,31 @@ impl super::cast::PlayerSpellState {
                 value.pending_mana > 0 || value.pending_skills.iter().any(|tries| *tries > 0)
             })
     }
+    /// The auto-attack owner pays one qualified weapon shot. Training banks with ordinary
+    /// mana training and is checkpointed by its existing level/cadence/logout saves.
+    pub fn after_weapon_shot(&self, mana: u32, now: u64) -> Option<Self> {
+        if self.health == 0 || self.mana < mana || self.training_checkpoint.is_some() {
+            return None;
+        }
+        let mut next = self.clone();
+        next.mana -= mana;
+        next.revision = next.revision.checked_add(1)?;
+        if mana > 0
+            && let Some(training) = next.training.as_mut()
+        {
+            if training.last_cast_micros.is_some_and(|last| now < last) {
+                return None;
+            }
+            training.pending_mana = training
+                .pending_mana
+                .saturating_add(u64::from(mana))
+                .min(MAX_BUILD_PROGRESS);
+            training.checkpoint_started_micros.get_or_insert(now);
+            training.last_cast_micros = Some(now);
+        }
+        Some(next)
+    }
+
     /// W2b: one resolved hit or use trains `family` by the tries `rule` derives from the hit
     /// streaks. Without owned training (no active formula, the production off switch) nothing
     /// trains. While a checkpoint is retained for replay (a save returned `Unknown`) the live
