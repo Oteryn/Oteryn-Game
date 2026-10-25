@@ -127,15 +127,19 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
 fn creature_push_real_dispatch_moves_and_refuses_on_postgres() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| {
+            // One qualification spawn per runtime: the unpushable profile gets its own run.
+            scenario("creature_push_np", true)?;
+            scenario("creature_push", false)
+        })?
         .join()
         .map_err(|_| "creature push e2e panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
+fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
     run(async |admin| {
-        let h = Harness::create_with_admission_seed(admin, "creature_push", true, false).await?;
+        let h = Harness::create_with_admission_seed(admin, seed, true, false).await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -215,7 +219,11 @@ fn scenario() -> TestResult {
         );
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
-            let result = client_scenario(&mut client, &owner, admitted).await;
+            let result = if unpushable {
+                unpushable_scenario(&mut client, &owner).await
+            } else {
+                client_scenario(&mut client, &owner, admitted).await
+            };
             client.shutdown().await?;
             result
         };
@@ -234,6 +242,7 @@ fn scenario() -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+    .map_err(|error| error.to_string())
 }
 
 async fn position(
@@ -317,34 +326,49 @@ async fn raw(client: &mut DuplexStream, id: u64, payload: &[u8]) -> TestResult<u
     }
 }
 
-async fn client_scenario(
+/// Waits for the first snapshot and installs the content's companion policies.
+async fn prepare(
     client: &mut DuplexStream,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
-    admitted: AdmittedSession,
 ) -> TestResult {
-    let actor = admitted.runtime_actor.ok_or("actor")?;
     loop {
         let frame = read(client).await?;
         if decode_wire_envelope(&frame)?.message_type() == MessageType::SnapshotCommit {
             break;
         }
     }
-    {
-        let mut runtime = owner.runtime.lock().await;
-        owner
-            .active_generation
-            .and_then(|g| g.native_gameplay())
-            .ok_or("native")?
-            .install_companion_policies(&mut runtime)
-            .map_err(debug)?;
-    }
-    let troll = spawn(owner, "oteryn:creature.troll", at(3, 2)).await?;
-    let marauder = spawn(owner, "oteryn:creature.pirate_marauder", at(1, 2)).await?;
-    let troll_ref = reference(owner, troll).await?;
+    let mut runtime = owner.runtime.lock().await;
+    owner
+        .active_generation
+        .and_then(|g| g.native_gameplay())
+        .ok_or("native")?
+        .install_companion_policies(&mut runtime)
+        .map_err(debug)?;
+    Ok(())
+}
+
+async fn unpushable_scenario(
+    client: &mut DuplexStream,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+) -> TestResult {
+    prepare(client, owner).await?;
+    let marauder = spawn(owner, "oteryn:creature.pirate_marauder", at(3, 2)).await?;
     let marauder_ref = reference(owner, marauder).await?;
     // Canary monster.cpp:275: a profile with `pushable: false` is never moved.
-    assert_eq!(push(client, 1, marauder_ref, at(0, 2)).await?, NOT_MOVABLE);
-    assert_eq!(position(owner, marauder).await?, at(1, 2));
+    assert_eq!(push(client, 1, marauder_ref, at(4, 2)).await?, NOT_MOVABLE);
+    assert_eq!(position(owner, marauder).await?, at(3, 2));
+    Ok(())
+}
+
+async fn client_scenario(
+    client: &mut DuplexStream,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let actor = admitted.runtime_actor.ok_or("actor")?;
+    prepare(client, owner).await?;
+    let troll = spawn(owner, "oteryn:creature.troll", at(3, 2)).await?;
+    let troll_ref = reference(owner, troll).await?;
     // A pushable adjacent creature moves exactly one cell.
     assert_eq!(push(client, 2, troll_ref, at(4, 2)).await?, MOVED);
     assert_eq!(position(owner, troll).await?, at(4, 2));
