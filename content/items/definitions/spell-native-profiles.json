@@ -10769,6 +10769,842 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "candidate:item/2358",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "wooden chair"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "KNOWN",
+          "value": {
+            "targets": [
+              {
+                "kind": "ROTATE",
+                "target": {
+                  "state": "KNOWN",
+                  "value": {
+                    "key": "oteryn:item.tibia.i2359",
+                    "revision": "definition-r1"
+                  }
+                }
+              },
+              {
+                "kind": "WRAP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "USE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "EQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DEEQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "MALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "FEMALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DESTROY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DECAY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "WRITE_ONCE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          }
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": true,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2358",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2358",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2358",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/2359",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "wooden chair"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "KNOWN",
+          "value": {
+            "targets": [
+              {
+                "kind": "ROTATE",
+                "target": {
+                  "state": "KNOWN",
+                  "value": {
+                    "key": "oteryn:item.tibia.i2360",
+                    "revision": "definition-r1"
+                  }
+                }
+              },
+              {
+                "kind": "WRAP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "USE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "EQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DEEQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "MALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "FEMALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DESTROY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DECAY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "WRITE_ONCE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          }
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": true,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2359",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2359",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2359",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/2360",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "wooden chair"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "KNOWN",
+          "value": {
+            "targets": [
+              {
+                "kind": "ROTATE",
+                "target": {
+                  "state": "KNOWN",
+                  "value": {
+                    "key": "oteryn:item.tibia.i2361",
+                    "revision": "definition-r1"
+                  }
+                }
+              },
+              {
+                "kind": "WRAP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "USE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "EQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DEEQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "MALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "FEMALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DESTROY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DECAY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "WRITE_ONCE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          }
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": true,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2360",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2360",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2360",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/2361",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "wooden chair"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "KNOWN",
+          "value": {
+            "targets": [
+              {
+                "kind": "ROTATE",
+                "target": {
+                  "state": "KNOWN",
+                  "value": {
+                    "key": "oteryn:item.tibia.i2358",
+                    "revision": "definition-r1"
+                  }
+                }
+              },
+              {
+                "kind": "WRAP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "USE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "EQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DEEQUIP",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "MALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "FEMALE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DESTROY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "DECAY",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              },
+              {
+                "kind": "WRITE_ONCE",
+                "target": {
+                  "state": "UNKNOWN"
+                }
+              }
+            ]
+          }
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": true,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2361",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2361",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2361",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/2429",
           "revision": "spell-p2-r21"
         }

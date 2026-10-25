@@ -47,6 +47,7 @@ pub mod logout;
 pub mod loop_training;
 pub mod npc_service;
 pub mod party;
+pub mod player_trade;
 pub mod presentation;
 pub mod quest_log;
 mod registered_capabilities;

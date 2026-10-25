@@ -1,0 +1,18 @@
+{
+  "id": "TRADE0-RL-03",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_PLAYER_TRADE0_DIRECT_PLAYER_TRADE_DECISION_2026-09-30.md",
+  "resource": "Open trades per Channel owner",
+  "unit": "trades",
+  "hard_maximum": 512,
+  "configurable_range": {
+    "minimum": 512,
+    "maximum": 512
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Channel-local book, one open trade per participant; no durable reservations before the atomic exchange.",
+  "client_visible": false,
+  "boundary_tests": [
+    "player_trade_book_capacity_and_identity_boundaries"
+  ],
+  "notes": "TRADE-WIRE-1: fixed bounded admission; excess commands REJECTED and excess open trades PARTNER_BUSY. Duplicate CommandIds replay before this limiter. See TRADE-WIRE-NOTES.md for local qualification."
+}
