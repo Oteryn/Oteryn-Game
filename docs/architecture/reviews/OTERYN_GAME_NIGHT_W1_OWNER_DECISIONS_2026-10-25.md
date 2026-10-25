@@ -21,7 +21,7 @@ implements that row.
 | 11 | Corpse decay and ground items | As global: corpses decay on their timer (D113, D137); other ground items stay until the planned reset (ADR-0021 D191, LOOP-GROUND-1). Neither rule replaces the other | None: already the reconciled reading |
 | 12 | Exhaust after stairs (2 s) and after mounting (3 s) | Yes | With native stairs (FLOOR-1) and mounts |
 | 13 | Training on a dummy with a wand, rod or bow from a distance | As global: allowed | With the ranged attack wiring |
-| 14 | Look description at a distance | As global (owner correction, 2026-10-25): look works from a distance, on anything the player can see. Canary shows the weight and some details only within one tile; whether global does the same is checked at ITEM-LOOK-1, never by refusing a far look | ITEM-LOOK-1 |
+| 14 | Look description at a distance | As global (owner correction, 2026-10-25): look works on anything in the whole field of view. Canary shows the weight and some details only within one tile; whether global does the same is checked at ITEM-LOOK-1, never by refusing a far look | ITEM-LOOK-1 |
 | 15 | Moving or using an item from afar | Yes: keep the "too far" refusal for now | Auto-walk when the server owns walking |
 | 16 | Adventurer's Blessing level limit | From global: lost on first reaching level 21, so it protects through level 20 (TibiaWiki). PARTY-PVP-0 §10.2 already says "level 20 or less" | None: already consistent |
 | 17 | Rat corpse id in D113 | Correct it: D113's `i00005801` is the D3-7 alias of `oteryn:item.tibia.i5964`, the dead rat. 5801 is the Jewelled Backpack in Canary | D113 note in the D3 decision (this PR) |
