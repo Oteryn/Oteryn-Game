@@ -1,4 +1,5 @@
 //! PUSH-ROUTE-1: command 98 through the real serve router, composed owner and PostgreSQL session.
+use super::appearance_change_postgres::observer_visibility_tests as observer;
 use super::autowalk::{at, place, read, send};
 use super::fixture::{Harness, debug, id, join_two, run};
 use super::{Dependencies, TestResult, prepare_current_session};
@@ -28,7 +29,7 @@ const NOT_ENOUGH_ROOM: u8 = 5;
 const OUT_OF_REACH: u8 = 6;
 const EXHAUSTED: u8 = 7;
 
-/// Grass 0..=12 x 0..=8 on floor 7; a wall at (5, 2); every tile with x >= 8 is a protection zone.
+/// Grass 0..=12 x 0..=8 on floor 7 (Tibia-keyed, so every tile has spell facts); a wall at (5, 2); every tile with x >= 8 is a protection zone.
 fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     use oteryn_world_bundle::writer::{
@@ -65,8 +66,8 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
             floors: vec![-7],
         },
         palette: vec![
-            terrain("terrain:grass", 0, TerrainKind::Ground, Some(true)),
-            terrain("terrain:wall", 1, TerrainKind::Wall, None),
+            terrain("oteryn:terrain.tibia.i4526", 0, TerrainKind::Ground, Some(true)),
+            terrain("oteryn:terrain.tibia.i1026", 1, TerrainKind::Wall, None),
         ],
         draft_areas: vec![],
         skipped_provisional_keys: vec![],
@@ -141,6 +142,9 @@ fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, seed, true, false).await?;
         prepare_current_session(&h).await?;
+        // The pushed player is a second durable session (character 101, session 110).
+        h.seed_pvp_target().await?;
+        observer::admit(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
             .root
@@ -192,7 +196,8 @@ fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            // The pusher, one creature and one pushed player.
+            3,
             channel_pin,
         )
         .map_err(debug)?;
@@ -222,7 +227,7 @@ fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
             let result = if unpushable {
                 unpushable_scenario(&mut client, &owner).await
             } else {
-                client_scenario(&mut client, &owner, admitted).await
+                client_scenario(&mut client, &deps, &owner, admitted).await
             };
             client.shutdown().await?;
             result
@@ -362,6 +367,7 @@ async fn unpushable_scenario(
 
 async fn client_scenario(
     client: &mut DuplexStream,
+    deps: &Dependencies,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
 ) -> TestResult {
@@ -370,63 +376,54 @@ async fn client_scenario(
     let troll = spawn(owner, "oteryn:creature.troll", at(3, 2)).await?;
     let troll_ref = reference(owner, troll).await?;
     // A pushable adjacent creature moves exactly one cell.
-    assert_eq!(push(client, 2, troll_ref, at(4, 2)).await?, MOVED);
+    assert_eq!(push(client, 1, troll_ref, at(4, 2)).await?, MOVED);
     assert_eq!(position(owner, troll).await?, at(4, 2));
     // PUSH-RL-03: the next push inside 1000 ms is refused before the owner reads anything.
-    assert_eq!(push(client, 3, troll_ref, at(4, 3)).await?, EXHAUSTED);
+    assert_eq!(push(client, 2, troll_ref, at(4, 3)).await?, EXHAUSTED);
     assert_eq!(position(owner, troll).await?, at(4, 2));
     tokio::time::sleep(Duration::from_millis(1100)).await;
     // The troll is now two cells away from the pusher.
-    assert_eq!(push(client, 4, troll_ref, at(4, 3)).await?, NOT_POSSIBLE);
+    assert_eq!(push(client, 3, troll_ref, at(4, 3)).await?, NOT_POSSIBLE);
     let player_session = admitted;
     place(owner, player_session, at(3, 3)).await?;
     // The destination must neighbour the pushed creature.
-    assert_eq!(push(client, 5, troll_ref, at(6, 2)).await?, OUT_OF_REACH);
+    assert_eq!(push(client, 4, troll_ref, at(6, 2)).await?, OUT_OF_REACH);
     // A wall and an occupied cell (the pusher's own) refuse with no room.
-    assert_eq!(push(client, 6, troll_ref, at(5, 2)).await?, NOT_ENOUGH_ROOM);
-    assert_eq!(push(client, 7, troll_ref, at(3, 3)).await?, NOT_ENOUGH_ROOM);
+    assert_eq!(push(client, 5, troll_ref, at(5, 2)).await?, NOT_ENOUGH_ROOM);
+    assert_eq!(push(client, 6, troll_ref, at(3, 3)).await?, NOT_ENOUGH_ROOM);
     // Self, stale generations and malformed bytes never move anything.
     assert_eq!(
-        push(client, 8, reference(owner, actor).await?, at(3, 4)).await?,
+        push(client, 7, reference(owner, actor).await?, at(3, 4)).await?,
         NOT_POSSIBLE
     );
     let stale = EntityRef {
         generation: troll_ref.generation + 1,
         ..troll_ref
     };
-    assert_eq!(push(client, 9, stale, at(4, 3)).await?, NOT_POSSIBLE);
-    assert_eq!(raw(client, 10, &[0x0a, 0x00]).await?, REJECTED);
+    assert_eq!(push(client, 8, stale, at(4, 3)).await?, NOT_POSSIBLE);
+    assert_eq!(raw(client, 9, &[0x0a, 0x00]).await?, REJECTED);
     assert_eq!(position(owner, troll).await?, at(4, 2));
     assert_eq!(position(owner, actor).await?, at(3, 3));
 
     // A second real player is pushed by its own ordinary paced step.
-    let target_session = GameSessionId::decode(&id(77)).map_err(debug)?;
-    let target = {
-        let mut runtime = owner.runtime.lock().await;
-        let reservation = runtime
-            .reserve_fresh_session(target_session)
-            .map_err(debug)?;
-        let target = runtime.commit_fresh_session(reservation).map_err(debug)?;
-        runtime
-            .initialize_pinned_test_position(target, at(3, 4))
-            .map_err(debug)?;
-        target
+    let target = observer::initialize(deps, owner).await?;
+    let mut target_admitted = AdmittedSession {
+        runtime_actor: Some(target),
+        game_session_id: GameSessionId::decode(&id(110)).map_err(debug)?,
+        ..admitted
     };
+    owner.admit_progression_session(&mut target_admitted).await;
+    place(owner, target_admitted, at(3, 4)).await?;
     let target_ref = reference(owner, target).await?;
-    assert_eq!(push(client, 11, target_ref, at(3, 5)).await?, MOVED);
+    assert_eq!(push(client, 10, target_ref, at(3, 5)).await?, MOVED);
     assert_eq!(position(owner, target).await?, at(3, 5));
     tokio::time::sleep(Duration::from_millis(1100)).await;
     // Canary game.cpp:1865: out of a protection zone only onto another protection zone.
-    let target_admitted = AdmittedSession {
-        runtime_actor: Some(target),
-        game_session_id: target_session,
-        ..admitted
-    };
     place(owner, target_admitted, at(8, 5)).await?;
     place(owner, player_session, at(7, 4)).await?;
-    assert_eq!(push(client, 12, target_ref, at(7, 5)).await?, NOT_POSSIBLE);
+    assert_eq!(push(client, 11, target_ref, at(7, 5)).await?, NOT_POSSIBLE);
     assert_eq!(position(owner, target).await?, at(8, 5));
-    assert_eq!(push(client, 13, target_ref, at(8, 6)).await?, MOVED);
+    assert_eq!(push(client, 12, target_ref, at(8, 6)).await?, MOVED);
     assert_eq!(position(owner, target).await?, at(8, 6));
     Ok(())
 }
