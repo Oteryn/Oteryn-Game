@@ -11,6 +11,7 @@ mod attack;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
+mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod bundle_map_position;
