@@ -2218,6 +2218,74 @@ fn remove_receipt(occurrence: u8, original: u64, name: &str, race: &str, fee: u8
         )
 }
 
+/// Only the SQL guard case needs coins: fifty platinum pay exactly 5,000 gold, with no change.
+async fn seed_remove_fee_items(pool: &sqlx::PgPool) -> TestResult {
+    let mut tx = pool.begin().await?;
+    // Seed existing items as the migration owner, as in the item fee fixture. The remove itself
+    // runs with all guards enabled, including the item update, entry deletion and audit guards.
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+        "INSERT INTO game_item_instances(item_instance_id, world_id, definition_family, \
+           definition_production_key, definition_revision_ref, quantity, lifecycle, \
+           minted_transaction_id) \
+         VALUES ({backpack}, {world}, 'Item', 'oteryn:item.tibia.i2854', 'rev-1', 1, 1, {mint}), \
+                ({coins}, {world}, 'Item', 'oteryn:item.tibia.i3035', 'rev-1', 50, 1, {coin_mint}); \
+         INSERT INTO game_item_container_slots(character_id, item_instance_id, world_id, \
+           placed_transaction_id) VALUES ({character}, {backpack}, {world}, {mint}); \
+         INSERT INTO game_item_container_entries(item_instance_id, world_id, character_id, \
+           parent_item_instance_id, placement_ordinal, placed_transaction_id) \
+         VALUES ({coins}, {world}, {character}, {backpack}, 1, {placed});",
+        backpack = uuid(80),
+        world = uuid(42),
+        mint = uuid(81),
+        coins = uuid(83),
+        coin_mint = uuid(84),
+        character = uuid(CHARACTER),
+        placed = uuid(85),
+    )))
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+/// The item-side statements of a remove, composed with its root advance and charm receipt.
+fn remove_fee(occurrence: u8, committed: u64, name: &str, fee: u8) -> String {
+    format!(
+        "INSERT INTO game_item_fee_burns(transaction_id, event_id, cause_kind, \
+           cause_occurrence_id, charm_key, request_binding, character_id, world_id, channel_id, \
+           runtime_scope_ownership_generation, committed_character_revision, \
+           backpack_item_instance_id, fee_gold_units, burned_gold_units, change_gold_units, \
+           line_count, occurred_at, envelope_sha256, committed_at) \
+         VALUES ({transaction}, {event}, 1, {occurrence}, 'oteryn:charm.{name}', \
+           '\\x{binding}'::bytea, {character}, {world}, {channel}, 1, {committed}, {backpack}, \
+           5000, 5000, 0, 1, 1, sha256('\\x0102'::bytea), 1); \
+         INSERT INTO game_item_fee_burn_lines(transaction_id, line_ordinal, item_instance_id, \
+           placement_ordinal, coin_worth, quantity_before, quantity_after) \
+         VALUES ({transaction}, 1, {coins}, 1, 100, 50, 0); \
+         UPDATE game_item_instances SET quantity = 0, lifecycle = 2, \
+           last_transaction_id = {transaction} WHERE item_instance_id = {coins}; \
+         DELETE FROM game_item_container_entries WHERE item_instance_id = {coins}; \
+         INSERT INTO game_item_audit_outbox(event_id, transaction_id, transaction_ordinal, \
+           transaction_count, event_type_id, schema_revision, retention_profile_id, \
+           item_instance_id, occurred_at, expires_at, envelope, envelope_sha256, \
+           publication_state) \
+         VALUES ({event}, {transaction}, 1, 1, 2, 1, 'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', \
+           {coins}, 1, 7776000001, '\\x0102'::bytea, sha256('\\x0102'::bytea), 1);",
+        transaction = uuid(fee),
+        event = uuid(fee + 1),
+        occurrence = uuid(occurrence),
+        binding = hex(&[occurrence; 32]),
+        character = uuid(CHARACTER),
+        world = uuid(42),
+        channel = uuid(43),
+        backpack = uuid(80),
+        coins = uuid(83),
+    )
+}
+
 /// A complete assign transaction of a major charm (category 1).
 fn sql_assign(occurrence: u8, original: u64, name: &str, race: &str) -> String {
     format!(
@@ -2262,7 +2330,12 @@ async fn expect_committed(pool: &sqlx::PgPool, case: &str, script: &str) -> Test
         .map_err(|error| format!("{case}: expected commit, got {error}").into())
 }
 
-async fn expect_rejected(pool: &sqlx::PgPool, case: &str, script: &str, code: &str) -> TestResult {
+async fn expect_rejected(
+    pool: &sqlx::PgPool,
+    case: &str,
+    script: &str,
+    code: &str,
+) -> TestResult<String> {
     let before = snapshot(pool).await?;
     let result = attempt(pool, script).await;
     let observed = result
@@ -2277,7 +2350,13 @@ async fn expect_rejected(pool: &sqlx::PgPool, case: &str, script: &str, code: &s
     if snapshot(pool).await? != before {
         return Err(format!("{case}: a rejected transaction changed durable state").into());
     }
-    Ok(())
+    Ok(result
+        .as_ref()
+        .err()
+        .and_then(|error| error.as_database_error())
+        .expect("the expected SQLSTATE proves a database error")
+        .message()
+        .to_owned())
 }
 
 #[test]
@@ -2286,6 +2365,7 @@ fn the_database_binds_charm_rows_to_one_receipt_chain() -> TestResult {
         let harness = Harness::create(admin, "guards", true).await?;
         let pool = &harness.pool;
         let character = uuid(CHARACTER);
+        seed_remove_fee_items(pool).await?;
 
         // Revision one: nothing may exist without its receipt.
         expect_rejected(
@@ -2484,17 +2564,6 @@ fn the_database_binds_charm_rows_to_one_receipt_chain() -> TestResult {
         .await?;
         expect_rejected(
             pool,
-            "remove naming another race than its assign",
-            &format!(
-                "{}{}{delete}",
-                advance(5),
-                remove_receipt(65, 5, "wound", "wolf", 90)
-            ),
-            "23514",
-        )
-        .await?;
-        expect_rejected(
-            pool,
             "reassign in place",
             &format!(
                 "UPDATE game_character_charm_assignments SET race_key = 'oteryn:creature.wolf' \
@@ -2606,6 +2675,43 @@ fn the_database_binds_charm_rows_to_one_receipt_chain() -> TestResult {
                 ("game_character_is_charm_key(text)".to_owned(), true),
             ]
         );
+        // Negative and positive controls differ only in the race named by the remove.
+        let remove = |race| {
+            format!(
+                "{}{}{}DELETE FROM game_character_charm_assignments \
+                  WHERE character_id = {character} AND charm_key = 'oteryn:charm.wound';",
+                advance(6),
+                remove_receipt(65, 6, "wound", race, 90),
+                remove_fee(65, 7, "wound", 90)
+            )
+        };
+        let remove_error = expect_rejected(
+            pool,
+            "remove naming another race than its assign",
+            &remove("wolf"),
+            "23514",
+        )
+        .await?;
+        assert_eq!(
+            remove_error,
+            "Character charm state is inconsistent with its charm receipts"
+        );
+        // Keep poison's assignment so the snapshot also proves only wound was removed.
+        expect_committed(pool, "remove wound with its fee burn", &remove("rat")).await?;
+        assert_eq!(
+            snapshot(pool).await?,
+            "7|7|2,3,4,5,6,7|oteryn:charm.poison:1:4,oteryn:charm.wound:2:3|\
+             oteryn:charm.poison:oteryn:creature.wolf:1"
+        );
+        let fee_state: (i64, i16, bool) = sqlx::query_as(
+            "SELECT i.quantity, i.lifecycle, EXISTS (SELECT 1 FROM game_item_container_entries e \
+                WHERE e.item_instance_id = i.item_instance_id) \
+               FROM game_item_instances i WHERE i.item_instance_id = encode($1, 'hex')::uuid",
+        )
+        .bind(id(83).as_slice())
+        .fetch_one(pool)
+        .await?;
+        assert_eq!(fee_state, (0, 2, false));
         harness.cleanup().await
     })
 }
