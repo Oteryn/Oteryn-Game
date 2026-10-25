@@ -448,7 +448,17 @@ fn resolve(
     facts: Facts<'_>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<CastResolution, CastRejection> {
-    // Order of Canary Spell::playerSpellCheck (group, spell, secondary group cooldowns first).
+    // Order of Canary Spell::playerSpellCheck: an aggressive spell in a protection zone is
+    // refused first, then the group, spell and secondary group cooldowns.
+    if let Facts::Owned(operational, _) | Facts::CarriedItem(operational) = facts
+        && let Some(profile) = &spell.authored
+        && oteryn_gameplay_spell_rules::dispatch_plans::cast_legality::protection_rejected(
+            profile,
+            operational.in_protection_zone,
+        )
+    {
+        return Err(CastRejection::ProtectionZoneRejected);
+    }
     let mut groups = spell.groups.iter();
     if let Some(primary) = groups.next() {
         check_group(cooldowns, &primary.key, now)?;
