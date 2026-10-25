@@ -218,6 +218,8 @@ pub struct SessionContinuity {
     pub next_command_id: u64,
     pub server_sequence: u64,
     pub spatial_revision: u64,
+    /// PLAYER_TRADE domain revision last delivered by this GameSession.
+    pub player_trade_revision: u64,
     /// The last `WORLD_OBJECT_OVERLAY` (domain 2) revision emitted to this connection, from
     /// either the join/resync snapshot or a committed-use delta (USE-WIRE-V1, #162 5868482467).
     /// Unlike `spatial_revision` (this actor's own per-actor counter), the door overlay is
@@ -275,6 +277,7 @@ impl SessionContinuity {
         next_command_id: 1,
         server_sequence: 0,
         spatial_revision: 1,
+        player_trade_revision: 0,
         overlay_revision: 0,
         vitals_revision: 0,
         achievement_notice_revision: None,
@@ -450,6 +453,10 @@ pub struct UseOutcome {
     /// The gate message id of a `SEALED` outcome (1 to 127): carried to the result under
     /// capability 11, required by the codec for `SEALED` and absent for every other disposition.
     pub gate_message_id: Option<u8>,
+    /// PARITY-REFUSAL-DETAIL-1: the refusal detail the disposition alone does not name (the
+    /// floor of a target out of reach). `None` sends the disposition's own detail under
+    /// capability 66; nothing is sent without it.
+    pub refusal_detail: Option<oteryn_protocol_oteryn::refusal_detail::RefusalDetail>,
 }
 
 impl UseOutcome {
@@ -459,6 +466,7 @@ impl UseOutcome {
             committed: None,
             earned: EarnedNotice::NoneEarned,
             gate_message_id: None,
+            refusal_detail: None,
         }
     }
 }

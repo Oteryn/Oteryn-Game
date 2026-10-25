@@ -16,6 +16,7 @@ fn a_sealed_use_carries_its_gate_message_id_only_under_capability_11() -> Result
                 committed: None,
                 earned: EarnedNotice::NoneEarned,
                 gate_message_id: Some(42),
+                refusal_detail: None,
             },
         };
         let use_type = u64::from(COMMAND_TYPE_USE_INTENT);

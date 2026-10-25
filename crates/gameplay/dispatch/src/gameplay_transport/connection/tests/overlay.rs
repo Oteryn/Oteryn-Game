@@ -27,7 +27,7 @@ fn admitted_use_commits_and_the_join_snapshot_carries_the_door_overlay()
                 disposition: UseDisposition::Committed,
                 committed: Some(committed.clone()),
                 earned: EarnedNotice::NoneEarned,
-                gate_message_id: None,
+                gate_message_id: None, refusal_detail: None,
             },
         };
         let use_type = u64::from(COMMAND_TYPE_USE_INTENT);

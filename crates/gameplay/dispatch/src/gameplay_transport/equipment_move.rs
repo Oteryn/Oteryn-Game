@@ -264,6 +264,18 @@ pub(super) async fn move_equipment(
     let Some(_permit) = admission.spell_lane_permit().await else {
         return EquipmentMoveResult::Unknown;
     };
+    let key = match request {
+        EquipmentMove::Equip { item, .. } | EquipmentMove::Unequip { item, .. } => item,
+    };
+    if !admission.states.player_trades.physical(
+        command.game_session_id,
+        match key {
+            ItemKey::Instance(id) => Some(id),
+            _ => None,
+        },
+    ) {
+        return refused;
+    }
     if !admission
         .checkpoint_timed_equipment(actor, command.game_session_id, true)
         .await
@@ -318,7 +330,7 @@ pub(super) async fn move_equipment(
             }
             // EQUIP-0 §4: only a committed owner move changes suppressions. Keep the lane
             // permit across the fresh read, then obey runtime -> spell_states lock order.
-            let Some((effects, armor, defence, mana_shield)) =
+            let Some((effects, armor, defence, mana_shield, offence)) =
                 read_current_equipment(admission, command.game_session_id)
                     .await
                     .and_then(|equipment| {
@@ -327,6 +339,7 @@ pub(super) async fn move_equipment(
                             equipment_effects_owner::equipped_armor(&equipment, native)?,
                             equipment_effects_owner::equipped_defence(&equipment, native)?,
                             equipment_effects_owner::equipped_mana_shield(&equipment, native)?,
+                            equipment_effects_owner::equipped_offence(&equipment, native)?,
                         ))
                     })
             else {
@@ -342,6 +355,7 @@ pub(super) async fn move_equipment(
                 state.install_equipped_armor(armor);
                 state.install_equipped_defence(defence);
                 state.install_equipped_mana_shield(mana_shield);
+                state.install_equipped_offence(offence);
             }
             EquipmentMoveResult::Committed
         }

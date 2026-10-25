@@ -568,6 +568,17 @@ pub(super) async fn npc_bank_talk(
     let reference = CommandId::new(command.command_id)
         .ok()
         .map(|id| CommandRef::new(session, id));
+    let _trade_permit = if yes {
+        let Some(permit) = admission.spell_lane_permit().await else {
+            return unknown();
+        };
+        if !admission.states.player_trades.physical_service(session) {
+            return rejected();
+        }
+        Some(permit)
+    } else {
+        None
+    };
     let mut runtime = admission.runtime.lock().await;
     let ordinary = admission.states.npc_conversations.talk_in(
         &admission.states.chat,

@@ -62,6 +62,8 @@ pub trait MapFacts {
     fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts>;
     /// Whether `pos` is a house tile.
     fn house_tile(&self, pos: TilePos) -> bool;
+    /// Original instance text of a base placement. No allocation or materialization.
+    fn base_text(&self, placement_key: u64) -> Option<&str>;
     /// The overlay revision of a base placement key in the current reset epoch, 0 while the
     /// overlay holds no state for it (contract §3 Object revision).
     fn object_revision(&self, placement_key: u64) -> u64;

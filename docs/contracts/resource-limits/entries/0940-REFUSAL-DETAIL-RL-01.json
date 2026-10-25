@@ -1,0 +1,21 @@
+{
+  "id": "REFUSAL-DETAIL-RL-01",
+  "owner_contract": "protocol-oteryn/v1/refusal_detail_v1.proto",
+  "resource": "Refusal detail field appended to step, use and item move results",
+  "unit": "bytes",
+  "hard_maximum": 2,
+  "configurable_range": {
+    "minimum": 2,
+    "maximum": 2
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Fixed two-byte suffix; a repeated, misplaced or unknown detail is refused before the result is decoded.",
+  "client_visible": true,
+  "boundary_tests": [
+    "refusal_detail_strict_suffix"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/refusal_detail.rs"
+  ],
+  "notes": "PARITY-REFUSAL-DETAIL-1. Each result bound (MAX_ITEM_MOVE_RESULT_BYTES, MAX_USE_RESULT_BYTES, MAX_STEP_RESULT_BYTES) grows by this suffix only under capability 66."
+}

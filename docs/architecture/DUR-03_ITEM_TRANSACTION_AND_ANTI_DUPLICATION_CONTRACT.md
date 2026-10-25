@@ -542,6 +542,17 @@ FORGE-CREATURE-1's dust on kill for `GAIN`) under that cause's TransactionId, re
 which each such child admits here. `CONVERT`, `LIMIT_RAISE` and `ForgeCause` are FORGE-1b's.
 `DUR03-RL-03` stays 0 for every existing shape.
 
+**Accepted amendment (SUPPLY-STASH-0 §3, §7, §9; accepted 2026-10-15).**
+The stash is Game-owned Character + World non-item value keyed by Item definition and
+revision. Whole-item stow and bounded withdrawal convert units one-for-one under
+`StashConversionCause {Stow | Withdraw, occurrence}`; item and value lines are
+`CONVERSION`, with no BURN or MINT. One fenced PostgreSQL transaction commits the
+balance, immutable ledger, input retirements or fresh default-state outputs and
+one economy-ledger stash event. Refusals persist only their original outcome.
+For these shapes only, the §39 exclusions of non-item accounts and multiple
+items are superseded. All existing fences, conservation and exclusive custody
+proofs remain binding. See the accepted supply-stash decision for the bounds.
+
 ## 19. World-scope conservation
 
 - each live ItemInstance stays within one WorldId value scope by default;
@@ -776,7 +787,7 @@ Owning combat/loot/content architecture also declares whether visible runtime lo
 | trade | atomic exchange/custody safety | consent/lifecycle/policy |
 | market | conservation/escrow safety | offer/fill/fee/pricing state machine |
 | bank | exact item/ledger transfer/conversion | banking/economy policy |
-| depot | item move/custody conservation | access/depot semantics |
+| depot | item move/custody conservation; stash value/item conversions under `StashConversionCause` | access/depot/stash semantics |
 | mail | item custody/move conservation | address/delivery lifecycle |
 | rewards | mint/transfer idempotency | eligibility/schedule |
 | houses | placement/move conservation | ownership/access/rent/topology |

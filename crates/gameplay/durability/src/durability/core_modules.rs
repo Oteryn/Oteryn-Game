@@ -40,6 +40,7 @@ pub mod character_progression;
 pub mod character_promotion;
 pub mod character_revision_sequencer;
 pub mod character_stance;
+pub mod character_stash;
 pub mod character_tutorial;
 pub mod character_wheel;
 pub mod charm_state;

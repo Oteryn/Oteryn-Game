@@ -27,6 +27,31 @@ impl MovementPositionSnapshot {
 }
 
 impl CurrentOwnerMovementPosition<'_> {
+    /// Turn in place through the same exact-snapshot owner fence as a cardinal step.
+    pub fn commit_turn(
+        &mut self,
+        expected: MovementPositionSnapshot,
+        facing: MovementFacing,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        let index = self
+            .carrier
+            .validate_ref(self.continuity, expected.0.actor_ref)?;
+        let mut committed = self.carrier.compare_commit_position(
+            self.continuity,
+            expected.0,
+            expected.0.version.context,
+            expected.0.version.position,
+        )?;
+        committed.version.facing = Some(facing);
+        match &mut self.carrier.slots[index] {
+            Slot::Occupied { position, .. } | Slot::CreatureOccupied { position, .. } => {
+                *position = Some(committed.version);
+            }
+            _ => unreachable!("position commit proved occupied exact slot"),
+        }
+        Ok(MovementPositionSnapshot(committed))
+    }
+
     pub fn commit_spell_relocation<P: SpellRelocationProof>(
         &mut self,
         proof: P,

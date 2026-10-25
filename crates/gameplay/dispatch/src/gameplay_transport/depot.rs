@@ -24,7 +24,7 @@ fn empty(intent: DepotIntent, outcome: DepotOutcome) -> DepotReply {
 }
 
 /// The nearest visible authored locker, with deterministic position/ordinal tie-breaking.
-fn locker(at: &super::bundle_map_position::BundleMapPosition<'_>) -> Option<u16> {
+pub(super) fn locker(at: &super::bundle_map_position::BundleMapPosition<'_>) -> Option<u16> {
     let mut found = Vec::new();
     for dy in -1..=1 {
         for dx in -1..=1 {
@@ -126,6 +126,14 @@ pub(super) async fn execute(
         )
     };
     let permit = admission.spell_lane_permit().await?;
+    if intent.action != DepotAction::Browse
+        && !admission
+            .states
+            .player_trades
+            .physical_service(command.game_session_id)
+    {
+        return Some(refused(DepotOutcome::Rejected));
+    }
     let (native, town) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;

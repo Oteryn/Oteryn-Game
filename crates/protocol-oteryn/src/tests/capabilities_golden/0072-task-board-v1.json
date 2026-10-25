@@ -1,0 +1,17 @@
+{
+  "id": 72,
+  "name": "TASK_BOARD_V1",
+  "constant": "task_board::CAPABILITY_TASK_BOARD_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    89
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

@@ -17,7 +17,10 @@ where
 {
     if session
         .commands
-        .terminalize(command.command_id, &result)
+        .terminalize_with(command.command_id, &result, || {
+            authority
+                .player_trade_terminalized(session.admitted.game_session_id, command.command_id)
+        })
         .is_none()
     {
         return Err(ServeEnd::Disconnected);
@@ -123,6 +126,59 @@ where
                 return Err(ServeEnd::Disconnected);
             }
         }
+        Dispatch::Stash(reply) => {
+            if !session
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::stash::CAPABILITY_STASH_V1)
+            {
+                return Err(ServeEnd::Disconnected);
+            }
+            let revision = session
+                .stash_revision
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let sequence = session
+                .sequence
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let payload = oteryn_protocol_oteryn::stash::encode_stash_reply(&reply)
+                .map_err(|_| ServeEnd::Disconnected)?;
+            let frame = oteryn_protocol_oteryn::encode_state_delta(
+                session.generation,
+                sequence,
+                oteryn_protocol_oteryn::stash::DOMAIN_STASH,
+                session.stash_revision,
+                revision,
+                1,
+                &payload,
+            )
+            .map_err(|_| ServeEnd::Disconnected)?;
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+            session.stash_revision = revision;
+            session.sequence = sequence;
+            session.admitted.continuity.server_sequence = sequence;
+            if reply.outcome == oteryn_protocol_oteryn::stash::StashOutcome::Committed {
+                let Some(view) = session.item_view.as_mut() else {
+                    return Err(ServeEnd::Disconnected);
+                };
+                if item_use_view_refresh::refresh(
+                    stream,
+                    authority,
+                    session.actor,
+                    &mut session.admitted,
+                    view,
+                    session.container_views.as_mut(),
+                    &mut session.sequence,
+                )
+                .await
+                .is_none()
+                {
+                    return Err(ServeEnd::Disconnected);
+                }
+            }
+        }
         Dispatch::Depot(reply) => {
             if reply.outcome == oteryn_protocol_oteryn::depot::DepotOutcome::Moved {
                 let Some(view) = session.item_view.as_mut() else {
@@ -144,7 +200,7 @@ where
                 }
             }
         }
-        Dispatch::ItemMove(outcome, deltas) => {
+        Dispatch::ItemMove(outcome, deltas, _) => {
             effects::item_move(stream, authority, session, outcome, deltas).await?;
         }
         Dispatch::QuestLog(domain) => {
@@ -248,6 +304,7 @@ where
         | Dispatch::House(_)
         | Dispatch::Unregistered => {}
     }
+    player_trade::refresh(stream, authority, session).await?;
     if training_logged_out {
         return Err(ServeEnd::LoggedOut);
     }
