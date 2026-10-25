@@ -464,7 +464,14 @@ fn a_sell_all_burns_every_eligible_stack_whole_and_mints_their_price() {
                 0,
                 99
             ),
-            (NpcTradeLineKind::CoinMint, id(92), 11, Some(Coin::Gold), 0, 99),
+            (
+                NpcTradeLineKind::CoinMint,
+                id(92),
+                11,
+                Some(Coin::Gold),
+                0,
+                99
+            ),
         ]
     );
     // Nothing eligible, a price over the SELL maximum and no room for the coins are refused.
@@ -487,5 +494,8 @@ fn a_sell_all_burns_every_eligible_stack_whole_and_mints_their_price() {
     assert!(super::plan_sell_all(&input(&value), 99, 6, &entries).is_ok());
     // A price of 0 burns the stacks and mints nothing.
     let (free, units) = super::plan_sell_all(&input(&value), 0, 20, &entries).unwrap();
-    assert_eq!((units, free.minted_gold_units, free.lines.len()), (101, 0, 2));
+    assert_eq!(
+        (units, free.minted_gold_units, free.lines.len()),
+        (101, 0, 2)
+    );
 }

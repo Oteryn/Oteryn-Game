@@ -11,9 +11,6 @@
 //! size over its bound fail closed. A result carries the look text or the sold count and gold
 //! only with `OK`, and never both.
 
-// The client-side codecs (intent encode, result decode) are exercised by the tests.
-#![cfg_attr(not(test), allow(dead_code))]
-
 use crate::charm_wire::{
     WireResult, push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes,
     read_uint32, read_varint, set_once,
@@ -21,8 +18,8 @@ use crate::charm_wire::{
 use crate::item_look::MAX_ITEM_LOOK_TEXT_BYTES;
 pub use crate::npc_service::NpcServiceWireError as NpcShopWireError;
 use crate::npc_service::{
-    MAX_NPC_INTENT_RESULT_BYTES, NpcIntentDisposition, NpcTradeSide, check_offer_index,
-    check_size, decode_npc, encode_npc, malformed, read_fields,
+    MAX_NPC_INTENT_RESULT_BYTES, NpcIntentDisposition, NpcTradeSide, check_offer_index, check_size,
+    decode_npc, encode_npc, malformed, read_fields,
 };
 use crate::world_spatial_entities::EntityRef;
 
