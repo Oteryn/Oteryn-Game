@@ -112,6 +112,9 @@ pub struct PlayerSpellState {
     /// SHIELD-DEFENCE-1: what the hands of the last committed equipment read defend with.
     pub(super) equipped_defence:
         Option<oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence>,
+    /// EQUIP-PROTECTION-1: the summed physical protection of the last committed equipment read.
+    pub(super) equipped_physical_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
     pub(super) training: Option<super::mana_training::LiveManaTraining>,
     pub(super) training_checkpoint: Option<Box<super::mana_training::RetainedTrainingCheckpoint>>,
     pub(super) training_payment: Option<super::mana_training::TrainingPaymentWitness>,
@@ -165,6 +168,7 @@ impl PlayerSpellState {
                 owned_skills: None,
                 equipped_armor: 0,
                 equipped_defence: None,
+                equipped_physical_protection: None,
                 training: None,
                 training_payment: None,
                 field_attack_history: super::field_history::FieldAttackHistory::default(),

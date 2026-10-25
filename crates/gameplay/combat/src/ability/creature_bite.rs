@@ -25,6 +25,8 @@ use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, Movement
 use oteryn_gameplay_combat_rules::attack::AttackConstants;
 use oteryn_gameplay_combat_rules::resolution::player_armor_mitigated;
 use oteryn_gameplay_combat_rules::resolution::player_defence::player_defence_mitigated;
+use oteryn_gameplay_content::content::ReferenceRationalPercent;
+use oteryn_gameplay_items::equipment_effects::apply_protection;
 
 /// Retained bite state per Channel owner: `CREATUREAI0-RL-04`, the creature actors one Channel
 /// admits (Foundation's `CREATUREAI0_CREATURE_ACTORS_PER_CHANNEL_MAX`; a Foundation test holds the
@@ -200,6 +202,17 @@ pub trait CreatureBiteVitals {
     ) -> Option<(u32, u32)> {
         None
     }
+
+    /// EQUIP-PROTECTION-1: the summed physical protection the committed player's worn
+    /// equipment grants (EQUIP-0 §3.3, `Player::blockHit`); `None` when nothing protects.
+    fn target_physical_protection(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _target_session: GameSessionId,
+    ) -> Option<ReferenceRationalPercent> {
+        None
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -331,7 +344,13 @@ fn resolve_and_apply(
             player_defence_mitigated(magnitude, bounds, intent.defence_draw)
         });
     let armor = vitals.target_armor(runtime, intent.target, intent.target_session);
-    let mitigated = player_armor_mitigated(constants, defended, armor, intent.armor_draw);
+    let armored = player_armor_mitigated(constants, defended, armor, intent.armor_draw);
+    // EQUIP-PROTECTION-1: the worn physical protection, summed and applied once after armor
+    // and defence (EQUIP-0 §3.3).
+    let mitigated = protected(
+        armored,
+        vitals.target_physical_protection(runtime, intent.target, intent.target_session),
+    );
     let hit = vitals
         .apply_creature_damage(
             runtime,
@@ -347,6 +366,14 @@ fn resolve_and_apply(
         vitals_revision: hit.vitals_revision,
         death: hit.death,
     })
+}
+
+/// `damage` after the protection `sum` (EQUIP-0 §3.3, clamped to [-100, 100]); a negative
+/// protection raises it. An unrepresentable result leaves `damage` as it is.
+fn protected(damage: u32, sum: Option<ReferenceRationalPercent>) -> u32 {
+    sum.and_then(|sum| apply_protection(i64::from(damage), sum))
+        .and_then(|value| u32::try_from(value).ok())
+        .unwrap_or(damage)
 }
 
 /// Range 1 (§4.6): one tile apart, diagonals included, on one floor.
@@ -457,5 +484,27 @@ mod tests {
         assert!(CreatureBiteDefinition::new(0, 5).is_none());
         assert!(CreatureBiteDefinition::new(2_000_000, 0).is_none());
         assert!(CreatureBiteDefinition::new(2_000_000, 5).is_some());
+    }
+
+    #[test]
+    fn worn_physical_protection_scales_the_armored_bite_once() {
+        let percent = |numerator| ReferenceRationalPercent {
+            numerator,
+            denominator: 1,
+        };
+        assert_eq!(protected(100, Some(percent(10))), 90);
+        assert_eq!(protected(100, Some(percent(-50))), 150, "a weakness adds");
+        assert_eq!(
+            protected(99, Some(percent(10))),
+            90,
+            "the reduction truncates"
+        );
+        assert_eq!(
+            protected(100, Some(percent(250))),
+            0,
+            "the sum clamps at 100"
+        );
+        assert_eq!(protected(0, Some(percent(-50))), 0);
+        assert_eq!(protected(100, None), 100);
     }
 }

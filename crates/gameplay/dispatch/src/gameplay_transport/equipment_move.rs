@@ -330,6 +330,9 @@ pub(super) async fn move_equipment(
             let runtime = admission.runtime.lock().await;
             let mut states = admission.states.spell_states.lock().await;
             if let Some(state) = states.get_mut(&runtime, actor, command.game_session_id) {
+                state.install_equipped_physical_protection(
+                    equipment_effects_owner::physical_protection(&effects),
+                );
                 equipment_effects_owner::install_suppressions(state, effects);
                 state.install_equipped_armor(armor);
                 state.install_equipped_defence(defence);
