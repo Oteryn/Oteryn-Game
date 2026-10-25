@@ -1,0 +1,40 @@
+syntax = "proto3";
+package oteryn.game.v1;
+
+// Additive capability 62, command 79, domain 27. Requires native DEPOT_V1 (37).
+// Definition identities and row versions come only from the server's open page.
+message StashIntentV1 {
+  uint32 page = 1; // 0..14999
+  uint32 action = 2; // 1 browse, 2 whole-item stow, 3 withdraw
+  optional uint64 item_handle = 3; // stow only
+  optional bytes row_handle = 4; // withdraw only; exact 16-byte last_entry_id
+  optional uint32 amount = 5; // withdraw only; >0, at most 20*stack_max
+}
+message StashRowV1 {
+  bytes handle = 1;
+  string definition_key = 2; // 1..512 UTF-8 bytes
+  string definition_revision = 3; // 1..512 UTF-8 bytes
+  uint32 quantity = 4; // 1..1,000,000,000
+  bool migration_required = 5;
+}
+message StashReplyV1 {
+  uint32 outcome = 1; // 1 opened, 2 committed, 3 no locker, 4 stale, 5 no room,
+  // 6 no backpack, 7 overweight, 8 unsupported, 9 rejected, 10 Premium required,
+  // 11 amount limit, 12 insufficient balance.
+  optional bytes transaction = 2; // immutable receipt identity; unchanged on replay
+  uint32 page = 3;
+  bool has_more = 4;
+  repeated StashRowV1 rows = 5; // <=32, ordered by key/revision (UTF-8 byte order)
+  string message = 6; // deterministic native message for outcome
+  uint32 stowed_quantity = 7; // success stow only, 1..100; replay retains the original tally
+}
+// Request <=48 bytes; result/page delta <=36,000 bytes. Canonical decoding rejects
+// duplicate/unknown fields, cross-action fields, zero quantities and invalid pages.
+// Domain 27/type 1 replaces the complete page. Its revision is connection-local.
+// Browse reopens after reconnect/resync. Row handles are invalidated by value
+// changes or another mechanic command. Every mutation rechecks locker reach.
+// Receipt fields (transaction, outcome) are durable. Page rows are a fresh view
+// and are omitted outside reach, including on a historical receipt replay.
+// Existing domain 9/11/14 inventory refresh follows a committed conversion.
+// Native rules differ intentionally from Canary: Premium stow, whole main-bag
+// sources, 20 output stacks, atomic full withdrawal, no top-up/loot routing.

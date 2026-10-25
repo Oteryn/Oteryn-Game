@@ -107,6 +107,12 @@ Where does a character keep items outside its backpack, and how does it reach th
     answers Free until the PROD-ENTITLEMENTS-01 consumer contract is accepted (the charm state
     precedent). A move into the depot over that limit is `NO_ROOM`.
   - Nothing is removed when Premium ends; taking items out is always allowed.
+- **Accepted SUPPLY-STASH-0 §6 amendment (accepted 2026-10-15).** Stash units
+  count toward depot capacity in increments of 100 per definition: `ceil(q/100)`.
+  Compatible revisions aggregate for counting; incompatible revisions count
+  separately. Their value balances and ledgers always remain distinct. The native
+  town-scoped depot continuation applies the same World-wide stash count to each
+  town's depot admission; withdrawal remains allowed after Premium ends.
 - **Lifetime.** Never touched by death, `WorldReset` or channel changes. `character_id` references
   the Character root with RESTRICT, so a future deletion workflow must empty the depot first.
 

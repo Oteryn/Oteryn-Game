@@ -49,6 +49,8 @@ struct ServeState {
     appearances: SessionAppearance,
     selected_capabilities: SelectedCapabilities,
     item_view: Option<SessionItemView>,
+    stash_rows: Option<Vec<[u8; 16]>>,
+    stash_revision: u64,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,
     notices_selected: bool,
     overlay_served: bool,

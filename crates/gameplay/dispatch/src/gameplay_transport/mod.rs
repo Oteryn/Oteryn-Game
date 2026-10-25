@@ -111,6 +111,7 @@ mod spell_magnitude_facts;
 mod spell_parameter_cast;
 pub mod spell_premium_coordinator;
 mod spell_presentation_publisher;
+mod stash;
 mod tcp_tls;
 #[cfg(test)]
 #[allow(clippy::expect_used)]

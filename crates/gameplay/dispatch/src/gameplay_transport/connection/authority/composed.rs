@@ -237,6 +237,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         equipment_move::move_equipment(self, actor, command, request).await
     }
 
+    async fn stash(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        item: Option<item_view::ItemKey>,
+        row_open: bool,
+    ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
+        stash::execute(self, actor, command, intent, item, row_open).await
+    }
+
     async fn depot(
         &self,
         actor: ExactActorRef,
