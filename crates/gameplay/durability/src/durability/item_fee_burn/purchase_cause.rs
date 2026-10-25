@@ -8,6 +8,7 @@ impl FeeBurnCause {
             Self::AreaDonation { .. } => 4,
             Self::CharmUnassign { .. } => CAUSE_CHARM_UNASSIGN,
             Self::NpcRepair { .. } => 5,
+            Self::Imbuement { .. } => 6,
             Self::PromotionPurchase { .. } => 2,
             Self::BlessingPurchase { .. } => 3,
         }
@@ -16,7 +17,7 @@ impl FeeBurnCause {
         match self {
             Self::AreaDonation { occurrence, .. } => occurrence,
             Self::CharmUnassign { occurrence, .. } => occurrence.as_bytes(),
-            Self::NpcRepair { occurrence, .. } => occurrence,
+            Self::NpcRepair { occurrence, .. } | Self::Imbuement { occurrence, .. } => occurrence,
             Self::PromotionPurchase { occurrence, .. }
             | Self::BlessingPurchase { occurrence, .. } => occurrence,
         }
@@ -26,6 +27,7 @@ impl FeeBurnCause {
             Self::AreaDonation { .. } => "oteryn:area.entry_environs",
             Self::CharmUnassign { charm, .. } => charm.as_str(),
             Self::NpcRepair { .. } => "oteryn:service.repair.aldo",
+            Self::Imbuement { .. } => "oteryn:service.imbuement",
             Self::PromotionPurchase { service, .. } | Self::BlessingPurchase { service, .. } => {
                 service
             }
@@ -46,6 +48,13 @@ impl FeeBurnCause {
                 if repair.occurrence.as_slice() == occurrence =>
             {
                 super::super::item_fee_burn_audit::repair_cause::check(repair)
+                    .map_err(|_| FeeBurnError::InvalidInput)
+            }
+            Self::Imbuement {
+                occurrence,
+                imbuement,
+            } if imbuement.occurrence.as_slice() == occurrence => {
+                super::super::item_fee_burn_audit::imbuement_cause::check(imbuement)
                     .map_err(|_| FeeBurnError::InvalidInput)
             }
             Self::PromotionPurchase { service, .. }
@@ -75,6 +84,7 @@ impl FeeBurnCause {
                 },
             ),
             Self::NpcRepair { repair, .. } => FeeBurnCauseV1::NpcRepair(repair.clone()),
+            Self::Imbuement { imbuement, .. } => FeeBurnCauseV1::Imbuement(imbuement.clone()),
             Self::CharmUnassign { charm, occurrence } => {
                 FeeBurnCauseV1::CharmUnassign(OneItemCharmUnassignV1 {
                     charm_key: charm.as_str().into(),

@@ -75,11 +75,15 @@ pub enum FeeBurnCauseV1 {
     AreaDonation(OneItemAreaDonationV1),
     #[prost(message, tag = "5")]
     NpcRepair(Box<OneItemTimedRepairV1>),
+    #[prost(message, tag = "6")]
+    Imbuement(Box<OneItemImbuementV1>),
     // End tag-sorted variants.
 }
 
+pub(super) mod imbuement_cause;
 mod purchase_cause;
 pub(super) mod repair_cause;
+pub use imbuement_cause::{OneItemImbuementMaterialV1, OneItemImbuementV1};
 pub use purchase_cause::OneItemNpcPurchaseV1;
 pub use repair_cause::OneItemTimedRepairV1;
 
@@ -94,6 +98,7 @@ pub struct OneItemFeeBurnCauseV1 {
             3, // BlessingPurchase
             4, // AreaDonation
             5, // NpcRepair
+            6, // Imbuement
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,
@@ -199,18 +204,34 @@ pub fn fee_burn_usage(value: &OneItemFeeBurnV1) -> TransactionResourceUsage {
     let count = value.lines.len() as u64;
     let minted = value.change.len() as u64;
     let bank = u64::from(value.bank_debit.is_some());
-    let repair = u64::from(matches!(
-        value.cause.as_ref().and_then(|cause| cause.cause.as_ref()),
-        Some(FeeBurnCauseV1::NpcRepair(_))
-    ));
+    let cause = value.cause.as_ref().and_then(|cause| cause.cause.as_ref());
+    let repair = u64::from(matches!(cause, Some(FeeBurnCauseV1::NpcRepair(_))));
+    let imbuement = match cause {
+        Some(FeeBurnCauseV1::Imbuement(imbuement)) => imbuement_cause::usage(imbuement),
+        _ => TransactionResourceUsage {
+            touched_item_instances: 0,
+            location_custody_lines: 0,
+            value_lines: 0,
+            transform_lines: 0,
+            container_expansion: 0,
+            participants: 0,
+            effect_work_units: 0,
+            events: 0,
+        },
+    };
     TransactionResourceUsage {
-        touched_item_instances: count + minted + repair,
-        location_custody_lines: whole + minted,
+        touched_item_instances: count + minted + repair + imbuement.touched_item_instances,
+        location_custody_lines: whole + minted + imbuement.location_custody_lines,
         value_lines: bank,
         transform_lines: repair,
         container_expansion: 0,
-        participants: count + minted + bank + repair,
-        effect_work_units: 3 * whole + 2 * (count - whole) + 2 * minted + 2 * bank + 4 * repair,
+        participants: count + minted + bank + repair + imbuement.participants,
+        effect_work_units: 3 * whole
+            + 2 * (count - whole)
+            + 2 * minted
+            + 2 * bank
+            + 4 * repair
+            + imbuement.effect_work_units,
         events: 1,
     }
 }
@@ -267,7 +288,7 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         || value.committed_character_revision
             < if matches!(
                 value.cause.as_ref().and_then(|c| c.cause.as_ref()),
-                Some(FeeBurnCauseV1::NpcRepair(_))
+                Some(FeeBurnCauseV1::NpcRepair(_) | FeeBurnCauseV1::Imbuement(_))
             ) {
                 1
             } else {
@@ -574,6 +595,7 @@ pub struct OneItemAreaDonationV1 {
 #[cfg(test)]
 mod tests {
     #![allow(clippy::expect_used, clippy::unwrap_used)]
+    mod imbuement_cause_tests;
     mod purchase_cause_tests;
     mod timed_repair_tests;
     use super::super::item_mint_audit::{OneItemTypedDefinitionRevisionV1, decode_payload};

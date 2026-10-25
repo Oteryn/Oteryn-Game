@@ -1,4 +1,5 @@
-//! IMBUE-WIRE-1: command 85 -> real composed dispatch -> durable item owner read.
+//! IMBUE-WIRE-1 and PARITY-IMBUE-FORGE-WIRE-1: command 85 -> real composed dispatch -> durable
+//! item owner read, and the shrine apply and clear writers.
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::foundation::{ChannelContentPin, ChannelRuntimeV1, MovementLocalPosition};
@@ -11,27 +12,47 @@ use crate::gameplay_transport::connection::{
 use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::imbuement::*;
 use oteryn_protocol_oteryn::item_view::*;
+use std::num::NonZeroU32;
 use tokio::io::AsyncWriteExt;
 
 const SWORD: &str = "oteryn:item.tibia.i3264";
+const SHRINE: &str = "oteryn:item.tibia.i25060";
+const CRYSTAL: &str = "oteryn:item.tibia.i3043";
+/// Strike tier 1 consumes 20 protective charms (Canary `imbuements.xml`).
+const CHARM: &str = "oteryn:item.tibia.i11444";
 
 #[test]
 fn imbuement_wire_dispatch_reads_the_carried_item_and_fails_closed_without_writes() -> TestResult {
+    spawn(false)
+}
+
+#[test]
+fn imbuement_wire_dispatch_applies_and_clears_at_a_shrine_in_one_fenced_transaction() -> TestResult {
+    spawn(true)
+}
+
+fn spawn(shrine: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(move || scenario(shrine).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "imbuement wire e2e panic")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
-    run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "imbuement_wire", true, false).await?;
+/// The test map holds the sword's bag at x 6, where the actor stands, and at x 7 either a
+/// loose gold coin or an imbuing shrine.
+fn scenario(shrine: bool) -> TestResult {
+    run(async move |admin| {
+        let name = if shrine {
+            "imbuement_shrine"
+        } else {
+            "imbuement_wire"
+        };
+        let harness = Harness::create_with_admission_seed(admin, name, true, false).await?;
         super::reset();
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -51,10 +72,12 @@ fn scenario() -> TestResult {
         let index = native.item_index().ok_or("index")?;
         let coin = "oteryn:item.tibia.i3031";
         let bag = "oteryn:item.tibia.i2854";
+        let beside = if shrine { SHRINE } else { coin };
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
+        let sword_ref = reference(SWORD).ok_or("sword")?;
         let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
-            (coin, reference(coin).ok_or("oven")?.get() - 1),
+            (beside, reference(beside).ok_or("beside")?.get() - 1),
         );
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let map = crate::map::boot::boot(
@@ -71,18 +94,30 @@ fn scenario() -> TestResult {
             deps.admitted.world_id,
             deps.admitted.channel_id,
             |key| {
+                // The shrine has no native item policy in the fixture content: it is placed
+                // as fixed, solid scenery, as the served World places it.
+                if key == SHRINE {
+                    return Some(crate::map::facts::ItemDefinition {
+                        reference: reference(key)?,
+                        solid: Some(true),
+                        blocks_projectile: true,
+                        pickupable: false,
+                        door: false,
+                    });
+                }
                 let policy = native.item_policy(key, "definition-r1")?.record();
                 let crate::content::ReferenceItemField::Known(physical) =
                     &policy.semantics.physical
                 else {
                     return None;
                 };
+                let pickupable =
+                    physical.pickupable == crate::content::ReferenceItemField::Known(true);
                 Some(crate::map::facts::ItemDefinition {
                     reference: reference(key)?,
                     solid: policy.attributes.blocks_movement,
                     blocks_projectile: policy.attributes.blocks_projectile.unwrap_or(true),
-                    pickupable: physical.pickupable
-                        == crate::content::ReferenceItemField::Known(true),
+                    pickupable,
                     door: false,
                 })
             },
@@ -141,7 +176,15 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look::seed_main_backpack(&harness, &[(SWORD, 1), (coin, 100)]).await?;
+        if shrine {
+            super::item_look::seed_main_backpack(
+                &harness,
+                &[(SWORD, 1), (CHARM, 25), (CRYSTAL, 3)],
+            )
+            .await?;
+        } else {
+            super::item_look::seed_main_backpack(&harness, &[(SWORD, 1), (coin, 100)]).await?;
+        }
         seed_imbuement(&harness).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -152,58 +195,210 @@ fn scenario() -> TestResult {
             &[4, 6, 12, 14, 18, CAPABILITY_IMBUE_V1],
         )
         .ok_or("imbuement capability selectable")?;
-        let before = snapshot(&harness).await?;
-        // The carried sword is read through the durable owner with its stored imbuement;
-        // the qualified native policy declares no imbuement semantics, so the shrine
-        // window, apply and clear are all the same NOT_ALLOWED and nothing is written.
-        let mut next = admitted;
-        for (command, action) in [
-            (1, Some(ImbuementAction::Query)),
-            (
-                2,
-                Some(ImbuementAction::Apply {
-                    slot: 1,
-                    imbuement: 0,
-                }),
-            ),
-            (3, Some(ImbuementAction::Clear { slot: 0 })),
-        ] {
-            let (end, status, reply) = exchange(&owner, next, command, action, true).await?;
-            assert_eq!(status, CommandStatus::Accepted, "command {command}");
-            assert_eq!(
-                reply,
-                Some(ImbuementReply {
-                    result: ImbuementResult::NotAllowed,
-                    window: None,
-                }),
-                "command {command}"
-            );
-            next = end;
+        if shrine {
+            at_the_shrine(&harness, &owner, sword_ref, admitted).await?;
+        } else {
+            out_of_reach(&harness, &owner, sword_ref, admitted).await?;
         }
-        // A handle that names no current item is the same NOT_ALLOWED.
-        let (end, status, reply) = exchange(&owner, next, 4, None, true).await?;
-        assert_eq!(status, CommandStatus::Accepted);
-        assert_eq!(
-            reply.map(|reply| reply.result),
-            Some(ImbuementResult::NotAllowed)
-        );
-        next = end;
-        // A malformed payload and a session without capability 68 are rejected.
-        let (end, status, _) = exchange(&owner, next, 5, None, false).await?;
-        assert_eq!(status, CommandStatus::Rejected);
-        let mut legacy = end;
-        legacy.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 12, 14, 18])
-                .ok_or("legacy selection")?;
-        let (_, status, _) =
-            exchange(&owner, legacy, 6, Some(ImbuementAction::Query), true).await?;
-        assert_eq!(status, CommandStatus::Rejected);
-        assert_eq!(snapshot(&harness).await?, before);
         drop(owner);
         drop(authority);
         drop(seal);
         harness.cleanup().await
     })
+}
+
+/// Without a shrine in reach the window still opens, but apply and clear are
+/// `REQUIREMENT_NOT_MET` and nothing is written.
+async fn out_of_reach(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    sword_ref: NonZeroU32,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let before = snapshot(harness).await?;
+    let (mut next, status, reply) =
+        exchange(owner, sword_ref, admitted, 1, Some(ImbuementAction::Query), true).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    let window = reply.and_then(|reply| reply.window).ok_or("window")?;
+    assert_eq!(window.slot_count, 2);
+    assert_eq!(window.applied.len(), 1);
+    for (command, action) in [
+        (
+            2,
+            ImbuementAction::Apply {
+                slot: 1,
+                imbuement: 0,
+            },
+        ),
+        (3, ImbuementAction::Clear { slot: 0 }),
+    ] {
+        let (end, status, reply) = exchange(owner, sword_ref, next, command, Some(action), true).await?;
+        assert_eq!(status, CommandStatus::Accepted, "command {command}");
+        assert_eq!(
+            reply.map(|reply| reply.result),
+            Some(ImbuementResult::RequirementNotMet),
+            "command {command}"
+        );
+        next = end;
+    }
+    // A handle that names no current item is NOT_ALLOWED.
+    let (end, status, reply) = exchange(owner, sword_ref, next, 4, None, true).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(
+        reply.map(|reply| reply.result),
+        Some(ImbuementResult::NotAllowed)
+    );
+    next = end;
+    // A malformed payload and a session without capability 68 are rejected.
+    let (end, status, _) = exchange(owner, sword_ref, next, 5, None, false).await?;
+    assert_eq!(status, CommandStatus::Rejected);
+    let mut legacy = end;
+    legacy.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 12, 14, 18])
+            .ok_or("legacy selection")?;
+    let (_, status, _) = exchange(owner, sword_ref, legacy, 6, Some(ImbuementAction::Query), true).await?;
+    assert_eq!(status, CommandStatus::Rejected);
+    assert_eq!(snapshot(harness).await?, before);
+    Ok(())
+}
+
+/// Beside a shrine: the item gates, one apply that consumes the charms and burns 5,000 gold,
+/// its replay, a clear that burns 15,000 gold, and refusals that roll back.
+async fn at_the_shrine(
+    harness: &Harness,
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    sword_ref: NonZeroU32,
+    admitted: AdmittedSession,
+) -> TestResult {
+    let mut next = admitted;
+    let apply = |slot, imbuement| ImbuementAction::Apply { slot, imbuement };
+    let initial = snapshot(harness).await?;
+    assert_eq!(coin_value(harness).await?, 30_000);
+    // The sword's offers run Critical Hit (family 1), Elemental Damage (2), Life Leech (11),
+    // Mana Leech (12) and Skill Sword (20), three tiers each. The fixture row is Life Leech
+    // in slot 0.
+    step(owner, sword_ref, &mut next, 1, apply(0, 0), ImbuementResult::SlotOccupied).await?;
+    step(owner, sword_ref, &mut next, 2, apply(1, 6), ImbuementResult::NotAllowed).await?;
+    assert_eq!(snapshot(harness).await?, initial);
+    // Strike tier 1 into slot 1.
+    step(owner, sword_ref, &mut next, 3, apply(1, 0), ImbuementResult::Ok).await?;
+    let applied = snapshot(harness).await?;
+    assert_eq!(
+        applied.0,
+        [(0, 1, 1_000), (1, 1, 72_000_000)],
+        "one new Strike row"
+    );
+    assert_eq!(charms(harness).await?, 5);
+    assert_eq!(coin_value(harness).await?, 25_000);
+    let (key, revision): (String, String) = sqlx::query_as(
+        "SELECT imbuement_key, imbuement_revision FROM game_item_imbuements WHERE slot=1",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!(key, "oteryn:imbuement.strike");
+    assert_eq!(revision, oteryn_gameplay_items::imbuement::IMBUEMENT_CATALOGUE_REVISION);
+    // The session replays a retained command id without dispatching it again.
+    for action in [apply(1, 0), ImbuementAction::Clear { slot: 1 }] {
+        let (end, status, reply) = exchange(owner, sword_ref, next, 3, Some(action), true).await?;
+        assert_eq!(status, CommandStatus::DuplicateReplay);
+        assert_eq!(reply.map(|reply| reply.result), Some(ImbuementResult::Ok));
+        next = end;
+    }
+    // The durable record replays it beyond that window: the accepted request is OK again,
+    // another request under its id is REVISION_CHANGED, and an unknown id is not replayed.
+    let stored: Vec<u8> = sqlx::query_scalar(
+        "SELECT request_binding FROM game_item_imbuement_records WHERE command_id = 3",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    let binding: [u8; 32] = stored.try_into().map_err(|_| "binding")?;
+    let session = next.game_session_id;
+    for (command, binding, expected) in [
+        (3, binding, Some(ImbuementResult::Ok)),
+        (3, [0; 32], Some(ImbuementResult::RevisionChanged)),
+        (99, binding, None),
+    ] {
+        let replayed = owner
+            .root
+            .read_imbuement_command(owner.character, session, command, binding)
+            .await
+            .map_err(debug)?;
+        assert_eq!(replayed, expected, "command {command}");
+    }
+    assert_eq!(snapshot(harness).await?, applied);
+    // Clear the fixture row in slot 0: 15,000 gold.
+    step(owner, sword_ref, &mut next, 4, ImbuementAction::Clear { slot: 0 }, ImbuementResult::Ok).await?;
+    assert_eq!(snapshot(harness).await?.0, [(1, 1, 72_000_000)]);
+    assert_eq!(coin_value(harness).await?, 10_000);
+    let cleared = snapshot(harness).await?;
+    // Elemental Damage has no single recipe (declared difference); Vampirism tier 1 needs
+    // materials the bag does not hold; tier 2 needs Premium; a second clear needs 15,000 of
+    // the 10,000 gold left. Each rolls back.
+    step(owner, sword_ref, &mut next, 5, apply(0, 3), ImbuementResult::NotAllowed).await?;
+    step(owner, sword_ref, &mut next, 6, apply(0, 6), ImbuementResult::MaterialsMissing).await?;
+    step(owner, sword_ref, &mut next, 7, apply(0, 7), ImbuementResult::RequirementNotMet).await?;
+    step(
+        owner,
+        sword_ref,
+        &mut next,
+        8,
+        ImbuementAction::Clear { slot: 1 },
+        ImbuementResult::InsufficientFunds,
+    )
+    .await?;
+    assert_eq!(snapshot(harness).await?, cleared);
+    assert_eq!(coin_value(harness).await?, 10_000);
+    let (records, burns): (i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_item_imbuement_records), \
+                (SELECT count(*) FROM game_item_fee_burns)",
+    )
+    .fetch_one(&harness.pool)
+    .await?;
+    assert_eq!((records, burns), (2, 2));
+    Ok(())
+}
+
+/// One accepted command and its result, on the session the previous command left.
+async fn step(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    sword_ref: NonZeroU32,
+    next: &mut AdmittedSession,
+    command: u64,
+    action: ImbuementAction,
+    expected: ImbuementResult,
+) -> TestResult {
+    let (end, status, reply) = exchange(owner, sword_ref, *next, command, Some(action), true).await?;
+    assert_eq!(status, CommandStatus::Accepted, "command {command}");
+    assert_eq!(
+        reply.map(|reply| reply.result),
+        Some(expected),
+        "command {command}"
+    );
+    *next = end;
+    Ok(())
+}
+
+/// The gold value of the live coins.
+async fn coin_value(harness: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT COALESCE(sum(quantity * CASE definition_production_key \
+            WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 \
+            WHEN 'oteryn:item.tibia.i3043' THEN 10000 END), 0)::bigint \
+         FROM game_item_instances WHERE lifecycle = 1 AND definition_production_key IN \
+            ('oteryn:item.tibia.i3031', 'oteryn:item.tibia.i3035', 'oteryn:item.tibia.i3043')",
+    )
+    .fetch_one(&harness.pool)
+    .await?)
+}
+
+async fn charms(harness: &Harness) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT COALESCE(sum(quantity), 0)::bigint FROM game_item_instances \
+          WHERE lifecycle = 1 AND definition_production_key = $1",
+    )
+    .bind(CHARM)
+    .fetch_one(&harness.pool)
+    .await?)
 }
 
 /// Imbuement rows, item quantities and lifecycles: no command may change any of them.
@@ -236,6 +431,7 @@ async fn seed_imbuement(harness: &Harness) -> TestResult {
 
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    sword_ref: NonZeroU32,
     admitted: AdmittedSession,
     command_id: u64,
     action: Option<ImbuementAction>,
@@ -258,7 +454,7 @@ async fn exchange(
                         sword = inventory
                             .entries
                             .iter()
-                            .find(|entry| entry.count.get() == 1)
+                            .find(|entry| entry.item_definition_ref == sword_ref)
                             .map(|entry| entry.handle);
                     }
                 }
@@ -288,7 +484,10 @@ async fn exchange(
             if envelope.message_type() == crate::foundation::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
                 if result.command_id == command_id {
-                    let reply = (result.status == CommandStatus::Accepted)
+                    let reply = matches!(
+                        result.status,
+                        CommandStatus::Accepted | CommandStatus::DuplicateReplay
+                    )
                         .then(|| decode_imbuement_reply(result.payload))
                         .transpose()
                         .map_err(debug)?;

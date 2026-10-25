@@ -3,7 +3,7 @@
 use super::*;
 use crate::durability::item_fee_burn_audit::{
     FeeBurnCauseV1, OneItemAreaDonationV1, OneItemCharmUnassignV1, OneItemFeeBurnCauseV1,
-    OneItemNpcPurchaseV1, OneItemTimedRepairV1,
+    OneItemImbuementV1, OneItemNpcPurchaseV1, OneItemTimedRepairV1,
 };
 
 fn operation_fixtures() -> Vec<(u32, &'static str, OneItemOperationV1)> {
@@ -187,6 +187,15 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 ..Default::default()
             })),
         ),
+        (
+            6,
+            "Imbuement",
+            FeeBurnCauseV1::Imbuement(Box::new(OneItemImbuementV1 {
+                occurrence: vec![0x81, 0x07],
+                placement_ordinal: 129,
+                ..Default::default()
+            })),
+        ),
     ]
 }
 
@@ -211,6 +220,7 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("BlessingPurchase", "1a0e0a08626c657373696e6712028107"),
         ("AreaDonation", "220a0a02810710071a020809"),
         ("NpcRepair", "2a070a028107308101"),
+        ("Imbuement", "32070a028107208101"),
         ("EventId", "0a028107"),
         ("Command", "12070a028107108101"),
         ("OperationId", "1a028107"),

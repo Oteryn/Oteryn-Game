@@ -30,6 +30,15 @@ fn allowed(
     )
 }
 
+/// The reply of a decision; an item-gated write that only shrine access still decides is
+/// `REQUIREMENT_NOT_MET` without a shrine in reach.
+fn result(decision: Decision) -> ImbuementResult {
+    match decision {
+        Decision::Reply(reply) => reply.result,
+        Decision::Apply { .. } | Decision::Clear { .. } => ImbuementResult::RequirementNotMet,
+    }
+}
+
 fn row(slot: u8, category: u8) -> StoredImbuement {
     StoredImbuement {
         slot,
@@ -118,7 +127,10 @@ fn imbuement_offers_every_tier_of_each_admitted_family_at_canary_prices() {
             (11, 3, 200_000, true),
         ]
     );
-    let reply = decide(ImbuementAction::Query, Some(&allowance), &[row(1, 10)]);
+    let Decision::Reply(reply) = decide(ImbuementAction::Query, Some(&allowance), &[row(1, 10)])
+    else {
+        panic!("a query is answered at once");
+    };
     assert_eq!(reply.result, ImbuementResult::Ok);
     let window = reply.window.expect("query window");
     assert_eq!((window.slot_count, window.clear_gold), (2, 15_000));
@@ -135,13 +147,11 @@ fn imbuement_offers_every_tier_of_each_admitted_family_at_canary_prices() {
 fn imbuement_apply_gates_slot_offer_occupancy_category_then_access() {
     let allowance = two_slots();
     let apply = |slot, imbuement, applied: &[StoredImbuement]| {
-        let reply = decide(
+        result(decide(
             ImbuementAction::Apply { slot, imbuement },
             Some(&allowance),
             applied,
-        );
-        assert!(reply.window.is_none());
-        reply.result
+        ))
     };
     // Slot beyond the item's slots and an index beyond its offers.
     assert_eq!(apply(2, 0, &[]), ImbuementResult::NotAllowed);
@@ -149,23 +159,32 @@ fn imbuement_apply_gates_slot_offer_occupancy_category_then_access() {
     // An occupied slot, then a second imbuement of an applied category on another slot.
     assert_eq!(apply(0, 0, &[row(0, 10)]), ImbuementResult::SlotOccupied);
     assert_eq!(apply(1, 4, &[row(0, 10)]), ImbuementResult::NotAllowed);
-    // Every item gate passed: shrine access fails closed before any transaction.
+    // Every item gate passed: the write carries the slot and the chosen offer.
     assert_eq!(
-        apply(1, 0, &[row(0, 10)]),
-        ImbuementResult::RequirementNotMet
+        decide(
+            ImbuementAction::Apply {
+                slot: 1,
+                imbuement: 0
+            },
+            Some(&allowance),
+            &[row(0, 10)]
+        ),
+        Decision::Apply {
+            slot: 1,
+            offer: allowance.offers[0]
+        }
     );
     assert_eq!(apply(1, 5, &[]), ImbuementResult::RequirementNotMet);
     // No eligible item at all.
     assert_eq!(
-        decide(
+        result(decide(
             ImbuementAction::Apply {
                 slot: 0,
                 imbuement: 0
             },
             None,
             &[]
-        )
-        .result,
+        )),
         ImbuementResult::NotAllowed
     );
 }
@@ -174,20 +193,33 @@ fn imbuement_apply_gates_slot_offer_occupancy_category_then_access() {
 fn imbuement_clear_needs_an_occupied_slot_inside_the_item_then_access() {
     let allowance = two_slots();
     let clear = |slot, applied: &[StoredImbuement]| {
-        decide(ImbuementAction::Clear { slot }, Some(&allowance), applied).result
+        result(decide(
+            ImbuementAction::Clear { slot },
+            Some(&allowance),
+            applied,
+        ))
     };
     assert_eq!(clear(0, &[]), ImbuementResult::NotAllowed);
     assert_eq!(clear(2, &[row(0, 0)]), ImbuementResult::NotAllowed);
     assert_eq!(clear(1, &[row(0, 0)]), ImbuementResult::NotAllowed);
-    assert_eq!(clear(0, &[row(0, 0)]), ImbuementResult::RequirementNotMet);
     assert_eq!(
-        decide(ImbuementAction::Query, None, &[]).result,
+        decide(ImbuementAction::Clear { slot: 0 }, Some(&allowance), &[row(0, 0)]),
+        Decision::Clear { slot: 0 }
+    );
+    assert_eq!(
+        result(decide(ImbuementAction::Query, None, &[])),
         ImbuementResult::NotAllowed
     );
 }
 
 #[test]
-fn imbuement_allowance_of_activated_native_content_fails_closed() {
+fn imbuement_shrine_keys_are_sorted_for_binary_search() {
+    assert!(SHRINE_KEYS.windows(2).all(|pair| pair[0] < pair[1]));
+    assert!(SHRINE_KEYS.binary_search(&"oteryn:item.tibia.i25060").is_ok());
+}
+
+#[test]
+fn imbuement_allowance_of_activated_native_content_follows_generated_slots() {
     use crate::content::native_gameplay::test_support::{
         activated_with_item_keys, activated_with_loot_tables,
     };
@@ -199,33 +231,31 @@ fn imbuement_allowance_of_activated_native_content_fails_closed() {
     let (controller, _) = activated_with_loot_tables(world, None);
     let active = controller.active().expect("active");
     let native = active.native_gameplay().expect("native");
-    // Sword, wooden shield, backpack and gold coins: materializable, but the qualified
-    // native item policies do not declare imbuement semantics yet, so no item shows slots
-    // and every action is the same NOT_ALLOWED.
-    for key in [
-        "oteryn:item.tibia.i3264",
-        "oteryn:item.tibia.i3412",
-        "oteryn:item.tibia.i2854",
-        "oteryn:item.tibia.i3031",
-    ] {
+    let policy = |key: &str| {
         let record = native
             .item_policy(key, "definition-r1")
             .expect(key)
             .record();
         assert!(record.admission.materializable, "{key}");
-        assert_eq!(
-            record.semantics.imbuement,
-            ReferenceItemField::Unknown,
-            "{key}"
-        );
-        let allowance = allowance(&record.semantics.imbuement);
+        allowance(&record.semantics.imbuement)
+    };
+    // The sword and the backpack carry their Canary `imbuementslot` facts.
+    let sword = policy("oteryn:item.tibia.i3264").expect("sword slots");
+    assert_eq!(sword.slot_count, 2);
+    let families: Vec<_> = sword.offers.iter().map(|offer| offer.family).collect();
+    assert_eq!(families, [1, 1, 1, 2, 2, 2, 11, 11, 11, 12, 12, 12, 20, 20, 20]);
+    let backpack = policy("oteryn:item.tibia.i2854").expect("backpack slot");
+    assert_eq!(backpack.slot_count, 1);
+    // A wooden shield and gold coins have no slot: every action is the same NOT_ALLOWED.
+    for key in ["oteryn:item.tibia.i3412", "oteryn:item.tibia.i3031"] {
+        let allowance = policy(key);
         assert_eq!(allowance, None, "{key}");
         assert_eq!(
             decide(ImbuementAction::Query, allowance.as_ref(), &[]),
-            wire::ImbuementReply {
+            Decision::Reply(wire::ImbuementReply {
                 result: ImbuementResult::NotAllowed,
                 window: None,
-            },
+            }),
             "{key}"
         );
     }

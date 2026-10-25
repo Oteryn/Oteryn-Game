@@ -70,6 +70,7 @@ pub mod item_decay_retire;
 pub mod item_decay_retire_audit;
 pub mod item_fee_burn;
 pub mod item_fee_burn_audit;
+pub mod item_imbuement;
 pub mod item_loop_move;
 pub mod item_mint;
 pub mod item_mint_audit;
