@@ -67,12 +67,19 @@ pub fn store_condition_gate<S: Clone>(
         store.spell_cast_gate(spell.aggressive, now.get())
     }
 }
-/// [`condition_gate`] on the wire: any gate refuses with `REJECTED`.
+/// [`condition_gate`] on the wire: any gate refuses with `REJECTED`. A feared player is
+/// refused every spell and rune before that, as Canary `Spell::playerSpellCheck` does first.
 pub fn admit_condition_gates(
     state: &PlayerSpellState,
     spell: &SpellDefinition,
     now: SemanticTimeMicros,
 ) -> Result<(), SpellCastDisposition> {
+    if state.conditions.has_status(
+        oteryn_gameplay_domain::domain::condition::StatusKind::Feared,
+        now.get(),
+    ) {
+        return Err(SpellCastDisposition::Rejected);
+    }
     condition_gate(state, spell, now).map_err(|_| SpellCastDisposition::Rejected)
 }
 
