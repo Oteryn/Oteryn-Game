@@ -1548,7 +1548,7 @@ fn encode_intent(
     cost: &[u8],
 ) -> Result<Vec<u8>> {
     if request.command != authority.command
-        || request.spell.family != "Spell"
+        || !matches!((request.spell.family.as_str(), request.swing_ordinal), ("Spell", None) | ("Item", Some(_)))
         || request.spell.production_key.is_empty()
         || request.spell.revision_ref.is_empty()
         || request.catalog_digest == [0; 32]
@@ -1557,6 +1557,18 @@ fn encode_intent(
         || request.operations.len() > 500
     {
         return Err(SpellItemError::Rejected("spell item request shape"));
+    }
+    if request.swing_ordinal.is_some() {
+        let valid_source = request.operations.len() == 1 && matches!(&request.operations[0],
+            SpellItemOperation::ConsumeInventory(source)
+                if matches!(source.custody, InventoryCustody::Equipment { slot: 5 | 6 | 10, .. })
+                && source.quantity_after.checked_add(1) == Some(source.quantity_before));
+        if !valid_source || request.caster_origin.is_none() || request.companion.is_some()
+            || request.direct_companion.is_some() || request.cost.mana_before != request.cost.mana_after
+            || request.cost.soul_before != request.cost.soul_after
+            || request.cost.cooldowns_before != request.cost.cooldowns_after {
+            return Err(SpellItemError::Rejected("ranged shot requires one equipped unit and no spell cost"));
+        }
     }
     if let Some(origin) = &request.caster_origin
         && (*origin.actor.world_id().as_bytes() != authority.world
@@ -1770,6 +1782,7 @@ fn encode_intent(
         operations.push(value);
     }
     let mut intent = serde_json::json!({"version":1,"world":authority.world,"channel":authority.channel,"character":authority.character,"session":authority.command.game_session_id().as_bytes(),"command":authority.command.command_id().get(),"ownership_generation":authority.ownership_generation,"spell":reference(&request.spell),"catalog_digest":request.catalog_digest.as_slice(),"transaction":request.transaction_id,"event":request.event_id,"cost":cost,"operations":operations,"companion":request.companion.as_ref().map(|p|p.binding.json()),"caster_origin":request.caster_origin.as_ref().map(|o|serde_json::json!({"placement":o.actor.placement_identity(),"lease":o.character_lease_generation}))});
+    if let Some(ordinal) = request.swing_ordinal { intent["swing_ordinal"] = serde_json::json!(ordinal); }
     if let Some(direct) = &request.direct_companion {
         intent
             .as_object_mut()
@@ -1830,8 +1843,8 @@ pub async fn apply_spell_items_in_transaction_guarded(
         .bind(authority.command.command_id().get().to_string())
         .execute(&mut **tx)
         .await?;
-    let previous=sqlx::query("SELECT transaction_id::text,event_id::text,binding,cost_binding FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
-        .bind(authority.command.game_session_id().as_bytes().as_slice()).bind(authority.command.command_id().get().to_string()).fetch_optional(&mut **tx).await?;
+    let previous=sqlx::query("SELECT transaction_id::text,event_id::text,binding,cost_binding FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0) AND COALESCE(swing_ordinal,-1)=COALESCE($3,-1)")
+        .bind(authority.command.game_session_id().as_bytes().as_slice()).bind(authority.command.command_id().get().to_string()).bind(request.swing_ordinal.map(i32::from)).fetch_optional(&mut **tx).await?;
     let ids: Vec<[u8; 16]> = request
         .operations
         .iter()
@@ -1875,8 +1888,8 @@ pub async fn apply_spell_items_in_transaction_guarded(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
             .fetch_one(&mut **tx)
             .await?;
-    sqlx::query("INSERT INTO game_spell_item_receipts(transaction_id,event_id,game_session_id,command_id,character_id,world_id,channel_id,ownership_generation,spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,cost,cost_binding,operation_count,occurred_at_unix_ms,caster_lease_generation,caster_placement_digest) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),encode($5,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8::text::numeric(20,0),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19::text::numeric(20,0),$20)")
-        .bind(request.transaction_id.as_slice()).bind(request.event_id.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(authority.character.as_slice()).bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(authority.ownership_generation.to_string()).bind(&request.spell.family).bind(&request.spell.production_key).bind(&request.spell.revision_ref).bind(request.catalog_digest.as_slice()).bind(binding.as_slice()).bind(&intent).bind(&cost).bind(cost_binding.as_slice()).bind(i32::try_from(request.operations.len()).map_err(|_|SpellItemError::Rejected("operation count"))?).bind(occurred_at).bind(request.caster_origin.as_ref().map(|o|o.character_lease_generation.to_string())).bind(request.caster_origin.as_ref().map(|o|o.actor.placement_identity().to_vec())).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_spell_item_receipts(swing_ordinal,transaction_id,event_id,game_session_id,command_id,character_id,world_id,channel_id,ownership_generation,spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,cost,cost_binding,operation_count,occurred_at_unix_ms,caster_lease_generation,caster_placement_digest) VALUES($21,encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),encode($5,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8::text::numeric(20,0),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19::text::numeric(20,0),$20)")
+        .bind(request.transaction_id.as_slice()).bind(request.event_id.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(authority.character.as_slice()).bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(authority.ownership_generation.to_string()).bind(&request.spell.family).bind(&request.spell.production_key).bind(&request.spell.revision_ref).bind(request.catalog_digest.as_slice()).bind(binding.as_slice()).bind(&intent).bind(&cost).bind(cost_binding.as_slice()).bind(i32::try_from(request.operations.len()).map_err(|_|SpellItemError::Rejected("operation count"))?).bind(occurred_at).bind(request.caster_origin.as_ref().map(|o|o.character_lease_generation.to_string())).bind(request.caster_origin.as_ref().map(|o|o.actor.placement_identity().to_vec())).bind(request.swing_ordinal.map(i32::from)).execute(&mut **tx).await?;
     for (index, op) in request.operations.iter().enumerate() {
         apply_operation(tx, authority, request, index + 1, occurred_at, op).await?;
     }

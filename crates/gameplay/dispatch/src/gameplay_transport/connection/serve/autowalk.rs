@@ -55,11 +55,23 @@ pub(super) fn target(
                 .selected_capabilities
                 .contains(CAPABILITY_WORLD_INTERACTION_V1),
         };
-        let intent = oteryn_protocol_oteryn::item_view::decode_item_move_intent_for(
-            command.payload,
-            selection,
-        )
-        .ok()?;
+        let intent = if session
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_STACK_COUNT_V1)
+        {
+            oteryn_protocol_oteryn::item_view::decode_item_move_intent_with_count_for(
+                command.payload,
+                selection,
+            )
+            .ok()?
+            .0
+        } else {
+            oteryn_protocol_oteryn::item_view::decode_item_move_intent_for(
+                command.payload,
+                selection,
+            )
+            .ok()?
+        };
         let items = items?;
         let source = items.resolve(intent.source)?;
         return Some(AutoWalkTarget::Item(

@@ -422,30 +422,29 @@ fn scenario(mode: i16) -> TestResult {
             );
             wait_live(&mut client, Duration::from_secs(10)).await?;
             use crate::gameplay_transport::pvp_live::faults::Point;
-            melee_fault(
-                &mut client,
-                &owner,
-                3,
-                &payload,
-                Point::BeforeCommit,
-            )
-            .await?;
+            melee_fault(&mut client, &owner, 3, &payload, Point::BeforeCommit).await?;
             assert_eq!(health(&owner, target).await?, original_health);
             let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
                 .fetch_one(&h.pool)
                 .await?;
             assert_eq!(count, 0, "a rolled-back attempt leaves no durable harm");
-            melee_fault(
-                &mut client,
-                &owner,
-                4,
-                &payload,
-                Point::AfterCommit,
-            )
-            .await?;
+            let forfeited: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid AND adventurer_forfeited)")
+                .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert!(
+                !forfeited,
+                "rolled-back aggression keeps Adventurer's Blessing"
+            );
+            melee_fault(&mut client, &owner, 4, &payload, Point::AfterCommit).await?;
             assert!(
                 health(&owner, target).await? < original_health,
                 "live melee changes player HP"
+            );
+            let forfeiture: (bool, bool) = sqlx::query_as("SELECT (SELECT adventurer_forfeited FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid), (SELECT adventurer_forfeited FROM game_character_pvp_state WHERE character_id=encode($2,'hex')::uuid)")
+                .bind(id(41).as_slice()).bind(id(101).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(
+                forfeiture,
+                (true, false),
+                "first aggression forfeits only the attacker's Adventurer's Blessing"
             );
             let result = command(
                 &mut client,
@@ -597,7 +596,10 @@ fn scenario(mode: i16) -> TestResult {
                 sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
                     .fetch_one(&h.pool)
                     .await?;
-            assert_eq!(harm_after, harm_before, "a replayed cast writes no new harm");
+            assert_eq!(
+                harm_after, harm_before,
+                "a replayed cast writes no new harm"
+            );
             client.shutdown().await?;
             Ok(())
         };

@@ -387,7 +387,7 @@ pub(super) async fn move_loop_item(
             &NativeItemWeights(native),
             LoopMoveRequest {
                 item,
-                count: None,
+                count: request.count,
                 pickup_cell,
                 destination,
             },

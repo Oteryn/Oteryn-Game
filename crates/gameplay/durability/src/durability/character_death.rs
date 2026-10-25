@@ -152,6 +152,7 @@ pub struct ConsumedRespawn {
     pub respawn_position: Vec<u8>,
 }
 
+mod adventurer;
 mod commit;
 pub mod promotion;
 mod settlement;

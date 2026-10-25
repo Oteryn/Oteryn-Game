@@ -2,17 +2,16 @@
 //! `OTERYN_GAME_WORLD_INTERACTION0_DOORS_LEVERS_FIELDS_AND_WORLD_CLOCK_DECISION` §4, MAP track
 //! packets §1.2).
 //!
-//! A placed door is a plain closed/open item pair of the Game-owned door registry
-//! ([`super::door_registry`]; closed id `C`, open id `C + 1`). Its state is scope-ephemeral and per Channel: a restart builds
-//! every door closed again. It lives in [`DoorBook`], a layer beside the immutable base and the
+//! A placed door uses a closed/open pair or a key-door triple from the Game-owned door
+//! registry ([`super::door_registry`]). Its state is scope-ephemeral and per Channel: a
+//! restart restores the authored closed/locked predicate. It lives in [`DoorBook`], a layer beside the immutable base and the
 //! (still empty) overlay: the book answers the entry facts of the door's placement (the open
 //! item's appearance and definition while open), its object revision (the number of
 //! transitions, so an open door has an odd revision) and whether the door's tile is solid.
 //!
-//! Only a placement with no action, unique, door, depot, teleport, text or description binding is
-//! a door. Locked doors (a key `USE` needs KEY-1 and capability 15), quest, level and house doors,
-//! gates without a consecutive open item and a pair whose open item the item index does not
-//! serve stay sealed: the closed placement is solid and refuses `USE`.
+//! Key doors also admit their source action binding. Direct USE refuses locked appearances
+//! and the reserved bindings 101/1001; key USE-WITH is a separate follow-up. Other bindings,
+//! quest, level and house doors stay sealed, as do unqualified open counterparts.
 
 pub use super::door_registry::open_of;
 use super::overlay::TilePos;
@@ -34,14 +33,20 @@ pub enum PaletteDoor {
     No,
     /// A plain closed door whose open item the item index does not serve: it stays sealed.
     Sealed,
-    /// A plain closed door and the facts of its open item.
-    Pair { open: EntryFacts, open_solid: bool },
+    /// A qualified closed or locked door and the facts of its open item.
+    Pair {
+        open: EntryFacts,
+        open_solid: bool,
+        key_door: bool,
+        locked: bool,
+    },
 }
 
 #[derive(Debug)]
 struct Door {
     /// The bundle placement key of the closed door entry.
     key: u64,
+    locked: bool,
     closed_solid: bool,
     open_solid: bool,
     open: EntryFacts,
@@ -71,6 +76,8 @@ pub enum DoorUse {
     Toggled { revision: u64, open: bool },
     /// `expected_revision` is not the door's current one.
     Stale,
+    /// Direct use cannot open a locked key door.
+    Locked,
     /// The door is open and an actor stands on its tile.
     Occupied,
 }
@@ -87,9 +94,17 @@ pub struct DoorBook {
 }
 
 impl DoorBook {
-    pub fn push(&mut self, key: u64, closed_solid: bool, open_solid: bool, open: EntryFacts) {
+    pub fn push(
+        &mut self,
+        key: u64,
+        closed_solid: bool,
+        open_solid: bool,
+        open: EntryFacts,
+        locked: bool,
+    ) {
         self.doors.push(Door {
             key,
+            locked,
             closed_solid,
             open_solid,
             open,
@@ -228,7 +243,7 @@ impl DoorBook {
         self.doors.iter().map(|door| door.key)
     }
 
-    /// Opens or closes the door of placement `key` when `expected_revision` is its current
+    /// Refuses a locked door, or opens/closes placement `key` when `expected_revision` is its current
     /// revision. `occupied` is whether an actor stands on the door's tile: it keeps an open door
     /// from closing. The change is one compare-and-swap, so concurrent `USE`s of a revision
     /// commit once. `None` when `key` is no door.
@@ -237,6 +252,9 @@ impl DoorBook {
         let current = door.state.load(Ordering::Acquire);
         if current != expected_revision {
             return Some(DoorUse::Stale);
+        }
+        if door.locked {
+            return Some(DoorUse::Locked);
         }
         let closing = current % 2 == 1;
         if closing && occupied {

@@ -692,6 +692,7 @@ mod postgres {
     ) -> TestResult<crate::durability::spell_items_abi::SpellItemTransactionRequest> {
         use crate::durability::spell_items_abi::{CastCostBinding, SpellItemTransactionRequest};
         Ok(SpellItemTransactionRequest {
+            swing_ordinal: None,
             command: command(number)?,
             spell: TypedDefinitionRef {
                 family: "Spell".into(),
