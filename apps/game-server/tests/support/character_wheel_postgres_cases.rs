@@ -75,6 +75,19 @@ const AT_TEMPLE: WheelChangeFacts = WheelChangeFacts { at_temple: true };
 #[path = "character_wheel_promotion_tests.rs"]
 mod promotion_tests;
 
+// Amended 2026-10-25 by owner decision NIGHT-W1 #3: all writer fixtures use the
+// native Premium owner; these existing cases run under its sealed pre-delivery exception.
+fn pre_delivery(
+    harness: &Harness,
+) -> crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator {
+    crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+        Default::default(),
+        None,
+        None,
+        Some(harness.root.clone()),
+    )
+}
+
 async fn commit(
     harness: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -92,6 +105,7 @@ async fn commit(
             request,
             Arc::clone(ruleset),
             facts,
+            &pre_delivery(harness),
         )
         .await
         .map_err(debug)
@@ -648,6 +662,7 @@ fn the_slot_retries_a_bypassed_wheel_change_once() -> TestResult {
                 request(1, 0, &[(15, 10)])?,
                 Arc::clone(&r1),
                 ELIGIBLE,
+                &pre_delivery(harness),
             )
             .await,
         )?;
