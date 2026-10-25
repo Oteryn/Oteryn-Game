@@ -26,7 +26,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         hold: &mut FenceHold,
     ) -> FenceStep {
+        if self.states.player_trades.transitioning(hold.session)
+            && self.spell_lane_permit().await.is_none()
+        {
+            return FenceStep::Wait;
+        }
         let mut runtime = self.runtime.lock().await;
+        if self.states.player_trades.transitioning(hold.session) {
+            return FenceStep::Wait;
+        }
+        self.states.player_trades.cancel(hold.session);
         match self.states.fence_holders.fence(&mut runtime, actor, hold) {
             Ok(()) => FenceStep::Fenced,
             Err(CarrierError::WriteFenceBusy) => FenceStep::Wait,

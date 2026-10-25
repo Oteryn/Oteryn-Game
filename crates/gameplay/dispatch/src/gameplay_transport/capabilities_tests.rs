@@ -133,11 +133,13 @@ fn the_production_offered_set_is_the_registry_offered_set_and_registered()
             .collect()
     };
     // The registry offered set is the set a generation pinning a non-empty Item key set offers;
-    // without one, production falls back to that set without capability 4.
+    // without one, production also omits capabilities requiring Item views (TRADE-WIRE-1).
     assert_eq!(pairs(ITEM_VIEW_OFFERED_CAPABILITIES), offered);
     let fallback: Vec<(u32, Vec<u32>)> = offered
         .iter()
-        .filter(|(id, _)| *id != CAPABILITY_ITEM_VIEW_MOVE_V1)
+        .filter(|(id, requires)| {
+            *id != CAPABILITY_ITEM_VIEW_MOVE_V1 && !requires.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1)
+        })
         .cloned()
         .collect();
     assert_eq!(pairs(PRODUCTION_OFFERED_CAPABILITIES), fallback);

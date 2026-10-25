@@ -126,6 +126,14 @@ pub(super) async fn execute(
         )
     };
     let permit = admission.spell_lane_permit().await?;
+    if intent.action != DepotAction::Browse
+        && !admission
+            .states
+            .player_trades
+            .physical_service(command.game_session_id)
+    {
+        return Some(refused(DepotOutcome::Rejected));
+    }
     let (native, town) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;

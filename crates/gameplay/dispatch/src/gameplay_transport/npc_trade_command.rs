@@ -119,6 +119,9 @@ pub(super) async fn npc_trade(
     else {
         return NpcTradeStep::rejected();
     };
+    let Some(_permit) = admission.spell_lane_permit().await else {
+        return NpcTradeStep::Unknown;
+    };
     let command_ref = CommandRef::new(session, command_id);
     let occurrence = occurrence(session, command.command_id, intent.npc_actor);
     match admission
@@ -137,6 +140,9 @@ pub(super) async fn npc_trade(
         Ok(Some(_)) | Err(_) => return NpcTradeStep::rejected(),
     }
 
+    if !admission.states.player_trades.physical_service(session) {
+        return NpcTradeStep::rejected();
+    }
     let (offer, coins) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);

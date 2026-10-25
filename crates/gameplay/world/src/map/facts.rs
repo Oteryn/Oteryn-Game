@@ -1,7 +1,7 @@
 //! MAP-CUTOVER-1b: the production [`MapFacts`] of a bundle World (MAP track packets §2.4).
 //!
-//! [`BundleFacts`] is built once at boot from the bundle and the served item definitions and is
-//! never mutated afterwards:
+//! [`BundleFacts`] is built once at boot from the bundle and the served item definitions;
+//! only its Channel-local door and furniture states change afterwards:
 //!
 //! - **References.** A Terrain entry is `terrain_definition_ref` 1 + its palette `id`. An Item
 //!   entry is `item_definition_ref` 1 + its palette `id`, which must equal the §1.6 index entry
@@ -16,9 +16,11 @@
 //!   separately; the normalized view facts above do not change.
 //! - **Overlay.** The Channel overlay stays empty until MAP-CUTOVER-1c, so no added entry has
 //!   facts.
-//! - **Doors (MAP-DOOR-1).** The only state is the [`DoorBook`]: a plain door placement shows the
-//!   open item's facts while open and its transition count is its object revision; every other
-//!   object revision is 0.
+//! - **Doors (MAP-DOOR-1).** A plain door placement shows the open item's facts while open;
+//!   its transition count is its object revision.
+//! - **Rotation (PARITY-ITEM-TRANSFORMS-1).** Unbound, fixed furniture keeps its replacement
+//!   facts and revision in the same per-Channel fact overlay. Snapshots pin both together.
+//!   House tiles and durable/pickupable items are refused; restart restores base orientations.
 
 use super::door::{self, DoorBook, DoorStates, PaletteDoor};
 use super::floor::palette_mask;
@@ -28,8 +30,11 @@ use super::{LoadError, palette_appearance};
 use oteryn_protocol_oteryn::world_map::{MAX_BASE_ORDINAL, MapDefinition};
 use oteryn_world_bundle::bundle::{Family, Manifest, PaletteEntry, Sector, TerrainKind};
 use oteryn_world_bundle::sector::Attrs;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
+use std::sync::{Arc, Mutex};
+
+type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
 /// The served definition of the Item a palette key names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -93,6 +98,8 @@ pub struct BundleFacts {
     houses: Vec<TilePos>,
     house_doors: Vec<(TilePos, u32, u8)>,
     doors: DoorBook,
+    /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
+    rotations: Mutex<Arc<RotationStates>>,
 }
 
 const AMBIGUOUS: u32 = u32::MAX;
@@ -128,6 +135,7 @@ impl BundleFacts {
             houses: Vec::new(),
             house_doors: Vec::new(),
             doors: DoorBook::default(),
+            rotations: Mutex::default(),
         })
     }
 
@@ -297,7 +305,57 @@ impl BundleFacts {
         PinnedFacts {
             facts: self,
             doors: self.doors.snapshot(),
+            rotations: self.rotations.lock().ok().map(|states| Arc::clone(&states)),
         }
+    }
+
+    /// Commits a rotation resolved by the Channel owner from admitted Content. Fixed furniture
+    /// only: pickup and house custody never acquire a changed definition through this overlay.
+    /// The expected revision and facts are compared together, so a retry cannot rotate twice.
+    pub fn rotate_base(
+        &self,
+        key: u64,
+        expected_revision: u64,
+        before: EntryFacts,
+        after: EntryFacts,
+    ) -> oteryn_protocol_oteryn::world_object::UseDisposition {
+        use oteryn_protocol_oteryn::world_object::UseDisposition;
+        let Some((pos, _)) = view::placement_of(key) else {
+            return UseDisposition::NothingToUse;
+        };
+        if self.house_tile(pos)
+            || self.doors.contains(key)
+            || before.bound
+            || before.pickupable
+            || after.bound
+            || after.pickupable
+            || before.count != 1
+            || after.count != 1
+            || before.sub_type != 0
+            || after.sub_type != 0
+            || before.blocks_projectile != after.blocks_projectile
+        {
+            return UseDisposition::NothingToUse;
+        }
+        let Ok(mut states) = self.rotations.lock() else {
+            return UseDisposition::Rejected;
+        };
+        let current = states.get(&key);
+        if current.map_or(0, |(revision, _)| *revision) != expected_revision
+            || current.is_some_and(|(_, facts)| *facts != before)
+        {
+            return UseDisposition::StaleState;
+        }
+        let Some(revision) = expected_revision.checked_add(1) else {
+            return UseDisposition::Rejected;
+        };
+        // Conservative 512 bytes per changed placement, including B-tree slack and a pinned
+        // snapshot retained across a write. Refuse new entries at the map overlay budget.
+        if current.is_none() && states.len() >= super::overlay::OVERLAY_BUDGET_BYTES / 512 {
+            return UseDisposition::Exhausted;
+        }
+        Arc::make_mut(&mut states).insert(key, (revision, after));
+        UseDisposition::Committed
     }
 
     fn entry(
@@ -306,6 +364,7 @@ impl BundleFacts {
         ordinal: u8,
         id: u32,
         doors: Option<&DoorStates>,
+        rotations: &RotationStates,
     ) -> Option<EntryFacts> {
         let key = placement_key(pos, ordinal)?;
         let plain;
@@ -333,7 +392,10 @@ impl BundleFacts {
             sub_type: u32::from(placement.sub_type),
             ..entry.facts
         };
-        Some(self.doors.facts(key, facts, doors))
+        Some(rotations.get(&key).map_or_else(
+            || self.doors.facts(key, facts, doors),
+            |(_, rotated)| *rotated,
+        ))
     }
 
     /// Authored town binding of this top-level placement in the admitted bundle.
@@ -570,7 +632,8 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 
 impl MapFacts for BundleFacts {
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
-        self.entry(pos, ordinal, id, None)
+        let rotations = self.rotations.lock().ok()?;
+        self.entry(pos, ordinal, id, None, &rotations)
     }
 
     fn added_entry(&self, _item: &AddedItem) -> Option<EntryFacts> {
@@ -582,7 +645,12 @@ impl MapFacts for BundleFacts {
     }
 
     fn object_revision(&self, placement_key: u64) -> u64 {
-        self.doors.revision(placement_key)
+        self.rotations.lock().map_or(u64::MAX, |states| {
+            states.get(&placement_key).map_or_else(
+                || self.doors.revision(placement_key),
+                |(revision, _)| *revision,
+            )
+        })
     }
 }
 
@@ -590,11 +658,18 @@ impl MapFacts for BundleFacts {
 pub struct PinnedFacts<'a> {
     facts: &'a BundleFacts,
     doors: DoorStates,
+    rotations: Option<Arc<RotationStates>>,
 }
 
 impl MapFacts for PinnedFacts<'_> {
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
-        self.facts.entry(pos, ordinal, id, Some(&self.doors))
+        self.facts.entry(
+            pos,
+            ordinal,
+            id,
+            Some(&self.doors),
+            self.rotations.as_deref()?,
+        )
     }
 
     fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts> {
@@ -606,9 +681,16 @@ impl MapFacts for PinnedFacts<'_> {
     }
 
     fn object_revision(&self, placement_key: u64) -> u64 {
-        self.facts
-            .doors
-            .revision_in(placement_key, Some(&self.doors))
+        self.rotations.as_ref().map_or(u64::MAX, |states| {
+            states.get(&placement_key).map_or_else(
+                || {
+                    self.facts
+                        .doors
+                        .revision_in(placement_key, Some(&self.doors))
+                },
+                |(revision, _)| *revision,
+            )
+        })
     }
 }
 
@@ -639,6 +721,86 @@ mod tests {
             })
         };
         palette_facts(&entry, &definition).expect("facts").solid
+    }
+
+    #[test]
+    fn item_transform_rotation_refuses_house_custody_bound_and_pickupable_items() {
+        use oteryn_protocol_oteryn::world_object::UseDisposition;
+        let pos = TilePos {
+            x: 6,
+            y: 0,
+            floor: -7,
+        };
+        let key = placement_key(pos, 1).expect("key");
+        let before = EntryFacts {
+            definition: MapDefinition::Item(NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 2358,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: false,
+            count: 1,
+            sub_type: 0,
+        };
+        let after = EntryFacts {
+            appearance_id: 2359,
+            ..before
+        };
+        for (house, before, after) in [
+            (true, before, after),
+            (
+                false,
+                EntryFacts {
+                    bound: true,
+                    ..before
+                },
+                after,
+            ),
+            (
+                false,
+                EntryFacts {
+                    pickupable: true,
+                    ..before
+                },
+                after,
+            ),
+            (
+                false,
+                before,
+                EntryFacts {
+                    pickupable: true,
+                    ..after
+                },
+            ),
+            (
+                false,
+                before,
+                EntryFacts {
+                    blocks_projectile: true,
+                    ..after
+                },
+            ),
+            (false, EntryFacts { count: 2, ..before }, after),
+            (
+                false,
+                EntryFacts {
+                    sub_type: 7,
+                    ..before
+                },
+                after,
+            ),
+        ] {
+            let mut facts = BundleFacts::default();
+            if house {
+                facts.houses.push(pos);
+            }
+            assert_eq!(
+                facts.rotate_base(key, 0, before, after),
+                UseDisposition::NothingToUse
+            );
+            assert_eq!(facts.object_revision(key), 0);
+            assert!(facts.rotations.lock().expect("states").is_empty());
+        }
     }
 
     /// A solid floor-change object keeps blocking; a plain item without the fact blocks too.

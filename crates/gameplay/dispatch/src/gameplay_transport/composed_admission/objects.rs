@@ -84,6 +84,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(actor_tile) = native(expected.position()) else {
             return UseOutcome::rejected();
         };
+        if item_ref_admission::pinned_index(&runtime, self.active_generation).is_some()
+            && let Some(native) = self
+                .active_generation
+                .and_then(crate::content::ActiveGeneration::native_gameplay)
+            && let Some(disposition) = item_transform::rotate(
+                map,
+                native,
+                runtime.content_pin().client_artifact_digest(),
+                actor_tile,
+                target,
+            )
+        {
+            return UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            };
+        }
         map_door::use_door(
             &map.overlay,
             &map.facts,
@@ -110,6 +127,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use crate::interaction_chest_use::{ChestUseRequest, entry_chest, use_chest};
         // The chest must stand in this Channel's World (D39 review 5906461018 item 7).
         if chest.address.world_id != self.world_id {
+            return UseOutcome::rejected();
+        }
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return UseOutcome::rejected();
+        };
+        if !self
+            .states
+            .player_trades
+            .physical(command.game_session_id, None)
+        {
             return UseOutcome::rejected();
         }
         {
@@ -224,6 +251,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {
+            if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {
+                return outcome;
+            }
             return self
                 .use_bundle_door(actor, command.game_session_id, map, &target)
                 .await;
