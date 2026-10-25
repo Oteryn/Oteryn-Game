@@ -60,6 +60,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     },
                     command.payload,
                     selection,
+                    selected_capabilities.contains(
+                        oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_STACK_COUNT_V1,
+                    ),
                     view,
                 )
                 .await;

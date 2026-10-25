@@ -200,6 +200,7 @@ pub type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub enum UnresolvedSpellCommit {
+    Ranged(Box<super::super::attack::ranged::PendingShot>),
     Pvp(Box<super::super::pvp_live::PendingPvpHit>),
     Native(Box<PendingNativeCast>),
     WorldItem(Box<super::world_item_cast::PreparedWorldItemCast>),
@@ -344,6 +345,11 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker = match attempt {
+            UnresolvedSpellCommit::Ranged(attempt) => {
+                drop(states);
+                self.resolve_ranged_shot(&mut permit, *attempt).await;
+                return permit;
+            }
             UnresolvedSpellCommit::Pvp(hit) => {
                 drop(states);
                 self.resolve_pvp_hit(&mut permit, *hit).await;
@@ -1951,6 +1957,7 @@ fn source_cost_request(
         &[],
     );
     Ok(SpellItemTransactionRequest {
+        swing_ordinal: None,
         command: b.command,
         spell: crate::durability::item_mint::TypedDefinitionRef {
             family: "Spell".into(),

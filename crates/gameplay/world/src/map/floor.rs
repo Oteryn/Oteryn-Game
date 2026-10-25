@@ -7,7 +7,8 @@
 //! flags of every tile into a [`FloorTable`], and a step is resolved by [`resolve_landing`], the
 //! Canary `Tile::queryDestination` rules over the table and the bundle collision. The resolved
 //! destination is committed by the owner turn through a sealed [`BundleStepProof`], exactly like
-//! a source-map step, so nothing but an actual step moves a player across floors.
+//! a source-map step. Rope-spot ascent also uses this movement owner, through
+//! [`prepare_bundle_rope`]'s independently qualified sealed proof.
 //!
 //! NEWHAVEN-TELEPORT-1: the table also holds the bundle's teleports, the `teleport` attribute a
 //! top-level entry carries (`OTERYN_WORLD_BUNDLE_FORMAT_V1` §9, matched one to one with a
@@ -27,6 +28,7 @@
 //! because the bundle carries no height facts.
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
+mod rope;
 use super::overlay::TilePos;
 use super::palette_appearance;
 use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
@@ -35,6 +37,7 @@ use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
 use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 use oteryn_world_bundle::bundle::Family;
+pub use rope::prepare_bundle_rope;
 use std::collections::{BTreeMap, BTreeSet};
 use {
     crate::foundation::{

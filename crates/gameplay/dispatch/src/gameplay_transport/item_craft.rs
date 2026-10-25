@@ -10,6 +10,8 @@ use crate::map::view::{self, MapEntryKey};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 
+mod rope;
+
 pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
@@ -39,6 +41,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        match self
+            .use_rope_tool(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
         let disposition = |d| {
             Some(UseOutcome {
                 disposition: d,

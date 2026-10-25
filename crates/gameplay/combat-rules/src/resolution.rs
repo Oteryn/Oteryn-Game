@@ -237,6 +237,19 @@ pub fn creature_physically_immune(policy: &CompiledCreaturePolicy) -> bool {
 /// malformed (fail closed).
 #[must_use]
 pub fn creature_physical_response(policy: &CompiledCreaturePolicy, damage: i64) -> Option<i64> {
+    creature_damage_response(policy, damage, PHYSICAL)
+}
+
+/// The same source mitigation and elemental resistance path for ranged weapon components.
+#[must_use]
+pub fn creature_damage_response(
+    policy: &CompiledCreaturePolicy,
+    damage: i64,
+    element: &str,
+) -> Option<i64> {
+    if policy.damage_immunities.iter().any(|key| key == element) {
+        return Some(0);
+    }
     let ratio = |r: CreatureExactRatio| {
         (r.denominator != 0).then(|| r.numerator as f64 / r.denominator as f64)
     };
@@ -244,11 +257,7 @@ pub fn creature_physical_response(policy: &CompiledCreaturePolicy, damage: i64) 
         Some(m) => ratio(m)?.min(30.0),
         None => 0.0,
     };
-    let resistance = match policy
-        .resistances
-        .iter()
-        .find(|v| v.damage_type == PHYSICAL)
-    {
+    let resistance = match policy.resistances.iter().find(|v| v.damage_type == element) {
         Some(v) => ratio(v.percent)?,
         None => 0.0,
     };

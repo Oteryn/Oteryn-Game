@@ -214,6 +214,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         key: ItemKey,
+        range: u32,
     ) -> Option<String> {
         use crate::map::view::MapFacts;
         let fence = command.item_fence?;
@@ -257,8 +258,50 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if at.map.facts.house_tile(player) || at.map.facts.house_tile(pos) {
             return None;
         }
-        if !crate::map::overlay::pickup::within_reach(player, pos) {
+        if player.floor != pos.floor
+            || u32::from(player.x.abs_diff(pos.x).max(player.y.abs_diff(pos.y))) > range
+        {
             return None;
+        }
+        for (cell, exempt) in crate::spell::world_execution::source_sight_steps(
+            crate::foundation::MovementLocalPosition {
+                x: i32::from(player.x),
+                y: i32::from(player.y),
+                floor: -i16::from(player.floor),
+            },
+            crate::foundation::MovementLocalPosition {
+                x: i32::from(pos.x),
+                y: i32::from(pos.y),
+                floor: -i16::from(pos.floor),
+            },
+        )
+        .ok()?
+        {
+            if exempt {
+                continue;
+            }
+            let ray = crate::map::overlay::TilePos {
+                x: u16::try_from(cell.x).ok()?,
+                y: u16::try_from(cell.y).ok()?,
+                floor: i8::try_from(-cell.floor).ok()?,
+            };
+            let tile = at.map.overlay.base().tile(ray.x, ray.y, ray.floor)?;
+            for (ordinal, id) in tile
+                .ids()
+                .iter()
+                .zip(tile.depths())
+                .filter(|(_, depth)| **depth == 0)
+                .map(|(id, _)| id)
+                .enumerate()
+            {
+                let fact = at
+                    .map
+                    .facts
+                    .base_entry(ray, u8::try_from(ordinal).ok()?, *id)?;
+                if fact.blocks_projectile {
+                    return None;
+                }
+            }
         }
         let tile = at.map.overlay.base().tile(pos.x, pos.y, pos.floor)?;
         let id = tile
@@ -318,7 +361,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) else {
             return Some(TrainingResult::REFUSED);
         };
-        let Some(key) = self.training_target(actor, command, target).await else {
+        let Some(key) = self.training_target(actor, command, target, 1).await else {
             return Some(TrainingResult::REFUSED);
         };
         let Some(family) = context.rates.statues.get(&key).copied() else {

@@ -37,6 +37,8 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         }
         next.store(now.saturating_add(1_000), Ordering::Relaxed);
 
+        self.drain_corpse_deadlines().await;
+
         let sessions = {
             let runtime = self.runtime.lock().await;
             let Ok(census) = runtime.positioned_melee_census() else {
