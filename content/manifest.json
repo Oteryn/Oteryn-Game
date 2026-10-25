@@ -588,6 +588,9 @@
       "path": "content/items/index.json"
     },
     {
+      "path": "content/items/ranged-profiles.json"
+    },
+    {
       "path": "content/items/relations/items.json"
     },
     {
@@ -972,7 +975,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "bb9a66f3268ca630d67a97e3726ebe861b11a25a0eeab16a3c3f1da3d6ab912f"
+          "sha256": "5520da21f28edf010dce0196b451ddc083d0282d07b0baa3c2bdf93d44aad36e"
         }
       ],
       "Presentation": [

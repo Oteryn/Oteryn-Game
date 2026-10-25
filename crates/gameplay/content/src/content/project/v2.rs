@@ -8,11 +8,13 @@ mod creature;
 mod encounter;
 mod item_conversion;
 mod proficiency;
+mod ranged;
 mod state_validation;
 pub use creature::*;
 pub use encounter::*;
 pub use item_conversion::*;
 pub use proficiency::*;
+pub use ranged::*;
 
 pub const WORLD_PROJECT_V2_SOURCE_PROFILE: &str = "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2";
 pub const WORLD_PROJECT_V2_ROOT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_ROOT/v2";
@@ -1079,6 +1081,9 @@ impl ProjectV2AugmentBinding {
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2ItemAuthoring {
     pub item: ProjectV2DefinitionRef,
+    /// Absent is unqualified ranged content, never a fist or a zero-cost shot.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ranged: Option<ProjectV2RangedWeapon>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub presentation: Option<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -2422,6 +2427,9 @@ fn validate_v2_item_authoring(
         ));
     }
     require_ref(&item.item)?;
+    if let Some(ranged) = &item.ranged {
+        ranged.validate()?;
+    }
     if let Some(value) = item.weapon_absolute_hit_chance_percent {
         validate_v2_ratio(value, "v2 absolute weapon hit percent is not canonical")?;
         if value.numerator < 0

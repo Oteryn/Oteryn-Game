@@ -1664,6 +1664,11 @@
         "damage_type": {
           "$ref": "#/$defs/damageType"
         },
+        "mana_per_shot": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
         "elemental_attack": {
           "type": "array",
           "items": {

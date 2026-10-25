@@ -1686,6 +1686,38 @@ mod tests {
         qualify_native_entry_room_with_gameplay,
     };
     use serde_json::Value;
+    #[test]
+    fn ranged_profiles_survive_native_artifact_and_incomplete_weapon_is_rejected() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for id in [3277, 3349, 3350, 3446, 3447] {
+            let policy = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap();
+            assert!(policy.record().authoring.ranged.is_some());
+        }
+        let mut profiles: Value =
+            serde_json::from_slice(&supplied.item_profiles.as_ref().unwrap().bytes).unwrap();
+        let bow = profiles["records"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|r| r["production_binding"]["external_id"] == "3350")
+            .unwrap();
+        bow["authoring"]["ranged"]
+            .as_object_mut()
+            .unwrap()
+            .remove("ammunition");
+        supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+        assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+    }
     /// Explicit local qualification of the real composed input, without runtime activation.
     #[test]
     #[ignore = "requires OTERYN_FULL_SPELL_TEST_MANIFEST from the explicit source producer"]
