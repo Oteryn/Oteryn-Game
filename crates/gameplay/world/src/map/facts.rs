@@ -631,6 +631,13 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
 }
 
 impl MapFacts for BundleFacts {
+    fn base_text(&self, key: u64) -> Option<&str> {
+        let found = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()?;
+        self.placements[found].1.attrs.text.as_deref()
+    }
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
         let rotations = self.rotations.lock().ok()?;
         self.entry(pos, ordinal, id, None, &rotations)
@@ -662,6 +669,9 @@ pub struct PinnedFacts<'a> {
 }
 
 impl MapFacts for PinnedFacts<'_> {
+    fn base_text(&self, key: u64) -> Option<&str> {
+        self.facts.base_text(key)
+    }
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
         self.facts.entry(
             pos,
