@@ -488,15 +488,20 @@ fn draw_swing_damage(
         minimum,
         maximum,
     )?;
-    if runtime.contains_live_creature(target) {
+    let creature = runtime.contains_live_creature(target);
+    if creature {
         entry
             .state
             .record_hit(swing.at, constants.in_fight_micros());
     }
-    if damage <= 0 {
-        return None;
-    }
-    Some((damage, revision))
+    swing_lands(damage, creature).then_some((damage, revision))
+}
+
+/// `Game::combatBlockHit`: a 0 swing at a creature still meets its defence and armor (it spends
+/// a block and trains as a blocked hit). A PvP swing does not meet the target's defence yet, so
+/// a 0 swing at a player stays dropped.
+const fn swing_lands(damage: i64, creature: bool) -> bool {
+    damage > 0 || (damage == 0 && creature)
 }
 
 fn record_hit_activity(
@@ -550,4 +555,21 @@ fn settle_kill(
         Some(now),
     );
     entry.clear_target();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::swing_lands;
+
+    #[test]
+    fn a_zero_swing_meets_a_creature_but_not_a_player() {
+        assert!(swing_lands(0, true), "a 0 swing at a creature is blocked");
+        assert!(
+            !swing_lands(0, false),
+            "a 0 swing at a player stays dropped"
+        );
+        assert!(swing_lands(5, true));
+        assert!(swing_lands(5, false));
+        assert!(!swing_lands(-1, true));
+    }
 }
