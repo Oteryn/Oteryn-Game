@@ -31,6 +31,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.refresh_attack_weapon(actor, game_session_id).await;
         self.drain_auto_attacks().await;
         let _ = self.drain_kill_rewards(game_session_id).await;
+        self.apply_soul_kills(actor, game_session_id).await;
         self.drain_source_item_deadlines().await;
         self.drain_source_party_deadlines_bounded().await;
         // DEATH-2 §4.5: a dead player's cadence tick settles its death and respawns it.
