@@ -172,8 +172,10 @@ left the Wheel undecided, and this candidate closes that gap.
   stays fail-closed.
 
 **Pointer (pending on acceptance of WHEEL-0 (`reviews/OTERYN_GAME_WHEEL0_WHEEL_OF_DESTINY_DELIVERY_DECISION_2026-09-30.md` §6).** The "progression readiness" dependency of PREM-2 is #1143, completed.
-Under owner answer W1 a (#162 5917665342), the Premium requirement of promotion and of the Wheel is
-not applied until PREM-1 delivers `premium_current`.
+Amended 2026-10-25 by owner decision NIGHT-W1 #3: PREM-1 has delivered `premium_current`.
+Wheel allocation requires current Premium through promotion's native coordinator in the allocation
+transaction, preserving only the sealed PREMIUM-ACTIVATION-0 pre-delivery exception. Read-only
+viewing remains allowed. See the delivery decision §6.2.
 
 ## 4. Playable-first slice: what the spell gate needs first
 

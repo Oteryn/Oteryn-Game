@@ -490,14 +490,15 @@ pub struct ConditionTick<S> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TickKind {
-    /// One damage occurrence (§3.2); `refused` in a protection zone, where it is still used up.
+    /// One damage occurrence (§3.2); only non-permitted elements are refused in a
+    /// protection zone. Every PZ tick is still used up (NIGHT-W1 #1).
     Damage {
         element: DotElement,
         amount: u32,
         refused: bool,
     },
     /// One §3.5 `agony` occurrence: undefined element, not absorbed by the mana shield;
-    /// `refused` in a protection zone, where it is still used up.
+    /// permitted and used up even in a protection zone (NIGHT-W1 #1).
     Agony { amount: u32, refused: bool },
     /// A regeneration tick (FOOD-REGEN-1, Recovery); `suppressed` regenerates nothing.
     Regeneration { key: ConflictKey, suppressed: bool },
@@ -1213,7 +1214,7 @@ impl<S: Clone> ConditionStore<S> {
                     TickKind::Damage {
                         element,
                         amount: segment.amount,
-                        refused: facts.in_protection_zone,
+                        refused: facts.in_protection_zone && !element.ticks_in_protection_zone(),
                     }
                 }
 
@@ -1253,7 +1254,7 @@ impl<S: Clone> ConditionStore<S> {
                     TickKind::Damage {
                         element,
                         amount,
-                        refused: facts.in_protection_zone,
+                        refused: facts.in_protection_zone && !element.ticks_in_protection_zone(),
                     }
                 }
                 ConditionValues::DamageOverTime {
@@ -1275,7 +1276,7 @@ impl<S: Clone> ConditionStore<S> {
                     TickKind::Damage {
                         element,
                         amount,
-                        refused: facts.in_protection_zone,
+                        refused: facts.in_protection_zone && !element.ticks_in_protection_zone(),
                     }
                 }
                 ConditionValues::Agony {
@@ -1294,7 +1295,7 @@ impl<S: Clone> ConditionStore<S> {
                     instance.remaining_total -= amount;
                     TickKind::Agony {
                         amount,
-                        refused: facts.in_protection_zone,
+                        refused: false,
                     }
                 }
                 ConditionValues::FoodRegeneration { interval_ms, .. }

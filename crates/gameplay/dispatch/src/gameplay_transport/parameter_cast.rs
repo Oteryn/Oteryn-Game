@@ -796,8 +796,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         }
         super::native_combat_cast::dispatch_outcome_token(&dispatch.cast)
     }
-    /// Called only after the separate candidate capability was actually selected.
-    /// Parameter bytes never reinterpret the accepted v1 command.
+    /// Called by negotiated CHAT_V1 speech through the common cast dispatcher.
+    /// The internal parameter intent never reinterprets the accepted v1 command.
     pub(in crate::gameplay_transport) async fn cast_parameters<
         A: super::super::spell_access_facts::CurrentSpellAccessOwner + Sync,
     >(

@@ -521,7 +521,7 @@ impl RevisionSlot {
         reason = "the Wheel writer's own arguments; standalone durability suites path-load this \
                   module without Wheel cases"
     )]
-    pub async fn commit_wheel(
+    pub async fn commit_wheel<G: super::character_wheel::WheelPremiumGate>(
         &mut self,
         root: &DurabilityRoot,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -530,6 +530,7 @@ impl RevisionSlot {
         request: WheelChangeRequest,
         ruleset: std::sync::Arc<WheelRuleset>,
         facts: WheelChangeFacts,
+        gate: &G,
     ) -> Result<WheelCommitOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
@@ -543,6 +544,7 @@ impl RevisionSlot {
                     request,
                     std::sync::Arc::clone(&ruleset),
                     facts,
+                    gate,
                 )
             },
         )

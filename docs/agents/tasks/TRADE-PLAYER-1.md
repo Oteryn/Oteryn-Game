@@ -27,6 +27,37 @@ Merged evidence: #2332: pure offer/accept/invalidation rules and fenced atomic t
 
 Remaining: Live Channel trade book and session-ingress/FND routing, current visibility/LOS/busy/reservation checks, lifecycle invalidation routing, wire/capability/egress and real two-admitted-session/restart dispatch qualification remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
+## Vertical wiring audit
+
+Audit 2026-10-23, re-checked 2026-10-25 at `8abd5a621ada20032e97f7409f5c2004669f0692`.
+
+`status: waiting` is retained for the playable follow-up to the existing backend.
+This audit supersedes older statements below that common session ingress is
+absent. Negative caller/registration searches covered `apps/`, `crates/`, `tools/`
+and the split contract registries.
+
+| Layer | Existing implementation at this HEAD | Missing playable path |
+|---|---|---|
+| L3 economy | Leaf/pair/capacity rules and offer/counter-offer/accept/invalidation lifecycle exist ([`economy/player_trade.rs:43`](../../../crates/gameplay/economy/src/player_trade.rs#L43), [`lifecycle.rs:53`](../../../crates/gameplay/economy/src/player_trade/lifecycle.rs#L53)). | No live Channel trade owner invokes them; the Channel state inventory has command ingress but no trade book/busy index ([`channel_states.rs:13`](../../../crates/gameplay/dispatch/src/gameplay_transport/channel_states.rs#L13)). |
+| L4 durability | `observe_player_trade`, `exchange_player_trade` and `reconcile_player_trade` remain real backend APIs ([`durability/player_trade.rs:149`](../../../crates/gameplay/durability/src/durability/player_trade.rs#L149), [`player_trade.rs:189`](../../../crates/gameplay/durability/src/durability/player_trade.rs#L189), [`player_trade.rs:237`](../../../crates/gameplay/durability/src/durability/player_trade.rs#L237)); migration 0147 exists ([`0147_player_trade.sql:1`](../../../apps/game-server/migrations/0147_player_trade.sql#L1)). | Call sites remain confined to the writer PG case; no production `PlayerTradeContent` adapter or dispatch caller was found. The content trait requires admitted tradeability/pickupability ([`player_trade.rs:22`](../../../crates/gameplay/durability/src/durability/player_trade.rs#L22), [`player_trade_postgres_cases.rs:90`](../../../apps/game-server/src/lifted_tests/auto/player_trade_postgres_cases.rs#L90)). |
+| Common ingress | **Corrected:** Channel-owned `SessionCommands` holds Foundation `CommandIngress`, recovery and retained results ([`session_ingress.rs:19`](../../../crates/gameplay/dispatch/src/gameplay_transport/session_ingress.rs#L19), [`session_ingress.rs:83`](../../../crates/gameplay/dispatch/src/gameplay_transport/session_ingress.rs#L83)); the real serve path opens and reserves that stream ([`setup.rs:161`](../../../crates/gameplay/dispatch/src/gameplay_transport/connection/serve/setup.rs#L161), [`command.rs:59`](../../../crates/gameplay/dispatch/src/gameplay_transport/connection/serve/command.rs#L59)). | Trade-specific first-accept terminalization, second-accept occurrence issuance and unresolved-swap retention still have no handler. SESSION-INGRESS-1 is no longer an absent common prerequisite. |
+| Shared physical exclusion | The swap takes `SpellLanePermit`; equipment is a production permit consumer ([`player_trade.rs:189`](../../../crates/gameplay/durability/src/durability/player_trade.rs#L189), [`equipment_move.rs:260`](../../../crates/gameplay/dispatch/src/gameplay_transport/equipment_move.rs#L260)). | No trade book/reservation observer or trade invalidation/wait routing was found for movement, item changes, logout, reconnect, death or scope transfer. A permit without the missing trade state cannot enforce those lifecycle rules ([`lifecycle.rs:116`](../../../crates/gameplay/economy/src/player_trade/lifecycle.rs#L116), [`channel_states.rs:13`](../../../crates/gameplay/dispatch/src/gameplay_transport/channel_states.rs#L13)). |
+| Protocol / dispatch / egress | Generic framing and NPC trade routing exist; protocol modules contain no player-trade codec and mechanic fragments contain no player-trade route ([`protocol-oteryn/src/lib.rs:38`](../../../crates/protocol-oteryn/src/lib.rs#L38), [`0190-npc_trade.mechanic:1`](../../../crates/gameplay/dispatch/mechanics/0190-npc_trade.mechanic#L1), [`mechanics/README.md:3`](../../../crates/gameplay/dispatch/mechanics/README.md#L3)). | Player-trade capability/command/domain fragments, native partner/item-handle projection, live visibility/LOS admission and both-session results/deltas remain absent. No wire ID is allocated by this audit. |
+| Client / E2E | Session/app sources still expose no player-trade API, event or controls ([`session/src/lib.rs:19`](../../../crates/session/src/lib.rs#L19), [`play.rs:15`](../../../apps/client/src/play.rs#L15)). Backend PG case `player_trade_postgres_atomic_replay_refusals_and_restart` and ingress case `session_ingress_postgres_real_dispatch_replay_and_recovery` exist ([`player_trade_postgres_cases.rs:325`](../../../apps/game-server/src/lifted_tests/auto/player_trade_postgres_cases.rs#L325), [`postgres_tests/session_ingress.rs:20`](../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/session_ingress.rs#L20)). | Neither case is a two-admitted-session trade through real dispatch. That wire/result/restart qualification remains missing. |
+
+The original audit's rule comparison remains an acceptance target, not proof of
+playability: same floor/range two, mutual visibility/LOS, one whole direct-backpack
+leaf and incoming capacity before removal are implemented as pure rules
+([`player_trade.rs:43`](../../../crates/gameplay/economy/src/player_trade.rs#L43),
+[`player_trade.rs:70`](../../../crates/gameplay/economy/src/player_trade.rs#L70),
+[`player_trade.rs:98`](../../../crates/gameplay/economy/src/player_trade.rs#L98)).
+The 120-second idle rule and TRANSFERRING retention have existing tests
+([`player_trade_tests.rs:237`](../../../crates/gameplay/economy/src/player_trade/player_trade_tests.rs#L237)).
+Current test sources were inspected; old test counts, database markers and external
+Reference line numbers are not qualification of this HEAD. Next work is the sole
+Channel trade book, reservation/invalidation integration and native wire/egress on
+the existing ingress, followed by two-session real-dispatch/restart qualification.
+
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2132, branch skeleton/trade-player-1
 
 Status note: the draft reached a qualified writer-only stage (D1369) but used the
@@ -225,13 +256,11 @@ cargo test --locked -p oteryn-game-server --test character_authority_postgres pl
 - Archive: OTV2-20260930-item-move-wire1
 
 
-## Current pass — local AUTHORING, 2026-10-23
+## Backend checkpoint — 2026-10-23 (historical)
 
-Task `TRADE-PLAYER-1`; base/head `ac3f7fbc6` (`origin/main`), local changes only.
-No freeze, commit, publication, PR transition or external review was performed.
-Bound META policy 3.1.0 at `1bfb5ff98c8aa156e73669a14e083a1d464c29fb`
-was refreshed read-only before implementation. The owner's current local-only scope
-supersedes the historical card publication/validation commands.
+The following records the backend pass based on `ac3f7fbc6`. Its dependency,
+allocation and validation observations are historical; the re-checked vertical
+wiring audit above governs source observations at the current HEAD.
 
 Owned paths: economy `player_trade.rs` and `player_trade/`; durability
 `player_trade.rs` and `player_trade/`; wiring in the two crate module lists;
@@ -299,7 +328,7 @@ cross-products cover arithmetic overflow and capacity bounds.
 - BAGS-TRADE-1 container trees, equipped/ground/corpse sources and house-tile trade
   remain outside the accepted leaf slice. They are refused, not silently supported.
 - Independent exact-head persistence/security review and CI remain integration work
-  for the control plane; this worker did not publish or spend on review.
+  for the control plane.
 
 ## Reference parity
 
@@ -326,7 +355,7 @@ Each row is a named row of economy `player_trade_reference_parity_table`.
 | Logout / `onRemoveCreature` | Partner trade closed on removal | `logout_cancels` |
 
 
-### Validation for this local delta
+### Historical backend validation (2026-10-23)
 
 All final Cargo commands used the queued wrapper (`login=false` preserves its PATH),
 with the toolchain from `rust-toolchain.toml` and locked dependencies. Earlier direct
