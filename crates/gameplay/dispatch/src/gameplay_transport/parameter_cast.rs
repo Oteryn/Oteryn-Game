@@ -623,6 +623,7 @@ async fn prepare_parameter(
             )
             .map_err(|_| SpellCastDisposition::Rejected)?;
         let request = SpellItemTransactionRequest {
+            swing_ordinal: None,
             command,
             spell: definition.clone(),
             catalog_digest: content.source_digest(),

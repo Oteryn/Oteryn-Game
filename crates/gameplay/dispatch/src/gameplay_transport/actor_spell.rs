@@ -858,7 +858,7 @@ impl ChannelSpellStates {
 
     /// Compare-commit (SPELL-D3): `next` replaces the state only as the direct successor of the
     /// current revision, so one write carries the heal and the whole anchor payment.
-    fn commit(
+    pub(in crate::gameplay_transport) fn commit(
         &mut self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
