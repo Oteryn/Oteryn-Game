@@ -1,0 +1,31 @@
+syntax = "proto3";
+package oteryn.events.v2;
+
+// Event type 9; ECONOMY_LEDGER_RETENTION_V1 (P30D). Success only.
+// All item/value lines are CONVERSION (class=1); no BURN or MINT.
+message StashItemLineV1 {
+ bytes item = 1;
+ string definition_key = 2;
+ string definition_revision = 3;
+ uint32 quantity = 4;
+ uint32 direction = 5; // 1 input, 2 output
+ uint32 class = 6; // 1 CONVERSION
+}
+message StashValueLineV1 {
+ bytes entry = 1;
+ string asset = 2; // stash:<definition_key>@<definition_revision>
+ bytes character = 3;
+ bytes world = 4;
+ uint32 kind = 5; // 1 stow, 2 withdraw
+ uint32 class = 6; // 1 CONVERSION
+ uint32 amount = 7;
+ uint64 quantity_before = 8;
+ uint64 quantity_after = 9;
+}
+message StashOperationV1 {
+ uint32 interpretation_revision = 1; // 1
+ uint32 conversion_kind = 2; // 1 stow, 2 withdraw; closed
+ bytes intent = 3; // canonical original native stash intent, <=48 bytes
+ repeated StashItemLineV1 items = 4; // one input OR 1..20 outputs
+ StashValueLineV1 value = 5; // exactly one, same definition/revision as every item
+}

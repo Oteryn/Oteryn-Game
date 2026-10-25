@@ -53,6 +53,7 @@ mod registered_capabilities;
 pub mod spectate;
 pub mod spell_presentation_candidate;
 pub mod staff;
+pub mod stash;
 pub mod task_board;
 #[cfg(test)]
 #[path = "tests/lib_tests.rs"]

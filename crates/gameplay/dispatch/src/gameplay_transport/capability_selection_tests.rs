@@ -287,7 +287,9 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
     };
     let bundle_only: Vec<u32> = runtime_fragments()?
         .iter()
-        .filter(|entry| entry["offers"]["bundle_world"] == true && entry["offers"]["item_view"] == false)
+        .filter(|entry| {
+            entry["offers"]["bundle_world"] == true && entry["offers"]["item_view"] == false
+        })
         .map(|entry| Ok(u32::try_from(entry["id"].as_u64().ok_or("id")?)?))
         .collect::<Result<_, Box<dyn Error>>>()?;
     let shared: Vec<OfferedCapability> = BUNDLE_WORLD_OFFERED_CAPABILITIES
@@ -328,6 +330,19 @@ fn the_bundle_world_offered_set_is_3_the_item_view_set_12_14_and_18_requiring_4_
         requires(oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1),
         Some(&[4][..])
     );
+    assert_eq!(
+        requires(oteryn_protocol_oteryn::stash::CAPABILITY_STASH_V1),
+        Some(&[37][..])
+    );
+    let without_depot =
+        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[4, 6, 62])
+            .ok_or("stash dependency selection")?;
+    assert!(!without_depot.contains(62));
+    assert!(!without_depot.command_selected(79));
+    let stash = SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[4, 6, 37, 62])
+        .ok_or("stash selection")?;
+    assert!(stash.command_selected(79));
+    assert!(stash.domain_selected(27));
     assert_eq!(
         BUNDLE_WORLD_OFFERED_CAPABILITIES.len(),
         shared.len() + bundle_only.len()

@@ -39,6 +39,10 @@ pub(super) async fn plan_deposit(
     .bind(i32::from(access.town))
     .fetch_one(&mut **tx)
     .await?;
+    let stash: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(sum((quantity+99)/100),0)::bigint FROM game_character_stash_balances WHERE character_id=encode($1,'hex')::uuid AND quantity>0",
+    ).bind(character.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let count = count + stash;
     let limit = if access.premium.premium_current() {
         DEPOT_HARD_ENTRIES
     } else {
