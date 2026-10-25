@@ -107,7 +107,7 @@ pub(super) async fn drive(
 #[cfg(test)]
 mod world_respawns_tests;
 
-async fn stopping_first<T>(
+pub(super) async fn stopping_first<T>(
     work: impl Future<Output = T>,
     shutdown: &CancellationToken,
 ) -> Option<T> {

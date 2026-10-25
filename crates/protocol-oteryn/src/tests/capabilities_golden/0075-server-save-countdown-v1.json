@@ -1,0 +1,17 @@
+{
+  "id": 75,
+  "name": "SERVER_SAVE_COUNTDOWN_V1",
+  "constant": "server_save_countdown::CAPABILITY_SERVER_SAVE_COUNTDOWN_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [
+    40
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

@@ -111,6 +111,8 @@ pub async fn serve_gameplay(
     let mut cycles = pin!(authority.run_source_owner_cycles(&cycles_stop));
     let mut respawns = pin!(authority.run_world_respawns(shutdown));
     let mut respawns_done = false;
+    let mut countdown = pin!(authority.run_server_save_countdown(shutdown));
+    let mut countdown_done = false;
     let mut quiesce = pin!(async {
         drain.requested().await;
         authority.states.input_gate.quiesce().await;
@@ -139,6 +141,9 @@ pub async fn serve_gameplay(
     poll_fn(|context| {
         if !respawns_done && respawns.as_mut().poll(context).is_ready() {
             respawns_done = true;
+        }
+        if !countdown_done && countdown.as_mut().poll(context).is_ready() {
+            countdown_done = true;
         }
         if !quiesced && quiesce.as_mut().poll(context).is_ready() {
             quiesced = true;

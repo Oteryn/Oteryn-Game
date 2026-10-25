@@ -150,6 +150,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.vocation_talk(actor, command, intent).await
     }
 
+    fn server_save_countdown(
+        &self,
+    ) -> Option<crate::gameplay_transport::server_save_countdown::DueServerSaveCountdown> {
+        self.states.server_save.current()
+    }
+
     fn take_tutorial_notice(
         &self,
         session: GameSessionId,
