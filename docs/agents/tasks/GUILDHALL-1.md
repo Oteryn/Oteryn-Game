@@ -29,6 +29,43 @@ Merged evidence: none. Guild core exists; no guildhall escrow/ownership writer f
 
 Remaining: Hall split escrow, rank ACL, release and disband payout remain. `pr: null` means this audit identifies no canonical unmerged candidate; merged slices are linked above.
 
+## Server wiring gap list
+
+Audit 2026-10-23, re-checked 2026-10-25 at `8abd5a621ada20032e97f7409f5c2004669f0692`.
+
+This source audit supersedes the dated dependency/wiring observations below for
+this HEAD. `status: waiting` remains appropriate; Guildhall is not playable.
+Negative findings were checked across `apps/`, `crates/`, `tools/`, migrations and
+the split contract registries, using the module/registration inventories cited below.
+
+| Layer | Current evidence | Remaining Guildhall gap |
+|---|---|---|
+| L3 rules | House auction rules and Character ACL helpers exist ([`housing/src/lib.rs:3`](../../../crates/gameplay/housing/src/lib.rs#L3)). | No Hall split reserve/raise/lower/refund rules or Guild/rank ACL composition in that inventory. |
+| Guild core / Bank | Real `GuildDisbandTransaction` exists ([`disband_transaction.rs:6`](../../../crates/gameplay/durability/src/durability/guild/disband_transaction.rs#L6)); Guild Bank has a fenced writer and ledger migration ([`guild_bank.rs:36`](../../../crates/gameplay/durability/src/durability/guild_bank.rs#L36), [`0174_guild_bank.sql:3`](../../../apps/game-server/migrations/0174_guild_bank.sql#L3)). | `apply_guildhall_escrow_in_transaction` and Hall custody/journal are absent. Bank's closed operation kinds contain deposit, withdrawal, payout and claim, without a Hall escrow kind ([`0174_guild_bank.sql:9`](../../../apps/game-server/migrations/0174_guild_bank.sql#L9)). |
+| House ownership / acquisition | Ordinary property is still `private_house`/`shop`, owned by Character/Account ([`0143_house_ownership.sql:13`](../../../apps/game-server/migrations/0143_house_ownership.sql#L13)); a VACANT anchor still returns `CatalogueUnavailable` ([`bid.rs:74`](../../../crates/gameplay/durability/src/durability/house_ownership/bid.rs#L74)). | Guild property/slot/ban ownership and a qualified Hall auction producer remain missing. |
+| House ACL / disposition | Revisioned Character ACL edits and a real access-grant body now exist ([`0168_house_management.sql:71`](../../../apps/game-server/migrations/0168_house_management.sql#L71), [`0168_house_management.sql:96`](../../../apps/game-server/migrations/0168_house_management.sql#L96)); disposition now retains Character-owned `MOVE_OUT` operations ([`0178_house_disposition.sql:5`](../../../apps/game-server/migrations/0178_house_disposition.sql#L5)). | These do not supply Guild/rank grants, Hall rent/eviction or `GUILD_DISBAND` disposition. The older spell ACL parser still rejects Guild syntax ([`house_spell_acl.rs:70`](../../../crates/gameplay/housing/src/house_spell_acl.rs#L70)). |
+| Disband release | Disband now calls Bank payout and waits only when that participant reports blocked ([`disband.rs:40`](../../../crates/gameplay/durability/src/durability/guild/disband.rs#L40)); Bank checks `game_guild_bank_release_ready` ([`payout.rs:24`](../../../crates/gameplay/durability/src/durability/guild_bank/payout.rs#L24)). | The predicate refuses future Hall/Guild-property participants; it is not `game_house_guild_disband_released_proven`, which remains absent ([`0174_guild_bank.sql:209`](../../../apps/game-server/migrations/0174_guild_bank.sql#L209)). Hall release proof must precede payout activation with Hall state. |
+| Dispatch / capability / E2E | Guild routing covers commands 40–41 and Bank 68–69 ([`0120-guild.mechanic:2`](../../../crates/gameplay/dispatch/mechanics/0120-guild.mechanic#L2)); capabilities 40 and 55 are offered ([`0040-guild-v1.json:2`](../../../docs/contracts/protocol-oteryn/v1/registry/capabilities/0040-guild-v1.json#L2), [`0055-guild-bank-v1.json:2`](../../../docs/contracts/protocol-oteryn/v1/registry/capabilities/0055-guild-bank-v1.json#L2)). Existing real-dispatch cases cover Guild and Bank ([`guild_wire.rs:23`](../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_wire.rs#L23), [`guild_bank.rs:25`](../../../crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/guild_bank.rs#L25)). | No Hall codec, command route, offered capability or Hall real-dispatch case was found. New routes use mechanic fragments ([`mechanics/README.md:3`](../../../crates/gameplay/dispatch/mechanics/README.md#L3)). |
+
+**Allocation check:** the old audit's capability 58, commands 74–75, migration
+0177 and resource fragment ordinals 0880–0886 have **no corresponding entries/files**
+at this HEAD. They are not reservations established by this card. Protocol entries
+are split per ID ([`registry/README.md:8`](../../../docs/contracts/protocol-oteryn/v1/registry/README.md#L8));
+resource fragments and migrations come from their directories
+([`build.rs:72`](../../../crates/protocol-oteryn/build.rs#L72),
+[`durability/src/lib.rs:7`](../../../crates/gameplay/durability/src/lib.rs#L7)).
+
+The accepted parity targets remain split contributor refunds (GUILD0 §6.2),
+Guild-first rent and a 30-day Guild eviction ban (§7.1), current-leader ownership
+and rank ACL (§7.3), and release before disband payout (§7.4)
+([`GUILD0 decision:352`](../../architecture/reviews/OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md#L352),
+[`GUILD0 decision:375`](../../architecture/reviews/OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md#L375),
+[`GUILD0 decision:390`](../../architecture/reviews/OTERYN_GAME_GUILD0_GUILDS_AND_GUILDHALLS_DECISION_2026-09-30.md#L390)).
+The gaps above leave those Hall targets unfinished. Next work must extend the
+existing Bank and House owners with Hall participants, then compose fenced wire,
+rent/release jobs and a real-dispatch Hall E2E; ordinary Guild/Bank tests do not
+qualify that path. No runtime validation is claimed by this documentation audit.
+
 Reference implementation (pre-ADR-0022, do not copy paths or structure): draft #2153, branch skeleton/guildhall-1
 
 ## Goal
