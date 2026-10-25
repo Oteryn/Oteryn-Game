@@ -74,7 +74,7 @@ fn admitted_use_commit_write_failure_does_not_record_the_overlay_revision()
                 disposition: UseDisposition::Committed,
                 committed: Some(committed),
                 earned: EarnedNotice::NoneEarned,
-                gate_message_id: None,
+                gate_message_id: None, refusal_detail: None,
             },
         };
         let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
@@ -132,7 +132,7 @@ fn admitted_use_passes_command_identity_and_fence_and_chest_commit_emits_no_delt
                 disposition: UseDisposition::Committed,
                 committed: None,
                 earned: EarnedNotice::NoneEarned,
-                gate_message_id: None,
+                gate_message_id: None, refusal_detail: None,
             },
         };
         let world_id = WorldId::decode(&WORLD)?;
@@ -209,7 +209,7 @@ fn admitted_use_non_committing_disposition_emits_no_delta_and_unregistered_type_
                 disposition: UseDisposition::NothingToUse,
                 committed: None,
                 earned: EarnedNotice::NoneEarned,
-                gate_message_id: None,
+                gate_message_id: None, refusal_detail: None,
             },
         };
         let use_type = u64::from(COMMAND_TYPE_USE_INTENT);

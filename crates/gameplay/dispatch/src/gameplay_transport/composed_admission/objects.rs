@@ -69,6 +69,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                refusal_detail: None,
             };
         }
         let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
@@ -155,11 +156,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 i32::from(position.floor),
                 &cells,
             ) {
+                // PARITY-REFUSAL-DETAIL-1: legacy floors grow downwards, so they are negated
+                // into Canary's `canUse` order.
                 return UseOutcome {
                     disposition: oteryn_protocol_oteryn::world_object::UseDisposition::TooFar,
                     committed: None,
                     earned: connection::EarnedNotice::NoneEarned,
                     gate_message_id: None,
+                    refusal_detail:
+                        oteryn_protocol_oteryn::refusal_detail::RefusalDetail::of_floors(
+                            -i32::from(position.floor),
+                            -chest.address.cell.z,
+                        ),
                 };
             }
         }
@@ -208,6 +216,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             committed: None,
             earned: earned_notice(self.achievements, notice, &mut operator_event),
             gate_message_id: None,
+            refusal_detail: None,
         }
     }
 
@@ -251,6 +260,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {
+            if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {
+                return outcome;
+            }
             return self
                 .use_bundle_door(actor, command.game_session_id, map, &target)
                 .await;
@@ -274,6 +286,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                refusal_detail: None,
             };
         }
         let actor_floor = i32::from(position.floor);
@@ -284,6 +297,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                refusal_detail: None,
             };
         }
         // #162 5868482467 (shared-lease P1 repair r4121956127): occupancy is every currently
@@ -316,6 +330,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ),
                     earned: connection::EarnedNotice::NoneEarned,
                     gate_message_id: None,
+                    refusal_detail: None,
                 }
             }
             Ok(crate::world_runtime::LocalObjectUseOutcome::NothingToUse) => UseOutcome {
@@ -323,18 +338,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                refusal_detail: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Occupied) => UseOutcome {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Occupied,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                refusal_detail: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::StaleState) => UseOutcome {
                 disposition: oteryn_protocol_oteryn::world_object::UseDisposition::StaleState,
                 committed: None,
                 earned: connection::EarnedNotice::NoneEarned,
                 gate_message_id: None,
+                refusal_detail: None,
             },
             Ok(crate::world_runtime::LocalObjectUseOutcome::Rejected) | Err(_) => {
                 UseOutcome::rejected()

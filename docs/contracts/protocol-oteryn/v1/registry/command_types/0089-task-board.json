@@ -1,0 +1,10 @@
+{
+  "id": 89,
+  "name": "TASK_BOARD",
+  "owner_decision": "TASKBOARD-1 scope decision 2026-10-25",
+  "capability": 72,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/task_board_v1.proto#TaskBoardRequestV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/task_board_v1.proto#TaskBoardReplyV1",
+  "max_payload_bytes": 32,
+  "max_result_payload_bytes": 1024
+}

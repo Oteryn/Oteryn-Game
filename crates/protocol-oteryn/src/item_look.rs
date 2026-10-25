@@ -2,13 +2,17 @@
 //!
 //! The Item branch retains ItemTargetV1 bytes; Creature carries the existing native
 //! spatial EntityRef. Results are UTF-8 text or one of four fact-free refusals.
-//! CP D1240 accepts these payload fields. Runtime visibility/name binding remains separate.
+//! CP D1240 accepts Item/Creature; READ-WRITE-1a adds the existing WorldObjectTarget
+//! as field 3. Runtime visibility/name binding remains separate.
 
 use crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES;
 use crate::charm_wire::push_varint;
 use crate::charm_wire::{push_message_field, read_bytes, read_varint, set_once};
 pub use crate::item_view::ItemViewWireError as ItemLookWireError;
 use crate::item_view::{ItemHandle, decode_item_target, encode_item_target};
+use crate::world_object::{
+    WorldObjectError, WorldObjectTarget, decode_world_object_target, encode_world_object_target,
+};
 use crate::world_spatial_entities::EntityRef;
 use std::num::NonZeroU64;
 
@@ -23,24 +27,34 @@ pub const MAX_ITEM_LOOK_TEXT_BYTES: usize = 512;
 /// Actual session negotiation must supply this selection; default retains legacy bytes.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct ItemLookSelection {
-    /// Capability28: Creature request branch and extended result refusals.
+    /// Capability28: Creature/WorldObject request branches and extended result refusals.
     pub extended: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemLookIntent {
     pub target: ItemLookTarget,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ItemLookTarget {
     Item(ItemHandle),
     /// Native visible-entity identity and actor generation; not a new Creature ID.
     Creature(EntityRef),
+    /// Nonmovable base placement, using the same identity and revision as Use.
+    WorldObject(WorldObjectTarget),
 }
 
-/// Largest Creature target: outer framing + 16 identity bytes + full u64 generation.
-pub const MAX_ITEM_LOOK_TARGET_BYTES: usize = 31;
+/// WorldObject field 3: 512-byte placement + revision + framing, as for Use.
+pub const MAX_ITEM_LOOK_TARGET_BYTES: usize = crate::world_object::MAX_USE_INTENT_BYTES;
+const MAX_CREATURE_LOOK_TARGET_BYTES: usize = 31;
+
+fn object_error(error: WorldObjectError) -> ItemLookWireError {
+    match error {
+        WorldObjectError::Malformed => ItemLookWireError::Malformed,
+        WorldObjectError::LimitExceeded => ItemLookWireError::LimitExceeded,
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ItemLookRefusal {
@@ -67,7 +81,15 @@ pub fn encode_item_look_intent_for(
 ) -> Result<Vec<u8>, ItemLookWireError> {
     match intent.target {
         ItemLookTarget::Item(handle) => Ok(encode_item_target(handle)),
-        ItemLookTarget::Creature(_) if !selection.extended => Err(ItemLookWireError::Malformed),
+        ItemLookTarget::Creature(_) | ItemLookTarget::WorldObject(_) if !selection.extended => {
+            Err(ItemLookWireError::Malformed)
+        }
+        ItemLookTarget::WorldObject(target) => {
+            let reference = encode_world_object_target(&target).map_err(object_error)?;
+            let mut output = Vec::new();
+            push_message_field(&mut output, 3, &reference);
+            Ok(output)
+        }
         ItemLookTarget::Creature(entity) => {
             // Same EntityRef field layout and zero-generation default as spatial snapshots.
             let mut reference = Vec::new();
@@ -103,12 +125,22 @@ pub fn decode_item_look_intent_for(
             target: ItemLookTarget::Item(decode_item_target(payload)?),
         });
     }
-    if tag != 0x12 || !selection.extended {
+    if !matches!(tag, 0x12 | 0x1a) || !selection.extended {
         return Err(ItemLookWireError::Malformed);
     }
     let reference = read_bytes(payload, &mut cursor)?;
     if cursor != payload.len() {
         return Err(ItemLookWireError::Malformed);
+    }
+    if tag == 0x1a {
+        return Ok(ItemLookIntent {
+            target: ItemLookTarget::WorldObject(
+                decode_world_object_target(reference).map_err(object_error)?,
+            ),
+        });
+    }
+    if payload.len() > MAX_CREATURE_LOOK_TARGET_BYTES {
+        return Err(ItemLookWireError::LimitExceeded);
     }
     let mut cursor = 0;
     let (mut identity, mut generation) = (None, None);
