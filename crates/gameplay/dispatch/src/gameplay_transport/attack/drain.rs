@@ -18,9 +18,6 @@ use crate::spell::formula::FormulaInputs;
 use crate::world_runtime::LocalObjectRuntime;
 use oteryn_gameplay_combat_rules::attack::target::Swing;
 use oteryn_gameplay_combat_rules::resolution::{
-    creature_physical_response, creature_physically_immune,
-};
-use oteryn_gameplay_combat_rules::resolution::{
     creature_physical_response, creature_physically_immune, swing_mitigated,
 };
 use oteryn_gameplay_progression::charm_effects::{
