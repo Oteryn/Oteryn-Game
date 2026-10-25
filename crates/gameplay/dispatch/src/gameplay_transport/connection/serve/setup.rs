@@ -283,6 +283,8 @@ async fn live<A: FreshAdmissionAuthority>(
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let chase_yielded = false;
     Ok(ServeState {
+        stash_rows: None,
+        stash_revision: 0,
         admitted: *admitted,
         generation,
         actor,
