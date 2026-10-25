@@ -60,12 +60,21 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         both(
             both(
                 highscores_loop(root, material.world, achievements, &loops_stop),
-                super::super::guild_scheduler::run(
-                    root,
-                    authority,
-                    proof,
-                    material.world,
-                    &loops_stop
+                both(
+                    super::super::guild_scheduler::run(
+                        root,
+                        authority,
+                        proof,
+                        material.world,
+                        &loops_stop
+                    ),
+                    super::super::market_scheduler::run(
+                        root,
+                        authority,
+                        proof,
+                        material.world,
+                        &loops_stop
+                    ),
                 )
             ),
             account_characters_loop(

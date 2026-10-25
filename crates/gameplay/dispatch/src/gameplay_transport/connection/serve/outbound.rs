@@ -203,6 +203,37 @@ where
         Dispatch::ItemMove(outcome, deltas, _) => {
             effects::item_move(stream, authority, session, outcome, deltas).await?;
         }
+        Dispatch::Reply(_, payload)
+            if command.command_type == oteryn_protocol_oteryn::market::COMMAND_TYPE_MARKET
+                && session
+                    .selected_capabilities
+                    .domain_selected(oteryn_protocol_oteryn::market::STATE_DOMAIN_MARKET) =>
+        {
+            let next = session
+                .market_revision
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let sequence = session
+                .sequence
+                .checked_add(1)
+                .ok_or(ServeEnd::Disconnected)?;
+            let frame = encode_state_delta(
+                session.generation,
+                sequence,
+                oteryn_protocol_oteryn::market::STATE_DOMAIN_MARKET,
+                session.market_revision,
+                next,
+                1,
+                &payload,
+            )
+            .map_err(|_| ServeEnd::Disconnected)?;
+            session.market_revision = next;
+            session.sequence = sequence;
+            session.admitted.continuity.server_sequence = sequence;
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+        }
         Dispatch::QuestLog(domain) => {
             let Some((delta_sequence, frame)) =
                 quest_log_delta(session.generation, session.sequence, &domain)
