@@ -161,8 +161,35 @@ pub fn creature_mitigated(
     defense: u32,
     armor: u32,
 ) -> Option<i64> {
+    swing_mitigated(
+        root,
+        constants,
+        attacker,
+        lineage,
+        ordinal,
+        damage,
+        blocked.then_some((defense / 2, defense)),
+        armor,
+    )
+}
+
+/// PVP-DEFENCE-1: what a blocked hit's `defence` draw range (`None` when the target did not
+/// block) and the target's armor leave of a swing (`Creature::blockHit`): when defence stops the
+/// whole hit, armor is not reached; armor draws in [`armor_reduction_bounds`]. A creature target
+/// passes its `[defense / 2, defense]`, a player target the bounds of the hand it defends with.
+#[allow(clippy::too_many_arguments)]
+pub fn swing_mitigated(
+    root: &GameplayDecisionRoot,
+    constants: &AttackConstants,
+    attacker: [u8; 16],
+    lineage: ([u8; 16], u64),
+    ordinal: u16,
+    damage: i64,
+    defence: Option<(u32, u32)>,
+    armor: u32,
+) -> Option<i64> {
     let mut remaining = damage;
-    if blocked {
+    if let Some((minimum, maximum)) = defence {
         let defence = swing_draw(
             root,
             attacker,
@@ -170,8 +197,8 @@ pub fn creature_mitigated(
             ordinal,
             b"defence-draw",
             "attack.defence",
-            i64::from(defense / 2),
-            i64::from(defense),
+            i64::from(minimum),
+            i64::from(maximum),
         )?;
         remaining = remaining.saturating_sub(defence);
         if remaining <= 0 {
@@ -269,6 +296,44 @@ mod tests {
             armor,
         )
         .expect("draws")
+    }
+
+    #[test]
+    fn a_player_target_defends_by_its_hand_bounds_and_a_creature_by_half_to_full() {
+        let constants = AttackConstants::checked_in().expect("constants");
+        let swing = |ordinal: u16, damage: i64, defence: Option<(u32, u32)>, armor: u32| {
+            swing_mitigated(
+                &GameplayDecisionRoot::from_bytes([7; 32]),
+                constants,
+                [1; 16],
+                ([3; 16], 1),
+                ordinal,
+                damage,
+                defence,
+                armor,
+            )
+            .expect("draws")
+        };
+        for ordinal in 0..64 {
+            assert_eq!(
+                swing(ordinal, 100, Some((5, 10)), 10),
+                mitigated(ordinal, 100, true, 10, 10),
+                "a creature's block is the [defense / 2, defense] range"
+            );
+            assert_eq!(
+                swing(ordinal, 100, None, 10),
+                mitigated(ordinal, 100, false, 10, 10),
+                "no block, armor only"
+            );
+            let defended = swing(ordinal, 100, Some((3, 7)), 0);
+            assert!((93..=97).contains(&defended), "defence draws in [3, 7]");
+            assert_eq!(swing(ordinal, 6, Some((7, 7)), 10), 0, "defence stops it");
+            assert_eq!(
+                swing(ordinal, 0, Some((0, 0)), 0),
+                0,
+                "nothing stays nothing"
+            );
+        }
     }
 
     #[test]

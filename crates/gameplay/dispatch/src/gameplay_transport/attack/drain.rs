@@ -1,18 +1,24 @@
 //! Ordered phases of the Channel owner's auto-attack pass.
 
+use super::player_block::PlayerBiteVitals;
 use super::shared_experience::aggressive_monster;
 use super::skill_training::{TrainingDue, swing_block, swing_family, train_hit};
 use super::*;
+use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
+use crate::durability::spell_owner_commit::SpellLanePermit;
+use crate::foundation::CharacterId;
+use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::gameplay_transport::kill_reward::KillSettlementQueue;
 use crate::spell::cast::{CharacterCastFacts, SwingSkills};
 use crate::spell::combat_execution::actor_atom;
 use crate::spell::formula::FormulaInputs;
+use crate::world_runtime::LocalObjectRuntime;
 use oteryn_gameplay_combat_rules::attack::target::Swing;
 use oteryn_gameplay_combat_rules::resolution::{
-    creature_physical_response, creature_physically_immune,
+    creature_physical_response, creature_physically_immune, swing_mitigated,
 };
 use oteryn_gameplay_progression::charm_effects::{
     CharmAttackerFacts, CharmHitSource, CharmHookEvent,
@@ -25,6 +31,23 @@ struct SelectedSwing {
     weapon: WeaponFacts,
     swing: Swing<ExactActorRef, CommandRef>,
     ordinal: u16,
+}
+
+/// A PvP swing the attacker's pass drew, halved, for a player target; its defence is met after
+/// the pass (PVP-DEFENCE-1).
+struct PvpSwing {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    secure: bool,
+    target: ExactActorRef,
+    lineage: CommandRef,
+    ordinal: u16,
+    magnitude: i64,
+    black: bool,
+    revision: &'static str,
+    weapon: SwingWeapon,
+    attacker: CharacterId,
+    generation: u64,
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -71,6 +94,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect();
         let root = GameplayDecisionRoot::from_bytes(digest);
         let mut trained = TrainingDue::new();
+        let mut pvp_hits = Vec::new();
         for entry in entries.iter_mut() {
             let Some(selected) =
                 select_swing(entry, &runtime, &states, room, digest, now, constants)
@@ -119,56 +143,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     entry.clear_target();
                     continue;
                 };
-                let magnitude =
-                    i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(raw, black));
-                let atom = actor_atom(target);
-                let Some(plan) = swing_plan(
-                    entry.actor,
-                    swing.lineage,
+                // `Combat::CombatHealthFunc` halves a PvP hit before the target's block meets it;
+                // PVP-DEFENCE-1 resolves the defence after this pass, where the target's block
+                // budget is reachable.
+                pvp_hits.push(PvpSwing {
+                    actor: entry.actor,
+                    session: entry.session,
+                    secure: entry.modes.secure,
+                    target,
+                    lineage: swing.lineage,
                     ordinal,
-                    magnitude,
-                    &digest,
-                    &atom,
+                    magnitude: i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(raw, black)),
+                    black,
                     revision,
-                ) else {
-                    continue;
-                };
-                let batch = crate::spell::combat_batch::OwnerCombatBatch {
-                    caster: entry.actor,
+                    weapon: selected.weapon.weapon,
                     attacker: lease.character_id(),
-                    current_lease_generation: lease.generation(),
-                    command: swing.lineage,
-                    occurrence: plan.occurrence().clone().into(),
-                    binding: b"oteryn:pvp-melee:v1".to_vec(),
-                    anchor: None,
-                    now_us: Some(now),
-                    now_ms: now.get() / 1000,
-                    effects: vec![crate::spell::combat_batch::OwnerCombatEffect {
-                        target,
-                        sub_ordinal: ordinal,
-                        change: crate::spell::combat_batch::OwnerCombatChange::Damage {
-                            target_atom: atom,
-                            magnitude,
-                        },
-                    }],
-                    deferred: None,
-                };
-                if !self
-                    .pvp_swing(
-                        &mut pvp_permit,
-                        &mut runtime,
-                        &mut states,
-                        room,
-                        &objects,
-                        batch,
-                        ordinal,
-                        entry.modes.secure,
-                        black,
-                    )
-                    .await
-                {
-                    entry.clear_target();
-                }
+                    generation: lease.generation(),
+                });
                 continue;
             }
             let Ok(snapshot) = runtime.companion_snapshot(target) else {
@@ -337,6 +328,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 );
             }
         }
+        for hit in pvp_hits {
+            self.land_pvp_swing(
+                &mut pvp_permit,
+                &mut runtime,
+                &mut states,
+                &mut attack,
+                room,
+                &objects,
+                content,
+                (&root, &digest, constants, now),
+                hit,
+                &mut trained,
+            )
+            .await;
+        }
         drop(attack);
         drop(objects);
         drop(states);
@@ -347,6 +353,148 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 }
 
 /// SKILL-TRAIN-1: the swing at a creature trains the swing's skill by how its block met it.
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// PVP-DEFENCE-1 (`Creature::blockHit`, `Player::getDefense`): a PvP swing spends one of the
+    /// target's blocks and meets the defence of what the target's hands hold, then the target's
+    /// worn armor. A block trains the target's shielding (SKILL-TRAIN-1), and the attacker trains
+    /// by what is left: a swing they stop commits nothing and trains as blocked.
+    #[allow(clippy::too_many_arguments)]
+    async fn land_pvp_swing(
+        &self,
+        permit: &mut SpellLanePermit,
+        runtime: &mut ChannelRuntimeV1,
+        states: &mut ChannelSpellStates,
+        attack: &mut ChannelAttackStates,
+        room: &QualifiedNativeEntryRoom,
+        objects: &LocalObjectRuntime,
+        content: &NativeGameplayState,
+        (root, digest, constants, now): (
+            &GameplayDecisionRoot,
+            &[u8; 32],
+            &AttackConstants,
+            SemanticTimeMicros,
+        ),
+        hit: PvpSwing,
+        trained: &mut TrainingDue,
+    ) {
+        let Some(target_session) = states
+            .actors
+            .iter()
+            .find(|(actor, _, _)| *actor == hit.target)
+            .map(|(_, session, _)| *session)
+        else {
+            attack.clear_target_of(hit.actor, hit.session);
+            return;
+        };
+        let mut vitals = PlayerBiteVitals {
+            states: &mut *states,
+            attack: &mut *attack,
+            formula: content.training_formula(),
+            trained: &mut *trained,
+        };
+        let defence = vitals.target_defence(
+            runtime,
+            hit.target,
+            target_session,
+            OwnerTime::from_micros(now.get()),
+        );
+        let armor = vitals.target_armor(runtime, hit.target, target_session);
+        let Some(magnitude) = swing_mitigated(
+            root,
+            constants,
+            hit.actor.placement_identity(),
+            (
+                *hit.lineage.game_session_id().as_bytes(),
+                hit.lineage.command_id().get(),
+            ),
+            hit.ordinal,
+            hit.magnitude,
+            defence,
+            armor,
+        ) else {
+            return;
+        };
+        if magnitude <= 0 {
+            train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
+            return;
+        }
+        let atom = actor_atom(hit.target);
+        let Some(plan) = swing_plan(
+            hit.actor,
+            hit.lineage,
+            hit.ordinal,
+            magnitude,
+            digest,
+            &atom,
+            hit.revision,
+        ) else {
+            return;
+        };
+        let batch = crate::spell::combat_batch::OwnerCombatBatch {
+            caster: hit.actor,
+            attacker: hit.attacker,
+            current_lease_generation: hit.generation,
+            command: hit.lineage,
+            occurrence: plan.occurrence().clone().into(),
+            binding: b"oteryn:pvp-melee:v1".to_vec(),
+            anchor: None,
+            now_us: Some(now),
+            now_ms: now.get() / 1000,
+            effects: vec![crate::spell::combat_batch::OwnerCombatEffect {
+                target: hit.target,
+                sub_ordinal: hit.ordinal,
+                change: crate::spell::combat_batch::OwnerCombatChange::Damage {
+                    target_atom: atom,
+                    magnitude,
+                },
+            }],
+            deferred: None,
+        };
+        if self
+            .pvp_swing(
+                permit,
+                runtime,
+                states,
+                room,
+                objects,
+                batch,
+                hit.ordinal,
+                hit.secure,
+                hit.black,
+            )
+            .await
+        {
+            train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
+        } else {
+            attack.clear_target_of(hit.actor, hit.session);
+        }
+    }
+}
+
+/// The attacker of `hit` trains its weapon skill by what the target's defence and armor left.
+fn train_pvp_swing(
+    states: &mut ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    content: &NativeGameplayState,
+    hit: &PvpSwing,
+    magnitude: i64,
+    now: SemanticTimeMicros,
+    trained: &mut TrainingDue,
+) {
+    let block = swing_block(magnitude);
+    train_hit(
+        states,
+        runtime,
+        content.training_formula(),
+        hit.actor,
+        hit.session,
+        swing_family(hit.weapon),
+        now.get(),
+        |hits| hits.melee_hit(block),
+        trained,
+    );
+}
+
 #[allow(clippy::too_many_arguments)]
 fn train_swing(
     states: &mut ChannelSpellStates,
@@ -514,14 +662,13 @@ fn draw_swing_damage(
             .state
             .record_hit(swing.at, constants.in_fight_micros());
     }
-    swing_lands(damage, creature).then_some((damage, revision))
+    swing_lands(damage).then_some((damage, revision))
 }
 
-/// `Game::combatBlockHit`: a 0 swing at a creature still meets its defence and armor (it spends
-/// a block and trains as a blocked hit). A PvP swing does not meet the target's defence yet, so
-/// a 0 swing at a player stays dropped.
-const fn swing_lands(damage: i64, creature: bool) -> bool {
-    damage > 0 || (damage == 0 && creature)
+/// `Game::combatBlockHit`: a 0 swing still meets the target's defence and armor (it spends a
+/// block and trains as a blocked hit), at a creature and, since PVP-DEFENCE-1, at a player.
+const fn swing_lands(damage: i64) -> bool {
+    damage >= 0
 }
 
 fn record_hit_activity(
@@ -582,14 +729,12 @@ mod tests {
     use super::swing_lands;
 
     #[test]
-    fn a_zero_swing_meets_a_creature_but_not_a_player() {
-        assert!(swing_lands(0, true), "a 0 swing at a creature is blocked");
+    fn a_zero_swing_meets_the_targets_defence() {
         assert!(
-            !swing_lands(0, false),
-            "a 0 swing at a player stays dropped"
+            swing_lands(0),
+            "a 0 swing at a creature or a player is blocked"
         );
-        assert!(swing_lands(5, true));
-        assert!(swing_lands(5, false));
-        assert!(!swing_lands(-1, true));
+        assert!(swing_lands(5));
+        assert!(!swing_lands(-1));
     }
 }

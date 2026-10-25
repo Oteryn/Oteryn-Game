@@ -522,6 +522,13 @@ impl ChannelAttackStates {
     }
 
     /// An equipment move of `actor`: its swing weapon must be read again.
+    /// Clear the held target of `actor` in `session`, if it has an entry.
+    fn clear_target_of(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        if let Some(index) = self.index(actor, session) {
+            self.entries[index].clear_target();
+        }
+    }
+
     pub fn forget_weapon(&mut self, actor: ExactActorRef, session: GameSessionId) {
         if let Some(index) = self.index(actor, session) {
             let entry = &mut self.entries[index];
