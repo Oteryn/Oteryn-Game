@@ -498,7 +498,8 @@ fn draw_swing_damage(
 }
 
 /// `Game::combatBlockHit`: a 0 swing at a creature still meets its defence and armor (it spends
-/// a block and trains as a blocked hit); a 0 swing at a player does nothing.
+/// a block and trains as a blocked hit). A PvP swing does not meet the target's defence yet, so
+/// a 0 swing at a player stays dropped.
 const fn swing_lands(damage: i64, creature: bool) -> bool {
     damage > 0 || (damage == 0 && creature)
 }
@@ -563,7 +564,10 @@ mod tests {
     #[test]
     fn a_zero_swing_meets_a_creature_but_not_a_player() {
         assert!(swing_lands(0, true), "a 0 swing at a creature is blocked");
-        assert!(!swing_lands(0, false), "a 0 swing at a player does nothing");
+        assert!(
+            !swing_lands(0, false),
+            "a 0 swing at a player stays dropped"
+        );
         assert!(swing_lands(5, true));
         assert!(swing_lands(5, false));
         assert!(!swing_lands(-1, true));
