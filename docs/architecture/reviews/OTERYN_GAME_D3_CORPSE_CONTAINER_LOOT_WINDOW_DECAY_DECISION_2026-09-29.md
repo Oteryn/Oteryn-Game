@@ -73,6 +73,10 @@ invariant and VSL-COMBAT-01's "never a second durable location" line without wea
 | D112 | Loot is exclusive for 10 s to the creature's top-damage dealer (party later, once a party system exists), then anyone may loot. | #162 5879404970 |
 | D113 | The rat corpse uses corpse item `oteryn:item.registry.i00005801` (a Canary-derived id accepted as content data) and decays after 60 s. | #162 5884341120 |
 
+Note (NIGHT-W1 owner decision 17, 2026-10-25): `i00005801` is only the D3-7 registry alias of
+`oteryn:item.tibia.i5964`, the dead rat. It is not Canary item 5801, which is the Jewelled
+Backpack. The admitted corpse item is 5964.
+
 ## 3. Facts
 
 **PROVEN** (main `fb204ea3bac7b89b051e7a60c2036c65e506d7e7`)
