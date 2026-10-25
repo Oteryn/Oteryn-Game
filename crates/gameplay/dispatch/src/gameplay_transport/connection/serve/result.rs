@@ -135,6 +135,19 @@ pub(super) fn encode(
             CommandStatus::Accepted,
             encode_container_view_result(*outcome),
         ),
+        Dispatch::Stash(reply) => {
+            let Ok(payload) = oteryn_protocol_oteryn::stash::encode_stash_reply(reply) else {
+                return Err(ServeEnd::Disconnected);
+            };
+            // Validate the complete native result at its production wire boundary.
+            let Ok(decoded) = oteryn_protocol_oteryn::stash::decode_stash_reply(&payload) else {
+                return Err(ServeEnd::Disconnected);
+            };
+            if &decoded != reply {
+                return Err(ServeEnd::Disconnected);
+            }
+            (CommandStatus::Accepted, payload)
+        }
         Dispatch::Depot(reply) => {
             let Ok(payload) = oteryn_protocol_oteryn::depot::encode_depot_reply(reply) else {
                 return Err(ServeEnd::Disconnected);

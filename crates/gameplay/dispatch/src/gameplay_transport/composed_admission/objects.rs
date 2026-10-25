@@ -260,6 +260,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return UseOutcome::rejected();
         }
         if let Some(map) = self.bundle_map() {
+            if let Some(outcome) = self.use_bundle_chest(actor, command, map, &target).await {
+                return outcome;
+            }
             return self
                 .use_bundle_door(actor, command.game_session_id, map, &target)
                 .await;

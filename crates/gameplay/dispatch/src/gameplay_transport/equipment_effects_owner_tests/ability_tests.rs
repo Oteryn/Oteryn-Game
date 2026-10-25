@@ -24,6 +24,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("LOOP-TRAIN-1", 23),
     // The pick 3456, shiny stone 10310 and small diamond 3028.
     ("MINING-1", 3),
+    // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
+    // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
+    // None of them is equipment.
+    ("READ-WRITE-1", 19),
 ];
 
 #[test]
@@ -71,6 +75,14 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i10310".into(),
         ]
         .into_iter()
+        // READ-WRITE-1: the 19 readable profiles carry no speed attribute and are not equipment.
+        .chain(
+            [
+                2012, 2013, 2014, 2015, 2016, 2017, 2021, 2022, 2023, 2024, 2597, 2598, 2602, 2605,
+                6121, 6122, 10322, 12782, 12783,
+            ]
+            .map(|id| format!("oteryn:item.tibia.i{id}")),
+        )
         .collect()
     );
     Ok(())

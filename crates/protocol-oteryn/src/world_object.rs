@@ -254,8 +254,10 @@ fn read_bytes<'a>(input: &'a [u8], cursor: &mut usize) -> Result<&'a [u8], World
     Ok(value)
 }
 
-/// Reads exactly one singular enum field 1 (the only field of the use result).
-fn encode_world_object_target(target: &WorldObjectTarget) -> Result<Vec<u8>, WorldObjectError> {
+/// Shared WorldObjectTargetV1 inner message for Use, Use-With and Look.
+pub(crate) fn encode_world_object_target(
+    target: &WorldObjectTarget,
+) -> Result<Vec<u8>, WorldObjectError> {
     if target.placement.len() > MAX_KEY_BYTES {
         return Err(WorldObjectError::LimitExceeded);
     }
@@ -269,7 +271,9 @@ fn encode_world_object_target(target: &WorldObjectTarget) -> Result<Vec<u8>, Wor
 /// (empty `placement`, `expected_revision` 0), so both fields default on omission;
 /// semantic presence (e.g. a real object at its initial revision) is validated after
 /// decoding, not inferred from wire-default omission (FND-02 §7).
-fn decode_world_object_target(input: &[u8]) -> Result<WorldObjectTarget, WorldObjectError> {
+pub(crate) fn decode_world_object_target(
+    input: &[u8],
+) -> Result<WorldObjectTarget, WorldObjectError> {
     let mut cursor = 0;
     let (mut placement, mut expected_revision) = (None, None);
     while cursor < input.len() {

@@ -36,6 +36,7 @@ pub(super) enum Dispatch {
         Option<oteryn_protocol_oteryn::refusal_detail::RefusalDetail>,
     ),
     Depot(oteryn_protocol_oteryn::depot::DepotReply),
+    Stash(oteryn_protocol_oteryn::stash::StashReply),
     /// QUEST-LOG-WIRE-1: an accepted command 22; the domain 16 delta follows the result.
     QuestLog(QuestLogDomain),
     Look(ItemLookResult, ItemLookSelection),
