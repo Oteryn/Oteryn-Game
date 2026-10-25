@@ -33,6 +33,31 @@ fn transform(
     })
 }
 
+/// Equipped forms are resolved from the same admitted pair as their timed budget.
+/// Custody retains the base definition and instance; the active form is a worn view.
+pub(super) fn equipped_definition(
+    native: &NativeGameplayState,
+    definition: &TypedDefinitionRef,
+) -> Option<TypedDefinitionRef> {
+    let policy = native.item_policy(&definition.production_key, &definition.revision_ref)?;
+    let paired = matches!(&policy.record().semantics.use_transform, ReferenceItemField::Known(transforms)
+        if transforms.targets.iter().any(|entry| entry.kind == ReferenceTransformKind::Equip
+            && matches!(entry.target, ReferenceItemField::Known(_))));
+    if paired {
+        let active = transform(native, definition, ReferenceTransformKind::Equip)?;
+        if native
+            .item_policy(&active.production_key, &active.revision_ref)
+            .is_some()
+            && facts(native, definition).is_some()
+        {
+            return Some(active);
+        }
+        Some(definition.clone())
+    } else {
+        Some(definition.clone())
+    }
+}
+
 /// Inactive equip forms take their full values from the admitted paired active definition.
 pub(super) fn facts(
     native: &NativeGameplayState,

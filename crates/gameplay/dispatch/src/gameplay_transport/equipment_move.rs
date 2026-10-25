@@ -202,6 +202,7 @@ pub(super) async fn observe_character_equipment(
     game_session_id: GameSessionId,
 ) -> Option<Vec<(EquipmentSlot, ViewItem)>> {
     let equipment = read_current_equipment(admission, game_session_id).await?;
+    let native = admission.active_generation?.native_gameplay()?;
     let index = pinned_index(
         &*admission.runtime.lock().await,
         admission.active_generation,
@@ -214,7 +215,10 @@ pub(super) async fn observe_character_equipment(
                 wire_slot(item.slot)?,
                 ViewItem {
                     key: ItemKey::Instance(item.item_instance_id),
-                    item_definition_ref: definition_ref(index, &item.definition)?,
+                    item_definition_ref: definition_ref(
+                        index,
+                        &super::timed_item_content::equipped_definition(native, &item.definition)?,
+                    )?,
                     count: std::num::NonZeroU32::new(item.quantity)?,
                     sub_type: 0,
                 },
@@ -326,7 +330,7 @@ pub(super) async fn move_equipment(
             }
             // EQUIP-0 §4: only a committed owner move changes suppressions. Keep the lane
             // permit across the fresh read, then obey runtime -> spell_states lock order.
-            let Some((effects, armor, defence)) =
+            let Some((effects, armor, defence, mana_shield)) =
                 read_current_equipment(admission, command.game_session_id)
                     .await
                     .and_then(|equipment| {
@@ -334,6 +338,7 @@ pub(super) async fn move_equipment(
                             equipment_effects_owner::equipment_effects(&equipment, native)?,
                             equipment_effects_owner::equipped_armor(&equipment, native)?,
                             equipment_effects_owner::equipped_defence(&equipment, native)?,
+                            equipment_effects_owner::equipped_mana_shield(&equipment, native)?,
                         ))
                     })
             else {
@@ -348,6 +353,7 @@ pub(super) async fn move_equipment(
                 equipment_effects_owner::install_suppressions(state, effects);
                 state.install_equipped_armor(armor);
                 state.install_equipped_defence(defence);
+                state.install_equipped_mana_shield(mana_shield);
             }
             EquipmentMoveResult::Committed
         }

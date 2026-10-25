@@ -21,6 +21,7 @@ pub mod item_definition;
 pub mod loot_data;
 pub mod magnitude_policy;
 pub mod mail;
+pub mod mana_shield;
 pub mod map_position;
 pub mod market;
 pub mod melee_definition;

@@ -279,6 +279,7 @@ impl PlayerSpellState {
             && self.premium_valid_until_micros == before.premium_valid_until_micros
             && self.owned_skills == before.owned_skills
             && self.equipped_armor == before.equipped_armor
+            && self.equipped_mana_shield == before.equipped_mana_shield
             && self.equipped_defence == before.equipped_defence
             && self.base_speed == before.base_speed
             && anchor.expected_revision == before.revision

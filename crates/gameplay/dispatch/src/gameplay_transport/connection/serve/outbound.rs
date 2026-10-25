@@ -164,7 +164,10 @@ where
         }
         // CHAT-WIRE-1: the lines reach the hearers' domain 12 on their own ticks. CHAT-2B: an
         // opened or closed room follows the result as one domain 12 delta type 2.
-        Dispatch::Chat(_) => {
+        Dispatch::Chat(_, spell) => {
+            if let Some(outcome) = spell {
+                effects::spell(stream, authority, session, outcome).await?;
+            }
             if let Some(rooms) = authority
                 .chat_rooms_changed(session.admitted.game_session_id)
                 .await

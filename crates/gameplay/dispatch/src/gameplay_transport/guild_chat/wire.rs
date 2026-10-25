@@ -30,8 +30,14 @@ pub(in super::super) async fn dispatch<A: FreshAdmissionAuthority>(
     actor: crate::foundation::ExactActorRef,
     command_id: u64,
     payload: &[u8],
-) -> Option<ChatIntentResult> {
-    let intent = chat::decode_chat_intent(payload).ok()?;
+) -> Result<
+    Option<(
+        ChatIntentResult,
+        Option<super::super::actor_spell::SpellCastOutcome>,
+    )>,
+    (),
+> {
+    let intent = chat::decode_chat_intent(payload).map_err(|_| ())?;
     match intent {
         ChatIntent::Guild { text } => {
             if !admitted
@@ -39,14 +45,15 @@ pub(in super::super) async fn dispatch<A: FreshAdmissionAuthority>(
                 .selected_capabilities
                 .contains(CAPABILITY_CHAT_GUILD_ROOM_V1)
             {
-                return None;
+                return Err(());
             }
-            Some(authority.chat_guild_intent(admitted, text).await)
+            Ok(Some((
+                authority.chat_guild_intent(admitted, text).await,
+                None,
+            )))
         }
-        intent => Some(
-            authority
-                .chat_intent(actor, admitted.game_session_id, command_id, intent)
-                .await,
-        ),
+        intent => Ok(authority
+            .chat_intent_completion(actor, admitted.game_session_id, command_id, intent)
+            .await),
     }
 }

@@ -353,7 +353,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 continue;
             };
             let base_damage = match dispatch {
-                Dispatch::Bite(Ok(applied)) => Some(u64::from(applied.requested)),
+                Dispatch::Bite(Ok(applied)) => {
+                    if applied.damage.applied > 0 {
+                        states.hunting_activity(&runtime, player, session, now.get());
+                    }
+                    Some(u64::from(applied.requested))
+                }
                 Dispatch::ZeroDamage => None,
                 Dispatch::Bite(Err(_)) | Dispatch::Decision(_) => continue,
             };

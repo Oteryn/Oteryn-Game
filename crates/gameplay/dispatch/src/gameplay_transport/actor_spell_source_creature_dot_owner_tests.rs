@@ -237,7 +237,7 @@ fn current_player_buff_comes_from_canonical_owner_dot_heals_before_scaled_damage
     assert_eq!(retry.health_after, 10);
 }
 #[test]
-fn retired_exact_attacker_cannot_heal_and_pz_tick_uses_real_owner_store_without_hp() {
+fn retired_exact_attacker_cannot_heal_and_pz_tick_damages_through_real_owner_store() {
     let (mut runtime, states, source, target, _) = fixture();
     runtime
         .remove_test_actor(source)
@@ -252,21 +252,25 @@ fn retired_exact_attacker_cannot_heal_and_pz_tick_uses_real_owner_store_without_
             },
             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(1_000_000),
         )
-        .expect("qualified PZ suppression");
-    assert_eq!((first.health_before, first.health_after), (5, 5));
-    let second = states
-        .tick_source_creature_conditions(
-            &mut runtime,
-            target,
-            crate::foundation::TickFacts::default(),
-            crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000),
-        )
-        .expect("retired attacker resolved absent");
-    assert_eq!(
-        (second.health_before, second.health_after),
-        (5, 0),
-        "no fake attacker buff/healing; residual damage remains"
+        .expect("qualified PZ damage");
+    // NIGHT-W1 #1 permits fire in PZ; absent attacker cannot heal or scale it.
+    assert_eq!((first.health_before, first.health_after), (5, 0));
+    // The first PZ tick is now lethal; a dead creature accepts no later turn.
+    let second = states.tick_source_creature_conditions(
+        &mut runtime,
+        target,
+        crate::foundation::TickFacts::default(),
+        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(2_000_000),
     );
+    assert!(matches!(
+        second,
+        Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureNotActionable)
+    ));
+    let dead = runtime
+        .companion_snapshot_including_dead(target)
+        .expect("retained dead actor");
+    assert_eq!(dead.health, 0);
+    assert!(dead.state.conditions.instances().is_empty());
 }
 #[test]
 fn stale_lineage_content_pin_refuses_before_hp_and_condition_cursor_publication() {

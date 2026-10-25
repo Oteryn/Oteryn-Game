@@ -501,3 +501,39 @@ fn refused_healing_preserves_paralysis_hp_and_payment() -> Result<(), String> {
     assert_eq!(target_health(&f), 20);
     Ok(())
 }
+
+#[test]
+fn floor_exhaust_spell_relocation_staging_commits_with_dispatch_batch() {
+    use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+    let mut f = fixture();
+    let now = SemanticTimeMicros::from_micros(100_000);
+    let mut player = stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.next.clone()))
+        .expect("dispatch player preflight");
+    let before = f
+        .states
+        .get(&f.runtime, f.caster, f.session)
+        .expect("state")
+        .clone();
+    player
+        .stage_stairhop(&f.runtime, &f.states, f.caster, now)
+        .expect("relocation exhaust stage");
+    assert_eq!(
+        f.states.get(&f.runtime, f.caster, f.session),
+        Some(&before),
+        "staging publishes nothing"
+    );
+    let physical = f
+        .runtime
+        .stage_spell_batch(&f.batch)
+        .expect("physical stage");
+    commit_owner_batch(&mut f.runtime, &mut f.states, physical, Some(player))
+        .expect("real dispatch owner commit");
+    assert_eq!(
+        f.states
+            .get(&f.runtime, f.caster, f.session)
+            .expect("state")
+            .cooldowns
+            .group_ready_at(STAIRHOP_COOLDOWN_KEY),
+        Some(SemanticTimeMicros::from_micros(100_000 + STAIRHOP_MICROS))
+    );
+}

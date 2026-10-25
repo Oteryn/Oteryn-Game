@@ -126,7 +126,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if placed.is_none() {
             let current = self.current_quest_fence(session).await.ok()??;
             let mut runtime = self.runtime.lock().await;
-            let states = self.states.spell_states.lock().await;
+            let mut states = self.states.spell_states.lock().await;
             let position = runtime.read_actor_position(actor).ok()?;
             let independently_current = TravelCapture {
                 session: current.item_fence(),
@@ -152,6 +152,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 y: destination.y,
                 floor: destination.floor,
             };
+            // NPC travel is a teleport too. Stage its existing cooldown map before physical
+            // placement, and publish it once alongside that placement, never on reconciliation.
+            let cooldowns = if destination != position.position() {
+                use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+                let until = self.owner_now().checked_add(STAIRHOP_MICROS).ok()?;
+                states.get(&runtime, actor, session).map(|state| {
+                    let mut next = state.cooldowns.clone();
+                    next.groups.insert(STAIRHOP_COOLDOWN_KEY.into(), until);
+                    next
+                })
+            } else {
+                None
+            };
             let doors = std::collections::BTreeSet::new();
             let digest = runtime.content_pin().server_artifact_digest();
             let snapshot = runtime
@@ -173,6 +186,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })
                 })
                 .ok()?;
+            if let Some(cooldowns) = cooldowns
+                && let Some(state) = states.get_mut(&runtime, actor, session)
+            {
+                state.cooldowns = cooldowns;
+            }
             let mut record = self.placed_record(&runtime, snapshot.position());
             record.record.vitals = states
                 .saved_vitals(&runtime, actor, session)

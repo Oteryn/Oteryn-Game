@@ -113,6 +113,13 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             _ => return false,
         };
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let Some(mut active_mana_shield) =
+            super::equipment_move::equipment_effects_owner::equipped_mana_shield(
+                &equipment, native,
+            )
+        else {
+            return false;
+        };
         let mut clocks = self.states.timed_items.sessions.lock().await;
         let clock = clocks.entry(session).or_default();
         let held: HashSet<_> = equipment
@@ -123,6 +130,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // An ambiguous expiry may already have burned an equipped item. Reconcile
         // its original receipt before pruning custody; absence from equipment alone
         // cannot prove whether the value-moving transaction committed.
+        let mut retired_equipment = false;
         for (id, lane) in &clock.items {
             if !held.contains(id)
                 && let Some((request, _)) = &lane.pending
@@ -138,6 +146,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     Ok(_) | Err(crate::durability::item_timed_state::TimedWriteError::NotHeld) => {}
                     Err(_) => return false,
                 }
+                retired_equipment = true;
             }
         }
         clock.items.retain(|id, _| held.contains(id));
@@ -227,6 +236,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     if result.disposition
                         == oteryn_protocol_oteryn::timed_item::TimedDisposition::Ok =>
                 {
+                    retired_equipment |= result.retired;
                     lane.at_ms = at;
                     lane.pending = None;
                 }
@@ -238,6 +248,28 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Err(_) => return false,
             }
+        }
+        drop(clocks);
+        // Expiry may burn the ring without a client move. Re-read committed custody so
+        // its contribution cannot outlive the timed budget. An ordinary checkpoint uses
+        // its initial read, also repairing a previous expiry's failed acknowledgement/read.
+        if retired_equipment {
+            let Some(equipment) =
+                super::equipment_move::read_current_equipment(self, session).await
+            else {
+                return false;
+            };
+            let Some(active) = super::equipment_move::equipment_effects_owner::equipped_mana_shield(
+                &equipment, native,
+            ) else {
+                return false;
+            };
+            active_mana_shield = active;
+        }
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if let Some(state) = states.get_mut(&runtime, actor, session) {
+            state.install_equipped_mana_shield(active_mana_shield);
         }
         true
     }

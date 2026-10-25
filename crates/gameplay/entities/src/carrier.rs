@@ -139,7 +139,7 @@ mod spawn_realization;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
-#[path = "carrier/tests.rs"]
+#[path = "carrier/tests/mod.rs"]
 mod tests;
 
 use std::collections::BTreeSet;

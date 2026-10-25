@@ -305,6 +305,7 @@ def validate_item_enrichment(reference: Any, declarations: Any, sources: Any, ba
         require(row["family_profile"] == legacy_profile(row["source_taxonomy"]["primary"], assignments), "TAXONOMY_FAMILY_PROFILE")
         require(row["family_profile"] is None or row["family_profile"] in set(assignments.values()), "TAXONOMY_PROFILE_UNKNOWN")
         rebuilt.setdefault(key, {"item": row["target"]})["taxonomy"] = row["source_taxonomy"]
+    # Ranged profiles have their own owner; sealed authoring still round-trips exactly.
     require(canonical_sorted(list(rebuilt.values())) == canonical_sorted(list(legacy_authoring.values())), "ITEM_AUTHORING_ROUNDTRIP")
 
     aliases = item_alias_targets()
@@ -642,6 +643,10 @@ def validate_documents(declarations: Any, sources: Any) -> int:
 
 
 def main() -> int:
+    from ranged_item_profiles import outputs as ranged_outputs, RANGED_PROFILES
+    for relative, expected in ranged_outputs(ROOT).items():
+        require((ROOT / relative).is_file() and (ROOT / relative).read_bytes() == expected,
+                f"RANGED_IMPORT_DRIFT:{relative}")
     from register_spell_families import outputs as spell_outputs
     for relative, expected in spell_outputs(ROOT).items():
         require((ROOT / relative).is_file() and (ROOT / relative).read_bytes() == expected,
@@ -657,6 +662,7 @@ def main() -> int:
     sources = load(LEGACY / "provenance" / "sources.json")
     project = load(ROOT / "content" / "project.json")
     manifest = load(ROOT / "content" / "manifest.json")
+    require(RANGED_PROFILES in {row["path"] for row in manifest["managed_files"]}, "RANGED_MANAGED_FILE")
     lock = load(ROOT / "content" / "content.lock.json")
     item_index = load(ROOT / "content" / "items" / "index.json")
     mount_index = load(ROOT / "content" / "cosmetics" / "mounts" / "index.json")

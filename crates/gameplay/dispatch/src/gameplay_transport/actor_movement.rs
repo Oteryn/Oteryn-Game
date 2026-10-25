@@ -143,6 +143,80 @@ pub fn step_in_channel_with_source_step(
     equipment_delta: Option<i32>,
     prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
 ) -> StepInChannel {
+    use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+    let expected = runtime
+        .read_actor_position(actor)
+        .map_err(MovementError::Actor)?;
+    let starts_stairhop = if crate::map::floor::table_of(cells).is_some() {
+        crate::map::floor::prepare_bundle_step(
+            runtime, cells, actor, session, expected, direction, false, blocking,
+        )?
+        .starts_stairhop()
+    } else if let Some(proof) = prepared_source_step.as_ref() {
+        proof.destination().floor != expected.position().floor
+    } else if crate::movement::source_floor_change::is_source_profile(cells) {
+        crate::movement::source_floor_change::prepare_source_step(
+            runtime, cells, actor, session, expected, direction,
+        )?
+        .destination()
+        .floor
+            != expected.position().floor
+    } else {
+        false
+    };
+    // Stage the existing cooldown map before moving. A rejected step publishes neither
+    // position nor exhaust. Actors without cast state cannot swing or cast yet.
+    let cooldowns = if starts_stairhop {
+        states
+            .get(runtime, actor, session)
+            .map(|state| {
+                let until = now_us
+                    .checked_add(STAIRHOP_MICROS)
+                    .ok_or(MovementError::NotQualified)?;
+                let mut next = state.cooldowns.clone();
+                next.groups.insert(
+                    STAIRHOP_COOLDOWN_KEY.into(),
+                    SemanticTimeMicros::from_micros(until),
+                );
+                Ok(next)
+            })
+            .transpose()?
+    } else {
+        None
+    };
+    let result = step_in_channel_inner(
+        runtime,
+        states,
+        cells,
+        actor,
+        session,
+        now_us,
+        direction,
+        blocking,
+        equipment_delta,
+        prepared_source_step,
+    )?;
+    if let Some(cooldowns) = cooldowns
+        && let Some(state) = states.get_mut(runtime, actor, session)
+    {
+        state.cooldowns = cooldowns;
+    }
+    Ok(result)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn step_in_channel_inner(
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    cells: &NativeEntryMovementCells,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now_us: u64,
+    direction: CardinalStep,
+    blocking: &dyn crate::map::floor::CellBlocker,
+    equipment_delta: Option<i32>,
+    prepared_source_step: Option<crate::movement::source_floor_change::SourceStepProof<'_>>,
+) -> StepInChannel {
     let failure = Err;
     if prepared_source_step
         .as_ref()
@@ -1039,6 +1113,8 @@ mod tests {
             Ok((_, duration)) if duration == expected
         ));
     }
+    #[path = "../floor_exhaust_tests.rs"]
+    mod floor_exhaust;
 }
 
 #[cfg(test)]

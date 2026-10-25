@@ -204,6 +204,7 @@ fn observed_target_requires_live_handle_exact_binding_and_current_pin() {
         Some(ObservedLookItem {
             item,
             definition: &definition,
+            look_distance: 1,
         })
     };
     assert!(matches!(
@@ -265,7 +266,8 @@ fn observed_target_requires_live_handle_exact_binding_and_current_pin() {
                 target,
                 Some(ObservedLookItem {
                     item: changed,
-                    definition: &definition
+                    definition: &definition,
+                    look_distance: 1,
                 })
             ),
             ItemLookOutcome::Unavailable
@@ -293,7 +295,8 @@ fn observed_target_requires_live_handle_exact_binding_and_current_pin() {
                 target,
                 Some(ObservedLookItem {
                     item,
-                    definition: &definition
+                    definition: &definition,
+                    look_distance: 1,
                 })
             ),
             ItemLookOutcome::Unavailable
@@ -341,6 +344,7 @@ fn observed_target_requires_live_handle_exact_binding_and_current_pin() {
             Some(ObservedLookItem {
                 item: unprofiled_item,
                 definition: &unprofiled,
+                look_distance: 1,
             })
         ),
         ItemLookOutcome::Unavailable
@@ -546,4 +550,68 @@ fn item_look_window_matches_its_registered_resource_limit() {
     assert_eq!(row["configurable_range"]["maximum"], row["hard_maximum"]);
     assert_eq!(row["failure_category"], "CAPACITY_EXCEEDED");
     assert_eq!(row["client_visible"], true);
+}
+
+#[test]
+fn item_look_uses_the_map_send_window_on_every_floor_and_the_canary_near_split() {
+    use crate::map::overlay::TilePos;
+    for floor in -15_i8..=0 {
+        let origin = TilePos {
+            x: 100,
+            y: 100,
+            floor,
+        };
+        let layout = view::WindowLayout::of(origin).unwrap();
+        let actor = ActorPosition {
+            x: 100,
+            y: 100,
+            floor: i16::from(floor),
+        };
+        for z in -15_i8..=0 {
+            for x in 88..=112 {
+                for y in 88..=112 {
+                    let pos = TilePos { x, y, floor: z };
+                    let target = ActorPosition {
+                        x: i32::from(x),
+                        y: i32::from(y),
+                        floor: i16::from(z),
+                    };
+                    assert_eq!(
+                        in_view(actor, target),
+                        layout.slot_of(pos).is_some(),
+                        "{actor:?} -> {target:?}"
+                    );
+                    assert_eq!(
+                        look_distance(actor, target) <= 1,
+                        floor == z && x.abs_diff(100) <= 1 && y.abs_diff(100) <= 1
+                    );
+                }
+            }
+        }
+    }
+    let actor = ActorPosition {
+        x: i32::MIN,
+        y: 0,
+        floor: 7,
+    };
+    let target = ActorPosition {
+        x: i32::MAX,
+        y: 0,
+        floor: 6,
+    };
+    assert_eq!(look_distance(actor, target), i32::MAX);
+}
+
+#[test]
+fn item_look_details_stay_within_the_wire_bound_on_a_utf8_boundary() {
+    let text = bounded_text(format!("You see {}", "é".repeat(MAX_ITEM_LOOK_TEXT_BYTES)));
+    assert!(text.len() <= MAX_ITEM_LOOK_TEXT_BYTES);
+    assert!(text.ends_with('é'));
+    assert!(
+        oteryn_protocol_oteryn::item_look::encode_item_look_result_for(
+            &ItemLookResult::Text(text),
+            oteryn_protocol_oteryn::item_look::ItemLookSelection { extended: true },
+        )
+        .is_ok()
+    );
 }

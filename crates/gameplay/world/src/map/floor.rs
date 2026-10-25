@@ -223,6 +223,16 @@ pub fn resolve_landing(
     origin: Cell,
     direction: CardinalStep,
 ) -> Result<Cell, Refusal> {
+    resolve_landing_with_exhaust(table, ground, landable, origin, direction).map(|(cell, _)| cell)
+}
+
+fn resolve_landing_with_exhaust(
+    table: &FloorTable,
+    ground: impl Fn(Cell) -> Ground,
+    landable: impl Fn(Cell) -> bool,
+    origin: Cell,
+    direction: CardinalStep,
+) -> Result<(Cell, bool), Refusal> {
     let (dx, dy) = match direction {
         CardinalStep::North => (0, -1),
         CardinalStep::East => (1, 0),
@@ -243,9 +253,13 @@ fn follow(
     ground: &impl Fn(Cell) -> Ground,
     landable: &impl Fn(Cell) -> bool,
     mut next: Cell,
-) -> Result<Cell, Refusal> {
-    let land = |cell: Cell| match ground(cell) {
-        Ground::Walkable => Ok(teleported(table, ground, landable, cell)),
+) -> Result<(Cell, bool), Refusal> {
+    let mut changed_floor = false;
+    let land = |cell: Cell, changed_floor: bool| match ground(cell) {
+        Ground::Walkable => {
+            let target = teleported(table, ground, landable, cell);
+            Ok((target, changed_floor || target != cell))
+        }
         _ => Err(Refusal::Blocked),
     };
     for _ in 0..MAX_DESTINATIONS {
@@ -254,7 +268,7 @@ fn follow(
         }
         let mask = table.mask(next);
         if mask == 0 {
-            return land(next);
+            return land(next, changed_floor);
         }
         let target = if mask & DOWN != 0 {
             let below = (next.0, next.1, next.2 + 1);
@@ -280,7 +294,7 @@ fn follow(
                 }
                 shifted(offset.0, offset.1)
             } else {
-                return land(next);
+                return land(next, changed_floor);
             }
         } else {
             let mut offset = (0, 0);
@@ -299,8 +313,9 @@ fn follow(
             (next.0 + offset.0, next.1 + offset.1, next.2 - 1)
         };
         if ground(target) == Ground::Absent {
-            return land(next);
+            return land(next, changed_floor);
         }
+        changed_floor |= target.2 != next.2;
         next = target;
     }
     Err(Refusal::Chain)
@@ -391,6 +406,7 @@ pub struct BundleStepProof<'a> {
     pz_blocked: bool,
     closed: &'a dyn CellBlocker,
     destination: MovementLocalPosition,
+    starts_stairhop: bool,
 }
 
 /// Proves `actor`'s step `direction` from its current position over the bundle `cells`.
@@ -412,7 +428,7 @@ pub fn prepare_bundle_step<'a>(
 ) -> Result<BundleStepProof<'a>, MovementError> {
     let table = table_of(cells).ok_or(MovementError::NotQualified)?;
     qualify_origin(runtime, cells, actor, session, expected)?;
-    let destination = destination(
+    let (destination, starts_stairhop) = destination(
         cells,
         table,
         expected.position(),
@@ -430,6 +446,7 @@ pub fn prepare_bundle_step<'a>(
         pz_blocked,
         closed,
         destination,
+        starts_stairhop,
     })
 }
 
@@ -464,7 +481,7 @@ fn destination(
     direction: CardinalStep,
     pz_blocked: bool,
     closed: &dyn CellBlocker,
-) -> Result<MovementLocalPosition, MovementError> {
+) -> Result<(MovementLocalPosition, bool), MovementError> {
     let floor = i32::from(origin.floor);
     // A closed door blocks the entered tile and every tile a floor change resolves onto
     // before any teleport on it applies (WORLD-INTERACTION-0 §6.6); `landable` guards the
@@ -481,7 +498,7 @@ fn destination(
             ground(cell)
         }
     };
-    let (x, y, z) = resolve_landing(
+    let ((x, y, z), starts_stairhop) = resolve_landing_with_exhaust(
         table,
         ground,
         landable_of(cells, pz_blocked, closed),
@@ -489,14 +506,22 @@ fn destination(
         direction,
     )
     .map_err(movement_error)?;
-    Ok(MovementLocalPosition {
-        x,
-        y,
-        floor: i16::try_from(z).map_err(|_| MovementError::CoordinateOverflow)?,
-    })
+    Ok((
+        MovementLocalPosition {
+            x,
+            y,
+            floor: i16::try_from(z).map_err(|_| MovementError::CoordinateOverflow)?,
+        },
+        starts_stairhop,
+    ))
 }
 
 impl BundleStepProof<'_> {
+    /// Canary pacifies after any intermediate floor change or successful teleport.
+    pub const fn starts_stairhop(&self) -> bool {
+        self.starts_stairhop
+    }
+
     pub const fn destination(&self) -> MovementLocalPosition {
         self.destination
     }
@@ -511,7 +536,7 @@ impl BundleStepProof<'_> {
             self.pz_blocked,
             self.closed,
         )?;
-        if observed != self.destination {
+        if observed != (self.destination, self.starts_stairhop) {
             return Err(MovementError::SnapshotMismatch);
         }
         Ok(())

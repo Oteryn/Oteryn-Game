@@ -143,3 +143,32 @@ fn property_cooldown_groups_share_deadlines_and_overflow_is_atomic() {
         Ok(())
     });
 }
+
+#[test]
+fn floor_exhaust_focus_preserves_movement_pacification_but_resets_spell_groups() {
+    use crate::cast::STAIRHOP_COOLDOWN_KEY;
+    use crate::native_actor_states::{CooldownResetRule, FocusPlan};
+    let mut cooldowns = Cooldowns::default();
+    let until = SemanticTimeMicros::from_micros(2_000_000);
+    cooldowns.groups.insert(STAIRHOP_COOLDOWN_KEY.into(), until);
+    cooldowns.groups.insert("healing".into(), until);
+    let focus = FocusPlan {
+        harmony_after: 0,
+        gained_charges: 0,
+        serene_after: true,
+        forced_until: None,
+        arm_forced_serene: false,
+        effect_asset_binding: "fixture:focus".into(),
+        healing: None,
+        individual_reset: CooldownResetRule::Clear,
+        group_without_spell_reset: CooldownResetRule::Clear,
+        group_with_spell_reset: CooldownResetRule::Clear,
+        rearm_cast_cooldowns: false,
+    };
+    cooldowns.reset_for_focus(
+        &oteryn_gameplay_content::content::spell_data::SpellBook::new(vec![spell()]).expect("book"),
+        &focus,
+    );
+    assert_eq!(cooldowns.group_ready_at(STAIRHOP_COOLDOWN_KEY), Some(until));
+    assert_eq!(cooldowns.group_ready_at("healing"), None);
+}

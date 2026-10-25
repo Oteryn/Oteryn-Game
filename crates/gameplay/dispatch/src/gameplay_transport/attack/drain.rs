@@ -25,7 +25,7 @@ use oteryn_gameplay_progression::charm_effects::{
     CharmAttackerFacts, CharmHitSource, CharmHookEvent,
 };
 
-struct SelectedSwing {
+pub(super) struct SelectedSwing {
     target: ExactActorRef,
     character_facts: CharacterCastFacts,
     skills: SwingSkills,
@@ -284,6 +284,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
                 &mut trained,
             );
+            if result.applied
+                && result.health_after < result.health_before
+                && snapshot.state.master.is_none()
+                && !snapshot.state.policy.is_familiar
+            {
+                states.hunting_activity(&runtime, entry.actor, entry.session, now.get());
+            }
             record_hit_activity(
                 entry,
                 &runtime,
@@ -528,7 +535,7 @@ fn train_swing(
     );
 }
 
-fn select_swing(
+pub(super) fn select_swing(
     entry: &mut ActorAttack,
     runtime: &ChannelRuntimeV1,
     states: &ChannelSpellStates,
@@ -552,6 +559,14 @@ fn select_swing(
         entry.target_set_at,
     ) {
         entry.clear_target();
+        return None;
+    }
+    // Canary Player::doAttacking pauses swings without dropping the held target or timer.
+    if player
+        .cooldowns
+        .group_ready_at(oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY)
+        .is_some_and(|until| now < until)
+    {
         return None;
     }
     // SPELL-LOCK-2 §1.3: while the attacker's own slot is reserved by a pending spell
