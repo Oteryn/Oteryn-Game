@@ -100,6 +100,7 @@ mod rune_use_bridge;
 mod seam_rooms;
 mod serving;
 pub mod session_ingress;
+mod soul_kill_live;
 mod source_item_cycle;
 mod source_pvp_expiry;
 pub mod spectate_session;

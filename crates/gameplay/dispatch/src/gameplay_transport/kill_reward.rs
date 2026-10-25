@@ -1285,6 +1285,14 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             leveled.extend(super::level_up_live::leveled_character(xp));
         }
         admission.states.level_refresh.mark(leveled);
+        if let Ok(outcome) = &outcome
+            && let Ok(xp) = &outcome.rewards.xp
+        {
+            admission
+                .states
+                .soul_kills
+                .mark(super::soul_kill_live::soul_hook(xp));
+        }
         let mut runtime = admission.runtime.lock().await;
         if let Ok(outcome) = &outcome
             && let CorpseBind::Refused(error) =
