@@ -40,6 +40,7 @@ use oteryn_protocol_oteryn::item_view::{
     EquipmentSlot, ItemMoveDestination, ItemMoveOutcome, ItemMoveSelection, WorldTilePosition,
     decode_item_move_intent_for, decode_item_move_intent_with_count_for,
 };
+use oteryn_protocol_oteryn::refusal_detail::RefusalDetail;
 
 /// One equipment move of command 9 (ITEM-MOVE-WIRE-1 §4), by the item's server-internal key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,6 +96,15 @@ pub(super) const fn loop_outcome(refusal: LoopMoveRefusal) -> ItemMoveOutcome {
         LoopMoveRefusal::Overweight
         | LoopMoveRefusal::WeightUnknown
         | LoopMoveRefusal::Rejected => ItemMoveOutcome::Rejected,
+    }
+}
+
+/// PARITY-REFUSAL-DETAIL-1: the cause [`loop_outcome`] folds into `REJECTED` that Canary names
+/// (`RETURNVALUE_NOTENOUGHCAPACITY`); `None` leaves the outcome's own detail.
+pub(super) const fn loop_detail(refusal: LoopMoveRefusal) -> Option<RefusalDetail> {
+    match refusal {
+        LoopMoveRefusal::Overweight => Some(RefusalDetail::NotEnoughCapacity),
+        _ => None,
     }
 }
 
@@ -173,6 +183,9 @@ pub(super) async fn observe_inventory<A: FreshAdmissionAuthority>(
 pub(super) enum ItemMoveStep {
     /// The result, then the view deltas in order.
     Result(ItemMoveOutcome, Vec<ItemViewDelta>),
+    /// PARITY-REFUSAL-DETAIL-1: a refusal without deltas whose cause its outcome folds; the
+    /// detail reaches only a session that selected capability 66.
+    Refused(ItemMoveOutcome, RefusalDetail),
     /// The outcome is unknown or a committed view cannot be shown: end the connection without
     /// sequencing the CommandId.
     Disconnect,
@@ -216,6 +229,26 @@ pub(super) fn outcome_of(
             | ItemTransferError::ConflictingCandidate
             | ItemTransferError::Unavailable(_) => ItemMoveOutcome::Rejected,
         },
+    }
+}
+
+/// PARITY-REFUSAL-DETAIL-1: the cause [`outcome_of`] folds into `REJECTED` that Canary names.
+pub(super) const fn detail_of(
+    result: &Result<ItemTransferOutcome, GroundPickupError>,
+) -> Option<RefusalDetail> {
+    match result {
+        Err(GroundPickupError::Transfer(ItemTransferError::Refused(
+            ItemTransferRefusal::Overweight,
+        ))) => Some(RefusalDetail::NotEnoughCapacity),
+        _ => None,
+    }
+}
+
+/// The step of a refusal without deltas: [`ItemMoveStep::Refused`] when it has a detail.
+fn refused(outcome: ItemMoveOutcome, detail: Option<RefusalDetail>) -> ItemMoveStep {
+    match detail {
+        Some(detail) => ItemMoveStep::Refused(outcome, detail),
+        None => ItemMoveStep::Result(outcome, Vec::new()),
     }
 }
 
@@ -375,9 +408,10 @@ async fn loop_move<A: FreshAdmissionAuthority>(
         LoopMoveResult::Committed => moved(authority, actor, command, view).await,
         LoopMoveResult::TooFar => ItemMoveStep::Result(ItemMoveOutcome::TooFar, Vec::new()),
         LoopMoveResult::Unknown => ItemMoveStep::Disconnect,
-        LoopMoveResult::Refused(refusal) => {
-            ItemMoveStep::Result(admitted(loop_outcome(refusal), selection), Vec::new())
-        }
+        LoopMoveResult::Refused(refusal) => refused(
+            admitted(loop_outcome(refusal), selection),
+            loop_detail(refusal),
+        ),
     }
 }
 
@@ -420,7 +454,7 @@ async fn take_from_corpse<A: FreshAdmissionAuthority>(
     }
     match outcome_of(&result) {
         ItemMoveOutcome::Moved => moved(authority, actor, command, view).await,
-        outcome => ItemMoveStep::Result(outcome, Vec::new()),
+        outcome => refused(outcome, detail_of(&result)),
     }
 }
 

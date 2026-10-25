@@ -49,6 +49,7 @@ pub mod party;
 pub mod player_trade;
 pub mod presentation;
 pub mod quest_log;
+pub mod refusal_detail;
 mod registered_capabilities;
 pub mod spectate;
 pub mod spell_presentation_candidate;
