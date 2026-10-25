@@ -16,6 +16,23 @@ pub enum DotElement {
     Cursed,
 }
 
+impl DotElement {
+    /// Whether damage ticks are permitted in a protection zone: Canary
+    /// `player.cpp:12897`, `Player::hasPermittedConditionInPZ` at
+    /// `47dfd51f45280a59a1d3e50ba7edd573d7234446` (NIGHT-W1 #1).
+    pub const fn ticks_in_protection_zone(self) -> bool {
+        match self {
+            Self::Poison
+            | Self::Fire
+            | Self::Energy
+            | Self::Bleeding
+            | Self::Dazzled
+            | Self::Cursed => true,
+            Self::Drown | Self::Freezing => false,
+        }
+    }
+}
+
 /// §3.5: the gate families `muted`, `pacified` and `powerless`, one conflict key each. The
 /// declaration order is the refusal order when several gates refuse the same action.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
