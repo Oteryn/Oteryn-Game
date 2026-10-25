@@ -1137,6 +1137,23 @@ impl ChannelRuntimeV1 {
         }
         Ok(owned.len())
     }
+    /// SUMMON-OWNER-END-1 (CREATURE-AI-0 §8.4): the owner's death removes its summons with no
+    /// death. Familiars stay for their own fenced lifecycle end (FAMILIARS0 §7).
+    pub fn remove_owned_summons_except_familiars(
+        &mut self,
+        owner: ExactActorRef,
+        session: GameSessionId,
+    ) -> Result<usize, CarrierError> {
+        let mut owned = self.owned_companions(owner, session)?;
+        owned.retain(|creature| !creature.state.policy.is_familiar);
+        for creature in &owned {
+            self.assert_actor_spell_unreserved(creature.actor)?;
+        }
+        for creature in &owned {
+            self.despawn_companion(owner, session, creature)?;
+        }
+        Ok(owned.len())
+    }
     pub fn follow_companion(
         &mut self,
         owner: ExactActorRef,
@@ -2096,6 +2113,63 @@ mod tests {
         assert_eq!(runtime.remove_owned_companions(owner, session).unwrap(), 1);
         assert!(!runtime.contains_live_creature(creature));
         assert_eq!(runtime.owned_companions(owner, session).unwrap().len(), 0);
+    }
+    #[test]
+    fn terminal_owner_removal_takes_its_summons_and_a_wrong_session_takes_none() {
+        let (mut runtime, owner, session) = owner();
+        let summon = |runtime: &mut ChannelRuntimeV1, x| {
+            runtime
+                .create_companion(
+                    owner,
+                    session,
+                    "rat",
+                    MovementLocalPosition { x, y: 0, floor: 0 },
+                    None,
+                    None,
+                    0,
+                )
+                .unwrap()
+        };
+        let first = summon(&mut runtime, 1);
+        let second = summon(&mut runtime, 2);
+        let other = oteryn_gameplay_foundation::foundation::GameSessionId::decode(&id(9)).unwrap();
+        assert_eq!(
+            runtime.remove_terminal_session(other, owner),
+            Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlayerReservationMismatch)
+        );
+        assert!(runtime.contains_live_creature(first) && runtime.contains_live_creature(second));
+        runtime.remove_terminal_session(session, owner).unwrap();
+        assert!(!runtime.contains_live_creature(first));
+        assert!(!runtime.contains_live_creature(second));
+        assert!(runtime.player_control_facts(owner, session).is_err());
+    }
+    #[test]
+    fn owner_death_removes_summons_but_leaves_the_familiar_to_its_lifecycle() {
+        let mut familiar = policy("fam");
+        familiar.is_familiar = true;
+        let (mut runtime, owner, session) = owner_with_policies(vec![policy("rat"), familiar]);
+        let at = |x| MovementLocalPosition { x, y: 0, floor: 0 };
+        let rat = runtime
+            .create_companion(owner, session, "rat", at(1), None, None, 0)
+            .unwrap();
+        let fam = runtime
+            .create_companion(owner, session, "fam", at(2), None, None, 1)
+            .unwrap();
+        assert_eq!(
+            runtime
+                .remove_owned_summons_except_familiars(owner, session)
+                .unwrap(),
+            1
+        );
+        assert!(!runtime.contains_live_creature(rat));
+        assert!(runtime.contains_live_creature(fam));
+        assert_eq!(
+            runtime
+                .remove_owned_summons_except_familiars(owner, session)
+                .unwrap(),
+            0
+        );
+        assert!(runtime.player_control_facts(owner, session).is_ok());
     }
     #[test]
     fn applied_creature_damage_dispels_actual_invisibility_but_historical_replay_keeps_new_condition()

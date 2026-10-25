@@ -51,6 +51,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
+            // SUMMON-OWNER-END-1 (CREATURE-AI-0 §8.4): its other summons are removed with no
+            // death; a refused removal keeps the actor dead for the next tick, as above.
+            if self
+                .runtime
+                .lock()
+                .await
+                .remove_owned_summons_except_familiars(actor, game_session_id)
+                .is_err()
+            {
+                return None;
+            }
             return self
                 .respawn_after_death(actor, game_session_id, death)
                 .await;
