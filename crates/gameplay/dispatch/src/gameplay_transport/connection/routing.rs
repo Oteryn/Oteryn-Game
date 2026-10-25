@@ -37,7 +37,7 @@ pub(super) enum Dispatch {
     /// ATTACK-1b: commands 11 and 12; the domain 10 delta follows the result.
     Attack(AttackIntentDisposition),
     /// CHAT-WIRE-1: command 13; lines reach the hearers' domain 12 on their own ticks.
-    Chat(ChatIntentResult),
+    Chat(ChatIntentResult, Option<SpellCastOutcome>),
     /// NPC-CMD-1a: commands 7 and 8; the domain 7 payload follows the result.
     Npc(NpcIntentDisposition, NpcUpdate, bool),
     /// NPC-TRADE-2: the result, the domain 9 deltas of a committed trade, then the domain

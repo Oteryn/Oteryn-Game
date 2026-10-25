@@ -10,7 +10,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     actor: ExactActorRef,
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
-) -> Dispatch {
+) -> Option<Dispatch> {
     // CHAT-WIRE-1: spam control is the speaker's limiter inside the authority; a
     // malformed intent is REJECTED with an empty payload like any unregistered command.
     match transport::guild_chat::wire::dispatch(
@@ -22,7 +22,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     )
     .await
     {
-        Some(result) => Dispatch::Chat(result),
-        None => Dispatch::Unregistered,
+        Ok(Some((result, spell))) => Some(Dispatch::Chat(result, spell)),
+        Ok(None) => None,
+        Err(()) => Some(Dispatch::Unregistered),
     }
 }

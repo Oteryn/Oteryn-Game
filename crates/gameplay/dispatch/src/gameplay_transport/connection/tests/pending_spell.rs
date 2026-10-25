@@ -45,6 +45,88 @@ impl FreshAdmissionAuthority for PendingSpellAuthority {
     ) -> Option<SpellCastOutcome> {
         None
     }
+
+    async fn chat_intent_completion(
+        &self,
+        _: ExactActorRef,
+        _: GameSessionId,
+        _: u64,
+        _: oteryn_protocol_oteryn::chat::ChatIntent,
+    ) -> Option<(ChatIntentResult, Option<SpellCastOutcome>)> {
+        None
+    }
+}
+
+#[test]
+fn unknown_spoken_spell_commit_keeps_command_and_requires_chat_capability()
+-> Result<(), Box<dyn Error>> {
+    run(async {
+        for selected in [false, true] {
+            let (_, actor, session) = super::super::actor_spell::tests::runtime_with_player(0x74);
+            let mut continuity = SessionContinuity::FRESH;
+            if selected {
+                continuity.selected_capabilities = SelectedCapabilities::select(
+                    super::super::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
+                    &[7],
+                )
+                .ok_or("chat selection")?;
+            }
+            let admitted = AdmittedSession {
+                game_session_id: session,
+                world_id: WorldId::decode(&uuid_v7(0x60))?,
+                channel_id: ChannelId::decode(&uuid_v7(0x61))?,
+                runtime_actor: Some(actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity,
+                item_fence: None,
+            };
+            let payload = oteryn_protocol_oteryn::chat::encode_chat_intent(
+                &oteryn_protocol_oteryn::chat::ChatIntent::Say {
+                    mode: oteryn_protocol_oteryn::chat::ChatSpeechMode::Say,
+                    text: "exiva Bob".into(),
+                },
+            )
+            .map_err(|error| format!("{error:?}"))?;
+            let command = oteryn_protocol_oteryn::encode_client_command(
+                1,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id: 1,
+                    command_type: 13,
+                    payload: &payload,
+                },
+            )?;
+            let (mut server, mut client) = tokio::io::duplex(1 << 16);
+            write_frame(&mut client, &command).await?;
+            client.shutdown().await?;
+            let end =
+                serve_admitted(&mut server, admitted, &PendingSpellAuthority, IDLE_LIVENESS).await;
+            let ConnectionEnd::AdmittedThenDisconnected(retained) = end else {
+                return Err("unexpected end".into());
+            };
+            assert_eq!(
+                retained.continuity.next_command_id,
+                if selected { 1 } else { 2 }
+            );
+            drop(server);
+            let mut bytes = Vec::new();
+            client.read_to_end(&mut bytes).await?;
+            let mut remaining = bytes.as_slice();
+            let mut results = 0;
+            while !remaining.is_empty() {
+                let prefix: [u8; 4] = remaining.get(..4).ok_or("prefix")?.try_into()?;
+                let length = usize::try_from(u32::from_be_bytes(prefix))?;
+                let wire = remaining.get(4..4 + length).ok_or("frame")?;
+                let envelope = oteryn_protocol_oteryn::decode_wire_envelope(wire)?;
+                if envelope.message_type() == MessageType::CommandResult {
+                    results += 1;
+                }
+                remaining = remaining.get(4 + length..).ok_or("tail")?;
+            }
+            assert_eq!(results, usize::from(!selected));
+        }
+        Ok(())
+    })
 }
 
 #[test]

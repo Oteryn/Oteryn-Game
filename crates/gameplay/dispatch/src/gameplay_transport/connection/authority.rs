@@ -565,6 +565,23 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    /// A spoken cast retains the command on an unknown COMMIT, just like command 3.
+    /// Its vitals travel with the chat receipt; private feedback uses negotiated domain 12.
+    fn chat_intent_completion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: ChatIntent,
+    ) -> impl Future<Output = Option<(ChatIntentResult, Option<SpellCastOutcome>)>> {
+        async move {
+            Some((
+                self.chat_intent(actor, session, command_id, intent).await,
+                None,
+            ))
+        }
+    }
+
     /// CHAT-2B: the open rooms of the session when an intent changed them since its client was
     /// last shown them (a domain 12 delta type 2); `None` when unchanged.
     fn chat_rooms_changed(
