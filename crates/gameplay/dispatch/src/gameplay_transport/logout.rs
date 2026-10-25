@@ -26,6 +26,25 @@ pub(super) fn in_fight_retry_after_ms(until_micros: u64, now_micros: u64) -> u32
         .unwrap_or(u32::MAX)
         .clamp(1, MAX_LOGOUT_RETRY_AFTER_MS)
 }
+/// The `retry_after_ms` of a logout refused for a fight, or `None`. A live PvP block always
+/// refuses. The PvE in-fight deadline refuses unless the actor's cell is a qualified protection
+/// zone, as Canary's `ProtocolGame::logout` (`protocolgame.cpp:1159`) checks
+/// `CONDITION_INFIGHT` only outside `TILESTATE_PROTECTIONZONE`. An unknown cell keeps the
+/// refusal.
+pub(super) fn in_fight_logout_retry(
+    pvp_blocked: bool,
+    pve_in_fight_until_micros: Option<u64>,
+    now_micros: u64,
+    in_protection_zone: Option<bool>,
+) -> Option<u32> {
+    if pvp_blocked {
+        return Some(1000);
+    }
+    if in_protection_zone == Some(true) {
+        return None;
+    }
+    pve_in_fight_until_micros.map(|until| in_fight_retry_after_ms(until, now_micros))
+}
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// §1.6: one `LOGOUT_INTENT` of the admitted session. A pending durable spell commit is
     /// `BUSY`, a running in-fight deadline is `IN_FIGHT`; otherwise the session ends at once in a
@@ -58,18 +77,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.release_logout(admitted, actor, controller).await
     }
     /// The `retry_after_ms` of a running in-fight deadline (ATTACK-0 §4), or `None`. A dead
-    /// actor is not held, as at a closed client's release (`held_step`).
+    /// actor is not held, as at a closed client's release (`held_step`). The PvE deadline
+    /// does not hold an actor standing in a protection zone (`in_fight_logout_retry`).
     async fn logout_in_fight(&self, actor: ExactActorRef, session: GameSessionId) -> Option<u32> {
+        let in_protection_zone = super::actor_spell::qualified_protection_zone(
+            &mut *self.runtime.lock().await,
+            self.movement_cells,
+            actor,
+        );
         let fact = self.combat_lock_fact(actor, session).await;
-        match fact.pvp {
-            super::combat_lock_fact::PvpLockSource::NotWiredInRuntime => {}
-            super::combat_lock_fact::PvpLockSource::LiveBlocked => return Some(1000),
-        }
-        let until = fact.pve_in_fight_until?;
-        Some(in_fight_retry_after_ms(
-            until.get(),
+        in_fight_logout_retry(
+            fact.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked,
+            fact.pve_in_fight_until.map(|until| until.get()),
             fact.sampled_at().get(),
-        ))
+            in_protection_zone,
+        )
     }
     /// One attempt of the release on the `Abandoned` path, with no retry: the client retries a
     /// `BUSY`. A failure before the commit reads the durable row and settles the fence
