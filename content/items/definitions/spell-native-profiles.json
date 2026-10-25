@@ -7446,6 +7446,1126 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "oteryn:item.tibia.i2012",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2012",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2012",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2012",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2013",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2013",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2013",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2013",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2014",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2014",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2014",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2014",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2015",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2015",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2015",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2015",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2016",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2016",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2016",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2016",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2017",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2017",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2017",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2017",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2021",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "street sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2021",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2021",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2021",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2022",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "street sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2022",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2022",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2022",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2023",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2023",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2023",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2023",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2024",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2024",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2024",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2024",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/2118",
           "revision": "spell-p2-r21"
         }
@@ -13074,6 +14194,460 @@
         "family": "Item",
         "production_key": "oteryn:item.tibia.i2541",
         "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2597",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "blackboard"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2597",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2597",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2597",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2598",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "blackboard"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "writeable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "KNOWN",
+              "value": 1023
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2598",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2598",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2598",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2602",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "blackboard"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2602",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2602",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2602",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2605",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "blackboard"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "writeable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "KNOWN",
+              "value": 1023
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i2605",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "2605",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i2605",
+          "revision": "definition-r1"
+        }
       },
       "production_binding_qualification": null
     },
@@ -33609,6 +35183,146 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "oteryn:item.tibia.i6121",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "note pinned on the wall"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i6121",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "6121",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i6121",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i6122",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "note pinned on the wall"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i6122",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "6122",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i6122",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/6192",
           "revision": "spell-p2-r21"
         }
@@ -53765,6 +55479,76 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "oteryn:item.tibia.i10322",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "statue"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i10322",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "10322",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i10322",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/11141",
           "revision": "spell-p2-r21"
         }
@@ -55178,6 +56962,230 @@
         "family": "Item",
         "production_key": "oteryn:item.tibia.i12036",
         "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12782",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "warning sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i12782",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "12782",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12782",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12783",
+          "revision": "definition-r1"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "UNKNOWN"
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "UNKNOWN"
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "warning sign"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "KNOWN",
+          "value": {
+            "readable": {
+              "state": "UNKNOWN"
+            },
+            "writeable": {
+              "state": "UNKNOWN"
+            },
+            "distance_read": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "max_text_length": {
+              "state": "UNKNOWN"
+            },
+            "write_once_target": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "UNKNOWN"
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {},
+      "admission": {
+        "materializable": false,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i12783",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "12783",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i12783",
+          "revision": "definition-r1"
+        }
       },
       "production_binding_qualification": null
     },

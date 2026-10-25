@@ -15,6 +15,37 @@ pub fn item_text(
     count: NonZeroU32,
     look_distance: i32,
 ) -> Option<String> {
+    item_text_inner(semantics, count, look_distance, None)
+}
+
+/// Base-placement Look only. Borrow and bound untrusted text before copying it.
+/// Carried/handle examination continues to use `item_text` without instance text.
+pub fn item_text_with_reading(
+    semantics: &ReferenceItemSemantics,
+    count: NonZeroU32,
+    look_distance: i32,
+    item_id: Option<u16>,
+    instance_text: &str,
+    max_text_bytes: usize,
+) -> Option<String> {
+    let mut end = instance_text.len().min(max_text_bytes);
+    while !instance_text.is_char_boundary(end) {
+        end -= 1;
+    }
+    item_text_inner(
+        semantics,
+        count,
+        look_distance,
+        Some((item_id, &instance_text[..end])),
+    )
+}
+
+fn item_text_inner(
+    semantics: &ReferenceItemSemantics,
+    count: NonZeroU32,
+    look_distance: i32,
+    reading: Option<(Option<u16>, &str)>,
+) -> Option<String> {
     use ReferenceItemField::Known;
     let Known(presentation) = &semantics.presentation else {
         return None;
@@ -75,6 +106,25 @@ pub fn item_text(
         text.push_str(&format!(" ({})", attributes.join(", ")));
     }
     text.push('.');
+    let distance_read =
+        matches!(&semantics.readable_writeable, Known(facts) if facts.distance_read == Known(true));
+    let raw_text = reading.filter(|(id, _)| distance_read && matches!(id, Some(7369..=7371)));
+    if let Some((_, instance)) = reading.filter(|_| distance_read && raw_text.is_none()) {
+        text.push('\n');
+        if look_distance <= 4 {
+            if instance.is_empty() {
+                text.push_str("Nothing is written on it.");
+            } else {
+                text.push_str("You read: ");
+                text.push_str(instance);
+            }
+        } else {
+            text.push_str("You are too far away to read it");
+            if instance.is_empty() {
+                text.push('.');
+            }
+        }
+    }
     // These are definition facts, not remaining instance charges/duration or occupied slots.
     // Content lacks Canary's showCharges/showDuration flags and the observation has no
     // timed-instance snapshot, so do not claim an unused charge or an empty imbuement.
@@ -138,6 +188,10 @@ pub fn item_text(
             text.push('\n');
             text.push_str(description);
         }
+    }
+    if let Some((_, instance)) = raw_text.filter(|(_, instance)| !instance.is_empty()) {
+        text.push('\n');
+        text.push_str(instance);
     }
     Some(text)
 }
@@ -361,5 +415,114 @@ mod tests {
                 expected
             );
         }
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod reading_tests {
+    use super::*;
+    use oteryn_gameplay_content::content::{
+        ReferenceItemField as F, ReferenceItemPresentation, ReferenceItemReadableWriteable,
+    };
+
+    fn sign() -> ReferenceItemSemantics {
+        ReferenceItemSemantics {
+            presentation: F::Known(ReferenceItemPresentation {
+                name: F::Known("sign".into()),
+                description: F::Unknown,
+            }),
+            readable_writeable: F::Known(ReferenceItemReadableWriteable {
+                readable: F::Unknown,
+                writeable: F::Unknown,
+                distance_read: F::Known(true),
+                max_text_length: F::Unknown,
+                write_once_target: F::Unknown,
+            }),
+            ..Default::default()
+        }
+    }
+    fn read(facts: &ReferenceItemSemantics, distance: i32, text: &str) -> String {
+        item_text_with_reading(facts, NonZeroU32::MIN, distance, Some(2012), text, 512).unwrap()
+    }
+    #[test]
+    fn reading_near_zero_through_four_including_exactly_four() {
+        for distance in 0..=4 {
+            assert_eq!(
+                read(&sign(), distance, "Go north!\nWelcome"),
+                "You see sign.\nYou read: Go north!\nWelcome"
+            );
+        }
+    }
+    #[test]
+    fn reading_five_and_other_floor_are_too_far() {
+        for distance in [5, 15, 19] {
+            assert_eq!(
+                read(&sign(), distance, "North"),
+                "You see sign.\nYou are too far away to read it"
+            );
+            assert_eq!(
+                read(&sign(), distance, ""),
+                "You see sign.\nYou are too far away to read it."
+            );
+        }
+    }
+    #[test]
+    fn reading_empty_text_has_canary_period() {
+        for distance in 0..=4 {
+            assert_eq!(
+                read(&sign(), distance, ""),
+                "You see sign.\nNothing is written on it."
+            );
+        }
+    }
+    #[test]
+    fn reading_non_distance_and_carried_items_keep_existing_description() {
+        let mut facts = sign();
+        // The handle path has no placement text, even at carried distance -1.
+        assert_eq!(
+            item_text(&facts, NonZeroU32::MIN, -1).unwrap(),
+            "You see sign."
+        );
+        for gate in [F::Known(false), F::Unknown, F::Conflict, F::NotApplicable] {
+            if let F::Known(group) = &mut facts.readable_writeable {
+                group.distance_read = gate;
+            }
+            assert_eq!(read(&facts, 0, "private text"), "You see sign.");
+        }
+    }
+    #[test]
+    fn reading_goblet_exception_is_raw_and_not_distance_gated() {
+        for id in 7369..=7371 {
+            for distance in [0, 4, 5, 19] {
+                assert_eq!(
+                    item_text_with_reading(
+                        &sign(),
+                        NonZeroU32::MIN,
+                        distance,
+                        Some(id),
+                        "Winner!",
+                        512
+                    )
+                    .unwrap(),
+                    "You see sign.\nWinner!"
+                );
+                assert_eq!(
+                    item_text_with_reading(&sign(), NonZeroU32::MIN, distance, Some(id), "", 512)
+                        .unwrap(),
+                    "You see sign."
+                );
+            }
+        }
+    }
+    #[test]
+    fn reading_instance_is_bounded_before_copying_on_utf8_boundary() {
+        let oversized = "界".repeat(10000);
+        let output = read(&sign(), 0, &oversized);
+        assert_eq!(
+            output,
+            format!("You see sign.\nYou read: {}", "界".repeat(170))
+        );
+        assert!(output.is_char_boundary(output.len()));
     }
 }

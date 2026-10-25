@@ -128,6 +128,9 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn base_text(&self, key: u64) -> Option<&str> {
+        self.inner.base_text(key)
+    }
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
         self.inner.base_entry(pos, ordinal, id)
     }

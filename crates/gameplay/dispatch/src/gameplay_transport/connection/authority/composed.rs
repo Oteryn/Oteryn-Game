@@ -670,6 +670,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.read_committed_item_move(_actor, command).await
     }
 
+    /// READ-WRITE-1a: read a visible base placement without materializing it.
+    async fn look_world_object(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> ItemLookResult {
+        item_look::look_world_object(self, actor, game_session_id, target).await
+    }
+
     /// LOOK-2: examine a freshly observed item admitted by the session's handle table.
     async fn look_item(
         &self,

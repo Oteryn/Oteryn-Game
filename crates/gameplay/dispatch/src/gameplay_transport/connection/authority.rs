@@ -494,6 +494,15 @@ pub trait FreshAdmissionAuthority {
         async { ItemLookResult::Refused(ItemLookRefusal::NotAvailable) }
     }
 
+    fn look_world_object(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = ItemLookResult> {
+        async { ItemLookResult::Refused(ItemLookRefusal::NotAvailable) }
+    }
+
     fn look_creature(
         &self,
         _actor: ExactActorRef,

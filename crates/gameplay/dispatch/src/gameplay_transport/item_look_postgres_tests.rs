@@ -56,6 +56,7 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
     let mut backpack = None;
     let mut map_item = None;
     let mut near_item = None;
+    let (mut near_sign, mut far_sign) = (None, None);
     loop {
         let frame = read_frame(client).await?;
         let envelope = decode_wire_envelope(&frame).map_err(debug)?;
@@ -69,6 +70,35 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
                     let map = decode_world_map_snapshot(domain.payload).map_err(debug)?;
                     for tile in &map.tiles {
                         for item in &tile.items {
+                            if item.appearance_id == 2012 {
+                                let MapOrigin::BaseOrdinal {
+                                    ordinal,
+                                    object_revision,
+                                } = item.origin
+                                else {
+                                    return Err("sign must have no handle".into());
+                                };
+                                let pos = TilePos {
+                                    x: u16::try_from(tile.position.x)?,
+                                    y: u16::try_from(tile.position.y)?,
+                                    floor: i8::try_from(tile.position.floor)?,
+                                };
+                                let key = crate::map::view::placement_key(pos, ordinal)
+                                    .ok_or("placement key")?;
+                                let mut placement = map.header.bundle_digest.to_vec();
+                                placement.extend_from_slice(&key.to_be_bytes());
+                                let target =
+                                    oteryn_protocol_oteryn::world_object::WorldObjectTarget {
+                                        placement,
+                                        expected_revision: object_revision,
+                                    };
+                                if pos.x == 6 {
+                                    near_sign = Some(target);
+                                } else if pos.x == 7 {
+                                    far_sign = Some(target);
+                                }
+                            }
+
                             if let MapOrigin::Handle(handle) = item.origin {
                                 if tile.position.x == 7 {
                                     map_item = Some(handle);
@@ -89,6 +119,12 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
     let backpack = backpack.ok_or("domain 9 carries the main backpack handle")?;
     let map_item = map_item.ok_or("domain 17 carries a far map item handle")?;
     let near_item = near_item.ok_or("domain 17 carries an adjacent map item handle")?;
+    let near_sign = near_sign.ok_or("snapshot shows a real sign at distance 4")?;
+    let far_sign = far_sign.ok_or("snapshot shows a real sign at distance 5")?;
+    let mut forged = near_sign.clone();
+    forged.placement[0] ^= 1;
+    let mut stale = near_sign.clone();
+    stale.expected_revision += 1;
     for (offset, target) in [
         ItemLookTarget::Creature(own),
         ItemLookTarget::Item(backpack),
@@ -99,6 +135,10 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
         ItemLookTarget::Item(map_item),
         ItemLookTarget::Item(near_item),
         ItemLookTarget::Creature(rat),
+        ItemLookTarget::WorldObject(near_sign),
+        ItemLookTarget::WorldObject(far_sign),
+        ItemLookTarget::WorldObject(forged),
+        ItemLookTarget::WorldObject(stale),
     ]
     .into_iter()
     .enumerate()
@@ -152,6 +192,18 @@ async fn client_looks(client: &mut DuplexStream, own: EntityRef, rat: EntityRef)
                     other => return Err(format!("adjacent map look failed: {other:?}").into()),
                 },
                 5 => assert_eq!(looked, ItemLookResult::Text("You see a rat.".into())),
+                6 => assert_eq!(
+                    looked,
+                    ItemLookResult::Text("You see sign.\nYou read: Welcome to Oteryn!".into())
+                ),
+                7 => assert_eq!(
+                    looked,
+                    ItemLookResult::Text("You see sign.\nYou are too far away to read it".into())
+                ),
+                8 | 9 => assert_eq!(
+                    looked,
+                    ItemLookResult::Refused(ItemLookRefusal::NotAvailable)
+                ),
                 _ => unreachable!(),
             }
             break;
@@ -262,6 +314,39 @@ fn scenario() -> TestResult {
         tiles.retain(|tile| tile.x != 3);
         tiles.push(near);
         tiles.sort_by_key(|tile| (tile.y, tile.x));
+        // READ-WRITE-1a: real sign definitions, bound original TEXT, base ordinal
+        // targets taken from the domain-17 snapshot. No synthetic handle admission.
+        let sign_ref = reference("oteryn:item.tibia.i2012")?;
+        assert!(
+            !native
+                .item_policy("oteryn:item.tibia.i2012", "definition-r1")
+                .ok_or("sign policy")?
+                .record()
+                .admission
+                .materializable
+        );
+        let sign_palette = u32::try_from(decoded.manifest.palette.len())?;
+        decoded
+            .manifest
+            .palette
+            .push(oteryn_world_bundle::bundle::PaletteEntry {
+                family: oteryn_world_bundle::bundle::Family::Item,
+                key: "oteryn:item.tibia.i2012".into(),
+                id: sign_ref.get() - 1,
+                terrain: None,
+            });
+        for tile in &mut decoded.sectors[0].tiles {
+            if tile.x == 6 || tile.x == 7 {
+                tile.items.push(oteryn_world_bundle::sector::Item {
+                    palette: sign_palette,
+                    depth: 0,
+                    attrs: oteryn_world_bundle::sector::Attrs {
+                        text: Some("Welcome to Oteryn!".into()),
+                        ..Default::default()
+                    },
+                });
+            }
+        }
         let bytes = oteryn_world_bundle_compiler::bundle::write(
             &decoded.manifest,
             &decoded.sectors,
@@ -287,14 +372,12 @@ fn scenario() -> TestResult {
             admitted.channel_id,
             |key| {
                 let profile = native.item_policy(key, "definition-r1")?.record();
-                let ReferenceItemField::Known(physical) = &profile.semantics.physical else {
-                    return None;
-                };
+                let pickupable = matches!(&profile.semantics.physical, ReferenceItemField::Known(physical) if physical.pickupable == ReferenceItemField::Known(true));
                 Some(ItemDefinition {
                     reference: reference(key).ok()?,
                     solid: profile.attributes.blocks_movement,
                     blocks_projectile: profile.attributes.blocks_projectile.unwrap_or(true),
-                    pickupable: physical.pickupable == ReferenceItemField::Known(true),
+                    pickupable,
                     door: false,
                 })
             },
