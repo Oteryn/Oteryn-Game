@@ -9,6 +9,7 @@ mod poll;
 mod refresh;
 mod setup;
 mod snapshot;
+mod target_move;
 use command::CommandOutcome;
 mod effects;
 mod outbound;
@@ -19,6 +20,8 @@ mod use_effects;
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    target_walk: Option<target_move::PendingWalk>,
+    target_move_window: crate::gameplay_transport::attack::IntentWindow,
     chase_yielded: bool,
     chase_due: Option<tokio::time::Instant>,
     held: std::collections::VecDeque<(Vec<u8>, bool)>,

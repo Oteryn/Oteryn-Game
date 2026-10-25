@@ -253,6 +253,8 @@ async fn live<A: FreshAdmissionAuthority>(
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let chase_yielded = false;
     Ok(ServeState {
+        target_walk: None,
+        target_move_window: crate::gameplay_transport::attack::IntentWindow::EMPTY,
         admitted: *admitted,
         generation,
         actor,

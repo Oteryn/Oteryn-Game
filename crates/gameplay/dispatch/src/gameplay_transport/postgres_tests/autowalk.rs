@@ -36,7 +36,7 @@ const MOVE_SELECTION: ItemMoveSelection = ItemMoveSelection {
 fn pos(x: u16, y: u16) -> TilePos {
     TilePos { x, y, floor: -7 }
 }
-fn at(x: i32, y: i32) -> MovementLocalPosition {
+pub(super) fn at(x: i32, y: i32) -> MovementLocalPosition {
     MovementLocalPosition { x, y, floor: 7 }
 }
 
@@ -164,13 +164,23 @@ fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::BundlePins)>
 fn autowalk_real_session_use_move_cancel_and_stale_on_postgres() -> TestResult {
     std::thread::Builder::new()
         .stack_size(64 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "autowalk e2e panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn target_move_real_dispatch_walk_turn_follow_and_cancel_on_postgres() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "target move e2e panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario(target_move: bool) -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "autowalk", true, false).await?;
         prepare_current_session(&h).await?;
@@ -302,6 +312,13 @@ fn scenario() -> TestResult {
                 r.pinned_movement_context()
             );
         }
+        if target_move {
+            admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, 11, 13, 15, 18, 31, 64],
+            )
+            .ok_or("target selection")?;
+        }
         let open = owner
             .item_walk_route(
                 deps.actor,
@@ -344,8 +361,11 @@ fn scenario() -> TestResult {
         );
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let client_flow = async {
-            let result =
-                client_scenario(&mut client, &owner, admitted, world.base().digest()).await;
+            let result = if target_move {
+                super::target_move::client_scenario(&mut client, &owner, admitted).await
+            } else {
+                client_scenario(&mut client, &owner, admitted, world.base().digest()).await
+            };
             client.shutdown().await?;
             result
         };
@@ -356,17 +376,59 @@ fn scenario() -> TestResult {
             matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)),
             "{end:?}"
         );
+        if target_move {
+            let ConnectionEnd::AdmittedThenDisconnected(mut resumed) = end else {
+                return Err("connection end".into());
+            };
+            resumed.continuity.selected_capabilities = SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[4, 6, 11, 13, 15, 18, 31],
+            )
+            .ok_or("without target capability")?;
+            let before = owner
+                .runtime
+                .lock()
+                .await
+                .borrow_movement_position()
+                .read(deps.actor)
+                .map_err(debug)?;
+            let (mut server, mut client) = tokio::io::duplex(1 << 20);
+            let client_flow = async {
+                let result = super::target_move::without_capability(&mut client).await;
+                client.shutdown().await?;
+                result
+            };
+            let (end, result) = join_two(
+                serve_admitted(&mut server, resumed, &owner, IDLE_LIVENESS),
+                client_flow,
+            )
+            .await;
+            result?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .borrow_movement_position()
+                    .read(deps.actor)
+                    .map_err(debug)?,
+                before
+            );
+        }
         let bag = h
             .root
             .read_character_backpack(&authority, fence.character_id)
             .await?
             .ok_or("backpack")?;
-        assert_eq!(
-            bag.entries.len(),
-            1,
-            "far move committed exactly one map pickup"
-        );
-        assert_eq!(bag.entries[0].item.definition.production_key, COIN);
+        if !target_move {
+            assert_eq!(
+                bag.entries.len(),
+                1,
+                "far move committed exactly one map pickup"
+            );
+            assert_eq!(bag.entries[0].item.definition.production_key, COIN);
+        }
         drop(owner);
         drop(authority);
         drop(seal);
@@ -509,7 +571,12 @@ fn next(
     at
 }
 
-async fn send(client: &mut DuplexStream, id: u64, kind: u32, payload: &[u8]) -> TestResult {
+pub(super) async fn send(
+    client: &mut DuplexStream,
+    id: u64,
+    kind: u32,
+    payload: &[u8],
+) -> TestResult {
     let frame = encode_client_command(
         1,
         &ClientCommandValue {
@@ -524,7 +591,7 @@ async fn send(client: &mut DuplexStream, id: u64, kind: u32, payload: &[u8]) -> 
     client.write_all(&frame).await?;
     Ok(())
 }
-async fn read(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
+pub(super) async fn read(client: &mut DuplexStream) -> TestResult<Vec<u8>> {
     let len = tokio::time::timeout(Duration::from_secs(20), client.read_u32()).await??;
     let mut frame = vec![0; usize::try_from(len)?];
     client.read_exact(&mut frame).await?;
@@ -934,7 +1001,7 @@ async fn result(client: &mut DuplexStream, id: u64) -> TestResult<(Vec<u8>, usiz
     }
 }
 
-async fn place(
+pub(super) async fn place(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     destination: MovementLocalPosition,

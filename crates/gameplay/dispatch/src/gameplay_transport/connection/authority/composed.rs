@@ -310,6 +310,50 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.tutorial_paced_step(actor, session, direction).await
     }
 
+    async fn turn_actor_valid(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        !states.is_dead(actor)
+            && !self.states.newhaven_travel.held(session)
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+    }
+
+    async fn turn_actor(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> bool {
+        use crate::foundation::MovementFacing;
+        let mut runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        if states.is_dead(actor)
+            || self.states.newhaven_travel.held(session)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return false;
+        }
+        let context = runtime.pinned_movement_context();
+        let mut movement = runtime.borrow_movement_position();
+        let Ok(expected) = movement.read(actor) else {
+            return false;
+        };
+        if expected.context() != context {
+            return false;
+        }
+        let facing = match direction {
+            StepDirection::North => MovementFacing::North,
+            StepDirection::East => MovementFacing::East,
+            StepDirection::South => MovementFacing::South,
+            StepDirection::West => MovementFacing::West,
+        };
+        movement.commit_turn(expected, facing).is_ok()
+    }
+
     async fn item_walk_route(
         &self,
         actor: ExactActorRef,
@@ -325,12 +369,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         expected: crate::foundation::MovementPositionSnapshot,
         direction: StepDirection,
+        follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (
         StepOutcome,
         Option<Duration>,
         Option<crate::foundation::MovementPositionSnapshot>,
     ) {
-        ComposedFreshAdmission::item_walk_step(self, actor, session, expected, direction).await
+        ComposedFreshAdmission::item_walk_step(self, actor, session, expected, direction, follow)
+            .await
     }
 
     async fn item_walk_valid(
