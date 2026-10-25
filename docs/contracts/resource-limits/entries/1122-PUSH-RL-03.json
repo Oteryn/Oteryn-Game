@@ -1,0 +1,22 @@
+{
+  "id": "PUSH-RL-03",
+  "owner_contract": "CREATURE_PUSH_V1.md",
+  "resource": "milliseconds between committed pushes per connection",
+  "unit": "milliseconds",
+  "hard_maximum": 1000,
+  "configurable_range": {
+    "minimum": 1000,
+    "maximum": 1000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Canary pushDelay 1000. A push inside the window answers EXHAUSTED before any owner read; only a committed push restarts it.",
+  "client_visible": true,
+  "boundary_tests": [
+    "creature_push_real_dispatch_moves_and_refuses_on_postgres"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/creature_push.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/creature_push.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/connection/serve/creature_push.rs"
+  ]
+}

@@ -288,6 +288,8 @@ async fn live<A: FreshAdmissionAuthority>(
         stash_revision: 0,
         target_walk: None,
         target_move_window: crate::gameplay_transport::attack::IntentWindow::EMPTY,
+        push_window: crate::gameplay_transport::attack::IntentWindow::EMPTY,
+        push_due: None,
         admitted: *admitted,
         generation,
         actor,
