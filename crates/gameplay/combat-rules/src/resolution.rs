@@ -447,6 +447,7 @@ mod tests {
             },
             preferred_distance: None,
             reward_boss: None,
+            blocked_by_nearby_players: false,
         }
     }
 

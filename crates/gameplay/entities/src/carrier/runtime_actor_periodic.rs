@@ -551,6 +551,7 @@ mod tests {
             condition_immunities: Vec::new(),
             preferred_distance: Some(1),
             reward_boss: Some(false),
+            blocked_by_nearby_players: false,
             defense: Some(1),
             armor: Some(10),
             mitigation: Some(CreatureExactRatio {

@@ -2345,9 +2345,9 @@ const SPAWN_ACTIVATION_WINDOW_MICROS: u64 = 50_000;
 /// SPAWN-1b (CREATURE-AI-0 §6.1, §6.2): a bundle World realizes the spawn family of its bundle
 /// at Channel activation, before the listener binds, each bundle source as one runtime source.
 /// Each creature's initial health is its served definition's maximum health; a creature the
-/// active content does not serve refuses readiness. The served policy does not carry the
-/// creature profile's `blocked_by_nearby_players` yet, so every point keeps the SPAWN-1a
-/// default (not blockable).
+/// active content does not serve refuses readiness. A point is blockable exactly when its
+/// served creature profile is `blocked_by_nearby_players` (CREATURE-AI-0 §6.3; source
+/// `spawn_monster.cpp:288`).
 ///
 /// The activation is begun once (every registered ceiling checked, nothing admitted) and then
 /// realized one `CREATUREAI0-RL-14` window (4,096 points) per 50 ms owner window, in canonical
@@ -2363,7 +2363,10 @@ pub(crate) async fn realize_bundle_spawns(
     let sources = world
         .activation_spawns(|key| {
             let policy = runtime.companion_policy(key).ok()?;
-            Some((u64::try_from(policy.maximum_health).ok()?, false))
+            Some((
+                u64::try_from(policy.maximum_health).ok()?,
+                policy.blocked_by_nearby_players,
+            ))
         })
         .ok_or_else(refuse)?;
     realize_activation_paced(runtime, sources, signalled).await

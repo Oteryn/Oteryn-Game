@@ -403,6 +403,7 @@ mod tests {
             healing_from_damage: vec![],
             preferred_distance: Some(1),
             reward_boss: Some(false),
+            blocked_by_nearby_players: false,
             flags: CreatureFlags {
                 attackable: true,
                 illusionable: false,

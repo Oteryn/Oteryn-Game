@@ -866,6 +866,7 @@ fn source_metadata_touches_reserve_real_slots_without_synthesized_combat_effects
         healing_from_damage: vec![],
         preferred_distance: Some(1),
         reward_boss: Some(false),
+        blocked_by_nearby_players: false,
         flags: CreatureFlags {
             attackable: true,
             illusionable: true,
@@ -1041,6 +1042,7 @@ fn master_assignment_fixture() -> Fixture {
         damage_immunities: vec![],
         healing_from_damage: vec![],
         preferred_distance: Some(1),
+        blocked_by_nearby_players: false,
         reward_boss: Some(false),
         flags: CreatureFlags {
             attackable: true,

@@ -71,6 +71,7 @@ fn target_fixture(
         },
         preferred_distance: Some(1),
         reward_boss: Some(false),
+        blocked_by_nearby_players: false,
     };
     runtime
         .install_companion_policies(

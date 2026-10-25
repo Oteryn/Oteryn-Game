@@ -505,6 +505,7 @@ fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
                     condition_immunities: Vec::new(),
                     preferred_distance: Some(1),
                     reward_boss: Some(false),
+                    blocked_by_nearby_players: false,
                     defense: Some(1),
                     armor: Some(10),
                     mitigation: None,

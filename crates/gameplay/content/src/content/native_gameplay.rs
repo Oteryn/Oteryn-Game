@@ -1507,6 +1507,7 @@ fn creature_policies(
         records.push(CompiledCreaturePolicy {
             preferred_distance,
             reward_boss: Some(details.system_eligibility.reward_boss),
+            blocked_by_nearby_players: details.spawn_eligibility.blocked_by_nearby_players,
             defense: Some(details.defense),
             armor: value.armor,
             mitigation: value.mitigation.map(|v| {
@@ -1881,6 +1882,49 @@ mod tests {
             hex(compiled.server_digest()),
             hex(compiled.client_digest()),
             source.sha256
+        );
+    }
+    /// SPAWN-BLOCK-1 (CREATURE-AI-0 §6.3): each served policy carries its own profile's
+    /// `blocked_by_nearby_players`. The source rat is not blockable (`rat.lua` `isBlockable`);
+    /// the same rat profile declared blockable serves a blockable policy.
+    #[test]
+    fn actual_profile_policies_carry_the_profile_spawn_blocking() {
+        let input = input();
+        let mut creatures: CreatureProfilesDocument =
+            serde_json::from_slice(&input.creature_profiles.bytes).unwrap();
+        let presentations: PresentationProfilesDocument =
+            serde_json::from_slice(&input.presentation_profiles.bytes).unwrap();
+        let rat = |policies: &[CompiledCreaturePolicy]| {
+            policies
+                .iter()
+                .find(|p| p.display_name == "Rat")
+                .unwrap()
+                .blocked_by_nearby_players
+        };
+        let policies = creature_policies(&creatures, &presentations).unwrap();
+        assert!(!rat(&policies));
+        let mut declared = 0;
+        for record in &mut creatures.records {
+            let ProjectV2AuthoringProfileData::Creature(value) = &mut record.profile.data else {
+                continue;
+            };
+            let Some(details) = value.details.as_mut() else {
+                continue;
+            };
+            if details.display_name == "Rat" {
+                details.spawn_eligibility.blocked_by_nearby_players = true;
+                declared += 1;
+            }
+        }
+        assert_eq!(declared, 1);
+        let blocked = creature_policies(&creatures, &presentations).unwrap();
+        assert!(rat(&blocked));
+        assert_eq!(
+            blocked
+                .iter()
+                .filter(|p| p.blocked_by_nearby_players)
+                .count(),
+            1
         );
     }
     #[test]
