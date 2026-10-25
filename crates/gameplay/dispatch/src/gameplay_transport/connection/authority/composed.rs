@@ -86,6 +86,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn chat_private_channels(&self, session: GameSessionId, selected: bool) {
+        self.states.chat.set_private_channels(session, selected);
+    }
+
+    async fn chat_channel_list(
+        &self,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList> {
+        self.states.chat.take_channel_list(session)
+    }
+
     async fn chat_guild_admit(
         &self,
         admitted: AdmittedSession,

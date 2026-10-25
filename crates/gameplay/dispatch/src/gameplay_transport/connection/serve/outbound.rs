@@ -272,6 +272,7 @@ where
                     return Err(ServeEnd::Disconnected);
                 }
             }
+            refresh::channel_list(stream, authority, session).await?;
         }
         // NPC-CMD-1a: the whole domain 7 payload, then the domain 8 window (NPC-CMD-1b-read),
         // follow the result, to the speaker alone.

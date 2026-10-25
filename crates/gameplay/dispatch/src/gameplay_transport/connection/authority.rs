@@ -677,6 +677,25 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// CHAT-PM-CHANNELS-1: negotiation of `session`; `selected` is capability 80.
+    fn chat_private_channels(
+        &self,
+        _session: GameSessionId,
+        _selected: bool,
+    ) -> impl Future<Output = ()> {
+        std::future::ready(())
+    }
+
+    /// CHAT-PM-CHANNELS-1: the channel list when it changed since the client was last sent one
+    /// (a domain 12 delta type 3); `None` when unchanged.
+    fn chat_channel_list(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList>>
+    {
+        std::future::ready(None)
+    }
+
     fn chat_guild_admit(
         &self,
         _admitted: AdmittedSession,

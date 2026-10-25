@@ -1,0 +1,13 @@
+{
+  "id": 80,
+  "name": "CHAT_PRIVATE_CHANNEL_V1",
+  "owner_decision": "CHAT-PM-CHANNELS-1 coordinator lane NIGHT-W1 2026-10-25 (parity audit gap 14): extend chat_v1 with Channel-local private channels",
+  "owner": "World communication (current ChannelRuntime chat state; nothing durable)",
+  "requires": [
+    7
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Extends CHAT_V1 command 13 with intent tags 7..=13 and disposition 11 NOT_INVITED (common status ACCEPTED), domain 12 delta type 3 and line kind 6 with field 11. Without selection all old CHAT_V1 bytes and behavior remain unchanged. Guild, party and free/premium channel admission stay out of scope."
+}

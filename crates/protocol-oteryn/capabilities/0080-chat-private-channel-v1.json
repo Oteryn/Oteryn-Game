@@ -1,0 +1,17 @@
+{
+  "id": 80,
+  "name": "CHAT_PRIVATE_CHANNEL_V1",
+  "constant": "chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1",
+  "requires": [
+    7
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}
