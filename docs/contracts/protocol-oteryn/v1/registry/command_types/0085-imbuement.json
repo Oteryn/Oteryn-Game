@@ -1,0 +1,10 @@
+{
+  "id": 85,
+  "name": "IMBUEMENT",
+  "owner_decision": "PARITY-IMBUE-FORGE-WIRE-1; IMBUE-FORGE0 §14",
+  "capability": 68,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/imbuement_v1.proto#ImbuementRequestV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/imbuement_v1.proto#ImbuementReplyV1",
+  "max_payload_bytes": 32,
+  "max_result_payload_bytes": 1024
+}

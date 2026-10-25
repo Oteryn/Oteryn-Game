@@ -40,6 +40,7 @@ pub mod guild_bank;
 pub mod highscores;
 pub mod house;
 pub mod house_move_out;
+pub mod imbuement;
 pub mod item_look;
 pub mod item_view;
 pub mod logout;
