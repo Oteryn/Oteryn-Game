@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, btree_map};
 
 use crate::ability::creature_bite::{
     AppliedBite, BiteRejection, CREATURE_BITE_LEDGER_MAX, CreatureBiteDefinition,
-    CreatureBiteLedger, CreatureBiteVitals, ReentryProtection, commit_ai_bite,
+    CreatureBiteLedger, CreatureBiteVitals, ReentryProtection, commit_ai_bite, meet_zero_bite,
 };
 use crate::ability::{AiAbilityAdapter, RevisionSet};
 use crate::ai_think::profile_schedule::decision_occurrence;
@@ -165,6 +165,21 @@ impl MonsterMeleeOwner {
                 let magnitude = definition.minimum
                     + u32::try_from(draw % width).map_err(|_| BiteRejection::InvalidPlan)?;
                 if magnitude == 0 {
+                    // ZERO-BITE-BLOCK-1: a 0 bite still meets the player's block.
+                    meet_zero_bite(
+                        runtime,
+                        vitals,
+                        AiAbilityAdapter::bite(
+                            issuer,
+                            sequence,
+                            target,
+                            session,
+                            armor_draw,
+                            defence_draw,
+                        ),
+                        protection,
+                        now,
+                    );
                     Dispatch::ZeroDamage
                 } else {
                     let bite = CreatureBiteDefinition::new(definition.interval_us, magnitude)
@@ -855,6 +870,103 @@ mod tests {
                 .map(|entry| entry.actor),
             Some(newer)
         );
+        Ok(())
+    }
+    struct CountedDefence {
+        defences: u32,
+        hits: u32,
+    }
+    impl CreatureBiteVitals for CountedDefence {
+        fn apply_creature_damage(
+            &mut self,
+            _: &mut ChannelRuntimeV1,
+            _: ExactActorRef,
+            _: GameSessionId,
+            _: u32,
+            _: SemanticTimeMicros,
+        ) -> Option<CreatureHit> {
+            self.hits += 1;
+            None
+        }
+        fn target_armor(&self, _: &ChannelRuntimeV1, _: ExactActorRef, _: GameSessionId) -> u32 {
+            0
+        }
+        fn target_defence(
+            &mut self,
+            _: &ChannelRuntimeV1,
+            _: ExactActorRef,
+            _: GameSessionId,
+            _: SemanticTimeMicros,
+        ) -> Option<(u32, u32)> {
+            self.defences += 1;
+            None
+        }
+    }
+    #[test]
+    fn a_zero_bite_meets_the_players_block_once_unless_protected() -> Result<(), String> {
+        let (mut runtime, issuer, target, session) = fixture()?;
+        let def = MeleeDefinition::new(
+            runtime.content_pin().server_artifact_digest(),
+            2000,
+            1_000_000,
+            0,
+            1,
+        )
+        .ok_or("valid 0..1 melee definition was refused")?;
+        let bite = |seed, protected_until, runtime: &mut ChannelRuntimeV1| {
+            let mut owner = MonsterMeleeOwner::default();
+            let mut vitals = CountedDefence {
+                defences: 0,
+                hits: 0,
+            };
+            let resolve = |_| Some((target, session, ReentryProtection { protected_until }));
+            let mut results = Vec::new();
+            for _ in 0..2 {
+                results.push(
+                    owner
+                        .think(
+                            runtime,
+                            &mut vitals,
+                            issuer,
+                            1,
+                            def,
+                            input(seed),
+                            &perceived(),
+                            resolve,
+                            revisions()?,
+                            SemanticTimeMicros::from_micros(0),
+                        )
+                        .map_err(|error| format!("{error:?}"))?,
+                );
+            }
+            Ok::<_, String>((results, vitals.defences, vitals.hits))
+        };
+        let mut zero_seed = None;
+        for seed in 1..=32 {
+            let (results, defences, hits) = bite(seed, None, &mut runtime)?;
+            if results[0] == Dispatch::ZeroDamage {
+                assert_eq!(
+                    results[1],
+                    Dispatch::ZeroDamage,
+                    "the retry replays the swing"
+                );
+                assert_eq!(
+                    (defences, hits),
+                    (1, 0),
+                    "a 0 bite spends one block and writes no damage"
+                );
+                zero_seed = Some(seed);
+                break;
+            }
+        }
+        let seed = zero_seed.ok_or("no seed in 1..=32 drew a 0 bite")?;
+        let (results, defences, _) = bite(
+            seed,
+            Some(SemanticTimeMicros::from_micros(1000)),
+            &mut runtime,
+        )?;
+        assert_eq!(results[0], Dispatch::ZeroDamage);
+        assert_eq!(defences, 0, "a protected player's block is not met");
         Ok(())
     }
 }
