@@ -15,6 +15,7 @@ use crate::map::door::DoorUse;
 use crate::map::facts::BundleFacts;
 use crate::map::overlay::ChannelOverlay;
 use crate::map::overlay::TilePos;
+use oteryn_protocol_oteryn::refusal_detail::RefusalDetail;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 
 fn outcome(disposition: UseDisposition) -> UseOutcome {
@@ -23,6 +24,7 @@ fn outcome(disposition: UseDisposition) -> UseOutcome {
         committed: None,
         earned: EarnedNotice::NoneEarned,
         gate_message_id: None,
+        refusal_detail: None,
     }
 }
 
@@ -128,7 +130,14 @@ pub(super) fn use_door(
         return outcome(UseDisposition::NothingToUse);
     }
     if !reachable(actor, resolved.pos) {
-        return outcome(UseDisposition::TooFar);
+        // PARITY-REFUSAL-DETAIL-1: Canary `canUse` names the floor of a door on another one.
+        return UseOutcome {
+            refusal_detail: RefusalDetail::of_floors(
+                i32::from(actor.floor),
+                i32::from(resolved.pos.floor),
+            ),
+            ..outcome(UseDisposition::TooFar)
+        };
     }
     let occupied = occupied(resolved.pos);
     match doors.toggle(resolved.placement_key, target.expected_revision, occupied) {
@@ -190,6 +199,33 @@ mod tests {
         assert!(!reachable(at(4), DOOR_AT));
         assert!(!reachable(TilePos { floor: -6, ..at(5) }, DOOR_AT));
         assert!(reachable(TilePos { y: 1, ..at(7) }, DOOR_AT));
+    }
+
+    /// PARITY-REFUSAL-DETAIL-1 (Canary `actions.cpp:183`): a door on another floor is out of
+    /// reach with the floor to go to; one too far on the same floor carries no floor detail.
+    #[test]
+    fn a_door_on_another_floor_names_the_floor_to_go_to() {
+        let world = door_world().expect("world");
+        let t = target(world.base().digest(), door_key(), 0);
+        let above = TilePos {
+            floor: DOOR_AT.floor + 1,
+            ..DOOR_AT
+        };
+        let below = TilePos {
+            floor: DOOR_AT.floor - 1,
+            ..DOOR_AT
+        };
+        for (actor, detail) in [
+            (above, Some(RefusalDetail::FirstGoDownstairs)),
+            (below, Some(RefusalDetail::FirstGoUpstairs)),
+            (at(3), None),
+        ] {
+            let refused = run(&world, actor, &[], &t);
+            assert_eq!(refused.disposition, UseDisposition::TooFar, "{actor:?}");
+            assert_eq!(refused.refusal_detail, detail, "{actor:?}");
+        }
+        assert!(!world.enterable(DOOR_AT));
+        assert_eq!(run(&world, at(7), &[], &t).refusal_detail, None);
     }
 
     #[test]

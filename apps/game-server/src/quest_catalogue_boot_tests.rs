@@ -97,6 +97,24 @@ fn the_boot_catalogue_is_the_served_content_revision() -> TestResult {
     Ok(())
 }
 
+/// TASKBOARD-1: boot serves the code-built weekly Task Board quest beside the lowered quests.
+#[test]
+fn the_boot_catalogue_carries_the_task_board_quest() -> TestResult {
+    use oteryn_gameplay_quests::quest::task_board;
+    let (catalogue, _) = boot_catalogue()?;
+    assert!(catalogue.definition_hash(task_board::QUEST).is_some());
+    for number in 1..=u8::try_from(task_board::TASKS.len())? {
+        for key in [
+            task_board::select_transition(number),
+            task_board::kill_transition(number),
+            task_board::claim_transition(number),
+        ] {
+            assert!(catalogue.transition(&key).is_some(), "{key}");
+        }
+    }
+    Ok(())
+}
+
 #[test]
 fn the_accepted_package_revision_is_no_quest_revision() {
     // §1.2 named `content::accepted::REVISIONS[0]`; its `/` is no valid quest or Character
