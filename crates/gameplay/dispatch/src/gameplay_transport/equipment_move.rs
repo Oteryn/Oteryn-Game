@@ -260,6 +260,18 @@ pub(super) async fn move_equipment(
     let Some(_permit) = admission.spell_lane_permit().await else {
         return EquipmentMoveResult::Unknown;
     };
+    let key = match request {
+        EquipmentMove::Equip { item, .. } | EquipmentMove::Unequip { item, .. } => item,
+    };
+    if !admission.states.player_trades.physical(
+        command.game_session_id,
+        match key {
+            ItemKey::Instance(id) => Some(id),
+            _ => None,
+        },
+    ) {
+        return refused;
+    }
     if !admission
         .checkpoint_timed_equipment(actor, command.game_session_id, true)
         .await

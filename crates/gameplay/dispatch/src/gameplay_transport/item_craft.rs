@@ -129,6 +129,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             super::item_look::typed_definition(index, reference)?
         };
+        if !self
+            .states
+            .player_trades
+            .physical(command.game_session_id, Some(source))
+        {
+            return disposition(UseDisposition::Rejected);
+        }
         let result = self
             .root
             .craft_item(

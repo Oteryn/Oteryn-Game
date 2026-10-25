@@ -83,6 +83,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(id) = CommandId::new(id) else {
             return GuildReply::Rejected;
         };
+        let _trade_permit = if intent.operation == 4 {
+            let Some(permit) = self.spell_lane_permit().await else {
+                return GuildReply::Rejected;
+            };
+            if !self
+                .states
+                .player_trades
+                .physical_service(admitted.game_session_id)
+            {
+                return GuildReply::Rejected;
+            }
+            Some(permit)
+        } else {
+            None
+        };
         let Some(current) =
             super::character_gameplay_fence::current(self, admitted.game_session_id, false).await
         else {

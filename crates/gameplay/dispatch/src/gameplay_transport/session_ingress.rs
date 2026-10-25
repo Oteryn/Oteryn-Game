@@ -22,6 +22,8 @@ struct SessionIngress {
     retained: Option<Vec<u8>>,
     result_sequence_floor: u64,
     active: bool,
+    pending_delivery: Option<(u64, u64, u64)>,
+    reconciled_trade_sequence: Option<u64>,
 }
 
 /// Owned alongside the Channel's admitted sessions, forgotten only at retirement.
@@ -38,6 +40,87 @@ impl SessionCommands {
         if let Ok(mut commands) = self.0.lock() {
             commands.remove(&session);
         }
+    }
+
+    pub(super) fn pending(&self, command: crate::foundation::CommandRef) -> bool {
+        self.0.lock().is_ok_and(|commands| {
+            commands
+                .get(&command.game_session_id())
+                .is_some_and(|entry| {
+                    entry.lock().is_ok_and(|state| {
+                        state.active
+                            && state.ingress.outstanding() == 1
+                            && semantic(command.command_id()).is_some_and(|identity| {
+                                matches!(
+                                    state
+                                        .ingress
+                                        .classify_duplicate(command.command_id(), &identity),
+                                    DuplicateDisposition::PendingOriginal
+                                )
+                            })
+                    })
+                })
+        })
+    }
+
+    /// Only the frozen trade's verified durable verdict can complete this reserved command.
+    pub(super) fn complete_trade(
+        &self,
+        command: crate::foundation::CommandRef,
+        code: oteryn_protocol_oteryn::player_trade::ResultCode,
+    ) -> Option<()> {
+        let commands = self.0.lock().ok()?;
+        let state = commands.get(&command.game_session_id())?;
+        let mut state = state.lock().ok()?;
+        let (generation, sequence, pending) = state.pending_delivery?;
+        if pending != command.command_id().get() {
+            return None;
+        }
+        let frame = oteryn_protocol_oteryn::encode_command_result(
+            generation,
+            sequence,
+            pending,
+            if code == oteryn_protocol_oteryn::player_trade::ResultCode::Rejected {
+                oteryn_protocol_oteryn::CommandStatus::Rejected
+            } else {
+                oteryn_protocol_oteryn::CommandStatus::Accepted
+            },
+            &code.payload(),
+        )
+        .ok()?;
+        let digest = base64::engine::general_purpose::STANDARD.encode(Sha256::digest(&frame));
+        let outcome = TerminalSemanticOutcome::new("command-result", &digest, sequence).ok()?;
+        state
+            .ingress
+            .terminalize(command.command_id(), outcome, || {})
+            .ok()?;
+        state.retained = Some(frame);
+        state.result_sequence_floor = sequence;
+        state.pending_delivery = None;
+        state.reconciled_trade_sequence = Some(sequence);
+        Some(())
+    }
+
+    /// Carry the one now-known terminal result into the resumed snapshot barrier.
+    pub(super) fn recover_trade_continuity(&self, admitted: &mut AdmittedSession) -> Option<()> {
+        let commands = self.0.lock().ok()?;
+        let state = commands.get(&admitted.game_session_id)?.lock().ok()?;
+        if let Some(sequence) = state.reconciled_trade_sequence {
+            if state.active
+                || state.ingress.outstanding() != 0
+                || state.ingress.next_command_id().map(CommandId::get)
+                    != Some(admitted.continuity.next_command_id)
+            {
+                return None;
+            }
+            if admitted.continuity.server_sequence < sequence {
+                if admitted.continuity.server_sequence.checked_add(1)? != sequence {
+                    return None;
+                }
+                admitted.continuity.server_sequence = sequence;
+            }
+        }
+        Some(())
     }
 
     pub(super) fn resumable(&self, admitted: &AdmittedSession) -> bool {
@@ -175,6 +258,8 @@ impl SessionCommandStream {
             IngressDecision::Reserved(_) => {
                 // Exhaustion is refused before domain execution; the namespace never wraps.
                 self.next = state.ingress.next_command_id().ok_or(unavailable)?.get();
+                state.pending_delivery = Some((generation, sequence + 1, command));
+                state.reconciled_trade_sequence = None;
                 Ok(CommandAction::Execute)
             }
             IngressDecision::SequenceGap { expected } => Err((CommandSequenceGap, expected.get())),
@@ -188,7 +273,16 @@ impl SessionCommandStream {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn terminalize(&mut self, command: u64, result: &[u8]) -> Option<()> {
+        self.terminalize_with(command, result, || {})
+    }
+    pub(super) fn terminalize_with(
+        &mut self,
+        command: u64,
+        result: &[u8],
+        effect: impl FnOnce(),
+    ) -> Option<()> {
         if let Some(state) = &self.state {
             if result.len() > MAX_RETAINED_RESULT_BYTES {
                 return None;
@@ -207,11 +301,15 @@ impl SessionCommandStream {
             } = &mut *state;
             ingress
                 .terminalize(CommandId::new(command).ok()?, outcome, || {
+                    effect();
                     *retained = Some(result.to_vec());
                     *result_sequence_floor = envelope.server_sequence();
                 })
                 .ok()?;
+            state.pending_delivery = None;
+            state.reconciled_trade_sequence = None;
         } else {
+            effect();
             self.next = self.next.checked_add(1)?;
         }
         Some(())
@@ -228,5 +326,7 @@ impl Drop for SessionCommandStream {
     }
 }
 
+#[cfg(test)]
+mod player_trade_tests;
 #[cfg(test)]
 mod tests;

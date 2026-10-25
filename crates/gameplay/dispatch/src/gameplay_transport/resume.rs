@@ -122,7 +122,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         attempt: ResumeAttempt<'_>,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Rejected, Unavailable};
-        let lost = self
+        if self
+            .states
+            .player_trades
+            .transitioning(attempt.game_session_id)
+        {
+            self.spell_lane_permit().await.ok_or(Unavailable)?;
+        }
+        let mut lost = self
             .states
             .lost
             .lock()
@@ -133,6 +140,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let (Some(actor), Some(controller)) = (lost.runtime_actor, lost.controller) else {
             return Err(Rejected);
         };
+        self.states
+            .command_ingress
+            .recover_trade_continuity(&mut lost)
+            .ok_or(Rejected)?;
         if !self.states.command_ingress.resumable(&lost) {
             return Err(Rejected);
         }

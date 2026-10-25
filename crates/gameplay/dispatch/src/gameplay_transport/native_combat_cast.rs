@@ -317,7 +317,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 Ok(permit) => permit,
                 Err(unresolved) => self.resolve_unresolved_spell_commit(unresolved).await,
             };
-            (!permit.has_unresolved()).then_some(permit)
+            if permit.has_unresolved() || !self.resolve_player_trades(&permit).await {
+                return None;
+            }
+            Some(permit)
         })
     }
     /// Resumes the parked writer's own retained retry path under the lane (§1.6): it installs a
@@ -1562,7 +1565,7 @@ pub(in crate::gameplay_transport) fn replay_with_rune(
 
 pub use oteryn_gameplay_spell_rules::dispatch_plans::geometry::TileFlags;
 /// Only this constructor reads the flags: source tile metadata plus locked actual Item rows.
-async fn read_tile(
+pub(in crate::gameplay_transport) async fn read_tile(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
     room: &QualifiedNativeEntryRoom,
@@ -1618,7 +1621,7 @@ async fn read_tile(
 
 /// Canary 99902524 map.cpp 845–949: endpoint-exclusive u16 Wu accumulator.
 /// The third tuple member is the source last-diagonal-step obstruction exemption.
-fn sight_steps(
+pub(in crate::gameplay_transport) fn sight_steps(
     a: TilePosition,
     b: TilePosition,
 ) -> Result<Vec<(TilePosition, bool)>, SpellCastDisposition> {

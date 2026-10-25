@@ -4,6 +4,7 @@ use super::*;
 
 mod command;
 mod inbound;
+mod player_trade;
 mod poll;
 mod refresh;
 mod setup;
@@ -126,9 +127,13 @@ where
         let input = match inbound::receive(stream, authority, &mut session, next).await {
             Ok(Some(input)) => input,
             Ok(None) => continue,
-            Err(end) => return end.finish(session.admitted),
+            Err(end) => {
+                authority.player_trade_disconnected(session.admitted.game_session_id);
+                return end.finish(session.admitted);
+            }
         };
         if let Err(end) = command::execute(stream, authority, &mut session, input).await {
+            authority.player_trade_disconnected(session.admitted.game_session_id);
             return end.finish(session.admitted);
         }
     }

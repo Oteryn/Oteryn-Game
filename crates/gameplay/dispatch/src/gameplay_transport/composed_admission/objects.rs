@@ -112,6 +112,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if chest.address.world_id != self.world_id {
             return UseOutcome::rejected();
         }
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return UseOutcome::rejected();
+        };
+        if !self
+            .states
+            .player_trades
+            .physical(command.game_session_id, None)
+        {
+            return UseOutcome::rejected();
+        }
         {
             let mut runtime = self.runtime.lock().await;
             if self.states.spell_states.lock().await.is_dead(actor) {

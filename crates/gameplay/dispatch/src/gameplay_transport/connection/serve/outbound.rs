@@ -17,7 +17,10 @@ where
 {
     if session
         .commands
-        .terminalize(command.command_id, &result)
+        .terminalize_with(command.command_id, &result, || {
+            authority
+                .player_trade_terminalized(session.admitted.game_session_id, command.command_id)
+        })
         .is_none()
     {
         return Err(ServeEnd::Disconnected);
@@ -245,6 +248,7 @@ where
         | Dispatch::House(_)
         | Dispatch::Unregistered => {}
     }
+    player_trade::refresh(stream, authority, session).await?;
     if training_logged_out {
         return Err(ServeEnd::LoggedOut);
     }
