@@ -57,6 +57,32 @@ pub const IMBUEMENT_TIER_RULES: [ImbuementTierRules; 3] = [
     },
 ];
 
+/// One applicable family and tier with its cumulative material list
+/// (`IMBUEMENT_RECIPES`, generated from the pinned Canary catalogue).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ImbuementRecipe {
+    /// Wire family 1-20; the durable category is `family - 1`.
+    pub family: u8,
+    pub tier: u8,
+    pub key: &'static str,
+    pub requires_premium: bool,
+    pub apply_gold: u64,
+    /// `(material item key, count)`, each consumed from one main-backpack stack.
+    pub materials: &'static [(&'static str, u32)],
+}
+
+#[path = "imbuement_catalogue.rs"]
+mod catalogue;
+pub use catalogue::{IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_RECIPES};
+
+/// The catalogue recipe of one family and tier.
+pub fn imbuement_recipe(family: u8, tier: u8) -> Option<&'static ImbuementRecipe> {
+    IMBUEMENT_RECIPES
+        .binary_search_by_key(&(family, tier), |recipe| (recipe.family, recipe.tier))
+        .ok()
+        .map(|index| &IMBUEMENT_RECIPES[index])
+}
+
 #[cfg(test)]
 #[path = "imbuement_tests.rs"]
 mod tests;
