@@ -18,6 +18,7 @@
 
 pub mod loader;
 pub mod log;
+pub mod task_board;
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -336,6 +337,30 @@ impl QuestStateCatalogue {
             transitions: transition_map,
             hashes,
         })
+    }
+
+    /// This catalogue with one more code-built quest's tracks and transitions, every rule and
+    /// hash checked again. A key or quest this catalogue already holds is a `DuplicateKey`, so
+    /// the hash of every quest already present is unchanged.
+    pub fn with_quest(
+        &self,
+        tracks: Vec<QuestTrack>,
+        transitions: Vec<QuestTransition>,
+    ) -> Result<Self, QuestCatalogueError> {
+        let quests = tracks.iter().map(|track| &track.quest);
+        let mut quests = quests.chain(transitions.iter().map(|transition| &transition.quest));
+        if let Some(quest) = quests.find(|quest| self.hashes.contains_key(*quest)) {
+            return Err(QuestCatalogueError::DuplicateKey(quest.clone()));
+        }
+        Self::new(
+            self.content_revision.clone(),
+            self.tracks.values().cloned().chain(tracks).collect(),
+            self.transitions
+                .values()
+                .cloned()
+                .chain(transitions)
+                .collect(),
+        )
     }
 
     /// A catalogue with no quest: every transition request is unknown.

@@ -1,0 +1,10 @@
+name=task_board
+commands=89
+transport=task_board
+composed=task_board
+authority=task_board
+[route]
+match routing::task_board::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}
