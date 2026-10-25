@@ -31,6 +31,7 @@ fn receipt() -> NpcTradeReceipt {
         side: npc_trade::NpcTradeSide::Buy,
         quantity: 3,
         unit_price: 40,
+        sell_all: false,
     }
 }
 

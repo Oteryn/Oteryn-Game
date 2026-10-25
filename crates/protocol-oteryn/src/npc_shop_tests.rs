@@ -187,3 +187,21 @@ fn npc_shop_result_refuses_a_second_encoding() {
         Err(NpcShopWireError::Malformed)
     );
 }
+
+#[test]
+fn npc_shop_bounds_are_the_registered_rows() {
+    let registry: serde_json::Value =
+        serde_json::from_str(crate::RESOURCE_LIMITS_REGISTRY_JSON).expect("registry");
+    let entries = registry["entries"].as_array().expect("entries");
+    for (id, value) in [
+        ("SELLALL1-RL-01", MAX_SELL_ALL_STACKS as u64),
+        ("SELLALL1-RL-02", u64::from(MAX_SELL_ALL_UNITS)),
+        ("SELLALL1-RL-03", MAX_SELL_ALL_GOLD_UNITS),
+        ("SELLALL1-RL-04", MAX_NPC_SHOP_RESULT_BYTES as u64),
+    ] {
+        let rows: Vec<_> = entries.iter().filter(|row| row["id"] == id).collect();
+        assert_eq!(rows.len(), 1, "{id}");
+        assert_eq!(rows[0]["hard_maximum"].as_u64(), Some(value), "{id}");
+    }
+    assert_eq!(MAX_NPC_SHOP_RESULT_BYTES, 524);
+}

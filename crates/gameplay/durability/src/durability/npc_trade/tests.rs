@@ -91,10 +91,100 @@ fn entry(tag: u8, ordinal: u64, definition: TypedDefinitionRef, quantity: u32) -
     }
 }
 
+/// The priced (non-sell-all) shape of a request.
+fn priced(request: &NpcTradeRequest) -> Result<(u64, u32)> {
+    validate(request, false).map(|priced| priced.expect("a priced trade"))
+}
+
+#[test]
+fn a_sell_all_names_one_unit_of_a_count_one_sell_offer() {
+    assert!(validate(&request(NpcTradeSide::Sell, 1, 99), true)
+        .unwrap()
+        .is_none());
+    let mut count = request(NpcTradeSide::Sell, 1, 1);
+    count.offer_count = 2;
+    for (name, value) in [
+        ("a BUY", request(NpcTradeSide::Buy, 1, 1)),
+        ("two units", request(NpcTradeSide::Sell, 2, 1)),
+        ("a count of 2", count),
+        (
+            "a price above the SELL ceiling",
+            request(NpcTradeSide::Sell, 1, rules::NPC_TRADE_SELL_GOLD_UNITS_MAX + 1),
+        ),
+    ] {
+        assert!(
+            matches!(validate(&value, true), Err(NpcTradeError::InvalidInput)),
+            "{name}"
+        );
+    }
+}
+
+/// A sell-all of 3 stacks (100, 100 and 7 units) at 99 each: every stack is one whole BURN, the
+/// audited quantity is the 207 units and the binding differs from the trade's.
+#[test]
+fn a_sell_all_audits_every_burned_stack_and_its_units() {
+    use crate::durability::npc_trade_audit::{check_npc_trade, decode_npc_trade_envelope};
+    use crate::foundation::{
+        ChannelId, ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+    };
+
+    let world = WorldId::decode(&id(1)).unwrap();
+    let channel = ChannelId::decode(&id(2)).unwrap();
+    let fence = CurrentCharacterItemFence {
+        character_id: CharacterId::from_bytes(id(3)).unwrap(),
+        game_session_id: GameSessionId::decode(&id(50)).unwrap(),
+        connection_generation: ConnectionGeneration::new(1).unwrap(),
+        character_lease_generation: 1,
+        runtime_scope: RuntimeScopeRefV1::channel(world, channel),
+        scope_ownership_generation: ScopeOwnershipGeneration::new(1).unwrap(),
+    };
+    let value = request(NpcTradeSide::Sell, 1, 99);
+    let entries = [
+        entry(10, 5, sword(), 7),
+        entry(11, 4, coin(Coin::Gold), 3),
+        entry(12, 3, sword(), 100),
+        entry(13, 1, sword(), 100),
+    ];
+    let (plan, total, units) = plan_sell_all(&value, 20, &entries).unwrap();
+    assert_eq!((total, units), (20_493, 207));
+    let message = trade_message(
+        &fence,
+        world,
+        channel,
+        &id(4),
+        &value,
+        (units, total, true),
+        &plan,
+    );
+    assert!(message.sell_all);
+    assert_eq!(message.quantity, 207);
+    check_npc_trade(&message).unwrap();
+    let wire = encode_npc_trade_event(
+        NpcTradeEventIdentity {
+            event_id: value.event_id,
+            transaction_id: value.transaction_id,
+            occurred_at_unix_ms: value.occurred_at_unix_ms,
+            server_build_id: SERVER_BUILD_ID,
+        },
+        message.clone(),
+        Type2EventTuple::V2,
+    )
+    .unwrap();
+    assert_eq!(decode_npc_trade_envelope(&wire).unwrap().1, message);
+    assert_ne!(
+        request_binding(&fence, world, &value, true),
+        request_binding(&fence, world, &value, false)
+    );
+    // The same lines without the marker are a SELL of three stacks: refused.
+    let mut unmarked = message;
+    unmarked.sell_all = false;
+    assert_eq!(check_npc_trade(&unmarked), Err(AuditError::InvalidInput));
+}
+
 #[test]
 fn a_request_outside_its_shape_is_invalid() {
     assert_eq!(
-        validate(&request(NpcTradeSide::Buy, 2, 50)).unwrap(),
+        priced(&request(NpcTradeSide::Buy, 2, 50)).unwrap(),
         (100, 2)
     );
     let mut cases: Vec<(&str, NpcTradeRequest)> = vec![
@@ -139,16 +229,16 @@ fn a_request_outside_its_shape_is_invalid() {
     cases.push(("an unknown stack class", value));
     for (name, value) in cases {
         assert!(
-            matches!(validate(&value), Err(NpcTradeError::InvalidInput)),
+            matches!(priced(&value), Err(NpcTradeError::InvalidInput)),
             "{name}"
         );
     }
     let mut value = request(NpcTradeSide::Buy, 1, 1);
     value.item.stack = ItemStackClass::NonStackable;
-    assert_eq!(validate(&value).unwrap(), (1, 1));
+    assert_eq!(priced(&value).unwrap(), (1, 1));
     // NPC-0 §5.3 and §5.4: a price of 0 is a valid trade on either side.
     for side in [NpcTradeSide::Buy, NpcTradeSide::Sell] {
-        assert_eq!(validate(&request(side, 3, 0)).unwrap(), (0, 3));
+        assert_eq!(priced(&request(side, 3, 0)).unwrap(), (0, 3));
     }
     let mut value = request(NpcTradeSide::Buy, 20, 1);
     value.offer_count = 5;
@@ -178,7 +268,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
         for side in [NpcTradeSide::Buy, NpcTradeSide::Sell] {
             let mut value = request(side, quantity, 3);
             value.offer_count = count;
-            let (total, units) = validate(&value).unwrap();
+            let (total, units) = priced(&value).unwrap();
             assert_eq!((total, units), (u64::from(quantity) * 3, expected_units));
             let plan = match side {
                 NpcTradeSide::Buy => plan_buy(
@@ -200,7 +290,7 @@ fn bundled_buy_and_sell_plans_encode_purchase_quantity_and_actual_item_units() {
                 )
                 .unwrap(),
             };
-            let message = trade_message(&fence, world, channel, &id(4), &value, total, &plan);
+            let message = trade_message(&fence, world, channel, &id(4), &value, (quantity, total, false), &plan);
             assert_eq!(
                 (
                     message.quantity,

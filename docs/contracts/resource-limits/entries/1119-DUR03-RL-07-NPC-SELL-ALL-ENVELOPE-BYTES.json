@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-07-NPC-SELL-ALL-ENVELOPE-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "One EventEnvelopeV1 carrying a sell_all npc_trade payload",
+  "unit": "bytes",
+  "hard_maximum": 34816,
+  "configurable_range": {
+    "minimum": 34816,
+    "maximum": 34816
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Equals the game_item_audit_outbox_envelope_check ceiling (migration 0101); the shared outbox constraint is not widened. The D50 worst case measures 51,389 B and is refused fail closed.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst case (51,389 B) is refused (CAPACITY_EXCEEDED)",
+    "an envelope over this row rejected before decode"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/npc_trade_audit.rs",
+    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC sell-all: plan and usage checked before any write; migration 0211 re-proves the lines at commit)"
+  ],
+  "notes": "NPC-TRADE-SELLALL-1 (command 97 NPC_SHOP, action SELL_ALL): a SELL of every carried stack of the offer item, `OneItemNpcTradeV1.sell_all` = 15; up to 20 whole item BURN lines of one definition revision and up to 3 coin MINTs. The NPC trade rows DUR03-RL-*-NPC-TRADE-* are unchanged and still bound every trade that is not a sell-all."
+}

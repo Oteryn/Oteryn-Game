@@ -308,6 +308,7 @@ fn buy_with_change_then_partial_and_whole_sell_replay_and_conflicts() -> TestRes
                 side: NpcTradeSide::Buy,
                 quantity: 5,
                 unit_price: 47,
+                sell_all: false,
             })
         );
         assert_eq!(

@@ -1,0 +1,24 @@
+{
+  "id": "DUR03-RL-07-NPC-SELL-ALL-PAYLOAD-BYTES",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "One encoded OneItemTransactionV1 payload carrying a sell_all npc_trade",
+  "unit": "bytes",
+  "hard_maximum": 34502,
+  "configurable_range": {
+    "minimum": 34502,
+    "maximum": 34502
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The audit outbox envelope ceiling less the measured 314-byte envelope overhead. The D50 worst case (20 item burns and 3 coin MINTs, every key and revision at 512 bytes) measures 51,075 B and is refused fail closed with nothing written; production-sized keys measure under 7 KB.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured worst case (51,075 B) is refused (CAPACITY_EXCEEDED)",
+    "34,503 bytes rejected before decode",
+    "a sell-all over the trade row and under this row round trips"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/npc_trade_audit.rs",
+    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC sell-all: plan and usage checked before any write; migration 0211 re-proves the lines at commit)"
+  ],
+  "notes": "NPC-TRADE-SELLALL-1 (command 97 NPC_SHOP, action SELL_ALL): a SELL of every carried stack of the offer item, `OneItemNpcTradeV1.sell_all` = 15; up to 20 whole item BURN lines of one definition revision and up to 3 coin MINTs. The NPC trade rows DUR03-RL-*-NPC-TRADE-* are unchanged and still bound every trade that is not a sell-all."
+}
