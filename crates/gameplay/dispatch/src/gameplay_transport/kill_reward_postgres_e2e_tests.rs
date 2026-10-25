@@ -257,6 +257,9 @@ fn scenario() -> TestResult {
                         session,
                         crate::spell::cast::CharacterCastFacts {
                             vocation: crate::spell::Vocation::Monk,
+                            // Level 50 keeps minimum fist damage above the rat's defence and
+                            // armor, independent of the content-digest-seeded RNG stream.
+                            level: 50,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
                         (3, 7_000_000),
