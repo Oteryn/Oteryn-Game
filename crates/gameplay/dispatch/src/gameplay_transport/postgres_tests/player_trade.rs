@@ -567,6 +567,20 @@ async fn scenario(h: &Harness) -> TestResult {
             original
         );
         assert_eq!(a.trade(offer_a).await?, ResultCode::Offered.payload());
+        // Logout's pre-fence reads can occupy the root's single holder. An unavailable
+        // observation must retain the offered dialog, rather than invent a rejection.
+        let before_contention = owner
+            .trade_observation(admitted[0].game_session_id)
+            .await
+            .ok_or("before root contention")?;
+        assert_eq!(before_contention.1.phase, 1);
+        let held = h.root.try_issue_semantic_pass().map_err(debug)?;
+        let during_contention = owner
+            .trade_observation(admitted[0].game_session_id)
+            .await
+            .ok_or("during root contention")?;
+        assert_eq!(during_contention, before_contention);
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
         let logged_out = b.command(23, &[]).await?;
         assert_eq!(
             oteryn_protocol_oteryn::logout::decode_logout_result(&logged_out).map_err(debug)?,
