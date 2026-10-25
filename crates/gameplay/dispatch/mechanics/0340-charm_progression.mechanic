@@ -1,0 +1,11 @@
+name=charm_progression
+commands=84
+transport=charm_progression
+composed=charm_progression
+authority=charm_progression
+offer=40,charm_progression::offered,charm_progression_available
+[route]
+match routing::charm_progression::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

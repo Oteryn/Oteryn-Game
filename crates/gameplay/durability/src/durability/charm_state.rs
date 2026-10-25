@@ -1,11 +1,12 @@
 //! Typed, fenced Character Charm commands (CHARM-3, migration 0020).
 //!
-//! Two commands exist: unlock the next stage of a charm, and assign an unlocked charm to a
-//! Bestiary race. Each is one Character transaction under the same current gameplay fence as an
+//! Three commands exist: unlock the next stage of a charm, assign an unlocked charm to a
+//! Bestiary race, and remove an assigned charm for its gold fee (migration 0195). Each is one Character transaction under the same current gameplay fence as an
 //! XP award (recovery fence, FND-04 session/lease/scope, current scope assignment and node
 //! incarnation, the root row-locked at the expected CharacterRevision), validated against the
-//! balance derived in that transaction, and advancing the CharacterRevision exactly once. There is
-//! no unassign (owner answer 3c). Charm Points and Minor Charm Echoes are never stored (2a).
+//! balance derived in that transaction, and advancing the CharacterRevision exactly once. A remove
+//! pays `level * 100` gold (Canary `sendBuyCharmRune` action 2) through
+//! [`burn_fee_in_transaction`] in the same transaction. Charm Points and Minor Charm Echoes are never stored (2a).
 //!
 //! Bestiary progress (CHARM-2), promotion and the slot entitlement are read through
 //! [`CharmFacts`] inside the command's transaction. Earned currency only grows, and every writer
@@ -17,7 +18,12 @@ use super::character_progression::{
     state_matches_root, uuid_text, valid_revision,
 };
 use super::db::{
-    begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    begin_semantic_transaction, begin_type2_transaction, commit_semantic_transaction,
+    lock_admission_relations,
+};
+use super::item_fee_burn::{
+    FeeBurnCause, FeeBurnError, FeeBurnOutcome, FeeBurnRequest, FeeChangeFacts,
+    burn_fee_in_transaction,
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
@@ -40,6 +46,10 @@ const COMMAND_BINDING_VERSION: u8 = 1;
 const CATALOGUE_DIGEST_VERSION: u8 = 1;
 const KIND_UNLOCK: i16 = 1;
 const KIND_ASSIGN: i16 = 2;
+const KIND_REMOVE: i16 = 3;
+/// Canary `iobestiary.cpp` `sendBuyCharmRune` action 2: `fee = level * 100`. The Charm
+/// Expansion discount is not modelled: every Character's entitlement is `Free`.
+const REMOVE_FEE_GOLD_PER_LEVEL: u64 = 100;
 const CATEGORY_MAJOR: i16 = 1;
 const CATEGORY_MINOR: i16 = 2;
 const MAX_VIEW_RACES: usize = oteryn_protocol_oteryn::bestiary::MAX_BESTIARY_VIEW_ENTRIES;
@@ -219,15 +229,32 @@ pub enum CharmCommand {
         charm: CharmKey,
         race: BestiaryRaceKey,
     },
+    /// Free the charm's race for `level * 100` gold.
+    Remove {
+        charm: CharmKey,
+        fee: Box<CharmRemoveFee>,
+    },
 }
 
 impl CharmCommand {
     #[must_use]
     pub const fn charm(&self) -> &CharmKey {
         match self {
-            Self::UnlockNextStage { charm } | Self::Assign { charm, .. } => charm,
+            Self::UnlockNextStage { charm }
+            | Self::Assign { charm, .. }
+            | Self::Remove { charm, .. } => charm,
         }
     }
+}
+
+/// The fee burn's identities and coin facts, fixed before the first attempt and reused on every
+/// retry. They are retry-local: the command binding covers only the charm.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CharmRemoveFee {
+    pub transaction_id: [u8; 16],
+    pub event_id: [u8; 16],
+    pub occurred_at_unix_ms: i64,
+    pub change: FeeChangeFacts,
 }
 
 /// One Charm command. `catalogue` is the static charm catalogue of content revision
@@ -250,6 +277,10 @@ pub enum CharmCommandEffect {
     },
     Assigned {
         race: BestiaryRaceKey,
+    },
+    Removed {
+        race: BestiaryRaceKey,
+        fee_gold_units: u64,
     },
 }
 
@@ -314,6 +345,12 @@ pub enum CharmStateError {
     CharmContextMismatch,
     ConflictingOccurrence,
     Rule(CharmRuleError),
+    /// A remove names a charm with no assigned race.
+    NotAssigned,
+    /// The coins and the bank cannot pay the remove fee.
+    InsufficientGold,
+    /// The fee's change cannot be placed in the backpack.
+    FeeChangeDoesNotFit,
     Unavailable(DurabilityError),
 }
 
@@ -341,6 +378,11 @@ impl std::fmt::Display for CharmStateError {
                 formatter.write_str("Charm command occurrence was reused with different semantics")
             }
             Self::Rule(error) => write!(formatter, "Charm rule rejected the command: {error:?}"),
+            Self::NotAssigned => formatter.write_str("Charm is not assigned"),
+            Self::InsufficientGold => formatter.write_str("not enough gold for the Charm fee"),
+            Self::FeeChangeDoesNotFit => {
+                formatter.write_str("Charm fee change does not fit the backpack")
+            }
             Self::Unavailable(error) => {
                 write!(formatter, "Charm storage is unavailable: {error:?}")
             }
@@ -485,7 +527,7 @@ impl DurabilityRoot {
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
-                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
 
@@ -494,7 +536,7 @@ impl DurabilityRoot {
                          'oteryn:character-charm:' || encode($1, 'hex'), 0))",
                     )
                     .bind(request.occurrence.0.as_slice())
-                    .execute(&mut *tx)
+                    .execute(&mut **tx)
                     .await?;
 
                     if let Some(row) = load_receipt(&mut tx, request.occurrence).await? {
@@ -503,7 +545,7 @@ impl DurabilityRoot {
                             return Ok(Err(CharmStateError::ConflictingOccurrence));
                         }
                         let committed = decode_receipt(&row)?;
-                        commit_semantic_transaction(tx, deadline).await?;
+                        tx.commit(deadline).await?;
                         return Ok(Ok(CharmCommandOutcome::AlreadyCommitted(committed)));
                     }
 
@@ -522,7 +564,7 @@ impl DurabilityRoot {
                           WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
-                    .fetch_optional(&mut *tx)
+                    .fetch_optional(&mut **tx)
                     .await?;
                     let Some(state) = state else {
                         return Ok(Err(CharmStateError::MissingProgressionState));
@@ -589,6 +631,27 @@ impl DurabilityRoot {
                                 Err(error) => return Ok(Err(CharmStateError::Rule(error))),
                             }
                         }
+                        CharmCommand::Remove { charm, .. } => {
+                            let category = match request.catalogue.get(charm) {
+                                Ok(definition) => definition.category,
+                                Err(error) => return Ok(Err(CharmStateError::Rule(error))),
+                            };
+                            let Some(race) = current.assignments.get(charm) else {
+                                return Ok(Err(CharmStateError::NotAssigned));
+                            };
+                            let level = u64::try_from(state.try_get::<i64, _>("level")?)
+                                .map_err(|_| DurabilityError::InvalidStoredState)?;
+                            let fee_gold_units = level
+                                .checked_mul(REMOVE_FEE_GOLD_PER_LEVEL)
+                                .ok_or(DurabilityError::InvalidStoredState)?;
+                            (
+                                category,
+                                CharmCommandEffect::Removed {
+                                    race: race.clone(),
+                                    fee_gold_units,
+                                },
+                            )
+                        }
                     };
                     let (category, effect) = effect;
 
@@ -604,7 +667,7 @@ impl DurabilityRoot {
                     .bind(fence.character_id.as_bytes().as_slice())
                     .bind(committed_revision.to_string())
                     .bind(root.revision.to_string())
-                    .execute(&mut *tx)
+                    .execute(&mut **tx)
                     .await?;
                     if root_update.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
@@ -618,13 +681,13 @@ impl DurabilityRoot {
                     .bind(fence.character_id.as_bytes().as_slice())
                     .bind(committed_revision.to_string())
                     .bind(root.revision.to_string())
-                    .execute(&mut *tx)
+                    .execute(&mut **tx)
                     .await?;
                     if state_update.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
                     }
 
-                    let (kind, stage_before, stage_after, cost, race) = match &effect {
+                    let (kind, stage_before, stage_after, cost, race, fee_gold) = match &effect {
                         CharmCommandEffect::Unlocked {
                             stage_before,
                             stage_after,
@@ -635,10 +698,29 @@ impl DurabilityRoot {
                             Some(i16::from(stage_after.get())),
                             Some(i64::from(*cost)),
                             None,
+                            None,
                         ),
                         CharmCommandEffect::Assigned { race } => {
-                            (KIND_ASSIGN, None, None, None, Some(race.as_str()))
+                            (KIND_ASSIGN, None, None, None, Some(race.as_str()), None)
                         }
+                        CharmCommandEffect::Removed {
+                            race,
+                            fee_gold_units,
+                        } => (
+                            KIND_REMOVE,
+                            None,
+                            None,
+                            None,
+                            Some(race.as_str()),
+                            Some(
+                                i64::try_from(*fee_gold_units)
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                            ),
+                        ),
+                    };
+                    let fee_transaction = match &request.command {
+                        CharmCommand::Remove { fee, .. } => Some(fee.transaction_id),
+                        _ => None,
                     };
                     let charm = request.command.charm();
                     let receipt = sqlx::query(
@@ -650,14 +732,21 @@ impl DurabilityRoot {
                            charm_category, stage_before, stage_after, stage_cost, race_key, \
                            profile_revision, ruleset_revision, content_revision, \
                            simulation_revision, evidence_revision, declaration_revision, \
-                           policy_revision, reward_revision, committed_at) \
+                           policy_revision, reward_revision, committed_at, \
+                           assignment_ordinal, fee_transaction_id, fee_gold_units) \
                          SELECT encode($1,'hex')::uuid, $2, $3, $4, s.character_id, \
                            $5::text::numeric(20,0), $6::text::numeric(20,0), s.level, s.level, \
                            s.total_experience, s.total_experience, $7, $8, $9, $10, $11, $12, \
                            $13, s.profile_revision, s.ruleset_revision, s.content_revision, \
                            s.simulation_revision, s.evidence_revision, s.declaration_revision, \
                            s.policy_revision, s.reward_revision, \
-                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
+                           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, \
+                           CASE WHEN $7 = 1 THEN 1 ELSE (\
+                             SELECT count(*) + 1 FROM game_character_charm_receipts p \
+                              WHERE p.character_id = s.character_id AND p.charm_key = $8 \
+                                AND p.command_kind = $7) END, \
+                           CASE WHEN $15::bytea IS NULL THEN NULL \
+                                ELSE encode($15,'hex')::uuid END, $16 \
                            FROM game_character_progression_state s \
                           WHERE s.character_id = encode($14,'hex')::uuid",
                     )
@@ -675,7 +764,9 @@ impl DurabilityRoot {
                     .bind(cost)
                     .bind(race)
                     .bind(fence.character_id.as_bytes().as_slice())
-                    .execute(&mut *tx)
+                    .bind(fee_transaction.as_ref().map(<[u8; 16]>::as_slice))
+                    .bind(fee_gold)
+                    .execute(&mut **tx)
                     .await?;
                     if receipt.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
@@ -701,7 +792,7 @@ impl DurabilityRoot {
                             .bind(i16::from(stage_after.get()))
                             .bind(committed_revision.to_string())
                             .bind(request.occurrence.0.as_slice())
-                            .execute(&mut *tx)
+                            .execute(&mut **tx)
                             .await?;
                         }
                         CharmCommandEffect::Assigned { race } => {
@@ -718,8 +809,56 @@ impl DurabilityRoot {
                             .bind(category_code(category))
                             .bind(committed_revision.to_string())
                             .bind(request.occurrence.0.as_slice())
-                            .execute(&mut *tx)
+                            .execute(&mut **tx)
                             .await?;
+                        }
+                        CharmCommandEffect::Removed { fee_gold_units, .. } => {
+                            let deleted = sqlx::query(
+                                "DELETE FROM game_character_charm_assignments \
+                                  WHERE character_id = encode($1,'hex')::uuid AND charm_key = $2",
+                            )
+                            .bind(fence.character_id.as_bytes().as_slice())
+                            .bind(charm.as_str())
+                            .execute(&mut **tx)
+                            .await?;
+                            if deleted.rows_affected() != 1 {
+                                return Err(DurabilityError::InvalidStoredState);
+                            }
+                            let CharmCommand::Remove { fee, .. } = &request.command else {
+                                return Err(DurabilityError::InvalidStoredState);
+                            };
+                            let burn = FeeBurnRequest {
+                                cause: FeeBurnCause::CharmUnassign {
+                                    charm: charm.clone(),
+                                    occurrence: request.occurrence,
+                                },
+                                fee_gold_units: *fee_gold_units,
+                                transaction_id: fee.transaction_id,
+                                event_id: fee.event_id,
+                                occurred_at_unix_ms: fee.occurred_at_unix_ms,
+                                server_build_id: "oteryn-game-server".into(),
+                                change: fee.change.clone(),
+                            };
+                            match burn_fee_in_transaction(&mut tx, &fence, &burn).await {
+                                Ok(FeeBurnOutcome::Burned(_)) => (),
+                                // A new occurrence's fresh fee transaction cannot be retained.
+                                Ok(FeeBurnOutcome::AlreadyBurned(_)) => {
+                                    return Err(DurabilityError::InvalidStoredState);
+                                }
+                                Err(FeeBurnError::InsufficientFunds) => {
+                                    return Ok(Err(CharmStateError::InsufficientGold));
+                                }
+                                Err(
+                                    FeeBurnError::ChangeDoesNotFit
+                                    | FeeBurnError::CapacityExceeded,
+                                ) => return Ok(Err(CharmStateError::FeeChangeDoesNotFit)),
+                                Err(FeeBurnError::Unavailable(error)) => return Err(error),
+                                Err(
+                                    FeeBurnError::InvalidInput
+                                    | FeeBurnError::CharacterMismatch
+                                    | FeeBurnError::ConflictingOccurrence,
+                                ) => return Ok(Err(CharmStateError::InvalidInput)),
+                            }
                         }
                     }
 
@@ -733,7 +872,7 @@ impl DurabilityRoot {
                         category,
                         effect,
                     };
-                    commit_semantic_transaction(tx, deadline).await?;
+                    tx.commit(deadline).await?;
                     Ok(Ok(CharmCommandOutcome::Committed(committed)))
                 })
             })
@@ -867,6 +1006,10 @@ fn command_binding(
             push_text(&mut semantic, charm.as_str())?;
             push_text(&mut semantic, race.as_str())?;
         }
+        CharmCommand::Remove { charm, .. } => {
+            semantic.extend_from_slice(&KIND_REMOVE.to_be_bytes());
+            push_text(&mut semantic, charm.as_str())?;
+        }
     }
     push_text(&mut semantic, &request.catalogue_revision)?;
     semantic.extend_from_slice(catalogue_digest);
@@ -885,7 +1028,7 @@ async fn load_receipt(
         "SELECT charm_occurrence_id::text, command_binding, character_id::text, \
                 original_character_revision::text, committed_character_revision::text, \
                 command_kind, charm_key, charm_category, stage_before, stage_after, \
-                stage_cost, race_key \
+                stage_cost, race_key, fee_gold_units \
            FROM game_character_charm_receipts \
           WHERE charm_occurrence_id = encode($1,'hex')::uuid",
     )
@@ -929,10 +1072,12 @@ fn decode_receipt(
                     .ok_or(DurabilityError::InvalidStoredState)?,
             }
         }
-        KIND_ASSIGN => CharmCommandEffect::Assigned {
-            race: row
-                .try_get::<Option<String>, _>("race_key")?
-                .and_then(|value| BestiaryRaceKey::new(value).ok())
+        KIND_ASSIGN => CharmCommandEffect::Assigned { race: race(row)? },
+        KIND_REMOVE => CharmCommandEffect::Removed {
+            race: race(row)?,
+            fee_gold_units: row
+                .try_get::<Option<i64>, _>("fee_gold_units")?
+                .and_then(|value| u64::try_from(value).ok())
                 .ok_or(DurabilityError::InvalidStoredState)?,
         },
         _ => return Err(DurabilityError::InvalidStoredState),
@@ -946,6 +1091,12 @@ fn decode_receipt(
         category,
         effect,
     })
+}
+
+fn race(row: &sqlx::postgres::PgRow) -> std::result::Result<BestiaryRaceKey, DurabilityError> {
+    row.try_get::<Option<String>, _>("race_key")?
+        .and_then(|value| BestiaryRaceKey::new(value).ok())
+        .ok_or(DurabilityError::InvalidStoredState)
 }
 
 async fn load_charm_state(

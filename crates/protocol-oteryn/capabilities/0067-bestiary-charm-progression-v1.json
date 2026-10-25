@@ -1,0 +1,17 @@
+{
+  "id": 67,
+  "name": "BESTIARY_CHARM_PROGRESSION_V1",
+  "constant": "charm_progression::CAPABILITY_BESTIARY_CHARM_PROGRESSION_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    84
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

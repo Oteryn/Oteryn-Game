@@ -156,6 +156,10 @@ mod chat_wire;
 #[path = "capability_logout_wire_tests.rs"]
 mod logout_wire;
 
+/// PARITY-EVENT-CALLBACKS-1: capability 75 through the real admission and serve path.
+#[path = "capability_server_save_countdown_wire_tests.rs"]
+mod server_save_countdown_wire;
+
 /// WEATHER-1 (D1023..D1026, D1448): capability 26 through the real admission and serve path.
 /// The source is the shipped Oteryn-designed `content/weather` data, exactly what production
 /// loads: production offers 26 once that data loads and fails closed when it does not.

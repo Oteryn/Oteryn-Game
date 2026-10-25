@@ -1,0 +1,20 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// Capability 67 BESTIARY_CHARM_PROGRESSION_V1, command 84 (PARITY-PROGRESSION-QUERIES-1).
+// Strict bounded codec: duplicate/unknown fields refused; zero fields omitted.
+// Views: BestiaryViewV1 and CharmViewV1 of charm_bestiary_v1.proto, as of the reply.
+message CharmProgressionRequestV1 {
+  uint32 action = 1; // 1 query, 2 unlock next stage, 3 assign, 4 remove (gold fee level * 100)
+  uint32 charm = 2; // 1..=32; absent only on query
+  uint32 race = 3; // 1..=1024; present only on assign
+  uint32 expected_stage = 4; // 0..=2; only on unlock
+}
+message CharmProgressionReplyV1 {
+  uint32 action = 1; // the request action
+  uint32 disposition = 2; // CharmUnlock/CharmAssign result codes; remove: 1 removed,
+                          // 2 not assigned, 3 not enough gold, 4 change does not fit,
+                          // 5 unknown charm, 6 rejected; query: 1
+  uint64 fee_gold = 3; // non-zero exactly on remove/removed, <= i64::MAX
+  bytes bestiary = 4; // BestiaryViewV1, <= 21504 bytes
+  bytes charms = 5; // CharmViewV1, <= 554 bytes
+}
