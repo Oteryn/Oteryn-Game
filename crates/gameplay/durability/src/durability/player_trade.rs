@@ -40,6 +40,19 @@ pub struct TradeLeaf {
     text_revision: Option<Value>,
 }
 
+impl TradeLeaf {
+    /// Content identity and whole quantity for the session-local offer projection.
+    pub fn definition_and_quantity(
+        &self,
+    ) -> Result<(super::item_mint::TypedDefinitionRef, u32), DurabilityError> {
+        Ok((
+            snapshot::definition(&self.item)?,
+            u32::try_from(snapshot::number(&self.item, "quantity")?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        ))
+    }
+}
+
 /// First terminal accept and second pending accept, with captured session/lease/scope fences.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TradeParticipant {
@@ -144,6 +157,106 @@ impl PlayerTradeRequest {
 }
 
 impl DurabilityRoot {
+    /// Capture the first offer under its actual session, Content and Character root fence.
+    pub async fn observe_player_trade_offer(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        command: CommandRef,
+        item: [u8; 16],
+        digest: [u8; 32],
+    ) -> Pass<TradeLeaf> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    match super::character_equipment::assert_current_equipment_in_transaction(
+                        &mut tx,
+                        &record,
+                        &node,
+                        &fence,
+                        Some(command),
+                        digest,
+                    )
+                    .await
+                    {
+                        Ok(_) => {}
+                        Err(super::character_equipment::EquipmentError::Rejected(_)) => {
+                            return Ok(Err(Refusal::Rejected));
+                        }
+                        Err(super::character_equipment::EquipmentError::Database(e)) => {
+                            return Err(e.into());
+                        }
+                        Err(super::character_equipment::EquipmentError::Durability(e)) => {
+                            return Err(e);
+                        }
+                    }
+                    let result = snapshot::read_leaves(&mut tx, &[fence], [item])
+                        .await?
+                        .map(|[leaf]| leaf);
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(result)
+                })
+            })
+            .await
+    }
+
+    /// Recheck room and incoming weight before either acceptance, without removing a source.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn preflight_player_trade<C: PlayerTradeContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fences: [CurrentCharacterItemFence; 2],
+        commands: [CommandRef; 2],
+        items: [[u8; 16]; 2],
+        digest: [u8; 32],
+        content: &C,
+    ) -> Pass<[TradeLeaf; 2]> {
+        // This reader remains the single capture path, also used by writer qualification.
+        let leaves = match self
+            .observe_player_trade(recovery, node, fences, commands, items, digest)
+            .await?
+        {
+            Ok(leaves) => leaves,
+            Err(reason) => return Ok(Err(reason)),
+        };
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        let mut context = content;
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, content| {
+                Box::pin(async move {
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    if !snapshot::fence_pair(&mut tx, &record, &node, &fences, &commands, digest)
+                        .await?
+                    {
+                        return Ok(Err(Refusal::Rejected));
+                    }
+                    let current = match snapshot::read_pair(&mut tx, &fences, items).await? {
+                        Ok(v) => v,
+                        Err(e) => return Ok(Err(e)),
+                    };
+                    if current != leaves {
+                        return Ok(Err(Refusal::Stale));
+                    }
+                    let result = snapshot::destinations(&mut tx, &fences, *content, &leaves)
+                        .await?
+                        .map(|_| leaves);
+                    super::db::commit_semantic_transaction(tx, deadline).await?;
+                    Ok(result)
+                })
+            })
+            .await
+    }
+
     /// Observe whole direct-backpack leaves under both current fences. Does not
     /// reserve items or authorize a trade; the runtime still owns every L3 check.
     pub async fn observe_player_trade(
