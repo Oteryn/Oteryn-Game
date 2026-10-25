@@ -1433,11 +1433,20 @@ impl ChannelRuntimeV1 {
 
     /// Exact-ref cleanup only. Callers still need an authoritative terminal
     /// GameSession fact; ordinary socket loss is not such a fact.
+    ///
+    /// SUMMON-OWNER-END-1 (CREATURE-AI-0 §8.4): the owner's summons, familiars included, leave
+    /// with it, as a removal with no death; no familiar durable state is written here.
     pub fn remove_terminal_session(
         &mut self,
         game_session_id: GameSessionId,
         actor: ExactActorRef,
     ) -> Result<(), CarrierError> {
+        if self
+            .carrier
+            .contains_committed_player(&self.continuity, game_session_id, actor)
+        {
+            self.remove_owned_companions(actor, game_session_id)?;
+        }
         self.carrier
             .remove_terminal_player(&self.continuity, game_session_id, actor)
     }
