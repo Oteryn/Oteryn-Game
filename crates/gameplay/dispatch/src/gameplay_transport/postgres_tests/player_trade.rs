@@ -275,6 +275,49 @@ async fn scenario(h: &Harness) -> TestResult {
         assert!(state.message.is_empty());
         assert!(state.own.is_some() && state.counter.is_some());
         let trade_id = state.trade_id.ok_or("trade id")?;
+        // Move the partner two cells on Y while the dialog is open. Look must use
+        // current authoritative positions, not the positions when offers were made.
+        let partner = admitted[1].runtime_actor.ok_or("partner actor")?;
+        {
+            let mut runtime = runtime.lock().await;
+            let observer = runtime
+                .read_actor_position(admitted[0].runtime_actor.ok_or("observer actor")?)
+                .map_err(debug)?
+                .position();
+            assert_eq!(
+                runtime.read_actor_position(partner).map_err(debug)?.position(),
+                observer
+            );
+            for _ in 0..2 {
+                let p = runtime.read_actor_position(partner).map_err(debug)?;
+                runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(
+                        p,
+                        crate::foundation::MovementLocalPosition {
+                            y: p.position().y + 1,
+                            ..p.position()
+                        },
+                    )
+                    .map_err(debug)?;
+            }
+        }
+        for (peer, session) in [
+            (&mut a, admitted[0].game_session_id),
+            (&mut b, admitted[1].game_session_id),
+        ] {
+            assert_eq!(
+                peer.trade(Intent::Look {
+                    trade_id,
+                    counter_offer: false,
+                })
+                .await?,
+                ResultCode::Offered.payload()
+            );
+            let own = owner.trade_observation(session).await.ok_or("own look")?.1;
+            assert!(own.look.contains(" oz."), "own offer shows near-only weight");
+            peer.trade_state(&own).await?;
+        }
         assert_eq!(
             a.trade(Intent::Look {
                 trade_id,
@@ -302,8 +345,26 @@ async fn scenario(h: &Harness) -> TestResult {
             .ok_or("partner inspection")?
             .1;
         assert!(!looked_a.look.is_empty() && !looked_b.look.is_empty());
+        assert!(
+            !looked_a.look.contains(" oz.") && !looked_b.look.contains(" oz."),
+            "counter offers at distance two hide near-only weight"
+        );
         a.trade_state(&looked_a).await?;
         b.trade_state(&looked_b).await?;
+        for _ in 0..2 {
+            let mut runtime = runtime.lock().await;
+            let p = runtime.read_actor_position(partner).map_err(debug)?;
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(
+                    p,
+                    crate::foundation::MovementLocalPosition {
+                        y: p.position().y - 1,
+                        ..p.position()
+                    },
+                )
+                .map_err(debug)?;
+        }
         let (accepted_a, accepted_b) = join_two(
             a.trade(Intent::Accept { trade_id }),
             b.trade(Intent::Accept { trade_id }),

@@ -160,13 +160,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Some(ResultCode::Stale);
                 }
                 let side = usize::from(record.sessions[1] == admitted.game_session_id);
+                // A held trade item is at its owner's authoritative runtime position.
+                let look_distance = if counter_offer {
+                    let positions = lives.each_ref().map(|live| {
+                        runtime.read_actor_position(live.actor).map(|p| p.position())
+                    });
+                    let [Ok(a), Ok(b)] = positions else {
+                        return Some(ResultCode::Stale);
+                    };
+                    i32::try_from(a.x.abs_diff(b.x).max(a.y.abs_diff(b.y)))
+                        .unwrap_or(i32::MAX)
+                } else {
+                    0
+                };
                 let leaf = record.offers[if counter_offer { 1 - side } else { side }].as_ref()?;
                 let (definition, count) = leaf.definition_and_quantity().ok()?;
                 let native = self.active_generation?.native_gameplay()?;
                 let policy =
                     native.item_policy(&definition.production_key, &definition.revision_ref)?;
                 let Some(text) = std::num::NonZeroU32::new(count).and_then(|count| {
-                    oteryn_gameplay_items::look::item_text(&policy.record().semantics, count)
+                    oteryn_gameplay_items::look::item_text(
+                        &policy.record().semantics,
+                        count,
+                        look_distance,
+                    )
                 }) else {
                     return Some(ResultCode::Rejected);
                 };
