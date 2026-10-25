@@ -153,6 +153,18 @@ where
         session.stash_rows = None;
     }
     let walk_target = autowalk::target(session, command);
+    if input_permit.is_some()
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type)
+        && ((command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT
+            && decode_step_intent(command.payload).is_ok())
+            || (command.command_type == 11 && decode_attack_target_intent(command.payload).is_ok())
+            || (command.command_type == 23 && decode_logout_intent(command.payload).is_ok())
+            || walk_target.is_some())
+    {
+        session.target_walk = None;
+    }
     let mut dispatch = if let Some(outcome) = retained_bank {
         Dispatch::Npc(
             outcome.disposition,

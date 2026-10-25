@@ -153,6 +153,7 @@ where
                 session.admitted.game_session_id,
                 queue.expected,
                 direction,
+                None,
             ),
         )
         .await

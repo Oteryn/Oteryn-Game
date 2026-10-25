@@ -11,6 +11,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
         expected: Option<crate::foundation::MovementPositionSnapshot>,
+        follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (StepOutcome, Option<Duration>) {
         if !self.ensure_source_map_initialized().await {
             return (StepOutcome::rejected(), None);
@@ -39,7 +40,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut states = self.states.spell_states.lock().await;
         // USE-AUTOWALK-1: a relocation (even away and back) invalidates the queued step.
         // Compare while holding the same owner lock as the movement commit.
-        if states.is_dead(actor)
+        if follow.is_some_and(|(target, expected)| {
+            states.is_dead(target)
+                || (!runtime.contains_live_creature(target)
+                    && !runtime
+                        .visible_entities()
+                        .players
+                        .iter()
+                        .any(|player| player.actor == target))
+                || runtime.borrow_movement_position().read(target) != Ok(expected)
+        }) || states.is_dead(actor)
             || expected.is_some_and(|expected| {
                 runtime.borrow_movement_position().read(actor) != Ok(expected)
             })

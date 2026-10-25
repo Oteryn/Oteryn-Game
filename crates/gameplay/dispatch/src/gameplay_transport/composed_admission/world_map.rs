@@ -57,6 +57,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
+            direction: match runtime
+                .read_actor_position(entry.actor)
+                .ok()
+                .and_then(|at| at.facing())
+            {
+                Some(crate::foundation::MovementFacing::North) => StepDirection::North,
+                Some(crate::foundation::MovementFacing::East) => StepDirection::East,
+                Some(crate::foundation::MovementFacing::West) => StepDirection::West,
+                Some(crate::foundation::MovementFacing::South) | None => StepDirection::South,
+            },
             kind,
             identity: entry.actor.placement_identity(),
             generation: entry.generation,

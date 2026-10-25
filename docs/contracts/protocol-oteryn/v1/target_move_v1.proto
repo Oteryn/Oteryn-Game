@@ -1,0 +1,16 @@
+syntax = "proto3";
+package oteryn.game.v1.target_move;
+// Cell uses the existing world_spatial ActorPosition encoding (sint32 x/y/floor).
+// Direction uses the existing StepIntent. Entity uses AttackTargetIntent with a required target.
+message TargetMoveIntent {
+  oneof action {
+    bytes cell = 1;
+    bool stop = 2;
+    bytes direction = 3;
+    bytes entity = 4;
+  }
+}
+message TargetMoveResult {
+  // 1 accepted; 2 no path; 3 rejected. Accepted starts an ephemeral route, not a teleport.
+  uint32 disposition = 1;
+}
