@@ -889,7 +889,7 @@ impl ChannelSpellStates {
     }
 }
 
-fn qualified_protection_zone(
+pub(super) fn qualified_protection_zone(
     runtime: &mut ChannelRuntimeV1,
     cells: &crate::content::NativeEntryMovementCells,
     actor: ExactActorRef,
