@@ -31,6 +31,25 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     world_interaction: selected_capabilities
                         .contains(CAPABILITY_WORLD_INTERACTION_V1),
                 };
+                // Foundation has already classified replay. Observe the reservation before
+                // legacy receipt reads can yield to the partner's observation cadence.
+                if let Ok(intent) = oteryn_protocol_oteryn::item_view::decode_item_move_intent_for(
+                    command.payload,
+                    selection,
+                ) && !authority
+                    .player_trade_item_available(
+                        actor,
+                        UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: command.command_id,
+                            item_fence: admitted.item_fence,
+                        },
+                        view.resolve(intent.source),
+                    )
+                    .await?
+                {
+                    return Some(Dispatch::ItemMove(ItemMoveOutcome::Rejected, Vec::new()));
+                }
                 let step = item_move::item_move(
                     authority,
                     actor,

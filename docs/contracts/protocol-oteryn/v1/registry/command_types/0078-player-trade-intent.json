@@ -1,0 +1,10 @@
+{
+  "id": 78,
+  "name": "PLAYER_TRADE_INTENT",
+  "owner_decision": "PLAYER-TRADE0-DIRECT-TRADE-V1; TRADE-WIRE-1",
+  "capability": 60,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/player_trade_v1.proto#PlayerTradeIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/player_trade_v1.proto#PlayerTradeResultV1",
+  "max_payload_bytes": 64,
+  "max_result_payload_bytes": 4
+}

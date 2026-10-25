@@ -16,6 +16,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("ENERGY-RING-1", 2),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
+    // The wooden chairs 2358..=2361 (tools/content-migration/item_transform_profiles.py).
+    // All have speed_bonus=0.
+    ("ITEM-TRANSFORM-1", 4),
     // 23 training/exercise weapon profiles (tools/content-migration/loop_training_profiles.py):
     // 28552..=28557, 35279..=35290, 44065..=44067, 50294/50295. All have speed_bonus=0.
     ("LOOP-TRAIN-1", 23),

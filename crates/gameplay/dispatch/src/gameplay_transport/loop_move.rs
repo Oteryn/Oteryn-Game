@@ -302,6 +302,15 @@ pub(super) async fn move_loop_item(
     let Some(permit) = admission.spell_lane_permit().await else {
         return LoopMoveResult::Unknown;
     };
+    if !admission.states.player_trades.physical(
+        command.game_session_id,
+        match request.item {
+            ItemKey::Instance(id) => Some(id),
+            _ => None,
+        },
+    ) {
+        return refused(LoopMoveRefusal::Rejected);
+    }
     if matches!(request.item, ItemKey::MapBase { .. }) {
         return map_pickup::move_map_item(admission, actor, command, request, &permit).await;
     }

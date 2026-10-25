@@ -19,11 +19,36 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     container_views: &mut Option<ContainerViewState>,
     visibility: &Option<SessionVisibility>,
 ) -> Option<Dispatch> {
+    let decoded = decode_use_intent_target(
+        admitted.continuity.selected_capabilities.as_slice(),
+        command.payload,
+    );
+    if let Ok(intent) = &decoded {
+        let source = match intent.target {
+            UseTarget::Item(handle) => {
+                Some(item_view.as_ref().and_then(|view| view.resolve(handle)))
+            }
+            UseTarget::ItemByDefinition(_) => Some(None),
+            _ => None,
+        };
+        if let Some(source) = source
+            && !authority
+                .player_trade_item_available(
+                    actor,
+                    UseCommand {
+                        game_session_id: admitted.game_session_id,
+                        command_id: command.command_id,
+                        item_fence: admitted.item_fence,
+                    },
+                    source,
+                )
+                .await?
+        {
+            return Some(Dispatch::Use(UseOutcome::rejected()));
+        }
+    }
     Some({
-        match decode_use_intent_target(
-            admitted.continuity.selected_capabilities.as_slice(),
-            command.payload,
-        ) {
+        match decoded {
             Ok(intent) if intent.use_with_map_item.is_some() => {
                 match transport::mining::dispatch_map_use(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,

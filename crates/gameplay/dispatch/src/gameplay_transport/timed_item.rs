@@ -106,6 +106,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return refusal(TimedDisposition::Stale);
         };
         let _lane = self.spell_lane_permit().await?;
+        if !self
+            .states
+            .player_trades
+            .physical(command.game_session_id, Some(item))
+        {
+            return refusal(TimedDisposition::Rejected);
+        }
         let Ok(Some(fence)) = self.current_quest_fence(command.game_session_id).await else {
             return None;
         };
