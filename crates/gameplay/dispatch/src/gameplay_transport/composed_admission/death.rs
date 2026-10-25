@@ -66,6 +66,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         SessionDeath,
         Option<crate::durability::character_build::DurableBuildState>,
     ) {
+        if self.states.player_trades.transitioning(session) {
+            return (SessionDeath::Retry, None);
+        }
+        self.states.player_trades.cancel(session);
         self.states.newhaven_travel.death(session);
         let mut lowered = None;
         let lowered_slot = &mut lowered;

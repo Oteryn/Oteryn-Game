@@ -14,6 +14,7 @@ pub(super) enum Next {
     Visibility,
     Combat,
     Chase,
+    TargetMove,
     Npc,
 }
 
@@ -84,6 +85,12 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin>(
                 None => std::future::pending().await,
             }
         });
+        let mut target_tick = std::pin::pin!(async {
+            match session.target_walk.as_ref().map(|walk| walk.due) {
+                Some(due) => tokio::time::sleep_until(due).await,
+                None => std::future::pending().await,
+            }
+        });
         std::future::poll_fn(|context| {
             if tick.as_mut().poll(context).is_ready() {
                 return std::task::Poll::Ready(Next::Probe);
@@ -112,13 +119,20 @@ pub(super) async fn next<S: AsyncRead + AsyncWrite + Unpin>(
             // CHASE-1: one ready client frame is read before a due chase step, so a client
             // step wins over the chase (RANGED-0 §8) and is never paced behind it; after
             // that frame the due chase step runs before the next one.
+            let target_ready = target_tick.as_mut().poll(context).is_ready();
+            if target_ready && session.chase_yielded {
+                return std::task::Poll::Ready(Next::TargetMove);
+            }
             let chase_ready = chase_tick.as_mut().poll(context).is_ready();
             if chase_ready && session.chase_yielded {
                 return std::task::Poll::Ready(Next::Chase);
             }
             if reading && let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
-                session.chase_yielded = chase_ready;
+                session.chase_yielded = chase_ready || target_ready;
                 return std::task::Poll::Ready(Next::Frame(read));
+            }
+            if target_ready {
+                return std::task::Poll::Ready(Next::TargetMove);
             }
             if chase_ready {
                 return std::task::Poll::Ready(Next::Chase);

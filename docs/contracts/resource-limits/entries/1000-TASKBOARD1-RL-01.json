@@ -1,0 +1,21 @@
+{
+  "id": "TASKBOARD1-RL-01",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_TASKBOARD1_SCOPE_DECISION_2026-10-25.md",
+  "resource": "Task Board request payload",
+  "unit": "bytes",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Refused before any read or write; strict decode re-encodes the request.",
+  "client_visible": true,
+  "boundary_tests": [
+    "task_board_request_strict_codec"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/task_board.rs"
+  ],
+  "notes": "TASKBOARD-1 command 89 request: action and task number only."
+}

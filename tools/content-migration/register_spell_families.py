@@ -227,8 +227,12 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     craft_runtime_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import mining_item_profiles
     mining_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    from ranged_item_profiles import apply_native
-    apply_native(root, generated)
+    import item_transform_profiles
+    item_transform_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import ranged_item_profiles
+    ranged_item_profiles.apply_native(root, generated)
+    import readable_item_profiles
+    readable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)
     descriptors = spell_import.descriptors(root, generated)
     for family, path in FAMILY_INDEXES.items():

@@ -237,6 +237,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         equipment_move::move_equipment(self, actor, command, request).await
     }
 
+    async fn stash(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::stash::StashIntent,
+        item: Option<item_view::ItemKey>,
+        row_open: bool,
+    ) -> Option<oteryn_protocol_oteryn::stash::StashReply> {
+        stash::execute(self, actor, command, intent, item, row_open).await
+    }
+
     async fn depot(
         &self,
         actor: ExactActorRef,
@@ -310,6 +321,50 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.tutorial_paced_step(actor, session, direction).await
     }
 
+    async fn turn_actor_valid(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        !states.is_dead(actor)
+            && !self.states.newhaven_travel.held(session)
+            && runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+    }
+
+    async fn turn_actor(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+    ) -> bool {
+        use crate::foundation::MovementFacing;
+        let mut runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        if states.is_dead(actor)
+            || self.states.newhaven_travel.held(session)
+            || !runtime
+                .player_control_facts(actor, session)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return false;
+        }
+        let context = runtime.pinned_movement_context();
+        let mut movement = runtime.borrow_movement_position();
+        let Ok(expected) = movement.read(actor) else {
+            return false;
+        };
+        if expected.context() != context {
+            return false;
+        }
+        let facing = match direction {
+            StepDirection::North => MovementFacing::North,
+            StepDirection::East => MovementFacing::East,
+            StepDirection::South => MovementFacing::South,
+            StepDirection::West => MovementFacing::West,
+        };
+        movement.commit_turn(expected, facing).is_ok()
+    }
+
     async fn item_walk_route(
         &self,
         actor: ExactActorRef,
@@ -325,12 +380,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         expected: crate::foundation::MovementPositionSnapshot,
         direction: StepDirection,
+        follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (
         StepOutcome,
         Option<Duration>,
         Option<crate::foundation::MovementPositionSnapshot>,
     ) {
-        ComposedFreshAdmission::item_walk_step(self, actor, session, expected, direction).await
+        ComposedFreshAdmission::item_walk_step(self, actor, session, expected, direction, follow)
+            .await
     }
 
     async fn item_walk_valid(
@@ -668,6 +725,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         crate::durability::item_transfer::ItemTransferError,
     > {
         self.read_committed_item_move(_actor, command).await
+    }
+
+    /// READ-WRITE-1a: read a visible base placement without materializing it.
+    async fn look_world_object(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> ItemLookResult {
+        item_look::look_world_object(self, actor, game_session_id, target).await
     }
 
     /// LOOK-2: examine a freshly observed item admitted by the session's handle table.

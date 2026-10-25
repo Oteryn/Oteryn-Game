@@ -1,0 +1,18 @@
+{
+  "id": "REPORT1-RL-01",
+  "owner_contract": "protocol-oteryn/v1/player_report_v1.proto",
+  "resource": "Player report comment",
+  "unit": "UTF-8 bytes",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Checked from the length prefix before the comment is copied; the SQL column CHECK repeats the bound.",
+  "client_visible": true,
+  "boundary_tests": [
+    "player_report_request_codec_is_strict_and_bounded"
+  ],
+  "notes": "Canary networkmessage getString bounds only by NETWORKMESSAGE_MAXSIZE; Oteryn fixes its own bound. Over-bound requests are REJECTED at the codec."
+}

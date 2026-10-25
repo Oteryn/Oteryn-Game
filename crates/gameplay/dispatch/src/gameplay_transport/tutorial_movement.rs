@@ -10,7 +10,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
     ) -> (StepOutcome, Option<Duration>) {
-        self.tutorial_paced_step_from(actor, session, direction, None)
+        self.tutorial_paced_step_from(actor, session, direction, None, None)
             .await
     }
 
@@ -20,13 +20,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
         expected: Option<crate::foundation::MovementPositionSnapshot>,
+        follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> (StepOutcome, Option<Duration>) {
         if self.states.newhaven_travel.held(session) {
             return (StepOutcome::rejected(), None);
         }
         if !self.tutorial_enabled().await {
             return self
-                .ordinary_paced_step(actor, session, direction, expected)
+                .ordinary_paced_step(actor, session, direction, expected, follow)
                 .await;
         }
         let here = {
@@ -74,7 +75,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             );
         }
         let outcome = self
-            .ordinary_paced_step(actor, session, direction, expected)
+            .ordinary_paced_step(actor, session, direction, expected, follow)
             .await;
         if let Some(moved) = outcome.0.moved_to {
             let cell = moved.actor_position;

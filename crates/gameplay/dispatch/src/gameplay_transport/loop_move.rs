@@ -128,6 +128,9 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn base_text(&self, key: u64) -> Option<&str> {
+        self.inner.base_text(key)
+    }
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
         self.inner.base_entry(pos, ordinal, id)
     }
@@ -299,6 +302,15 @@ pub(super) async fn move_loop_item(
     let Some(permit) = admission.spell_lane_permit().await else {
         return LoopMoveResult::Unknown;
     };
+    if !admission.states.player_trades.physical(
+        command.game_session_id,
+        match request.item {
+            ItemKey::Instance(id) => Some(id),
+            _ => None,
+        },
+    ) {
+        return refused(LoopMoveRefusal::Rejected);
+    }
     if matches!(request.item, ItemKey::MapBase { .. }) {
         return map_pickup::move_map_item(admission, actor, command, request, &permit).await;
     }

@@ -5,10 +5,12 @@ use super::*;
 mod autowalk;
 mod command;
 mod inbound;
+mod player_trade;
 mod poll;
 mod refresh;
 mod setup;
 mod snapshot;
+mod target_move;
 use command::CommandOutcome;
 mod effects;
 mod outbound;
@@ -19,6 +21,8 @@ mod use_effects;
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    target_walk: Option<target_move::PendingWalk>,
+    target_move_window: crate::gameplay_transport::attack::IntentWindow,
     chase_yielded: bool,
     chase_due: Option<tokio::time::Instant>,
     held: std::collections::VecDeque<(Vec<u8>, bool)>,
@@ -49,6 +53,8 @@ struct ServeState {
     appearances: SessionAppearance,
     selected_capabilities: SelectedCapabilities,
     item_view: Option<SessionItemView>,
+    stash_rows: Option<Vec<[u8; 16]>>,
+    stash_revision: u64,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,
     market_revision: u64,
     notices_selected: bool,
@@ -128,9 +134,13 @@ where
         let input = match inbound::receive(stream, authority, &mut session, next).await {
             Ok(Some(input)) => input,
             Ok(None) => continue,
-            Err(end) => return end.finish(session.admitted),
+            Err(end) => {
+                authority.player_trade_disconnected(session.admitted.game_session_id);
+                return end.finish(session.admitted);
+            }
         };
         if let Err(end) = command::execute(stream, authority, &mut session, input).await {
+            authority.player_trade_disconnected(session.admitted.game_session_id);
             return end.finish(session.admitted);
         }
     }

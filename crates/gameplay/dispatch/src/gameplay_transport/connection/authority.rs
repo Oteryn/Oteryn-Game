@@ -68,6 +68,7 @@ pub trait FreshAdmissionAuthority {
                 content_generation: own.content_generation,
                 observer: identity,
                 entities: vec![ChannelEntity {
+                    direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                     kind: VisibleKind::Player,
                     identity,
                     generation: 0,
@@ -111,6 +112,24 @@ pub trait FreshAdmissionAuthority {
         async move { (self.step(actor, direction).await, None) }
     }
 
+    fn turn_actor_valid(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    /// An in-place turn in the admitted actor's current owner context.
+    fn turn_actor(
+        &self,
+        _actor: ExactActorRef,
+        _session: GameSessionId,
+        _direction: StepDirection,
+    ) -> impl Future<Output = bool> {
+        async { false }
+    }
+
     /// USE-AUTOWALK-1: resolve an action's current target and find one bounded adjacent route.
     /// `Ok(None)` leaves unsupported/stale targets to their normal handler; `Err` is no path.
     fn item_walk_route(
@@ -129,6 +148,7 @@ pub trait FreshAdmissionAuthority {
         _session: GameSessionId,
         _expected: crate::foundation::MovementPositionSnapshot,
         _direction: StepDirection,
+        _follow: Option<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
     ) -> impl Future<
         Output = (
             StepOutcome,
@@ -439,6 +459,18 @@ pub trait FreshAdmissionAuthority {
         async { EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected) }
     }
 
+    /// Native stash conversion; test doubles fail closed unless they expose this owner.
+    fn stash(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: oteryn_protocol_oteryn::stash::StashIntent,
+        _item: Option<ItemKey>,
+        _row_open: bool,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::stash::StashReply>> {
+        async { None }
+    }
+
     /// Depot requests are resolved by the live Channel and fenced native item owner.
     fn depot(
         &self,
@@ -490,6 +522,15 @@ pub trait FreshAdmissionAuthority {
         _fence: Option<CurrentCharacterItemFence>,
         _views: &SessionItemView,
         _target: oteryn_protocol_oteryn::item_view::ItemHandle,
+    ) -> impl Future<Output = ItemLookResult> {
+        async { ItemLookResult::Refused(ItemLookRefusal::NotAvailable) }
+    }
+
+    fn look_world_object(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> impl Future<Output = ItemLookResult> {
         async { ItemLookResult::Refused(ItemLookRefusal::NotAvailable) }
     }

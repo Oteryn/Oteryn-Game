@@ -118,6 +118,9 @@ impl RealFacts {
 }
 
 impl MapFacts for RealFacts {
+    fn base_text(&self, _: u64) -> Option<&str> {
+        None
+    }
     fn base_entry(&self, _: TilePos, _: u8, id: u32) -> Option<EntryFacts> {
         self.by_id.get(id as usize).copied().flatten()
     }

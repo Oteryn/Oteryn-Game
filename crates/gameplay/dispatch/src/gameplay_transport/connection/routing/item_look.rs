@@ -30,6 +30,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             Err(_) => Dispatch::Unregistered,
             Ok(intent) => Dispatch::Look(
                 match intent.target {
+                    ItemLookTarget::WorldObject(target) => {
+                        authority
+                            .look_world_object(actor, admitted.game_session_id, &target)
+                            .await
+                    }
                     ItemLookTarget::Creature(entity) => match known_creature_generation(entity) {
                         Err(refusal) => ItemLookResult::Refused(refusal),
                         Ok(_) if !visibility.as_ref().is_some_and(|view| view.shows(entity)) => {

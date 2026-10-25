@@ -11,6 +11,7 @@ mod attack;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
+mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
 mod bundle_map_position;
@@ -54,6 +55,7 @@ mod item_craft;
 mod item_look;
 mod item_move;
 mod item_ref_admission;
+mod item_transform;
 mod item_use;
 mod item_view;
 mod kill_reward;
@@ -112,6 +114,7 @@ mod spell_magnitude_facts;
 mod spell_parameter_cast;
 pub mod spell_premium_coordinator;
 mod spell_presentation_publisher;
+mod stash;
 mod tcp_tls;
 #[cfg(test)]
 #[allow(clippy::expect_used)]

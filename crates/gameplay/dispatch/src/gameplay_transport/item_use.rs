@@ -200,6 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             committed: None,
             earned: EarnedNotice::NoneEarned,
             gate_message_id: None,
+            refusal_detail: None,
         }
     }
 
@@ -274,6 +275,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     })?
             }
         };
+        if !self.states.player_trades.physical(session, Some(source)) {
+            return Err(UseDisposition::Rejected);
+        }
         let backpack = inventory
             .backpack
             .as_ref()

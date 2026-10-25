@@ -36,6 +36,9 @@ intentional future capability-set change adds or updates its golden file as well
 fragment, so parallel capability changes touch different files and need no ordering. Existing
 mechanic-specific assertions remain in their modules.
 
+Regenerate one golden with `python3 tools/contracts/update_capability_golden.py <fragment>`.
+For an allocated renumbering, pass `--previous <old-fragment>` to replace the old golden.
+
 Command decoding/routing still edits `gameplay_transport/connection.rs`. CAPS-SPLIT-1 defers
 per-mechanic route registration to a separate change because the current chain also determines
 check order, decoding and error results. This split changes neither that chain nor wire behavior.

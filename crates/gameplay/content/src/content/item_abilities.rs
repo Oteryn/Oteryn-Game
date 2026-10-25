@@ -174,6 +174,57 @@ pub fn item_ability_profile(
     })
 }
 
+/// PARITY-EQUIP-MODIFIERS-1: the critical hit and leech skills one Item grants, in Canary's
+/// hundredths of a percent (`item_parse.cpp:482-496` writes `abilities.skills[SKILL_*]` with
+/// 10000 = 100%). Not an EQUIP-0 §3.1 ability, so the six-ability view stays as it is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct ItemOffenceModifiers {
+    pub critical_chance: i64,
+    pub critical_damage: i64,
+    pub life_leech: i64,
+    pub mana_leech: i64,
+}
+
+/// The offence skills of one Item. A modifier without a Known percent grants nothing, never an
+/// error: the content validator already requires the percent for these kinds. The leech chances
+/// are not read, as Canary's `Game::applyLifeLeech` and `applyManaLeech` read the amounts only.
+#[must_use]
+pub fn item_offence_modifiers(semantics: &ReferenceItemSemantics) -> ItemOffenceModifiers {
+    use ReferenceSkillModifierKind as Kind;
+    let mut offence = ItemOffenceModifiers::default();
+    let ReferenceItemField::Known(group) = &semantics.skill_modifiers else {
+        return offence;
+    };
+    let ReferenceItemField::Known(modifiers) = &group.modifiers else {
+        return offence;
+    };
+    for modifier in modifiers {
+        let ReferenceItemField::Known(ReferenceModifierParameter::RationalPercent(percent)) =
+            &modifier.parameter
+        else {
+            continue;
+        };
+        let Some(points) = hundredths_of_percent(*percent) else {
+            continue;
+        };
+        let field = match modifier.kind {
+            Kind::CriticalHitChance => &mut offence.critical_chance,
+            Kind::CriticalHitDamage => &mut offence.critical_damage,
+            Kind::LifeLeechAmount => &mut offence.life_leech,
+            Kind::ManaLeechAmount => &mut offence.mana_leech,
+            _ => continue,
+        };
+        *field = field.saturating_add(points);
+    }
+    offence
+}
+
+/// A percent in hundredths of a percent, truncated toward zero; `None` for a zero denominator.
+fn hundredths_of_percent(percent: ReferenceRationalPercent) -> Option<i64> {
+    let denominator = i64::try_from(percent.denominator).ok().filter(|d| *d > 0)?;
+    Some(percent.numerator.saturating_mul(100) / denominator)
+}
+
 fn modifier_ability(
     modifier: &ReferenceModifierBinding,
 ) -> Result<Option<ItemAbility>, &'static str> {
@@ -631,6 +682,61 @@ mod tests {
         assert_eq!(
             item_ability_profile(&semantics),
             Err("an ability modifier needs Known signed points")
+        );
+    }
+
+    #[test]
+    fn offence_modifiers_sum_in_hundredths_of_a_percent_and_ignore_leech_chances() {
+        let binding = |kind, numerator, denominator| ReferenceModifierBinding {
+            kind,
+            target_domain: ReferenceItemField::Unknown,
+            evaluation_phase: ReferenceItemField::Unknown,
+            priority: ReferenceItemField::Unknown,
+            parameter: ReferenceItemField::Known(ReferenceModifierParameter::RationalPercent(
+                ReferenceRationalPercent {
+                    numerator,
+                    denominator,
+                },
+            )),
+        };
+        let mut semantics = ReferenceItemSemantics {
+            skill_modifiers: ReferenceItemField::Known(ReferenceItemSkillModifiers {
+                modifiers: ReferenceItemField::Known(vec![
+                    binding(ReferenceSkillModifierKind::CriticalHitChance, 5, 1),
+                    binding(ReferenceSkillModifierKind::CriticalHitDamage, 25, 1),
+                    binding(ReferenceSkillModifierKind::LifeLeechAmount, 18, 1),
+                    binding(ReferenceSkillModifierKind::LifeLeechChance, 100, 1),
+                    binding(ReferenceSkillModifierKind::ManaLeechAmount, 3, 2),
+                    binding(ReferenceSkillModifierKind::ManaLeechChance, 100, 1),
+                    binding(ReferenceSkillModifierKind::ManaLeechAmount, 1, 3),
+                ]),
+            }),
+            ..ReferenceItemSemantics::default()
+        };
+        assert_eq!(
+            item_offence_modifiers(&semantics),
+            ItemOffenceModifiers {
+                critical_chance: 500,
+                critical_damage: 2500,
+                life_leech: 1800,
+                mana_leech: 150 + 33,
+            }
+        );
+        let ReferenceItemField::Known(group) = &mut semantics.skill_modifiers else {
+            unreachable!()
+        };
+        let ReferenceItemField::Known(modifiers) = &mut group.modifiers else {
+            unreachable!()
+        };
+        modifiers[0].parameter = ReferenceItemField::Unknown;
+        modifiers[1].parameter = ReferenceItemField::Known(
+            ReferenceModifierParameter::SignedPoints(ReferenceSignedPoints(25)),
+        );
+        let offence = item_offence_modifiers(&semantics);
+        assert_eq!((offence.critical_chance, offence.critical_damage), (0, 0));
+        assert_eq!(
+            item_offence_modifiers(&ReferenceItemSemantics::default()),
+            ItemOffenceModifiers::default()
         );
     }
 }

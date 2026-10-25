@@ -223,6 +223,18 @@
       "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
       "retention_profile_id": "STAFF_ACTION_AUDIT_RETENTION_V1",
       "atomic_mutation_evidence": true
+    },
+    {
+      "id": 9,
+      "name": "STASH_OPERATION",
+      "owner_gate": "SUPPLYSTASH0_SUPPLY_STASH",
+      "payload_schema": "docs/contracts/game-events/v2/stash_operation.proto",
+      "payload_message": "oteryn.events.v2.StashOperationV1",
+      "current_schema_revision": 1,
+      "durability_class": "DURABLE_AUDIT",
+      "privacy_class_floor": "RESTRICTED_PLAYER_LINKED",
+      "retention_profile_id": "ECONOMY_LEDGER_RETENTION_V1",
+      "atomic_mutation_evidence": true
     }
   ],
   "notes": [

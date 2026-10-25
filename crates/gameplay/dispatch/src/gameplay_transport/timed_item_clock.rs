@@ -137,6 +137,9 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             if !held.contains(id)
                 && let Some((request, _)) = &lane.pending
             {
+                if !self.states.player_trades.physical(session, None) {
+                    return false;
+                }
                 match self
                     .root
                     .commit_timed_action(self.character, self.holder, fence, request.clone())
