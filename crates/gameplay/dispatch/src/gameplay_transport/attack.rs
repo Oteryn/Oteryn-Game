@@ -21,6 +21,7 @@
 
 mod attack_chase_search;
 mod drain;
+mod equipped_offence;
 pub(super) mod player_block;
 pub(in crate::gameplay_transport) mod ranged;
 mod shared_experience;
