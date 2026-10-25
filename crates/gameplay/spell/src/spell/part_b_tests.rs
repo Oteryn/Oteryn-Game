@@ -326,10 +326,9 @@ fn the_longest_spoken_words_win() {
         cast("summon_creature", Some("rat"))
     );
     assert_eq!(heard(&book, "utevo res"), cast("summon_creature", None));
-    assert_eq!(
-        heard(&book, "  UTEVO   res  "),
-        cast("summon_creature", None)
-    );
+    // PARAM-CAST-WIRE-1: Canary trimString trims ASCII edge spaces only.
+    assert_eq!(heard(&book, "  UTEVO   res  "), None);
+    assert_eq!(heard(&book, "  UTEVO res  "), cast("summon_creature", None));
     // Canary picks the longest prefix first, so `ina` glued to a letter is chat.
     assert_eq!(heard(&book, "utevo res inax"), None);
     // A spell without a parameter must match exactly.
@@ -369,16 +368,33 @@ fn the_spoken_parameter_follows_the_quote_rules() {
         heard(&book, "exura sio \"Bubble"),
         cast("heal_friend", Some("Bubble"))
     );
-    // Quoting applies only when the parameter opens with a quote.
-    assert_eq!(heard(&book, "exiva Foo \"Bar\""), None);
+    // PARAM-CAST-WIRE-1: Canary searches for the first quote anywhere after the space.
+    assert_eq!(
+        heard(&book, "exiva Foo \"Bar\""),
+        cast("find_person", Some("Bar"))
+    );
     assert_eq!(
         heard(&book, "exiva Foo\"Bar\""),
-        cast("find_person", Some("Foo\"Bar\""))
+        cast("find_person", Some("Bar"))
+    );
+    assert_eq!(heard(&book, "exiva Foo\""), cast("find_person", None));
+}
+
+#[test]
+fn spoken_parameters_preserve_interior_spaces_case_and_ascii_trimming() {
+    let book = parameter_book();
+    assert_eq!(
+        heard(&book, " EXIVA  prefix\"Al  Dric\" "),
+        cast("find_person", Some("Al  Dric"))
     );
     assert_eq!(
-        heard(&book, "exiva Foo\""),
-        cast("find_person", Some("Foo\""))
+        heard(&book, "exiva   AlDric  "),
+        cast("find_person", Some("AlDric"))
     );
+    assert_eq!(heard(&book, "\texiva Aldric"), None);
+    assert_eq!(heard(&book, "exiva\tAldric"), None);
+    assert_eq!(heard(&book, "exiva \"Al Dric\" tail"), None);
+    assert_eq!(heard(&book, "exura   "), cast("light_healing", None));
 }
 
 /// Spoken words match case-insensitively, so words that differ only in case are one spell.

@@ -61,7 +61,29 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command_id: u64,
         intent: oteryn_protocol_oteryn::chat::ChatIntent,
     ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
-        self.chat_speak(actor, session, command_id, &intent).await
+        self.complete_chat_intent(actor, session, command_id, &intent)
+            .await
+            .map_or(
+                oteryn_protocol_oteryn::chat::ChatIntentResult {
+                    disposition: oteryn_protocol_oteryn::chat::ChatDisposition::ChatUnavailable,
+                    wait_seconds: 0,
+                },
+                |(result, _)| result,
+            )
+    }
+
+    async fn chat_intent_completion(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        intent: oteryn_protocol_oteryn::chat::ChatIntent,
+    ) -> Option<(
+        oteryn_protocol_oteryn::chat::ChatIntentResult,
+        Option<actor_spell::SpellCastOutcome>,
+    )> {
+        self.complete_chat_intent(actor, session, command_id, &intent)
+            .await
     }
 
     async fn chat_guild_admit(

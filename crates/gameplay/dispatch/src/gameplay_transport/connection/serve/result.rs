@@ -137,7 +137,7 @@ pub(super) fn encode(
         }
         Dispatch::Reply(status, payload) => (*status, std::mem::take(payload)),
         Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
-        Dispatch::Chat(result) => {
+        Dispatch::Chat(result, _) => {
             let Ok(payload) = encode_chat_intent_result(result) else {
                 return Err(ServeEnd::Disconnected);
             };
