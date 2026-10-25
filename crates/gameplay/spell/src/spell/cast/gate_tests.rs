@@ -170,6 +170,64 @@ fn a_gated_cast_in_a_protection_zone_is_refused_by_the_gate_not_the_zone() {
 }
 
 #[test]
+fn a_protection_zone_refuses_an_aggressive_cast_before_its_cooldown_and_mana() {
+    // Canary Spell::playerSpellCheck: the zone answers before the cooldowns, level and mana.
+    let book = book();
+    let wave = book
+        .spells
+        .iter()
+        .find(|s| s.name == "Terra Wave")
+        .expect("Terra Wave");
+    let cooling = ordinary(&book, &druid(), "Terra Wave", &operational(false))
+        .expect("first cast")
+        .next;
+    let resolve = |state: &PlayerSpellState, spell: &SpellDefinition, pz: bool| {
+        let caster = state.caster(state.owned_harmony_multiplier(spell).expect("harmony"));
+        crate::spell::resolve_cast_with_operational_facts(
+            spell,
+            &caster,
+            &state.cooldowns,
+            at(1),
+            &operational(pz),
+            &mut |_, maximum| maximum,
+        )
+        .map(|_| ())
+    };
+    assert!(matches!(
+        resolve(&cooling, wave, false),
+        Err(crate::spell::CastRejection::SpellCooling { .. }
+            | crate::spell::CastRejection::GroupCooling { .. })
+    ));
+    assert_eq!(
+        resolve(&cooling, wave, true),
+        Err(crate::spell::CastRejection::ProtectionZoneRejected)
+    );
+    let broke = PlayerSpellState { mana: 0, ..druid() };
+    assert!(matches!(
+        resolve(&broke, wave, false),
+        Err(crate::spell::CastRejection::NotEnoughMana { .. })
+    ));
+    assert_eq!(
+        resolve(&broke, wave, true),
+        Err(crate::spell::CastRejection::ProtectionZoneRejected)
+    );
+    // A non-aggressive spell in the zone still answers with its cooldown.
+    let heal = book
+        .spells
+        .iter()
+        .find(|s| s.name == "Light Healing")
+        .expect("Light Healing");
+    let healed = ordinary(&book, &druid(), "Light Healing", &operational(true))
+        .expect("first heal")
+        .next;
+    assert!(matches!(
+        resolve(&healed, heal, true),
+        Err(crate::spell::CastRejection::SpellCooling { .. }
+            | crate::spell::CastRejection::GroupCooling { .. })
+    ));
+}
+
+#[test]
 fn the_gate_answers_before_cost_and_spends_nothing() {
     let book = book();
     let open = operational(false);
