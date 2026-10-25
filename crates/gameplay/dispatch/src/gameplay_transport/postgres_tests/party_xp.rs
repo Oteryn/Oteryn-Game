@@ -24,6 +24,7 @@ const REAL_SWING_PASSES: u32 = 256;
 #[derive(Clone, Copy)]
 pub(super) enum Case {
     Stamina,
+    Offence,
     Shared,
     Modifiers,
     Inactive,
@@ -419,6 +420,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(case, Case::Stamina) {
         return super::hunting_stamina::qualify(&mut owner, h, &players).await;
+    }
+    if matches!(case, Case::Offence) {
+        return super::equipped_offence::qualify(&mut owner, h, &players).await;
     }
     owner
         .states
