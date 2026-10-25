@@ -69,6 +69,11 @@ pub struct CasterState {
     pub harmony_multiplier: HarmonyMultiplier,
 }
 
+/// Runtime-only movement pacification, kept in the existing cooldown owner. This is not a
+/// spell group and neither Focus nor client spell-group presentation may reset/expose it.
+pub const STAIRHOP_COOLDOWN_KEY: &str = "runtime:stairhop";
+pub const STAIRHOP_MICROS: u64 = 2_000_000;
+
 /// Ready times of a caster's spell and group cooldowns.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Cooldowns {
@@ -137,14 +142,15 @@ impl Cooldowns {
                 .individual_reset
                 .clears(spell.harmony_role == Some(HarmonyRole::Spender))
         });
-        self.groups.retain(
-            |key, _| match book.spells.iter().find(|spell| &spell.key == key) {
-                Some(spell) => !plan
-                    .group_with_spell_reset
-                    .clears(spell.harmony_role == Some(HarmonyRole::Spender)),
-                None => !plan.group_without_spell_reset.clears(false),
-            },
-        );
+        self.groups.retain(|key, _| {
+            key == STAIRHOP_COOLDOWN_KEY
+                || match book.spells.iter().find(|spell| &spell.key == key) {
+                    Some(spell) => !plan
+                        .group_with_spell_reset
+                        .clears(spell.harmony_role == Some(HarmonyRole::Spender)),
+                    None => !plan.group_without_spell_reset.clears(false),
+                }
+        });
     }
 }
 

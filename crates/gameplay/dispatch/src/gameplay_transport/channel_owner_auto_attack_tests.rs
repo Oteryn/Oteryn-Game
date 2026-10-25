@@ -1730,3 +1730,75 @@ fn item_look_reads_the_runtime_creature_name_and_requires_current_generation_and
         Err(ItemLookRefusal::NotVisible)
     ));
 }
+
+#[test]
+fn floor_exhaust_pauses_due_attack_without_clearing_target_or_consuming_swing() {
+    use crate::gameplay_transport::actor_spell::ChannelSpellStates;
+    use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+    let mut owner = owner();
+    let mut states = ChannelSpellStates::default();
+    states
+        .initialize(
+            &owner.runtime,
+            owner.player,
+            owner.session,
+            crate::gameplay_transport::actor_spell::tests::FACTS,
+            (0, 0),
+            at(0),
+        )
+        .expect("player state");
+    assert_eq!(
+        owner.target(T0, Some(owner.rat), 1),
+        AttackIntentDisposition::Ok
+    );
+    states
+        .get_mut(&owner.runtime, owner.player, owner.session)
+        .expect("state")
+        .cooldowns
+        .groups
+        .insert(STAIRHOP_COOLDOWN_KEY.into(), at(T0 + STAIRHOP_MICROS));
+    let digest = owner.runtime.content_pin().server_artifact_digest();
+    let constants = AttackConstants::checked_in().expect("attack rules");
+    let entry = owner.attack.entries.first_mut().expect("held attack");
+    entry.weapon = Some(WeaponFacts {
+        weapon: SwingWeapon::Fists,
+        content_digest: digest,
+        read_at: at(T0 + STAIRHOP_MICROS),
+    });
+    assert!(
+        super::drain::select_swing(
+            entry,
+            &owner.runtime,
+            &states,
+            &owner.room,
+            digest,
+            at(T0 + STAIRHOP_MICROS - 1),
+            constants
+        )
+        .is_none()
+    );
+    assert_eq!(entry.next_ordinal, 0);
+    assert_eq!(entry.target_ref, Some(owner.rat));
+    assert!(!owner.attack.settle_pacified_target(
+        &owner.runtime,
+        &states,
+        owner.player,
+        owner.session
+    ));
+    // A held target survives, and a due attack resumes exactly at the deadline.
+    let entry = owner.attack.entries.first_mut().expect("held attack");
+    assert!(
+        super::drain::select_swing(
+            entry,
+            &owner.runtime,
+            &states,
+            &owner.room,
+            digest,
+            at(T0 + STAIRHOP_MICROS),
+            constants
+        )
+        .is_some()
+    );
+    assert_eq!(entry.next_ordinal, 1);
+    assert_eq!(entry.target_ref, Some(owner.rat));
+}

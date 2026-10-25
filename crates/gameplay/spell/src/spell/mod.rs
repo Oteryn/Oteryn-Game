@@ -448,6 +448,14 @@ fn resolve(
     facts: Facts<'_>,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<CastResolution, CastRejection> {
+    // Canary's movement pacification precedes PZ, resource and spell cooldown checks.
+    if spell.aggressive {
+        check_group(
+            cooldowns,
+            oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY,
+            now,
+        )?;
+    }
     // Order of Canary Spell::playerSpellCheck: an aggressive spell in a protection zone is
     // refused first, then the group, spell and secondary group cooldowns.
     if let Facts::Owned(operational, _) | Facts::CarriedItem(operational) = facts

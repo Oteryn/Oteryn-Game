@@ -12,6 +12,36 @@ pub const MAX_OFFLINE_SECONDS: u64 = 21 * 24 * 60 * 60;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StaminaOutOfRange;
 
+/// Session-local hunting time. Gaps longer than a minute pause the clock;
+/// neither a checkpoint nor an idle owner tick calls `activity`.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct HuntingClock {
+    last_activity_micros: Option<u64>,
+    accumulated_micros: u64,
+}
+
+impl HuntingClock {
+    /// Damage dealt to or received from a monster is the OFFLINE-0 §4.2 signal.
+    /// Returns minutes spent and the successor clock without mutating the input.
+    pub fn activity(self, now: u64, minutes: u16) -> (u16, Self) {
+        const MINUTE: u64 = 60_000_000;
+        let elapsed = match self.last_activity_micros {
+            Some(last) if now < last => return (0, self),
+            Some(last) if now - last <= MINUTE => now - last,
+            _ => 0,
+        };
+        let accumulated = self.accumulated_micros + elapsed;
+        let spent = minutes.min((accumulated / MINUTE) as u16);
+        (
+            spent,
+            Self {
+                last_activity_micros: Some(now),
+                accumulated_micros: accumulated % MINUTE,
+            },
+        )
+    }
+}
+
 /// Computes one proposed value; it does not consume a marker or mutate durable state.
 /// `raw_offline_seconds` carries no provenance or current-authority guarantee. The caller
 /// must qualify it before using the result; repeated calls are not settlement idempotency.
@@ -197,5 +227,30 @@ mod tests {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod hunting_tests {
+    use super::*;
+    #[test]
+    fn hunting_clock_band_edges_and_zero_floor() {
+        for minutes in [0, 1, 840, 841, 2340, 2341, 2520] {
+            let (spent, clock) = HuntingClock::default().activity(10, minutes);
+            assert_eq!(spent, 0);
+            let (spent, clock) = clock.activity(60_000_009, minutes);
+            assert_eq!(spent, 0);
+            let (spent, _) = clock.activity(60_000_010, minutes);
+            assert_eq!(spent, minutes.min(1));
+        }
+    }
+    #[test]
+    fn hunting_clock_idle_and_stale_events_never_catch_up() {
+        let (_, clock) = HuntingClock::default().activity(0, 2520);
+        let (_, clock) = clock.activity(30_000_000, 2520);
+        assert_eq!(clock.activity(29_000_000, 2520), (0, clock));
+        let (spent, clock) = clock.activity(u64::MAX - 60_000_000, 2520);
+        assert_eq!(spent, 0);
+        assert_eq!(clock.activity(u64::MAX, 2520).0, 1);
     }
 }

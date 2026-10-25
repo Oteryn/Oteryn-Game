@@ -598,6 +598,10 @@ async fn prepare_parameter(
         binding:serde_json::to_vec(&json!({"intent":intent_bytes,"result":result_bytes,"spell":profile.spell(),"before":format!("{before:?}"),"paid":format!("{:?}",common.next),"owned":format!("{owned:?}")})).map_err(|_|SpellCastDisposition::Rejected)?};
     // Consume the transaction-borrowing source proof while Item locks are held.
     // The Foundation seal and real reserved destination survive unknown COMMIT.
+    let relocated_actor = relocation_proof.as_ref().and_then(|proof| {
+        let (actor, expected, destination) = crate::foundation::SpellRelocationProof::parts(proof);
+        (expected.position() != destination).then_some(actor)
+    });
     let relocation = relocation_proof
         .map(|proof| crate::foundation::QualifiedSpellRelocation::bind(&mut batch, proof))
         .transpose()
@@ -660,8 +664,11 @@ async fn prepare_parameter(
             None => runtime.stage_spell_batch(&batch),
         }
         .map_err(|_| SpellCastDisposition::Rejected)?;
-        let player = stage_player_batch(runtime, states, &batch, Some(common.next.clone()))
+        let mut player = stage_player_batch(runtime, states, &batch, Some(common.next.clone()))
             .map_err(|_| SpellCastDisposition::Rejected)?;
+        if let Some(relocated_actor) = relocated_actor {
+            player.stage_stairhop(runtime, states, relocated_actor, now)?;
+        }
         Some(ParameterInstallation {
             request,
             training,
@@ -797,8 +804,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         }
         super::native_combat_cast::dispatch_outcome_token(&dispatch.cast)
     }
-    /// Called only after the separate candidate capability was actually selected.
-    /// Parameter bytes never reinterpret the accepted v1 command.
+    /// Called by negotiated CHAT_V1 speech through the common cast dispatcher.
+    /// The internal parameter intent never reinterprets the accepted v1 command.
     pub(in crate::gameplay_transport) async fn cast_parameters<
         A: super::super::spell_access_facts::CurrentSpellAccessOwner + Sync,
     >(

@@ -1,12 +1,16 @@
 //! Tutorial step interception around the existing owner movement path.
 use super::*;
 
+mod autowalk;
+pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn ordinary_paced_step(
         &self,
         actor: ExactActorRef,
         session: GameSessionId,
         direction: StepDirection,
+        expected: Option<crate::foundation::MovementPositionSnapshot>,
     ) -> (StepOutcome, Option<Duration>) {
         if !self.ensure_source_map_initialized().await {
             return (StepOutcome::rejected(), None);
@@ -33,6 +37,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        // USE-AUTOWALK-1: a relocation (even away and back) invalidates the queued step.
+        // Compare while holding the same owner lock as the movement commit.
+        if states.is_dead(actor)
+            || expected.is_some_and(|expected| {
+                runtime.borrow_movement_position().read(actor) != Ok(expected)
+            })
+        {
+            return (StepOutcome::rejected(), None);
+        }
         if states.has_pending_spell_commit(actor, session) {
             return (StepOutcome::rejected(), None);
         }

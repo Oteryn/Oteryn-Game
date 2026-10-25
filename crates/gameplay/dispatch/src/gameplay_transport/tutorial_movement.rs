@@ -10,16 +10,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
     ) -> (StepOutcome, Option<Duration>) {
+        self.tutorial_paced_step_from(actor, session, direction, None)
+            .await
+    }
+
+    pub(super) async fn tutorial_paced_step_from(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        direction: StepDirection,
+        expected: Option<crate::foundation::MovementPositionSnapshot>,
+    ) -> (StepOutcome, Option<Duration>) {
         if self.states.newhaven_travel.held(session) {
             return (StepOutcome::rejected(), None);
         }
         if !self.tutorial_enabled().await {
-            return self.ordinary_paced_step(actor, session, direction).await;
+            return self
+                .ordinary_paced_step(actor, session, direction, expected)
+                .await;
         }
         let here = {
-            let runtime = self.runtime.lock().await;
+            let mut runtime = self.runtime.lock().await;
             if runtime.player_control_facts(actor, session).is_err()
                 || runtime.owner_fence().is_err()
+                || expected.is_some_and(|expected| {
+                    runtime.borrow_movement_position().read(actor) != Ok(expected)
+                })
             {
                 return (StepOutcome::rejected(), None);
             }
@@ -57,7 +73,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 None,
             );
         }
-        let outcome = self.ordinary_paced_step(actor, session, direction).await;
+        let outcome = self
+            .ordinary_paced_step(actor, session, direction, expected)
+            .await;
         if let Some(moved) = outcome.0.moved_to {
             let cell = moved.actor_position;
             let event = match (cell.x, cell.y, cell.floor) {

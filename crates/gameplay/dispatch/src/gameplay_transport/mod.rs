@@ -47,6 +47,7 @@ mod guild_bank;
 mod guild_chat;
 mod highscores;
 mod house_query;
+mod hunting_stamina;
 mod input_gate;
 mod item_craft;
 mod item_look;
@@ -139,6 +140,7 @@ use bundle_map_position::bundle_world_map;
 pub use connection::quest_log;
 pub use last_position::LastPositionFlush;
 pub use npc_talk::NpcTalkBook;
+pub use paced_movement::{AutoWalkRoute, AutoWalkTarget};
 pub use promotion_login::PremiumSessions;
 pub use seam_rooms::SeamRooms;
 #[allow(

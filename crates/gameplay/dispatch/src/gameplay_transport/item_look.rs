@@ -38,6 +38,8 @@ pub enum ItemLookOutcome {
 pub struct ObservedLookItem<'a> {
     pub item: ViewItem,
     pub definition: &'a TypedDefinitionRef,
+    /// Canary Chebyshev distance, plus 15 across floors; carried items use -1.
+    pub look_distance: i32,
 }
 
 pub fn examine_observed_item(
@@ -101,9 +103,13 @@ fn examine_qualified_item(
     {
         return ItemLookOutcome::Unavailable;
     }
-    oteryn_gameplay_items::look::item_text(&record.semantics, observed.item.count)
-        .map(ItemLookOutcome::Text)
-        .unwrap_or(ItemLookOutcome::Unavailable)
+    oteryn_gameplay_items::look::item_text(
+        &record.semantics,
+        observed.item.count,
+        observed.look_distance,
+    )
+    .map(|text| ItemLookOutcome::Text(bounded_text(text)))
+    .unwrap_or(ItemLookOutcome::Unavailable)
 }
 
 #[cfg(test)]
@@ -143,6 +149,15 @@ fn in_view(actor: ActorPosition, target: ActorPosition) -> bool {
     }
 }
 
+// Canary Game::playerLookAt, game.cpp:6380-6387. Floor differences never reject a
+// visible look, but they make it far for the description's near-only fields.
+fn look_distance(actor: ActorPosition, target: ActorPosition) -> i32 {
+    let distance = actor.x.abs_diff(target.x).max(actor.y.abs_diff(target.y));
+    i32::try_from(distance)
+        .unwrap_or(i32::MAX)
+        .saturating_add(if actor.floor == target.floor { 0 } else { 15 })
+}
+
 pub(super) enum Looked<'a> {
     Creature {
         name: &'a str,
@@ -171,17 +186,21 @@ pub(super) fn look_text(looked: Looked<'_>) -> ItemLookResult {
     if name.trim().is_empty() {
         return ItemLookResult::Refused(ItemLookRefusal::NotAvailable);
     }
-    let mut text = match details {
+    let text = match details {
         None => format!("You see {name}."),
         Some((level, None)) => format!("You see {name} (Level {level})."),
         Some((level, Some(vocation))) => format!("You see {name} (Level {level}, {vocation})."),
     };
+    ItemLookResult::Text(bounded_text(text))
+}
+
+fn bounded_text(mut text: String) -> String {
     let mut end = text.len().min(MAX_ITEM_LOOK_TEXT_BYTES);
     while !text.is_char_boundary(end) {
         end -= 1;
     }
     text.truncate(end);
-    ItemLookResult::Text(text)
+    text
 }
 
 pub(super) fn vocation_name(vocation: Vocation) -> &'static str {
@@ -300,7 +319,7 @@ async fn observe_look_item(
     } else {
         None
     };
-    let (definition, count) = match key {
+    let (definition, count, mut distance) = match key {
         ItemKey::Entity(_) => {
             let corpse = corpse.as_ref().ok_or(unavailable)?;
             (
@@ -310,6 +329,7 @@ async fn observe_look_item(
                     revision_ref: corpse.item.revision_ref.clone(),
                 },
                 1,
+                -1,
             )
         }
         ItemKey::Instance(instance) => {
@@ -325,7 +345,7 @@ async fn observe_look_item(
                             && oteryn_protocol_oteryn::item_view::wire_slot(item.slot) == Some(slot)
                     })
                     .ok_or(unavailable)?;
-                (item.definition, item.quantity)
+                (item.definition, item.quantity, -1)
             } else if let Some(corpse) = &corpse {
                 let contents = admission
                     .root
@@ -338,7 +358,7 @@ async fn observe_look_item(
                     .into_iter()
                     .find(|entry| entry.item.item_instance_id == instance)
                     .ok_or(unavailable)?;
-                (entry.item.definition, entry.item.quantity)
+                (entry.item.definition, entry.item.quantity, -1)
             } else {
                 // This fenced owner read admits only the Character's carried tree, including
                 // the main backpack. A handle may instead name a durable Ground item, which
@@ -352,7 +372,7 @@ async fn observe_look_item(
                     None => None,
                 };
                 match read {
-                    Some(read) => (read.container.definition, read.container.quantity),
+                    Some(read) => (read.container.definition, read.container.quantity, -1),
                     None => observe_map_look(admission, actor, key).await?,
                 }
             }
@@ -365,7 +385,7 @@ async fn observe_look_item(
     if content_generation(&runtime) != pin {
         return Err(unavailable);
     }
-    actor_position(&mut runtime, actor).ok_or(unavailable)?;
+    let position = actor_position(&mut runtime, actor).ok_or(unavailable)?;
     if let (Some(ItemKey::Entity(identity)), Some(previous)) = (corpse_key, corpse) {
         let current = corpse_for_look(
             &mut runtime,
@@ -376,6 +396,14 @@ async fn observe_look_item(
         if current.item != previous.item {
             return Err(unavailable);
         }
+        distance = look_distance(
+            position,
+            ActorPosition {
+                x: current.position.x,
+                y: current.position.y,
+                floor: current.position.floor,
+            },
+        );
     }
     let index = pinned_index(&runtime, admission.active_generation).ok_or(unavailable)?;
     let observed = ObservedLookItem {
@@ -386,6 +414,7 @@ async fn observe_look_item(
             sub_type: 0,
         },
         definition: &definition,
+        look_distance: distance,
     };
     match examine_observed_item(
         &runtime,
@@ -404,7 +433,7 @@ pub(super) fn map_look_target<F: MapFacts>(
     at: ActorPosition,
     key: ItemKey,
     index: &ItemDefinitionIndex,
-) -> Result<(TypedDefinitionRef, NonZeroU32), ItemLookRefusal> {
+) -> Result<(TypedDefinitionRef, NonZeroU32, i32), ItemLookRefusal> {
     use super::world_map::{MapHandleTarget, resolve_map_handle};
     use oteryn_protocol_oteryn::world_map::MapDefinition;
     let unavailable = ItemLookRefusal::NotAvailable;
@@ -451,13 +480,14 @@ pub(super) fn map_look_target<F: MapFacts>(
     Ok((
         typed_definition(index, reference).ok_or(unavailable)?,
         NonZeroU32::new(entry.facts.count).ok_or(unavailable)?,
+        look_distance(at, target),
     ))
 }
 async fn observe_map_look(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     key: ItemKey,
-) -> Result<(TypedDefinitionRef, u32), ItemLookRefusal> {
+) -> Result<(TypedDefinitionRef, u32, i32), ItemLookRefusal> {
     use super::world_map::MapViewSource;
     let unavailable = ItemLookRefusal::NotAvailable;
     let (at, index, pin) = {
@@ -479,7 +509,7 @@ async fn observe_map_look(
     let current = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)
         .ok_or(unavailable)?;
     let facts = at.map.facts.pinned();
-    let (definition, count) = match ground.as_deref() {
+    let (definition, count, distance) = match ground.as_deref() {
         Some(ground) => {
             let facts = ground.facts(&facts);
             let source = MapViewSource {
@@ -500,7 +530,7 @@ async fn observe_map_look(
             map_look_target(&source, current.at, key, index)?
         }
     };
-    Ok((definition, count.get()))
+    Ok((definition, count.get(), distance))
 }
 /// Owned runtime facts; no borrowed runtime state survives the following durable read.
 pub(super) enum RuntimeLook {
@@ -578,6 +608,41 @@ pub(super) fn runtime_look_creature(
         yourself: found.actor == actor,
     })
 }
+fn creature_inspection<'a>(
+    runtime: &ChannelRuntimeV1,
+    generation: Option<&'a ActiveGeneration>,
+    target: EntityRef,
+) -> Option<&'a str> {
+    use crate::content::ProjectV2AuthoringProfileData;
+    let generation = generation?;
+    if runtime.content_pin().world_id() != generation.identity().world_id()
+        || runtime.content_pin().activation_sequence() != generation.activation_sequence()
+    {
+        return None;
+    }
+    pinned_index(runtime, Some(generation))?;
+    let visible = runtime.visible_entities();
+    let creature = visible.creatures.iter().find(|entry| {
+        entry.actor.placement_identity() == target.identity && entry.generation == target.generation
+    })?;
+    let snapshot = runtime.companion_snapshot(creature.actor).ok()?;
+    let policy = &snapshot.state.policy;
+    let record = generation
+        .native_gameplay()?
+        .creature_profiles()
+        .records
+        .iter()
+        .find(|record| {
+            record.profile.target.key == policy.definition_key
+                && record.profile.target.revision == policy.definition_revision
+        })?;
+    let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+        return None;
+    };
+    let name = &profile.details.as_ref()?.inspection;
+    (!name.trim().is_empty()).then_some(name.as_str())
+}
+
 pub(super) async fn look_creature(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -592,7 +657,16 @@ pub(super) async fn look_creature(
             target,
         ) {
             Err(refusal) => return ItemLookResult::Refused(refusal),
-            Ok(RuntimeLook::Text(text)) => return text,
+            Ok(RuntimeLook::Text(text)) => {
+                // Runtime policy owns identity/visibility; the same pinned content generation
+                // supplies the source inspection (including its article), never a guessed one.
+                if let Some(name) =
+                    creature_inspection(&runtime, admission.active_generation, target)
+                {
+                    return look_text(Looked::Creature { name });
+                }
+                return text;
+            }
             Ok(RuntimeLook::Player {
                 actor,
                 session,

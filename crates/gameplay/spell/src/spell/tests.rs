@@ -696,3 +696,65 @@ fn only_a_spender_scales_its_damage_bounds_by_the_harmony_multiplier() {
 
 #[path = "cast_property_tests.rs"]
 mod property_tests;
+
+#[test]
+fn floor_exhaust_aggressive_instant_and_rune_refuse_until_exact_deadline_only() {
+    use oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY;
+    let book = book();
+    let caster = caster(Vocation::MasterSorcerer, 100, 50, 100);
+    let mut cooldowns = Cooldowns::default();
+    cooldowns
+        .groups
+        .insert(STAIRHOP_COOLDOWN_KEY.into(), at(2100));
+    for words in ["exori frigo", "exori vis"] {
+        let spell = book.spoken(words).expect("aggressive instant").spell;
+        assert!(spell.aggressive);
+        for time in [100, 2099] {
+            assert!(
+                matches!(resolve_cast(spell, &caster, &cooldowns, at(time), true, &mut lowest),
+                Err(CastRejection::GroupCooling { group, ready_at })
+                if group == STAIRHOP_COOLDOWN_KEY && ready_at == at(2100))
+            );
+        }
+        assert!(resolve_cast(spell, &caster, &cooldowns, at(2100), true, &mut lowest).is_ok());
+    }
+    let rune = book
+        .spells
+        .iter()
+        .find(|s| matches!(s.carrier, Carrier::Rune { .. }) && s.aggressive)
+        .expect("aggressive rune");
+    assert!(matches!(
+        resolve_cast(rune, &caster, &cooldowns, at(2099), true, &mut lowest),
+        Err(CastRejection::GroupCooling { .. })
+    ));
+    assert!(resolve_cast(rune, &caster, &cooldowns, at(2100), true, &mut lowest).is_ok());
+    let heal = book.spoken("exura").expect("heal").spell;
+    assert!(!heal.aggressive);
+    assert!(resolve_cast(heal, &caster, &cooldowns, at(101), false, &mut lowest).is_ok());
+}
+
+#[test]
+fn floor_exhaust_lifecycle_clears_only_the_movement_deadline() {
+    use oteryn_gameplay_spell_rules::cast::STAIRHOP_COOLDOWN_KEY;
+    let mut player = crate::spell::cast::PlayerSpellState::new(
+        crate::spell::cast::CharacterCastFacts {
+            vocation: Vocation::Druid,
+            level: 100,
+            magic_level: 50,
+            max_health: 1000,
+            max_mana: 1000,
+            max_soul: 100,
+        },
+        0,
+        0,
+    )
+    .expect("state");
+    player
+        .cooldowns
+        .groups
+        .insert(STAIRHOP_COOLDOWN_KEY.into(), at(2000));
+    player.cooldowns.groups.insert("healing".into(), at(2000));
+    crate::spell::actor_conditions::clear_on_lifecycle(&mut player);
+    assert_eq!(player.cooldowns.group_ready_at(STAIRHOP_COOLDOWN_KEY), None);
+    assert_eq!(player.cooldowns.group_ready_at("healing"), Some(at(2000)));
+}

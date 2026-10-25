@@ -147,6 +147,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     reward_revision: binding.reward_revision.clone(),
                     policy: binding.policy.clone(),
                 },
+                // Filled from the current runtime under the final transaction's guards.
+                live_stamina: None,
                 premium: member.premium,
                 shared: member.shared,
                 party_id: member.party_id,
@@ -229,6 +231,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     for (request, current) in members.iter_mut().zip(&current.members) {
                         request.request.amount =
                             oteryn_simulation_determinism::ExactI64::new(current.share);
+                        request.live_stamina = states.live_stamina(current.actor, current.session);
                         request.premium = current.premium;
                         request.shared = current.shared;
                         request.party_id = current.party_id;

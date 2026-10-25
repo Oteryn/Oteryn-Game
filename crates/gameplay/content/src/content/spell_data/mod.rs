@@ -330,16 +330,16 @@ impl SpellBook {
     }
 
     /// The instant spell a spoken message casts, if any (part B.3 P1 and P2, Canary
-    /// `getInstantSpell` and `playerSaySpell`). Whitespace runs collapse to one space and the ends
-    /// are trimmed. The spell whose words are the longest case-insensitive prefix is chosen; a
+    /// `getInstantSpell` and `playerSaySpell`). Only ASCII spaces at the ends are trimmed;
+    /// interior whitespace and parameter case are preserved. The longest case-insensitive prefix is chosen; a
     /// spell without a parameter must match exactly, one with a parameter needs a space and at
-    /// least one more character after its words. A parameter that opens with a quote is the text
+    /// least one more character after its words. A parameter containing a quote is the text
     /// up to the next quote (an unclosed quote runs to the end; text after the closing quote makes
-    /// the message chat); any other parameter is a single word kept as spoken, quotes included
+    /// the message chat); an unquoted parameter must be a single word
     /// (two words make it chat). It keeps the
     /// spoken case; an empty parameter is `None`. `None` means the message is chat.
     pub fn spoken(&self, message: &str) -> Option<SpokenSpell<'_>> {
-        let message = message.split_whitespace().collect::<Vec<_>>().join(" ");
+        let message = message.trim_matches(' ');
         let (words, &index) = self
             .by_words
             .iter()
@@ -366,14 +366,22 @@ impl SpellBook {
             });
         }
         let parameter = rest.strip_prefix(' ').filter(|_| takes_parameter)?;
-        let parameter = match parameter.strip_prefix('"') {
-            Some(quoted) => match quoted.find('"') {
-                None => quoted,
-                Some(close) if close + 1 == quoted.len() => &quoted[..close],
-                Some(_) => return None,
-            },
-            None if parameter.contains(' ') => return None,
-            None => parameter,
+        let parameter = match parameter.find('"') {
+            Some(open) => {
+                let quoted = &parameter[open + 1..];
+                match quoted.find('"') {
+                    None => quoted,
+                    Some(close) if close + 1 == quoted.len() => &quoted[..close],
+                    Some(_) => return None,
+                }
+            }
+            None => {
+                let parameter = parameter.trim_matches(' ');
+                if parameter.contains(' ') {
+                    return None;
+                }
+                parameter
+            }
         };
         Some(SpokenSpell {
             spell,

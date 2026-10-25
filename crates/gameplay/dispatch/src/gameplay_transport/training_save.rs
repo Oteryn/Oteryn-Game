@@ -22,6 +22,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> TrainingSave {
+        // A retained receipt may leave spending accumulated after its unknown outcome.
+        // Drain that successor before an actor-end save can report success.
+        for _ in 0..2 {
+            match self.save_hunting_stamina(actor, session).await {
+                TrainingSave::Unknown => return TrainingSave::Unknown,
+                TrainingSave::FencedOut => return TrainingSave::FencedOut,
+                TrainingSave::NotApplicable => break,
+                TrainingSave::Saved => {}
+            }
+        }
+        if force
+            && self
+                .states
+                .spell_states
+                .lock()
+                .await
+                .stamina_to_flush(actor, session)
+        {
+            return TrainingSave::Unknown;
+        }
         if !self.training_before_save(actor, session, force).await {
             return TrainingSave::Unknown;
         }

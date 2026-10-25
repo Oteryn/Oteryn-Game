@@ -78,6 +78,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(build) => build,
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
+        let stamina = match self
+            .root
+            .read_hunting_stamina(self.character, character_id)
+            .await
+        {
+            Ok(minutes) => minutes,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+        };
         let stance = match self
             .root
             .read_character_stance(self.character, character_id)
@@ -311,6 +319,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedByChannel, None, None);
             }
         }
+        self.states.spell_states.lock().await.load_stamina(
+            &runtime,
+            actor,
+            game_session_id,
+            stamina,
+        );
         drop(runtime);
         drop(permit);
         #[cfg(test)]

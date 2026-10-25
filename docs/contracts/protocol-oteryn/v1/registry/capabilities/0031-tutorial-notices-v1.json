@@ -8,5 +8,5 @@
     23
   ],
   "offered": true,
-  "offer_gate": "Tutorial hints and status text only after capability selection. Newhaven-start tutorial rules alone produce notices."
+  "offer_gate": "Tutorial hints and status text only after capability selection. Newhaven-start tutorial rules produce hints and tutorial text; USE-AUTOWALK-1 (NIGHT-W1 owner decision 15) also produces the status text There is no way. after a no-path item-action refusal."
 }

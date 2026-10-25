@@ -152,12 +152,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
             return;
         };
+        let Ok(stamina) = self
+            .root
+            .read_hunting_stamina(self.character, item.character_id)
+            .await
+        else {
+            admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+            return;
+        };
         if let Some(actor) = admitted.runtime_actor {
             let runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if let Some(state) = states.get_mut(&runtime, actor, admitted.game_session_id) {
                 state.rebase_after_death(&build);
             }
+            states.load_stamina(&runtime, actor, admitted.game_session_id, stamina);
         }
     }
     pub(in crate::gameplay_transport) async fn training_release_store(

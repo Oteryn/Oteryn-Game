@@ -19,6 +19,8 @@ pub struct PartyKillXpMember<const N: usize> {
     pub fence: CurrentCharacterGameplayFence,
     pub request: ExperienceAwardRequest<N>,
     pub premium: bool,
+    /// Current runtime stamina; durable stamina remains the upper bound.
+    pub live_stamina: Option<u16>,
     pub shared: bool,
     pub party_id: Option<[u8; 16]>,
     pub party_revision: Option<u64>,
@@ -208,9 +210,12 @@ pub async fn commit_in_transaction<const N: usize>(
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
-        let modifiers =
+        let mut modifiers =
             hunting_xp::read_in_transaction(tx, &member.fence, &input.creature, member.premium)
                 .await?;
+        if let Some(live) = member.live_stamina {
+            modifiers.stamina_minutes = modifiers.stamina_minutes.min(i32::from(live));
+        }
         let raw = member.request.amount.get();
         let amount = oteryn_gameplay_characters::hunting_experience::hunting_experience(
             raw,
