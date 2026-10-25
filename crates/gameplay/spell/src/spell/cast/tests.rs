@@ -157,6 +157,19 @@ fn actual_named_healing_failure_starts_cooldowns_without_resources_or_harmony() 
             )
             .is_err()
         );
+        let mut knight = state.clone();
+        knight.facts.vocation = Vocation::Knight;
+        let wrong_vocation =
+            knight.caster(knight.owned_harmony_multiplier(&spell).expect("multiplier"));
+        let mut not_premium = caster.clone();
+        not_premium.premium = CasterPremium::NotCurrent;
+        for (owner, refused) in [(&knight, &wrong_vocation), (&state, &not_premium)] {
+            assert_eq!(
+                prepare_named_player_failure_owner_cast_with_caster(owner, &spell, at(1), refused)
+                    .err(),
+                Some(SpellCastDisposition::NotAvailable)
+            );
+        }
         let mut unavailable = state.clone();
         unavailable.mana = 0;
         let caster = unavailable.caster(
