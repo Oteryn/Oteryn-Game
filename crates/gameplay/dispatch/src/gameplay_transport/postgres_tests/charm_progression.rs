@@ -20,14 +20,6 @@ use oteryn_protocol_oteryn::CommandStatus;
 use std::num::NonZeroU32;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-/// A UUIDv7-shaped fixture id.
-fn occurrence(n: u8) -> [u8; 16] {
-    let mut bytes = id(n);
-    bytes[6] = 0x70 | (bytes[6] & 0x0f);
-    bytes[8] = 0x80 | (bytes[8] & 0x3f);
-    bytes
-}
-
 /// One command on a fresh connection that continues this GameSession's command stream.
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -95,9 +87,17 @@ async fn seed(h: &Harness, races: &[&BestiaryRace]) -> TestResult {
     sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now())")
         .execute(&mut *tx)
         .await?;
+    // Fund the level * 100 unassignment fee, in addition to the five carried coins.
+    let bank_gold: i64 = sqlx::query_scalar(
+        "SELECT level * 100 FROM game_character_progression_state \
+         WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .fetch_one(&mut *tx)
+    .await?;
     let uuid = |n| crate::durability::item_fee_burn::test_support::uuid(n);
     let seed = format!(
-        "INSERT INTO game_account_bank_operations(operation_occurrence_id,transaction_id,event_id,kind,request_binding,acting_character_id,account_id,world_id,channel_id,runtime_scope_ownership_generation,amount,outcome,occurred_at,envelope_sha256,committed_at,planned_platinum_item_instance_id,planned_gold_item_instance_id,backpack_item_instance_id) VALUES({}, {}, {},1,sha256('seed'),{},{},{},{},1,1000,0,1,sha256('seed'),0,{},{},{}); INSERT INTO game_account_bank_entries(entry_id,transaction_id,account_id,world_id,kind,amount,balance_before,balance_after,acting_character_id) VALUES({},{},{},{},1,1000,0,1000,{}); INSERT INTO game_account_bank_balances VALUES({},{},1000,{});",
+        "INSERT INTO game_account_bank_operations(operation_occurrence_id,transaction_id,event_id,kind,request_binding,acting_character_id,account_id,world_id,channel_id,runtime_scope_ownership_generation,amount,outcome,occurred_at,envelope_sha256,committed_at,planned_platinum_item_instance_id,planned_gold_item_instance_id,backpack_item_instance_id) VALUES({}, {}, {},1,sha256('seed'),{},{},{},{},1,{bank_gold},0,1,sha256('seed'),0,{},{},{}); INSERT INTO game_account_bank_entries(entry_id,transaction_id,account_id,world_id,kind,amount,balance_before,balance_after,acting_character_id) VALUES({},{},{},{},1,{bank_gold},0,{bank_gold},{}); INSERT INTO game_account_bank_balances VALUES({},{},{bank_gold},{});",
         uuid(80),
         uuid(81),
         uuid(82),
@@ -147,19 +147,65 @@ async fn seed(h: &Harness, races: &[&BestiaryRace]) -> TestResult {
     sqlx::raw_sql(sqlx::AssertSqlSafe(seed))
         .execute(&mut *tx)
         .await?;
-    // Completed Bestiary entries: the fixture stands in for their kill receipts.
-    for (n, race) in (90..).zip(races) {
+    // Completed Bestiary entries need their entire kill receipt chain, including one
+    // CharacterRevision per kill. A counter alone can be queried, but the next real
+    // Character write correctly rejects it as an inconsistent projection.
+    let mut kills_before = 0_i64;
+    for race in races {
         sqlx::query(
-            "INSERT INTO game_character_bestiary_progress VALUES \
-               (encode($1,'hex')::uuid, $2, $3, 2, encode($4,'hex')::uuid)",
+            "WITH receipts AS (\
+               INSERT INTO game_character_bestiary_kill_receipts(\
+                 bestiary_occurrence_id, command_binding, race_digest, character_id, \
+                 original_character_revision, committed_character_revision, \
+                 level_before, level_after, experience_before, experience_after, \
+                 race_key, race_definition_revision, final_kill_threshold, \
+                 kill_count_before, kill_count_after, profile_revision, ruleset_revision, \
+                 content_revision, simulation_revision, evidence_revision, \
+                 declaration_revision, policy_revision, reward_revision, committed_at) \
+               SELECT game_character_uuid_v7(), decode('01','hex'), sha256('seed'), \
+                 s.character_id, s.character_revision + $5 + k.n - 1, \
+                 s.character_revision + $5 + k.n, s.level, s.level, \
+                 s.total_experience, s.total_experience, $2, $4, $3, k.n - 1, k.n, \
+                 s.profile_revision, s.ruleset_revision, s.content_revision, \
+                 s.simulation_revision, s.evidence_revision, s.declaration_revision, \
+                 s.policy_revision, s.reward_revision, 0 \
+               FROM game_character_progression_state s \
+               CROSS JOIN generate_series(1::bigint, $3::bigint) k(n) \
+               WHERE s.character_id = encode($1,'hex')::uuid \
+               RETURNING character_id, race_key, kill_count_after, \
+                 committed_character_revision, bestiary_occurrence_id) \
+             INSERT INTO game_character_bestiary_progress(\
+               character_id, race_key, kill_count, committed_character_revision, \
+               last_bestiary_occurrence_id) \
+             SELECT character_id, race_key, kill_count_after, committed_character_revision, \
+               bestiary_occurrence_id FROM receipts WHERE kill_count_after = $3",
         )
         .bind(id(41).as_slice())
         .bind(race.key())
         .bind(i64::from(race.final_kill_threshold()))
-        .bind(occurrence(n).as_slice())
+        .bind(race.definition_revision())
+        .bind(kills_before)
         .execute(&mut *tx)
         .await?;
+        kills_before += i64::from(race.final_kill_threshold());
     }
+    sqlx::query(
+        "UPDATE game_character_roots SET character_revision = character_revision + $2 \
+         WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .bind(kills_before)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "UPDATE game_character_progression_state \
+         SET character_revision = character_revision + $2 \
+         WHERE character_id = encode($1,'hex')::uuid",
+    )
+    .bind(id(41).as_slice())
+    .bind(kills_before)
+    .execute(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok(())
 }
