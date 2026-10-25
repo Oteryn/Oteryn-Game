@@ -720,13 +720,25 @@ fn stage_hit(
             .checked_sub(u32::try_from(removed).map_err(|_| SpellCastDisposition::Rejected)?)
             .ok_or(SpellCastDisposition::Rejected)?;
     }
-    if let Some(capacity) = next.conditions.mana_shield_at(now).filter(|_| mitigated) {
-        let absorbed = remaining.min(capacity).min(next.mana);
+    if mitigated {
+        let capacity = next
+            .conditions
+            .mana_shield_at(now)
+            .filter(|capacity| *capacity > 0);
+        let (absorbed, mana_spent) =
+            oteryn_gameplay_domain::domain::mana_shield::absorb_mana_shield(
+                remaining,
+                next.mana,
+                capacity,
+                next.equipped_mana_shield,
+            );
         if absorbed > 0 {
-            next.conditions
-                .consume_mana_shield(now, capacity, absorbed)
-                .map_err(|_| SpellCastDisposition::Rejected)?;
-            next.mana -= absorbed;
+            if let Some(capacity) = capacity {
+                next.conditions
+                    .consume_mana_shield(now, capacity, absorbed)
+                    .map_err(|_| SpellCastDisposition::Rejected)?;
+            }
+            next.mana -= mana_spent;
             remaining -= absorbed;
         }
         if next.mana == 0 {
@@ -743,6 +755,9 @@ fn stage_hit(
     }
     Ok((next, damage))
 }
+
+#[cfg(test)]
+mod energy_ring_tests;
 
 #[cfg(test)]
 mod tests {

@@ -109,6 +109,8 @@ pub struct PlayerSpellState {
     pub(super) owned_skills: Option<[u16; 7]>,
     /// ARMOR-MITIGATION-1: the worn armor the last committed equipment read installed.
     pub(super) equipped_armor: u32,
+    /// ENERGY-RING-1: the active equipment form from the last fenced equipment read.
+    pub(super) equipped_mana_shield: bool,
     /// SHIELD-DEFENCE-1: what the hands of the last committed equipment read defend with.
     pub(super) equipped_defence:
         Option<oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence>,
@@ -167,6 +169,7 @@ impl PlayerSpellState {
                 pending_stance: None,
                 owned_skills: None,
                 equipped_armor: 0,
+                equipped_mana_shield: false,
                 equipped_defence: None,
                 equipped_physical_protection: None,
                 training: None,
