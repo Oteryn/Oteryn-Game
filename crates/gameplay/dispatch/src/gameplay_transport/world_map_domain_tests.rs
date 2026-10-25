@@ -47,6 +47,7 @@ struct BundleChannel {
     position: Cell<TilePos>,
     overlay: Option<WorldObjectOverlayEntry>,
     use_outcome: UseOutcome,
+    doors: Option<(ChannelOverlay, crate::map::facts::BundleFacts)>,
 }
 
 impl BundleChannel {
@@ -65,6 +66,7 @@ impl BundleChannel {
             position: Cell::new(ACTOR),
             overlay: None,
             use_outcome: UseOutcome::rejected(),
+            doors: None,
         }
     }
 
@@ -106,8 +108,18 @@ impl FreshAdmissionAuthority for BundleChannel {
         &self,
         _actor: ExactActorRef,
         _use: UseCommand,
-        _target: WorldObjectTarget,
+        target: WorldObjectTarget,
     ) -> UseOutcome {
+        if let Some((overlay, facts)) = &self.doors {
+            return crate::gameplay_transport::map_door::use_door(
+                overlay,
+                facts,
+                [7; 32],
+                self.position.get(),
+                |pos| pos == self.position.get(),
+                &target,
+            );
+        }
         if self.use_outcome.disposition == UseDisposition::Committed {
             self.fixture
                 .borrow_mut()
@@ -132,6 +144,15 @@ impl FreshAdmissionAuthority for BundleChannel {
         view: &mut SessionMapView,
         items: &mut SessionItemView,
     ) -> Option<Result<Option<MapUpdate>, MapViewError>> {
+        if let Some((overlay, facts)) = &self.doors {
+            let source = MapViewSource {
+                overlay,
+                facts,
+                content_generation: [7; 32],
+                reset_epoch: 0,
+            };
+            return Some(view.update(items, &source, at(self.position.get())));
+        }
         let fixture = self.fixture.borrow();
         Some(view.update(items, &fixture.source(), at(self.position.get())))
     }
@@ -201,6 +222,7 @@ struct Sent {
     end: ConnectionEnd,
     snapshot: Vec<(u32, u64, Vec<u8>)>,
     deltas: Vec<(u32, Vec<u8>)>,
+    results: Vec<Vec<u8>>,
 }
 
 impl Sent {
@@ -272,6 +294,7 @@ async fn serve(
         output
     };
     let (end, output) = join(served, client).await;
+    let mut results = Vec::new();
     let (mut snapshot, mut deltas, mut cursor) = (Vec::new(), Vec::new(), 0);
     while cursor < output.len() {
         let length = u32::from_be_bytes(output[cursor..cursor + 4].try_into().expect("length"));
@@ -289,6 +312,14 @@ async fn serve(
                 let delta = decode_state_delta(envelope.payload()).expect("delta");
                 deltas.push((delta.domain_id, delta.payload.to_vec()));
             }
+            MessageType::CommandResult => {
+                results.push(
+                    oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                        .expect("command result")
+                        .payload
+                        .to_vec(),
+                );
+            }
             _ => {}
         }
     }
@@ -296,6 +327,7 @@ async fn serve(
         end,
         snapshot,
         deltas,
+        results,
     }
 }
 
@@ -577,6 +609,245 @@ fn a_fixture_world_session_keeps_domain_2_on_join_resume_and_delta_and_never_get
                 .snapshot_domains()
                 .contains(&STATE_DOMAIN_WORLD_MAP_VIEW)
         );
+        Ok(())
+    })
+}
+
+// PARITY-DOOR-PREDICATES-1: generated fixture bundle -> native facts -> real USE
+// routing -> map target resolver -> DoorBook -> negotiated command result.
+fn key_door_channel(appearance: u32, attrs: Attrs, house: u32) -> BundleChannel {
+    use crate::map::boot::tests::bundle_with_items;
+    use crate::map::facts::{BundleFacts, ItemDefinition};
+    let closed = format!("oteryn:item.tibia.i{appearance}");
+    let (bytes, mut pins) = bundle_with_items(&closed, "oteryn:item.tibia.i1000");
+    let mut bundle = bundle::read(&bytes).expect("bundle");
+    let tile = bundle.sectors[0]
+        .tiles
+        .iter_mut()
+        .find(|tile| tile.x == 6)
+        .expect("door");
+    tile.items[1].attrs = attrs;
+    tile.house = house;
+    let bytes = bundle::write(&bundle.manifest, &bundle.sectors, &Default::default())
+        .expect("generated fixture");
+    pins.digest = bundle::read(&bytes).expect("bundle digest").digest;
+    let base = Arc::new(crate::map::load(&bytes, &pins).expect("base"));
+    let mut facts = BundleFacts::palette(&bundle.manifest, |key| {
+        let id: u32 = key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()?;
+        Some(ItemDefinition {
+            reference: nz(if id == appearance {
+                1
+            } else if id == 1000 {
+                2
+            } else {
+                id + 1
+            }),
+            solid: Some(!matches!(id, 1630 | 1639 | 20445 | 4911 | 1000)),
+            blocks_projectile: !matches!(id, 1630 | 1639 | 20445 | 4911 | 1000),
+            pickupable: id == 1000,
+            door: id != 1000,
+        })
+    })
+    .expect("palette facts");
+    for sector in &bundle.sectors {
+        facts.push(&bundle.manifest, sector, &mut BTreeSet::new());
+    }
+    facts.finish();
+    let mut owner = BundleChannel::new();
+    owner.position.set(tp(7, 0, -7));
+    owner.doors = Some((ChannelOverlay::new(base, world(), channel()), facts));
+    owner
+}
+
+#[test]
+fn key_door_predicates_through_use_dispatch() -> TestResult {
+    use oteryn_protocol_oteryn::world_object::decode_use_result;
+    run(async {
+        for (appearance, action, expected) in [
+            (1629, None, UseDisposition::Committed),
+            (1629, Some(4321), UseDisposition::Committed),
+            (1628, Some(4321), UseDisposition::Locked),
+            (1628, None, UseDisposition::Locked),
+            (1629, Some(101), UseDisposition::Locked),
+            (1629, Some(1001), UseDisposition::Locked),
+            (20444, Some(4321), UseDisposition::Locked),
+            (20443, Some(4321), UseDisposition::Committed),
+            (5007, Some(4321), UseDisposition::Committed),
+        ] {
+            let channel = key_door_channel(
+                appearance,
+                Attrs {
+                    action,
+                    ..Attrs::default()
+                },
+                0,
+            );
+            let (overlay, facts) = channel.doors.as_ref().expect("doors");
+            let key = crate::map::boot::tests::door_key();
+            let mut placement = overlay.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            // An authorized second direct USE closes the unlocked door. Replaying the old
+            // target is stale; locked refusals never consume the object revision.
+            let revisions: &[u64] = if expected == UseDisposition::Committed {
+                &[0, 0, 1]
+            } else {
+                &[0]
+            };
+            let frames: Vec<_> = revisions
+                .iter()
+                .enumerate()
+                .map(|(i, revision)| {
+                    let payload = encode_use_intent(&WorldObjectTarget {
+                        placement: placement.clone(),
+                        expected_revision: *revision,
+                    })
+                    .expect("use");
+                    command(1, i as u64 + 1, COMMAND_TYPE_USE_INTENT, &payload)
+                })
+                .collect();
+            let admitted = session(
+                BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                &[4, 6, 11, 15, 18],
+                SessionContinuity::FRESH,
+            );
+            let sent = serve(&channel, admitted, &frames, NO_HOLD).await;
+            let results: Vec<_> = sent
+                .results
+                .iter()
+                .map(|payload| decode_use_result(payload).expect("use result"))
+                .collect();
+            let expected_results = if expected == UseDisposition::Committed {
+                vec![expected, UseDisposition::StaleState, expected]
+            } else {
+                vec![expected]
+            };
+            assert_eq!(results, expected_results, "{appearance} {action:?}");
+            assert_eq!(
+                facts.doors().revision(key),
+                if expected == UseDisposition::Committed {
+                    2
+                } else {
+                    0
+                }
+            );
+            assert!(facts.doors().blocks(tp(6, 0, -7)));
+            assert!(
+                !sent
+                    .delta_domains()
+                    .contains(&STATE_DOMAIN_WORLD_OBJECT_OVERLAY)
+            );
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn key_door_predicates_preserve_bindings_reach_and_capabilities() -> TestResult {
+    use oteryn_protocol_oteryn::world_object::decode_use_result;
+    run(async {
+        for (appearance, attrs, house, position, caps, expected) in [
+            (
+                1629,
+                Attrs {
+                    action: Some(4321),
+                    unique: Some(7),
+                    ..Attrs::default()
+                },
+                0,
+                tp(7, 0, -7),
+                vec![4, 6, 11, 15, 18],
+                UseDisposition::NothingToUse,
+            ),
+            (
+                1629,
+                Attrs {
+                    action: Some(4321),
+                    door: Some(1),
+                    ..Attrs::default()
+                },
+                7,
+                tp(7, 0, -7),
+                vec![4, 6, 11, 15, 18],
+                UseDisposition::NothingToUse,
+            ),
+            (
+                1629,
+                Attrs {
+                    action: Some(4321),
+                    ..Attrs::default()
+                },
+                7,
+                tp(7, 0, -7),
+                vec![4, 6, 11, 15, 18],
+                UseDisposition::NothingToUse,
+            ),
+            (
+                1628,
+                Attrs {
+                    action: Some(4321),
+                    ..Attrs::default()
+                },
+                0,
+                tp(9, 0, -7),
+                vec![4, 6, 11, 15, 18],
+                UseDisposition::TooFar,
+            ),
+            (
+                1628,
+                Attrs::default(),
+                0,
+                tp(7, 0, -7),
+                vec![4, 6, 15, 18],
+                UseDisposition::Rejected,
+            ),
+            (
+                1638,
+                Attrs {
+                    action: Some(4321),
+                    ..Attrs::default()
+                },
+                0,
+                tp(7, 0, -7),
+                vec![4, 6, 11, 15, 18],
+                UseDisposition::NothingToUse,
+            ),
+        ] {
+            let house_door = attrs.door.map(u32::from);
+            let channel = key_door_channel(appearance, attrs, house);
+            channel.position.set(position);
+            let (overlay, facts) = channel.doors.as_ref().expect("doors");
+            let key = crate::map::boot::tests::door_key();
+            let mut placement = overlay.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            let payload = encode_use_intent(&WorldObjectTarget {
+                placement,
+                expected_revision: 0,
+            })
+            .expect("use");
+            let admitted = session(
+                BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                &caps,
+                SessionContinuity::FRESH,
+            );
+            let sent = serve(
+                &channel,
+                admitted,
+                &[command(1, 1, COMMAND_TYPE_USE_INTENT, &payload)],
+                NO_HOLD,
+            )
+            .await;
+            assert_eq!(sent.results.len(), 1);
+            assert_eq!(
+                decode_use_result(&sent.results[0]).expect("use result"),
+                expected
+            );
+            assert_eq!(facts.doors().revision(key), 0);
+            if house != 0 {
+                assert!(facts.house_tile(tp(6, 0, -7)));
+                assert_eq!(facts.house_door(tp(6, 0, -7), house), house_door);
+                assert!(!facts.doors().contains(key));
+            }
+        }
         Ok(())
     })
 }
