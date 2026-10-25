@@ -1,4 +1,38 @@
 #[test]
+fn corpse_decay_forgets_only_retired_bindings_under_the_current_owner() {
+    let mut runtime = runtime(4);
+    for local in 1..=2 {
+        let projection = corpse_projection_at(&runtime.continuity, local);
+        let actor = projection.occurrence.actor;
+        runtime.carrier.retain_corpse_projection(projection);
+        runtime
+            .bind_corpse_item(
+                actor,
+                uuid_v7(u64::from(local)),
+                "Item",
+                "fixture:corpse",
+                "r1",
+            )
+            .expect("a retained death binds its committed corpse");
+    }
+    runtime
+        .retain_live_corpse_items(&[uuid_v7(2)])
+        .expect("the current owner reconciles a complete live read");
+    let visible = runtime.carrier.bound_corpses(None);
+    assert_eq!(visible.len(), 1);
+    assert_eq!(visible[0].item.item_instance_id, uuid_v7(2));
+    assert_eq!(
+        runtime.carrier.corpse_projections.len(),
+        2,
+        "bounded death evidence survives"
+    );
+
+    runtime.retire_owner_cycle();
+    assert!(runtime.retain_live_corpse_items(&[]).is_err());
+    assert_eq!(runtime.carrier.bound_corpses(None), visible);
+}
+
+#[test]
 fn evicting_a_corpse_projection_evicts_its_reward_occurrence() {
     let (continuity, mut carrier) = carrier(4);
     let context = spawn_position_context(&continuity);
