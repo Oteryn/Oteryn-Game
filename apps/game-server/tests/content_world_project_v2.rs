@@ -695,6 +695,7 @@ fn item_candidate() -> ProjectV2Draft {
         });
     draft.state.item_authoring.push(ProjectV2ItemAuthoring {
         item: reference(ProjectV2Family::Item, "oteryn:reference.item.weapon-alpha"),
+        ranged: None,
         presentation: Some(reference(
             ProjectV2Family::Presentation,
             "oteryn:reference.presentation.courier",
@@ -1556,6 +1557,103 @@ fn committed_proficiency_content_lowers_to_valid_v2_declarations() {
         ..limits()
     };
     CanonicalProjectDocuments::from_v2_draft(draft, wide).expect("443 definitions validate");
+}
+
+#[test]
+fn ranged_separate_profile_owners_survive_world_project_roundtrip() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let read = |path: &std::path::Path| -> Value {
+        serde_json::from_slice(&std::fs::read(path).expect("content input")).expect("content JSON")
+    };
+    let profiles = read(&root.join("content/items/ranged-profiles.json"));
+    let index = read(&root.join("content/items/index.json"));
+    let rows: Vec<Value> = index["shards"]
+        .as_array()
+        .expect("shards")
+        .iter()
+        .flat_map(|path| {
+            read(&root.join(path.as_str().expect("shard path")))["records"]
+                .as_array()
+                .expect("records")
+                .clone()
+        })
+        .collect();
+    for (id, expected_attack, expected_hit) in [
+        (16163, Some(4), None),
+        (3446, None, Some(86)),
+        (3074, None, None),
+    ] {
+        let key = format!("oteryn:item.tibia.i{id}");
+        let row = rows
+            .iter()
+            .find(|row| row["definition"]["identity"]["key"] == key)
+            .expect("Item");
+        assert!(row["authoring"].get("ranged").is_none());
+        let profile = profiles["records"]
+            .as_array()
+            .expect("profiles")
+            .iter()
+            .find(|record| record["item"]["key"] == key)
+            .expect("profile");
+        let mut owner = row.get("authoring").cloned().unwrap_or(json!({}));
+        owner["item"] = row["definition"]["identity"].clone();
+        let owner: ProjectV2ItemAuthoring = serde_json::from_value(owner).expect("sealed owner");
+        assert_eq!(
+            owner.weapon_attack_modifier_points.map(|points| points.0),
+            expected_attack
+        );
+        assert_eq!(
+            owner
+                .weapon_absolute_hit_chance_percent
+                .map(|ratio| ratio.numerator),
+            expected_hit
+        );
+        let resolved = ProjectV2RangedWeapon::try_from((&profile["profile"], &owner))
+            .expect("resolved ranged profile");
+        for field in ["attack", "hit_chance", "range_cells", "mana_per_shot"] {
+            let mut missing = profile["profile"].clone();
+            if missing
+                .as_object_mut()
+                .expect("profile object")
+                .remove(field)
+                .is_some()
+            {
+                assert!(ProjectV2RangedWeapon::try_from((&missing, &owner)).is_err());
+            }
+        }
+        for (field, present) in [
+            ("attack", expected_attack.is_some()),
+            ("hit_chance", expected_hit.is_some()),
+        ] {
+            if present {
+                let mut duplicate = profile["profile"].clone();
+                duplicate[field] = json!(0);
+                assert!(ProjectV2RangedWeapon::try_from((&duplicate, &owner)).is_err());
+            }
+        }
+        let mut draft = item_candidate();
+        let authoring = &mut draft.state.item_authoring[0];
+        authoring.weapon_attack_modifier_points = owner.weapon_attack_modifier_points;
+        authoring.weapon_absolute_hit_chance_percent = owner.weapon_absolute_hit_chance_percent;
+        authoring.ranged = Some(resolved.clone());
+        let documents =
+            CanonicalProjectDocuments::from_v2_draft(draft, limits()).expect("ranged documents");
+        let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+            .expect("admit")
+            .parse(limits())
+            .expect("parse");
+        assert_eq!(
+            parsed.v2().expect("v2 state").item_authoring[0].ranged,
+            Some(resolved)
+        );
+        assert_eq!(
+            parsed
+                .canonical_documents(limits())
+                .expect("rewrite")
+                .documents(),
+            documents.documents()
+        );
+    }
 }
 
 #[test]
