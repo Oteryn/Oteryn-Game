@@ -61,7 +61,10 @@ const INVENTORY: &[Entry] = &[
         accessor: "gate_auto_attack",
         key: "",
         state: COMBAT_ENABLE,
-        calls: &[("gameplay_transport/attack/drain.rs", 1)],
+        calls: &[
+            ("gameplay_transport/attack/drain.rs", 1),
+            ("gameplay_transport/postgres_tests/hunting_stamina.rs", 3),
+        ],
     },
     Entry {
         gate: "native combat cast and its commit",
