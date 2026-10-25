@@ -79,6 +79,7 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
         is_familiar: false,
         preferred_distance: Some(4),
         reward_boss: Some(false),
+        blocked_by_nearby_players: false,
         condition_immunities: vec![],
         defense: Some(1),
         armor: Some(10),

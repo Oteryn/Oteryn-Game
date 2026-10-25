@@ -170,6 +170,7 @@ fn policy(d: &ProjectV2Draft, key: &str) -> CompiledCreaturePolicy {
         },
         preferred_distance: Some(u32::from(behavior.targeting.target_distance_tiles)),
         reward_boss: Some(detail.system_eligibility.reward_boss),
+        blocked_by_nearby_players: detail.spawn_eligibility.blocked_by_nearby_players,
     }
 }
 pub(crate) fn fixture() -> (

@@ -46,6 +46,9 @@ pub struct CompiledCreaturePolicy {
     pub flags: CreatureFlags,
     pub preferred_distance: Option<u32>,
     pub reward_boss: Option<bool>,
+    /// CREATURE-AI-0 §6.3: the profile's `blocked_by_nearby_players`; a player's interest
+    /// blocks this creature's due respawn (source `spawn_monster.cpp:288` `isBlockable`).
+    pub blocked_by_nearby_players: bool,
 }
 impl CompiledCreaturePolicy {
     /// Source game.cpp healingMap is evaluated before blockHit/immunity, from

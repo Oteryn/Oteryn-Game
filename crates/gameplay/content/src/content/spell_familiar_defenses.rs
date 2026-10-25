@@ -166,6 +166,7 @@ mod tests {
             },
             preferred_distance: None,
             reward_boss: Some(false),
+            blocked_by_nearby_players: false,
         }
     }
     #[test]
