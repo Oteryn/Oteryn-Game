@@ -98,7 +98,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let scope = self.movement_cells.scope();
         if scope.world_id != runtime.binding().world_id()
             || scope.world_id != runtime.content_pin().world_id()
-            || scope.generation_digest != runtime.content_pin().server_artifact_digest()
         {
             return None;
         }
@@ -115,19 +114,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         match self.movement_cells.index() {
             NativeMovementCollisionIndex::Bundle(index) => {
                 use crate::map::boot::BundleCollisionIndexExt;
+                use sha2::{Digest, Sha256};
+                // Bundle cells inherit the entry scope's gameplay generation. The zone
+                // evidence belongs to the independently pinned map, not that artifact.
+                let map_revision: [u8; 32] =
+                    Sha256::digest(scope.map_revision.as_str().as_bytes()).into();
+                if map_revision != runtime.content_pin().map_revision_digest() {
+                    return None;
+                }
                 // Check the bundle scope even on a tile whose mutable stack is unknown to spells.
                 index.lookup(scope, cell).ok()?;
                 let pos = crate::content::bundle_spell_tiles::tile_pos(cell)?;
                 let tile = index.map().overlay.base().tile(pos.x, pos.y, pos.floor)?;
                 Some(tile.no_logout())
             }
-            NativeMovementCollisionIndex::Source(world) => Some(
-                world
-                    .immutable_tile(scope, cell)
-                    .ok()?
-                    .source_step()?
-                    .no_logout,
-            ),
+            NativeMovementCollisionIndex::Source(world) => {
+                if scope.generation_digest != runtime.content_pin().server_artifact_digest() {
+                    return None;
+                }
+                Some(
+                    world
+                        .immutable_tile(scope, cell)
+                        .ok()?
+                        .source_step()?
+                        .no_logout,
+                )
+            }
             // The engineering fixture format has no OTBM zones.
             NativeMovementCollisionIndex::Entry(_) => Some(false),
         }

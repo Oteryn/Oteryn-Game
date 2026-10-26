@@ -8,6 +8,7 @@ use oteryn_world_bundle::writer::*;
 pub(super) fn training_world(
     index: &ItemDefinitionIndex,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
+    flags: [u32; 2],
 ) -> TestResult<BundleWorld> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     let keys = [
@@ -60,10 +61,10 @@ pub(super) fn training_world(
         spawns: Default::default(),
         npcs: Default::default(),
     };
-    let tile = |x, items: Vec<u32>| Tile {
+    let tile = |x, flags, items: Vec<u32>| Tile {
         x,
         y: 0,
-        flags: 1,
+        flags,
         house: 0,
         zones: vec![],
         items: items
@@ -81,7 +82,7 @@ pub(super) fn training_world(
             floor: -7,
             sx: 0,
             sy: 0,
-            tiles: vec![tile(1, vec![0]), tile(2, vec![0, 1, 2])],
+            tiles: vec![tile(1, flags[0], vec![0]), tile(2, flags[1], vec![0, 1, 2])],
         }],
         &Default::default(),
     )
