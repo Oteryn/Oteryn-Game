@@ -54,7 +54,7 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             semantics['equipment'] = known({'patterns': known(patterns)})
             semantics['weapon'] = {'state': 'NOT_APPLICABLE'}
         record = {
-            'authoring': {'item': source['identity']}, 'semantics': semantics, 'attributes': {},
+            'authoring': {'item': source['identity']}, 'semantics': semantics, 'attributes': {'speed_bonus': 0},
             'admission': {'materializable': True, 'stack_class': 'NonStackable',
                           'legal_destinations': ['CharacterInventory'] if number == 23721 else ['CharacterInventory', 'Ground']},
             'production_definition': {'family': 'Item', 'production_key': key, 'revision_ref': source['identity']['revision']},

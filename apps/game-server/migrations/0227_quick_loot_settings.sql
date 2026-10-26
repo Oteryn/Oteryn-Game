@@ -141,6 +141,10 @@ $$;
 CREATE OR REPLACE FUNCTION game_item_corpse_entry_removal_proven() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- Preserve the same-transaction reset proof installed by 0148_world_reset.sql.
+    IF game_world_reset_item_proven(OLD.item_instance_id) THEN
+        RETURN NULL;
+    END IF;
     IF EXISTS(SELECT 1 FROM game_item_loop_move_lines l JOIN game_item_loop_move_receipts r USING(transaction_id)
         WHERE l.item_instance_id=OLD.item_instance_id AND l.from_kind=5 AND r.quick_loot_ordinal>0
           AND l.created_xact_id=pg_current_xact_id() AND r.created_xact_id=pg_current_xact_id()) THEN

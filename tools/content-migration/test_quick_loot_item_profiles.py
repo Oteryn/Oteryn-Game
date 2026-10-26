@@ -33,6 +33,10 @@ class QuickLootProfiles(unittest.TestCase):
         primaries = {r['authoring']['taxonomy']['primary'] for r in self.profiles.values() if 'taxonomy' in r['authoring']}
         self.assertTrue({'Creature Products', 'Food', 'Ammunition', 'Quivers'} <= primaries)
 
+    def test_quick_loot_profiles_have_no_speed_bonus(self):
+        for number in sorted(quick.IDS):
+            self.assertEqual(self.profiles[f'oteryn:item.tibia.i{number}']['attributes']['speed_bonus'], 0)
+
 
 if __name__ == '__main__':
     unittest.main()
