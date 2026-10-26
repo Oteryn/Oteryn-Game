@@ -368,6 +368,7 @@ async fn qualify_gameplay_fence(h: &fixture::Harness) -> TestResult {
             .is_some()
     );
     qualify_channel_position_consumers(h, &authority, scope).await?;
+    qualify_live_respawn_retention(h, &authority, scope).await?;
     Ok(())
 }
 
@@ -519,6 +520,244 @@ async fn qualify_channel_position_consumers(
     let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(channel.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(revision, "1");
+    Ok(())
+}
+
+// A committed Channel death leaves a real restart obligation. Allocation and
+// readiness must not let an Instance consume it, even with the exact occurrence.
+// The destination below is a fixture cell, not a D119 temple-resolution proof.
+async fn qualify_live_respawn_retention(
+    h: &fixture::Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    scope: RuntimeScopeRefV1,
+) -> TestResult {
+    use crate::domain::progression::{FiniteProgressionPolicy, LevelThreshold};
+    use crate::durability::character_death::{
+        CharacterDeathOutcome, CharacterDeathRequest, ConsumedRespawn, DeathCell,
+        PlayerDeathOccurrence,
+    };
+    use crate::durability::character_last_position::{
+        FinalLastPosition, LastPositionCell, LastPositionWrite, LastVitals,
+    };
+    use crate::durability::character_progression::CharacterProgressionError;
+    use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let before = fixture::fence(1)?;
+    let context = fixture::context();
+    let occurrence = PlayerDeathOccurrence::from_bytes(id(100)).map_err(fixture::debug)?;
+    let request = CharacterDeathRequest {
+        occurrence,
+        context: context.clone(),
+        policy_revision: "policy-1".into(),
+        reward_revision: "reward-1".into(),
+        policy: FiniteProgressionPolicy {
+            context,
+            policy_revision: "policy-1".into(),
+            reward_revision: "reward-1".into(),
+            death_policy_revision: "death-1".into(),
+            declared_difference_revision: "declaration-1".into(),
+            // The native harness starts at level 50 / 1000 XP. These are
+            // constraint-fixture thresholds, not a proposed Global XP table.
+            thresholds: std::array::from_fn::<_, 50, _>(|index| LevelThreshold {
+                level: u32::try_from(index + 1).unwrap_or(u32::MAX),
+                minimum_experience: ExactI64::new(i64::try_from(index).unwrap_or(i64::MAX) * 20),
+            }),
+            terminal_exclusive_experience: ExactI64::new(1_000_000),
+            death_loss_numerator: 1,
+            death_loss_denominator: 1,
+            death_loss_rounding: RoundingMode::Floor,
+        },
+        held_blessings: vec![],
+        pvp_contributors: vec![],
+        death_cell: DeathCell {
+            world_id: before.runtime_scope.world_id(),
+            channel_id: crate::foundation::ChannelId::decode(&id(fixture::CHANNEL))
+                .map_err(fixture::debug)?,
+            spatial_position: vec![100, 200, 7],
+            map_revision: "map-1".into(),
+        },
+        respawn_position: vec![10, 20, 7],
+    };
+    let death = h
+        .root
+        .commit_character_death(authority, &h.node, before, request.clone())
+        .await?;
+    let CharacterDeathOutcome::Committed(death) = death else {
+        return Err("first Channel death unexpectedly replayed".into());
+    };
+    let mut channel = before;
+    channel.expected_character_revision = death.committed_character_revision;
+    let mut instance = channel;
+    instance.runtime_scope = scope;
+    let pending = ConsumedRespawn {
+        occurrence,
+        respawn_position: request.respawn_position.clone(),
+    };
+    let saved = h
+        .root
+        .read_character_last_position(authority, &h.node, channel)
+        .await?
+        .ok_or("pre-respawn Channel position missing")?;
+    let placed = FinalLastPosition {
+        record: crate::durability::character_last_position::LastPositionRecord {
+            cell: LastPositionCell {
+                x: 10,
+                y: 20,
+                floor: 7,
+            },
+            vitals: Some(LastVitals::new(100, 50).ok_or("respawn vitals")?),
+            ..saved.record
+        },
+        write_sequence: 3,
+    };
+    let called = AtomicUsize::new(0);
+    assert!(matches!(
+        h.root.pending_respawn(authority, &h.node, instance).await,
+        Err(CharacterProgressionError::InvalidInput)
+    ));
+    for selected in [None, Some(occurrence)] {
+        assert!(matches!(
+            h.root
+                .consume_pending_respawn(authority, &h.node, instance, selected)
+                .await,
+            Err(CharacterProgressionError::InvalidInput)
+        ));
+        assert!(matches!(
+            h.root
+                .consume_pending_respawn_placed(authority, &h.node, instance, selected, placed)
+                .await,
+            Err(CharacterProgressionError::InvalidInput)
+        ));
+    }
+    assert!(matches!(
+        h.root
+            .place_and_consume_pending_respawn(authority, &h.node, instance, occurrence, |_| {
+                called.fetch_add(1, Ordering::SeqCst);
+                std::future::ready(true)
+            })
+            .await,
+        Err(CharacterProgressionError::InvalidInput)
+    ));
+    assert!(matches!(
+        h.root
+            .place_and_consume_pending_respawn_placed(
+                authority,
+                &h.node,
+                instance,
+                occurrence,
+                placed,
+                |_| {
+                    called.fetch_add(1, Ordering::SeqCst);
+                    std::future::ready(true)
+                }
+            )
+            .await,
+        Err(CharacterProgressionError::InvalidInput)
+    ));
+    assert_eq!(called.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        h.root.pending_respawn(authority, &h.node, channel).await?,
+        Some(pending.clone())
+    );
+    assert_eq!(
+        h.root
+            .read_character_last_position(authority, &h.node, channel)
+            .await?,
+        Some(saved)
+    );
+    // Periodic projection may not overwrite a still-pending Channel respawn.
+    assert_eq!(
+        h.root
+            .write_character_last_position(authority, &h.node, channel, 3, placed.record)
+            .await?,
+        LastPositionWrite::PendingObligation
+    );
+    // A failed valid placement preserves the obligation as well as the old cell.
+    assert!(
+        !h.root
+            .place_and_consume_pending_respawn_placed(
+                authority,
+                &h.node,
+                channel,
+                occurrence,
+                placed,
+                |found| {
+                    assert_eq!(found, Some(pending.clone()));
+                    called.fetch_add(1, Ordering::SeqCst);
+                    std::future::ready(false)
+                }
+            )
+            .await?
+    );
+    assert_eq!(
+        h.root.pending_respawn(authority, &h.node, channel).await?,
+        Some(pending.clone())
+    );
+    assert_eq!(
+        h.root
+            .read_character_last_position(authority, &h.node, channel)
+            .await?,
+        Some(saved)
+    );
+    assert!(
+        h.root
+            .place_and_consume_pending_respawn_placed(
+                authority,
+                &h.node,
+                channel,
+                occurrence,
+                placed,
+                |found| {
+                    assert_eq!(found, Some(pending));
+                    called.fetch_add(1, Ordering::SeqCst);
+                    std::future::ready(true)
+                }
+            )
+            .await?
+    );
+    assert_eq!(called.load(Ordering::SeqCst), 2);
+    assert!(
+        h.root
+            .pending_respawn(authority, &h.node, channel)
+            .await?
+            .is_none()
+    );
+    let after = h
+        .root
+        .read_character_last_position(authority, &h.node, channel)
+        .await?
+        .ok_or("placed Channel position missing")?;
+    assert_eq!(after.record, placed.record);
+    assert_eq!(
+        after.key.character_lease_generation,
+        channel.character_lease_generation
+    );
+    assert_eq!(after.key.write_sequence, placed.write_sequence);
+    assert!(
+        h.root
+            .consume_pending_respawn(authority, &h.node, channel, Some(occurrence))
+            .await?
+            .is_none()
+    );
+    assert_eq!(
+        h.root
+            .commit_character_death(authority, &h.node, before, request)
+            .await?,
+        CharacterDeathOutcome::AlreadyCommitted(death)
+    );
+    assert!(
+        h.root
+            .pending_respawn(authority, &h.node, channel)
+            .await?
+            .is_none()
+    );
+    assert_eq!(
+        h.root
+            .read_character_last_position(authority, &h.node, channel)
+            .await?,
+        Some(after)
+    );
     Ok(())
 }
 
@@ -690,7 +929,7 @@ fn boss_activity_gameplay_fence_postgres() -> TestResult {
         return Ok(());
     };
     fixture::runtime()?.block_on(async move {
-        let h = fixture::Harness::create(admin, "boss_activity_fence", false).await?;
+        let h = fixture::Harness::create(admin, "boss_activity_fence", true).await?;
         eprintln!("Canonical PostgreSQL 18.6; activity session fence isolation qualification");
         let result = qualify_gameplay_fence(&h).await;
         h.cleanup().await?;

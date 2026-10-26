@@ -297,7 +297,12 @@ fn owner_and_actor_generation_are_revalidated_after_resolution() {
     let resolved = resolve(&carrier, &continuity, actor, &cast);
     let p = plan(cast, "target:one", 5);
     let mut wrong_actor = actor.0;
-    wrong_actor.world_id = grant(60, 1).world_id();
+    wrong_actor.runtime_scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        grant(60, 1).world_id(),
+        oteryn_gameplay_foundation::foundation::ExactActorRef(wrong_actor)
+            .channel_id()
+            .expect("Channel actor"),
+    );
     let before = carrier.slots.clone();
     assert_eq!(
         carrier.commit_creature_damage_inner(

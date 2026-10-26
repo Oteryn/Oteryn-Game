@@ -294,8 +294,15 @@ impl Binding {
     }
     fn actor(&mut self, actor: ExactActorRef) -> Result<(), Error> {
         let a = actor.0;
-        self.bytes(a.world_id.as_bytes())?;
-        self.bytes(a.channel_id.as_bytes())?;
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = a.runtime_scope
+        else {
+            return Err(Error::Owner(CarrierError::WrongScope));
+        };
+        self.bytes(world_id.as_bytes())?;
+        self.bytes(channel_id.as_bytes())?;
         self.number(ExactActorRef(a).scope_generation().get())?;
         self.number(u64::from(a.actor_local_id.0))?;
         self.number(a.actor_local_generation.0)

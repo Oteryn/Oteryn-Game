@@ -36,7 +36,7 @@ impl ChannelActorCarrier {
         item: RuntimeCorpseItem,
     ) -> Result<(), CarrierError> {
         if actor.world_id() != self.world_id
-            || actor.channel_id() != self.channel_id
+            || actor.runtime_scope() != RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
             || actor.scope_generation() != self.scope_generation
             || !self
                 .corpse_projections

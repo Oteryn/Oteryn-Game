@@ -263,6 +263,42 @@ fn scenario() -> TestResult {
             &[CAPABILITY_BOSS_ENCOUNTER_V1],
         )
         .ok_or("boss capability not offered")?;
+        // A typed Instance handle cannot borrow the current Channel player's slot, even
+        // when World, UUID bytes and every actor/session generation are identical.
+        let scope = deps.actor.runtime_scope();
+        assert_eq!(
+            scope,
+            crate::foundation::RuntimeScopeRefV1::channel(admitted.world_id, admitted.channel_id)
+        );
+        assert_eq!(deps.actor.channel_id(), Some(admitted.channel_id));
+        let instance_actor =
+            crate::foundation::ExactActorRef(crate::foundation::ActorRef::from_scoped_owner_parts(
+                crate::foundation::RuntimeScopeRefV1::instance(
+                    admitted.world_id,
+                    *admitted.channel_id.as_bytes(),
+                )
+                .map_err(debug)?,
+                deps.actor.scope_generation(),
+                deps.actor.0.actor_local_id,
+                deps.actor.0.actor_local_generation,
+            ));
+        assert_eq!(instance_actor.channel_id(), None);
+        let mut wrong_actor = admitted;
+        wrong_actor.runtime_actor = Some(instance_actor);
+        assert!(matches!(
+            owner
+                .boss_cooldowns_command(wrong_actor, 1, COMMAND_TYPE_BOSS_COOLDOWNS, &[])
+                .await,
+            crate::gameplay_transport::guild_intent::GuildReply::Rejected
+        ));
+        assert!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .player_control_facts(deps.actor, admitted.game_session_id)
+                .is_ok()
+        );
         // Empty is a real accepted read, not a missing-table or unsupported fallback.
         let (status, payload) = exchange(&owner, &mut admitted, 1, &[]).await?;
         assert_eq!(status, CommandStatus::Accepted);

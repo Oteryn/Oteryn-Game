@@ -695,10 +695,14 @@ fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
             .occurrence()
             .death_key();
     assert_eq!(
+        format!("{first:?}"),
+        format!("CreatureDeathOccurrenceKey({:?})", actor.0)
+    );
+    assert_eq!(
         key_fields(first),
         (
-            actor.0.world_id,
-            actor.0.channel_id,
+            actor.world_id(),
+            actor.channel_id().expect("Channel death"),
             actor.scope_generation(),
             actor.0.actor_local_id.0,
             actor.0.actor_local_generation.0,

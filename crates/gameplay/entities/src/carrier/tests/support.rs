@@ -99,6 +99,7 @@ fn corpse_projection_at(
     RuntimeCorpseProjection {
         death_at_ms: None,
         occurrence: CreatureDeathOccurrenceRef {
+            channel_id: continuity.channel_id,
             actor: corpse_actor_at(continuity, local),
             commit_binding: Box::new([]),
             damage: 1,

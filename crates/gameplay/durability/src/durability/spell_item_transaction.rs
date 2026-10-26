@@ -189,7 +189,10 @@ impl DurabilityRoot {
     /// caster-cost receipt and optional Character training/companion source.
     /// The outer Channel compositor must retain its physical preflight/owner
     /// lock and install only after this returns a genuine COMMIT capability.
-    #[allow(clippy::too_many_arguments, reason = "explicit provenance accompanies the existing authority and commit window")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "explicit provenance accompanies the existing authority and commit window"
+    )]
     pub async fn commit_world_item_spell<T: Send + 'static>(
         &self,
         window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
@@ -418,13 +421,13 @@ impl PreparedCompanionAcquisition {
     pub fn from_spawn(
         transaction: [u8; 16],
         spawn: &impl CompanionAcquisitionSource,
-    ) -> Self {
-        Self {
-            binding: companion_binding(transaction, spawn),
-            master_scope_matches: spawn.actor().world_id() == spawn.master_actor().world_id()
-                && spawn.actor().channel_id() == spawn.master_actor().channel_id()
+    ) -> Result<Self> {
+        Ok(Self {
+            binding: companion_binding(transaction, spawn)?,
+            master_scope_matches: spawn.actor().runtime_scope()
+                == spawn.master_actor().runtime_scope()
                 && spawn.actor().scope_generation() == spawn.master_actor().scope_generation(),
-        }
+        })
     }
 }
 impl CompanionBinding {
@@ -471,10 +474,11 @@ impl CommittedCompanionAcquisition {
         b.corpse == *spawn.corpse_item_instance_id()
             && b.corpse_revision == spawn.corpse_state_revision()
             && b.world == *actor.world_id().as_bytes()
-            && b.channel == *actor.channel_id().as_bytes()
+            && actor
+                .channel_id()
+                .is_some_and(|channel| b.channel == *channel.as_bytes())
             && b.ownership_generation == actor.scope_generation().get()
-            && actor.world_id() == master.world_id()
-            && actor.channel_id() == master.channel_id()
+            && actor.runtime_scope() == master.runtime_scope()
             && actor.scope_generation() == master.scope_generation()
             && b.actor_id == actor.actor_local_id()
             && b.actor_generation == actor.actor_local_generation()
@@ -581,15 +585,18 @@ pub async fn reconcile_spell_owner_commit_with_direct_in_transaction(
 fn companion_binding(
     transaction: [u8; 16],
     spawn: &impl CompanionAcquisitionSource,
-) -> CompanionBinding {
+) -> Result<CompanionBinding> {
     let actor = spawn.actor();
     let master = spawn.master_actor();
-    CompanionBinding {
+    Ok(CompanionBinding {
         transaction,
         corpse: *spawn.corpse_item_instance_id(),
         corpse_revision: spawn.corpse_state_revision(),
         world: *actor.world_id().as_bytes(),
-        channel: *actor.channel_id().as_bytes(),
+        channel: *actor
+            .channel_id()
+            .ok_or(SpellItemError::Rejected("Instance companion unsupported"))?
+            .as_bytes(),
         ownership_generation: actor.scope_generation().get(),
         actor_id: actor.actor_local_id(),
         actor_generation: actor.actor_local_generation(),
@@ -600,7 +607,7 @@ fn companion_binding(
         cell: spawn.spawn_cell(),
         creature_key: spawn.creature_definition_key().into(),
         creature_revision: spawn.creature_definition_revision().into(),
-    }
+    })
 }
 
 pub async fn record_companion_acquisition_in_transaction(
@@ -609,7 +616,7 @@ pub async fn record_companion_acquisition_in_transaction(
     request: &SpellItemTransactionRequest,
     spawn: &impl CompanionAcquisitionSource,
 ) -> Result<PendingCompanionAcquisition> {
-    let binding = companion_binding(request.transaction_id, spawn);
+    let binding = companion_binding(request.transaction_id, spawn)?;
     if request.companion.as_ref().map(|p| &p.binding) != Some(&binding) {
         return Err(SpellItemError::Rejected(
             "companion absent from the exact compound cast intent",
@@ -1548,7 +1555,10 @@ fn encode_intent(
     cost: &[u8],
 ) -> Result<Vec<u8>> {
     if request.command != authority.command
-        || !matches!((request.spell.family.as_str(), request.swing_ordinal), ("Spell", None) | ("Item", Some(_)))
+        || !matches!(
+            (request.spell.family.as_str(), request.swing_ordinal),
+            ("Spell", None) | ("Item", Some(_))
+        )
         || request.spell.production_key.is_empty()
         || request.spell.revision_ref.is_empty()
         || request.catalog_digest == [0; 32]
@@ -1559,20 +1569,30 @@ fn encode_intent(
         return Err(SpellItemError::Rejected("spell item request shape"));
     }
     if request.swing_ordinal.is_some() {
-        let valid_source = request.operations.len() == 1 && matches!(&request.operations[0],
+        let valid_source = request.operations.len() == 1
+            && matches!(&request.operations[0],
             SpellItemOperation::ConsumeInventory(source)
                 if matches!(source.custody, InventoryCustody::Equipment { slot: 5 | 6 | 10, .. })
                 && source.quantity_after.checked_add(1) == Some(source.quantity_before));
-        if !valid_source || request.caster_origin.is_none() || request.companion.is_some()
-            || request.direct_companion.is_some() || request.cost.mana_before != request.cost.mana_after
+        if !valid_source
+            || request.caster_origin.is_none()
+            || request.companion.is_some()
+            || request.direct_companion.is_some()
+            || request.cost.mana_before != request.cost.mana_after
             || request.cost.soul_before != request.cost.soul_after
-            || request.cost.cooldowns_before != request.cost.cooldowns_after {
-            return Err(SpellItemError::Rejected("ranged shot requires one equipped unit and no spell cost"));
+            || request.cost.cooldowns_before != request.cost.cooldowns_after
+        {
+            return Err(SpellItemError::Rejected(
+                "ranged shot requires one equipped unit and no spell cost",
+            ));
         }
     }
     if let Some(origin) = &request.caster_origin
         && (*origin.actor.world_id().as_bytes() != authority.world
-            || *origin.actor.channel_id().as_bytes() != authority.channel
+            || !origin
+                .actor
+                .channel_id()
+                .is_some_and(|channel| *channel.as_bytes() == authority.channel)
             || origin.actor.scope_generation().get() != authority.ownership_generation
             || origin.character_lease_generation != authority.character_lease_generation)
     {
@@ -1782,7 +1802,9 @@ fn encode_intent(
         operations.push(value);
     }
     let mut intent = serde_json::json!({"version":1,"world":authority.world,"channel":authority.channel,"character":authority.character,"session":authority.command.game_session_id().as_bytes(),"command":authority.command.command_id().get(),"ownership_generation":authority.ownership_generation,"spell":reference(&request.spell),"catalog_digest":request.catalog_digest.as_slice(),"transaction":request.transaction_id,"event":request.event_id,"cost":cost,"operations":operations,"companion":request.companion.as_ref().map(|p|p.binding.json()),"caster_origin":request.caster_origin.as_ref().map(|o|serde_json::json!({"placement":o.actor.placement_identity(),"lease":o.character_lease_generation}))});
-    if let Some(ordinal) = request.swing_ordinal { intent["swing_ordinal"] = serde_json::json!(ordinal); }
+    if let Some(ordinal) = request.swing_ordinal {
+        intent["swing_ordinal"] = serde_json::json!(ordinal);
+    }
     if let Some(direct) = &request.direct_companion {
         intent
             .as_object_mut()

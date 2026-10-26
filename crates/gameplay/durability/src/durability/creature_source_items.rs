@@ -337,8 +337,7 @@ impl CreatureGroundCause {
     ) -> Result<Self> {
         use crate::content::{ProjectV2AuthoringProfileData, ProjectV2Family};
         let actor = proposal.issuer;
-        let scope =
-            crate::foundation::RuntimeScopeRefV1::channel(actor.world_id(), actor.channel_id());
+        let scope = actor.runtime_scope();
         if !fence.accepts_stamp(stamp)
             || !fence.is_current_for_scope(scope, actor.scope_generation())
             || !runtime
@@ -476,7 +475,12 @@ impl CreatureGroundCause {
             .map_err(|_| SpellItemError::Rejected("Creature source body encoding"))?;
         Ok(Self {
             world: *actor.world_id().as_bytes(),
-            channel: *actor.channel_id().as_bytes(),
+            channel: *actor
+                .channel_id()
+                .ok_or(SpellItemError::Rejected(
+                    "Instance creature items unsupported",
+                ))?
+                .as_bytes(),
             scope_generation: actor.scope_generation().get(),
             source_items,
             placement: actor.placement_identity(),
@@ -1100,8 +1104,7 @@ impl ScheduledCreatureSourceItems {
         proposal: &ProfileAbilityProposal,
     ) -> Result<Self> {
         let actor = proposal.issuer;
-        let scope =
-            crate::foundation::RuntimeScopeRefV1::channel(actor.world_id(), actor.channel_id());
+        let scope = actor.runtime_scope();
         if native.source_digest() != runtime.content_pin().server_artifact_digest()
             || !fence.accepts_stamp(stamp)
             || !fence.is_current_for_scope(scope, actor.scope_generation())
@@ -1554,8 +1557,7 @@ impl DurabilityRoot {
         let record = creature_item_recovery_record(recovery, self)?;
         let node = node.clone();
         let actor = scheduled.proposal.issuer;
-        let scope =
-            crate::foundation::RuntimeScopeRefV1::channel(actor.world_id(), actor.channel_id());
+        let scope = actor.runtime_scope();
         let generation = actor.scope_generation();
         let mut context = CreatureSourceScopeContext {
             permit,

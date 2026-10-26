@@ -8,7 +8,7 @@
 //! ownership generation is enforced by that composition, not by this module.
 
 use oteryn_gameplay_foundation::foundation::{
-    ChannelId, CharacterId, CharacterLease, CommandRef, GameSessionId, NodeId,
+    ChannelId, CharacterId, CharacterLease, CommandRef, GameSessionId, NodeId, RuntimeScopeRefV1,
     ScopeOwnershipGeneration, WorldId,
 };
 pub use {
@@ -507,12 +507,28 @@ impl TopDamagePrincipal {
 /// Stable identity of the one committed lethal occurrence. Construction stays
 /// private to the physical Channel owner; callers cannot supply occurrence
 /// bytes, HP facts or actor generation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct CreatureDeathOccurrenceRef {
     actor: ExactActorRef,
+    // Captured by the Channel owner after exact actor validation. The existing
+    // death/loot contract is Channel-only; a scoped actor does not widen it.
+    channel_id: ChannelId,
     pub commit_binding: Box<[u8]>,
     damage: i64,
     health_before: i64,
+}
+
+// Preserve the pre-scope owner-binding representation; channel_id is redundant
+// Channel-only metadata captured from the same validated owner as actor.
+impl std::fmt::Debug for CreatureDeathOccurrenceRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CreatureDeathOccurrenceRef")
+            .field("actor", &self.actor)
+            .field("commit_binding", &self.commit_binding)
+            .field("damage", &self.damage)
+            .field("health_before", &self.health_before)
+            .finish()
+    }
 }
 
 impl CreatureDeathOccurrenceRef {
@@ -537,7 +553,10 @@ impl CreatureDeathOccurrenceRef {
     /// §4.1): exactly the owner-issued actor reference. The commit binding,
     /// damage and HP facts stay bound attributes, never key material.
     pub const fn death_key(&self) -> CreatureDeathOccurrenceKey {
-        CreatureDeathOccurrenceKey(self.actor.0)
+        CreatureDeathOccurrenceKey {
+            actor: self.actor.0,
+            channel_id: self.channel_id,
+        }
     }
 }
 
@@ -546,28 +565,39 @@ impl CreatureDeathOccurrenceRef {
 /// constructor is [`CreatureDeathOccurrenceRef::death_key`]: there is no
 /// raw-byte, field or caller constructor, so a key always names a lethal
 /// occurrence the physical Channel owner committed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CreatureDeathOccurrenceKey(ActorRef);
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct CreatureDeathOccurrenceKey {
+    actor: ActorRef,
+    channel_id: ChannelId,
+}
+
+impl std::fmt::Debug for CreatureDeathOccurrenceKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("CreatureDeathOccurrenceKey")
+            .field(&self.actor)
+            .finish()
+    }
+}
 
 impl CreatureDeathOccurrenceKey {
     pub const fn world_id(self) -> WorldId {
-        self.0.world_id
+        self.actor.runtime_scope.world_id()
     }
 
     pub const fn channel_id(self) -> ChannelId {
-        self.0.channel_id
+        self.channel_id
     }
 
     pub const fn scope_ownership_generation(self) -> ScopeOwnershipGeneration {
-        ExactActorRef(self.0).scope_generation()
+        ExactActorRef(self.actor).scope_generation()
     }
 
     pub const fn actor_local_id(self) -> u32 {
-        self.0.actor_local_id.0
+        self.actor.actor_local_id.0
     }
 
     pub const fn actor_local_generation(self) -> u64 {
-        self.0.actor_local_generation.0
+        self.actor.actor_local_generation.0
     }
 }
 
@@ -1886,11 +1916,10 @@ impl ChannelActorCarrier {
         actor_ref: ActorRef,
     ) -> Result<usize, CarrierError> {
         self.validate_current_continuity(continuity)?;
-        if actor_ref.world_id != continuity.world_id
-            || actor_ref.channel_id != continuity.channel_id
+        if actor_ref.runtime_scope
+            != RuntimeScopeRefV1::channel(continuity.world_id, continuity.channel_id)
             || ExactActorRef(actor_ref).scope_generation() != continuity.current_generation
-            || actor_ref.world_id != self.world_id
-            || actor_ref.channel_id != self.channel_id
+            || actor_ref.runtime_scope != RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
             || ExactActorRef(actor_ref).scope_generation() != self.scope_generation
         {
             return Err(CarrierError::WrongScope);

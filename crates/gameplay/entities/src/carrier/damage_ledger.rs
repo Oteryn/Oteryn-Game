@@ -297,7 +297,11 @@ impl CommittedLethalReceipt {
 /// current wall-clock millisecond, so two calls never collide). Called at
 /// most once per (death, character): `reward_occurrence_inner` memoizes the
 /// first result and every later call returns that same value.
-fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16] {
+fn mint_reward_occurrence_bytes(
+    actor: ActorRef,
+    channel_id: ChannelId,
+    character: [u8; 16],
+) -> [u8; 16] {
     use sha2::{Digest, Sha256};
     let millis = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -305,8 +309,8 @@ fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16
         .unwrap_or(0);
     let digest = Sha256::new()
         .chain_update(b"oteryn:combat-death-xp-occurrence:v1")
-        .chain_update(actor.world_id.as_bytes())
-        .chain_update(actor.channel_id.as_bytes())
+        .chain_update(ExactActorRef(actor).world_id().as_bytes())
+        .chain_update(channel_id.as_bytes())
         .chain_update(ExactActorRef(actor).scope_generation().get().to_be_bytes())
         .chain_update(actor.actor_local_id.0.to_be_bytes())
         .chain_update(actor.actor_local_generation.0.to_be_bytes())
@@ -847,6 +851,7 @@ impl ChannelActorCarrier {
                 projection: RuntimeCorpseProjection {
                     occurrence: CreatureDeathOccurrenceRef {
                         actor: existing.occurrence.actor,
+                        channel_id: existing.occurrence.channel_id,
                         commit_binding: copy_bounded_binding(&existing.occurrence.commit_binding)?,
                         damage: existing.occurrence.damage,
                         health_before: existing.occurrence.health_before,
@@ -879,6 +884,7 @@ impl ChannelActorCarrier {
             projection: RuntimeCorpseProjection {
                 occurrence: CreatureDeathOccurrenceRef {
                     actor: ExactActorRef(actor_ref),
+                    channel_id: self.channel_id,
                     commit_binding: copy_bounded_binding(&committed.binding)?,
                     damage: committed.damage,
                     health_before: committed.result.health_before,
@@ -1020,7 +1026,7 @@ impl ChannelActorCarrier {
     /// scope generation.
     pub(super) fn retains_corpse_projection(&self, actor: ExactActorRef) -> bool {
         actor.world_id() == self.world_id
-            && actor.channel_id() == self.channel_id
+            && actor.runtime_scope() == RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
             && actor.scope_generation() == self.scope_generation
             && self
                 .corpse_projections
@@ -1126,7 +1132,7 @@ impl ChannelActorCarrier {
         {
             return Err(CarrierError::CapacityExceeded);
         }
-        let occurrence = mint_reward_occurrence_bytes(actor_ref, character);
+        let occurrence = mint_reward_occurrence_bytes(actor_ref, self.channel_id, character);
         self.death_reward_occurrences.push(DeathRewardOccurrence {
             actor: actor_ref,
             character,

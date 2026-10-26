@@ -288,7 +288,9 @@ impl ChannelRuntimeV1 {
     }
 
     pub fn encounter_death_is_current(&self, key: CreatureDeathOccurrenceKey) -> bool {
-        self.carrier.validate_ref(&self.continuity, key.0).is_ok()
+        self.carrier
+            .validate_ref(&self.continuity, key.actor)
+            .is_ok()
             && self
                 .carrier
                 .corpse_projections

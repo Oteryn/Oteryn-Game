@@ -86,6 +86,17 @@ invoke either respawn placement callback. The saved cell, vitals, rest state,
 lease/write order and Character revision remain Channel-owned. This does not
 qualify an Instance death or its required D119 home-temple return.
 
+That case also commits a Channel death through the real durable death writer,
+leaving its occurrence-bound pending respawn live. Instance reads, both consume
+APIs (with either the exact occurrence or no occurrence selection), and both
+placement callbacks refuse without losing that obligation or changing the saved
+Channel position. A failed Channel placement retains both; a successful Channel
+placement atomically consumes the obligation and writes the supplied cell. Death
+receipt replay after consumption does not recreate the obligation or overwrite
+the placed cell. This is durable consumer qualification with fixture coordinates,
+not real-dispatch Instance admission, D119 destination resolution or restart
+qualification.
+
 The cooldown real-connection case changes the durable session to a bare,
 unallocated Instance after the Channel snapshot commits, then attempts to send
 command 133 over that connection. The connection may close before that write;
@@ -96,3 +107,21 @@ activity handoff or session provenance implementation.
 Applied migrations and receipts are immutable. Rollback uses a forward migration
 that disables activity allocation while preserving all history and generations.
 Never delete spent cooldowns or allocation receipts to roll back this boundary.
+
+
+Actor references now carry `RuntimeScopeRefV1` rather than a compulsory Channel
+identity. `ExactActorRef::channel_id` returns `None` for an Instance, and
+`runtime_scope` retains the exact World and scope kind. Channel carriers compare
+that typed scope before slot access; identical Channel/Instance UUID bytes cannot
+borrow one another's slots. Channel placement/corpse digest v1 bytes are preserved;
+Instance digests use separate domains and include the World, Instance, ownership
+and local actor generations. Channel ActorRef and death-reference/key Debug text
+retain their pre-scope shapes for native intent/owner-binding compatibility. No origin Channel is part of an Instance actor.
+
+This actor representation does not admit an Instance. Existing Channel spell/item
+writers reject Instance actors, and the committed creature-death/loot key remains
+Channel-only, captured from the validated Channel owner. Generalizing the carrier,
+InstanceRuntime, successful Instance consumers and handoff/recovery remains open.
+The cooldown real-dispatch PostgreSQL scenario checks the admitted Channel path
+and directly checks refusal of a typed Instance actor at its composed command
+boundary; that refusal is not successful Instance admission evidence.

@@ -459,7 +459,10 @@ fn stale_snapshot_wrong_scope_context_and_coordinate_overflow_reject_before_look
         Err(MoveError::PositionContextMismatch)
     );
     let mut wrong_actor = fixture.actor;
-    wrong_actor.channel_id = ChannelId::decode(&uuid_v7(99)).expect("other channel");
+    wrong_actor.runtime_scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        oteryn_gameplay_foundation::foundation::ExactActorRef(wrong_actor).world_id(),
+        ChannelId::decode(&uuid_v7(99)).expect("other channel"),
+    );
     let wrong_snapshot = PositionSnapshot {
         actor_ref: wrong_actor,
         ..fixture.snapshot

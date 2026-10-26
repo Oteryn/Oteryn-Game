@@ -86,9 +86,18 @@ fn scope_and_context_fields_fail_independently_without_mutation() {
     let before = carrier.slots.clone();
 
     let mut wrong_world = actor;
-    wrong_world.world_id = grant(30, 1).world_id;
+    wrong_world.runtime_scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        grant(30, 1).world_id,
+        oteryn_gameplay_foundation::foundation::ExactActorRef(wrong_world)
+            .channel_id()
+            .expect("Channel actor"),
+    );
     let mut wrong_channel = actor;
-    wrong_channel.channel_id = grant(30, 1).channel_id;
+    wrong_channel.runtime_scope =
+        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+            oteryn_gameplay_foundation::foundation::ExactActorRef(wrong_channel).world_id(),
+            grant(30, 1).channel_id,
+        );
     let mut wrong_scope = actor;
     wrong_scope.set_scope_generation(
         oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2).expect("scope"),

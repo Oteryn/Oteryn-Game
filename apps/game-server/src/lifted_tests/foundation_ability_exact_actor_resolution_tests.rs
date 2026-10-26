@@ -112,8 +112,22 @@ fn missing_vacant_recycled_and_cross_scope_refs_fail_closed() {
     for changed in 0..3 {
         let mut wrong = recycled;
         match changed {
-            0 => wrong.world_id = grant(40, 1).world_id(),
-            1 => wrong.channel_id = grant(40, 1).channel_id(),
+            0 => {
+                wrong.runtime_scope =
+                    oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                        grant(40, 1).world_id(),
+                        oteryn_gameplay_foundation::foundation::ExactActorRef(wrong)
+                            .channel_id()
+                            .expect("Channel actor"),
+                    )
+            }
+            1 => {
+                wrong.runtime_scope =
+                    oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                        oteryn_gameplay_foundation::foundation::ExactActorRef(wrong).world_id(),
+                        grant(40, 1).channel_id(),
+                    )
+            }
             _ => wrong.set_scope_generation(ScopeOwnershipGeneration::new(2).expect("generation")),
         }
         assert_eq!(
