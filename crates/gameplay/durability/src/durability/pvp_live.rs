@@ -98,6 +98,7 @@ pub async fn read_live_pvp_in_transaction(
     let world = match policy.mode() {
         FieldWorldType::NoPvp => WorldPvpType::Optional,
         FieldWorldType::Pvp => WorldPvpType::Open,
+        FieldWorldType::RetroPvp => WorldPvpType::Retro,
         FieldWorldType::PvpEnforced => WorldPvpType::Hardcore,
     };
     let world_id = *policy.world().as_bytes();

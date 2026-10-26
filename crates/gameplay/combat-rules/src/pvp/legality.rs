@@ -13,6 +13,7 @@ const PVP_DAMAGE_PERCENT: u64 = 50;
 pub enum WorldPvpType {
     Optional,
     Open,
+    Retro,
     Hardcore,
 }
 

@@ -3002,6 +3002,7 @@ mod tests {
                                 "oteryn:creature/rat".to_string(),
                                 20,
                                 false,
+                                Vec::new(),
                             )
                         })
                         .collect::<Vec<_>>();

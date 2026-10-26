@@ -10,6 +10,7 @@ use sqlx::{Postgres, Row, Transaction};
 pub enum FieldWorldType {
     NoPvp,
     Pvp,
+    RetroPvp,
     PvpEnforced,
 }
 #[derive(Debug)]
@@ -107,6 +108,7 @@ pub async fn read_world_field_policy_in_transaction(
         1 => FieldWorldType::NoPvp,
         2 => FieldWorldType::Pvp,
         3 => FieldWorldType::PvpEnforced,
+        4 => FieldWorldType::RetroPvp,
         _ => return Err(DurabilityError::InvalidStoredState),
     };
     Ok(Some(WorldFieldPolicyData {

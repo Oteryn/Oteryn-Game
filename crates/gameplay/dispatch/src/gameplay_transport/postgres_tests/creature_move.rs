@@ -41,6 +41,7 @@ fn creature_movement_dispatch_steps_between_thinks_on_postgres() -> TestResult {
                     x: 104,
                     y: 100,
                     points: vec![Point {
+                        alternatives: Vec::new(),
                         creature: 0,
                         x: 104,
                         y: 100,

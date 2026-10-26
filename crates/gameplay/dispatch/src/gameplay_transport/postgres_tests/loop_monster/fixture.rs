@@ -119,6 +119,7 @@ pub(super) fn dependencies(
             x: 4,
             y: 12,
             points: vec![Point {
+                alternatives: Vec::new(),
                 creature: 0,
                 x: 4,
                 y: 12,

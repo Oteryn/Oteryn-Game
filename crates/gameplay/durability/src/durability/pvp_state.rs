@@ -28,6 +28,7 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
 use crate::foundation::RuntimeScopeRefV1;
 use sqlx::Row;
+use oteryn_gameplay_combat_rules::pvp::{PvpRelation, WorldPvpType};
 
 type Result<T> = std::result::Result<T, CharacterProgressionError>;
 
@@ -146,7 +147,45 @@ pub struct PvpCleanup {
     pub skulls: u64,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct WalkthroughPvpFacts {
+    pub world: WorldPvpType,
+    pub relation: PvpRelation,
+}
+
 impl DurabilityRoot {
+    /// Current control-owned World type and pairwise relationship for player collision.
+    pub async fn read_walkthrough_pvp_facts(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        target_session: crate::foundation::GameSessionId,
+        target_character: CharacterId,
+    ) -> Result<WalkthroughPvpFacts> {
+        let recovery = authority.record_for(self).map_err(|_| CharacterProgressionError::AuthorityRejected)?;
+        let node = node.clone();
+        let root = self.clone();
+        let RuntimeScopeRefV1::Channel { world_id, channel_id } = fence.runtime_scope else { return Err(CharacterProgressionError::InvalidInput) };
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if let Err(error)=assert_session_fence(&mut tx, &fence.item_fence(), &node).await? { return Ok(Err(error)); }
+            let target_ok: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND session_state=2 AND world_id=encode($3,'hex')::uuid AND runtime_scope_kind=2 AND runtime_scope_world_id=encode($3,'hex')::uuid AND runtime_scope_channel_id=encode($4,'hex')::uuid AND scope_ownership_generation=$5::text::numeric)")
+                .bind(target_session.as_bytes().as_slice()).bind(target_character.as_bytes().as_slice())
+                .bind(world_id.as_bytes().as_slice())
+                .bind(channel_id.as_bytes().as_slice())
+                .bind(fence.scope_ownership_generation.get().to_string()).fetch_one(&mut *tx).await?;
+            if !target_ok { return Ok(Err(CharacterProgressionError::AuthorityRejected)); }
+            let policy=super::spell_field_policy::read_world_field_policy_in_transaction(&mut tx,&root,fence.runtime_scope,fence.scope_ownership_generation.get()).await?.ok_or(DurabilityError::Unavailable)?;
+            let world=match policy.bind(&tx).mode() { super::spell_field_policy::FieldWorldType::NoPvp=>WorldPvpType::Optional, super::spell_field_policy::FieldWorldType::Pvp=>WorldPvpType::Open, super::spell_field_policy::FieldWorldType::RetroPvp=>WorldPvpType::Retro, super::spell_field_policy::FieldWorldType::PvpEnforced=>WorldPvpType::Hardcore };
+            let group:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=encode($1,'hex')::uuid AND b.character_id=encode($2,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b USING(guild_id) WHERE a.character_id=encode($1,'hex')::uuid AND b.character_id=encode($2,'hex')::uuid)").bind(fence.character_id.as_bytes().as_slice()).bind(target_character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            let hostile:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pvp_aggression WHERE ((attacker=encode($1,'hex')::uuid AND target=encode($2,'hex')::uuid) OR (attacker=encode($2,'hex')::uuid AND target=encode($1,'hex')::uuid)) AND until_at>clock_timestamp())").bind(fence.character_id.as_bytes().as_slice()).bind(target_character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            commit_semantic_transaction(tx,deadline).await?;
+            Ok(Ok(WalkthroughPvpFacts { world, relation:PvpRelation { war_between:false, same_party_or_guild:Some(group), friendly_fire:false, target_aggressor_of_actor:hostile, target_aggressor_of_actor_group:false } }))
+        })).await?
+    }
     /// §8.1 write-ahead under the session fence of `fence`: the acting Character must be one of
     /// `targets`, which hold at most [`PVP_WRITE_AHEAD_MAX_TARGETS`] distinct Characters of the
     /// fence's World. A refused write refuses the action.

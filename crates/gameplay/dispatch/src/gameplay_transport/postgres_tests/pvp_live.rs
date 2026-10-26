@@ -48,6 +48,10 @@ fn pvp_live_bundle_melee_spell_death_replay_and_reload() -> TestResult {
     super::item_look::large_stack(|| scenario(6))
 }
 
+pub(super) fn retro_walkthrough_scenario() -> TestResult {
+    super::item_look::large_stack(|| scenario(7))
+}
+
 async fn command(
     client: &mut DuplexStream,
     id: u64,
@@ -332,7 +336,7 @@ fn scenario(mode: i16) -> TestResult {
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')").bind(id(42).as_slice()).execute(&h.pool).await?;
-        sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'pvp-live-fixture')").bind(id(42).as_slice()).bind(if mode==1 {1_i16}else{2_i16}).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'pvp-live-fixture')").bind(id(42).as_slice()).bind(if mode==1 {1_i16}else if mode==7 {4_i16} else {2_i16}).execute(&h.pool).await?;
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
@@ -367,6 +371,13 @@ fn scenario(mode: i16) -> TestResult {
                 {
                     break;
                 }
+            }
+            if mode == 7 {
+                let result = command(&mut client, 1, 1, &oteryn_protocol_oteryn::world_spatial::encode_step_intent(oteryn_protocol_oteryn::world_spatial::StepDirection::East)).await?;
+                let step=oteryn_protocol_oteryn::world_spatial::decode_step_result(&result).map_err(debug)?;
+                assert_eq!(step, oteryn_protocol_oteryn::world_spatial::StepDisposition::Blocked);
+                client.shutdown().await?;
+                return Ok::<_, Box<dyn std::error::Error>>(());
             }
             let target_command = if mode != 2 && mode != 6 {
                 let result = command(
