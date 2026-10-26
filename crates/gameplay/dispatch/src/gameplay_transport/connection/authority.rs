@@ -8,6 +8,23 @@ mod composed;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     mechanic_authority_methods!();
+    fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { true }
+    }
+    fn house_scope_ack(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<Option<(u64, Vec<u8>)>, ()>> {
+        async { Ok(None) }
+    }
+    fn house_transfer(
+        &self,
+        _admitted: AdmittedSession,
+        _command: u64,
+        _body: &[u8],
+    ) -> impl Future<Output = super::super::house_transfer::TransferResult> {
+        async { Some((None, Vec::new())) }
+    }
     fn gameplay_idle_policy(&self) -> super::GameplayIdlePolicy {
         super::GameplayIdlePolicy::default()
     }

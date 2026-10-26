@@ -702,6 +702,39 @@ where
             write_frame(stream, &accepted)
                 .await
                 .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+            if let Some((command, payload)) = authority
+                .house_scope_ack(resumed)
+                .await
+                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?
+            {
+                let ack = encode_command_result(
+                    continuity.connection_generation,
+                    continuity
+                        .server_sequence
+                        .checked_add(1)
+                        .ok_or(ConnectionEnd::AdmittedThenDisconnected(resumed))?,
+                    command,
+                    CommandStatus::Accepted,
+                    &payload,
+                )
+                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+                write_frame(stream, &ack)
+                    .await
+                    .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+                let mut resumed = resumed;
+                resumed.continuity.server_sequence += 1;
+                return Ok(resumed);
+            }
+            if resumed.game_session_id != resume.game_session_id
+                || resumed.item_fence.is_some_and(|f| {
+                    matches!(
+                        f.runtime_scope,
+                        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+                    )
+                })
+            {
+                return Err(ConnectionEnd::AdmittedThenDisconnected(resumed));
+            }
             return Ok(resumed);
         }
         _ => Err(FoundationProtocolError::MalformedEnvelope),
