@@ -45,6 +45,50 @@ class RegistryFragmentsTests(unittest.TestCase):
                 count = sum(len(items) for items in committed(registry).values())
                 self.assertEqual(len(files), 1 + count)
 
+    def test_split_preserves_sparse_ordinals(self):
+        registry = rf.RESOURCE_LIMITS
+        base = '{\n  "entries": []\n}\n'
+        items = [
+            (f"{prefix:04d}-{identifier}.json", json.dumps({"id": identifier}, indent=2) + "\n")
+            for prefix, identifier in (
+                (1100, "ZETA-RL-01"), (1110, "ALPHA-RL-01"), (1120, "OMEGA-RL-01"),
+            )
+        ]
+        with tempfile.TemporaryDirectory(dir=rf.ROOT) as tmp:
+            root = Path(tmp)
+            directory = root / rf.collection_dir(registry, "entries")
+            directory.mkdir(parents=True)
+            (root / registry.base_path).write_text(base, encoding="utf-8")
+            for name, body in items:
+                (directory / name).write_text(body, encoding="utf-8")
+            self.assertEqual(rf.validate(registry, root), [])
+            text = rf.load_text(registry, root)
+            split_base, fragments = rf.split(registry, text, root)
+            self.assertEqual(split_base, base)
+            self.assertEqual(fragments, {"entries": items})
+            self.assertEqual(rf.assemble(split_base, fragments), text)
+
+    def test_split_allocates_new_ordinals_after_existing_prefixes(self):
+        registry = rf.RESOURCE_LIMITS
+        base = '{\n  "entries": []\n}\n'
+        first = ('1100-EXISTING-RL-01.json', '{\n  "id": "EXISTING-RL-01"\n}\n')
+        added = ('1101-NEW-RL-01.json', '{\n  "id": "NEW-RL-01"\n}\n')
+        text = rf.assemble(base, {"entries": [first, added]})
+        with tempfile.TemporaryDirectory(dir=rf.ROOT) as tmp:
+            root = Path(tmp)
+            # No tree yet: the initial split still uses dense ordinals.
+            _, fragments = rf.split(registry, text, root)
+            self.assertEqual(
+                [name for name, _ in fragments["entries"]],
+                ["0001-EXISTING-RL-01.json", "0002-NEW-RL-01.json"],
+            )
+            directory = root / rf.collection_dir(registry, "entries")
+            directory.mkdir(parents=True)
+            (directory / first[0]).write_text(first[1], encoding="utf-8")
+            split_base, fragments = rf.split(registry, text, root)
+            self.assertEqual(fragments, {"entries": [first, added]})
+            self.assertEqual(rf.assemble(split_base, fragments), text)
+
     def _tree(self, tmp: str, registry: rf.Registry) -> Path:
         root = Path(tmp)
         for rel in rf.source_files(registry):
