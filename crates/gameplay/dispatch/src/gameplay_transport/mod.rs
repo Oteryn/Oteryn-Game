@@ -79,6 +79,7 @@ mod monster_profile_cycle;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod monster_quest_death;
+mod mount_taming;
 mod newhaven_arrival;
 mod newhaven_travel;
 mod npc_actor;
