@@ -46,16 +46,17 @@ pub async fn run_guild_world_pass(
 
 #[cfg(test)]
 #[test]
-fn world_pass_wires_active_war_termination_before_other_guild_jobs() {
+fn world_pass_wires_active_war_termination_before_other_guild_jobs() -> Result<(), &'static str> {
     let source = include_str!("guild.rs")
         .split_once("pub async fn run_guild_world_pass")
-        .expect("world pass")
+        .ok_or("world pass")?
         .1;
     let finish = source
         .find("root.finish_due_guild_wars")
-        .expect("war end step");
+        .ok_or("war end step")?;
     let deadlines = source
         .find("run_guild_deadline_pass")
-        .expect("deadline step");
+        .ok_or("deadline step")?;
     assert!(finish < deadlines);
+    Ok(())
 }
