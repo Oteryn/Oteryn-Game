@@ -22,6 +22,9 @@ mod channel_consumers;
 #[path = "activity_assignment_tests/character_fence.rs"]
 mod character_fence;
 
+#[path = "activity_assignment_tests/item_consumers.rs"]
+mod item_consumers;
+
 fn request(tag: u8, command: AssignmentCommand) -> TestResult<AssignmentRequest> {
     Ok(AssignmentRequest {
         operation_key: OperationKey::from_bytes([tag; 32]),

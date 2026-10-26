@@ -165,6 +165,25 @@ handoff or successful Instance consumer. The activity-session refusal remains
 installed; full accepted Instance qualification still requires the provenance,
 handoff writer and tests together.
 
+Channel item consumers now delegate their session and root proofs to the same
+shared fences. Their command's reserved Character, World and Channel are checked
+first; an Instance with identical UUID bytes cannot satisfy a Channel reservation.
+The root-bearing item fence also checks the current profile, ruleset, content and
+starter-template interpretation. It remains item-only: it does not require an
+expected CharacterRevision or advance that revision. The root-free helper proves
+only the session/runtime/lease boundary; consumers needing a root proof must
+still acquire it in their existing lock order.
+
+`boss_activity_item_consumers_postgres` qualifies those binding checks and each
+interpretation mismatch independently, with accepted controls after append-only
+restoration. `boss_activity_item_consumer_postgres_real_dispatch` uses the existing
+Channel item-move fixture: after an accepted command 133 reconciles carried
+commands, four interpretation changes each refuse a new command 9 on the same
+connection without moving custody or writing a move receipt. Restored command
+133 controls succeed; the final command 9 commits exactly one split. This is
+consumer-fence evidence for the existing Channel path, not an activity
+handoff, Instance gameplay or a boss reward.
+
 Applied migrations and receipts are immutable. Rollback uses a forward migration
 that disables activity allocation while preserving all history and generations.
 Never delete spent cooldowns or allocation receipts to roll back this boundary.
