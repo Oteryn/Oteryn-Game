@@ -5,6 +5,7 @@ use super::*;
 mod autowalk;
 mod command;
 mod creature_push;
+mod house_transfer;
 mod inbound;
 mod player_trade;
 mod poll;
@@ -71,6 +72,7 @@ struct ServeState {
 }
 
 enum ServeEnd {
+    Transferred(Box<AdmittedSession>),
     Disconnected,
     ControlLost,
     LoggedOut,
@@ -80,6 +82,7 @@ enum ServeEnd {
 impl ServeEnd {
     fn finish(self, admitted: AdmittedSession) -> ConnectionEnd {
         match self {
+            Self::Transferred(next) => ConnectionEnd::AdmittedThenDisconnected(*next),
             Self::Disconnected => ConnectionEnd::AdmittedThenDisconnected(admitted),
             Self::ControlLost => ConnectionEnd::AdmittedThenControlLost(admitted),
             Self::LoggedOut => ConnectionEnd::AdmittedThenLoggedOut(admitted),
@@ -107,45 +110,62 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    let generation = admitted.continuity.connection_generation;
-    let playable = matches!(
-        admitted.first_entry,
-        FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-    );
-    let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
-        return hold_refused(stream, admitted, policy).await;
-    };
-    let Some(baseline) = authority.observe(actor).await else {
-        return hold_refused(stream, admitted, policy).await;
-    };
-    let revision = admitted.continuity.spatial_revision;
-    let mut session = match setup::prepare(
-        stream,
-        &mut admitted,
-        authority,
-        policy,
-        actor,
-        baseline,
-        (generation, revision),
-    )
-    .await
-    {
-        Ok(session) => session,
-        Err(end) => return end.finish(admitted),
-    };
     loop {
-        let next = poll::next(stream, &mut session).await;
-        let input = match inbound::receive(stream, authority, &mut session, next).await {
-            Ok(Some(input)) => input,
-            Ok(None) => continue,
-            Err(end) => {
+        if admitted.item_fence.is_some_and(|fence| {
+            matches!(
+                fence.runtime_scope,
+                crate::foundation::RuntimeScopeRefV1::Instance { .. }
+            )
+        }) {
+            admitted = match house_transfer::serve(stream, admitted, authority, policy).await {
+                Ok(next) => next,
+                Err(end) => return *end,
+            };
+        }
+        let generation = admitted.continuity.connection_generation;
+        let playable = matches!(
+            admitted.first_entry,
+            FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+        );
+        let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
+            return hold_refused(stream, admitted, policy).await;
+        };
+        let Some(baseline) = authority.observe(actor).await else {
+            return hold_refused(stream, admitted, policy).await;
+        };
+        let revision = admitted.continuity.spatial_revision;
+        let mut session = match setup::prepare(
+            stream,
+            &mut admitted,
+            authority,
+            policy,
+            actor,
+            baseline,
+            (generation, revision),
+        )
+        .await
+        {
+            Ok(session) => session,
+            Err(end) => return end.finish(admitted),
+        };
+        loop {
+            let next = poll::next(stream, &mut session).await;
+            let input = match inbound::receive(stream, authority, &mut session, next).await {
+                Ok(Some(input)) => input,
+                Ok(None) => continue,
+                Err(end) => {
+                    authority.player_trade_disconnected(session.admitted.game_session_id);
+                    return end.finish(session.admitted);
+                }
+            };
+            if let Err(end) = command::execute(stream, authority, &mut session, input).await {
+                if let ServeEnd::Transferred(next) = end {
+                    admitted = *next;
+                    break;
+                }
                 authority.player_trade_disconnected(session.admitted.game_session_id);
                 return end.finish(session.admitted);
             }
-        };
-        if let Err(end) = command::execute(stream, authority, &mut session, input).await {
-            authority.player_trade_disconnected(session.admitted.game_session_id);
-            return end.finish(session.admitted);
         }
     }
 }

@@ -1,0 +1,18 @@
+{
+  "id": "HOUSETR1-RL-INTENT",
+  "owner_contract": "protocol-oteryn/v1/house_transfer_v1.proto",
+  "resource": "Encoded transfer intent",
+  "unit": "bytes",
+  "hard_maximum": 540,
+  "configurable_range": {
+    "minimum": 540,
+    "maximum": 540
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before decode or acknowledgement persistence.",
+  "client_visible": true,
+  "boundary_tests": [
+    "exact maximum admitted",
+    "maximum plus one refused"
+  ]
+}
