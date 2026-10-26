@@ -20,6 +20,7 @@ pub mod stacking;
 pub mod starter_grant;
 
 pub mod corpse_open;
+pub mod drome_concoction;
 pub mod item_ref_admission;
 pub mod map_pickup;
 pub mod native_map_items_abi;
