@@ -1,0 +1,27 @@
+syntax = "proto3";
+package oteryn.game.v1;
+
+// Capability 86. Command 102. Unknown, duplicate and oversized fields refuse.
+message HouseTransferIntentV1 {
+  // 1 = entry, 2 = exit. The server resolves every authority-bearing field.
+  uint32 direction = 1;
+  string house = 2;
+}
+
+// A successful CommandResult payload. An empty payload refuses. Recovery sends
+// this same scope-identifying result before any destination snapshot/domain.
+message HouseTransferAckV1 {
+  bytes transfer_id = 1;
+  bytes destination_game_session_id = 2;
+  bytes world_id = 3;
+  bytes origin_channel_id = 4;
+  // Present for a House destination; absent for the origin Channel destination.
+  optional string house = 5;
+  uint64 scope_ownership_generation = 6;
+  uint64 connection_generation = 7;
+  uint64 character_lease_generation = 8;
+  repeated uint32 selected_capabilities = 9;
+  sint32 x = 10;
+  sint32 y = 11;
+  sint32 floor = 12;
+}

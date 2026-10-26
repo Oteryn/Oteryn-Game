@@ -15,6 +15,7 @@ pub mod guild_chat;
 #[cfg(feature = "test-support")]
 pub mod guild_chat_fixture;
 pub mod house_management;
+pub mod house_transfer;
 pub mod hunting_stamina;
 pub mod hunting_xp;
 pub mod mail_text_policy;

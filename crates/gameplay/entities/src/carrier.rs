@@ -60,6 +60,8 @@ mod damage_contributors_tests;
 
 mod damage_ledger;
 
+pub mod house_custody;
+
 #[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
 
@@ -841,6 +843,8 @@ pub struct ChannelActorCarrier {
     /// evicted ([`ChannelRuntimeV1::pin_corpse_projection`]); at most
     /// `MAX_PINNED_CORPSE_PROJECTIONS`, each naming a retained projection.
     corpse_projection_pins: Vec<ExactActorRef>,
+    /// HOUSE-TRANSFER-1 custody metadata only; all actor state stays in `slots`.
+    house_custody: Vec<house_custody::HouseResident>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1010,6 +1014,7 @@ pub struct ChannelRuntimeV1 {
     /// SPAWN-CEILINGS-1: the owner window of the last gone scan and its remaining step budget,
     /// so the scan runs once per Channel window, not once per drive.
     spawn_drive_window: Option<SpawnDriveWindow>,
+    house_owners: std::collections::BTreeMap<String, house_custody::HouseScopeOwner>,
     /// Test only: the spawn records the respawn drives read (gone-scan points and deadline
     /// entries), to prove the work per owner window is bounded.
     #[cfg(any(test, feature = "test-support"))]
@@ -1115,6 +1120,7 @@ impl ChannelRuntimeV1 {
             },
             spawn_activation: None,
             spawn_drive_window: None,
+            house_owners: std::collections::BTreeMap::new(),
             #[cfg(any(test, feature = "test-support"))]
             spawn_drive_visits: 0,
         })
@@ -1518,6 +1524,7 @@ impl ChannelActorCarrier {
             occupied,
             corpse_item_bindings: Vec::new(),
             corpse_projection_pins: Vec::new(),
+            house_custody: Vec::new(),
         })
     }
 
@@ -1899,6 +1906,13 @@ impl ChannelActorCarrier {
             .ok_or(CarrierError::InvalidActorIdentity)?;
         if index >= self.slots.len() || actor_ref.actor_local_generation.0 == 0 {
             return Err(CarrierError::InvalidActorIdentity);
+        }
+        if self
+            .house_custody
+            .iter()
+            .any(|resident| resident.actor.0 == actor_ref)
+        {
+            return Err(CarrierError::WrongScope);
         }
         Ok(index)
     }

@@ -35,8 +35,8 @@ use super::runtime_scope_assignment::{
     prove_current_incarnation, require_history_matches_high_water, scope_key, writer_high_water,
 };
 use super::{DurabilityError, DurabilityRoot, MAX_ADMISSION_GUARD_BYTES};
-use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::admission_evidence::{Facts, Request, Response, decode_response};
+use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -307,6 +307,85 @@ impl AdmissionAuthorityOwningPublisherV1 for Resolved {
     > {
         Ok(self.0.clone())
     }
+}
+
+/// HOUSE-TRANSFER-1: move the existing composition-owned claims after the
+/// transfer's source/destination fences have been proven in this transaction.
+/// This preserves the publisher, CAS, encoded mirrors and immutable history.
+pub(super) async fn transfer_claims_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    account: &str,
+    character: CharacterId,
+    sessions: (
+        crate::foundation::GameSessionId,
+        crate::foundation::GameSessionId,
+    ),
+    lease: u64,
+    now: i64,
+) -> Result<()> {
+    let (source, destination) = sessions;
+    let store = AdmissionGuardStore::from_root(root.clone());
+    let mut current = Vec::with_capacity(2);
+    let mut changes = Vec::with_capacity(2);
+    for key in [
+        AdmissionAuthorityGuardKeyV1::Account {
+            account_id: account.to_owned(),
+        },
+        AdmissionAuthorityGuardKeyV1::Character(character),
+    ] {
+        let old = store
+            .load_locked(tx, &key)
+            .await?
+            .ok_or(DurabilityError::Unavailable)?;
+        let mut next = old.clone();
+        let (precondition, revision) = successor_precondition(Some(&old))?;
+        next.precondition = precondition;
+        next.publication_revision = revision;
+        next.source = composition_source(old.source.purpose, Some(&old), "house-transfer", now)?;
+        match &mut next.state {
+            AdmissionAuthorityGuardStateV1::Account { security, presence }
+                if *presence == Some((character, source)) =>
+            {
+                *presence = Some((character, destination));
+                security.provenance.publication_revision = revision;
+            }
+            AdmissionAuthorityGuardStateV1::Character {
+                holder,
+                lease_generation,
+                eligible,
+                ..
+            } if *holder == Some(source)
+                && *eligible
+                && lease_generation.checked_add(1) == Some(lease) =>
+            {
+                *holder = Some(destination);
+                *lease_generation = lease;
+            }
+            _ => return Err(DurabilityError::Unavailable),
+        }
+        current.push(Some(old));
+        changes.push(next);
+    }
+    let request = AdmissionAuthorityPublicationV1::prepare(&Resolved(changes), now)
+        .map_err(|_| DurabilityError::Unavailable)?;
+    request
+        .validate_locked(&current)
+        .map_err(|_| DurabilityError::Unavailable)?;
+    if !store
+        .successor_history_available(tx, request.changes(), &current)
+        .await?
+    {
+        return Err(DurabilityError::Unavailable);
+    }
+    let encoded = request
+        .changes()
+        .iter()
+        .map(|change| encode_guard(change, MAX_ADMISSION_GUARD_BYTES))
+        .collect::<Result<Vec<_>>>()?;
+    store
+        .persist_locked(tx, request.changes(), &current, &encoded)
+        .await
 }
 
 impl DurabilityRoot {

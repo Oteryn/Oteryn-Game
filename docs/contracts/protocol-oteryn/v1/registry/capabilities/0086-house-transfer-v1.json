@@ -1,0 +1,15 @@
+{
+  "id": 86,
+  "name": "HOUSE_TRANSFER_V1",
+  "owner_decision": "HOUSE-TRANSFER-1 (2026-10-26)",
+  "owner": "native House scope / Channel session transfer owner",
+  "requires": [],
+  "command_types": [
+    102
+  ],
+  "state_domains": [
+    51
+  ],
+  "offered": true,
+  "offer_gate": "Server transfer composition only; never select or dispatch without client support."
+}
