@@ -203,6 +203,7 @@ pub(super) async fn prepare_inner(
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
+        item_spell_leech: item_spell_augments::leech(owned, spell, &before),
         corpse_companion: None,
         direct_companion: None,
         field_policy_revision: None,
@@ -663,7 +664,7 @@ fn prepare_payment(
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PaidPreparation, SpellCastDisposition> {
     let prepare_paid = |draw: &mut dyn FnMut(i64, i64) -> i64| {
-        prepare_ordinary_owner_cast_with_caster(
+        let mut paid = prepare_ordinary_owner_cast_with_caster(
             book,
             before,
             spell,
@@ -678,7 +679,10 @@ fn prepare_payment(
                 .as_ref()
                 .map(|_| (world as &dyn ChainWorld, chain_start)),
             draw,
-        )
+        )?;
+        item_spell_augments::cooldown(owned, spell, &mut paid.next, &mut paid.anchor, now)?;
+        paid.resolution.cooldowns = paid.next.cooldowns.clone();
+        Ok(paid)
     };
     // Entire footprint, magnitude prerequisites, owner stores and outbox capacity
     // are qualified using a non-executed preview before consuming the live stream.

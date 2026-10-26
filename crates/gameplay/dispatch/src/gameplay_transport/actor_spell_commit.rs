@@ -143,6 +143,64 @@ impl PlayerBatchPreflight {
         })
     }
 
+    /// Item spell leech consumes only actual staged damage, in the same owner install.
+    pub(in crate::gameplay_transport) fn stage_item_spell_leech(
+        &mut self,
+        physical: &StagedSpellBatch,
+        rates: (u32, u32),
+    ) -> Result<(), Error> {
+        if rates == (0, 0) {
+            return Ok(());
+        }
+        let damage = self
+            .batch
+            .effects
+            .iter()
+            .filter(|effect| matches!(effect.change, OwnerCombatChange::Damage { .. }))
+            .collect::<Vec<_>>();
+        let affected = damage.len();
+        if affected == 0 {
+            return Ok(());
+        }
+        let mut gains = (0u32, 0u32);
+        for effect in damage {
+            let receipt = physical
+                .preview_effect_receipts()
+                .iter()
+                .chain(self.health_receipts.iter())
+                .find(|receipt| {
+                    receipt.target == effect.target
+                        && receipt.sub_ordinal == effect.sub_ordinal
+                        && receipt.health.is_some()
+                })
+                .and_then(|receipt| receipt.health.as_ref())
+                .ok_or(Error::InvalidBatch)?;
+            if !receipt.applied {
+                continue;
+            }
+            let real = receipt
+                .health_before
+                .saturating_sub(receipt.health_after.max(0))
+                .max(0);
+            let amount = |rate: u32| {
+                (real as f64 * f64::from(rate.min(u32::from(u16::MAX))) / 10000.0
+                    * (0.1 * affected as f64 + 0.9)
+                    / affected as f64)
+                    .round()
+                    .clamp(0.0, real as f64) as u32
+            };
+            gains.0 = gains.0.saturating_add(amount(rates.0));
+            gains.1 = gains.1.saturating_add(amount(rates.1));
+        }
+        let caster = self
+            .replacements
+            .iter_mut()
+            .find(|r| r.actor == self.batch.caster)
+            .ok_or(Error::InvalidBatch)?;
+        caster.next.apply_batch_leech(gains.0, gains.1);
+        Ok(())
+    }
+
     pub fn validate_current(
         &self,
         runtime: &ChannelRuntimeV1,

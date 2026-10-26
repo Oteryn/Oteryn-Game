@@ -74529,7 +74529,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 400
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -74737,7 +74744,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -74945,7 +74959,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 400
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -75153,7 +75174,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -75361,7 +75389,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 400
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -75569,7 +75604,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -75742,7 +75784,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 400
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -75915,7 +75964,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -76088,7 +76144,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 400
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -76261,7 +76324,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -76434,7 +76504,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 400
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -76607,7 +76684,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "fierce berserk",
+            "kind": "base_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -76845,7 +76929,19 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "avatar of steel",
+            "kind": "cooldown",
+            "value": 900000
+          },
+          {
+            "spell": "fierce beserk",
+            "kind": "critical_extra_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -77032,7 +77128,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "divine caldera",
+            "kind": "base_damage",
+            "value": 400
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -77219,7 +77322,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "divine caldera",
+            "kind": "base_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -77406,7 +77516,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "divine caldera",
+            "kind": "base_damage",
+            "value": 400
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -77593,7 +77710,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "divine caldera",
+            "kind": "base_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -77812,7 +77936,19 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "avatar of light",
+            "kind": "cooldown",
+            "value": 900000
+          },
+          {
+            "spell": "divine caldera",
+            "kind": "critical_extra_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -78484,7 +78620,24 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "avatar of storm",
+            "kind": "cooldown",
+            "value": 900000
+          },
+          {
+            "spell": "hell's core",
+            "kind": "critical_extra_damage",
+            "value": 800
+          },
+          {
+            "spell": "energy wave",
+            "kind": "critical_extra_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -79156,7 +79309,24 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "avatar of nature",
+            "kind": "cooldown",
+            "value": 900000
+          },
+          {
+            "spell": "eternal winter",
+            "kind": "critical_extra_damage",
+            "value": 800
+          },
+          {
+            "spell": "terra wave",
+            "kind": "critical_extra_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -82234,7 +82404,19 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "avatar of balance",
+            "kind": "cooldown",
+            "value": 900000
+          },
+          {
+            "spell": "chained penance",
+            "kind": "critical_extra_damage",
+            "value": 800
+          }
+        ]
       },
       "admission": {
         "materializable": true,
@@ -82442,7 +82624,14 @@
         "has_height": false,
         "field_replaceable": null,
         "field_condition": null,
-        "rune_consumption": null
+        "rune_consumption": null,
+        "spell_augments": [
+          {
+            "spell": "sweeping takedown",
+            "kind": "base_damage",
+            "value": 400
+          }
+        ]
       },
       "admission": {
         "materializable": true,

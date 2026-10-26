@@ -61,6 +61,7 @@ pub struct MagnitudeOwnerBinding {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MagnitudeOwnedAttributes {
     pub policy: MagnitudePolicy,
+    pub item_augments: Vec<oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugment>,
     /// Actual durable observations, retained across numerical revalidation.
     pub owner_revisions: Option<(u64, u64, Option<u64>)>,
     pub binding: MagnitudeOwnerBinding,
@@ -206,6 +207,8 @@ struct Target {
 pub struct PreparedMagnitudeOwner {
     pub attributes: MagnitudeOwnedAttributes,
     resolved_attributes: MagnitudeOwnedAttributes,
+    selected_item_augments:
+        Vec<oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugment>,
     caster: PlayerSpellState,
     now_ms: u64,
     plan: NativeCombatPlan,
@@ -257,6 +260,47 @@ fn condition_attributes(
 }
 
 impl PreparedMagnitudeOwner {
+    /// Select only the named instant spell from the original fenced Item observations.
+    /// Selection leaves those observations intact for commit-time revalidation.
+    pub fn select_item_spell(&mut self, spell: &super::SpellDefinition) -> Result<(), Error> {
+        use oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind as K;
+        self.selected_item_augments.clear();
+        self.shared_extensions = None;
+        self.resolved_attributes = self.attributes.resolved_for_policy();
+        if !matches!(spell.carrier, super::Carrier::Instant { .. }) {
+            return Ok(());
+        }
+        for augment in &self.attributes.item_augments {
+            if !augment.spell.eq_ignore_ascii_case(&spell.name) {
+                continue;
+            }
+            match augment.kind {
+                K::CriticalHitChance => {
+                    let chance = u32::from(needed(
+                        self.resolved_attributes.base_critical_chance_permyriad,
+                    )?)
+                    .checked_add(augment.value)
+                    .ok_or(Error::InvalidMagnitude)?;
+                    self.resolved_attributes.base_critical_chance_permyriad =
+                        Some(chance.min(10000) as u16);
+                }
+                K::CriticalExtraDamage => {
+                    self.resolved_attributes.base_critical_extra_permyriad = Some(
+                        needed(self.resolved_attributes.base_critical_extra_permyriad)?
+                            .checked_add(
+                                i32::try_from(augment.value)
+                                    .map_err(|_| Error::InvalidMagnitude)?,
+                            )
+                            .ok_or(Error::InvalidMagnitude)?,
+                    );
+                }
+                _ => {}
+            }
+            self.selected_item_augments.push(augment.clone());
+        }
+        Ok(())
+    }
+
     /// Qualify the entire target set before RNG. Player targets come from the actual
     /// ChannelSpellStates borrow and are compared again by the joined player preflight.
     #[allow(clippy::too_many_arguments)]
@@ -487,6 +531,7 @@ impl PreparedMagnitudeOwner {
         }
         Ok(Self {
             attributes: original.clone(),
+            selected_item_augments: Vec::new(),
             resolved_attributes: resolved,
             caster: caster.clone(),
             now_ms,
@@ -670,6 +715,19 @@ impl PreparedMagnitudeOwner {
         };
         let a = &self.resolved_attributes;
         let mut value = signed_truncate(hit.magnitude as f64)?;
+        // Item base bonuses precede critical, target mitigation and Wheel flat stages.
+        for augment in &self.selected_item_augments {
+            use oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind as K;
+            if matches!((augment.kind, element), (K::BaseHealing, Element::Healing))
+                || (augment.kind == K::BaseDamage && element != Element::Healing)
+            {
+                value = value
+                    .checked_add(signed_truncate(
+                        value as f64 * f64::from(augment.value) / 10000.0,
+                    )?)
+                    .ok_or(Error::InvalidMagnitude)?;
+            }
+        }
         if critical {
             let mut bonus = needed(a.equipment_critical_extra_permyriad)?;
             if let Some(ConditionValues::Attributes {

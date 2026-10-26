@@ -233,6 +233,7 @@ pub async fn prepare_from_owners(
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
+        item_spell_leech: item_spell_augments::leech(owned, spell, before),
         corpse_companion: None,
         direct_companion: None,
         field_policy_revision: None,
@@ -612,6 +613,11 @@ fn prepare_preview(
     } else {
         None
     };
+    if let Some(owner) = preview_magnitude.as_mut() {
+        owner
+            .select_item_spell(spell)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+    }
     let binding = serde_json::to_vec(
         &json!({"intent":source_cast_intent(intent,rune),"spell":profile.spell(),
         "equipment_revision":b.equipment_revision,"character_revision":b.character_revision,
@@ -659,6 +665,8 @@ fn prepare_preview(
         &mut preview_lowered,
         now,
     )?;
+    item_spell_augments::cooldown(owned, spell, &mut preview.next, &mut preview.anchor, now)?;
+    preview_lowered.batch.anchor = Some(preview.anchor.clone());
     if preview_lowered.batch.effects.iter().any(|effect| {
         effect.target != actor
             && matches!(
@@ -796,6 +804,11 @@ fn prepare_payment(
     } else {
         None
     };
+    if let Some(owner) = magnitude.as_mut() {
+        owner
+            .select_item_spell(spell)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+    }
     let batch = OwnerCombatBatch {
         caster: actor,
         attacker,
@@ -832,6 +845,8 @@ fn prepare_payment(
         &mut lowered,
         now,
     )?;
+    item_spell_augments::cooldown(owned, spell, &mut paid.next, &mut paid.anchor, now)?;
+    lowered.batch.anchor = Some(paid.anchor.clone());
     let Plan::Combat(final_plan) = &paid.plan else {
         return reject();
     };
