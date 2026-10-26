@@ -126,8 +126,12 @@ async fn write<C: ItemLoopContent>(
              ON e.parent_item_instance_id=t.item_instance_id WHERE t.depth<8 \
          ) SELECT count(*) FROM (SELECT item_instance_id FROM tree LIMIT 501) bounded",
     ).bind(&parent).fetch_one(&mut ***tx).await?;
+    let mut deliver_to_inbox = false;
     if tree_count + i64::try_from(conversion.outputs.len()).map_err(|_| DurabilityError::InvalidStoredState)? - i64::from(quantity == 1) > 500 {
-        return Ok(UseDisposition::NoRoom);
+        if request.station.is_some() {
+            return Ok(UseDisposition::NoRoom);
+        }
+        deliver_to_inbox = true;
     }
     let bag = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
         .bind(&parent).fetch_one(&mut ***tx).await?;
@@ -147,7 +151,10 @@ async fn write<C: ItemLoopContent>(
         - i64::from(quantity == 1)
         > i64::from(capacity)
     {
-        return Ok(UseDisposition::NoRoom);
+        if request.station.is_some() {
+            return Ok(UseDisposition::NoRoom);
+        }
+        deliver_to_inbox = true;
     }
     // Whole carried weight and capacity use the same locked projection as the item loop.
     let carried = match carried_weight(tx, fence.character_id, *world.as_bytes(), content).await {
@@ -180,7 +187,10 @@ async fn write<C: ItemLoopContent>(
         .and_then(|w| w.checked_add(output_weight))
         .is_none_or(|w| w > capacity)
     {
-        return Ok(UseDisposition::NotPossible);
+        if request.station.is_some() {
+            return Ok(UseDisposition::NotPossible);
+        }
+        deliver_to_inbox = true;
     }
     let highest: String = sqlx::query_scalar("SELECT coalesce(max(placement_ordinal),0)::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
     let mut ordinal: u64 = highest
@@ -197,7 +207,7 @@ async fn write<C: ItemLoopContent>(
         let item: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
             .fetch_one(&mut ***tx)
             .await?;
-        outputs.push(json!({"item": item, "key": definition.production_key, "revision": definition.revision_ref, "count": count, "ordinal": output_ordinal}));
+        outputs.push(json!({"item": item, "key": definition.production_key, "revision": definition.revision_ref, "count": count, "ordinal": output_ordinal, "destination": if deliver_to_inbox { "store_inbox" } else { "backpack" }}));
     }
     let (transaction, event, occurred): (String, String, i64) = sqlx::query_as("SELECT game_character_uuid_v7()::text,game_character_uuid_v7()::text,(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut ***tx).await?;
     let tuple = tx.tuple();
@@ -228,8 +238,13 @@ async fn write<C: ItemLoopContent>(
     for output in outputs {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
-        sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,($1->>'ordinal')::numeric,$5::uuid)")
-            .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(&transaction).execute(&mut ***tx).await?;
+        if deliver_to_inbox {
+            sqlx::query("SELECT game_item_craft_inbox_deliver(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::uuid)")
+                .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
+        } else {
+            sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,($1->>'ordinal')::numeric,$5::uuid)")
+                .bind(&output).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(&parent).bind(&transaction).execute(&mut ***tx).await?;
+        }
     }
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;

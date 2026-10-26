@@ -166,7 +166,7 @@ fn scenario() -> TestResult {
         assert_eq!(recipe, "oteryn:reward-bag.primal_bag");
         assert_eq!(outputs[0]["key"], reward.as_str());
         assert!(hash_matches);
-        // Over capacity: a second bag stays carried and nothing is minted or recorded.
+        // Over capacity: Global's fallback consumes the bag and delivers the draw to Store Inbox.
         let mut tx = harness.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
         let levelled = sqlx::query("UPDATE game_character_progression_state SET level=1 WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).execute(&mut *tx).await?;
@@ -180,10 +180,12 @@ fn scenario() -> TestResult {
         let mut next = end;
         next.continuity.next_command_id = 2;
         let (_, result, _) = exchange(&owner, next, 2, &payload, reference(covet)).await?;
-        assert_eq!(result, UseDisposition::NotPossible);
-        assert_eq!(craft_count().await?, 1);
+        assert_eq!(result, UseDisposition::Committed);
+        assert_eq!(craft_count().await?, 2);
         let kept: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=$1::uuid").bind(&seeded[0]).fetch_one(&harness.pool).await?;
-        assert_eq!(kept, (1, 1));
+        assert_eq!(kept, (0, 2));
+        let inbox: (i64, Option<String>) = sqlx::query_as("SELECT count(*),min(d.cause_kind) FROM game_character_inbox_deliveries d JOIN game_item_instances i USING(item_instance_id) WHERE i.minted_transaction_id IN (SELECT transaction_id FROM game_item_craft_records WHERE command_id=2)").fetch_one(&harness.pool).await?;
+        assert_eq!(inbox, (1, Some("ITEM_CRAFT_REWARD".into())));
         let bag_two: [u8; 16] = sqlx::query_scalar("SELECT uuid_send($1::uuid)").bind(&seeded[0]).fetch_one(&harness.pool).await?;
         // A restarted owner replays the consumed bag's receipt without redrawing or minting.
         drop(owner);
@@ -200,10 +202,10 @@ fn scenario() -> TestResult {
             .use_item_completion(deps.actor, UseCommand { game_session_id: deps.admitted.game_session_id, command_id: 2, item_fence: Some(fence) }, ItemKey::Instance(bag_two))
             .await
             .ok_or("refused outcome")?;
-        assert_eq!(refused.disposition, UseDisposition::NotPossible);
-        assert_eq!(craft_count().await?, 1);
+        assert_eq!(refused.disposition, UseDisposition::Committed);
+        assert_eq!(craft_count().await?, 2);
         let minted: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND item_instance_id::text<>ALL($2)").bind(&reward).bind(&seeded).fetch_one(&harness.pool).await?;
-        assert_eq!(minted, 1);
+        assert_eq!(minted, 2);
         drop(restarted);
         drop(authority);
         drop(seal);
