@@ -56,6 +56,13 @@ message ChatIntentV1 {
     ChatRoomRefV1 open_room = 4;
     ChatRoomRefV1 close_room = 5;
     ChatGuildSendV1 guild = 6; // requires capability 36
+    ChatPrivateChannelCreateV1 private_channel_create = 7;   // requires capability 80
+    ChatPrivateChannelNameV1 private_channel_invite = 8;     // requires capability 80
+    ChatPrivateChannelNameV1 private_channel_exclude = 9;    // requires capability 80
+    ChatPrivateChannelRefV1 private_channel_join = 10;       // requires capability 80
+    ChatPrivateChannelRefV1 private_channel_leave = 11;      // requires capability 80
+    ChatPrivateChannelSayV1 private_channel_say = 12;        // requires capability 80
+    ChatChannelListRequestV1 channel_list = 13;              // requires capability 80
   }
 }
 
@@ -70,7 +77,8 @@ enum ChatDisposition {
   CHAT_DISPOSITION_ROOM_NOT_OPEN = 7;
   CHAT_DISPOSITION_CHAT_UNAVAILABLE = 8; // the World relay is not ready
   CHAT_DISPOSITION_REJECTED = 9;         // malformed intent or text, ineligible actor
-  CHAT_DISPOSITION_NOT_ALLOWED = 10; // capability 36; committed non-member
+  CHAT_DISPOSITION_NOT_ALLOWED = 10; // capability 36; committed non-member. Capability 80: create without Premium, invite or exclude without an own channel
+  CHAT_DISPOSITION_NOT_INVITED = 11; // capability 80: no invitation to the channel, or no such channel
 }
 
 // CommandResult.payload of command type 13: outcome only. At most 8 bytes.
@@ -92,6 +100,7 @@ enum ChatLineKind {
   CHAT_LINE_KIND_ROOM = 3;    // fields 4, 6, 7
   CHAT_LINE_KIND_DROPPED = 4; // no other field: lines were dropped by the egress bound (CHAT0-RL-11)
   CHAT_LINE_KIND_GUILD = 5; // capability 36: fields 4, 7, 9, 10 only
+  CHAT_LINE_KIND_PRIVATE_CHANNEL = 6; // capability 80: fields 4, 7, 11 only
 }
 
 // Same encoding as world_spatial ActorPositionV1; floor 0..=15.
@@ -114,6 +123,7 @@ message ChatLineV1 {
   ChatPositionV1 position = 8;   // where the line was spoken; always present on a local line
   bytes guild_id = 9; // capability 36, kind 5 only; 16-byte UUIDv7
   uint32 guild_rank = 10; // capability 36, kind 5 only; send-time rank 1..20
+  uint32 channel_id = 11; // capability 80, kind 6 only; 1..=65535
 }
 
 // GUILD-CHAT-1, Integrator decision 2026-10-22: capability 36 CHAT_GUILD_ROOM_V1
@@ -132,4 +142,36 @@ message GuildChatSnapshotV1 {
   bytes guild_id = 3; // UUIDv7, exactly 16 bytes; member only
   uint32 rank = 4; // 1..20; member only
   string motd = 5; // present even empty; member only, <=1020 bytes / 255 scalars
+}
+
+// CHAT-PM-CHANNELS-1, coordinator lane NIGHT-W1 2026-10-25: capability 80
+// CHAT_PRIVATE_CHANNEL_V1 requires 7. Only selected peers use intent tags 7..=13,
+// disposition 11, line kind 6 and delta type 3; every CHAT_V1 byte is unchanged
+// without selection. A private channel lives in the memory of one Channel: its owner,
+// invitations and members are sessions of that Channel, it closes when its owner
+// leaves it or its session ends, and nothing is stored. A channel is named by its
+// Channel-local number 1..=65535, never by a CharacterId. Lines pass the CHAT_V1
+// limiter (mute and bucket) and text rule; they are delivered to the joined members,
+// the speaker included. Results are common status ACCEPTED with wait_seconds=0
+// except MUTED and EXHAUSTED.
+message ChatPrivateChannelCreateV1 {} // Premium only; one own channel per session
+message ChatPrivateChannelNameV1 { string name = 1; } // 1..=120 bytes; an online session of this Channel
+message ChatPrivateChannelRefV1 { uint32 channel_id = 1; } // 1..=65535
+message ChatPrivateChannelSayV1 {
+  uint32 channel_id = 1; // 1..=65535
+  string text = 2;       // 1..=1020 bytes
+}
+message ChatChannelListRequestV1 {} // answered by one delta type 3
+
+message ChatInvitedChannelV1 {
+  uint32 channel_id = 1; // 1..=65535
+  string owner_name = 2; // 1..=120 bytes
+}
+
+// StateDelta.payload of delta type 3 (capability 80): the whole channel list; a delta
+// replaces it. At most 2054 bytes (16 invitations, CHATPM-RL-02).
+message ChatChannelListV1 {
+  uint32 public_rooms = 1; // ChatRoomsV1 bits of the rooms that can be opened; absent when none
+  uint32 own_channel = 2; // the session's own channel; absent when it has none
+  repeated ChatInvitedChannelV1 invited = 3; // at most 16, distinct, never the own channel
 }

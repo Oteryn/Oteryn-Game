@@ -194,7 +194,7 @@ fn results_carry_a_wait_only_with_muted_and_exhausted() {
     for payload in [
         &[][..],
         &[0x08, 0x00],
-        &[0x08, 0x0b],
+        &[0x08, 0x0c],
         &[0x08, 0x02],
         &[0x08, 0x01, 0x10, 0x01],
         &[0x08, 0x01, 0x18, 0x01],
@@ -427,6 +427,12 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 schema("ChatRoomsV1"),
                 MAX_CHAT_ROOMS_BYTES as u64
             ),
+            (
+                u64::from(private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1),
+                "CHAT_CHANNEL_LIST_DELTA_V1".to_owned(),
+                schema("ChatChannelListV1"),
+                private_channel::MAX_CHAT_CHANNEL_LIST_BYTES as u64
+            ),
         ]
     );
     assert_eq!(
@@ -457,6 +463,7 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
         "ChatRoomsV1",
         "ChatPositionV1",
         "ChatLineV1",
+        "ChatChannelListV1",
     ] {
         assert!(
             SCHEMA.contains(&format!("message {message} {{")),
@@ -468,6 +475,7 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
         MAX_CHAT_RESULT_BYTES,
         MAX_CHAT_ROOMS_BYTES,
         MAX_CHAT_LINE_BYTES,
+        private_channel::MAX_CHAT_CHANNEL_LIST_BYTES,
     ] {
         assert!(
             SCHEMA.contains(&format!("At most {bound} bytes")),
@@ -489,6 +497,14 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
     assert_eq!(limit("CHAT0-RL-01A"), Some(255));
     assert_eq!(limit("CHAT1-RL-01"), Some(MAX_CHAT_NAME_BYTES as u64));
     assert_eq!(limit("CHAT0-RL-07"), Some(MAX_CHAT_OPEN_ROOMS as u64));
+    assert_eq!(
+        limit("CHATPM-RL-01"),
+        Some(private_channel::MAX_PRIVATE_CHANNEL_INVITES as u64)
+    );
+    assert_eq!(
+        limit("CHATPM-RL-02"),
+        Some(private_channel::MAX_INVITED_PRIVATE_CHANNELS as u64)
+    );
 }
 
 #[test]
