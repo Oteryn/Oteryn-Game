@@ -659,6 +659,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
         dropped_teleports: vec![],
         spawns: Default::default(),
         npcs: Default::default(),
+        subareas: Default::default(),
     };
     let points = [
         (32310u16, 32210u16, -6i8),
