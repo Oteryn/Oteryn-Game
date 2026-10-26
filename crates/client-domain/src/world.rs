@@ -1,5 +1,8 @@
 //! World cell values, independent of asset formats, protocol and rendering backends.
 
+/// Edge of one drawn source cell in pixels.
+pub const CELL_PX: u32 = 32;
+
 /// One atlas cell drawn at a pixel offset from a tile's top-left, in 32 px source pixels.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Draw {

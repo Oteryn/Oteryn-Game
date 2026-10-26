@@ -1,5 +1,8 @@
 //! Deterministic mutation of the non-authoritative client projection.
 
+/// Deterministic world draw projection.
+pub mod world;
+
 use oteryn_client_domain::{ClientWorldProjection, ProjectionEvent};
 use std::fmt::{self, Display, Formatter};
 

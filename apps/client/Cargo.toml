@@ -23,6 +23,7 @@ path = "src/bin/oteryn-launcher.rs"
 oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets" }
 oteryn-client-domain = { version = "=0.1.0", path = "../../crates/client-domain" }
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
+oteryn-client-simulation = { version = "=0.1.0", path = "../../crates/client-simulation" }
 oteryn-diagnostics = { version = "=0.1.0", path = "../../crates/diagnostics" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-identity = { version = "=0.1.0", path = "../../crates/identity" }

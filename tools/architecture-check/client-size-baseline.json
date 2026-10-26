@@ -64,11 +64,6 @@
     "bytes": 38878,
     "central_registrations": 0
   },
-  "crates/renderer/src/lib.rs": {
-    "lines": 690,
-    "bytes": 21104,
-    "central_registrations": 0
-  },
   "crates/session/src/lib.rs": {
     "lines": 2412,
     "bytes": 105644,

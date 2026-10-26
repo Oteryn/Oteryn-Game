@@ -1880,6 +1880,7 @@ dependencies = [
  "oteryn-client-assets",
  "oteryn-client-domain",
  "oteryn-client-runtime",
+ "oteryn-client-simulation",
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-identity",
@@ -1906,6 +1907,7 @@ name = "oteryn-client-assets"
 version = "0.1.0"
 dependencies = [
  "lzma-rs",
+ "oteryn-client-domain",
  "oteryn-world-bundle",
  "prost",
  "serde",
@@ -2601,6 +2603,7 @@ dependencies = [
 name = "oteryn-renderer"
 version = "0.1.0"
 dependencies = [
+ "oteryn-client-domain",
  "oteryn-foundation",
  "pollster",
  "wgpu",

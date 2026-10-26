@@ -739,6 +739,8 @@ mod tests {
     fn client_edge_to_canary_synthetic_tool_or_dev_client_still_fails_closure() -> Result<(), String>
     {
         let policy = checked_in_policy()?;
+        assert!(policy.production.contains("oteryn-client-simulation"));
+        assert!(policy.edges["oteryn-client"].contains("oteryn-client-simulation"));
         assert!(policy.production.contains("oteryn-client-domain"));
         assert!(policy.edges["oteryn-client"].contains("oteryn-client-domain"));
         for target in [
@@ -751,6 +753,12 @@ mod tests {
         ] {
             let mut policy = checked_in_policy()?;
             assert!(policy.members.contains(target), "{target} missing");
+            // Simulation now has a production caller. Retain the negative fixture for
+            // a synthetic simulation package rather than rejecting its real owner.
+            if target == "oteryn-client-simulation" {
+                policy.production.remove(target);
+                policy.synthetic.insert(target.to_owned());
+            }
             if let Some(edges) = policy.edges.get_mut("oteryn-client") {
                 edges.insert(target.to_owned());
             }
