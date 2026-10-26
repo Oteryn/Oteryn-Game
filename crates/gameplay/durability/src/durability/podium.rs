@@ -8,7 +8,8 @@ use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::appearance::{
-    AppearanceContent, AppearanceSelection, EarnedCosmetics, Sex, validate_selection,
+    AccountUnlocks, AppearanceContent, AppearanceSelection, EarnedCosmetics, Sex, UnlockFact,
+    validate_selection,
 };
 use crate::foundation::{CommandRef, LocalPosition};
 use oteryn_gameplay_content::content::native_gameplay::NativeCosmeticsView;
@@ -112,6 +113,72 @@ fn authorized(
     .is_ok()
 }
 
+fn window(
+    revision: u64,
+    display: Display,
+    sex: Sex,
+    content: &NativeCosmeticsView,
+    facts: &[(String, String)],
+) -> Result<Vec<u8>, DurabilityError> {
+    let unlocks = EarnedCosmetics { content, facts };
+    let mut outfits = std::collections::BTreeMap::new();
+    let mut mounts = std::collections::BTreeSet::new();
+    let mut seen_outfits = std::collections::BTreeSet::new();
+    let mut seen_mounts = std::collections::BTreeSet::new();
+    // Resolve exactly the same qualified identities as configure, including definitions
+    // the actor does not own. Ambiguous or unrepresentable looks cannot be offered.
+    for key in content.outfit_keys() {
+        let Some(look) = content
+            .look_type(key, sex)
+            .and_then(|v| u16::try_from(v).ok())
+        else {
+            return refused(1636);
+        };
+        if !seen_outfits.insert(look) {
+            return refused(1636);
+        }
+        let key = key.to_owned();
+        if !content.outfit_is_starter(&key, sex) && unlocks.outfit(&key) != UnlockFact::Compatible {
+            continue;
+        }
+        let Some(count) = content.outfit_addon_count(&key) else {
+            return refused(1636);
+        };
+        let mut addons = 0;
+        for addon in 1..=count.min(2) {
+            if content.addon_is_starter(&key, sex, addon)
+                || unlocks.addon(&key, addon) == UnlockFact::Compatible
+            {
+                addons |= 1 << (addon - 1);
+            }
+        }
+        outfits.insert(look, addons);
+    }
+    for key in content.mount_keys() {
+        let Some(look) = content
+            .mount_metadata(key)
+            .and_then(|v| u16::try_from(v.0).ok())
+        else {
+            return refused(1636);
+        };
+        if !seen_mounts.insert(look) {
+            return refused(1636);
+        }
+        if unlocks.mount(&key.to_owned()) == UnlockFact::Compatible {
+            mounts.insert(look);
+        }
+    }
+    wire::encode_window(
+        revision,
+        display,
+        content.palette(),
+        &outfits.into_iter().collect::<Vec<_>>(),
+        &mounts.into_iter().collect::<Vec<_>>(),
+    )
+    .or_else(|_| wire::encode_result(1636, 0, Display::default()))
+    .map_err(|_| DurabilityError::InvalidStoredState)
+}
+
 impl DurabilityRoot {
     /// A current House actor, native recovery and same-transaction Item/ACL/earned checks.
     /// Display metadata follows the Item across custody changes; this writer moves no value.
@@ -161,14 +228,15 @@ impl DurabilityRoot {
             if i64::from(coords[0]).abs_diff(i64::from(command.position.x)) > 1
                 || i64::from(coords[1]).abs_diff(i64::from(command.position.y)) > 1
                 || coords[2] != i32::from(command.position.floor) { return refused(1639); }
-            if request.action == 0 {
-                commit_semantic_transaction(tx,deadline).await?;
-                return reply(0,revision,display);
-            }
             let selected = if request.action == 2 { display } else { request.display };
             let sex = match snapshot["sex"].as_i64() { Some(1)=>Sex::Female,Some(2)=>Sex::Male,_=>return Err(DurabilityError::InvalidStoredState) };
             let facts = earned_unlocks::read(&mut tx,fence.character_id,&content.earned_grant_keys()).await.map_err(|e| match e {
                 AppearanceReadError::InvalidStoredState=>DurabilityError::InvalidStoredState, AppearanceReadError::Storage(e)=>e.into() })?;
+            if request.action == 0 {
+                let bytes = window(revision,display,sex,&content,&facts)?;
+                commit_semantic_transaction(tx,deadline).await?;
+                return Ok(bytes);
+            }
             if !authorized(selected,sex,&content,&facts) { return refused(1635); }
             let after: Value = match sqlx::query_scalar("SELECT game_podium_apply($1,encode($2,'hex')::uuid,$3::text::numeric,$4,$5,$6::text::numeric,$7)")
                 .bind(p).bind(node.fact().node_id().as_bytes().as_slice()).bind(node.fact().registration_revision().to_string())

@@ -5,6 +5,9 @@ pub const CAPABILITY_PODIUM_V1: u32 = 133;
 pub const COMMAND_TYPE_PODIUM: u32 = 154;
 pub const DISPLAY_BYTES: usize = 15;
 pub const MAX_REQUEST_BYTES: usize = 556;
+/// A result prefix, version, palette and bounded outfit/mount choices.
+pub const MAX_WINDOW_BYTES: usize = 20_911;
+const _: () = assert!(MAX_WINDOW_BYTES <= crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES);
 
 /// Mutable Item presentation. Visibility never grants cosmetic ownership.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -157,9 +160,91 @@ pub fn encode_result(refusal: u16, revision: u64, display: Display) -> Result<Ve
     Ok(bytes)
 }
 
+/// Successful Renown window: the stored Item presentation and the actor's currently
+/// authorized choices. Look identities refer to the session's qualified content.
+/// Choices are sorted numerically, unique and bounded by the native content limit.
+pub fn encode_window(
+    revision: u64,
+    display: Display,
+    palette: &[[u8; 3]],
+    outfits: &[(u16, u8)],
+    mounts: &[u16],
+) -> Result<Vec<u8>, Error> {
+    if palette.len() != 133
+        || outfits.len() > 4096
+        || mounts.len() > 4096
+        || outfits
+            .iter()
+            .any(|(look, addons)| *look == 0 || *addons > 3)
+        || outfits.windows(2).any(|v| v[0].0 >= v[1].0)
+        || mounts.contains(&0)
+        || mounts.windows(2).any(|v| v[0] >= v[1])
+    {
+        return Err(Error::Malformed);
+    }
+    let mut bytes = encode_result(0, revision, display)?;
+    bytes.push(1);
+    bytes.extend_from_slice(&(palette.len() as u16).to_be_bytes());
+    bytes.extend(palette.iter().flatten());
+    bytes.extend_from_slice(&(outfits.len() as u16).to_be_bytes());
+    for (look, addons) in outfits {
+        bytes.extend_from_slice(&look.to_be_bytes());
+        bytes.push(*addons);
+    }
+    bytes.extend_from_slice(&(mounts.len() as u16).to_be_bytes());
+    for look in mounts {
+        bytes.extend_from_slice(&look.to_be_bytes());
+    }
+    Ok(bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn podium_registry_window_limit_matches_codec() -> Result<(), Box<dyn std::error::Error>> {
+        let registry: serde_json::Value =
+            serde_json::from_str(crate::PROTOCOL_OTERYN_V1_REGISTRY_JSON)?;
+        let commands = registry["command_types"].as_array().ok_or("commands")?;
+        let entry = commands
+            .iter()
+            .find(|v| v["id"] == COMMAND_TYPE_PODIUM)
+            .ok_or("podium command")?;
+        assert_eq!(entry["capability"], CAPABILITY_PODIUM_V1);
+        assert_eq!(entry["max_result_payload_bytes"], MAX_WINDOW_BYTES);
+        assert_eq!(entry["max_payload_bytes"], MAX_REQUEST_BYTES);
+        Ok(())
+    }
+    #[test]
+    fn podium_window_bounds_and_counterfactual() -> Result<(), Error> {
+        let palette = [[7, 8, 9]; 133];
+        let bytes = encode_window(4, Display::default(), &palette, &[(128, 3)], &[139])?;
+        assert_eq!(&bytes[..25], encode_result(0, 4, Display::default())?);
+        assert_eq!(&bytes[25..28], &[1, 0, 133]);
+        assert_eq!(&bytes[28..427], palette.as_flattened());
+        assert_eq!(&bytes[427..], &[0, 1, 0, 128, 3, 0, 1, 0, 139]);
+        for outfits in [
+            vec![(0, 0)],
+            vec![(128, 4)],
+            vec![(128, 0), (128, 1)],
+            vec![(129, 0), (128, 0)],
+        ] {
+            assert!(encode_window(0, Display::default(), &palette, &outfits, &[]).is_err());
+        }
+        for mounts in [vec![0], vec![139, 139], vec![140, 139]] {
+            assert!(encode_window(0, Display::default(), &palette, &[], &mounts).is_err());
+        }
+        assert!(encode_window(0, Display::default(), &palette[..132], &[], &[]).is_err());
+        let outfits: Vec<_> = (1..=4096).map(|look| (look, 3)).collect();
+        let mut mounts: Vec<_> = (1..=4096).collect();
+        assert_eq!(
+            encode_window(0, Display::default(), &palette, &outfits, &mounts)?.len(),
+            MAX_WINDOW_BYTES
+        );
+        mounts.push(4097);
+        assert!(encode_window(0, Display::default(), &palette, &outfits, &mounts).is_err());
+        Ok(())
+    }
     #[test]
     fn podium_codec_roundtrip_and_counterfactual() -> Result<(), Error> {
         let mut item = [0; 16];

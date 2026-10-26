@@ -168,19 +168,37 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
                 }
                 crate::gameplay_transport::session_ingress::CommandAction::Execute => {}
             }
-            let (next, payload) = if permit.is_some()
+            let (next, payload, status) = if permit.is_some()
                 && command.command_type == COMMAND_TYPE_HOUSE_TRANSFER
                 && admitted
                     .continuity
                     .selected_capabilities
                     .command_selected(command.command_type)
             {
-                authority
+                let (next, payload) = authority
                     .house_transfer(admitted, command.command_id, command.payload)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?
+                    .ok_or(ServeEnd::Disconnected)?;
+                let status = if next.is_some() {
+                    CommandStatus::Accepted
+                } else {
+                    CommandStatus::Rejected
+                };
+                (next, payload, status)
+            } else if permit.is_some()
+                && command.command_type == oteryn_protocol_oteryn::podium::COMMAND_TYPE_PODIUM
+                && admitted
+                    .continuity
+                    .selected_capabilities
+                    .command_selected(command.command_type)
+            {
+                let (status, payload) =
+                    crate::gameplay_transport::podium::dispatch(authority, &admitted, command)
+                        .await
+                        .ok_or(ServeEnd::Disconnected)?;
+                (None, payload, status)
             } else {
-                (None, Vec::new())
+                (None, Vec::new(), CommandStatus::Rejected)
             };
             drop(permit);
             let sequence = admitted
@@ -188,18 +206,9 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
                 .server_sequence
                 .checked_add(1)
                 .ok_or(ServeEnd::Disconnected)?;
-            let result = encode_command_result(
-                generation,
-                sequence,
-                command.command_id,
-                if next.is_some() {
-                    CommandStatus::Accepted
-                } else {
-                    CommandStatus::Rejected
-                },
-                &payload,
-            )
-            .map_err(|_| ServeEnd::Disconnected)?;
+            let result =
+                encode_command_result(generation, sequence, command.command_id, status, &payload)
+                    .map_err(|_| ServeEnd::Disconnected)?;
             commands
                 .terminalize_with(command.command_id, &result, || {})
                 .ok_or(ServeEnd::Disconnected)?;
