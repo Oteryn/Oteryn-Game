@@ -42,6 +42,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(intent) = wire::decode_guild_war_intent(payload) else {
             return GuildReply::Rejected;
         };
+        // Hash the canonical intent so equivalent field orderings share a durable receipt.
+        let Ok(canonical) = wire::encode_guild_war_intent(&intent) else {
+            return GuildReply::Rejected;
+        };
         let Ok(command_id) = CommandId::new(id) else {
             return GuildReply::Rejected;
         };
@@ -66,7 +70,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 self.holder,
                 fence,
                 command,
-                Sha256::digest(payload).into(),
+                Sha256::digest(canonical).into(),
                 intent,
                 war,
                 now,
