@@ -273,6 +273,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 source_definition: entry.item.definition.clone(),
                 source_quantity_before: entry.item.quantity,
                 flask: ItemUseFlaskPlan::None,
+                drome: None,
             },
             binding,
             target_identity: wanted.identity,

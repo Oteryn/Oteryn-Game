@@ -41,3 +41,29 @@ REVOKE ALL ON game_character_concoction_effects, game_character_concoction_recei
 GRANT SELECT,INSERT,UPDATE ON game_character_concoction_effects TO oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_character_concoction_receipts TO oteryn_game_runtime;
 GRANT SELECT ON game_character_concoction_effects, game_character_concoction_receipts TO oteryn_game_control;
+
+ALTER TABLE game_item_use_records
+ DROP CONSTRAINT game_item_use_records_cause_kind_check,
+ ADD CONSTRAINT game_item_use_records_cause_kind_check CHECK(cause_kind IN (1,2,3,328,344)),
+ DROP CONSTRAINT game_item_use_cause_shape,
+ ADD CONSTRAINT game_item_use_cause_shape CHECK(
+   (cause_kind IN (1,328) AND shape=1) OR cause_kind=2 OR
+   (cause_kind=3 AND shape IN (3,4)) OR (cause_kind=344 AND shape IN (1,3,4)));
+
+CREATE TABLE game_character_drome_cube_receipts (
+ transaction_id UUID PRIMARY KEY REFERENCES game_item_use_records(transaction_id) DEFERRABLE INITIALLY DEFERRED,
+ character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+ game_session_id UUID NOT NULL CHECK(game_character_is_uuid_v7(game_session_id)),
+ command_id NUMERIC(20,0) NOT NULL CHECK(command_id BETWEEN 1 AND 18446744073709551615),
+ concoction SMALLINT NOT NULL CHECK(concoction BETWEEN 0 AND 19),
+ reward_item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id) DEFERRABLE INITIALLY DEFERRED,
+ request_binding BYTEA NOT NULL CHECK(octet_length(request_binding)=32),
+ created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
+ UNIQUE(game_session_id,command_id)
+);
+CREATE TRIGGER game_character_drome_cube_receipts_immutable BEFORE UPDATE OR DELETE ON game_character_drome_cube_receipts FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_character_drome_cube_receipts_no_truncate BEFORE TRUNCATE ON game_character_drome_cube_receipts EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_character_drome_cube_receipts_stamp BEFORE INSERT ON game_character_drome_cube_receipts FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id();
+REVOKE ALL ON game_character_drome_cube_receipts FROM PUBLIC;
+GRANT SELECT,INSERT ON game_character_drome_cube_receipts TO oteryn_game_runtime;
+GRANT SELECT ON game_character_drome_cube_receipts TO oteryn_game_control;

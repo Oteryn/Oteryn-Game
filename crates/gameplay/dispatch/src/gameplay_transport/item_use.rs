@@ -6,6 +6,7 @@
 use std::num::NonZeroU32;
 use std::time::Duration;
 
+use oteryn_gameplay_items::drome_concoction::{Concoction, DROME_CUBE_ITEM_ID, cube_reward};
 use oteryn_gameplay_items::hotkey_search::HotkeyRefusal;
 
 use oteryn_simulation_determinism::{
@@ -96,6 +97,7 @@ impl ItemUseGate {
         let (ready, cooldown) = match kind {
             ItemUseKind::Food => (&mut self.food_ready_ms, FOOD_COOLDOWN_MS),
             ItemUseKind::Potion => (&mut self.potion_ready_ms, POTION_COOLDOWN_MS),
+            ItemUseKind::Drome => (&mut self.food_ready_ms, 0),
             ItemUseKind::PickRefine { .. } | ItemUseKind::MountTaming => {
                 return Err(UseDisposition::Rejected);
             }
@@ -154,6 +156,7 @@ impl ItemUseGates {
 enum Effect {
     Food(u16),
     Potion(Vec<ReferencePotionRestore>),
+    Drome,
 }
 
 enum UseSource {
@@ -290,20 +293,90 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| entry.item.item_instance_id == source)
             .ok_or(UseDisposition::StaleState)?;
-        let record = record(native, &entry.item.definition).ok_or(UseDisposition::NothingToUse)?;
-        let (kind, effect, flask) = match &record.semantics.consumption {
-            ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
-                if food.regeneration_seconds > 0 =>
+        let item_id = tibia_item_id(&entry.item.definition);
+        let record = record(native, &entry.item.definition);
+        let occurred_at_unix_ms = unix_ms().map_err(|_| UseDisposition::Rejected)?;
+        let (kind, effect, flask, drome) = match item_id {
+            Some(DROME_CUBE_ITEM_ID) => {
+                let root = GameplayDecisionRoot::from_bytes(
+                    self.runtime
+                        .lock()
+                        .await
+                        .content_pin()
+                        .server_artifact_digest(),
+                );
+                let decision = DecisionOccurrenceId::from_bytes(occurrence(
+                    actor,
+                    session,
+                    command.command_id,
+                ));
+                let mut index = 0;
+                let concoction = loop {
+                    let draw = deterministic_decision_u64(
+                        &root,
+                        decision,
+                        "drome.cube.uniform_twenty",
+                        index,
+                    )
+                    .map_err(|_| UseDisposition::Rejected)?;
+                    if let Some(reward) = cube_reward(draw) {
+                        break reward;
+                    }
+                    index += 1;
+                };
+                let target = TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: format!("oteryn:item.tibia.i{}", concoction.item_id()),
+                    revision_ref: entry.item.definition.revision_ref.clone(),
+                };
+                let flask = inventory
+                    .plan_flask(entry, target, || crate::operator_files::uuid_v7().ok())
+                    .map_err(|_| UseDisposition::Rejected)?;
+                (
+                    ItemUseKind::Drome,
+                    Effect::Drome,
+                    flask,
+                    Some(crate::durability::item_use::DromeUsePlan::Cube {
+                        concoction: concoction as u8,
+                    }),
+                )
+            }
+            Some(id) if Concoction::from_item_id(id).is_some() => {
+                let concoction =
+                    Concoction::from_item_id(id).ok_or(UseDisposition::NothingToUse)?;
+                (
+                    ItemUseKind::Drome,
+                    Effect::Drome,
+                    ItemUseFlaskPlan::None,
+                    Some(crate::durability::item_use::DromeUsePlan::Activate {
+                        concoction: concoction as u8,
+                        active_until_unix_ms: occurred_at_unix_ms
+                            .checked_add(3_600_000)
+                            .ok_or(UseDisposition::Rejected)?,
+                        ready_at_unix_ms: occurred_at_unix_ms
+                            .checked_add(86_400_000)
+                            .ok_or(UseDisposition::Rejected)?,
+                    }),
+                )
+            }
+            _ => match &record
+                .ok_or(UseDisposition::NothingToUse)?
+                .semantics
+                .consumption
             {
-                let effect = Effect::Food(food.regeneration_seconds);
-                (ItemUseKind::Food, effect, ItemUseFlaskPlan::None)
-            }
-            ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) => {
-                let flask = flask_plan(native, &inventory, entry, &potion.empty_flask)?;
-                let effect = Effect::Potion(potion.restores.clone());
-                (ItemUseKind::Potion, effect, flask)
-            }
-            _ => return Err(UseDisposition::NothingToUse),
+                ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
+                    if food.regeneration_seconds > 0 =>
+                {
+                    let effect = Effect::Food(food.regeneration_seconds);
+                    (ItemUseKind::Food, effect, ItemUseFlaskPlan::None, None)
+                }
+                ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) => {
+                    let flask = flask_plan(native, &inventory, entry, &potion.empty_flask)?;
+                    let effect = Effect::Potion(potion.restores.clone());
+                    (ItemUseKind::Potion, effect, flask, None)
+                }
+                _ => return Err(UseDisposition::NothingToUse),
+            },
         };
         let reserved: Vec<[u8; 16]> = std::iter::once(source)
             .chain(match &flask {
@@ -318,7 +391,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect();
         let ids = crate::operator_files::uuid_v7()
             .and_then(|transaction| Ok((transaction, crate::operator_files::uuid_v7()?)));
-        let (Ok((transaction_id, event_id)), Ok(occurred_at_unix_ms)) = (ids, unix_ms()) else {
+        let Ok((transaction_id, event_id)) = ids else {
             return Err(UseDisposition::Rejected);
         };
         let request = ItemUseRequest {
@@ -335,6 +408,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source_definition: entry.item.definition.clone(),
             source_quantity_before: entry.item.quantity,
             flask,
+            drome,
         };
         // PREPARE (§5): requirements before any reservation, then FULL, then the cooldown.
         {
@@ -344,7 +418,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .then(|| states.get(&runtime, actor, session))
                 .flatten()
                 .ok_or(UseDisposition::Rejected)?;
-            if !requirements_met(&record.semantics.use_requirements, state.character_facts()) {
+            if let Some(record) = record
+                && !requirements_met(&record.semantics.use_requirements, state.character_facts())
+            {
                 return Err(UseDisposition::RequirementNotMet);
             }
             // FOOD-REGEN-1: eating that would reach the cap is refused; nothing is burned.
@@ -526,7 +602,16 @@ fn apply_effect(
                 };
             }
         }
+        Effect::Drome => {}
     }
+}
+
+fn tibia_item_id(definition: &TypedDefinitionRef) -> Option<u32> {
+    definition
+        .production_key
+        .strip_prefix("oteryn:item.tibia.i")?
+        .parse()
+        .ok()
 }
 
 /// The occurrence of one item use, bound to its CommandRef and actor like a spell cast's.
@@ -660,6 +745,30 @@ mod tests {
             &ReferenceItemField::Conflict,
             facts(Vocation::Monk, 1)
         ));
+    }
+
+    #[test]
+    fn carried_drome_catalogue_is_recognized_by_production_definition() {
+        let definition = |id| TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: format!("oteryn:item.tibia.i{id}"),
+            revision_ref: "definition-r1".into(),
+        };
+        assert_eq!(tibia_item_id(&definition(DROME_CUBE_ITEM_ID)), Some(36_827));
+        for concoction in oteryn_gameplay_items::drome_concoction::ALL_CONCOCTIONS {
+            assert_eq!(
+                tibia_item_id(&definition(concoction.item_id())),
+                Some(concoction.item_id())
+            );
+        }
+        assert_eq!(
+            tibia_item_id(&TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.not-tibia".into(),
+                revision_ref: "definition-r1".into(),
+            }),
+            None
+        );
     }
 }
 

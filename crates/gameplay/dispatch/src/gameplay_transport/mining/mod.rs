@@ -250,6 +250,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source_definition: stone.item.definition.clone(),
             source_quantity_before: stone.item.quantity,
             flask,
+            drome: None,
         };
         let content = NativeItemWeights(native);
         match self

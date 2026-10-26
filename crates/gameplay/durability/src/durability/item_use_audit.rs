@@ -285,6 +285,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | ITEM_USE_CAUSE_POTION
             | super::item_use::mining::PICK_REFINE_CAUSE
             | super::item_use::mount_taming::TAMING_CAUSE
+            | super::item_use::DROME_USE_CAUSE
     ) || command.command_id == 0
         || command.game_session_id != value.expected_game_session_id
         || value.expected_session_generation == 0
@@ -314,13 +315,16 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
         (
             ITEM_USE_CAUSE_FOOD
             | ITEM_USE_CAUSE_POTION
-            | super::item_use::mount_taming::TAMING_CAUSE,
+            | super::item_use::mount_taming::TAMING_CAUSE
+            | super::item_use::DROME_USE_CAUSE,
             None,
             false,
         ) => ItemUseShape::Burn,
         (ITEM_USE_CAUSE_POTION, None, true) => ItemUseShape::BurnFlaskMissing,
         (
-            ITEM_USE_CAUSE_POTION | super::item_use::mining::PICK_REFINE_CAUSE,
+            ITEM_USE_CAUSE_POTION
+            | super::item_use::mining::PICK_REFINE_CAUSE
+            | super::item_use::DROME_USE_CAUSE,
             Some(flask),
             false,
         ) => check_flask(flask, before, entry)?,

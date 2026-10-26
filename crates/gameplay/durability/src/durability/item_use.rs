@@ -51,11 +51,16 @@ pub mod mount_taming;
 pub use carried_inventory::ItemUseInventory;
 use carried_source::lock_use_path;
 
+pub const DROME_USE_CAUSE: u32 = 344;
+
 /// The closed `ItemUseCause` kinds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ItemUseKind {
     Food,
     Potion,
+    /// DROMECUBE: cube conversion or one concoction activation. The attached plan closes which
+    /// durable side effect must accompany the burn in this transaction.
+    Drome,
     MountTaming,
     PickRefine {
         tool: [u8; 16],
@@ -69,6 +74,7 @@ impl ItemUseKind {
         match self {
             Self::Food => ITEM_USE_CAUSE_FOOD,
             Self::Potion => ITEM_USE_CAUSE_POTION,
+            Self::Drome => DROME_USE_CAUSE,
             Self::MountTaming => mount_taming::TAMING_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
@@ -114,6 +120,17 @@ pub struct ItemUseRequest {
     pub source_definition: TypedDefinitionRef,
     pub source_quantity_before: u32,
     pub flask: ItemUseFlaskPlan,
+    pub drome: Option<DromeUsePlan>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DromeUsePlan {
+    Cube { concoction: u8 },
+    Activate {
+        concoction: u8,
+        active_until_unix_ms: i64,
+        ready_at_unix_ms: i64,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -189,6 +206,9 @@ impl ItemUseRequest {
                 ItemUseKind::Food | ItemUseKind::Potion | ItemUseKind::MountTaming,
             ) => true,
             (_, ItemUseKind::Food | ItemUseKind::MountTaming) => false,
+            (ItemUseFlaskPlan::New { .. } | ItemUseFlaskPlan::Stack { .. }, ItemUseKind::Drome) => true,
+            (ItemUseFlaskPlan::None, ItemUseKind::Drome) => true,
+            (_, ItemUseKind::Drome) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
                 ItemUseFlaskPlan::Stack {
@@ -220,7 +240,17 @@ impl ItemUseRequest {
             }
             (_, ItemUseKind::PickRefine { .. }) => false,
         };
-        if !flask_valid
+        let drome_valid = match (&self.drome, self.kind, &self.flask) {
+            (None, ItemUseKind::Food | ItemUseKind::Potion | ItemUseKind::MountTaming | ItemUseKind::PickRefine { .. }, _) => true,
+            (Some(DromeUsePlan::Cube { concoction }), ItemUseKind::Drome, ItemUseFlaskPlan::New { .. } | ItemUseFlaskPlan::Stack { .. }) => *concoction < 20,
+            (Some(DromeUsePlan::Activate { concoction, active_until_unix_ms, ready_at_unix_ms }), ItemUseKind::Drome, ItemUseFlaskPlan::None) => {
+                *concoction < 20
+                    && *active_until_unix_ms == self.occurred_at_unix_ms.saturating_add(3_600_000)
+                    && *ready_at_unix_ms == self.occurred_at_unix_ms.saturating_add(86_400_000)
+            }
+            _ => false,
+        };
+        if !flask_valid || !drome_valid
             || self.command_id == 0
             || check_uuid_v7(&self.source_item_instance_id).is_err()
             || check_uuid_v7(&self.transaction_id).is_err()
@@ -290,6 +320,15 @@ impl ItemUseRequest {
                 hasher.update(item_instance_id);
                 definition(&mut hasher, flask);
                 hasher.update(placement_ordinal.to_be_bytes());
+            }
+        }
+        match &self.drome {
+            None => hasher.update([0_u8]),
+            Some(DromeUsePlan::Cube { concoction }) => hasher.update([1, *concoction]),
+            Some(DromeUsePlan::Activate { concoction, active_until_unix_ms, ready_at_unix_ms }) => {
+                hasher.update([2, *concoction]);
+                hasher.update(active_until_unix_ms.to_be_bytes());
+                hasher.update(ready_at_unix_ms.to_be_bytes());
             }
         }
         hasher.finalize().into()
@@ -822,6 +861,30 @@ async fn write(
     .execute(&mut *connection)
     .await?;
 
+    if let Some(plan) = &request.drome {
+        match plan {
+            DromeUsePlan::Cube { concoction } => {
+                sqlx::query("INSERT INTO game_character_drome_cube_receipts (transaction_id, character_id, game_session_id, command_id, concoction, reward_item_instance_id, request_binding) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, $4::text::numeric(20,0), $5, encode($6,'hex')::uuid, $7)")
+                    .bind(request.transaction_id.as_slice()).bind(holder.as_slice())
+                    .bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command_id.to_string())
+                    .bind(i16::from(*concoction)).bind(flask_item_id(request).ok_or(ItemUseError::InvalidInput)?.as_slice())
+                    .bind(request.binding().as_slice()).execute(&mut *connection).await?;
+            }
+            DromeUsePlan::Activate { concoction, active_until_unix_ms, ready_at_unix_ms } => {
+                let available: bool = sqlx::query_scalar("SELECT COALESCE((SELECT ready_at <= to_timestamp($3::double precision/1000) FROM game_character_concoction_effects WHERE character_id=encode($1,'hex')::uuid AND concoction=$2), true)")
+                    .bind(holder.as_slice()).bind(i16::from(*concoction)).bind(request.occurred_at_unix_ms).fetch_one(&mut *connection).await?;
+                if !available { return Err(ItemUseError::StaleState); }
+                sqlx::query("INSERT INTO game_character_concoction_receipts (transaction_id, character_id, game_session_id, command_id, concoction, active_until, ready_at, request_binding) VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, $4::text::numeric(20,0), $5, to_timestamp($6::double precision/1000), to_timestamp($7::double precision/1000), $8)")
+                    .bind(request.transaction_id.as_slice()).bind(holder.as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
+                    .bind(request.command_id.to_string()).bind(i16::from(*concoction)).bind(*active_until_unix_ms).bind(*ready_at_unix_ms)
+                    .bind(request.binding().as_slice()).execute(&mut *connection).await?;
+                sqlx::query("INSERT INTO game_character_concoction_effects(character_id,concoction,active_until,ready_at,activated_transaction_id) VALUES(encode($1,'hex')::uuid,$2,to_timestamp($3::double precision/1000),to_timestamp($4::double precision/1000),encode($5,'hex')::uuid) ON CONFLICT(character_id,concoction) DO UPDATE SET active_until=EXCLUDED.active_until,ready_at=EXCLUDED.ready_at,activated_transaction_id=EXCLUDED.activated_transaction_id")
+                    .bind(holder.as_slice()).bind(i16::from(*concoction)).bind(*active_until_unix_ms).bind(*ready_at_unix_ms)
+                    .bind(request.transaction_id.as_slice()).execute(&mut *connection).await?;
+            }
+        }
+    }
+
     // The used stack: one unit leaves, the identity is kept or the stack retires at zero.
     let changed = sqlx::query(
         "UPDATE game_item_instances \
@@ -956,6 +1019,13 @@ fn flask_definition(request: &ItemUseRequest) -> Option<&TypedDefinitionRef> {
         ItemUseFlaskPlan::Stack { definition, .. } | ItemUseFlaskPlan::New { definition, .. } => {
             Some(definition)
         }
+        _ => None,
+    }
+}
+
+fn flask_item_id(request: &ItemUseRequest) -> Option<&[u8; 16]> {
+    match &request.flask {
+        ItemUseFlaskPlan::Stack { item_instance_id, .. } | ItemUseFlaskPlan::New { item_instance_id, .. } => Some(item_instance_id),
         _ => None,
     }
 }
