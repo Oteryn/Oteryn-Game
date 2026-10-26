@@ -81,6 +81,45 @@ pub struct EquipmentSnapshot {
     pub combat_mode: Option<CombatMode>,
     pub items: Vec<EquippedItem>,
 }
+
+impl DurabilityRoot {
+    /// Exact direct entries of equipped quivers, Extra before Shield, in display order.
+    pub async fn read_quiver_ammunition<C: super::item_loop_move::ItemLoopContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        expected: EquipmentSnapshot,
+        content: &C,
+    ) -> Result<Vec<EquippedItem>> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| rejected("quiver recovery"))?;
+        let node = node.clone();
+        let fence = *fence;
+        let mut context = content;
+        self.try_issue_semantic_pass()?.run_with_context(&mut context,move |holder,deadline,content| Box::pin(async move {
+            let content=*content;
+            let mut tx=super::db::begin_semantic_transaction(holder,deadline).await?;
+            let authority=assert_current_equipment_in_transaction(&mut tx,&record,&node,&fence,None,content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
+            let actual=read_equipment_in_transaction(&mut tx,&authority).await.map_err(|_| DurabilityError::Unavailable)?;
+            if actual != expected { return Err(DurabilityError::Unavailable); }
+            let mut entries=Vec::new();
+            for slot in [10,6] {
+                let Some(quiver)=actual.items.iter().find(|i|i.slot==slot && content.is_quiver(&i.definition)) else { continue; };
+                let rows=sqlx::query("SELECT COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal DESC LIMIT 21 FOR UPDATE OF i")
+                    .bind(quiver.item_instance_id.as_slice()).bind(authority.world.as_slice()).fetch_all(&mut *tx).await?;
+                if rows.len()>20 { return Err(DurabilityError::InvalidStoredState); }
+                for row in rows {
+                    let definition=super::item_mint::TypedDefinitionRef {family:row.try_get("definition_family")?,production_key:row.try_get("definition_production_key")?,revision_ref:row.try_get("definition_revision_ref")?};
+                    if !content.is_ammunition(&definition) { return Err(DurabilityError::InvalidStoredState); }
+                    entries.push(EquippedItem {slot,tier:u8::try_from(row.try_get::<i16,_>("tier")?).ok().filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX).ok_or(DurabilityError::InvalidStoredState)?,item_instance_id:uuid(row.try_get("item_instance_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,definition,quantity:u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,state_revision:number(row.try_get("state_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?});
+                }
+            }
+            super::db::commit_semantic_transaction(tx,deadline).await?;Ok(entries)
+        })).await.map_err(EquipmentError::from)
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum EquipmentIntent {
     Move {
@@ -473,6 +512,7 @@ pub async fn apply_equipment_in_transaction(
                             Some("knight" | "elite_knight") => Base::Knight,
                             Some("paladin" | "royal_paladin") => Base::Paladin,
                             Some("monk" | "exalted_monk") => Base::Monk,
+                            None | Some("none") => Base::None,
                             _ => return Err(rejected("equipment actual vocation")),
                         };
                         if !proposed.vocations.contains(&base) {
@@ -495,11 +535,14 @@ pub async fn apply_equipment_in_transaction(
                     // The target's occupant leaves in this same receipt. Every other
                     // occupied hand/group remains a genuine conflict.
                     if old.slot == *slot {
-                        if oldpolicy.container_capacity().is_some()
+                        if !content.is_quiver_item(
+                            &old.definition.production_key,
+                            &old.definition.revision_ref,
+                        ) && (oldpolicy.container_capacity().is_some()
                             || !content.is_plain_item(
                                 &old.definition.production_key,
                                 &old.definition.revision_ref,
-                            )
+                            ))
                         {
                             return Err(rejected("equipment swap container semantics"));
                         }
@@ -531,8 +574,9 @@ pub async fn apply_equipment_in_transaction(
                 if let Some(old) = actual.items.iter().find(|old| old.slot == *slot) {
                     let key: String = row.try_get("definition_production_key")?;
                     let revision: String = row.try_get("definition_revision_ref")?;
-                    if policy.container_capacity().is_some()
-                        || !content.is_plain_item(&key, &revision)
+                    if !content.is_quiver_item(&key, &revision)
+                        && (policy.container_capacity().is_some()
+                            || !content.is_plain_item(&key, &revision))
                     {
                         return Err(rejected("equipment swap container semantics"));
                     }
@@ -1060,6 +1104,13 @@ pub enum EquipmentMoveRefusal {
 pub trait EquipmentMoveContent: EquipmentPolicyLookup + Sync {
     /// True only when the definition is known to carry no `container` semantics.
     fn is_plain_item(&self, production_key: &str, revision_ref: &str) -> bool;
+    fn is_quiver_item(&self, _production_key: &str, _revision_ref: &str) -> bool {
+        false
+    }
+    fn is_ammunition_item(&self, _production_key: &str, _revision_ref: &str) -> bool {
+        false
+    }
+
     /// True unless the definition is known to have no timed field (`temporal` active-time
     /// budget or `charges`); unknown or conflicting timed content is timed.
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool;
@@ -1154,23 +1205,35 @@ async fn precheck_move(
             let Some(policy) = content.equipment_policy(&key, &revision) else {
                 return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
             };
+            let quiver = content.is_quiver_item(&key, &revision) && matches!(to, 6 | 10);
             if claims(&policy, to).is_err()
-                || policy.container_capacity().is_some()
-                || !content.is_plain_item(&key, &revision)
+                || (!quiver
+                    && (policy.container_capacity().is_some()
+                        || !content.is_plain_item(&key, &revision)))
             {
                 return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
             }
             let contents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid) OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)")
                 .bind(request.item.as_slice()).fetch_one(&mut **tx).await?;
-            if contents {
+            if contents && !quiver {
                 return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
+            }
+            if quiver {
+                let rows=sqlx::query("SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid ORDER BY i.item_instance_id LIMIT 21 FOR UPDATE OF i")
+                    .bind(request.item.as_slice()).fetch_all(&mut **tx).await?;
+                if rows.len()>20 || rows.iter().any(|row| {
+                    let key=row.try_get::<String,_>("definition_production_key");let revision=row.try_get::<String,_>("definition_revision_ref");
+                    !matches!((key,revision),(Ok(key),Ok(revision)) if content.is_ammunition_item(&key,&revision))
+                }) {return Ok(Some(EquipmentMoveRefusal::SlotMismatch));}
             }
             if content.is_timed_item(&key, &revision) {
                 return Ok(Some(EquipmentMoveRefusal::TimedNotHosted));
             }
             if let Some(old) = snapshot.items.iter().find(|item| item.slot == to) {
                 if !content
-                    .is_plain_item(&old.definition.production_key, &old.definition.revision_ref)
+                    .is_quiver_item(&old.definition.production_key, &old.definition.revision_ref)
+                    && !content
+                        .is_plain_item(&old.definition.production_key, &old.definition.revision_ref)
                 {
                     return Ok(Some(EquipmentMoveRefusal::SlotMismatch));
                 }

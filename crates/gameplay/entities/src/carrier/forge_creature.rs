@@ -6,6 +6,9 @@ use oteryn_gameplay_domain::domain::forge_creature::{
 };
 use sha2::{Digest, Sha256};
 
+// Canary's Game::updateForgeableMonsters maintenance cadence, in owner semantic time.
+pub(super) const POPULATION_TICK_MICROS: u64 = 10_000_000;
+
 impl ChannelRuntimeV1 {
     fn forge_roll(&self, actor: ExactActorRef) -> u64 {
         let mut hash = Sha256::new();
@@ -15,26 +18,6 @@ impl ChannelRuntimeV1 {
         hash.update(actor.actor_local_generation().to_be_bytes());
         let bytes: [u8; 32] = hash.finalize().into();
         u64::from_be_bytes(bytes[..8].try_into().unwrap_or_default())
-    }
-
-    pub(super) fn classify_influenced_spawn(
-        &mut self,
-        actor: ExactActorRef,
-    ) -> Result<(), CarrierError> {
-        let snapshot = self.companion_snapshot(actor)?;
-        if snapshot.state.policy.forge_difficulty.is_none() || snapshot.forge.is_some() {
-            return Ok(());
-        }
-        let roll = self.forge_roll(actor);
-        // Global specifies a low spawn chance, without publishing a percentage. Oteryn's
-        // explicit default is 1%; no donor's global influenced population cap is imported.
-        if roll.is_multiple_of(100) {
-            let stacks = 1 + ((roll / 100) % 5) as u8;
-            if let Some(kind) = ForgeCreature::new_influenced(stacks) {
-                self.apply_forge_classification(actor, kind)?;
-            }
-        }
-        Ok(())
     }
 
     fn apply_forge_classification(
@@ -104,7 +87,8 @@ impl ChannelRuntimeV1 {
                 };
                 let identity = (u64::from(source.source.0) << 8) | ordinal as u64;
                 let eligible = snapshot.state.master.is_none()
-                    && snapshot.state.policy.forge_difficulty.is_some();
+                    && snapshot.state.policy.forge_difficulty.is_some()
+                    && !matches!(snapshot.forge, Some(ForgeCreature::Influenced(_)));
                 candidates.push(ForgeSpawnCandidate {
                     spawn_identity: identity,
                     eligible,
@@ -133,12 +117,45 @@ impl ChannelRuntimeV1 {
                 selected += 1;
             }
         }
+        // Influenced creatures share the timed, eligible native population. Keep its
+        // influenced population bounded to one third, rather than rolling on every spawn.
+        let influenced_count = actors
+            .iter()
+            .filter(|(_, actor)| {
+                self.companion_snapshot(*actor)
+                    .is_ok_and(|s| matches!(s.forge, Some(ForgeCreature::Influenced(_))))
+            })
+            .count();
+        let influenced_limit =
+            (candidates.iter().filter(|c| c.eligible).count() + influenced_count) / 3;
+        let mut influenced: Vec<_> = actors
+            .iter()
+            .filter(|(_, actor)| {
+                self.companion_snapshot(*actor).is_ok_and(|s| {
+                    s.state.master.is_none()
+                        && s.state.policy.forge_difficulty.is_some()
+                        && s.forge.is_none()
+                })
+            })
+            .map(|(_, actor)| (self.forge_roll(*actor), *actor))
+            .collect();
+        influenced.sort_unstable_by_key(|(roll, _)| *roll);
+        for (roll, actor) in influenced
+            .into_iter()
+            .take(influenced_limit.saturating_sub(influenced_count))
+        {
+            if let Some(kind) = ForgeCreature::new_influenced(1 + (roll % 5) as u8) {
+                self.apply_forge_classification(actor, kind)?;
+            }
+        }
+        let next_scan = now.saturating_add(POPULATION_TICK_MICROS);
         self.forge_next_tick_micros = self
             .forge_fiends
             .iter()
             .filter_map(|(_, due)| *due)
             .min()
-            .unwrap_or(plan.next_tick_micros);
+            .unwrap_or(next_scan)
+            .min(next_scan);
         Ok(())
     }
 }
@@ -215,6 +232,27 @@ mod tests {
                 .remaining,
             0
         );
+        for (_, _, actor) in current.spawn_point_creatures() {
+            let snapshot = current.companion_snapshot(actor.unwrap()).unwrap();
+            assert_eq!(
+                (snapshot.health, snapshot.maximum_health, snapshot.forge),
+                (100, 100, None)
+            );
+        }
+        current.drive_forge_population(9_999_999).unwrap();
+        assert!(
+            current
+                .spawn_point_creatures()
+                .into_iter()
+                .all(|(_, _, actor)| {
+                    current
+                        .companion_snapshot(actor.unwrap())
+                        .unwrap()
+                        .forge
+                        .is_none()
+                })
+        );
+        current.drive_forge_population(10_000_000).unwrap();
         let fiends: Vec<_> = current
             .spawn_point_creatures()
             .into_iter()
@@ -224,6 +262,19 @@ mod tests {
             })
             .collect();
         assert_eq!(fiends.len(), 4);
+        let influenced: Vec<_> = current
+            .spawn_point_creatures()
+            .into_iter()
+            .filter_map(|(_, _, actor)| actor)
+            .filter_map(|actor| current.companion_snapshot(actor).ok())
+            .filter(|snapshot| matches!(snapshot.forge, Some(ForgeCreature::Influenced(_))))
+            .collect();
+        assert_eq!(influenced.len(), 2, "one third of six eligible creatures");
+        for snapshot in influenced {
+            let kind = snapshot.forge.unwrap();
+            assert_eq!(snapshot.maximum_health, i64::from(kind.health_percent()));
+            assert_eq!(snapshot.health, snapshot.maximum_health);
+        }
         let actor = fiends[0];
         let before = current.companion_snapshot(actor).unwrap();
         assert_eq!((before.health, before.maximum_health), (360, 360));
@@ -241,7 +292,7 @@ mod tests {
                 .is_err()
         );
         current.set_test_creature_health(actor, 180).unwrap();
-        current.drive_forge_population(1).unwrap();
+        current.drive_forge_population(10_000_001).unwrap();
         let retained = current.companion_snapshot(actor).unwrap();
         assert_eq!(
             (retained.health, retained.maximum_health, retained.forge),
@@ -280,15 +331,25 @@ mod tests {
             360
         );
         current.set_test_creature_health(actor, 0).unwrap();
-        current.drive_spawn_respawns(1_000, |_, _| true).unwrap();
         current
-            .drive_spawn_respawns(61_001_000, |_, _| true)
+            .drive_spawn_respawns(10_001_000, |_, _| true)
             .unwrap();
         current
-            .drive_spawn_respawns(61_001_000 + spawn::SPAWN_WARNING_MICROS, |_, _| true)
+            .drive_spawn_respawns(71_001_000, |_, _| true)
+            .unwrap();
+        current
+            .drive_spawn_respawns(71_001_000 + spawn::SPAWN_WARNING_MICROS, |_, _| true)
             .unwrap();
         assert!(current.companion_snapshot(actor).is_err());
-        current.drive_forge_population(270_000_000).unwrap();
+        let replacement = current
+            .spawn_point_creatures()
+            .into_iter()
+            .filter_map(|(_, _, actor)| actor)
+            .filter_map(|actor| current.companion_snapshot(actor).ok())
+            .find(|snapshot| snapshot.forge.is_none())
+            .unwrap();
+        assert_eq!((replacement.health, replacement.maximum_health), (100, 100));
+        current.drive_forge_population(280_000_000).unwrap();
         assert_eq!(
             current
                 .spawn_point_creatures()
@@ -299,7 +360,7 @@ mod tests {
                 .count(),
             3
         );
-        current.drive_forge_population(270_001_000).unwrap();
+        current.drive_forge_population(280_001_000).unwrap();
         assert_eq!(
             current
                 .spawn_point_creatures()

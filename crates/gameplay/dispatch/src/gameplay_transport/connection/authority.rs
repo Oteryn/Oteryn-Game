@@ -8,6 +8,23 @@ mod composed;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     mechanic_authority_methods!();
+    fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { true }
+    }
+    fn house_scope_ack(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<Option<(u64, Vec<u8>)>, ()>> {
+        async { Ok(None) }
+    }
+    fn house_transfer(
+        &self,
+        _admitted: AdmittedSession,
+        _command: u64,
+        _body: &[u8],
+    ) -> impl Future<Output = super::super::house_transfer::TransferResult> {
+        async { Some((None, Vec::new())) }
+    }
     /// PREMCHAN: the bounded list of Game Channels served by this owner. This node currently
     /// serves exactly one Channel. No routing or admission authority is granted by the list.
     fn channel_list(&self) -> Option<Vec<u8>> {

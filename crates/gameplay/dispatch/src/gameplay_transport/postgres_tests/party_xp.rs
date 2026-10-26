@@ -243,6 +243,17 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         ));
     }
     runtime.realize_activation_spawns(sources).map_err(debug)?;
+    for creature in runtime.visible_entities().creatures {
+        let snapshot = runtime.companion_snapshot(creature.actor).map_err(debug)?;
+        assert_eq!(snapshot.forge, None, "activation admits ordinary creatures");
+        assert_eq!(snapshot.maximum_health, snapshot.state.policy.maximum_health);
+    }
+    if case.forge() {
+        // Forge selection is timed owner work, never a side effect of realizing a spawn.
+        runtime
+            .drive_spawn_respawns(10_000_000, |_, _| false)
+            .map_err(debug)?;
+    }
     let mut players = Vec::new();
     let mut currents = vec![&first, &second];
     if let Some(third) = &third {
