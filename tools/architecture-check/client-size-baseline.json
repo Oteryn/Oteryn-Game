@@ -29,11 +29,6 @@
     "bytes": 15331,
     "central_registrations": 0
   },
-  "apps/client/src/world.rs": {
-    "lines": 816,
-    "bytes": 33572,
-    "central_registrations": 0
-  },
   "crates/client-assets/src/appearance.rs": {
     "lines": 569,
     "bytes": 18536,

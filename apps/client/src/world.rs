@@ -10,16 +10,16 @@
 //! builtin cells.
 
 use crate::input::StepDir;
+use oteryn_client_assets::world::{
+    Budget, MANIFEST_PATH, MANIFEST_SHA256, MAX_REGION_BYTES, REGION_TILES, SECTOR_TILES,
+    decode_region, palette_entry, read_capped, read_placement_index,
+};
 use oteryn_client_assets::{
     AppearanceIndex, AssetStore, CELL_PX, Catalog, DrawCell, Hook, Placement, SpriteSheets,
-    text_sha256,
 };
 use oteryn_renderer::{AtlasImage, BatchError, MAX_ATLAS_DIMENSION};
-use oteryn_world_bundle::sector::{self, Budget, TileLimits};
-use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap};
-use std::io::Read;
 use std::path::Path;
 
 /// One resolved map item: draw layer, elevation and cells.
@@ -27,18 +27,6 @@ type Item = (u8, i32, Vec<DrawCell>);
 
 /// Names the local asset root.
 pub const ASSET_DIR_ENV: &str = "OTERYN_ASSET_DIR";
-/// The sha256 of `imports/official/client-assets/15.30/manifest.json`. The manifest pins every
-/// asset file, so the client pins the manifest instead of trusting the one in the asset root.
-const MANIFEST_SHA256: &str = "febaff9f4bd7e0f8a029736e446a81f1626805e895e7c2268018e0a9a8493fe4";
-const MANIFEST_PATH: &str = "imports/official/client-assets/15.30/manifest.json";
-/// The sha256 of `content/world/placements/index.json`, which pins every region file. A
-/// regenerated placement index must update it; a test compares it with the repository.
-const PLACEMENT_INDEX_SHA256: &str =
-    "b32bc5e1088ba594b1b72238686a34e31373e5ecddc10f8428d4418db98ae081";
-const PLACEMENT_INDEX_PATH: &str = "content/world/placements/index.json";
-/// The tutorial islet temple, where the offline view starts.
-pub const START: (i32, i32) = (32534, 32513);
-pub const START_FLOOR: u8 = 7;
 /// Tiles decoded on each side of [`START`].
 pub const RADIUS: i32 = 64;
 /// The default outfit (citizen).
@@ -55,12 +43,6 @@ const BUILTIN_CELLS: usize = 3;
 
 const ATLAS_COLUMNS: usize = (MAX_ATLAS_DIMENSION / CELL_PX) as usize;
 const MAX_CELLS: usize = ATLAS_COLUMNS * ATLAS_COLUMNS;
-const MAX_INDEX_BYTES: u64 = 8 * 1024 * 1024;
-const MAX_REGION_BYTES: u64 = 32 * 1024 * 1024;
-const MAX_SECTOR_BYTES: usize = 16 * 1024 * 1024;
-const REGION_TILES: i32 = 256;
-/// The side of one sector: a region is 8 x 8 sectors.
-const SECTOR_TILES: i32 = REGION_TILES / 8;
 /// The most tiles in the sectors the bounded window can overlap.
 #[allow(clippy::cast_sign_loss)]
 const WINDOW_TILES: usize = (((2 * RADIUS + 1) / SECTOR_TILES + 2) * SECTOR_TILES).pow(2) as usize;
@@ -76,21 +58,8 @@ const MAX_ELEVATION: i32 = 24;
 pub const SCAN_MARGIN: i32 = 2;
 const MAX_REACH_PX: i32 = SCAN_MARGIN * CELL_PX as i32;
 
-/// One atlas cell drawn at a pixel offset from a tile's top-left, in 32 px source pixels.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Draw {
-    pub cell: u16,
-    pub offset: [i32; 2],
-}
-
-/// What one map tile draws: `under` before a creature standing on it, `over` after it.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct MapTile {
-    pub under: Vec<Draw>,
-    /// How far a creature on this tile is lifted, in source pixels.
-    pub elevation: i32,
-    pub over: Vec<Draw>,
-}
+/// Compatibility exports; new callers should use `oteryn_client_domain::world`.
+pub use oteryn_client_domain::world::{Draw, MapTile, START, START_FLOOR};
 
 #[derive(Debug, Clone)]
 pub struct World {
@@ -99,32 +68,6 @@ pub struct World {
     tiles: HashMap<(i32, i32), MapTile>,
     /// The own player's cells per facing, in [`FACINGS`] order.
     player: [Vec<Draw>; 4],
-}
-
-#[derive(Deserialize)]
-struct PlacementIndex {
-    palette: Vec<PaletteEntry>,
-    regions: Vec<RegionEntry>,
-}
-
-#[derive(Deserialize)]
-struct PaletteEntry {
-    source_item_id: u32,
-}
-
-#[derive(Deserialize)]
-struct RegionEntry {
-    path: String,
-    sha256: String,
-}
-
-/// Reads the placement index, refusing one that does not match [`PLACEMENT_INDEX_SHA256`].
-fn read_placement_index(root: &Path) -> Result<PlacementIndex, String> {
-    let bytes = read_capped(&root.join(PLACEMENT_INDEX_PATH), MAX_INDEX_BYTES)?;
-    if text_sha256(&bytes) != PLACEMENT_INDEX_SHA256 {
-        return Err("placement index: sha256 does not match the pinned digest".to_owned());
-    }
-    serde_json::from_slice(&bytes).map_err(|error| format!("placement index: {error}"))
 }
 
 impl World {
@@ -438,18 +381,6 @@ fn item_height(elevation: u32) -> i32 {
     i32::try_from(elevation).map_or(MAX_ELEVATION, |height| height.min(MAX_ELEVATION))
 }
 
-/// The palette entry an item names; an index outside the palette fails the whole map closed.
-fn palette_entry<'a>(
-    palette: &'a [PaletteEntry],
-    index: u32,
-    region: &str,
-) -> Result<&'a PaletteEntry, String> {
-    usize::try_from(index)
-        .ok()
-        .and_then(|index| palette.get(index))
-        .ok_or_else(|| format!("{region}: palette index {index} outside the placement index"))
-}
-
 /// A start-floor placement; the encoded value is a stack count or, for fluids, the subtype.
 fn placement(x: i32, y: i32, encoded: Option<u8>, floor: u8) -> Placement {
     let mut placement = Placement::at(x, y, -i32::from(floor));
@@ -468,18 +399,6 @@ impl World {
         world.tiles.extend(tiles);
         Ok(world)
     }
-}
-
-fn read_capped(path: &Path, max: u64) -> Result<Vec<u8>, String> {
-    let file = std::fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    let mut bytes = Vec::new();
-    file.take(max + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|error| format!("{}: {error}", path.display()))?;
-    if bytes.len() as u64 > max {
-        return Err(format!("{}: larger than {max} bytes", path.display()));
-    }
-    Ok(bytes)
 }
 
 /// Whether a map cell at `offset` (lift included) stays within [`MAX_REACH_PX`] of its tile,
@@ -505,312 +424,6 @@ fn within_draw_cap(draws: usize) -> Result<(), String> {
     Ok(())
 }
 
-/// Decodes an `OTERYN_WORLD_REGION_B3/v1` file the way `world-bundle-compiler`'s `b3` reader
-/// does: a 12-byte header, `local u8 | offset u32 | length u32` rows, one zstd frame per sector.
-/// The header must name `region` (`z, rx, ry`), the region the file was looked up for. Only
-/// sectors that overlap `window` (`lo_x, hi_x, lo_y, hi_y`, inclusive) are decompressed.
-fn decode_region(
-    data: &[u8],
-    region: (u8, i32, i32),
-    window: (i32, i32, i32, i32),
-    budget: &mut Budget,
-) -> Result<Vec<sector::Tile>, String> {
-    const HEADER: usize = 12;
-    const ROW: usize = 9;
-    let le16 = |at: usize| u16::from_le_bytes([data[at], data[at + 1]]);
-    let le32 = |at: usize| {
-        u32::from_le_bytes([data[at], data[at + 1], data[at + 2], data[at + 3]]) as usize
-    };
-    if data.len() < HEADER || &data[..4] != b"OTRB" || data[4] != 1 {
-        return Err("not an OTERYN_WORLD_REGION_B3/v1 file".into());
-    }
-    let (rx, ry, count) = (le16(6), le16(8), usize::from(le16(10)));
-    if count == 0 || count > 64 || rx > 255 || ry > 255 {
-        return Err("header out of range".into());
-    }
-    if (data[5], i32::from(rx), i32::from(ry)) != region {
-        return Err("header names another region".into());
-    }
-    let mut expected = HEADER + ROW * count;
-    if data.len() < expected {
-        return Err("sector table runs past the end of the file".into());
-    }
-    let limits = TileLimits {
-        max_entries: 4096,
-        max_text_bytes: 4096,
-    };
-    let mut tiles = Vec::new();
-    let mut previous = -1;
-    for row in 0..count {
-        let at = HEADER + ROW * row;
-        let (local, offset, length) = (data[at], le32(at + 1), le32(at + 5));
-        if i32::from(local) <= previous || local >= 64 {
-            return Err("sector table must be strictly ascending within 0..63".into());
-        }
-        if offset != expected || length == 0 || data.len() - offset < length {
-            return Err("sector payloads must be non-empty and contiguous".into());
-        }
-        previous = i32::from(local);
-        expected += length;
-        let (sx, sy) = (rx * 8 + u16::from(local) % 8, ry * 8 + u16::from(local) / 8);
-        let (x0, y0) = (i32::from(sx) * SECTOR_TILES, i32::from(sy) * SECTOR_TILES);
-        let (lo_x, hi_x, lo_y, hi_y) = window;
-        if x0 > hi_x || x0 + SECTOR_TILES <= lo_x || y0 > hi_y || y0 + SECTOR_TILES <= lo_y {
-            continue;
-        }
-        let frame = &data[offset..offset + length];
-        let capacity = match zstd::zstd_safe::get_frame_content_size(frame) {
-            Ok(Some(size)) if size <= MAX_SECTOR_BYTES as u64 => size as usize,
-            Ok(Some(_)) => return Err("sector payload over the cap".into()),
-            _ => MAX_SECTOR_BYTES,
-        };
-        let payload = zstd::bulk::decompress(frame, capacity)
-            .map_err(|error| format!("sector {local}: {error}"))?;
-        let mut decoded = sector::decode(&payload, (sx, sy), limits, budget)
-            .map_err(|error| format!("sector {local}: {error:?}"))?;
-        // Zones and item texts are not drawn and not charged to the budget. Dropping them per
-        // sector keeps a region's retained memory to the charged tiles and entries.
-        for tile in &mut decoded {
-            tile.zones = Vec::new();
-            for item in &mut tile.items {
-                item.attrs.text = None;
-                item.attrs.description = None;
-            }
-        }
-        tiles.extend(decoded);
-    }
-    if expected != data.len() {
-        return Err("bytes after the last sector payload".into());
-    }
-    Ok(tiles)
-}
-
 #[cfg(test)]
-mod tests {
-    use super::*;
-    include!("world/tutorial_window_tests.rs");
-
-    fn repo() -> std::path::PathBuf {
-        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
-    }
-
-    #[test]
-    fn the_builtin_world_has_only_the_builtin_cells() -> Result<(), BatchError> {
-        let world = World::builtin()?;
-        assert_eq!(world.atlas().cell_count() as usize, BUILTIN_CELLS);
-        assert_eq!(world.tile_count(), 0);
-        assert_eq!(world.player(StepDir::South)[0].cell, MARKER_CELL);
-        Ok(())
-    }
-
-    #[test]
-    fn the_temple_area_resolves_to_real_cells_inside_the_atlas() -> Result<(), String> {
-        let world = World::load(&repo())?;
-        let cells = world.atlas().cell_count();
-        assert!(cells as usize > BUILTIN_CELLS + 100, "{cells} cells");
-        assert!(world.tile_count() > 10_000, "{} tiles", world.tile_count());
-        let start = world.tile(START.0, START.1).ok_or("no start tile")?;
-        assert!(!start.under.is_empty(), "the start tile has ground");
-        for tile in world.tiles.values() {
-            for draw in tile.under.iter().chain(&tile.over) {
-                assert!(draw.cell >= BUILTIN_CELLS as u16 && u32::from(draw.cell) < cells);
-                world
-                    .atlas()
-                    .uv_rect(draw.cell)
-                    .map_err(|e| e.to_string())?;
-            }
-        }
-        for facing in FACINGS {
-            let player = world.player(facing);
-            assert!(!player.is_empty());
-            assert!(player.iter().all(|draw| draw.cell >= BUILTIN_CELLS as u16));
-        }
-        assert_ne!(world.player(StepDir::North), world.player(StepDir::South));
-        Ok(())
-    }
-
-    #[test]
-    fn the_pinned_manifest_digest_matches_the_repository() -> Result<(), String> {
-        let mut bytes = std::fs::read(repo().join(MANIFEST_PATH)).map_err(|e| e.to_string())?;
-        bytes.retain(|byte| *byte != b'\r');
-        let hex: String = Sha256::digest(&bytes)
-            .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect();
-        assert_eq!(hex, MANIFEST_SHA256);
-        Ok(())
-    }
-
-    #[test]
-    fn a_crlf_checkout_of_the_manifest_still_matches_the_pin() -> Result<(), String> {
-        let bytes = std::fs::read(repo().join(MANIFEST_PATH)).map_err(|e| e.to_string())?;
-        let crlf: Vec<u8> = bytes
-            .iter()
-            .flat_map(|byte| match byte {
-                b'\n' => vec![b'\r', b'\n'],
-                other => vec![*other],
-            })
-            .collect();
-        let dir = std::env::temp_dir().join(format!("oteryn-manifest-crlf-{}", std::process::id()));
-        let manifest = dir.join("manifest.json");
-        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        std::fs::write(&manifest, crlf).map_err(|e| e.to_string())?;
-        let result = AssetStore::open_pinned(
-            &repo().join("content/assets/files"),
-            &manifest,
-            MANIFEST_SHA256,
-        );
-        std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
-        result.map_err(|e| e.to_string())?;
-        Ok(())
-    }
-
-    #[test]
-    fn the_pinned_placement_index_digest_matches_the_repository() -> Result<(), String> {
-        let bytes = std::fs::read(repo().join(PLACEMENT_INDEX_PATH)).map_err(|e| e.to_string())?;
-        assert_eq!(text_sha256(&bytes), PLACEMENT_INDEX_SHA256);
-        Ok(())
-    }
-
-    #[test]
-    fn a_placement_index_off_the_pin_is_refused() -> Result<(), String> {
-        let dir = std::env::temp_dir().join(format!("oteryn-index-pin-{}", std::process::id()));
-        let index = dir.join(PLACEMENT_INDEX_PATH);
-        std::fs::create_dir_all(index.parent().ok_or("no parent")?).map_err(|e| e.to_string())?;
-        std::fs::write(&index, br#"{"regions":[]}"#).map_err(|e| e.to_string())?;
-        let result = read_placement_index(&dir);
-        std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
-        let error = result.err().ok_or("a substituted placement index loaded")?;
-        assert!(error.contains("placement index: sha256"), "{error}");
-        Ok(())
-    }
-
-    #[test]
-    fn a_manifest_off_the_pin_is_refused() -> Result<(), String> {
-        let dir = std::env::temp_dir().join(format!("oteryn-manifest-pin-{}", std::process::id()));
-        let manifest = dir.join(MANIFEST_PATH);
-        let parent = manifest.parent().ok_or("manifest has no parent")?;
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-        std::fs::write(&manifest, br#"{"files":[]}"#).map_err(|e| e.to_string())?;
-        let result = World::load(&dir);
-        std::fs::remove_dir_all(&dir).map_err(|e| e.to_string())?;
-        let error = result.err().ok_or("a substituted manifest loaded")?;
-        assert!(
-            error.contains("does not match its manifest sha256"),
-            "{error}"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn an_encoded_fluid_value_selects_the_fluid_pattern() -> Result<(), String> {
-        let root = repo();
-        let store = AssetStore::open(
-            &root.join("content/assets/files"),
-            &root.join("imports/official/client-assets/15.30/manifest.json"),
-        )
-        .map_err(|e| e.to_string())?;
-        let catalog = Catalog::load(&store).map_err(|e| e.to_string())?;
-        let index = AppearanceIndex::load(&store, &catalog).map_err(|e| e.to_string())?;
-        let sheets = SpriteSheets::new(store, catalog);
-        let (x, y) = START;
-        assert_eq!(placement(x, y, Some(8), START_FLOOR).sub_type, 8);
-        assert_eq!(placement(x, y, None, START_FLOOR).count, 1);
-        // Fluid appearance 2524 is on the start area with encoded values 1 and 8. Sub-types 8
-        // and 12 share colour 5; sub-type 1 is colour 1.
-        let mut resolved = Vec::new();
-        for encoded in [1, 8, 12] {
-            let entry = index
-                .resolve(&sheets, 2524, placement(x, y, Some(encoded), START_FLOOR))
-                .map_err(|e| e.to_string())?;
-            resolved.push(entry.cells.iter().map(|c| c.sprite_id).collect::<Vec<_>>());
-        }
-        assert_ne!(resolved[0], resolved[1]);
-        assert_eq!(resolved[1], resolved[2]);
-        Ok(())
-    }
-
-    #[test]
-    fn an_item_is_lifted_by_its_own_height_and_the_heights_below_it() {
-        // Ground, a height-8 table, an item on it, another height-8 item, a top item of height 8.
-        let (lifts, elevation) = stack_lifts([(0, 0), (3, 8), (3, 0), (3, 8), (4, 8)]);
-        assert_eq!(lifts, [0, 8, 8, 16, 8]);
-        assert_eq!(elevation, 16);
-        assert_eq!(item_height(8), 8);
-        assert_eq!(item_height(u32::MAX), MAX_ELEVATION);
-        assert_eq!(item_height(i32::MAX as u32 + 1), MAX_ELEVATION);
-        let (lifts, elevation) = stack_lifts([(3, 16), (3, 16)]);
-        assert_eq!(lifts, [16, MAX_ELEVATION]);
-        assert_eq!(elevation, MAX_ELEVATION);
-    }
-
-    #[test]
-    fn a_palette_index_outside_the_placement_index_is_refused() {
-        let palette = [PaletteEntry { source_item_id: 7 }];
-        let found = palette_entry(&palette, 0, "region");
-        assert_eq!(found.map(|entry| entry.source_item_id), Ok(7));
-        assert_eq!(
-            palette_entry(&palette, 1, "region").err().as_deref(),
-            Some("region: palette index 1 outside the placement index")
-        );
-    }
-
-    #[test]
-    fn a_cell_beyond_the_scan_margin_is_not_drawn() {
-        assert!(within_reach([-MAX_REACH_PX, 0]));
-        assert!(!within_reach([0, -MAX_REACH_PX - 1]));
-    }
-
-    #[test]
-    fn a_tile_over_the_draw_cap_is_refused() {
-        assert!(within_window_cap(MAX_WINDOW_CELLS).is_ok());
-        assert!(within_window_cap(MAX_WINDOW_CELLS + 1).is_err());
-        assert!(within_draw_cap(MAX_TILE_DRAWS).is_ok());
-        assert!(within_draw_cap(MAX_TILE_DRAWS + 1).is_err());
-    }
-
-    #[test]
-    fn a_region_whose_header_names_another_region_is_refused() {
-        let header = b"OTRB\x01\x06\x7e\x00\x7d\x00\x01\x00";
-        let decode = |region| {
-            decode_region(
-                header,
-                region,
-                (0, 0, 0, 0),
-                &mut Budget {
-                    tiles: 1,
-                    entries: 1,
-                },
-            )
-        };
-        assert_eq!(
-            decode((7, 126, 125)).err().as_deref(),
-            Some("header names another region")
-        );
-        assert_eq!(
-            decode((6, 126, 124)).err().as_deref(),
-            Some("header names another region")
-        );
-        assert_ne!(
-            decode((6, 126, 125)).err().as_deref(),
-            Some("header names another region")
-        );
-    }
-
-    #[test]
-    fn a_region_that_does_not_match_its_digest_is_refused() -> Result<(), String> {
-        let bad = decode_region(
-            b"OTRB\x02\x07\x7e\x00\x7d\x00\x01\x00",
-            (7, 126, 125),
-            (0, 0, 0, 0),
-            &mut Budget {
-                tiles: 1,
-                entries: 1,
-            },
-        );
-        assert!(bad.is_err());
-        let missing = World::load(&repo().join("no-such-root"));
-        assert!(missing.is_err());
-        Ok(())
-    }
-}
+#[path = "world/tests.rs"]
+mod tests;

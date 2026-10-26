@@ -14,10 +14,12 @@ release-role = "production"
 
 [dependencies]
 lzma-rs.workspace = true
+oteryn-world-bundle = { version = "=0.1.0", path = "../world-bundle" }
 prost.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
+zstd.workspace = true
 
 [lints]
 workspace = true

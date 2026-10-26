@@ -738,11 +738,14 @@ mod tests {
     #[test]
     fn client_edge_to_canary_synthetic_tool_or_dev_client_still_fails_closure() -> Result<(), String>
     {
+        let policy = checked_in_policy()?;
+        assert!(policy.production.contains("oteryn-client-domain"));
+        assert!(policy.edges["oteryn-client"].contains("oteryn-client-domain"));
         for target in [
             "oteryn-synthetic-assets",
             "oteryn-dev-client",
             "oteryn-synthetic-client-harness",
-            "oteryn-client-domain",
+            "oteryn-client-simulation",
             "oteryn-architecture-check",
             "oteryn-test-support",
         ] {

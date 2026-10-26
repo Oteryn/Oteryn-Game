@@ -1878,6 +1878,7 @@ name = "oteryn-client"
 version = "0.1.0"
 dependencies = [
  "oteryn-client-assets",
+ "oteryn-client-domain",
  "oteryn-client-runtime",
  "oteryn-diagnostics",
  "oteryn-foundation",
@@ -1889,7 +1890,6 @@ dependencies = [
  "oteryn-renderer",
  "oteryn-session",
  "oteryn-session-tcp",
- "oteryn-world-bundle",
  "rcgen",
  "rustls",
  "serde",
@@ -1899,7 +1899,6 @@ dependencies = [
  "tokio-rustls",
  "windows-sys 0.61.2",
  "winit",
- "zstd",
 ]
 
 [[package]]
@@ -1907,10 +1906,12 @@ name = "oteryn-client-assets"
 version = "0.1.0"
 dependencies = [
  "lzma-rs",
+ "oteryn-world-bundle",
  "prost",
  "serde",
  "serde_json",
  "sha2 0.11.1",
+ "zstd",
 ]
 
 [[package]]
