@@ -1,11 +1,9 @@
 //! TRAVEL0 §7.4 private pending-arrival reader and occurrence-keyed consume.
 //!
-//! No fee/arrival producer exists here: a travel cause, its fee and this obligation must
-//! originate in ONE item-only transaction. The current CharmUnassign fee writer cannot do that.
+//! `paid` composes the existing fee burn, receipt and obligation in ONE item-only transaction.
 //! `FinalLastPosition` is a capture, never proof of relocation. The caller must have actually
 //! placed the living, uncancelled actor under all TRAVEL0 §7.3 owner fences before consuming.
-//! Registration, production DDL/roles, death deletion, admission and the periodic/final
-//! position writers' pending-arrival guard remain mandatory integration work.
+//! Death deletion, admission and the periodic/final position guards share this arrival owner.
 
 #![allow(
     dead_code,
@@ -29,6 +27,9 @@ use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 use crate::domain::CharacterId;
 use crate::foundation::{RuntimeScopeRefV1, WorldId};
 use sqlx::Row;
+
+mod paid;
+pub use paid::{NpcTravelGate, PaidTravelRequest, TravelRefusal};
 
 /// The confirming command's occurrence. Construction checks representation only; the
 /// eventual cause writer must enforce its one-to-one CommandRef binding.

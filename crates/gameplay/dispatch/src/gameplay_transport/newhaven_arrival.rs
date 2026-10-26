@@ -1,4 +1,4 @@
-//! Reconcile the original free-travel commit, place once, then consume its obligation.
+//! Reconcile the confirmed travel commit, place once, then consume its obligation.
 use super::npc_travel::{FeeOutcome, TravelCapture, TravelStep};
 use super::*;
 use crate::durability::character_progression::CharacterProgressionError;
@@ -84,38 +84,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (
                 held.frozen.clone(),
                 held.capture.clone(),
-                held.route,
+                held.route.clone(),
                 held.committed,
                 held.placed,
             )
         };
         if !committed {
-            let result = self
-                .root
-                .commit_newhaven_travel(
-                    self.character,
-                    self.holder,
-                    fence,
-                    frozen.command,
-                    frozen.arrival,
-                    route,
-                )
-                .await;
+            let result = match route {
+                newhaven_travel::Departure::Tutorial(route) => self
+                    .root
+                    .commit_newhaven_travel(
+                        self.character,
+                        self.holder,
+                        fence,
+                        frozen.command,
+                        frozen.arrival,
+                        route,
+                    )
+                    .await
+                    .map(Ok),
+                newhaven_travel::Departure::Paid(request) => {
+                    self.root
+                        .commit_npc_travel(
+                            self.character,
+                            self.holder,
+                            fence,
+                            *request,
+                            &self.premium_coordinator,
+                        )
+                        .await
+                }
+            };
             let mut holds = self.states.newhaven_travel.holds.lock().ok()?;
             let held = holds.get_mut(&session)?;
             match result {
                 Err(CharacterProgressionError::Unavailable(_)) => return None,
+                Ok(Err(refusal)) => {
+                    held.refusal = Some(refusal);
+                    held.slot
+                        .fee_outcome(frozen.arrival.occurrence, FeeOutcome::Aborted)
+                        .ok()?;
+                    return Some(false);
+                }
                 Err(_) => {
                     held.slot
                         .fee_outcome(frozen.arrival.occurrence, FeeOutcome::Aborted)
                         .ok()?;
                     return Some(false);
                 }
-                Ok(None) => {
+                Ok(Ok(None)) => {
                     holds.remove(&session);
                     return Some(true);
                 }
-                Ok(Some(_)) => {
+                Ok(Ok(Some(_))) => {
                     held.slot
                         .fee_outcome(frozen.arrival.occurrence, FeeOutcome::Committed)
                         .ok()?;

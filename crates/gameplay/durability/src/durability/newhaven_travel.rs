@@ -88,11 +88,13 @@ pub(super) async fn complete_in_transaction(
     character: crate::domain::CharacterId,
     occurrence: super::npc_travel::TravelOccurrence,
 ) -> Result<(), DurabilityError> {
-    let completed = sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp() WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid AND arrived_at IS NULL")
-        .bind(character.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice()).execute(&mut **tx).await?;
-    if completed.rows_affected() == 1
-        && let TutorialProgressOutcome::Read(Some(stored)) =
-            tutorial_progress_in_transaction(tx, character, None).await?
+    let completed = sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp() WHERE character_id=encode($1,'hex')::uuid AND occurrence_id=encode($2,'hex')::uuid AND arrived_at IS NULL RETURNING route")
+        .bind(character.as_bytes().as_slice()).bind(occurrence.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    if completed.is_some_and(|row| {
+        row.try_get::<String, _>("route")
+            .is_ok_and(|route| matches!(route.as_str(), "rookgaard" | "thais_peninsula"))
+    }) && let TutorialProgressOutcome::Read(Some(stored)) =
+        tutorial_progress_in_transaction(tx, character, None).await?
         && let Some(next) = tutorial_transition(
             true,
             Some(stored.progress),

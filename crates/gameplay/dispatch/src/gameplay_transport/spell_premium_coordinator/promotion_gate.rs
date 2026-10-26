@@ -70,3 +70,19 @@ impl SpellPremiumCoordinator {
         .await
     }
 }
+
+impl crate::durability::npc_travel::NpcTravelGate for SpellPremiumCoordinator {
+    async fn travel_permitted(
+        &self,
+        tx: &mut Type2Transaction<'_>,
+        account: [u8; 16],
+    ) -> Result<bool, DurabilityError> {
+        self.transaction_permission(tx, account, |status| {
+            matches!(
+                status,
+                PremiumStatus::Current | PremiumStatus::NotActivated(_)
+            )
+        })
+        .await
+    }
+}

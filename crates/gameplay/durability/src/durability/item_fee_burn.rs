@@ -64,6 +64,10 @@ pub mod test_support;
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeBurnCause {
+    NpcTravel {
+        service: String,
+        occurrence: [u8; 16],
+    },
     MarketFee {
         offer: [u8; 16],
         occurrence: [u8; 16],
@@ -289,7 +293,9 @@ async fn burn_fee(
         .get()
         .checked_add(u64::from(!matches!(
             request.cause,
-            FeeBurnCause::NpcRepair { .. } | FeeBurnCause::Imbuement { .. }
+            FeeBurnCause::NpcRepair { .. }
+                | FeeBurnCause::Imbuement { .. }
+                | FeeBurnCause::NpcTravel { .. }
         )))
         .and_then(|value| CharacterRevision::new(value).ok())
         .ok_or(FeeBurnError::InvalidInput)?;

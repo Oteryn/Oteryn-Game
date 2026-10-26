@@ -33,6 +33,7 @@ pub struct NpcTalkEntry {
     topic_reply: Option<String>,
     /// The admitted offers of every Service of the NPC, in source order (NPC-CMD-1b).
     offers: Vec<ProjectV2ServiceOffer>,
+    pub travel_routes: Vec<crate::content::npc_catalogue::travel::TravelRoute>,
     pub premium_services: Vec<crate::content::npc_catalogue::premium_services::PremiumNpcService>,
 }
 
@@ -64,6 +65,7 @@ impl NpcTalkEntry {
             topic_reply: topic.map(str::to_owned),
             offers: Vec::new(),
             premium_services: Vec::new(),
+            travel_routes: Vec::new(),
         }
     }
 
@@ -102,6 +104,8 @@ impl NpcTalkBook {
                 &reference.key,
                 &npc.services,
             );
+            let travel_routes =
+                crate::content::npc_catalogue::travel::resolve(model, &npc.services);
             let bank = npc
                 .services
                 .iter()
@@ -119,6 +123,13 @@ impl NpcTalkBook {
                         replies.greeting.text.clone(),
                         replies.farewell.text.clone(),
                         (!lines.is_empty()).then(|| lines.join(" ")),
+                        Vec::new(),
+                    )
+                } else if !travel_routes.is_empty() {
+                    (
+                        format!("Greetings, I am {}.", npc.name),
+                        "Farewell.".into(),
+                        Some("Ask me for a passage to your destination.".into()),
                         Vec::new(),
                     )
                 } else if !premium_services.is_empty() {
@@ -162,7 +173,10 @@ impl NpcTalkBook {
                 reference.key.clone(),
                 NpcTalkEntry {
                     name: npc.name.clone(),
-                    admitted_dialogue: npc.dialogue.is_some() && premium_services.is_empty(),
+                    admitted_dialogue: npc.dialogue.is_some()
+                        && premium_services.is_empty()
+                        && travel_routes.is_empty(),
+                    travel_routes,
                     premium_services,
                     bank: npc
                         .services

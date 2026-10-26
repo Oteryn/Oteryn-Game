@@ -2,7 +2,7 @@
 use super::*;
 
 impl NpcConversations {
-    pub(super) fn current_npc(
+    pub(in crate::gameplay_transport) fn current_npc(
         &self,
         chat: &ChatRuntime,
         runtime: &ChannelRuntimeV1,

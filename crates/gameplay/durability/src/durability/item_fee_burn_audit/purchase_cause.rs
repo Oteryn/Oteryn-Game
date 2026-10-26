@@ -81,6 +81,13 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
             check_content_key(&cause.service_key)?;
             check_uuid_v7(&cause.occurrence)
         }
+        Some(FeeBurnCauseV1::NpcTravel(cause))
+            if cause.service_key.starts_with("oteryn:service.travel.")
+                && value.fee_gold_units <= 1_000_000 =>
+        {
+            check_content_key(&cause.service_key)?;
+            check_uuid_v7(&cause.occurrence)
+        }
         Some(FeeBurnCauseV1::BlessingPurchase(cause))
             if cause.service_key.starts_with("oteryn:service.blessing.") =>
         {

@@ -1,4 +1,4 @@
-//! Newhaven's free routes, composed through the existing travel hold and arrival owners.
+//! NPC departures share one travel hold and arrival owner, including free Newhaven routes.
 use super::npc_travel::{FrozenTravel, TravelCapture, TravelHoldSlot};
 use super::*;
 use crate::content::newhaven_travel::NewhavenRoute;
@@ -17,11 +17,19 @@ struct Prompt {
     confirmations: u8,
 }
 
+#[derive(Clone)]
+pub(super) enum Departure {
+    Tutorial(NewhavenRoute),
+    Paid(Box<crate::durability::npc_travel::PaidTravelRequest>),
+}
+
 pub(super) struct Invocation {
     pub(super) actor: ExactActorRef,
+    pub(super) npc: EntityRef,
     pub(super) capture: TravelCapture,
     pub(super) frozen: FrozenTravel,
-    pub(super) route: NewhavenRoute,
+    pub(super) route: Departure,
+    pub(super) refusal: Option<crate::durability::npc_travel::TravelRefusal>,
     pub(super) slot: TravelHoldSlot,
     pub(super) committed: bool,
     pub(super) placed: Option<FinalLastPosition>,
@@ -30,8 +38,12 @@ pub(super) struct Invocation {
 #[derive(Default)]
 pub(super) struct NewhavenTravel {
     prompts: std::sync::Mutex<HashMap<GameSessionId, Prompt>>,
+    paid_prompts: std::sync::Mutex<HashMap<GameSessionId, paid::Prompt>>,
     pub(super) holds: std::sync::Mutex<HashMap<GameSessionId, Invocation>>,
 }
+
+#[path = "paid_travel.rs"]
+mod paid;
 
 impl NewhavenTravel {
     pub(super) fn held(&self, session: GameSessionId) -> bool {
@@ -40,6 +52,9 @@ impl NewhavenTravel {
         })
     }
     pub(super) fn forget(&self, session: GameSessionId) {
+        if let Ok(mut prompts) = self.paid_prompts.lock() {
+            prompts.remove(&session);
+        }
         if let Ok(mut prompts) = self.prompts.lock() {
             prompts.remove(&session);
         }
@@ -66,14 +81,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         use npc_command::NpcConversations;
         let session = command.game_session_id;
         if self.states.newhaven_travel.held(session) {
+            let paid = self
+                .states
+                .newhaven_travel
+                .holds
+                .lock()
+                .ok()
+                .and_then(|holds| holds.get(&session).map(|held| held.frozen.fare > 0))
+                .unwrap_or(false);
             let known = self.reconcile_newhaven_travel(actor, session).await;
             return npc_command::NpcTalkOutcome {
                 unknown: known.is_none(),
+                inventory_changed: paid && known == Some(true),
                 ..npc_command::NpcTalkOutcome::only(NpcIntentDisposition::Rejected)
             };
         }
         let ordinary = npc_command::npc_bank_talk(self, actor, command, intent.clone()).await;
-        if ordinary.disposition != NpcIntentDisposition::Ok || !self.tutorial_enabled().await {
+        if ordinary.disposition != NpcIntentDisposition::Ok {
+            return ordinary;
+        }
+        let ordinary = self
+            .paid_travel_talk(actor, command, &intent, ordinary)
+            .await;
+        if ordinary.inventory_changed || ordinary.unknown || !self.tutorial_enabled().await {
             return ordinary;
         }
         let (route, conversation, catalogue, capture, work, npc_key) = {
@@ -233,9 +263,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 session,
                 Invocation {
                     actor,
+                    npc: intent.npc_actor,
                     capture,
                     frozen,
-                    route,
+                    route: Departure::Tutorial(route),
+                    refusal: None,
                     slot,
                     committed: false,
                     placed: None,
