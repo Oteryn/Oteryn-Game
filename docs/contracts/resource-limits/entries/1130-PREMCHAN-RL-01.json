@@ -1,0 +1,19 @@
+{
+  "id": "PREMCHAN-RL-01",
+  "owner_contract": "GAME-CHANNEL-01 \u00a736 / protocol-oteryn/v1/channel_list_v1.proto",
+  "resource": "Served Game Channel list payload",
+  "unit": "bytes",
+  "hard_maximum": 40,
+  "configurable_range": {
+    "minimum": 40,
+    "maximum": 40
+  },
+  "failure_category": "PAYLOAD_LIMIT_EXCEEDED",
+  "allocation_impact": "One statically configured served Channel; no cross-node scan. Warm-up reuses the existing PREM-1 puller and releases pending registration on cancellation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "premchan_list_golden_preserves_both_identities_and_explicit_boolean",
+    "premchan_entry_uses_premium_owner_and_releases_failed_attempts"
+  ],
+  "notes": "PREMIUM-CHANNEL-1 owner allocation 1130-1139."
+}

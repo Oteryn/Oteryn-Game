@@ -48,7 +48,7 @@ impl DurabilityRoot {
     ///
     /// This callable seam does not capture/drain the actor's live deltas, refresh
     /// its current session. This compatibility entry point has no current build
-    /// formula; trained new deaths require the build-aware settlement below.
+    /// formula; death preserves trained build state with or without one.
     /// `None` must mean the owner has no pending checkpoint, not permission to drop
     /// pending progress. A failed/stale/unknown flush prevents the death; the owner
     /// retains its deltas and retries using the existing training-save rules.
@@ -100,13 +100,10 @@ impl DurabilityRoot {
         .await
     }
 
-    /// CP D1425 (#2193 Codex P1 4303282822): the runtime owner's death settlement. With the
-    /// active generation's training formula for the request's content revision it settles
-    /// through [`Self::settle_player_death_with_training_and_build`], so a trained Character's
-    /// death applies its build-family loss instead of being refused. Without a formula, or with
-    /// one for another content revision, it keeps the legacy [`Self::settle_player_death`]:
-    /// an untrained Character still dies as before and a trained one is still refused, never
-    /// settled without its loss. The owner has no prepared training checkpoint here.
+    /// The runtime owner's death settlement. A current training formula validates
+    /// the build when available; all new deaths preserve every skill and magic
+    /// level/progress value (D58 / NIGHT-W1 decision 19). Historical receipts
+    /// retain their original outcome. The owner flushes pending training first.
     #[allow(
         clippy::too_many_arguments,
         reason = "the runtime death inputs and current Premium owner"

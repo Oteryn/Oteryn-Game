@@ -94,6 +94,7 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    channel_list(stream, authority, session).await?;
     // CHAT-WIRE-1: every heard line queued since the last tick is one domain 12
     // delta; an empty queue sends nothing.
     // At most one full queue per refresh: lines that keep arriving cannot hold the
@@ -126,6 +127,50 @@ where
                 .chat_delivered(session.admitted.game_session_id)
                 .await;
         }
+    }
+    Ok(())
+}
+
+/// CHAT-PM-CHANNELS-1: a changed channel list is one domain 12 delta type 3, with capability 80
+/// only.
+pub(super) async fn channel_list<S, A>(
+    stream: &mut S,
+    authority: &A,
+    session: &mut ServeState,
+) -> Result<(), ServeEnd>
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    use oteryn_protocol_oteryn::chat::private_channel;
+    if !session
+        .selected_capabilities
+        .contains(private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1)
+    {
+        return Ok(());
+    }
+    let Some(list) = authority
+        .chat_channel_list(session.admitted.game_session_id)
+        .await
+    else {
+        return Ok(());
+    };
+    let payload =
+        private_channel::encode_channel_list(&list).map_err(|_| ServeEnd::Disconnected)?;
+    let Some((delta_sequence, frame, chat_revision)) = chat_delta(
+        session.generation,
+        session.sequence,
+        session.admitted.continuity.chat_revision,
+        private_channel::DELTA_TYPE_CHAT_CHANNEL_LIST_V1,
+        &payload,
+    ) else {
+        return Err(ServeEnd::Disconnected);
+    };
+    session.sequence = delta_sequence;
+    session.admitted.continuity.server_sequence = session.sequence;
+    session.admitted.continuity.chat_revision = chat_revision;
+    if write_frame(stream, &frame).await.is_err() {
+        return Err(ServeEnd::Disconnected);
     }
     Ok(())
 }

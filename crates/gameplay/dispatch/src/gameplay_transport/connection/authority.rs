@@ -8,6 +8,11 @@ mod composed;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     mechanic_authority_methods!();
+    /// PREMCHAN: the bounded list of Game Channels served by this owner. This node currently
+    /// serves exactly one Channel. No routing or admission authority is granted by the list.
+    fn channel_list(&self) -> Option<Vec<u8>> {
+        None
+    }
     /// The production session owner retains command truth across connection replacement.
     /// Transport-only authorities may omit the resumable command directory.
     fn session_commands(
@@ -675,6 +680,25 @@ pub trait FreshAdmissionAuthority {
         _session: GameSessionId,
     ) -> impl Future<Output = Option<ChatRoomSet>> {
         async { None }
+    }
+
+    /// CHAT-PM-CHANNELS-1: negotiation of `session`; `selected` is capability 80.
+    fn chat_private_channels(
+        &self,
+        _session: GameSessionId,
+        _selected: bool,
+    ) -> impl Future<Output = ()> {
+        std::future::ready(())
+    }
+
+    /// CHAT-PM-CHANNELS-1: the channel list when it changed since the client was last sent one
+    /// (a domain 12 delta type 3); `None` when unchanged.
+    fn chat_channel_list(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList>>
+    {
+        std::future::ready(None)
     }
 
     fn chat_guild_admit(

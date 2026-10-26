@@ -295,6 +295,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub evidence: &'a FreshEvidenceSource,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
+    /// PREMCHAN: static configuration of the served Game Channel.
+    pub premium_only: bool,
     /// ADMIT0 §3.2: the requirements boot validated against this generation's real offer
     /// before readiness. Immutable data; it never stands in for current scope authority.
     pub required_capabilities:
@@ -474,6 +476,8 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub reset_epoch: u64,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
+    /// PREMCHAN: static configuration, shared by admission and the channel-list projection.
+    pub premium_only: bool,
     /// See [`GameplaySeamOwners::required_capabilities`].
     pub required_capabilities:
         std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,

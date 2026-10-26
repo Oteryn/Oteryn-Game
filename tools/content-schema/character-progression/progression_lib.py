@@ -280,6 +280,11 @@ def build_differences():
             "reference": "Stamina and experience boosts change the experience a kill awards.",
             "oteryn": "Not modelled: the base experience is awarded unchanged.",
         },
+        {
+            "id": "no-skill-or-magic-level-loss-on-death",
+            "reference": "Global death can reduce skill and magic-level progress (characters.md 5.1.11).",
+            "oteryn": "Death never changes skill levels, magic level or their progress, in PvE or PvP, with or without blessings (D58 / baseline difference 2; NIGHT-W1 decision 19 supersedes SKILLS-0 section 3.6).",
+        },
     ]
     doc = {"schema": DIFFERENCES_SCHEMA, "records": records}
     doc["revision"] = document_revision("differences", doc)

@@ -733,11 +733,8 @@ fn prepare_death_build_loss(
     lost: ExactI64,
 ) -> Result<Option<CommittedDeathBuildLoss>> {
     let Some(formula) = formula else {
-        // An old caller may settle an untrained actor. Trained progress must not
-        // silently escape loss while the build-aware runtime wiring is pending.
-        if lost.get() != 0 && (before.magic() != (0, 0) || before.skills() != [(10, 0); 7]) {
-            return Err(CharacterProgressionError::InvalidInput);
-        }
+        // Death never changes trained build state, including for legacy callers
+        // without a current training formula (D58 / NIGHT-W1 decision 19).
         return Ok(None);
     };
     if formula.content_revision() != content_revision {
@@ -1712,7 +1709,7 @@ mod death_build_postgres {
     }
 
     #[test]
-    fn native_training_then_death_replays_and_reconciles_after_restart() -> TestResult {
+    fn historical_v2_training_then_death_replays_and_reconciles_after_restart() -> TestResult {
         run("death_build_restart", async |h| {
             let pending = prepared_training()?;
             let before = pending.after.clone();
@@ -1741,6 +1738,75 @@ mod death_build_postgres {
                 )
                 .await
                 .map_err(debug)?;
+            assert!(committed.build_loss.is_none());
+            // Stored pre-decision history: the old writer took all progress when
+            // capped XP loss was 100%. Plant its exact v2 receipt/build row, then
+            // exercise the real restart decoder, verifier and replay APIs below.
+            let mut committed = committed;
+            let historical = CommittedDeathBuildLoss {
+                before: before.clone(),
+                after: DurableBuildState::default(),
+                formula_digest: TABLE.digest(),
+            };
+            let binding = build_command_binding(
+                &command_binding(&fence(2)?, &death).map_err(debug)?,
+                &historical,
+            );
+            let mut receipt_fields = vec![
+                "vocation = 'none'".to_owned(),
+                "stamina_minutes_before = 2520".to_owned(),
+                "stamina_minutes_after = 2520".to_owned(),
+                "offline_pool_s_before = 43200".to_owned(),
+                "offline_pool_s_after = 43200".to_owned(),
+                "offline_skill_before = -1".to_owned(),
+                "offline_skill_after = -1".to_owned(),
+            ];
+            let mut state_fields = vec![
+                "magic_level = 0".to_owned(),
+                "mana_spent = 0".to_owned(),
+                "committed_character_revision = 3".to_owned(),
+                "last_build_occurrence_id = encode($1,'hex')::uuid".to_owned(),
+            ];
+            for (suffix, state) in [("before", &historical.before), ("after", &historical.after)] {
+                for (family, (level, progress)) in build_families(state).into_iter().enumerate() {
+                    let (level_column, progress_column) = if family == 0 {
+                        ("magic_level".to_owned(), "mana_spent".to_owned())
+                    } else {
+                        (
+                            format!("{}_level", SKILLS[family - 1]),
+                            format!("{}_tries", SKILLS[family - 1]),
+                        )
+                    };
+                    receipt_fields.push(format!("{level_column}_{suffix} = {level}"));
+                    receipt_fields.push(format!("{progress_column}_{suffix} = {progress}"));
+                    if suffix == "after" && family != 0 {
+                        state_fields.push(format!("{level_column} = {level}"));
+                        state_fields.push(format!("{progress_column} = {progress}"));
+                    }
+                }
+            }
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role = replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "UPDATE game_character_death_receipts SET {}, command_binding = $1 WHERE death_occurrence_id = encode($2,'hex')::uuid",
+                receipt_fields.join(",")
+            )))
+            .bind(binding)
+            .bind(death.occurrence.0.as_slice())
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query(sqlx::AssertSqlSafe(format!(
+                "UPDATE game_character_build_state SET {} WHERE character_id = encode($2,'hex')::uuid",
+                state_fields.join(",")
+            )))
+            .bind(death.occurrence.0.as_slice())
+            .bind(fence(2)?.character_id.as_bytes().as_slice())
+            .execute(&mut *tx)
+            .await?;
+            tx.commit().await?;
+            committed.build_loss = Some(historical);
             let build = committed
                 .build_loss
                 .as_ref()
@@ -1797,7 +1863,7 @@ mod death_build_postgres {
                 CharacterDeathOutcome::AlreadyCommitted(committed.clone())
             );
             // Retained death replay skips even an invalid newly supplied live
-            // checkpoint; it must not validate/capture/apply it over lowered state.
+            // checkpoint; it must not validate/capture/apply it over historical state.
             let mut ignored_training_fence = fence(2)?;
             ignored_training_fence.character_lease_generation = 99;
             assert_eq!(
@@ -1970,7 +2036,7 @@ mod death_build_postgres {
     }
 
     #[test]
-    fn native_death_requires_current_fences_and_content_and_never_bypasses_loss() -> TestResult {
+    fn native_death_requires_current_fences_and_content_and_preserves_build() -> TestResult {
         run("death_build_current", async |h| {
             train(h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -2024,24 +2090,32 @@ mod death_build_postgres {
                     .await,
                 Err(CharacterProgressionError::ProgressionContextMismatch)
             ));
-            assert!(matches!(
-                h.root
-                    .commit_character_death(&authority, &h.node, fence(2)?, request(87)?)
-                    .await,
-                Err(CharacterProgressionError::InvalidInput)
-            ));
             assert_eq!(snapshot(h).await?, before);
+            let outcome = h
+                .root
+                .commit_character_death(&authority, &h.node, fence(2)?, request(87)?)
+                .await
+                .map_err(debug)?;
+            let CharacterDeathOutcome::Committed(death) = outcome else {
+                return Err("legacy death unexpectedly replayed".into());
+            };
+            assert!(death.build_loss.is_none());
+            assert_eq!(death.experience_lost.get(), 1000);
+            assert_eq!(
+                h.root
+                    .read_character_build_state(&authority, fence(3)?.character_id)
+                    .await
+                    .map_err(debug)?,
+                prepared_training()?.after
+            );
             Ok(())
         })
     }
 
-    /// CP D1425 (#2193 Codex P1 4303282822): the runtime owner's settlement of a trained
-    /// Character with the current formula applies its build loss instead of being refused, a
-    /// retry replays the receipt, and the death's pending respawn is then consumed under the
-    /// next fence. No formula, or one for another content revision, keeps the legacy refusal
-    /// and writes nothing.
+    /// Runtime deaths preserve trained builds with current, absent or unavailable
+    /// content formulas; replay and fenced respawn consumption still converge.
     #[test]
-    fn native_runtime_death_of_trained_character_settles_loss_and_respawns() -> TestResult {
+    fn native_runtime_death_of_trained_character_preserves_build_and_respawns() -> TestResult {
         run("death_build_runtime", async |h| {
             let trained = train(h).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -2051,25 +2125,6 @@ mod death_build_postgres {
                 .await
                 .map_err(debug)?;
             let sequencer = CharacterRevisionSequencer::new();
-            let untouched = snapshot(h).await?;
-            let stale = Table([17; 32], "stale-content");
-            for formula in [None, Some(&stale as &dyn BuildFormula)] {
-                assert!(matches!(
-                    h.root
-                        .settle_runtime_player_death(
-                            &sequencer,
-                            &authority,
-                            &h.node,
-                            fence(2)?,
-                            request(95)?,
-                            formula,
-                            None,
-                        )
-                        .await,
-                    Err(CharacterProgressionError::InvalidInput)
-                ));
-                assert_eq!(snapshot(h).await?, untouched);
-            }
             let death = request(96)?;
             let committed = h
                 .root
@@ -2084,13 +2139,15 @@ mod death_build_postgres {
                 )
                 .await
                 .map_err(debug)?;
-            let build = committed
-                .build_loss
-                .as_ref()
-                .ok_or("missing build payload")?;
-            assert_eq!(build.before, trained);
-            assert_eq!(build.after, DurableBuildState::default());
-            assert_eq!(build.formula_digest, TABLE.digest());
+            assert!(committed.build_loss.is_none());
+            assert_eq!(committed.experience_lost.get(), 1000);
+            assert_eq!(
+                h.root
+                    .read_character_build_state(&authority, fence(3)?.character_id)
+                    .await
+                    .map_err(debug)?,
+                trained
+            );
             assert_eq!(h.root_revision().await?, "3");
             assert_eq!(h.count("game_character_death_receipts").await?, 1);
             assert_eq!(h.count("game_character_pending_respawns").await?, 1);
@@ -2122,6 +2179,48 @@ mod death_build_postgres {
             assert_eq!(h.root_revision().await?, "3");
             Ok(())
         })
+    }
+
+    #[test]
+    fn native_trained_death_preserves_build_without_a_current_formula() -> TestResult {
+        for stale_formula in [false, true] {
+            run("death_build_no_formula", async |h| {
+                let trained = train(h).await?;
+                let seal = h.recovery.seal_current().map_err(debug)?;
+                let authority = h
+                    .root
+                    .open_character_authority(&seal)
+                    .await
+                    .map_err(debug)?;
+                let stale = Table([17; 32], "stale-content");
+                let formula = stale_formula.then_some(&stale as &dyn BuildFormula);
+                let committed = h
+                    .root
+                    .settle_runtime_player_death(
+                        &CharacterRevisionSequencer::new(),
+                        &authority,
+                        &h.node,
+                        fence(2)?,
+                        request(95)?,
+                        formula,
+                        None,
+                    )
+                    .await
+                    .map_err(debug)?;
+                assert!(committed.build_loss.is_none());
+                assert_eq!(committed.experience_lost.get(), 1000);
+                assert_eq!(
+                    h.root
+                        .read_character_build_state(&authority, fence(3)?.character_id)
+                        .await
+                        .map_err(debug)?,
+                    trained
+                );
+                assert_eq!(h.root_revision().await?, "3");
+                Ok(())
+            })?;
+        }
+        Ok(())
     }
 
     async fn join_two<A: Future, B: Future>(a: A, b: B) -> (A::Output, B::Output) {

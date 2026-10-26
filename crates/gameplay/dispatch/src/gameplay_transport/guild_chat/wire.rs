@@ -2,6 +2,7 @@
 use super::super::connection::FreshAdmissionAuthority;
 use super::*;
 use oteryn_protocol_oteryn::chat::guild_room::{self, GuildChatSnapshot};
+use oteryn_protocol_oteryn::chat::private_channel::CAPABILITY_CHAT_PRIVATE_CHANNEL_V1;
 use oteryn_protocol_oteryn::chat::{self, ChatIntent, ChatRoomSet};
 
 pub(in super::super) async fn snapshot<A: FreshAdmissionAuthority>(
@@ -9,6 +10,15 @@ pub(in super::super) async fn snapshot<A: FreshAdmissionAuthority>(
     admitted: AdmittedSession,
     rooms: ChatRoomSet,
 ) -> Option<(u32, Vec<u8>)> {
+    authority
+        .chat_private_channels(
+            admitted.game_session_id,
+            admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_CHAT_PRIVATE_CHANNEL_V1),
+        )
+        .await;
     if admitted
         .continuity
         .selected_capabilities
@@ -51,6 +61,14 @@ pub(in super::super) async fn dispatch<A: FreshAdmissionAuthority>(
                 authority.chat_guild_intent(admitted, text).await,
                 None,
             )))
+        }
+        ChatIntent::PrivateChannel(_)
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(CAPABILITY_CHAT_PRIVATE_CHANNEL_V1) =>
+        {
+            Err(())
         }
         intent => Ok(authority
             .chat_intent_completion(actor, admitted.game_session_id, command_id, intent)

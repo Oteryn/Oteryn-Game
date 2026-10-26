@@ -1,0 +1,14 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+
+// PREMCHAN, capability 83, state domain 48, snapshot type 1. This Game node serves exactly
+// one configured Channel, so the complete local list has one entry and at most 40 bytes.
+// No global directory, target grant or routing authority is implied. WorldId != ChannelId.
+message ChannelListV1 {
+  repeated GameChannelV1 channels = 1;
+}
+message GameChannelV1 {
+  bytes world_id = 1;   // UUIDv7, exactly 16 bytes
+  bytes channel_id = 2; // UUIDv7, exactly 16 bytes
+  bool premium_only = 3; // explicitly encoded even when false
+}

@@ -4,7 +4,7 @@ The owner answered the 18 open questions from the NIGHT-W1 light-mechanics parit
 means Tibia Global behaviour. Where it could not be observed directly, it is read from Canary at the
 pinned revision `47dfd51f45280a59a1d3e50ba7edd573d7234446` or from TibiaWiki. This record holds the
 decisions and their follow-ups. The contracts named in each row are amended only by the PR that
-implements that row.
+implements that row. Decision 19 records the subsequent death-skill correction.
 
 | # | Question | Decision | Follow-up |
 |---|---|---|---|
@@ -26,3 +26,4 @@ implements that row.
 | 16 | Adventurer's Blessing level limit | From global: lost on first reaching level 21, so it protects through level 20 (TibiaWiki). PARTY-PVP-0 §10.2 already says "level 20 or less" | None: already consistent |
 | 17 | Rat corpse id in D113 | Correct it: D113's `i00005801` is the D3-7 alias of `oteryn:item.tibia.i5964`, the dead rat. 5801 is the Jewelled Backpack in Canary | D113 note in the D3 decision (this PR) |
 | 18 | Who wires parameter spells (exiva etc.) to the session | Yes: the same dispatch owner as ordinary spell casting | PARAM-CAST-WIRE-1: heavy (Hello capability and owner caller) |
+| 19 | Skill and magic level loss on death | Differs from Global: never lost (restores D58 / baseline difference 2; supersedes SKILLS-0 §3.6) | DEATH-NO-SKILL-LOSS-1: preserve every skill/ML level and progress accumulator; XP loss unchanged |
