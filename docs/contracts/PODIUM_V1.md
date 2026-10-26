@@ -26,10 +26,10 @@ under the locked Character root; hidden selections are checked too. Rotation
 retains every other field and wraps north/east/south/west. A refusal writes nothing.
 
 Renown definitions are `oteryn:item.tibia.i35973` and `i35974`.
-Owner decision 22 resolves Vigour (`i38707`) as a boss display, following the
-pinned references, not verified against Global. It remains refused: there is no
-qualified Bosstiary expertise/read owner or boss-display catalogue in this
-implementation. Ordinary Bestiary kill progress is not Bosstiary authority.
+Vigour (`i38707`) is a boss display in the pinned references, not verified against
+Global; owner decision 22 permits this provisional reference fallback. It remains
+refused: there is no qualified Bosstiary expertise/read owner or boss-display
+catalogue in this implementation. Ordinary Bestiary kill progress is not Bosstiary authority.
 Vigour must not accept a Renown outfit/mount request as a substitute.
 
 ## Wire and activation boundary
@@ -67,9 +67,12 @@ content. The pending request action distinguishes a window from a mutation resul
 Window reads the same locked House/Item/session/root and current account grants as
 configure, inside the semantic transaction/deadline. It includes starter or
 compatibly earned outfits, only authorized addon bits 1 and 2, and compatible
-owned mounts. Hidden/unowned addons are not advertised. Ambiguous duplicate or
-unrepresentable look identities fail closed with 1636. A window does not mutate
-the Item, its revision, custody or audit. It preserves stored display even if the
+owned mounts. Hidden/unowned addons are not advertised. Window, configure and
+rotation all reject ambiguous duplicate, zero or unrepresentable numeric look
+identities with 1636, including unowned definitions. A numeric wire look must
+identify exactly one qualified cosmetic in its family (for outfits, for the actor's
+sex); iteration order cannot grant ownership. A window does not mutate the Item,
+its revision, custody or audit. It preserves stored display even if the
 querying guest does not own that display; catalogue choices grant no ownership.
 
 This result does **not** substitute for the House map Item snapshot/appearance

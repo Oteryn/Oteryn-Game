@@ -46,31 +46,42 @@ fn assert_window(
 
 #[test]
 fn podium_postgres_real_dispatch_mutable_rotation_reload_and_refusals() -> TestResult {
+    run_scenarios(false)
+}
+
+#[test]
+fn podium_postgres_real_dispatch_catalogue_and_vigour_refusals() -> TestResult {
+    run_scenarios(true)
+}
+
+fn run_scenarios(boundaries: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(move || scenario(boundaries).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "podium scenario panicked")??;
     Ok(())
 }
-fn scenario() -> TestResult {
+fn scenario(boundaries: bool) -> TestResult {
     let admin =
         crate::bestiary_postgres_harness::configured_admin().ok_or("routed PostgreSQL required")?;
     let rt = crate::bestiary_postgres_harness::runtime()?;
-    for guest in [false, true] {
-        let h = rt.block_on(Harness::create_appearance(
-            admin.clone(),
-            if guest {
-                "podium_guest"
-            } else {
-                "podium_owner"
-            },
-        ))?;
+    let cases: &[_] = if boundaries {
+        &[
+            ("podium_duplicate_outfit", false, Some("outfits")),
+            ("podium_duplicate_mount", false, Some("mounts")),
+            ("podium_vigour", false, Some("vigour")),
+        ]
+    } else {
+        &[("podium_owner", false, None), ("podium_guest", true, None)]
+    };
+    for &(name, guest, boundary) in cases {
+        let h = rt.block_on(Harness::create_appearance(admin.clone(), name))?;
         let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            rt.block_on(case(&h, guest))
+            rt.block_on(case(&h, guest, boundary))
         }));
         let cleanup = rt.block_on(h.cleanup());
         match outcome {
@@ -150,7 +161,7 @@ async fn direct_exchange(
     .await
     .ok_or_else(|| "direct podium route".into())
 }
-async fn case(h: &Harness, guest: bool) -> TestResult {
+async fn case(h: &Harness, guest: bool, boundary: Option<&str>) -> TestResult {
     reset();
     let source = house::RecoverySource::start(h).await?;
     house::prepare_owned_session(h).await?;
@@ -192,6 +203,38 @@ async fn case(h: &Harness, guest: bool) -> TestResult {
         .as_array_mut()
         .ok_or("promotions")?
         .push(promotion);
+    if let Some(family @ ("outfits" | "mounts")) = boundary {
+        // Two individually qualified identities share one numeric wire look. The
+        // duplicate is unowned; configure must not resolve it by iteration order.
+        let document = &mut packet["authoring"]["document"];
+        let mut duplicate = document[family][0].clone();
+        duplicate["key"] = if family == "outfits" {
+            duplicate["starter_male"] = false.into();
+            duplicate["starter_female"] = false.into();
+            "oteryn:outfit.zz_podium_duplicate".into()
+        } else {
+            "oteryn:mount.zz_podium_duplicate".into()
+        };
+        document[family]
+            .as_array_mut()
+            .ok_or("cosmetic family")?
+            .push(duplicate.clone());
+        let promotions = packet["authoring"]["promotions"]
+            .as_array_mut()
+            .ok_or("promotions")?;
+        let prefix = format!("/{family}/0");
+        let mut additions = Vec::new();
+        for original in promotions.iter() {
+            let path = original["path"].as_str().ok_or("promotion path")?;
+            if let Some(suffix) = path.strip_prefix(&prefix) {
+                let mut promotion = original.clone();
+                promotion["path"] = format!("/{family}/1{suffix}").into();
+                promotion["value"] = duplicate.pointer(suffix).ok_or("duplicate field")?.clone();
+                additions.push(promotion);
+            }
+        }
+        promotions.extend(additions);
+    }
     let (controller, pin) = activated_with_optional_cosmetics(
         base.admitted.world_id,
         None,
@@ -302,7 +345,14 @@ async fn case(h: &Harness, guest: bool) -> TestResult {
         .execute(&mut *tx)
         .await?;
     for (item, key) in [
-        (item, "oteryn:item.tibia.i35973"),
+        (
+            item,
+            if boundary == Some("vigour") {
+                "oteryn:item.tibia.i38707"
+            } else {
+                "oteryn:item.tibia.i35973"
+            },
+        ),
         (backpack, "oteryn:item.tibia.i2854"),
     ] {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,game_character_uuid_v7())").bind(item.as_slice()).bind(id(42).as_slice()).bind(key).execute(&mut *tx).await?;
@@ -399,6 +449,53 @@ async fn case(h: &Harness, guest: bool) -> TestResult {
         .execute(&mut *tx).await?.rows_affected();
     assert_eq!(changed, 1);
     tx.commit().await?;
+    if let Some(boundary) = boundary {
+        let refusal = if boundary == "vigour" {
+            1634_u16
+        } else {
+            1636_u16
+        };
+        let look = content
+            .look_type(
+                &content
+                    .fallback(crate::domain::appearance::Sex::Male)
+                    .outfit_key,
+                crate::domain::appearance::Sex::Male,
+            )
+            .ok_or("look")?;
+        // Keep the House authority, actor reach and Item custody valid, varying
+        // only the unsupported Item kind or ambiguous qualified catalogue.
+        for action in 0..=2 {
+            request.action = action;
+            request.display = if action == 1 {
+                Display {
+                    look_type: u16::try_from(look)?,
+                    show_outfit: true,
+                    ..Display::default()
+                }
+            } else {
+                Display::default()
+            };
+            let (status, bytes) =
+                exchange(&owner, &mut inside, 2 + u64::from(action), &request).await?;
+            assert_eq!(
+                status,
+                CommandStatus::Rejected,
+                "{boundary} action {action}"
+            );
+            assert_eq!(
+                bytes,
+                wire::encode_result(refusal, 0, Display::default()).map_err(debug)?,
+                "{boundary} action {action}"
+            );
+        }
+        let states: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_podium_states WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).fetch_one(&h.pool).await?;
+        let audits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_podium_records WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!((states, audits), (0, 0));
+        return Ok(());
+    }
     let (status, bytes) = exchange(&owner, &mut inside, 2, &request).await?;
     assert_eq!(status, CommandStatus::Accepted);
     assert_window(&bytes, 0, Display::default(), content.palette(), &[])?;

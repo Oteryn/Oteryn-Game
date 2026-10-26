@@ -69,6 +69,21 @@ fn sql_refusal(error: sqlx::Error) -> Result<Vec<u8>, DurabilityError> {
     }
     Err(error.into())
 }
+// The wire carries numeric looks, not definition keys. Validate the entire
+// qualified family before resolving ownership, including unowned definitions.
+fn unique_wire_looks(looks: impl Iterator<Item = Option<u32>>) -> bool {
+    let mut seen = std::collections::BTreeSet::new();
+    for look in looks {
+        let Some(look) = look.and_then(|v| u16::try_from(v).ok()) else {
+            return false;
+        };
+        if look == 0 || !seen.insert(look) {
+            return false;
+        }
+    }
+    true
+}
+
 fn authorized(
     display: Display,
     sex: Sex,
@@ -123,10 +138,7 @@ fn window(
     let unlocks = EarnedCosmetics { content, facts };
     let mut outfits = std::collections::BTreeMap::new();
     let mut mounts = std::collections::BTreeSet::new();
-    let mut seen_outfits = std::collections::BTreeSet::new();
-    let mut seen_mounts = std::collections::BTreeSet::new();
-    // Resolve exactly the same qualified identities as configure, including definitions
-    // the actor does not own. Ambiguous or unrepresentable looks cannot be offered.
+    // The shared command gate has already validated numeric identity uniqueness.
     for key in content.outfit_keys() {
         let Some(look) = content
             .look_type(key, sex)
@@ -134,9 +146,6 @@ fn window(
         else {
             return refused(1636);
         };
-        if !seen_outfits.insert(look) {
-            return refused(1636);
-        }
         let key = key.to_owned();
         if !content.outfit_is_starter(&key, sex) && unlocks.outfit(&key) != UnlockFact::Compatible {
             continue;
@@ -161,9 +170,6 @@ fn window(
         else {
             return refused(1636);
         };
-        if !seen_mounts.insert(look) {
-            return refused(1636);
-        }
         if unlocks.mount(&key.to_owned()) == UnlockFact::Compatible {
             mounts.insert(look);
         }
@@ -230,6 +236,10 @@ impl DurabilityRoot {
                 || coords[2] != i32::from(command.position.floor) { return refused(1639); }
             let selected = if request.action == 2 { display } else { request.display };
             let sex = match snapshot["sex"].as_i64() { Some(1)=>Sex::Female,Some(2)=>Sex::Male,_=>return Err(DurabilityError::InvalidStoredState) };
+            if !unique_wire_looks(content.outfit_keys().map(|key| content.look_type(key, sex)))
+                || !unique_wire_looks(content.mount_keys().map(|key| content.mount_metadata(key).map(|v| v.0))) {
+                return refused(1636);
+            }
             let facts = earned_unlocks::read(&mut tx,fence.character_id,&content.earned_grant_keys()).await.map_err(|e| match e {
                 AppearanceReadError::InvalidStoredState=>DurabilityError::InvalidStoredState, AppearanceReadError::Storage(e)=>e.into() })?;
             if request.action == 0 {
