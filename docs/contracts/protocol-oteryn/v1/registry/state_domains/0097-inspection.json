@@ -1,0 +1,10 @@
+{
+  "id": 97,
+  "name": "INSPECTION",
+  "owner_decision": "INSPECT-1",
+  "owner": "Game inspection owner",
+  "capability": 132,
+  "revision": "read-only command result; no unsolicited state",
+  "delta_types": [],
+  "snapshot_types": []
+}

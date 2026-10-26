@@ -21,6 +21,9 @@ use tokio::{io::AsyncWriteExt, sync::Mutex};
 
 #[test]
 fn player_trade_postgres_two_real_sessions_atomic_replay_and_cancellation() -> TestResult {
+    run_scenario(false)
+}
+pub(super) fn run_scenario(inspection: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -31,7 +34,7 @@ fn player_trade_postgres_two_real_sessions_atomic_replay_and_cancellation() -> T
                 let h = Harness::create(admin, "player_trade_wire", true)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h).await.map_err(|e| e.to_string());
+                let result = scenario(&h, inspection).await.map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
                 result
             })
@@ -57,7 +60,7 @@ async fn seed(h: &Harness, character: [u8; 16], bag: u8, leaf: u8, key: &str) ->
     tx.commit().await?;
     Ok(())
 }
-async fn scenario(h: &Harness) -> TestResult {
+async fn scenario(h: &Harness, inspection: bool) -> TestResult {
     eprintln!("TRADE-WIRE-1: PostgreSQL harness started; two native Fresh admissions");
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -90,6 +93,17 @@ async fn scenario(h: &Harness) -> TestResult {
     )
     .await?;
 
+    if inspection {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i3264','definition-r1',1,1,encode($1,'hex')::uuid)").bind(id(115).as_slice()).bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,6,encode($3,'hex')::uuid,encode($3,'hex')::uuid)").bind(currents[1].commit().character_id().as_bytes().as_slice()).bind(id(WORLD).as_slice()).bind(id(115).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_imbuements(item_instance_id,slot,category,imbuement_key,imbuement_revision,tier,remaining_ms,applying_occurrence_id,applying_transaction_id) VALUES(encode($1,'hex')::uuid,0,0,'oteryn:imbuement.strike',$2,3,72000000,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+            .bind(id(115).as_slice()).bind(oteryn_gameplay_items::imbuement::IMBUEMENT_CATALOGUE_REVISION).bind(id(116).as_slice()).bind(id(117).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
     let seal = h.recovery.seal_current().map_err(debug)?;
     let recovery = h
         .root
@@ -227,9 +241,15 @@ async fn scenario(h: &Harness) -> TestResult {
         "real source-map initialization"
     );
     for a in &mut admitted {
-        a.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 21, 60])
-                .ok_or("selected")?;
+        a.continuity.selected_capabilities = SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            if inspection {
+                &[4, 6, 21, 60, 132]
+            } else {
+                &[4, 6, 21, 60]
+            },
+        )
+        .ok_or("selected")?;
         assert!(a.continuity.selected_capabilities.contains(60));
     }
 
@@ -275,6 +295,96 @@ async fn scenario(h: &Harness) -> TestResult {
         assert!(state.message.is_empty());
         assert!(state.own.is_some() && state.counter.is_some());
         let trade_id = state.trade_id.ok_or("trade id")?;
+        if inspection {
+            use oteryn_protocol_oteryn::inspection::{self as inspect, Request};
+            let reply = a
+                .command(
+                    inspect::COMMAND_TYPE_INSPECTION,
+                    &inspect::encode_request(Request::Player(targets[1])).map_err(debug)?,
+                )
+                .await?;
+            assert_eq!(inspect::decode_reply(&reply).map_err(debug)?.status, 6);
+            let reply = a
+                .command(
+                    inspect::COMMAND_TYPE_INSPECTION,
+                    &inspect::encode_request(Request::Permission {
+                        action: 1,
+                        target: Some(targets[1]),
+                    })
+                    .map_err(debug)?,
+                )
+                .await?;
+            assert_eq!(inspect::decode_reply(&reply).map_err(debug)?.status, 7);
+            let reply = b
+                .command(
+                    inspect::COMMAND_TYPE_INSPECTION,
+                    &inspect::encode_request(Request::Permission {
+                        action: 6,
+                        target: None,
+                    })
+                    .map_err(debug)?,
+                )
+                .await?;
+            assert_eq!(
+                inspect::decode_reply(&reply).map_err(debug)?.requests,
+                vec![targets[0]]
+            );
+            for (action, expected) in [(2, 1), (3, 6), (4, 1), (5, 6)] {
+                let target = if action <= 3 { Some(targets[0]) } else { None };
+                let reply = b
+                    .command(
+                        inspect::COMMAND_TYPE_INSPECTION,
+                        &inspect::encode_request(Request::Permission { action, target })
+                            .map_err(debug)?,
+                    )
+                    .await?;
+                assert_eq!(inspect::decode_reply(&reply).map_err(debug)?.status, 8);
+                let reply = a
+                    .command(
+                        inspect::COMMAND_TYPE_INSPECTION,
+                        &inspect::encode_request(Request::Player(targets[1])).map_err(debug)?,
+                    )
+                    .await?;
+                let inspected = inspect::decode_reply(&reply).map_err(debug)?;
+                assert_eq!(inspected.status, expected);
+                if expected == 1 {
+                    assert_eq!(inspected.items.len(), 2);
+                    assert_eq!(inspected.items[1].slot, 10);
+                    assert!(
+                        inspected.items[0]
+                            .attributes
+                            .iter()
+                            .any(|(label, value)| label == "Imbuement Slot 1"
+                                && value.contains("Powerful Strike")
+                                && value.contains("20:00h"))
+                    );
+                    assert!(
+                        inspected.items[0]
+                            .attributes
+                            .contains(&("Attack".into(), "14".into()))
+                    );
+                }
+            }
+            for (counter, index, expected) in [(false, 0, 1), (true, 0, 1), (true, 1, 2)] {
+                let payload =
+                    inspect::encode_request(Request::Trade { counter, index }).map_err(debug)?;
+                let reply = a
+                    .command(inspect::COMMAND_TYPE_INSPECTION, &payload)
+                    .await?;
+                let reply = inspect::decode_reply(&reply).map_err(debug)?;
+                assert_eq!(reply.status, expected, "{reply:?}");
+                if expected == 1 {
+                    assert_eq!(reply.items[0].count, 3);
+                    assert!(reply.items[0].attributes.iter().any(|(k, _)| k == "Weight"));
+                }
+            }
+            // This new mechanic case ends after its read-only assertions. The original
+            // player_trade_postgres test runs every swap/replay/cancellation assertion below.
+            a.close().await?;
+            b.close().await?;
+            return Ok::<_, Box<dyn std::error::Error>>(());
+        }
+
         // Move the partner two cells on Y while the dialog is open. Look must use
         // current authoritative positions, not the positions when offers were made.
         let partner = admitted[1].runtime_actor.ok_or("partner actor")?;
@@ -285,7 +395,10 @@ async fn scenario(h: &Harness) -> TestResult {
                 .map_err(debug)?
                 .position();
             assert_eq!(
-                runtime.read_actor_position(partner).map_err(debug)?.position(),
+                runtime
+                    .read_actor_position(partner)
+                    .map_err(debug)?
+                    .position(),
                 observer
             );
             for _ in 0..2 {
@@ -315,7 +428,10 @@ async fn scenario(h: &Harness) -> TestResult {
                 ResultCode::Offered.payload()
             );
             let own = owner.trade_observation(session).await.ok_or("own look")?.1;
-            assert!(own.look.contains(" oz."), "own offer shows near-only weight");
+            assert!(
+                own.look.contains(" oz."),
+                "own offer shows near-only weight"
+            );
             peer.trade_state(&own).await?;
         }
         assert_eq!(
@@ -607,6 +723,9 @@ async fn scenario(h: &Harness) -> TestResult {
     )
     .await?;
     result?;
+    if inspection {
+        return Ok(());
+    }
     let request = owner
         .states
         .player_trades
