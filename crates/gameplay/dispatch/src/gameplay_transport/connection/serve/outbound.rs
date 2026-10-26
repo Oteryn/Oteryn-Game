@@ -275,7 +275,7 @@ where
         }
         // NPC-CMD-1a: the whole domain 7 payload, then the domain 8 window (NPC-CMD-1b-read),
         // follow the result, to the speaker alone.
-        Dispatch::NpcTrade(_, update, deltas) => {
+        Dispatch::NpcTrade(_, update, deltas) | Dispatch::NpcShop(_, _, update, deltas) => {
             effects::npc_trade(stream, session, update, deltas).await?;
         }
         Dispatch::Npc(_, update, _) => {

@@ -1,0 +1,19 @@
+{
+  "id": "SELLALL1-RL-03",
+  "owner_contract": "protocol-oteryn/v1/npc_shop_v1.proto",
+  "resource": "Gold one NPC sell-all pays",
+  "unit": "gold units per command",
+  "hard_maximum": 1009999,
+  "configurable_range": {
+    "minimum": 1009999,
+    "maximum": 1009999
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The most three coin stacks hold (100 crystal, 99 platinum, 99 gold, NPC-0 \u00a75.4); a larger total is refused before any write.",
+  "client_visible": true,
+  "boundary_tests": [
+    "the maximum round trips in NpcShopResultV1",
+    "max+1 rejected by the result codec"
+  ],
+  "notes": "`NpcShopResultV1.total_gold_units`."
+}

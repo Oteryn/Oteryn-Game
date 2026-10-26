@@ -107,6 +107,7 @@ fn trade(side: u32, quantity: u32, unit_price: u64) -> OneItemNpcTradeV1 {
         minted_gold_units: 0,
         lines: Vec::new(),
         bank_debit: None,
+        sell_all: false,
     }
 }
 
@@ -401,6 +402,31 @@ fn trade_rows_equal_the_registry() {
             "DUR03-RL-07-NPC-TRADE-ENVELOPE-BYTES",
             NPC_TRADE_RL07_ENVELOPE_BYTES_MAX as u64,
         ),
+        // NPC-TRADE-SELLALL-1.
+        (
+            "DUR03-RL-01-NPC-SELL-ALL",
+            SELL_ALL_RL01_TOUCHED_ITEM_INSTANCES_MAX,
+        ),
+        (
+            "DUR03-RL-02-NPC-SELL-ALL",
+            SELL_ALL_RL02_LOCATION_CUSTODY_LINES_MAX,
+        ),
+        (
+            "DUR03-RL-06-NPC-SELL-ALL-PARTICIPANTS",
+            SELL_ALL_RL06_PARTICIPANTS_MAX,
+        ),
+        (
+            "DUR03-RL-06-NPC-SELL-ALL-EFFECT-WORK-UNITS",
+            SELL_ALL_RL06_EFFECT_WORK_UNITS_MAX,
+        ),
+        (
+            "DUR03-RL-07-NPC-SELL-ALL-PAYLOAD-BYTES",
+            SELL_ALL_RL07_PAYLOAD_BYTES_MAX as u64,
+        ),
+        (
+            "DUR03-RL-07-NPC-SELL-ALL-ENVELOPE-BYTES",
+            SELL_ALL_RL07_ENVELOPE_BYTES_MAX as u64,
+        ),
     ] {
         assert_eq!(registered(id), value, "{id}");
     }
@@ -534,7 +560,7 @@ fn npc_buy_bank_value_line_is_v2_only_and_conserves_the_single_trade() {
     let mut over_value_lines = npc_trade_usage(&value);
     over_value_lines.value_lines = 2;
     assert_eq!(
-        check_npc_trade_usage(SIDE_BUY, &over_value_lines),
+        check_npc_trade_usage(SIDE_BUY, false, &over_value_lines),
         Err(AuditError::InvalidInput)
     );
     // Prost accepts a repeated singular message by merging it. The canonical native gate
@@ -620,4 +646,260 @@ fn largest_bank_remainder_fits_existing_measured_trade_envelope_bounds() {
     );
     assert!(payload <= NPC_TRADE_RL07_PAYLOAD_BYTES_MAX);
     assert!(wire.len() <= NPC_TRADE_RL07_ENVELOPE_BYTES_MAX);
+}
+
+/// A sell-all of two sword stacks (7 at ordinal 5, 100 at ordinal 3) at 99 each: 10,593 as 1
+/// crystal, 5 platinum and 93 gold.
+fn sell_all() -> OneItemNpcTradeV1 {
+    let mut value = trade(SIDE_SELL, 107, 99);
+    value.sell_all = true;
+    value.lines = vec![
+        burn(LINE_ITEM_BURN, 10, sword("s"), 5, 7, 0),
+        burn(LINE_ITEM_BURN, 11, sword("s"), 3, 100, 0),
+        mint_line(LINE_COIN_MINT, 20, coin(Coin::Crystal, "r"), 6, 1),
+        mint_line(LINE_COIN_MINT, 21, coin(Coin::Platinum, "r"), 7, 5),
+        mint_line(LINE_COIN_MINT, 22, coin(Coin::Gold, "r"), 8, 93),
+    ];
+    value.minted_gold_units = 10_593;
+    value
+}
+
+#[test]
+fn a_sell_all_burns_whole_stacks_of_one_item_in_display_order() {
+    let value = sell_all();
+    check_npc_trade(&value).unwrap();
+    let wire = encode_npc_trade_event(identity(), value.clone(), Type2EventTuple::V1).unwrap();
+    assert_eq!(decode_npc_trade_envelope(&wire).unwrap().1, value);
+    let usage = npc_trade_usage(&value);
+    assert_eq!(
+        (usage.participants, usage.effect_work_units),
+        (5, 3 * 2 + 2 * 3)
+    );
+    let mut cases: Vec<(&str, OneItemNpcTradeV1)> = Vec::new();
+    let mut value = sell_all();
+    value.cause.as_mut().unwrap().side = SIDE_BUY;
+    cases.push(("a sell-all BUY", value));
+    let mut value = sell_all();
+    value.lines[1].after = Some(state(11, sword("s"), 1));
+    value.quantity = 106;
+    value.total_gold_units = 106 * 99;
+    cases.push(("a partial stack", value));
+    let mut value = sell_all();
+    value.lines.swap(0, 1);
+    cases.push(("stacks out of display order", value));
+    let mut value = sell_all();
+    value.lines[1].before = Some(state(11, sword("t"), 100));
+    value.lines[1].after = Some(OneItemStateV1 {
+        lifecycle: ITEM_LIFECYCLE_RETIRED,
+        ..state(11, sword("t"), 0)
+    });
+    cases.push(("another item revision", value));
+    let mut value = sell_all();
+    value.quantity = 108;
+    value.total_gold_units = 108 * 99;
+    cases.push(("a quantity other than the units", value));
+    let mut value = sell_all();
+    value.lines.drain(0..2);
+    cases.push(("no stack", value));
+    let mut value = sell_all();
+    value.quantity = SELL_ALL_UNITS_MAX + 1;
+    value.unit_price = 0;
+    value.total_gold_units = 0;
+    cases.push(("more units than the bound", value));
+    for (name, value) in cases {
+        assert_eq!(
+            check_npc_trade(&value),
+            Err(AuditError::InvalidInput),
+            "{name}"
+        );
+    }
+}
+
+/// A sell-all of `stacks` whole stacks (the first of `first` units, then 100 each) at `price`,
+/// every key and revision at 512 bytes, maximal ordinals and integers.
+fn worst_case_sell_all(stacks: usize, first: u32, price: u64) -> OneItemNpcTradeV1 {
+    let long = "r".repeat(mint::RL07_CONTENT_KEY_BYTES_MAX);
+    let family = "f".repeat(mint::RL07_TECHNICAL_FIELD_BYTES_MAX);
+    let units = first + 100 * (u32::try_from(stacks).unwrap() - 1);
+    let mut value = trade(SIDE_SELL, units, price);
+    value.sell_all = true;
+    value.cause = Some(OneItemNpcTradeCauseV1 {
+        npc_key: "n".repeat(mint::RL07_CONTENT_KEY_BYTES_MAX),
+        catalogue_revision: u64::MAX,
+        offer_index: u32::MAX,
+        side: SIDE_SELL,
+        occurrence: uuid(70),
+    });
+    value.command.as_mut().unwrap().command_id = u64::MAX;
+    value.runtime_scope_ownership_generation = u64::MAX;
+    value.lines = (0..stacks)
+        .map(|n| {
+            let tag = u8::try_from(n).unwrap() + 100;
+            let quantity = if n == 0 { first } else { 100 };
+            burn(
+                LINE_ITEM_BURN,
+                tag,
+                definition(&family, &long, &long),
+                u64::MAX - 3 - n as u64,
+                quantity,
+                0,
+            )
+        })
+        .collect();
+    let total = u64::from(units) * price;
+    let coins = sell_coins(total).unwrap();
+    for (index, (coin_kind, quantity)) in coins.into_iter().enumerate() {
+        value.lines.push(mint_line(
+            LINE_COIN_MINT,
+            200 + u8::try_from(index).unwrap(),
+            coin(coin_kind, &long),
+            u64::MAX - 2 + index as u64,
+            quantity,
+        ));
+    }
+    value.minted_gold_units = total;
+    value
+}
+
+/// The worst case of `stacks` single items at `price`.
+fn singles(stacks: usize, price: u64) -> OneItemNpcTradeV1 {
+    let mut value = worst_case_sell_all(stacks, 1, 0);
+    value.unit_price = price;
+    for line in value.lines.iter_mut().take(stacks) {
+        line.before.as_mut().unwrap().quantity = 1;
+    }
+    let units = u32::try_from(stacks).unwrap();
+    value.quantity = units;
+    value.total_gold_units = u64::from(units) * price;
+    value.lines.truncate(stacks);
+    let long = "r".repeat(mint::RL07_CONTENT_KEY_BYTES_MAX);
+    for (index, (coin_kind, quantity)) in sell_coins(value.total_gold_units)
+        .unwrap()
+        .into_iter()
+        .enumerate()
+    {
+        value.lines.push(mint_line(
+            LINE_COIN_MINT,
+            200 + u8::try_from(index).unwrap(),
+            coin(coin_kind, &long),
+            u64::MAX - 2 + index as u64,
+            quantity,
+        ));
+    }
+    value.minted_gold_units = value.total_gold_units;
+    value
+}
+
+const _: () = assert!(SELL_ALL_RL07_PAYLOAD_BYTES_MAX <= 196_608);
+const _: () = assert!(SELL_ALL_RL07_ENVELOPE_BYTES_MAX <= 262_144);
+const _: () = assert!(SELL_ALL_RL07_PAYLOAD_BYTES_MAX >= NPC_TRADE_RL07_PAYLOAD_BYTES_MAX);
+const _: () = assert!(SELL_ALL_RL07_ENVELOPE_BYTES_MAX >= NPC_TRADE_RL07_ENVELOPE_BYTES_MAX);
+
+#[test]
+fn worst_case_sell_all_payload_and_envelope_are_the_registered_rows() {
+    let identity = NpcTradeEventIdentity {
+        occurred_at_unix_ms: i64::MAX,
+        server_build_id: &"b".repeat(mint::RL07_TECHNICAL_FIELD_BYTES_MAX),
+        ..identity()
+    };
+    let measure = |value: &OneItemNpcTradeV1| {
+        let payload = OneItemTransactionV1 {
+            interpretation_revision: mint::INTERPRETATION_REVISION,
+            operation: Some(OneItemOperationV1::NpcTrade(value.clone())),
+        };
+        let bytes = payload.encode_to_vec();
+        let envelope = EventEnvelopeV1 {
+            envelope_revision: mint::ENVELOPE_REVISION,
+            event_id: identity.event_id.to_vec(),
+            event_type_id: mint::EVENT_TYPE_ID,
+            event_schema_revision: Type2EventTuple::V2.schema_revision(),
+            durability_class: mint::DURABLE_AUDIT,
+            privacy_class: mint::RESTRICTED_PLAYER_LINKED,
+            retention_profile_id: Type2EventTuple::V2.retention_profile_id().into(),
+            occurred_at_unix_ms: identity.occurred_at_unix_ms,
+            world_id: Some(value.world_id.clone()),
+            channel_id: Some(value.channel_id.clone()),
+            transaction_event: Some(TransactionEventRefV1 {
+                transaction_id: identity.transaction_id.to_vec(),
+                ordinal: 1,
+                count: 1,
+            }),
+            server_build_id: identity.server_build_id.into(),
+            payload_sha256: Sha256::digest(&bytes).to_vec(),
+            payload: bytes.clone(),
+            ..EventEnvelopeV1::default()
+        };
+        (bytes.len(), envelope.encoded_len())
+    };
+    // 1,999 units at 505 (100 crystal, 94 platinum, 95 gold), 2,000 at 504 and 20 single items
+    // at 50,499 (100 crystal, 99 platinum, 80 gold): the largest unit count and price.
+    let mut largest = (0, 0);
+    for value in [
+        worst_case_sell_all(FEE_INPUTS_MAX, 99, 505),
+        worst_case_sell_all(FEE_INPUTS_MAX, 100, 504),
+        singles(FEE_INPUTS_MAX, 50_499),
+    ] {
+        check_npc_trade(&value).unwrap();
+        let (payload, envelope) = measure(&value);
+        largest = (largest.0.max(payload), largest.1.max(envelope));
+        // Above the rows: refused before any write.
+        assert_eq!(
+            encode_npc_trade_event(identity, value, Type2EventTuple::V2),
+            Err(AuditError::CapacityExceeded)
+        );
+    }
+    assert_eq!(
+        largest,
+        (
+            SELL_ALL_WORST_CASE_PAYLOAD_BYTES,
+            SELL_ALL_WORST_CASE_ENVELOPE_BYTES
+        )
+    );
+    // The rows are the outbox ceiling and that ceiling less the measured overhead.
+    assert_eq!(SELL_ALL_RL07_ENVELOPE_BYTES_MAX, 34_816);
+    assert_eq!(
+        SELL_ALL_RL07_ENVELOPE_BYTES_MAX - SELL_ALL_RL07_PAYLOAD_BYTES_MAX,
+        SELL_ALL_WORST_CASE_ENVELOPE_BYTES - SELL_ALL_WORST_CASE_PAYLOAD_BYTES
+    );
+    // 20 stacks under production-sized keys fit and round trip.
+    let mut value = singles(FEE_INPUTS_MAX, 50_499);
+    let key = "oteryn:item.tibia.i3264";
+    for line in &mut value.lines {
+        for state in [line.before.as_mut(), line.after.as_mut()].into_iter().flatten() {
+            let definition = state.definition.as_mut().unwrap();
+            definition.revision_ref = "r".repeat(64);
+            if definition.family != COIN_DEFINITION_FAMILY {
+                definition.family = "Item".into();
+                definition.production_key = key.into();
+            }
+        }
+    }
+    value.cause.as_mut().unwrap().npc_key = "oteryn:npc.tibia.sam".into();
+    check_npc_trade(&value).unwrap();
+    let wire = encode_npc_trade_event(identity, value.clone(), Type2EventTuple::V2).unwrap();
+    assert!(wire.len() <= SELL_ALL_RL07_ENVELOPE_BYTES_MAX);
+    assert_eq!(decode_npc_trade_envelope(&wire).unwrap().1, value);
+    assert_eq!(
+        npc_trade_usage(&value).effect_work_units,
+        SELL_ALL_RL06_EFFECT_WORK_UNITS_MAX
+    );
+    // The worst case with 64-byte revisions exceeds the trade row but fits the sell-all row.
+    let mut wide = singles(FEE_INPUTS_MAX, 50_499);
+    for line in &mut wide.lines {
+        for state in [line.before.as_mut(), line.after.as_mut()].into_iter().flatten() {
+            state.definition.as_mut().unwrap().revision_ref = "r".repeat(64);
+        }
+    }
+    check_npc_trade(&wide).unwrap();
+    let wire = encode_npc_trade_event(identity, wide.clone(), Type2EventTuple::V2).unwrap();
+    assert!(wire.len() > NPC_TRADE_RL07_ENVELOPE_BYTES_MAX);
+    assert!(wire.len() <= SELL_ALL_RL07_ENVELOPE_BYTES_MAX);
+    assert_eq!(decode_npc_trade_envelope(&wire).unwrap().1, wide);
+    assert_eq!(
+        decode_npc_trade_payload(&vec![0; SELL_ALL_RL07_PAYLOAD_BYTES_MAX + 1]),
+        Err(AuditError::CapacityExceeded)
+    );
+    // A 21st stack is refused before encoding.
+    let over = singles(FEE_INPUTS_MAX + 1, 1);
+    assert_eq!(check_npc_trade(&over), Err(AuditError::CapacityExceeded));
 }

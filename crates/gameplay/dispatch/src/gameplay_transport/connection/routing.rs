@@ -49,6 +49,14 @@ pub(super) enum Dispatch {
     /// NPC-TRADE-2: the result, the domain 9 deltas of a committed trade, then the domain
     /// 7 and 8 payloads.
     NpcTrade(NpcIntentDisposition, NpcUpdate, Vec<ItemViewDelta>),
+    /// NPC-TRADE-SELLALL-1: command 97; the domain 9 deltas of a committed sell-all, then the
+    /// domain 7 and 8 payloads, follow the result.
+    NpcShop(
+        crate::foundation::CommandStatus,
+        Vec<u8>,
+        NpcUpdate,
+        Vec<ItemViewDelta>,
+    ),
     /// LOGOUT-WIRE-1: command 23; `ACCEPTED` ends the connection after the result.
     Logout(LogoutResult),
     House(Option<Vec<u8>>),

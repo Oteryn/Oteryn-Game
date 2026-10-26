@@ -11,9 +11,12 @@
 //! - SELL: one BURN of the sold item (part of a stack or the whole item), then the coin MINT
 //!   (crystal, platinum, gold, each only when positive) in new entries.
 //!
+//! - SELL_ALL (NPC-TRADE-SELLALL-1, `sell_all`): a SELL whose BURN lines are 1..=20 whole stacks
+//!   of the sold item in display order (highest ordinal first), `quantity` being their units.
+//!
 //! The shape has its own `DUR03-RL-*-NPC-TRADE-*` rows (BUY 23 participants / 66 work units, SELL
-//! 4 / 9); every bound is checked before encode allocation and oversize input is rejected, never
-//! truncated.
+//! 4 / 9, SELL_ALL 23 / 66); every bound is checked before encode allocation and oversize input is
+//! rejected, never truncated.
 
 use super::item_mint_audit::{
     self as mint, AuditError, EventEnvelopeV1, ITEM_LIFECYCLE_LIVE, OneItemOperationV1,
@@ -35,11 +38,28 @@ pub const SELL_RL01_TOUCHED_ITEM_INSTANCES_MAX: u64 = 4;
 pub const SELL_RL02_LOCATION_CUSTODY_LINES_MAX: u64 = 4;
 pub const SELL_RL06_PARTICIPANTS_MAX: u64 = 4;
 pub const SELL_RL06_EFFECT_WORK_UNITS_MAX: u64 = 9;
+/// SELL_ALL rows (NPC-TRADE-SELLALL-1): 20 whole item BURNs and 3 coin MINTs.
+pub const SELL_ALL_RL01_TOUCHED_ITEM_INSTANCES_MAX: u64 = 23;
+pub const SELL_ALL_RL02_LOCATION_CUSTODY_LINES_MAX: u64 = 23;
+pub const SELL_ALL_RL06_PARTICIPANTS_MAX: u64 = 23;
+pub const SELL_ALL_RL06_EFFECT_WORK_UNITS_MAX: u64 = 66;
+/// The units one sell-all sells: 20 stacks of at most 100 (SELLALL1-RL-02).
+pub const SELL_ALL_UNITS_MAX: u32 = 2_000;
 pub const NPC_TRADE_RL07_EVENTS_MAX: u64 = 1;
 /// Measured worst case of this schema (the `worst_case_*` test), D50 method: a BUY of 20 whole
 /// coin burns, the largest change and an item MINT, every key and revision at 512 bytes.
 pub const NPC_TRADE_RL07_PAYLOAD_BYTES_MAX: usize = 27_094;
 pub const NPC_TRADE_RL07_ENVELOPE_BYTES_MAX: usize = 27_408;
+/// Sell-all rows (NPC-TRADE-SELLALL-1): the envelope is the audit outbox ceiling (migration
+/// 0101, 34,816 B) and the payload that ceiling less the measured envelope overhead (314 B). The
+/// measured worst case (20 whole item burns and 3 coin MINTs, every key and revision at 512 bytes)
+/// is 51,075 / 51,389 B and is refused fail closed (`CapacityExceeded`, nothing written); only a
+/// `sell_all` trade may exceed the trade rows above.
+pub const SELL_ALL_RL07_PAYLOAD_BYTES_MAX: usize = 34_502;
+pub const SELL_ALL_RL07_ENVELOPE_BYTES_MAX: usize = 34_816;
+/// The measured worst-case sell-all, above the rows.
+pub const SELL_ALL_WORST_CASE_PAYLOAD_BYTES: usize = 51_075;
+pub const SELL_ALL_WORST_CASE_ENVELOPE_BYTES: usize = 51_389;
 
 pub use oteryn_gameplay_economy::npc_trade::{
     NPC_TRADE_BUY_GOLD_UNITS_MAX, NPC_TRADE_QUANTITY_MAX, NPC_TRADE_SELL_GOLD_UNITS_MAX,
@@ -122,6 +142,9 @@ pub struct OneItemNpcTradeV1 {
     /// BANK_FEE0§5: one FEE_DEBIT BURN value line, admitted only under the V2 tuple.
     #[prost(message, optional, tag = "14")]
     pub bank_debit: Option<super::item_fee_burn_audit::OneItemFeeBankDebitV1>,
+    /// NPC-TRADE-SELLALL-1: a SELL of every eligible stack; `quantity` is the units sold.
+    #[prost(bool, tag = "15")]
+    pub sell_all: bool,
 }
 
 /// Resource usage of one trade: each line is a participant; a whole burn adds its location
@@ -152,8 +175,19 @@ pub fn npc_trade_usage(value: &OneItemNpcTradeV1) -> TransactionResourceUsage {
     }
 }
 
-fn check_npc_trade_usage(side: u32, usage: &TransactionResourceUsage) -> Result<(), AuditError> {
-    let (touched, custody, participants, work) = if side == SIDE_BUY {
+fn check_npc_trade_usage(
+    side: u32,
+    sell_all: bool,
+    usage: &TransactionResourceUsage,
+) -> Result<(), AuditError> {
+    let (touched, custody, participants, work) = if sell_all {
+        (
+            SELL_ALL_RL01_TOUCHED_ITEM_INSTANCES_MAX,
+            SELL_ALL_RL02_LOCATION_CUSTODY_LINES_MAX,
+            SELL_ALL_RL06_PARTICIPANTS_MAX,
+            SELL_ALL_RL06_EFFECT_WORK_UNITS_MAX,
+        )
+    } else if side == SIDE_BUY {
         (
             BUY_RL01_TOUCHED_ITEM_INSTANCES_MAX,
             BUY_RL02_LOCATION_CUSTODY_LINES_MAX,
@@ -280,9 +314,16 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
         ),
         _ => return Err(AuditError::InvalidInput),
     };
+    let sell_all = value.sell_all;
+    let quantity_max = if sell_all {
+        SELL_ALL_UNITS_MAX
+    } else {
+        NPC_TRADE_QUANTITY_MAX
+    };
     if command.command_id == 0
         || value.runtime_scope_ownership_generation == 0
-        || !(1..=NPC_TRADE_QUANTITY_MAX).contains(&value.quantity)
+        || (sell_all && side != SIDE_SELL)
+        || !(1..=quantity_max).contains(&value.quantity)
         || value.unit_price.checked_mul(u64::from(value.quantity)) != Some(value.total_gold_units)
         || value.total_gold_units > total_max
     {
@@ -295,7 +336,8 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
         .count();
     let (burn_lines, mint_lines) = value.lines.split_at(burns);
     // A BUY at price 0 burns nothing; conservation below refuses any other BUY without a burn.
-    if (side == SIDE_SELL && burns != 1)
+    if (side == SIDE_SELL && !sell_all && burns != 1)
+        || (sell_all && burns == 0)
         || burns > FEE_INPUTS_MAX
         || mint_lines
             .iter()
@@ -309,6 +351,7 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
     }
 
     // BURN lines. BUY: the fee plan's coin order, only the last keeps units. SELL: one item.
+    // SELL_ALL: whole stacks of one item, highest ordinal first.
     let mut burned: u64 = 0;
     let mut item_units: Option<u32> = None;
     let mut item_definition = None;
@@ -332,7 +375,21 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
             if is_coin(before) {
                 return Err(AuditError::InvalidInput);
             }
-            item_units = Some(units);
+            if sell_all {
+                let whole = line.after.as_ref().is_some_and(|after| after.quantity == 0);
+                let ordered = previous.is_none_or(|(_, ordinal)| line.placement_ordinal < ordinal);
+                let same = item_definition.is_none() || item_definition == before.definition;
+                if !whole || !ordered || !same {
+                    return Err(AuditError::InvalidInput);
+                }
+                previous = Some((0, line.placement_ordinal));
+            }
+            item_units = Some(
+                item_units
+                    .unwrap_or(0)
+                    .checked_add(units)
+                    .ok_or(AuditError::InvalidInput)?,
+            );
             item_definition = before.definition.clone();
         }
     }
@@ -373,7 +430,11 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
     // Quantity counts purchase units; a stackable offer contains `count` item units per
     // purchase (NPC0 §3.4/§5.3/§5.4). The bound catalogue/writer owns exact count;
     // this payload carries only its revision/index, so validate the integral bundle shape.
-    if item_definition.is_none() || units == 0 || !units.is_multiple_of(value.quantity) {
+    if item_definition.is_none()
+        || units == 0
+        || !units.is_multiple_of(value.quantity)
+        || (sell_all && units != value.quantity)
+    {
         return Err(AuditError::InvalidInput);
     }
 
@@ -422,13 +483,46 @@ pub fn check_npc_trade(value: &OneItemNpcTradeV1) -> Result<(), AuditError> {
             return Err(AuditError::InvalidInput);
         }
     }
-    check_npc_trade_usage(side, &npc_trade_usage(value))
+    check_npc_trade_usage(side, sell_all, &npc_trade_usage(value))
+}
+
+/// The RL-07 rows of a trade: a sell-all has its own.
+const fn rl07_bounds(sell_all: bool) -> (usize, usize) {
+    if sell_all {
+        (
+            SELL_ALL_RL07_PAYLOAD_BYTES_MAX,
+            SELL_ALL_RL07_ENVELOPE_BYTES_MAX,
+        )
+    } else {
+        (
+            NPC_TRADE_RL07_PAYLOAD_BYTES_MAX,
+            NPC_TRADE_RL07_ENVELOPE_BYTES_MAX,
+        )
+    }
 }
 
 /// RL-07 payload gate for the trade shape: size before decode, canonical round trip, closed
 /// shape and per-field bounds.
+/// Bytes over the trade row are admitted only as a valid sell-all: any other failure of them is
+/// `CapacityExceeded`.
 pub fn decode_npc_trade_payload(wire: &[u8]) -> Result<OneItemNpcTradeV1, AuditError> {
-    if wire.len() > NPC_TRADE_RL07_PAYLOAD_BYTES_MAX {
+    over_trade_row(wire.len() > NPC_TRADE_RL07_PAYLOAD_BYTES_MAX, || {
+        decode_npc_trade_payload_within(wire)
+    })
+}
+
+fn over_trade_row<T>(
+    over: bool,
+    decode: impl FnOnce() -> Result<T, AuditError>,
+) -> Result<T, AuditError> {
+    match decode() {
+        Err(_) if over => Err(AuditError::CapacityExceeded),
+        result => result,
+    }
+}
+
+fn decode_npc_trade_payload_within(wire: &[u8]) -> Result<OneItemNpcTradeV1, AuditError> {
+    if wire.len() > SELL_ALL_RL07_PAYLOAD_BYTES_MAX {
         return Err(AuditError::CapacityExceeded);
     }
     let value = OneItemTransactionV1::decode(wire).map_err(|_| AuditError::InvalidInput)?;
@@ -440,6 +534,9 @@ pub fn decode_npc_trade_payload(wire: &[u8]) -> Result<OneItemNpcTradeV1, AuditE
     let Some(OneItemOperationV1::NpcTrade(trade)) = value.operation else {
         return Err(AuditError::InvalidInput);
     };
+    if wire.len() > rl07_bounds(trade.sell_all).0 {
+        return Err(AuditError::CapacityExceeded);
+    }
     check_npc_trade(&trade)?;
     Ok(trade)
 }
@@ -450,8 +547,19 @@ pub fn decode_npc_trade_payload(wire: &[u8]) -> Result<OneItemNpcTradeV1, AuditE
 pub fn decode_npc_trade_envelope(
     wire: &[u8],
 ) -> Result<(EventEnvelopeV1, OneItemNpcTradeV1), AuditError> {
-    let value = mint::decode_common_envelope_within(wire, NPC_TRADE_RL07_ENVELOPE_BYTES_MAX)?;
+    over_trade_row(wire.len() > NPC_TRADE_RL07_ENVELOPE_BYTES_MAX, || {
+        decode_npc_trade_envelope_within(wire)
+    })
+}
+
+fn decode_npc_trade_envelope_within(
+    wire: &[u8],
+) -> Result<(EventEnvelopeV1, OneItemNpcTradeV1), AuditError> {
+    let value = mint::decode_common_envelope_within(wire, SELL_ALL_RL07_ENVELOPE_BYTES_MAX)?;
     let trade = decode_npc_trade_payload(&value.payload)?;
+    if wire.len() > rl07_bounds(trade.sell_all).1 {
+        return Err(AuditError::CapacityExceeded);
+    }
     let tuple = Type2EventTuple::of(value.event_schema_revision, &value.retention_profile_id)
         .ok_or(AuditError::InvalidInput)?;
     if tuple == Type2EventTuple::V1 && trade.bank_debit.is_some() {
@@ -496,12 +604,13 @@ pub fn encode_npc_trade_event(
         return Err(AuditError::InvalidInput);
     }
     let (world_id, channel_id) = (trade.world_id.clone(), trade.channel_id.clone());
+    let (payload_max, envelope_max) = rl07_bounds(trade.sell_all);
     let payload = encode_bounded(
         &OneItemTransactionV1 {
             interpretation_revision: mint::INTERPRETATION_REVISION,
             operation: Some(OneItemOperationV1::NpcTrade(trade)),
         },
-        NPC_TRADE_RL07_PAYLOAD_BYTES_MAX,
+        payload_max,
     )?;
     let envelope = EventEnvelopeV1 {
         envelope_revision: mint::ENVELOPE_REVISION,
@@ -524,7 +633,7 @@ pub fn encode_npc_trade_event(
         payload,
         ..EventEnvelopeV1::default()
     };
-    let wire = encode_bounded(&envelope, NPC_TRADE_RL07_ENVELOPE_BYTES_MAX)?;
+    let wire = encode_bounded(&envelope, envelope_max)?;
     let (decoded, _) = decode_npc_trade_envelope(&wire)?;
     if decoded != envelope {
         return Err(AuditError::InvalidInput);

@@ -1,0 +1,19 @@
+{
+  "id": "SELLALL1-RL-01",
+  "owner_contract": "protocol-oteryn/v1/npc_shop_v1.proto",
+  "resource": "Item stacks one NPC sell-all sells",
+  "unit": "stacks per command",
+  "hard_maximum": 20,
+  "configurable_range": {
+    "minimum": 20,
+    "maximum": 20
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The backpack entry ceiling (GAMEITEM01_CONTAINER_ENTRIES_MAX); checked in the plan before any write.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=20 whole stacks admitted",
+    "a 21st burn line rejected (CAPACITY_EXCEEDED)"
+  ],
+  "notes": "Canary npc.cpp sellAllLoot sells every matching item in the backpack; Oteryn bounds it by the backpack entries."
+}
