@@ -11,7 +11,7 @@ use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
 use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget, encode_item_use_intent};
 
 #[test]
-fn reward_bag_use_wire_atomic_replay_and_capacity_refusal() -> TestResult {
+fn primal_bag_use_wire_atomic_replay_and_capacity_refusal() -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
@@ -130,7 +130,7 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        let covet = "oteryn:item.tibia.i43895";
+        let covet = "oteryn:item.tibia.i39546";
         super::item_look::seed_main_backpack(&harness, &[(covet, 1)]).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -163,7 +163,7 @@ fn scenario() -> TestResult {
         let (recipe, outputs, hash_matches): (String, serde_json::Value, bool) = sqlx::query_as(
             "SELECT r.recipe,r.outputs,a.envelope_sha256=sha256(a.envelope) AND a.envelope_sha256=r.envelope_sha256 FROM game_item_craft_records r JOIN game_item_audit_outbox a USING(event_id)",
         ).fetch_one(&harness.pool).await?;
-        assert_eq!(recipe, "oteryn:reward-bag.bag_you_covet");
+        assert_eq!(recipe, "oteryn:reward-bag.primal_bag");
         assert_eq!(outputs[0]["key"], reward.as_str());
         assert!(hash_matches);
         // Over capacity: a second bag stays carried and nothing is minted or recorded.

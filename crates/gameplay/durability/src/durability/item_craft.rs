@@ -165,8 +165,7 @@ async fn write<C: ItemLoopContent>(
         let Some(weight) = facts.weight else {
             return Ok(UseDisposition::NotPossible);
         };
-        if facts.container_capacity.is_some()
-            || *count
+        if *count
                 > stack_maximum(facts.stack)
                     .map(|(maximum, _)| maximum)
                     .unwrap_or(0)

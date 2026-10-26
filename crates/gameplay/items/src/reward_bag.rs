@@ -113,11 +113,27 @@ mod tests {
     }
 
     #[test]
-    fn overlay_admits_only_the_covet_bag_with_canary_weights() {
+    fn overlay_admits_primal_and_covet_bags_with_canary_weights() {
         let bags = reward_bags().expect("overlay parses");
         let playable: Vec<_> = bags.iter().filter(|b| b.playable).collect();
-        assert_eq!(playable.len(), 1);
-        let covet = playable[0];
+        assert_eq!(playable.len(), 2);
+        let primal = playable
+            .iter()
+            .find(|bag| bag.constant == "PRIMAL_BAG")
+            .expect("primal bag");
+        assert_eq!(primal.bag, "oteryn:item.tibia.i39546");
+        assert_eq!(primal.rewards.len(), 14);
+        assert_eq!(primal.rewards.iter().map(|r| r.weight).sum::<u64>(), 54_000);
+        assert!(
+            primal
+                .rewards
+                .iter()
+                .any(|reward| reward.item == "oteryn:item.tibia.i39150")
+        );
+        let covet = playable
+            .iter()
+            .find(|bag| bag.constant == "BAG_YOU_COVET")
+            .expect("covet bag");
         assert_eq!(
             (covet.constant.as_str(), covet.bag.as_str()),
             ("BAG_YOU_COVET", "oteryn:item.tibia.i43895")

@@ -95,11 +95,11 @@ def capture(canary, crystal):
             record['semantics']['skill_modifiers'] = source.K({
                 'modifiers': source.K(sorted(modifiers, key=lambda m: m['kind']))})
 
-    def leaf(i):
-        # The CRAFT-1 owner mints exactly one non-stackable, non-container leaf per Use.
+    def portable_reward(i):
+        # The CRAFT-1 owner mints exactly one non-stackable carried item per Use. Empty
+        # containers are valid rewards too (the Primal Bag's alicorn quiver is one).
         record = profiles[i]
         return (record['admission']['stack_class'] == 'NonStackable'
-                and record['semantics']['container'] == source.NA
                 and 'CharacterInventory' in record['admission']['legal_destinations'])
 
     bags = []
@@ -118,7 +118,7 @@ def capture(canary, crystal):
             rewards.append({'item': key(row['id']), 'name': row['name'], 'weight': int(weight)})
         reason = EXCLUDED.get(name)
         if reason is None:
-            blocked = [r['id'] for r in rows if not leaf(r['id'])]
+            blocked = [r['id'] for r in rows if not portable_reward(r['id'])]
             if blocked:
                 reason = 'NON_LEAF_REWARD:' + ','.join(map(str, blocked))
         if reason is None:
