@@ -281,7 +281,10 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
     check_uuid_v7(&value.expected_game_session_id)?;
     if !matches!(
         cause.kind,
-        ITEM_USE_CAUSE_FOOD | ITEM_USE_CAUSE_POTION | super::item_use::mining::PICK_REFINE_CAUSE
+        ITEM_USE_CAUSE_FOOD
+            | ITEM_USE_CAUSE_POTION
+            | super::item_use::mining::PICK_REFINE_CAUSE
+            | super::item_use::mount_taming::TAMING_CAUSE
     ) || command.command_id == 0
         || command.game_session_id != value.expected_game_session_id
         || value.expected_session_generation == 0
@@ -308,9 +311,13 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
         return Err(AuditError::InvalidInput);
     }
     let shape = match (cause.kind, value.flask.as_ref(), value.flask_missing) {
-        (ITEM_USE_CAUSE_FOOD, None, false) | (ITEM_USE_CAUSE_POTION, None, false) => {
-            ItemUseShape::Burn
-        }
+        (
+            ITEM_USE_CAUSE_FOOD
+            | ITEM_USE_CAUSE_POTION
+            | super::item_use::mount_taming::TAMING_CAUSE,
+            None,
+            false,
+        ) => ItemUseShape::Burn,
         (ITEM_USE_CAUSE_POTION, None, true) => ItemUseShape::BurnFlaskMissing,
         (
             ITEM_USE_CAUSE_POTION | super::item_use::mining::PICK_REFINE_CAUSE,
@@ -752,6 +759,19 @@ mod tests {
             let flask = self.flask.as_mut().unwrap();
             flask.entry.as_mut().unwrap().placement_ordinal = u64::MAX - 1;
         }
+    }
+
+    #[test]
+    fn mount_taming_is_an_audited_one_unit_burn_without_a_flask() {
+        let mut value = burn();
+        value.cause.as_mut().unwrap().kind = super::super::item_use::mount_taming::TAMING_CAUSE;
+        assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
+        value.flask = flask_new().flask;
+        assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+        value.flask = None;
+        value.source_after.as_mut().unwrap().quantity =
+            value.source_before.as_ref().unwrap().quantity;
+        assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
     }
 
     #[test]

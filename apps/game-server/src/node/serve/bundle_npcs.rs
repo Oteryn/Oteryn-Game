@@ -292,6 +292,7 @@ mod tests {
         };
         use oteryn_world_bundle_compiler::sector::{Attrs, Item, Tile};
         let manifest = Manifest {
+            subareas: Default::default(),
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,
             projection_class: "server".into(),

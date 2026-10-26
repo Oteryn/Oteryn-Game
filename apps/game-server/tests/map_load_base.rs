@@ -223,7 +223,7 @@ fn pins(compiled: &Compiled, production: bool) -> BundlePins {
 fn resealed(mut bytes: Vec<u8>) -> (Vec<u8>, [u8; 32]) {
     let body = bytes.len() - 32;
     let digest: [u8; 32] = Sha256::new()
-        .chain_update(b"OTERYN_WORLD_BUNDLE/v4\0")
+        .chain_update(b"OTERYN_WORLD_BUNDLE/v5\0")
         .chain_update(&bytes[..body])
         .finalize()
         .into();
@@ -252,7 +252,7 @@ fn assemble(
     let npc_frame = compress(&npc_raw)?;
     let u32_of = |value: usize| (value as u32).to_le_bytes();
     let mut out = b"OTWB".to_vec();
-    out.extend_from_slice(&4u16.to_le_bytes());
+    out.extend_from_slice(&bundle::VERSION.to_le_bytes());
     out.extend_from_slice(&[0, 0]);
     out.extend_from_slice(&u32_of(json.len()));
     out.extend_from_slice(&u32_of(sectors.len()));
