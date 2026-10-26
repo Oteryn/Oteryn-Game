@@ -3,6 +3,8 @@ use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::content::native_gameplay::test_support::activated_with_loot_tables;
 use crate::content::{NpcDataCatalogue, npc_catalogue_preproduction_limits};
+use crate::durability::character_progression::CharacterProgressionError;
+use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::foundation::{
     ChannelContentPin, MovementFacing, NpcPlacement, NpcPlacementTable, NpcPlacements,
 };
@@ -284,20 +286,29 @@ fn scenario() -> TestResult {
             .await
             .map_err(|_| "fence")?
             .ok_or("session")?;
-        let failed = owner
-            .npc_talk(
-                dependencies.actor,
-                UseCommand {
-                    game_session_id: session,
-                    command_id: 8,
-                    item_fence: Some(current.item_fence()),
-                },
-                NpcTalkIntent {
-                    npc_actor: npc,
-                    text: "yes".into(),
-                },
-            )
-            .await;
+        // A confirmation must wait for the Character slot without holding the runtime lock.
+        let held_slot = owner.revision_sequencer.acquire(current.character_id).await;
+        let mut confirmation = Box::pin(owner.npc_talk(
+            dependencies.actor,
+            UseCommand {
+                game_session_id: session,
+                command_id: 8,
+                item_fence: Some(current.item_fence()),
+            },
+            NpcTalkIntent {
+                npc_actor: npc,
+                text: "yes".into(),
+            },
+        ));
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(100), &mut confirmation)
+                .await
+                .is_err(),
+            "travel bypassed the occupied Character revision slot"
+        );
+        assert!(dependencies.runtime.try_lock().is_ok());
+        drop(held_slot);
+        let failed = confirmation.await;
         assert!(failed.unknown, "{}", line(&failed));
         assert!(owner.states.newhaven_travel.held(session));
         assert_eq!(bank(&h).await?, 200);
@@ -319,15 +330,65 @@ fn scenario() -> TestResult {
                 _ => return Err("paid request".into()),
             }
         };
+        let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
+        assert_eq!(
+            slot.cursor(&h.root, &authority).await.map_err(debug)?,
+            current.expected_character_revision
+        );
+        // Model another owner advancing the root after this slot cached its revision.
+        let competing = CharacterRevisionSequencer::new();
+        let successor = competing
+            .acquire(current.character_id)
+            .await
+            .commit_experience(&h.root, &authority, &h.node, current, xp_request()?, None)
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            successor,
+            crate::durability::character_progression::ExperienceCommitOutcome::Committed(_)
+        ));
+        assert!(matches!(
+            slot.commit_npc_travel(
+                &h.root,
+                &authority,
+                &h.node,
+                current,
+                request.clone(),
+                &coordinator
+            )
+            .await,
+            Err(CharacterProgressionError::CharacterRevisionMismatch)
+        ));
+        assert_eq!(bank(&h).await?, 200);
+        assert_eq!(fees(&h).await?, 0);
+        let untouched: (i64, i64) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_newhaven_travel_receipts), \
+                    (SELECT count(*) FROM game_character_pending_arrivals)",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(untouched, (0, 0));
+        assert_eq!(
+            slot.cursor(&h.root, &authority).await.map_err(debug)?.get(),
+            current.expected_character_revision.get() + 1,
+            "a refused stale revision must invalidate the cached cursor"
+        );
         // Simulate COMMIT acknowledged by PostgreSQL but lost to the connection.
         assert!(
-            h.root
-                .commit_npc_travel(&authority, &h.node, current, request.clone(), &coordinator)
-                .await
-                .map_err(debug)?
-                .map_err(debug)?
-                .is_some()
+            slot.commit_npc_travel(
+                &h.root,
+                &authority,
+                &h.node,
+                current,
+                request.clone(),
+                &coordinator
+            )
+            .await
+            .map_err(debug)?
+            .map_err(debug)?
+            .is_some()
         );
+        drop(slot);
         assert_eq!(bank(&h).await?, 80);
         assert_eq!(fees(&h).await?, 1);
         let resumed = owner
@@ -361,8 +422,18 @@ fn scenario() -> TestResult {
                 .await?;
         assert_eq!(pending, 0);
         assert_eq!(
-            h.root
-                .commit_npc_travel(&authority, &h.node, current, request.clone(), &coordinator)
+            owner
+                .revision_sequencer
+                .acquire(current.character_id)
+                .await
+                .commit_npc_travel(
+                    &h.root,
+                    &authority,
+                    &h.node,
+                    current,
+                    request.clone(),
+                    &coordinator
+                )
                 .await
                 .map_err(debug)?
                 .map_err(debug)?,
@@ -376,8 +447,11 @@ fn scenario() -> TestResult {
             crate::foundation::ConnectionGeneration::new(current.connection_generation.get() + 1)
                 .map_err(debug)?;
         assert!(
-            h.root
-                .commit_npc_travel(&authority, &h.node, stale, request, &coordinator)
+            owner
+                .revision_sequencer
+                .acquire(stale.character_id)
+                .await
+                .commit_npc_travel(&h.root, &authority, &h.node, stale, request, &coordinator)
                 .await
                 .is_err()
         );
@@ -474,6 +548,52 @@ fn scenario() -> TestResult {
         drop(authority);
         drop(seal);
         h.cleanup().await
+    })
+}
+
+fn xp_request() -> TestResult<crate::durability::character_progression::ExperienceAwardRequest<2>> {
+    use crate::domain::progression::{
+        FiniteProgressionPolicy, LevelThreshold, ProgressionRevisionContext,
+    };
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceRewardOccurrence,
+    };
+    use oteryn_simulation_determinism::{ExactI64, RoundingMode};
+    let context = ProgressionRevisionContext {
+        profile: "profile-1".into(),
+        ruleset: "ruleset-1".into(),
+        content: "content-1".into(),
+        simulation: "simulation-1".into(),
+        evidence: "evidence-1".into(),
+        declaration: "declaration-1".into(),
+    };
+    Ok(ExperienceAwardRequest {
+        occurrence: ExperienceRewardOccurrence::from_bytes(id(89)).map_err(debug)?,
+        amount: ExactI64::new(5),
+        context: context.clone(),
+        policy_revision: "policy-1".into(),
+        reward_revision: "reward-1".into(),
+        policy: FiniteProgressionPolicy {
+            context,
+            policy_revision: "policy-1".into(),
+            reward_revision: "reward-1".into(),
+            death_policy_revision: "death-1".into(),
+            declared_difference_revision: "declaration-1".into(),
+            thresholds: [
+                LevelThreshold {
+                    level: 50,
+                    minimum_experience: ExactI64::new(1000),
+                },
+                LevelThreshold {
+                    level: 51,
+                    minimum_experience: ExactI64::new(1100),
+                },
+            ],
+            terminal_exclusive_experience: ExactI64::new(1200),
+            death_loss_numerator: 1,
+            death_loss_denominator: 10,
+            death_loss_rounding: RoundingMode::Floor,
+        },
     })
 }
 

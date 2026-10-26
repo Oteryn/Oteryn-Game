@@ -130,7 +130,7 @@ impl DurabilityRoot {
             .await?
     }
 
-    pub async fn commit_npc_travel<G: NpcTravelGate>(
+    pub(in crate::durability) async fn commit_npc_travel<G: NpcTravelGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,

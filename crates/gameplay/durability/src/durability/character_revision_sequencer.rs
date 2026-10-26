@@ -30,6 +30,7 @@ use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
 mod cyclopedia;
 mod death_promotion;
 mod npc_purchase;
+mod npc_travel;
 #[cfg(test)]
 mod writer_registration_tests;
 

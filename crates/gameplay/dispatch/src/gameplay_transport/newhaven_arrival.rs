@@ -104,15 +104,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .await
                     .map(Ok),
                 newhaven_travel::Departure::Paid(request) => {
-                    self.root
-                        .commit_npc_travel(
-                            self.character,
-                            self.holder,
-                            fence,
-                            *request,
-                            &self.premium_coordinator,
-                        )
-                        .await
+                    let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+                    slot.commit_npc_travel(
+                        self.root,
+                        self.character,
+                        self.holder,
+                        fence,
+                        *request,
+                        &self.premium_coordinator,
+                    )
+                    .await
                 }
             };
             let mut holds = self.states.newhaven_travel.holds.lock().ok()?;
