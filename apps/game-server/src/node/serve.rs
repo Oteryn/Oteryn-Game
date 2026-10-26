@@ -2586,6 +2586,7 @@ async fn boot_and_serve(
     // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
     let premium_reads = production_premium_reads(root);
     let owners = GameplaySeamOwners {
+        gameplay_idle_policy: config.gameplay_idle,
         emit,
         root,
         character: &authority,

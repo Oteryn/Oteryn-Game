@@ -5,6 +5,8 @@
 pub(super) mod appearance_change;
 mod authority;
 pub use authority::FreshAdmissionAuthority;
+mod gameplay_idle;
+pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
 mod moved_step;
 mod routing;
 mod serve;
@@ -216,6 +218,8 @@ pub struct AdmittedSession {
 /// with, on a strictly newer connection generation (FND-04B §16).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SessionContinuity {
+    /// IDLEKICK: transport traffic and same-session reconnects are not gameplay input.
+    pub gameplay_idle: GameplayIdleState,
     pub connection_generation: u64,
     pub next_command_id: u64,
     pub server_sequence: u64,
@@ -280,6 +284,7 @@ impl SessionContinuity {
     /// baseline spatial revision 1, and no overlay observed yet (0, the door's own initial
     /// revision).
     pub const FRESH: Self = Self {
+        gameplay_idle: GameplayIdleState::FRESH,
         connection_generation: ADMITTED_GENERATION,
         next_command_id: 1,
         server_sequence: 0,

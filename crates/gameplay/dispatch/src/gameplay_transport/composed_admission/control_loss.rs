@@ -25,6 +25,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         actor: ExactActorRef,
         hold: &mut FenceHold,
+        logout: bool,
     ) -> FenceStep {
         if self.states.player_trades.transitioning(hold.session)
             && self.spell_lane_permit().await.is_none()
@@ -32,6 +33,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return FenceStep::Wait;
         }
         let mut runtime = self.runtime.lock().await;
+        // IDLEKICK: the tile can change after the idle/fight observation or while actor-end
+        // settlement waits on I/O. Recheck atomically with installing the real write fence,
+        // rather than merely minting its token. Unknown tiles also authorize no logout.
+        if logout && self.no_logout_tile(&mut runtime, actor) != Some(false) {
+            return FenceStep::Wait;
+        }
         if self.states.player_trades.transitioning(hold.session) {
             return FenceStep::Wait;
         }

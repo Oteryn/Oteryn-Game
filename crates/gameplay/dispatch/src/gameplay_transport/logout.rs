@@ -46,6 +46,27 @@ pub(super) fn in_fight_logout_retry(
     pve_in_fight_until_micros.map(|until| in_fight_retry_after_ms(until, now_micros))
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Retained NOLOGOUT bit 3 at the current runtime position. Entry-room fixtures have
+    /// no authored NOLOGOUT tiles; production bundle facts are read without spell gating.
+    pub(super) fn no_logout_tile(
+        &self,
+        runtime: &mut crate::foundation::ChannelRuntimeV1,
+        actor: ExactActorRef,
+    ) -> Option<bool> {
+        match self.movement_cells.index() {
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_) => {
+                let at = super::bundle_map_position(runtime, self.movement_cells, actor)?;
+                let tile = at.map.overlay.base().tile(
+                    u16::try_from(at.at.x).ok()?,
+                    u16::try_from(at.at.y).ok()?,
+                    i8::try_from(at.at.floor).ok()?,
+                )?;
+                Some(tile.no_logout())
+            }
+            _ => Some(false),
+        }
+    }
+
     /// §1.6: one `LOGOUT_INTENT` of the admitted session. A pending durable spell commit is
     /// `BUSY`, a running in-fight deadline is `IN_FIGHT`; otherwise the session ends at once in a
     /// `TerminalRelease::Logout`, with no grace period. Neither refusal changes the session or

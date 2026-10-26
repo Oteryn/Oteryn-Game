@@ -42,7 +42,10 @@ pub async fn serve_gameplay(
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
         clock_origin: std::time::Instant::now(),
-        states: channel_states::ChannelSessionStates::default(),
+        states: channel_states::ChannelSessionStates {
+            gameplay_idle_policy: owners.gameplay_idle_policy,
+            ..Default::default()
+        },
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new(),
         quest_catalogue: Some(std::sync::Arc::clone(owners.quest_catalogue)),

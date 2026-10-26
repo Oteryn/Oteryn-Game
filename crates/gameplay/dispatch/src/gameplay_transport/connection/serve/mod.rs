@@ -5,6 +5,7 @@ use super::*;
 mod autowalk;
 mod command;
 mod creature_push;
+mod idle;
 mod inbound;
 mod player_trade;
 mod poll;

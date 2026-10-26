@@ -8,6 +8,22 @@ mod composed;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     mechanic_authority_methods!();
+    fn gameplay_idle_policy(&self) -> super::GameplayIdlePolicy {
+        super::GameplayIdlePolicy::default()
+    }
+
+    /// Server clock; deterministic transport qualification may supply a controlled clock.
+    fn gameplay_idle_now(&self) -> tokio::time::Instant {
+        tokio::time::Instant::now()
+    }
+
+    /// `(training, no_logout_tile)` from the existing owners. Unknown facts fail closed.
+    fn gameplay_idle_exemptions(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<(bool, bool)>> {
+        async { Some((false, false)) }
+    }
     /// PREMCHAN: the bounded list of Game Channels served by this owner. This node currently
     /// serves exactly one Channel. No routing or admission authority is granted by the list.
     fn channel_list(&self) -> Option<Vec<u8>> {

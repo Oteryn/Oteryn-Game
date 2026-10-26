@@ -44,9 +44,15 @@ fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dy
         };
         // The ended session carries the FND-02 continuity a same-session recovery
         // resumes from: next CommandId 4, server_sequence 4, spatial revision 2.
+        assert_ne!(
+            ended.continuity.gameplay_idle,
+            SessionContinuity::FRESH.gameplay_idle,
+            "received movement initializes gameplay activity"
+        );
         assert_eq!(
             ended.continuity,
             SessionContinuity {
+                gameplay_idle: ended.continuity.gameplay_idle,
                 connection_generation: 1,
                 next_command_id: 4,
                 server_sequence: 4,

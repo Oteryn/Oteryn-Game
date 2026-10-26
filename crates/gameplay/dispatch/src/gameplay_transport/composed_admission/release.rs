@@ -104,7 +104,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !self.stop_timed_actor(actor, session).await {
             return ReleaseAttempt::Retry;
         }
-        match self.fence_transition(actor, hold).await {
+        match self
+            .fence_transition(actor, hold, matches!(release, TerminalRelease::Logout(_)))
+            .await
+        {
             FenceStep::Fenced => {}
             FenceStep::Wait => return ReleaseAttempt::Retry,
             FenceStep::Refused(_) => return ReleaseAttempt::Done(GraceExpiryResult::Unknown),
