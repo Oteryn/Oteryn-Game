@@ -25,6 +25,22 @@ pub trait FreshAdmissionAuthority {
     ) -> impl Future<Output = super::super::house_transfer::TransferResult> {
         async { Some((None, Vec::new())) }
     }
+    fn gameplay_idle_policy(&self) -> super::GameplayIdlePolicy {
+        super::GameplayIdlePolicy::default()
+    }
+
+    /// Server clock; deterministic transport qualification may supply a controlled clock.
+    fn gameplay_idle_now(&self) -> tokio::time::Instant {
+        tokio::time::Instant::now()
+    }
+
+    /// `(training, no_logout_tile)` from the existing owners. Unknown facts defer idle removal.
+    fn gameplay_idle_exemptions(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<(bool, bool)>> {
+        async { Some((false, false)) }
+    }
     /// PREMCHAN: the bounded list of Game Channels served by this owner. This node currently
     /// serves exactly one Channel. No routing or admission authority is granted by the list.
     fn channel_list(&self) -> Option<Vec<u8>> {
@@ -658,6 +674,14 @@ pub trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<ContainerObservation>> {
         async { None }
+    }
+
+    /// Current observer-relative icons. Unavailable facts produce no update.
+    fn observe_party_icons(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>> {
+        std::future::ready(None)
     }
 
     /// PARTY-1: basic session-fenced membership commands and own-state query.

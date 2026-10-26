@@ -92,6 +92,13 @@ where
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute) => {}
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
+    // Count a newly received action once, never its retained replay or delayed step.
+    let activity_at = authority.gameplay_idle_now();
+    let gameplay_activity = !buffered_original
+        && super::super::gameplay_idle::meaningful(
+            command,
+            session.selected_capabilities.as_slice(),
+        );
     // Unknown command types and malformed payloads have no effect. The result payload
     // belongs to the command type, so an unregistered type gets none. USE_INTENT (command
     // type 2, USE-WIRE-V1 #162 5868482467) is dispatched under the same FND-02 CommandId
@@ -200,6 +207,13 @@ where
     } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
         match route::step(authority, session, command, arrived_while_buffered).await {
             route::StepAction::Wait(due) => {
+                if gameplay_activity {
+                    session
+                        .admitted
+                        .continuity
+                        .gameplay_idle
+                        .activity(activity_at);
+                }
                 session.buffered = Some(BufferedStep { frame, due });
                 return Ok(());
             }
@@ -208,6 +222,22 @@ where
     } else {
         route::execute(stream, authority, session, command, &mut outcome).await?
     };
+    if let Dispatch::Training(result) = &dispatch
+        && matches!(result.disposition, 1 | 2)
+    {
+        session
+            .admitted
+            .continuity
+            .gameplay_idle
+            .training(activity_at, result.disposition == 1);
+    }
+    if gameplay_activity && input_permit.is_some() && !matches!(dispatch, Dispatch::Unregistered) {
+        session
+            .admitted
+            .continuity
+            .gameplay_idle
+            .activity(activity_at);
+    }
     let mut no_path = false;
     if autowalk::too_far(&dispatch)
         && let Some(target) = walk_target

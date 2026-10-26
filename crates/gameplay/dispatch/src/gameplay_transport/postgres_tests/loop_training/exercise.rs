@@ -502,6 +502,16 @@ fn scenario() -> TestResult {
         .ok_or("known start")?;
         assert_eq!(result.disposition, 1, "{result:?}");
         assert_eq!(result.charges, 500);
+        assert_eq!(
+            owner.gameplay_idle_exemptions(admitted).await,
+            Some((true, false)),
+            "IDLEKICK reads the real exercise owner"
+        );
+        assert_eq!(
+            owner.gameplay_idle_exemptions(stale).await,
+            None,
+            "IDLEKICK does not accept a stale trainer fence"
+        );
         // An unavailable checkpoint must retain the run before the session is detached.
         let rates = owner.states.training.config.take();
         assert!(
@@ -546,6 +556,11 @@ fn scenario() -> TestResult {
         .ok_or("known stop")?;
         assert_eq!(result.disposition, 2);
         assert_eq!(result.charges, 499);
+        assert_eq!(
+            owner.gameplay_idle_exemptions(admitted).await,
+            Some((false, false)),
+            "IDLEKICK resumes after the real training stop"
+        );
         let stored:(i32,i64,i64)=sqlx::query_as("SELECT (SELECT charges FROM game_item_timed_states WHERE item_instance_id=encode($1,'hex')::uuid),(SELECT sword_tries FROM game_character_build_state),(SELECT count(*) FROM game_character_exercise_receipts)").bind(id(72).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(stored, (499, 7, 1));
         let occurrence:Vec<u8>=sqlx::query_scalar("SELECT uuid_send(build_occurrence_id) FROM game_character_exercise_receipts ORDER BY committed_character_revision LIMIT 1").fetch_one(&h.pool).await?;
