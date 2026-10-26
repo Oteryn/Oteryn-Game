@@ -116,6 +116,28 @@ fn the_boot_catalogue_carries_the_task_board_quest() -> TestResult {
 }
 
 #[test]
+fn hazard_boot_catalogue_carries_selection_and_qualification() -> TestResult {
+    use oteryn_gameplay_quests::quest::hazard;
+    let (catalogue, _) = boot_catalogue()?;
+    assert!(catalogue.definition_hash(hazard::QUEST).is_some());
+    for level in 1..=hazard::MAX_LEVEL {
+        assert!(
+            catalogue
+                .transition(&hazard::select_transition(level))
+                .is_some()
+        );
+        if level < hazard::MAX_LEVEL {
+            assert!(
+                catalogue
+                    .transition(&hazard::advance_transition(level))
+                    .is_some()
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn the_accepted_package_revision_is_no_quest_revision() {
     // §1.2 named `content::accepted::REVISIONS[0]`; its `/` is no valid quest or Character
     // revision, so boot binds the declared served revision instead (D634).

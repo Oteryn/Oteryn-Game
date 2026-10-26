@@ -80,12 +80,13 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
     )
     .expect("facts");
     PendingKillSettlement {
+        hazard: None,
         damage_shares: Vec::new(),
         activity_observed_at: None,
         activity_at_death: Some(Vec::new()),
         facts,
         creature: "fixture:rat".into(),
-        row: row(drops),
+        row: Some(row(drops)),
         ground: DeathGroundContext {
             map_revision: "map-1".into(),
             content_revision: "content-1".into(),

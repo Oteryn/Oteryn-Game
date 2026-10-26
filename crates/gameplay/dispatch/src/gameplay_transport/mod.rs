@@ -48,6 +48,7 @@ pub mod fresh_evidence;
 pub mod gameplay_drain;
 mod guild_bank;
 mod guild_chat;
+mod hazard;
 mod highscores;
 mod house_query;
 mod hunting_stamina;

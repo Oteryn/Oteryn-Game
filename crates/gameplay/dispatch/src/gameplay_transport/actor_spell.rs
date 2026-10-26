@@ -147,6 +147,8 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) deaths: Vec<(ExactActorRef, GameSessionId, PlayerDeath)>,
     pub(super) equipment_reflection_kills:
         Vec<(ExactActorRef, crate::combat::CapturedRewardPrincipal, u64)>,
+    pub(super) hazard_criticals: super::hazard::combat::Criticals,
+    pub(super) hazard_level: Option<(ExactActorRef, GameSessionId, u8)>,
     mint_death: fn() -> Option<PlayerDeathOccurrence>,
     source_secondary_memos: Vec<actor_conditions::NativeSecondaryMemo>,
     source_damage: Vec<NativeSourceMemo<crate::player_lethal::PlayerDamageReceipt>>,
@@ -284,6 +286,8 @@ impl Default for ChannelSpellStates {
             pvp_locks: Vec::new(),
             deaths: Vec::new(),
             equipment_reflection_kills: Vec::new(),
+            hazard_criticals: Default::default(),
+            hazard_level: None,
             mint_death: mint_player_death_occurrence,
             source_secondary_memos: Vec::new(),
             source_damage: Vec::new(),
@@ -1206,6 +1210,7 @@ pub mod tests;
 // Reconciled source consumers: the existing ChannelSpellStates remains the only vitals/death owner.
 #[derive(Debug)]
 struct NativeSourceMemo<T> {
+    source: Option<ExactActorRef>,
     actor: ExactActorRef,
     session: GameSessionId,
     occurrence: String,
@@ -1322,8 +1327,9 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         }
 
         if definitions.is_empty() {
-            return self.apply_attack_damage(
+            return self.apply_attack_damage_from(
                 runtime,
+                source,
                 target,
                 session,
                 magnitude,
@@ -1393,6 +1399,26 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             state.revision(),
         ))
     }
+    fn apply_attack_damage_from(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        self.source_attack_damage(
+            runtime,
+            Some(source),
+            target,
+            session,
+            magnitude,
+            occurrence,
+            now,
+        )
+    }
     fn apply_attack_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -1402,85 +1428,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         occurrence: &str,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
-        use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
-        if magnitude == 0
-            || runtime
-                .player_control_facts(target, session)
-                .ok()?
-                .control_loss
-                .is_some()
-        {
-            return None;
-        }
-        if self
-            .source_secondary_memos
-            .iter()
-            .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
-            && !self
-                .source_damage
-                .iter()
-                .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
-        {
-            return None;
-        }
-        let text = Self::source_occurrence_text(occurrence)?;
-        self.prune_source_memos(runtime);
-        let old = self
-            .source_damage
-            .iter()
-            .position(|m| m.actor == target && m.session == session);
-        if let Some(i) = old {
-            let m = &self.source_damage[i];
-            if m.occurrence == occurrence {
-                return (m.magnitude == magnitude).then_some(m.receipt);
-            }
-        }
-        if self.is_dead(target) {
-            return None;
-        }
-        // Position/allocation failures precede native HP. Existing native owner rechecks position,
-        // reserves and mints its one PlayerDeathOccurrence before its own compare-commit.
-        let position = runtime.read_actor_position(target).ok()?.position();
-        if old.is_none() {
-            self.source_damage.try_reserve(1).ok()?;
-        }
-        let hit = CreatureBiteVitals::apply_creature_damage(
-            self, runtime, target, session, magnitude, now,
-        )?;
-        // Source-attack callers are monster attacks (including native monster spells).
-        // Replayed occurrences returned above do not renew the hunting clock.
-        if hit.damage.applied > 0 {
-            self.hunting_activity(runtime, target, session, now.get());
-        }
-        let death = hit.death.map(|bytes| {
-            PlayerLethalReceipt::from_native_commit(
-                runtime,
-                target,
-                session,
-                hit.vitals_revision,
-                bytes,
-                position,
-            )
-        });
-        let receipt = PlayerDamageReceipt {
-            applied: hit.damage.applied,
-            health_after: hit.damage.health_after,
-            vitals_revision: hit.vitals_revision,
-            death,
-        };
-        let memo = NativeSourceMemo {
-            actor: target,
-            session,
-            occurrence: text,
-            magnitude,
-            receipt,
-        };
-        if let Some(i) = old {
-            self.source_damage[i] = memo
-        } else {
-            self.source_damage.push(memo)
-        }
-        Some(receipt)
+        self.source_attack_damage(runtime, None, target, session, magnitude, occurrence, now)
     }
     fn apply_source_player_heal(
         &mut self,
@@ -1531,6 +1479,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             vitals_revision,
         };
         let memo = NativeSourceMemo {
+            source: None,
             actor: target,
             session,
             occurrence: text,
@@ -1544,6 +1493,27 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         }
         Some(receipt)
     }
+    #[allow(clippy::too_many_arguments)]
+    fn apply_attack_mana_drain_from(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<crate::player_lethal::PlayerManaDrainReceipt> {
+        self.source_attack_mana_drain(
+            runtime,
+            Some(source),
+            target,
+            session,
+            magnitude,
+            occurrence,
+            now,
+        )
+    }
     fn apply_attack_mana_drain(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -1553,69 +1523,7 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         occurrence: &str,
         now: crate::foundation::owner_timer::SemanticTimeMicros,
     ) -> Option<crate::player_lethal::PlayerManaDrainReceipt> {
-        use crate::player_lethal::PlayerManaDrainReceipt;
-        if self.has_pending_spell_commit(target, session)
-            || runtime.assert_actor_spell_unreserved(target).is_err()
-        {
-            return None;
-        }
-        if magnitude == 0
-            || self.is_dead(target)
-            || runtime
-                .player_control_facts(target, session)
-                .ok()?
-                .control_loss
-                .is_some()
-        {
-            return None;
-        }
-        if !self
-            .get(runtime, target, session)?
-            .owned_conditions()
-            .accepts_time(now.get())
-        {
-            return None;
-        }
-        let text = Self::source_occurrence_text(occurrence)?;
-        self.prune_source_memos(runtime);
-        let old = self
-            .source_mana
-            .iter()
-            .position(|m| m.actor == target && m.session == session);
-        if let Some(i) = old {
-            let m = &self.source_mana[i];
-            if m.occurrence == occurrence {
-                return (m.magnitude == magnitude).then_some(m.receipt);
-            }
-        }
-        let current = self.get(runtime, target, session)?;
-        let mana_before = current.vitals().mana;
-        let (next, applied) = current.after_creature_mana_drain(magnitude)?;
-        let receipt = PlayerManaDrainReceipt {
-            applied,
-            mana_before,
-            mana_after: next.vitals().mana,
-            vitals_revision: next.revision(),
-        };
-        if old.is_none() {
-            self.source_mana.try_reserve(1).ok()?;
-        }
-        if applied > 0 && !self.commit(runtime, target, session, next) {
-            return None;
-        }
-        let memo = NativeSourceMemo {
-            actor: target,
-            session,
-            occurrence: text,
-            magnitude,
-            receipt,
-        };
-        if let Some(i) = old {
-            self.source_mana[i] = memo
-        } else {
-            self.source_mana.push(memo)
-        }
-        Some(receipt)
+        self.source_attack_mana_drain(runtime, None, target, session, magnitude, occurrence, now)
     }
 }
 
@@ -1652,13 +1560,14 @@ impl ChannelSpellStates {
         {
             return None;
         }
-        let before = self.get(runtime, target, session)?;
+        let before = self.get(runtime, target, session)?.clone();
         if before.vitals().health == 0 || !before.owned_conditions().accepts_time(now.get()) {
             return None;
         }
         let mut next = before.clone();
         let ticks = next.source_take_due(now.get(), facts);
         let mut damage = 0u32;
+        let mut critical = false;
         for tick in &ticks {
             if next.vitals().health == 0 {
                 break;
@@ -1678,6 +1587,16 @@ impl ChannelSpellStates {
                     {
                         return None;
                     }
+                    let (amount, is_critical) = self.hazard_condition_damage(
+                        runtime,
+                        tick.provenance.source.as_deref()?,
+                        target,
+                        session,
+                        amount,
+                        now.get(),
+                        critical,
+                    )?;
+                    critical |= is_critical;
                     let (successor, hit) = crate::spell::actor_conditions::stage_creature_hit(
                         &next,
                         amount,
@@ -1719,6 +1638,16 @@ impl ChannelSpellStates {
                         {
                             return None;
                         }
+                        let (amount, is_critical) = self.hazard_condition_damage(
+                            runtime,
+                            tick.provenance.source.as_deref()?,
+                            target,
+                            session,
+                            amount,
+                            now.get(),
+                            critical,
+                        )?;
+                        critical |= is_critical;
                         let (successor, hit) = crate::spell::actor_conditions::stage_agony_hit(
                             &next,
                             amount,
@@ -1731,7 +1660,7 @@ impl ChannelSpellStates {
                 }
             }
         }
-        let changed = next != *before;
+        let changed = next != before;
         let revision = if changed {
             before.revision().checked_add(1)?
         } else {
@@ -1750,6 +1679,9 @@ impl ChannelSpellStates {
         };
         if changed && !self.commit(runtime, target, session, next) {
             return None;
+        }
+        if critical {
+            self.hazard_criticals.record(target, session, now.get());
         }
         if let Some(death) = death {
             self.deaths.push((target, session, death));
@@ -1790,14 +1722,7 @@ impl ChannelSpellStates {
         let Some(before) = self.get(runtime, target, session) else {
             return false;
         };
-        let source = format!(
-            "creature:{}",
-            caster
-                .placement_identity()
-                .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>()
-        );
+        let source = Self::hazard_condition_label(runtime, caster);
         let Some(next) = before.stage_source_player_conditions(source, definitions, &[], facts)
         else {
             return false;
@@ -2001,5 +1926,189 @@ impl ChannelSpellStates {
             ));
         }
         Ok(result)
+    }
+}
+
+impl ChannelSpellStates {
+    // Canary's pinned game.cpp combatChangeMana does not invoke the hazard health
+    // parser. Keep direct MP loss unscaled and do not draw/renew a hazard critical.
+    // This fallback behavior is not verified against Global.
+    #[allow(clippy::too_many_arguments)]
+    fn source_attack_mana_drain(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: Option<ExactActorRef>,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<crate::player_lethal::PlayerManaDrainReceipt> {
+        use crate::player_lethal::PlayerManaDrainReceipt;
+        if self.has_pending_spell_commit(target, session)
+            || runtime.assert_actor_spell_unreserved(target).is_err()
+        {
+            return None;
+        }
+        if magnitude == 0
+            || self.is_dead(target)
+            || runtime
+                .player_control_facts(target, session)
+                .ok()?
+                .control_loss
+                .is_some()
+        {
+            return None;
+        }
+        if !self
+            .get(runtime, target, session)?
+            .owned_conditions()
+            .accepts_time(now.get())
+        {
+            return None;
+        }
+        let text = Self::source_occurrence_text(occurrence)?;
+        self.prune_source_memos(runtime);
+        let old = self
+            .source_mana
+            .iter()
+            .position(|m| m.actor == target && m.session == session);
+        if let Some(i) = old {
+            let m = &self.source_mana[i];
+            if m.occurrence == occurrence {
+                return (m.magnitude == magnitude && m.source == source).then_some(m.receipt);
+            }
+        }
+        let current = self.get(runtime, target, session)?;
+        let mana_before = current.vitals().mana;
+        let (next, applied) = current.after_creature_mana_drain(magnitude)?;
+        let receipt = PlayerManaDrainReceipt {
+            applied,
+            mana_before,
+            mana_after: next.vitals().mana,
+            vitals_revision: next.revision(),
+        };
+        if old.is_none() {
+            self.source_mana.try_reserve(1).ok()?;
+        }
+        if applied > 0 && !self.commit(runtime, target, session, next) {
+            return None;
+        }
+        let memo = NativeSourceMemo {
+            source,
+            actor: target,
+            session,
+            occurrence: text,
+            magnitude,
+            receipt,
+        };
+        if let Some(i) = old {
+            self.source_mana[i] = memo
+        } else {
+            self.source_mana.push(memo)
+        }
+        Some(receipt)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn source_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: Option<ExactActorRef>,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        use crate::player_lethal::{PlayerDamageReceipt, PlayerLethalReceipt};
+        if magnitude == 0
+            || runtime
+                .player_control_facts(target, session)
+                .ok()?
+                .control_loss
+                .is_some()
+        {
+            return None;
+        }
+        if self
+            .source_secondary_memos
+            .iter()
+            .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
+            && !self
+                .source_damage
+                .iter()
+                .any(|m| m.actor == target && m.session == session && m.occurrence == occurrence)
+        {
+            return None;
+        }
+        let text = Self::source_occurrence_text(occurrence)?;
+        self.prune_source_memos(runtime);
+        let old = self
+            .source_damage
+            .iter()
+            .position(|m| m.actor == target && m.session == session);
+        if let Some(i) = old {
+            let m = &self.source_damage[i];
+            if m.occurrence == occurrence {
+                return (m.magnitude == magnitude && (source.is_none() || m.source == source))
+                    .then_some(m.receipt);
+            }
+        }
+        if self.is_dead(target) {
+            return None;
+        }
+        // Position/allocation failures precede native HP. Existing native owner rechecks position,
+        // reserves and mints its one PlayerDeathOccurrence before its own compare-commit.
+        let position = runtime.read_actor_position(target).ok()?.position();
+        if old.is_none() {
+            self.source_damage.try_reserve(1).ok()?;
+        }
+        let (damage, critical) = match source {
+            Some(source) => {
+                self.hazard_damage(runtime, source, target, session, magnitude, now.get())?
+            }
+            None => (magnitude, false),
+        };
+        let hit =
+            CreatureBiteVitals::apply_creature_damage(self, runtime, target, session, damage, now)?;
+        if critical {
+            self.hazard_criticals.record(target, session, now.get());
+        }
+        // Source-attack callers are monster attacks (including native monster spells).
+        // Replayed occurrences returned above do not renew the hunting clock.
+        if hit.damage.applied > 0 {
+            self.hunting_activity(runtime, target, session, now.get());
+        }
+        let death = hit.death.map(|bytes| {
+            PlayerLethalReceipt::from_native_commit(
+                runtime,
+                target,
+                session,
+                hit.vitals_revision,
+                bytes,
+                position,
+            )
+        });
+        let receipt = PlayerDamageReceipt {
+            applied: hit.damage.applied,
+            health_after: hit.damage.health_after,
+            vitals_revision: hit.vitals_revision,
+            death,
+        };
+        let memo = NativeSourceMemo {
+            source,
+            actor: target,
+            session,
+            occurrence: text,
+            magnitude,
+            receipt,
+        };
+        if let Some(i) = old {
+            self.source_damage[i] = memo
+        } else {
+            self.source_damage.push(memo)
+        }
+        Some(receipt)
     }
 }

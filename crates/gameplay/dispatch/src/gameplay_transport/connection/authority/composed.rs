@@ -156,6 +156,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: connection::UseCommand,
     ) -> Option<npc_command::NpcTalkOutcome> {
+        if let Some(outcome) = self.resume_hazard_talk(command).await {
+            return Some(outcome);
+        }
         npc_command::resume_npc_talk(self, actor, command).await
     }
 
@@ -165,7 +168,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::npc_service::NpcTalkIntent,
     ) -> npc_command::NpcTalkOutcome {
-        self.vocation_talk(actor, command, intent).await
+        self.hazard_talk(actor, command, intent).await
     }
 
     fn server_save_countdown(

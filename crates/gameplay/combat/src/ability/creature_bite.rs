@@ -169,6 +169,21 @@ pub enum BiteRejection {
 /// The Channel owner's vitals of its present player actors (SPELL-D2). The vitals owner
 /// implements it; a bite reaches the player's health only through this one method.
 pub trait CreatureBiteVitals {
+    /// Preserve the exact creature identity through the vitals adapter. Environmental damage
+    /// continues to use the unsourced sink; it cannot acquire monster-only modifiers.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_creature_damage_from(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        target: ExactActorRef,
+        target_session: GameSessionId,
+        magnitude: u32,
+        now: SemanticTimeMicros,
+    ) -> Option<CreatureHit> {
+        self.apply_creature_damage(runtime, target, target_session, magnitude, now)
+    }
+
     /// EQMOD2: the incoming source calls once after blocking and before HP/mana shield.
     /// The source stream's clock is strictly increasing; extension hits never enter here.
     #[allow(clippy::too_many_arguments)]
@@ -381,8 +396,9 @@ fn resolve_and_apply(
         return Err(BiteRejection::InvalidPlan);
     }
     let hit = vitals
-        .apply_creature_damage(
+        .apply_creature_damage_from(
             runtime,
+            intent.issuer,
             intent.target,
             intent.target_session,
             mitigated,

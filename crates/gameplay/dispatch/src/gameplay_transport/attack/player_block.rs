@@ -43,6 +43,7 @@ impl ChannelAttackStates {
 /// armor, with the block budget and fight mode of the attack states. A block trains shielding
 /// (SKILL-TRAIN-1) by `formula`; players whose tries reach a level go to `trained`.
 pub(in crate::gameplay_transport) struct PlayerBiteVitals<'a> {
+    pub(in crate::gameplay_transport) hazard: Option<(ExactActorRef, GameSessionId, u8)>,
     pub(in crate::gameplay_transport) states: &'a mut ChannelSpellStates,
     pub(in crate::gameplay_transport) attack: &'a mut ChannelAttackStates,
     pub(in crate::gameplay_transport) formula: Option<&'a CompiledTrainingFormula>,
@@ -50,6 +51,42 @@ pub(in crate::gameplay_transport) struct PlayerBiteVitals<'a> {
 }
 
 impl CreatureBiteVitals for PlayerBiteVitals<'_> {
+    fn apply_creature_damage_from(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        now: OwnerTime,
+    ) -> Option<CreatureHit> {
+        use crate::gameplay_transport::hazard::combat;
+        let level = if combat::eligible(runtime, source) {
+            let (actor, bound, level) = self.hazard?;
+            if actor != target || bound != session {
+                return None;
+            }
+            level
+        } else {
+            0
+        };
+        let ready = self
+            .states
+            .hazard_criticals
+            .ready(runtime, target, session, now.get());
+        let roll = combat::draw(runtime, source, target, now.get(), "hazard.critical")?;
+        let (damage, critical) = combat::incoming(magnitude, level, ready, roll)?;
+        let hit = self
+            .states
+            .apply_creature_damage(runtime, target, session, damage, now)?;
+        if critical {
+            self.states
+                .hazard_criticals
+                .record(target, session, now.get());
+        }
+        Some(hit)
+    }
+
     fn reflect_equipment_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,

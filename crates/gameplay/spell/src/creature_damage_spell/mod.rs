@@ -2060,7 +2060,15 @@ impl DamageSpellOwner {
             }
             if source.element.as_deref() == Some("mana_drain") {
                 let outcome = vitals
-                    .apply_attack_mana_drain(runtime, target, session, amount, &occurrence, now)
+                    .apply_attack_mana_drain_from(
+                        runtime,
+                        proposal.issuer,
+                        target,
+                        session,
+                        amount,
+                        &occurrence,
+                        now,
+                    )
                     .map(|mana| SpellTargetOutcome {
                         damage: None,
                         mana: Some(mana),
@@ -2071,7 +2079,15 @@ impl DamageSpellOwner {
                 continue;
             }
             let receipt = if source.conditions.is_empty() {
-                vitals.apply_attack_damage(runtime, target, session, amount, &occurrence, now)
+                vitals.apply_attack_damage_from(
+                    runtime,
+                    proposal.issuer,
+                    target,
+                    session,
+                    amount,
+                    &occurrence,
+                    now,
+                )
             } else {
                 let policy = facts
                     .condition_policy

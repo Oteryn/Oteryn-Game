@@ -16,6 +16,7 @@
 //!
 //! This module depends on `std` and `sha2` only, and [`loader`] on `serde` and `serde_json`.
 
+pub mod hazard;
 pub mod loader;
 pub mod log;
 pub mod task_board;

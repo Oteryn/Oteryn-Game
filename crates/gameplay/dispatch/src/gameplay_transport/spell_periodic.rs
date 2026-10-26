@@ -406,16 +406,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if runtime.borrow_movement_position().read(actor).ok()? != position {
             return None;
         }
-        states.tick_with_standing_read(
+        self.with_hazard_level(
+            &permit,
             &mut runtime,
-            self.movement_cells,
-            room,
-            source,
+            &mut states,
             actor,
             session,
-            now,
-            &read,
+            |runtime, states, _| {
+                states.tick_with_standing_read(
+                    runtime,
+                    self.movement_cells,
+                    room,
+                    source,
+                    actor,
+                    session,
+                    now,
+                    &read,
+                )
+            },
         )
+        .await
+        .flatten()
     }
 }
 

@@ -1759,6 +1759,91 @@ fn native_glyph_mana_drain_actual_mp_clamp_revision_no_hp_and_replay() {
     assert_eq!((revision, current.health, current.mana), (2, 185, 0));
 }
 #[test]
+fn native_glyph_mana_receipt_binds_exact_monster_and_original_request() {
+    let (mut r, mut v, mut s, p, mut w, f, stamp) = setup_named("an_astral_glyph", 3);
+    // Fix only the numerical request; retain the real native source, geometry,
+    // Combat admission and Channel MP owner used by the scheduling consumer.
+    s.minimum = 40;
+    s.maximum = 40;
+    let now = SemanticTimeMicros::from_micros(2_000_000);
+    let hit = DamageSpellOwner::default()
+        .execute(&mut r, &f, stamp, &mut v, &s, &p, &mut w, now)
+        .expect("native mana cast");
+    let receipt = hit.targets[0]
+        .1
+        .as_ref()
+        .expect("native mana target")
+        .mana
+        .expect("MP receipt");
+    assert_eq!((receipt.applied, receipt.mana_after), (40, 50));
+    let occurrence = format!(
+        "{}:target:{}",
+        p.occurrence.id().as_str(),
+        p.target
+            .placement_identity()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>(),
+    );
+    let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get());
+    assert_eq!(
+        v.apply_attack_mana_drain_from(
+            &mut r,
+            p.issuer,
+            p.target,
+            w.facts.attack.session,
+            40,
+            &occurrence,
+            now,
+        ),
+        Some(receipt)
+    );
+    assert!(
+        v.apply_attack_mana_drain_from(
+            &mut r,
+            p.target,
+            p.target,
+            w.facts.attack.session,
+            40,
+            &occurrence,
+            now,
+        )
+        .is_none(),
+        "another source cannot replay the admitted monster's MP receipt"
+    );
+    assert!(
+        v.apply_attack_mana_drain_from(
+            &mut r,
+            p.issuer,
+            p.target,
+            w.facts.attack.session,
+            41,
+            &occurrence,
+            now,
+        )
+        .is_none()
+    );
+    assert!(
+        v.apply_attack_mana_drain(
+            &mut r,
+            p.target,
+            w.facts.attack.session,
+            40,
+            &occurrence,
+            now,
+        )
+        .is_none()
+    );
+    let (revision, current) = crate::gameplay_transport::actor_spell::observe_vitals(
+        &r,
+        &v,
+        p.target,
+        w.facts.attack.session,
+    )
+    .expect("current vitals");
+    assert_eq!((revision, current.health, current.mana), (2, 185, 50));
+}
+#[test]
 fn actual_mana_owner_replay_conflict_session_and_current_death_guards() {
     let (mut r, mut v, _s, p, w, _f, _stamp) = setup_named("an_astral_glyph", 3);
     let session = w.facts.attack.session;

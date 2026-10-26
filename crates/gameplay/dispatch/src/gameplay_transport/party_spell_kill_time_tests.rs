@@ -16,6 +16,7 @@ fn party_xp_spell_death_preserves_original_precise_clock_on_replay()
         100_999
     );
     let sink = KillSink {
+        hazard: None,
         activity: &[],
         queue: &queue,
         rewards: &rewards,

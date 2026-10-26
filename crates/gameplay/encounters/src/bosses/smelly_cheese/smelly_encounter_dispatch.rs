@@ -440,7 +440,7 @@ fn execute_pulse(
             continue;
         }
         let receipt = v
-            .apply_attack_damage(r, target, session, amount, &id, now)
+            .apply_attack_damage_from(r, actor, target, session, amount, &id, now)
             .ok_or(AttackError::MissingVitals);
         committed.push((target, receipt))
     }

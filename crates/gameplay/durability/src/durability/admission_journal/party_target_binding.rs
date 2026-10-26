@@ -225,6 +225,65 @@ pub async fn current_colocated_party_character_for_scope_in_transaction(
         .map_err(|_| DurabilityError::InvalidStoredState)
 }
 
+/// Internal party-benefit scope read, independent of the member's presentation privacy.
+/// The caller holds World membership and the consuming Channel scope through the effect.
+/// A remote member is excluded only after its canonical current admission is validated;
+/// a missing local actor or stale social presence cannot impersonate a Channel switch.
+pub async fn current_remote_party_character_for_scope_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    authority: &SpellItemScopeAuthority,
+    character: [u8; 16],
+) -> Result<bool, DurabilityError> {
+    check_scope_transaction(tx, authority)
+        .await
+        .map_err(|_| DurabilityError::Unavailable)?;
+    // This is an exclusion read, never authority to mutate the remote member. Do not
+    // add a row-lock dependency on its session behind the World lock. The existing
+    // admission relation locks and the local runtime/scope locks prevent
+    // a remote actor entering this physical turn while the canonical facts are read.
+    let sessions = sqlx::query(
+        "SELECT uuid_send(game_session_id) AS game_session_id, account_id::text AS account_id, runtime_scope_kind, \
+                uuid_send(character_id) AS character_id, uuid_send(world_id) AS world_id, \
+                uuid_send(runtime_scope_world_id) AS runtime_scope_world_id, \
+                uuid_send(runtime_scope_channel_id) AS runtime_scope_channel_id, \
+                uuid_send(runtime_scope_instance_id) AS runtime_scope_instance_id, \
+                session_state, scope_ownership_generation::text AS scope_ownership_generation, \
+                character_lease_generation::text AS character_lease_generation, \
+                current_generation::text AS current_generation, current_transport_ref, \
+                control_loss_epoch::text AS control_loss_epoch, original_grace_deadline, \
+                predecessor_generation::text AS predecessor_generation \
+         FROM game_durability_reconnect_sessions \
+         WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid \
+         AND session_state IN (1,2) ORDER BY game_session_id LIMIT 2",
+    )
+    .bind(character.as_slice())
+    .bind(authority.world_bytes().as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    let [row] = sessions.as_slice() else {
+        return Ok(false);
+    };
+    let bytes = row.try_get::<Vec<u8>, _>("game_session_id")?;
+    let session = GameSessionId::decode(&bytes).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let Some(channel) = row.try_get::<Option<Vec<u8>>, _>("runtime_scope_channel_id")? else {
+        return Ok(false);
+    };
+    if channel == authority.channel_bytes()
+        || row.try_get::<i16, _>("session_state")? != ACTIVE
+        || row.try_get::<Vec<u8>, _>("runtime_scope_world_id")? != authority.world_bytes()
+        || row.try_get::<Option<Vec<u8>>, _>("runtime_scope_instance_id")?.is_some()
+    {
+        return Ok(false);
+    }
+    let world = crate::foundation::WorldId::decode(&authority.world_bytes())
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let channel = crate::foundation::ChannelId::decode(&channel)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    canonical_current_party_session(tx, root, session, row, RuntimeScopeRefV1::channel(world, channel))
+        .await
+}
+
 /// Fresh entry has no committed reconnect attempt. Resolve its genuinely committed operation
 /// through the existing bounded canonical reconciler, inside the same physical transaction.
 /// An origin-present but absent/corrupt receipt must never fall back to a legacy record.

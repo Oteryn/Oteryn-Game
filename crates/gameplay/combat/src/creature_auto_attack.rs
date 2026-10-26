@@ -1048,8 +1048,9 @@ impl AutoAttackOwner {
             let magnitude = u32::try_from(*magnitude).map_err(|_| AttackError::InvalidPlan)?;
             Some(
                 if source.conditions.is_empty() {
-                    vitals.apply_attack_damage(
+                    vitals.apply_attack_damage_from(
                         runtime,
+                        facts.issuer,
                         facts.target,
                         facts.session,
                         magnitude,

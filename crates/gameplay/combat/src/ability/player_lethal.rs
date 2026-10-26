@@ -184,6 +184,22 @@ pub trait PlayerLethalVitals {
         false
     }
 
+    /// Preserve the exact admitted monster in the mana owner's replay identity.
+    /// Direct mana drain is separate from health damage absorbed by mana shield.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_attack_mana_drain_from(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerManaDrainReceipt> {
+        self.apply_attack_mana_drain(runtime, target, session, magnitude, occurrence, now)
+    }
+
     fn apply_attack_mana_drain(
         &mut self,
         _runtime: &mut ChannelRuntimeV1,
@@ -244,8 +260,9 @@ pub trait PlayerLethalVitals {
         }
 
         if definitions.is_empty() {
-            self.apply_attack_damage(
+            self.apply_attack_damage_from(
                 runtime,
+                _source,
                 target,
                 session,
                 magnitude,
@@ -255,6 +272,21 @@ pub trait PlayerLethalVitals {
         } else {
             None
         }
+    }
+
+    /// Preserve the exact monster source for rules evaluated by the physical vitals owner.
+    #[allow(clippy::too_many_arguments)]
+    fn apply_attack_damage_from(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> Option<PlayerDamageReceipt> {
+        self.apply_attack_damage(runtime, target, session, magnitude, occurrence, now)
     }
 
     fn apply_attack_damage(

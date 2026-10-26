@@ -506,10 +506,18 @@ impl ChannelSpellStates {
         if magnitude.is_some() && damage_old.is_none() {
             self.source_damage.try_reserve(1).ok()?;
         }
+        let (actual, critical) = match magnitude {
+            Some(amount) => {
+                let (damage, critical) =
+                    self.hazard_damage(runtime, source, target, session, amount, facts.now)?;
+                (Some(damage), critical)
+            }
+            None => (None, false),
+        };
         let before = self.get(runtime, target, session)?;
         let mut next = before.clone();
         let mut primary = None;
-        if let Some(amount) = magnitude {
+        if let Some(amount) = actual {
             let (successor, damage) =
                 crate::spell::actor_conditions::stage_creature_hit(&next, amount, facts.now)
                     .ok()?;
@@ -517,7 +525,7 @@ impl ChannelSpellStates {
             primary = Some(damage);
         }
         if next.vitals().health > 0 {
-            let label = format!("creature:{}", super::hex(&source.placement_identity()));
+            let label = Self::hazard_condition_label(runtime, source);
             next = next.stage_source_player_conditions(label, definitions, immunities, facts)?;
         }
         let changed = next != *before;
@@ -555,6 +563,9 @@ impl ChannelSpellStates {
         if changed && !self.commit(runtime, target, session, next) {
             return None;
         }
+        if critical {
+            self.hazard_criticals.record(target, session, facts.now);
+        }
         if let Some(death) = death {
             self.deaths.push((target, session, death));
         }
@@ -562,6 +573,7 @@ impl ChannelSpellStates {
             (magnitude, receipt, damage_text)
         {
             let memo = NativeSourceMemo {
+                source: Some(source),
                 actor: target,
                 session,
                 occurrence: damage_text,

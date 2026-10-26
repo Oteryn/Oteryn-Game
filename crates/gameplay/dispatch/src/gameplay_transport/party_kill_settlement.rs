@@ -86,6 +86,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         entry: &PendingKillSettlement,
     ) -> Result<SettledPartyXp, CharacterProgressionError> {
+        let row = entry.row.as_ref().ok_or_else(rejected)?;
         let plan = self.discover_party_xp(permit, entry).await?;
         if !plan
             .members
@@ -197,7 +198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .map_err(|_| DurabilityError::InvalidStoredState)?,
                         &entry.creature,
-                        entry.row.xp_amount.get(),
+                        row.xp_amount.get(),
                         (
                             entry.facts.death_at_ms,
                             entry
@@ -259,7 +260,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             )
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                             creature: entry.creature.clone(),
-                            base_xp: entry.row.xp_amount.get(),
+                            base_xp: row.xp_amount.get(),
                             death_at_ms: entry.facts.death_at_ms,
                             death_at_us: entry
                                 .activity_observed_at

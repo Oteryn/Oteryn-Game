@@ -208,7 +208,12 @@ async fn plan_group(
         .iter()
         .map(|d| u128::from(d.total))
         .sum();
-    let base = entry.row.xp_amount.get();
+    let base = entry
+        .row
+        .as_ref()
+        .ok_or(SpellItemError::Rejected("XP reward row"))?
+        .xp_amount
+        .get();
     let contributions = entry
         .damage_shares
         .iter()

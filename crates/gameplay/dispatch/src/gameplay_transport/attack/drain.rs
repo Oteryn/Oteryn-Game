@@ -103,6 +103,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::gameplay_transport::kill_reward::record_creature_kill(
                 &mut runtime,
                 crate::gameplay_transport::kill_reward::KillSink {
+                    hazard: Some(&self.states.quest_sessions),
                     queue: kills,
                     rewards: self.reward_table(),
                     activity: &activity_cells,
@@ -462,14 +463,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
                 // hit, the death time the kill reward reads (§1.2).
-                let committed = crate::ability::commit::commit_exact_owner_swing_damage(
-                    &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
-                    &resolved,
-                    &plan,
-                    entry.actor,
-                    swing.lineage,
-                    ordinal,
-                );
+                let hit =
+                    |runtime: &mut ChannelRuntimeV1, _states: &mut ChannelSpellStates, level| {
+                        if crate::gameplay_transport::hazard::combat::dodges(
+                            level,
+                            crate::gameplay_transport::hazard::combat::draw(
+                                runtime,
+                                entry.actor,
+                                target,
+                                now.get(),
+                                "hazard.dodge",
+                            )?,
+                        ) {
+                            return None;
+                        }
+                        Some(crate::ability::commit::commit_exact_owner_swing_damage(
+                            &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
+                            &resolved,
+                            &plan,
+                            entry.actor,
+                            swing.lineage,
+                            ordinal,
+                        ))
+                    };
+                let committed =
+                    if crate::gameplay_transport::hazard::combat::eligible(&runtime, target) {
+                        self.with_hazard_level(
+                            &pvp_permit,
+                            &mut runtime,
+                            &mut states,
+                            entry.actor,
+                            entry.session,
+                            hit,
+                        )
+                        .await
+                        .flatten()
+                    } else {
+                        hit(&mut runtime, &mut states, 0)
+                    };
+                let Some(committed) = committed else {
+                    continue;
+                };
                 let Ok(result) = committed else {
                     if !extension {
                         entry.clear_target();
@@ -544,6 +578,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         kills,
                         self.reward_table(),
                         &activity_cells,
+                        &self.states.quest_sessions,
                         target,
                         lethal,
                         now,
@@ -629,6 +664,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let mut vitals = PlayerBiteVitals {
+            hazard: None,
             states: &mut *states,
             attack: &mut *attack,
             formula: content.training_formula(),
@@ -1078,6 +1114,7 @@ fn settle_kill(
     queue: &mut KillSettlementQueue,
     rewards: &crate::content::creature_reward::CreatureRewardTable,
     activity: &[SharedExperienceActivity],
+    hazard: &crate::gameplay_transport::hazard::QuestSessions,
     target: ExactActorRef,
     lethal: crate::combat::CapturedRewardPrincipal,
     now: SemanticTimeMicros,
@@ -1086,6 +1123,7 @@ fn settle_kill(
     crate::gameplay_transport::kill_reward::record_creature_kill(
         runtime,
         crate::gameplay_transport::kill_reward::KillSink {
+            hazard: Some(hazard),
             queue,
             rewards,
             activity,

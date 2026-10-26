@@ -121,6 +121,13 @@ impl NpcTalkBook {
                         (!lines.is_empty()).then(|| lines.join(" ")),
                         Vec::new(),
                     )
+                } else if reference.key == "oteryn:npc.gnomadness" {
+                    (
+                        "Welcome to Gnomprona Gardens. Ask me about your hazard level.".into(),
+                        "Farewell.".into(),
+                        None,
+                        Vec::new(),
+                    )
                 } else if !premium_services.is_empty() {
                     (
                         format!("Greetings, I am {}.", npc.name),

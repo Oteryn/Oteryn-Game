@@ -49,6 +49,7 @@ struct SessionNpc {
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
     premium: Option<premium_purchase::PendingPurchase>,
+    hazard: Option<super::hazard::PendingChoice>,
 }
 
 pub struct PendingBank {
@@ -73,6 +74,32 @@ pub use oteryn_gameplay_npc::npc_command::{NpcTradeOffer, NpcTradeRefusal, proje
 use oteryn_gameplay_economy::npc_trade::NPC_TRADE_QUANTITY_MAX as MAX_TRADE_QUANTITY;
 
 impl NpcConversations {
+    pub(super) fn retain_hazard(
+        &self,
+        session: GameSessionId,
+        pending: super::hazard::PendingChoice,
+    ) -> bool {
+        self.sessions.lock().is_ok_and(|mut sessions| {
+            sessions.entry(session).or_default().hazard = Some(pending);
+            true
+        })
+    }
+
+    pub(super) fn pending_hazard(
+        &self,
+        session: GameSessionId,
+    ) -> Option<super::hazard::PendingChoice> {
+        self.sessions.lock().ok()?.get(&session)?.hazard.clone()
+    }
+
+    pub(super) fn clear_hazard(&self, session: GameSessionId) {
+        if let Ok(mut sessions) = self.sessions.lock()
+            && let Some(state) = sessions.get_mut(&session)
+        {
+            state.hazard = None;
+        }
+    }
+
     #[allow(
         dead_code,
         reason = "D1220: A2 NPC caller must retrieve the retained confirmed choice; preserve this authored port until D1173 integration."

@@ -36,6 +36,8 @@ pub(crate) fn load_quest_catalogue(
     // TASKBOARD-1: the code-built weekly Task Board quest joins the lowered quests.
     let catalogue = oteryn_gameplay_quests::quest::task_board::extend(lowered.catalogue())
         .map_err(|_| BootError::ContentActivation("task board quest"))?;
+    let catalogue = oteryn_gameplay_quests::quest::hazard::extend(&catalogue)
+        .map_err(|_| BootError::ContentActivation("hazard quest"))?;
     let counts = lowered.counts();
     let line = format!(
         "event=quest_catalogue state=loaded content_revision={content_revision} quests={} transitions={} not_supported={} not_supported_explicit={} not_supported_inexact={}",

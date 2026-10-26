@@ -69,9 +69,15 @@ pub fn commit_smelly_unambiguous_damage(
             cast_sequence,
             hex(target.placement_identity())
         );
-        if let Some(receipt) =
-            vitals.apply_attack_damage(runtime, target, session, magnitude, &occurrence, now)
-        {
+        if let Some(receipt) = vitals.apply_attack_damage_from(
+            runtime,
+            caster,
+            target,
+            session,
+            magnitude,
+            &occurrence,
+            now,
+        ) {
             receipts.push(receipt);
         }
     }

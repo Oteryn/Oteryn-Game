@@ -506,11 +506,37 @@ mod fresh_source {
             if key_id != "fresh-1" {
                 return Err(Fnd04EvidenceError::ExplicitlyDenied);
             }
+            // Retain the actual publication's observation and revision. A second session
+            // cannot restamp an unchanged signing decision with its own admission time.
+            let row = self
+                .rows
+                .iter()
+                .find(|row| {
+                    matches!(&row.key,
+                AdmissionAuthorityGuardKeyV1::SigningTrust {key_id,profile}
+                    if key_id == "fresh-1" && profile == PRE_ADMISSION_PROFILE)
+                })
+                .ok_or(Fnd04EvidenceError::ExplicitlyDenied)?;
+            let mut proof = provenance(
+                FreshEvidencePurposeV1::SigningTrust,
+                row.source.source_observed_at,
+            );
+            proof.source_authority.clone_from(&row.source.authority);
+            proof.source_revision = row.source.source_revision;
+            proof.accepted_source_revision = row.source.source_revision;
+            proof
+                .decision_identity
+                .clone_from(&row.source.decision_identity);
+            proof
+                .accepted_decision_identity
+                .clone_from(&row.source.decision_identity);
+            proof.publication_revision = row.publication_revision;
+            proof.clock_uncertainty_seconds = row.source.clock_uncertainty_seconds;
             Ok(FreshSigningTrustObservationV1 {
                 key_id: key_id.into(),
                 public_key: self.key.verifying_key().to_bytes(),
                 trusted: true,
-                provenance: provenance(FreshEvidencePurposeV1::SigningTrust, self.now),
+                provenance: proof,
             })
         }
         fn account_security(
@@ -543,7 +569,11 @@ mod fresh_source {
                 facts: self.current.clone(),
                 account_publication_revision: 1,
                 character_publication_revision: 1,
-                runtime_publication_revision: 1,
+                runtime_publication_revision: self
+                    .rows
+                    .iter()
+                    .find(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)))
+                    .map_or(0, |row| row.publication_revision),
                 expected_lease_generation: 1,
                 proposed_lease_generation: 2,
                 account_presence_available: true,
@@ -830,6 +860,18 @@ async fn bootstrap_party_character(
     account: u8,
     now: i64,
 ) -> TestResult<crate::domain::CharacterId> {
+    bootstrap_party_character_from_owners(&h.root, &h.recovery, &h.node, character, account, now)
+        .await
+}
+
+async fn bootstrap_party_character_from_owners(
+    root: &crate::durability::DurabilityRoot,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryStore,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    character: u8,
+    account: u8,
+    now: i64,
+) -> TestResult<crate::domain::CharacterId> {
     // The independent producer fixture supplies a bounded authenticated decision. Only the
     // real bootstrap writer creates the root, issuer floor, operation receipt and audit data.
     use crate::durability::native_admission_source::{
@@ -849,17 +891,15 @@ async fn bootstrap_party_character(
             initialized_at: now,
         };
         assert!(
-            h.root
-                .record_native_source_descriptor_issuance(
-                    "platform",
-                    descriptor.clone(),
-                    Some(provenance.clone())
-                )
-                .await
-                .map_err(debug)?
+            root.record_native_source_descriptor_issuance(
+                "platform",
+                descriptor.clone(),
+                Some(provenance.clone())
+            )
+            .await
+            .map_err(debug)?
         );
-        h.root
-            .initialize_native_admission_source(&h.node, provenance, descriptor)
+        root.initialize_native_admission_source(node, provenance, descriptor)
             .await
             .map_err(debug)?;
     }
@@ -873,22 +913,20 @@ async fn bootstrap_party_character(
         "purpose": "platform_security", "scope": "fresh_admission", "allowed": true,
         "minimum_valid_generation": "1",
     });
-    h.root
-        .accept_native_source_observation(
-            &h.node,
-            SourceObservation {
-                source_authority: "platform".into(),
-                operation: NativeSourceOperation::ReadAccountSecurityV1,
-                subject: NativeSourceSubject::account_security(account_text.clone())
-                    .map_err(debug)?,
-                source_revision: revision,
-                decision_identity: revision.to_string(),
-                observed_at: now,
-                semantic_facts: serde_json::to_vec(&security)?,
-            },
-        )
-        .await
-        .map_err(debug)?;
+    root.accept_native_source_observation(
+        node,
+        SourceObservation {
+            source_authority: "platform".into(),
+            operation: NativeSourceOperation::ReadAccountSecurityV1,
+            subject: NativeSourceSubject::account_security(account_text.clone()).map_err(debug)?,
+            source_revision: revision,
+            decision_identity: revision.to_string(),
+            observed_at: now,
+            semantic_facts: serde_json::to_vec(&security)?,
+        },
+    )
+    .await
+    .map_err(debug)?;
     let wire = serde_json::json!({
         "contract_version": 3, "variant": "OPERATOR_CONTROL_PLANE_BOOTSTRAP",
         "issuer_authority": "OTERYN_PLATFORM_CHARACTER_AUTHORITY",
@@ -908,15 +946,10 @@ async fn bootstrap_party_character(
         id(character),
     )
     .map_err(debug)?;
-    let seal = h.recovery.seal_current().map_err(debug)?;
-    let recovery = h
-        .root
-        .open_character_authority(&seal)
-        .await
-        .map_err(debug)?;
-    let bootstrapped = h
-        .root
-        .bootstrap_character(&recovery, &h.node, &intent)
+    let seal = recovery.seal_current().map_err(debug)?;
+    let recovery = root.open_character_authority(&seal).await.map_err(debug)?;
+    let bootstrapped = root
+        .bootstrap_character(&recovery, node, &intent)
         .await
         .map_err(debug)?;
     assert_eq!(bootstrapped.revision.get(), 1);
@@ -932,13 +965,68 @@ pub(crate) async fn committed_fresh_player(
 ) -> TestResult<
     crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
 > {
+    committed_fresh_player_from_owners(
+        &h.root,
+        &h.recovery,
+        &h.node,
+        character,
+        account,
+        session,
+        now,
+    )
+    .await
+}
+
+pub(crate) async fn committed_fresh_player_from_owners(
+    root: &crate::durability::DurabilityRoot,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryStore,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    character: u8,
+    account: u8,
+    session: u8,
+    now: i64,
+) -> TestResult<
+    crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
+> {
+    committed_fresh_player_on_channel_from_owners(
+        root, recovery, node, character, account, session, CHANNEL, now,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn committed_fresh_player_on_channel_from_owners(
+    root: &crate::durability::DurabilityRoot,
+    recovery: &crate::character_recovery_fence::CharacterRecoveryStore,
+    node: &crate::durability::runtime_scope_assignment::NodeIncarnationProof,
+    character: u8,
+    account: u8,
+    session: u8,
+    channel: u8,
+    now: i64,
+) -> TestResult<
+    crate::foundation::GameSessionAuthoritySnapshot<crate::foundation::AuthenticatedTransportRefV1>,
+> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
     use crate::foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
-    let character_id = bootstrap_party_character(h, character, account, now).await?;
-    let mut source = fresh_source::Source::new(now, *character_id.as_bytes(), account, session)?;
-    let guards = AdmissionGuardStore::from_root(h.root.clone());
+    let character_id =
+        bootstrap_party_character_from_owners(root, recovery, node, character, account, now)
+            .await
+            .map_err(|e| format!("party bootstrap: {e}"))?;
+    let mut source = fresh_source::Source::new(now, *character_id.as_bytes(), account, session)
+        .map_err(|e| format!("party fixture: {e}"))?;
+    source.current.channel_id =
+        crate::foundation::ChannelId::decode(&id(channel)).map_err(debug)?;
+    source.rows[2].key =
+        crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(
+            crate::foundation::RuntimeScopeRefV1::channel(
+                source.current.world_id,
+                source.current.channel_id,
+            ),
+        );
+    let guards = AdmissionGuardStore::from_root(root.clone());
     // Keep independently committed runtime/signing publications exactly as actually read.
     // The fixture does not overwrite the actual assignment owner or invent its high-water.
     let rows = guards
@@ -947,13 +1035,31 @@ pub(crate) async fn committed_fresh_player(
         .map_err(debug)?;
     for (index, row) in rows.into_iter().enumerate() {
         if let Some(row) = row {
+            if let crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1::Runtime {
+                route_revision, runtime_observation_revision, ruleset_revision, content_revision,
+                map_revision, world_policy_revision, offer_revision, ..
+            } = &row.state {
+                source.current.route_revision.clone_from(route_revision);
+                source.current.runtime_observation_revision.clone_from(runtime_observation_revision);
+                source.current.ruleset_revision.clone_from(ruleset_revision);
+                source.current.content_revision.clone_from(content_revision);
+                source.current.map_revision.clone_from(map_revision);
+                source.current.world_policy_revision.clone_from(world_policy_revision);
+                source.current.offer_revision.clone_from(offer_revision);
+            }
             source.rows[index + 2] = row;
         }
     }
-    let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
-    guards.publish(&publication).await.map_err(debug)?;
-    let request = source.request()?;
-    let store = FreshAdmissionStore::from_root(h.root.clone());
+    let publication = AdmissionAuthorityPublicationV1::prepare(&source, now)
+        .map_err(|e| format!("party publication: {e:?}"))?;
+    guards
+        .publish(&publication)
+        .await
+        .map_err(|e| format!("party publish: {e:?}"))?;
+    let request = source
+        .request()
+        .map_err(|e| format!("party request: {e}"))?;
+    let store = FreshAdmissionStore::from_root(root.clone());
     let outcome = store.commit(&request).await.map_err(debug)?;
     let FreshAdmissionDurableOutcomeV1::Committed(receipt) = outcome else {
         return Err(format!("genuine Fresh admission not committed:{outcome:?}").into());

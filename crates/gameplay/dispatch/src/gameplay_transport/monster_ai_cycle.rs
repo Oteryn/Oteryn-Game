@@ -312,44 +312,73 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let decision_occurrence = DecisionOccurrenceId::from_bytes(occurrence);
             let race_key = &monster.race_key;
             // ATTACK-1b: the player this think resolved, for the incoming hooks below.
-            let attacked = std::cell::Cell::new(None);
-            let dispatch = melee_owner.think(
-                &mut runtime,
-                &mut super::attack::player_block::PlayerBiteVitals {
-                    states: &mut states,
-                    attack: &mut attack,
-                    formula: content.training_formula(),
-                    trained: &mut trained,
-                },
-                *actor,
-                sequence,
-                monster.definition,
-                input,
-                &perceived,
-                |id| {
-                    let index = usize::try_from(id.get().checked_sub(1)?).ok()?;
-                    let (actor, _, session, _, protected) = *targets.get(index)?;
-                    if protected {
-                        return None;
-                    }
-                    attacked.set(Some((actor, session)));
-                    // The held runtime owner and exact current protection
-                    // read above remain live through the synchronous bite commit.
-                    Some((
-                        actor,
-                        session,
-                        ReentryProtection {
-                            protected_until: None,
-                        },
-                    ))
-                },
-                revisions.clone(),
-                SemanticTimeMicros::from_micros(now.get()),
-            );
-            // ATTACK-0 §4: a creature attack on a player runs the incoming Charm hooks, and a
-            // landed attack starts the player's in-fight deadline. A replayed think returns its
-            // recorded dispatch without resolving a target again, so nothing runs twice.
-            let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
+            let Some(target) = melee_owner
+                .creature_ai
+                .state(*actor)
+                .and_then(|s| s.target())
+            else {
+                continue;
+            };
+            let Some(target_session) = targets
+                .iter()
+                .find(|(a, ..)| *a == target)
+                .map(|(_, _, s, ..)| *s)
+            else {
+                continue;
+            };
+            let think = |runtime: &mut ChannelRuntimeV1, states: &mut ChannelSpellStates, level| {
+                let attacked = std::cell::Cell::new(None);
+                let dispatch = melee_owner.think(
+                    runtime,
+                    &mut super::attack::player_block::PlayerBiteVitals {
+                        hazard: Some((target, target_session, level)),
+                        states,
+                        attack: &mut attack,
+                        formula: content.training_formula(),
+                        trained: &mut trained,
+                    },
+                    *actor,
+                    sequence,
+                    monster.definition,
+                    input,
+                    &perceived,
+                    |id| {
+                        let index = usize::try_from(id.get().checked_sub(1)?).ok()?;
+                        let (actor, _, session, _, protected) = *targets.get(index)?;
+                        if protected {
+                            return None;
+                        }
+                        attacked.set(Some((actor, session)));
+                        // The held runtime owner and exact current protection
+                        // read above remain live through the synchronous bite commit.
+                        Some((
+                            actor,
+                            session,
+                            ReentryProtection {
+                                protected_until: None,
+                            },
+                        ))
+                    },
+                    revisions.clone(),
+                    SemanticTimeMicros::from_micros(now.get()),
+                );
+                (dispatch, attacked.get())
+            };
+            let result = if super::hazard::combat::eligible(&runtime, *actor) {
+                self.with_hazard_level(
+                    &permit,
+                    &mut runtime,
+                    &mut states,
+                    target,
+                    target_session,
+                    think,
+                )
+                .await
+            } else {
+                Some(think(&mut runtime, &mut states, 0))
+            };
+            // A replayed think resolves no new target and applies no new modifier.
+            let Some((Ok(dispatch), Some((player, session)))) = result else {
                 continue;
             };
             let base_damage = match dispatch {
@@ -395,6 +424,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             super::kill_reward::record_creature_kill(
                 &mut runtime,
                 super::kill_reward::KillSink {
+                    hazard: Some(&self.states.quest_sessions),
                     queue: attack.kills(),
                     rewards: self.reward_table(),
                     activity: &activity,

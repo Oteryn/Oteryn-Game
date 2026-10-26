@@ -49,9 +49,11 @@ pub const KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX: usize = 64;
 /// One captured kill awaiting its settle.
 #[derive(Debug)]
 pub struct PendingKillSettlement {
+    pub(super) hazard: Option<super::hazard::Qualification>,
     pub facts: ProjectedCreatureDeathFacts,
     pub creature: String,
-    pub row: Arc<CreatureRewardRow>,
+    /// No loot row only for a captured hazard qualification. Reward admission stays intact.
+    pub row: Option<Arc<CreatureRewardRow>>,
     pub ground: DeathGroundContext,
     /// The killed actor whose committed corpse projection the minted corpse
     /// Item binds to (MAP-ITEM-REF-1 Part B, D607).
@@ -412,17 +414,18 @@ impl KillSettlementQueue {
             return TakeOutcome::Empty;
         };
         let entry = &state.queued[index];
-        let loot_mints = plan_creature_loot(
-            loot_plan_seed(entry.facts.death),
-            &entry.row.loot_table_ref,
-            &entry.row.loot_table,
-        )
-        .map_or(0, |plan| plan.entries.len())
-            + if entry.creature == "oteryn:creature.the_corruptor" {
-                3
-            } else {
-                0
-            };
+        let loot_mints = entry.row.as_ref().map_or(0, |row| {
+            plan_creature_loot(
+                loot_plan_seed(entry.facts.death),
+                &row.loot_table_ref,
+                &row.loot_table,
+            )
+            .map_or(0, |plan| plan.entries.len())
+        }) + if entry.creature == "oteryn:creature.the_corruptor" {
+            3
+        } else {
+            0
+        };
         let inflight_before = state.reserved_loot_mints;
         if check_inflight_loot_mint_capacity(inflight_before, loot_mints).is_err() {
             return TakeOutcome::CapacityWait;
@@ -533,6 +536,7 @@ impl Drop for TakenKillSettlement {
 /// Where a lethal arm appends: the Channel's queue and the active generation's reward rows.
 #[derive(Clone, Copy)]
 pub struct KillSink<'a> {
+    pub(super) hazard: Option<&'a super::hazard::QuestSessions>,
     pub activity: &'a [oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity],
     pub queue: &'a KillSettlementQueue,
     pub rewards: &'a CreatureRewardTable,
@@ -614,13 +618,6 @@ pub fn record_creature_kill(
         ),
         None => (lethal, None, true),
     };
-    let row = match sink.rewards.row(&creature) {
-        Ok(row) => row,
-        Err(reason) => {
-            refuse(reason.as_str(), &creature);
-            return;
-        }
-    };
     let Ok(mut facts) =
         capture_projected_death_facts(&mut owner, target, principal, last_damage_at_ms, now_ms)
     else {
@@ -646,7 +643,19 @@ pub fn record_creature_kill(
             return;
         }
     };
+    let hazard = super::hazard::capture(runtime, sink.hazard, &creature, &damage_shares);
+    let row = match sink.rewards.row(&creature) {
+        Ok(row) => Some(row),
+        Err(reason) => {
+            refuse(reason.as_str(), &creature);
+            if hazard.is_none() {
+                return;
+            }
+            None
+        }
+    };
     let entry = PendingKillSettlement {
+        hazard,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
@@ -933,7 +942,10 @@ pub fn bind_settled_corpse(
         Err(CombatDeathRewardLootError::Mint(_, corpse)) => corpse,
         Err(_) => return CorpseBind::NoCorpse,
     };
-    let corpse = &entry.row.corpse_item;
+    let Some(row) = &entry.row else {
+        return CorpseBind::NoCorpse;
+    };
+    let corpse = &row.corpse_item;
     match runtime.bind_corpse_item(
         entry.target,
         committed.item_instance_id,
@@ -1037,6 +1049,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) {
         let activity = attack.shared_experience_cells();
         let sink = KillSink {
+            hazard: Some(&self.states.quest_sessions),
             activity: &activity,
             queue: attack.kills(),
             rewards: self.reward_table(),
@@ -1169,6 +1182,24 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
+        let Some(row) = &entry.row else {
+            // A source reward refusal must not suppress independent quest qualification.
+            // This branch never enters loot, XP or Bestiary and cannot mint an Item.
+            let known = entry.hazard.is_some()
+                && admission
+                    .qualify_hazard_kill(entry.hazard.as_ref(), entry.facts.occurrence)
+                    .await;
+            let verdict = if known {
+                SettleVerdict::Final
+            } else {
+                SettleVerdict::Retry
+            };
+            release_settled_corpse(&mut *admission.runtime.lock().await, entry, verdict);
+            return SettleReport {
+                verdict,
+                no_progression: false,
+            };
+        };
         // Lock order (SPELL-LOCK-2 §1.2): the lane before the revision slot; the corpse loot
         // mint is a key-33 writer. `None` retries with no side effect while the lane is fenced.
         let Some(permit) = admission.spell_lane_permit().await else {
@@ -1229,15 +1260,15 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             };
         };
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
-            corpse_item: entry.row.corpse_item.clone(),
-            loot_table_ref: entry.row.loot_table_ref.clone(),
+            corpse_item: row.corpse_item.clone(),
+            loot_table_ref: row.loot_table_ref.clone(),
             loot_table,
             ground: entry.ground.clone(),
             inflight_loot_mints_before_this_death: inflight_before,
             reward_principals: vec![RewardPrincipal {
                 gameplay_fence: fence,
             }],
-            xp_amount: entry.row.xp_amount,
+            xp_amount: row.xp_amount,
             // ARCH-PROGRESSION-SOURCE-0 §1.4: the principal's own session binding; an unbound
             // session settles corpse and loot only (`no_progression_binding`).
             progression: admission
@@ -1250,7 +1281,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             node: admission.holder,
         };
         let bestiary = CreatureDeathBestiaryInput {
-            race: entry.row.race.clone(),
+            race: row.race.clone(),
         };
         let outcome = if let Some(xp) = party_xp {
             settle_creature_death_rewards_with_party_experience(
@@ -1293,9 +1324,20 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .soul_kills
                 .mark(super::soul_kill_live::soul_hook(xp));
         }
+        // HAZARD: settle the frozen qualification packet before releasing this death entry.
+        if outcome.is_ok()
+            && !admission
+                .qualify_hazard_kill(entry.hazard.as_ref(), entry.facts.occurrence)
+                .await
+        {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         // TASKBOARD-1 §2.4: the settled kill credits the principal's active Task Board task.
         if outcome.is_ok()
-            && let Some(race) = &entry.row.race
+            && let Some(race) = &row.race
         {
             admission
                 .credit_task_board_kill(self.fence, race.key(), entry.facts.occurrence)
