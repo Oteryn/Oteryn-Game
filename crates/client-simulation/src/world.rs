@@ -1,6 +1,6 @@
 //! Deterministic stack elevation and source-cell reach for world projection.
 
-use oteryn_client_domain::world::CELL_PX;
+use oteryn_client_domain::world::{CELL_PX, Draw, DrawCell, MapTile};
 
 /// The client's cap on how far elevation lifts what is drawn above it.
 pub const MAX_ELEVATION: i32 = 24;
@@ -37,6 +37,39 @@ pub fn item_height(elevation: u32) -> i32 {
 /// so the scene's scan past the view reaches it.
 pub fn within_reach(offset: [i32; 2]) -> bool {
     offset.iter().all(|axis| *axis >= -MAX_REACH_PX)
+}
+
+/// Project one assigned source cell after applying its stack lift.
+pub fn project_cell(
+    cell: &DrawCell,
+    lift: i32,
+    slot: impl Fn(&DrawCell) -> Option<u16>,
+) -> Option<Draw> {
+    let slot = slot(cell)?;
+    let offset = [cell.offset_x - lift, cell.offset_y - lift];
+    (slot != 0 && within_reach(offset)).then_some(Draw { cell: slot, offset })
+}
+
+/// Project a sorted stack, preserving order within its under/over layers.
+pub fn project_tile(
+    items: &[(u8, u32, Vec<DrawCell>)],
+    slot: impl Fn(&DrawCell) -> Option<u16>,
+) -> MapTile {
+    let mut tile = MapTile::default();
+    let (lifts, elevation) =
+        stack_lifts(items.iter().map(|(layer, e, _)| (*layer, item_height(*e))));
+    for ((layer, _, item_cells), lift) in items.iter().zip(lifts) {
+        let drawn = item_cells
+            .iter()
+            .filter_map(|cell| project_cell(cell, lift, &slot));
+        if *layer == 4 {
+            tile.over.extend(drawn);
+        } else {
+            tile.under.extend(drawn);
+        }
+    }
+    tile.elevation = elevation;
+    tile
 }
 
 #[cfg(test)]

@@ -13,7 +13,7 @@ use crate::input::StepDir;
 use oteryn_client_assets::DrawCell;
 use oteryn_client_assets::window::{ResolvedWindow, within_draw_cap};
 use oteryn_client_domain::world::CELL_PX;
-use oteryn_client_simulation::world::{item_height, stack_lifts, within_reach};
+use oteryn_client_simulation::world::{project_cell, project_tile};
 use oteryn_renderer::world::{BUILTIN_CELLS, MAX_CELLS, atlas_from_cells, builtin_rgba};
 use oteryn_renderer::{AtlasImage, BatchError};
 use std::collections::{BTreeMap, HashMap};
@@ -110,33 +110,21 @@ impl World {
             rgba.extend_from_slice(&pixels);
             next += 1;
         }
-        // A cell reaching further up or left than the scene scans past the view is not drawn.
-        let draw = |cell: &DrawCell, lift: i32| {
-            let slot = cells.get(&(cell.sprite_id, cell.cell_x, cell.cell_y))?;
-            let offset = [cell.offset_x - lift, cell.offset_y - lift];
-            (*slot != 0 && within_reach(offset)).then_some(Draw {
-                cell: *slot,
-                offset,
-            })
+        let slot = |cell: &DrawCell| {
+            cells
+                .get(&(cell.sprite_id, cell.cell_x, cell.cell_y))
+                .copied()
         };
-        let mut tiles = HashMap::with_capacity(entries.len());
-        for (position, items) in &entries {
-            let mut tile = MapTile::default();
-            let (lifts, elevation) =
-                stack_lifts(items.iter().map(|(layer, e, _)| (*layer, item_height(*e))));
-            for ((layer, _, item_cells), lift) in items.iter().zip(lifts) {
-                let drawn = item_cells.iter().filter_map(|cell| draw(cell, lift));
-                if *layer == 4 {
-                    tile.over.extend(drawn);
-                } else {
-                    tile.under.extend(drawn);
-                }
-            }
-            tile.elevation = elevation;
-            tiles.insert(*position, tile);
-        }
-        let player: [Vec<Draw>; 4] =
-            player.map(|cells| cells.iter().filter_map(|cell| draw(cell, 0)).collect());
+        let tiles = entries
+            .iter()
+            .map(|(position, items)| (*position, project_tile(items, slot)))
+            .collect();
+        let player: [Vec<Draw>; 4] = player.map(|cells| {
+            cells
+                .iter()
+                .filter_map(|cell| project_cell(cell, 0, slot))
+                .collect()
+        });
         for cells in &player {
             within_draw_cap(cells.len()).map_err(|error| format!("outfit: {error}"))?;
         }

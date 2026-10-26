@@ -22,3 +22,15 @@ pub struct MapTile {
 /// The tutorial islet temple, where the offline view starts.
 pub const START: (i32, i32) = (32534, 32513);
 pub const START_FLOOR: u8 = 7;
+
+/// One 32x32 cell to draw, with its pixel offset from the top-left of the tile. The offset
+/// includes the sprite's anchoring at the tile's bottom-right and the displacement; elevation
+/// is returned apart, because the caller accumulates it over a tile's stack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DrawCell {
+    pub sprite_id: u32,
+    pub cell_x: u32,
+    pub cell_y: u32,
+    pub offset_x: i32,
+    pub offset_y: i32,
+}

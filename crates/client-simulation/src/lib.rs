@@ -1,5 +1,7 @@
 //! Deterministic mutation of the non-authoritative client projection.
 
+/// Deterministic viewport and scene projection.
+pub mod scene;
 /// Deterministic world draw projection.
 pub mod world;
 

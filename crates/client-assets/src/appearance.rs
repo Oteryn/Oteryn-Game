@@ -193,17 +193,8 @@ impl Placement {
     }
 }
 
-/// One 32x32 cell to draw, with its pixel offset from the top-left of the tile. The offset
-/// includes the sprite's anchoring at the tile's bottom-right and the displacement; elevation
-/// is returned apart, because the caller accumulates it over a tile's stack.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DrawCell {
-    pub sprite_id: u32,
-    pub cell_x: u32,
-    pub cell_y: u32,
-    pub offset_x: i32,
-    pub offset_y: i32,
-}
+/// Compatibility export for resolved source-cell coordinates.
+pub use oteryn_client_domain::world::DrawCell;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedEntry {

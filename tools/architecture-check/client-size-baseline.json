@@ -19,19 +19,14 @@
     "bytes": 53450,
     "central_registrations": 3
   },
-  "apps/client/src/scene.rs": {
-    "lines": 416,
-    "bytes": 14929,
-    "central_registrations": 0
-  },
   "apps/client/src/windows_shell.rs": {
     "lines": 427,
     "bytes": 15331,
     "central_registrations": 0
   },
   "crates/client-assets/src/appearance.rs": {
-    "lines": 569,
-    "bytes": 18536,
+    "lines": 560,
+    "bytes": 18200,
     "central_registrations": 0
   },
   "crates/input-actions/src/lib.rs": {
