@@ -30,6 +30,7 @@ pub mod chat;
 pub mod command_replay;
 pub mod container_tree;
 mod contract_registries;
+pub mod creature_push;
 pub mod cyclopedia;
 pub mod daily_reward;
 pub mod damage_element;

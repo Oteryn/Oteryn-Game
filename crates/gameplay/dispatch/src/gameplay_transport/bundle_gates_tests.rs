@@ -179,10 +179,10 @@ const INVENTORY: &[Entry] = &[
         },
         calls: &[("gameplay_transport/source_item_cycle.rs", 1)],
     },
-    // The door overlay, step blocking, `use_object` and the chase step's door blocking serve a
-    // bundle World from `bundle_map`.
+    // The door overlay, step blocking, `use_object` and the chase step's and a creature push's
+    // door blocking serve a bundle World from `bundle_map`.
     Entry {
-        gate: "source World door overlay, step blocking, USE, chase step blocking",
+        gate: "source World door overlay, step blocking, USE, chase step and push blocking",
         plan: "door overlay, step blocking, USE",
         accessor: "gate_source_world",
         key: "",
@@ -190,6 +190,7 @@ const INVENTORY: &[Entry] = &[
         calls: &[
             ("gameplay_transport/attack.rs", 1),
             ("gameplay_transport/composed_admission/objects.rs", 2),
+            ("gameplay_transport/creature_push.rs", 1),
             ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/paced_movement/autowalk.rs", 1),
         ],
