@@ -37,6 +37,7 @@ pub mod character_last_position;
 pub mod character_proficiency;
 pub mod character_proficiency_modification;
 pub mod character_progression;
+pub mod character_quick_loot;
 pub mod character_promotion;
 pub mod character_revision_sequencer;
 pub mod character_stance;
