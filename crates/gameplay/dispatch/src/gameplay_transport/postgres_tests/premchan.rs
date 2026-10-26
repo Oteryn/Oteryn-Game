@@ -8,7 +8,7 @@ use crate::gameplay_transport::capabilities::{
     PRODUCTION_OFFERED_CAPABILITIES, SelectedCapabilities,
 };
 use crate::gameplay_transport::connection::{
-    AdmissionRefusal, ConnectionEnd, IDLE_LIVENESS, serve_admitted,
+    AdmissionRefusal, ConnectionEnd, FirstEntryOutcome, IDLE_LIVENESS, serve_admitted,
 };
 use crate::gameplay_transport::spell_premium_coordinator::{
     PremiumActivation, RegisteredPremiumClock, SpellPremiumCoordinator, clock_registration,
@@ -57,6 +57,8 @@ async fn channel_snapshot(
     selected: bool,
 ) -> TestResult<Option<Vec<u8>>> {
     let mut admitted = deps.admitted;
+    // A positioned entry is served its join snapshot; `NotApplicable` is held refused.
+    admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
         PRODUCTION_OFFERED_CAPABILITIES,
         if selected { &[83] } else { &[] },
@@ -73,6 +75,7 @@ async fn channel_snapshot(
     let mut bytes = Vec::new();
     client.read_to_end(&mut bytes).await?;
     let mut payload = None;
+    let mut snapshot = false;
     let mut at = 0;
     while at < bytes.len() {
         let len = u32::from_be_bytes(bytes[at..at + 4].try_into()?) as usize;
@@ -80,6 +83,7 @@ async fn channel_snapshot(
         let envelope = decode_wire_envelope(&bytes[at..at + len])?;
         at += len;
         if envelope.message_type() == MessageType::SnapshotChunk {
+            snapshot = true;
             for domain in decode_snapshot_chunk(envelope.payload())?.1 {
                 if domain.domain_id == 48 {
                     assert!(payload.is_none());
@@ -88,6 +92,10 @@ async fn channel_snapshot(
                 }
             }
         }
+    }
+    // Absence of domain 48 counts only in a snapshot that was actually served.
+    if !snapshot {
+        return Err("join snapshot".into());
     }
     Ok(payload)
 }
