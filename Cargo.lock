@@ -1869,6 +1869,7 @@ name = "oteryn-architecture-check"
 version = "0.1.0"
 dependencies = [
  "serde_json",
+ "sha2 0.11.1",
  "syn 3.0.4",
 ]
 
@@ -1934,6 +1935,15 @@ version = "0.1.0"
 dependencies = [
  "oteryn-client-domain",
  "oteryn-foundation",
+]
+
+[[package]]
+name = "oteryn-client-ui"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "sha2 0.11.1",
+ "syn 3.0.4",
 ]
 
 [[package]]
