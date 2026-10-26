@@ -260,6 +260,10 @@ pub fn render_chat_line(line: &ChatLine) -> String {
             text,
         } => format!("[{}] {speaker_name}: {text}", room_name(*room)),
         ChatLine::Guild(line) => super::guild_chat::render_line(line),
+        ChatLine::PrivateChannel(line) => format!(
+            "[#{}] {}: {}",
+            line.channel_id, line.speaker_name, line.text
+        ),
         ChatLine::Dropped => "-- DROPPED: chat lines were lost --".to_owned(),
     }
 }

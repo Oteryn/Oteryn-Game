@@ -16,6 +16,7 @@
 use std::num::NonZeroU64;
 
 pub mod guild_room;
+pub mod private_channel;
 
 pub use crate::charm_wire::CyclopediaWireError as ChatWireError;
 use crate::charm_wire::{
@@ -121,6 +122,8 @@ pub enum ChatIntent {
     Guild {
         text: String,
     },
+    /// Capability 80, oneof tags 7..=13.
+    PrivateChannel(private_channel::PrivateChannelIntent),
 }
 
 /// `ChatDisposition`.
@@ -136,10 +139,12 @@ pub enum ChatDisposition {
     ChatUnavailable = 8,
     Rejected = 9,
     NotAllowed = 10,
+    /// Capability 80: no invitation to the private channel, or no such channel.
+    NotInvited = 11,
 }
 
 impl ChatDisposition {
-    const ALL: [Self; 10] = [
+    const ALL: [Self; 11] = [
         Self::Ok,
         Self::Muted,
         Self::Exhausted,
@@ -150,6 +155,7 @@ impl ChatDisposition {
         Self::ChatUnavailable,
         Self::Rejected,
         Self::NotAllowed,
+        Self::NotInvited,
     ];
 
     const fn waits(self) -> bool {
@@ -213,6 +219,8 @@ pub enum ChatLine {
         text: String,
     },
     Guild(guild_room::GuildChatLine),
+    /// Capability 80, line kind 6.
+    PrivateChannel(private_channel::PrivateChannelLine),
     /// Lines were dropped by the session's egress bound (`CHAT0-RL-11`).
     Dropped,
 }
@@ -268,6 +276,7 @@ pub fn encode_chat_intent(intent: &ChatIntent) -> WireResult<Vec<u8>> {
     let mut inner = Vec::new();
     let field = match intent {
         ChatIntent::Guild { text } => return guild_room::encode_intent(text),
+        ChatIntent::PrivateChannel(intent) => return private_channel::encode_intent(intent),
         ChatIntent::Say { mode, text } => {
             check_text(text, MAX_CHAT_TEXT_BYTES)?;
             push_varint_field(&mut inner, 1, *mode as u64);
@@ -311,7 +320,7 @@ pub fn decode_chat_intent(payload: &[u8]) -> WireResult<ChatIntent> {
     }
     let mut intent = None;
     read_fields(payload, |field, wire, input, cursor| {
-        if wire != 2 || !(1..=6).contains(&field) {
+        if wire != 2 || !(1..=13).contains(&field) {
             return Err(ChatWireError::Malformed);
         }
         let inner = read_bytes(input, cursor)?;
@@ -323,6 +332,9 @@ pub fn decode_chat_intent(payload: &[u8]) -> WireResult<ChatIntent> {
 fn decode_intent_variant(field: u64, inner: &[u8]) -> WireResult<ChatIntent> {
     if field == 6 {
         return guild_room::decode_intent(inner);
+    }
+    if field >= 7 {
+        return private_channel::decode_intent(field, inner);
     }
     let (mut first, mut text) = (None, None);
     read_fields(inner, |number, wire, input, cursor| match (number, wire) {
@@ -426,6 +438,7 @@ pub fn encode_chat_line(line: &ChatLine) -> WireResult<Vec<u8>> {
     let mut output = Vec::with_capacity(MAX_CHAT_LINE_BYTES);
     match line {
         ChatLine::Guild(line) => return guild_room::encode_line(line),
+        ChatLine::PrivateChannel(line) => return private_channel::encode_line(line),
         ChatLine::Local {
             speaker,
             speaker_name,
@@ -486,6 +499,9 @@ pub fn decode_chat_line(payload: &[u8]) -> WireResult<ChatLine> {
     }
     if let Some(line) = guild_room::decode_line_if_guild(payload)? {
         return Ok(ChatLine::Guild(line));
+    }
+    if let Some(line) = private_channel::decode_line_if_private_channel(payload)? {
+        return Ok(ChatLine::PrivateChannel(line));
     }
     let mut f = LineFields::default();
     read_fields(payload, |number, wire, input, cursor| {

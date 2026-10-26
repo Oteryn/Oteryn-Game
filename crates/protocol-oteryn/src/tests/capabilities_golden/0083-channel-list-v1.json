@@ -1,0 +1,17 @@
+{
+  "id": 83,
+  "name": "CHANNEL_LIST_V1",
+  "constant": "channel_list::CAPABILITY_CHANNEL_LIST_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [
+    48
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

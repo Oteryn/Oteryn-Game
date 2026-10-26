@@ -29,6 +29,7 @@ pub async fn serve_gameplay(
         evidence: owners.evidence,
         world_id: owners.world_id,
         channel_id: owners.channel_id,
+        premium_only: owners.premium_only,
         required_capabilities: owners.required_capabilities,
         runtime: owners.runtime,
         movement_cells: owners.movement_cells,

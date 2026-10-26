@@ -67,6 +67,8 @@ struct ChatSession {
     walked_away: Vec<String>,
     /// The session selected capability 3: NPCs answer its `say` (NPC-CMD-1a).
     npc_service: bool,
+    /// Its private channels (capability 80, CHAT-PM-CHANNELS-1).
+    channels: private_channel::PrivateChannels,
 }
 
 /// The chat state of the admitted sessions of one Channel. The lock is never held across an
@@ -114,6 +116,7 @@ impl ChatRuntime {
                 joined: 0,
                 walked_away: Vec::new(),
                 npc_service: false,
+                channels: private_channel::PrivateChannels::default(),
             });
             entry.name = name.to_owned();
             entry.character = character;
@@ -411,6 +414,7 @@ impl ChatRuntime {
 
     pub fn forget(&self, session: GameSessionId) {
         self.guild.forget(session);
+        self.forget_private_channels(session);
         if let Ok(mut sessions) = self.sessions.lock() {
             sessions.remove(&session);
         }
@@ -840,6 +844,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             return result;
+        }
+        // Every other private-channel intent was answered by the gate.
+        if let ChatIntent::PrivateChannel(_) = intent {
+            let premium = self.session_premium_gate(session).await.premium_current();
+            return self.states.chat.create_private_channel(session, premium);
         }
         if matches!(intent, ChatIntent::Private { .. } | ChatIntent::Room { .. }) {
             return self.chat_relay(actor, session, intent, now).await;
@@ -1605,6 +1614,8 @@ mod sender_gate;
 
 #[path = "guild_chat/egress_acceptance.rs"]
 mod egress_acceptance;
+#[path = "guild_chat/private_channel.rs"]
+mod private_channel;
 
 #[cfg(test)]
 #[path = "guild_chat/test_support.rs"]

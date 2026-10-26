@@ -13,3 +13,14 @@ fn guild_chat_requires_chat_and_resume_cannot_drop_or_widen_it() {
     assert!(old.resumable_with(&[7, 36]));
     assert_eq!(old.as_slice(), [7]);
 }
+
+#[test]
+fn private_channels_require_chat_and_resume_cannot_drop_them() {
+    let unsupported =
+        SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &[80]).expect("bounded");
+    assert!(unsupported.as_slice().is_empty());
+    let channels =
+        SelectedCapabilities::select(PRODUCTION_OFFERED_CAPABILITIES, &[7, 80]).expect("bounded");
+    assert_eq!(channels.as_slice(), [7, 80]);
+    assert!(!channels.resumable_with(&[7]));
+}

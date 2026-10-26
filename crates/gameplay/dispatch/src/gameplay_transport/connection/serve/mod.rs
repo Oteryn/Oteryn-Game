@@ -4,6 +4,7 @@ use super::*;
 
 mod autowalk;
 mod command;
+mod creature_push;
 mod inbound;
 mod player_trade;
 mod poll;
@@ -24,6 +25,8 @@ mod use_effects;
 struct ServeState {
     target_walk: Option<target_move::PendingWalk>,
     target_move_window: crate::gameplay_transport::attack::IntentWindow,
+    push_window: crate::gameplay_transport::attack::IntentWindow,
+    push_due: Option<tokio::time::Instant>,
     chase_yielded: bool,
     chase_due: Option<tokio::time::Instant>,
     held: std::collections::VecDeque<(Vec<u8>, bool)>,

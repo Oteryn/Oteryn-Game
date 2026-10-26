@@ -68,7 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return (DeathCommit::Unavailable, None);
         };
-        // CP D1425: the active generation's training formula prices the death's build loss.
+        // Validate against the active generation's training formula when available.
         let formula = self
             .active_generation
             .and_then(|active| active.native_gameplay())

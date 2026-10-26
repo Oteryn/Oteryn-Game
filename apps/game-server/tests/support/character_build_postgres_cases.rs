@@ -289,6 +289,7 @@ fn award(occurrence: u8, original: u64, before: i64, after: i64) -> String {
     )
 }
 
+/// Historical schema fixture (pre-NIGHT-W1 decision 19), not a current death writer.
 /// A zero-blessing death from (50, `experience.0`) to (50, `experience.1`) with its pending
 /// respawn, optionally carrying build fields (before, after). The caller writes the build row.
 fn death(
@@ -458,7 +459,7 @@ fn build_receipts_join_the_chain_and_the_row_follows_the_latest() -> TestResult 
         let mut training = Change::new(64, 4, "training", knight, trained);
         training.at = (50, 1100);
         expect_committed(pool, "training r5", &training.commit()).await?;
-        // r6 a death takes progress in its own receipt and updates the row (A13 §4.6).
+        // r6 a historical death took progress; its receipt must remain readable.
         let lost = trained.with(0, (0, 90)).with(3, (11, 400));
         let with_loss = format!(
             "{}{}",
@@ -838,7 +839,7 @@ fn build_grants_and_admission_verifier() -> TestResult {
                 .map_err(debug)?,
         );
 
-        // r4 a death takes mana from the death receipt's build fields; r5 trains on from its
+        // r4 a historical death took mana in its build fields; r5 trains on from its
         // `after`, so both sides of the death join the build chain only through the verifier's
         // death arm (#1393 MEDIUM).
         let lost = knight.with(0, (0, 10));

@@ -108,6 +108,15 @@ impl Dependencies {
         room: crate::content::QualifiedNativeEntryRoom,
         spells: crate::spell::SpellBook,
     ) -> TestResult<Self> {
+        Self::with_content_and_capacity(pin, room, spells, 2)
+    }
+
+    fn with_content_and_capacity(
+        pin: ChannelContentPin,
+        room: crate::content::QualifiedNativeEntryRoom,
+        spells: crate::spell::SpellBook,
+        actor_capacity: usize,
+    ) -> TestResult<Self> {
         use rustls::pki_types::{CertificateDer, PrivateKeyDer};
         let expected = fence(1)?;
         let world = expected.runtime_scope.world_id();
@@ -121,7 +130,7 @@ impl Dependencies {
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            actor_capacity,
             pin,
         )
         .map_err(debug)?;
@@ -652,11 +661,11 @@ fn shutdown_flush_is_fenced_out_for_a_terminal_session_and_reports_an_unavailabl
     })
 }
 
-/// DEATH-ML-LOSS-1 (CP D1440, A13 §4.6, SKILLS-0 §3.6) end to end on PostgreSQL through the
+/// D58 / NIGHT-W1 decision 19 end to end on PostgreSQL through the
 /// composed owner: a trained level 20 druid takes a real lethal creature hit, and
 /// `respawn_after_death` force-saves its pending training, settles the death with the active
-/// generation's training formula (the build loss lands in the death receipt under binding
-/// version 2), places and consumes the respawn, and rebases the live actor onto the lowered
+/// generation's training formula (all build values stay unchanged), places and consumes the
+/// respawn, and keeps the live actor's trained
 /// build, so its next training save commits on that build. The production generation supplies
 /// the training formula and the progression; only its training content revision is the fixture
 /// Character's interpretation (production pairs both as `s3b-content-1`).
@@ -693,7 +702,7 @@ mod death_ml_loss_composed {
     const LEVEL_20_EXPERIENCE: u64 = 98_800;
 
     #[test]
-    fn composed_owner_death_lowers_rebases_and_trains_on_postgres() -> TestResult {
+    fn composed_owner_death_preserves_build_and_trains_on_postgres() -> TestResult {
         std::thread::Builder::new()
             .name("death-ml-loss-composed".into())
             .stack_size(SCENARIO_STACK_BYTES)
@@ -899,44 +908,6 @@ mod death_ml_loss_composed {
         .await?)
     }
 
-    /// Independent restatement of SKILLS-0 §3.6: sum the paid requirements and current progress,
-    /// remove `floor(total * lost / before)` and re-level from the family floor.
-    fn expected_loss(
-        formula: &dyn BuildFormula,
-        before: &DurableBuildState,
-        experience_before: u64,
-        experience_lost: u64,
-    ) -> TestResult<DurableBuildState> {
-        let vocation = before.vocation();
-        let mut families = [before.magic(); 8];
-        families[1..].copy_from_slice(&before.skills());
-        for (family, (level, progress)) in families.iter_mut().enumerate() {
-            let floor = if family == 0 { 0 } else { 10 };
-            let mut total = *progress;
-            for next in floor + 1..=*level {
-                total += formula
-                    .required(vocation, family, next)
-                    .ok_or("paid requirement")?;
-            }
-            let removed = u64::try_from(
-                u128::from(total) * u128::from(experience_lost) / u128::from(experience_before),
-            )?;
-            let mut remaining = total - removed;
-            let mut relevelled = floor;
-            while let Some(required) = formula.required(vocation, family, relevelled + 1) {
-                if remaining < required {
-                    break;
-                }
-                remaining -= required;
-                relevelled += 1;
-            }
-            (*level, *progress) = (relevelled, remaining);
-        }
-        let mut skills = [(0, 0); 7];
-        skills.copy_from_slice(&families[1..]);
-        DurableBuildState::new(vocation, families[0], skills).map_err(debug)
-    }
-
     #[allow(
         clippy::too_many_lines,
         reason = "one end-to-end scenario: setup, the lethal hit, the respawn and its checks"
@@ -1100,7 +1071,7 @@ mod death_ml_loss_composed {
                     .map_err(debug)?;
                 // One sword try the cadence has not saved yet: the death flush must save it.
                 state
-                    .train_skill(SkillFamily::Sword, 1, formula, |_| 1)
+                    .train_skill(SkillFamily::Sword, owner.owner_now().get(), formula, |_| 1)
                     .map_err(debug)?;
                 assert!(state.has_training_to_flush());
             }
@@ -1242,19 +1213,18 @@ mod death_ml_loss_composed {
                     );
                     assert_eq!(settled, Some(death));
                     assert_eq!(death_receipts(&harness).await?, 1);
-                    let before = format!(
-                        "SELECT {} FROM game_character_death_receipts \
-                         WHERE character_id = encode($1,'hex')::uuid",
-                        columns("_before")
-                    );
-                    assert_eq!(build_row(&harness, &before).await?, flushed);
-                    let lost = u64::try_from(
-                        crate::domain::death::death_experience_loss(20, 0, false).map_err(debug)?,
-                    )?;
+                    assert_eq!(build_row(&harness, &durable).await?, flushed);
+                    let (lost, payload_absent): (i64, bool) = sqlx::query_as(
+                        "SELECT experience_lost, vocation IS NULL FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid"
+                    ).bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
                     assert_eq!(
-                        build_row(&harness, &durable).await?,
-                        expected_loss(table, &flushed, LEVEL_20_EXPERIENCE, lost)?
+                        lost,
+                        i64::try_from(
+                            crate::domain::death::death_experience_loss(20, 0, false)
+                                .map_err(debug)?
+                        )?
                     );
+                    assert!(payload_absent);
                     drop(owner);
                     drop(authority);
                     drop(seal);
@@ -1270,8 +1240,8 @@ mod death_ml_loss_composed {
             assert_eq!(vitals.health, vitals.max_health);
             assert!(!owner.states.spell_states.lock().await.is_dead(actor));
 
-            // The death receipt: binding version 2, its before build holds the flushed try, and
-            // its after build is the SKILLS-0 §3.6 loss of the receipt's experience share.
+            // D58 / NIGHT-W1 decision 19: the death loses XP and records no
+            // build change; the preceding training receipt holds the flushed try.
             let (binding, experience_before, experience_lost): (i32, i64, i64) = sqlx::query_as(
                 "SELECT get_byte(command_binding, 0), experience_before, experience_lost \
                  FROM game_character_death_receipts WHERE character_id = encode($1,'hex')::uuid",
@@ -1279,29 +1249,24 @@ mod death_ml_loss_composed {
             .bind(id(41).as_slice())
             .fetch_one(&harness.pool)
             .await?;
-            assert_eq!(binding, 2);
+            assert_eq!(binding, 1);
             assert_eq!(u64::try_from(experience_before)?, LEVEL_20_EXPERIENCE);
             let lost = u64::try_from(
                 crate::domain::death::death_experience_loss(20, 0, false).map_err(debug)?,
             )?;
             assert_eq!(u64::try_from(experience_lost)?, lost);
-            let receipt = |suffix: &str| {
-                format!(
-                    "SELECT {} FROM game_character_death_receipts \
-                     WHERE character_id = encode($1,'hex')::uuid",
-                    columns(suffix)
-                )
-            };
-            assert_eq!(build_row(&harness, &receipt("_before")).await?, flushed);
-            let lowered = build_row(&harness, &receipt("_after")).await?;
-            assert_eq!(
-                lowered,
-                expected_loss(table, &flushed, LEVEL_20_EXPERIENCE, lost)?
-            );
-            assert!(lowered.magic() < flushed.magic());
-            assert!(lowered.skills()[2] < flushed.skills()[2]);
-            // The durable build is the lowered one, and the respawn obligation is consumed.
-            assert_eq!(build_row(&harness, &durable).await?, lowered);
+            let payload_absent: bool = sqlx::query_scalar(
+                "SELECT vocation IS NULL FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid"
+            ).bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+            assert!(payload_absent);
+            let preserved = build_row(&harness, &durable).await?;
+            assert_eq!(preserved, flushed);
+            assert!(preserved.magic().0 > 0 && preserved.magic().1 > 0);
+            assert!(preserved.skills()[2].0 > 10 && preserved.skills()[2].1 > 0);
+            let experience_after: i64 = sqlx::query_scalar(
+                "SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid"
+            ).bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(u64::try_from(experience_after)?, LEVEL_20_EXPERIENCE - lost);
             let pending: i64 = sqlx::query_scalar(
                 "SELECT count(*) FROM game_character_pending_respawns \
                  WHERE character_id = encode($1,'hex')::uuid",
@@ -1311,7 +1276,7 @@ mod death_ml_loss_composed {
             .await?;
             assert_eq!(pending, 0);
 
-            // The live actor continues from the lowered build: one more try saves on it.
+            // The live actor continues from the preserved build: one more try saves on it.
             {
                 let runtime = dependencies.runtime.lock().await;
                 let mut states = owner.states.spell_states.lock().await;
@@ -1320,22 +1285,22 @@ mod death_ml_loss_composed {
                     .ok_or("respawned actor")?;
                 assert_eq!(
                     state.character_facts().magic_level,
-                    u32::from(lowered.magic().0)
+                    u32::from(preserved.magic().0)
                 );
                 assert!(!state.has_training_to_flush());
                 state
-                    .train_skill(SkillFamily::Sword, 2, formula, |_| 1)
+                    .train_skill(SkillFamily::Sword, owner.owner_now().get(), formula, |_| 1)
                     .map_err(debug)?;
             }
             assert_eq!(
                 owner.save_spell_training(actor, session, true).await,
                 TrainingSave::Saved
             );
-            let mut next_skills = lowered.skills();
+            let mut next_skills = preserved.skills();
             next_skills[2].1 += 1;
             assert_eq!(
                 build_row(&harness, &durable).await?,
-                DurableBuildState::new("druid", lowered.magic(), next_skills).map_err(debug)?
+                DurableBuildState::new("druid", preserved.magic(), next_skills).map_err(debug)?
             );
 
             drop(owner);

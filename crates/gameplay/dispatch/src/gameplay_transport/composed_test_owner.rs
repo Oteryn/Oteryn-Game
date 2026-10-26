@@ -36,6 +36,7 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
             evidence: self.evidence,
             world_id: self.world_id,
             channel_id: self.channel_id,
+            premium_only: false,
             required_capabilities: self.required_capabilities,
             runtime: self.runtime,
             movement_cells: self.room.movement_cells(),
