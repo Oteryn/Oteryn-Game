@@ -17,7 +17,9 @@ where
 {
     let Some((training, no_logout)) = authority.gameplay_idle_exemptions(session.admitted).await
     else {
-        return Err(ServeEnd::Disconnected);
+        // Like other periodic observations, unavailable facts defer this pass.
+        // Never authorize removal or refresh the idle clock without exemption facts.
+        return Ok(());
     };
     let now = authority.gameplay_idle_now();
     let policy = authority.gameplay_idle_policy();

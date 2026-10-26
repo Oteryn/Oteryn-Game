@@ -34,7 +34,7 @@ pub trait FreshAdmissionAuthority {
         tokio::time::Instant::now()
     }
 
-    /// `(training, no_logout_tile)` from the existing owners. Unknown facts fail closed.
+    /// `(training, no_logout_tile)` from the existing owners. Unknown facts defer idle removal.
     fn gameplay_idle_exemptions(
         &self,
         _admitted: AdmittedSession,

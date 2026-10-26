@@ -12,6 +12,7 @@ struct IdleAuthority {
     now: Cell<Instant>,
     training: Cell<bool>,
     no_logout: Cell<bool>,
+    exemptions_available: Cell<bool>,
     no_logout_reply: Cell<bool>,
     fight: Cell<bool>,
     unknown: Cell<bool>,
@@ -26,6 +27,7 @@ impl IdleAuthority {
             now: Cell::new(now),
             training: Cell::new(false),
             no_logout: Cell::new(false),
+            exemptions_available: Cell::new(true),
             no_logout_reply: Cell::new(false),
             fight: Cell::new(false),
             unknown: Cell::new(false),
@@ -52,7 +54,9 @@ impl FreshAdmissionAuthority for IdleAuthority {
         self.now.get()
     }
     async fn gameplay_idle_exemptions(&self, _: AdmittedSession) -> Option<(bool, bool)> {
-        Some((self.training.get(), self.no_logout.get()))
+        self.exemptions_available
+            .get()
+            .then(|| (self.training.get(), self.no_logout.get()))
     }
     async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
         Some(at(0))
@@ -121,16 +125,25 @@ async fn scenario(
     notices: bool,
     body: impl AsyncFnOnce(&mut Client, &IdleAuthority, Instant) -> Result<(), Box<dyn Error>>,
 ) -> Result<ConnectionEnd, Box<dyn Error>> {
-    scenario_from(SessionContinuity::FRESH, notices, Instant::now(), body).await
+    scenario_from(
+        SessionContinuity::FRESH,
+        notices,
+        Instant::now(),
+        true,
+        body,
+    )
+    .await
 }
 
 async fn scenario_from(
     continuity: SessionContinuity,
     notices: bool,
     origin: Instant,
+    exemptions_available: bool,
     body: impl AsyncFnOnce(&mut Client, &IdleAuthority, Instant) -> Result<(), Box<dyn Error>>,
 ) -> Result<ConnectionEnd, Box<dyn Error>> {
     let authority = IdleAuthority::new(origin);
+    authority.exemptions_available.set(exemptions_available);
     let base = authority.now.get();
     let mut admitted = positioned()?;
     admitted.continuity = continuity;
@@ -196,6 +209,39 @@ async fn scenario_from(
     .await;
     result?;
     Ok(end)
+}
+
+#[test]
+fn idle_kick_unavailable_exemptions_defer_setup_and_tick_without_resetting_deadline()
+-> Result<(), Box<dyn Error>> {
+    run(async {
+        let end = scenario_from(
+            SessionContinuity::FRESH,
+            true,
+            Instant::now(),
+            false,
+            async |client, owner, base| {
+                // Snapshot setup and liveness continue even without exemption facts.
+                client.tick().await?;
+                assert_eq!((client.warnings, owner.logouts.get()), (0, 0));
+                owner.exemptions_available.set(true);
+                client.tick().await?;
+                owner.exemptions_available.set(false);
+                owner.now.set(base + Duration::from_secs(960));
+                client.tick().await?;
+                assert_eq!((client.warnings, owner.logouts.get()), (0, 0));
+                // Recovery re-evaluates the retained deadline, rather than refreshing it.
+                owner.exemptions_available.set(true);
+                assert_eq!(client.receive().await?, MessageType::StateDelta);
+                assert!(client.receive().await.is_err());
+                assert_eq!((client.warnings, owner.logouts.get()), (1, 1));
+                Ok(())
+            },
+        )
+        .await?;
+        assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
+        Ok(())
+    })
 }
 
 #[test]
@@ -367,6 +413,7 @@ fn idle_kick_reconnect_preserves_deadline_and_does_not_repeat_warning() -> Resul
             continuity,
             true,
             origin.get(),
+            true,
             async |client, owner, base| {
                 owner.now.set(base + Duration::from_secs(959));
                 client.tick().await?;

@@ -193,14 +193,14 @@ async fn live<A: FreshAdmissionAuthority>(
         weather_sent,
     } = world;
     let sequence = admitted.continuity.server_sequence;
-    let (training, _) = authority
-        .gameplay_idle_exemptions(*admitted)
-        .await
-        .ok_or(ServeEnd::Disconnected)?;
-    admitted
-        .continuity
-        .gameplay_idle
-        .training(authority.gameplay_idle_now(), training);
+    // Exemption facts are advisory for idle removal, not a join requirement. An
+    // unavailable observation preserves continuity until the next successful pass.
+    if let Some((training, _)) = authority.gameplay_idle_exemptions(*admitted).await {
+        admitted
+            .continuity
+            .gameplay_idle
+            .training(authority.gameplay_idle_now(), training);
+    }
     let Some(commands) = crate::gameplay_transport::session_ingress::SessionCommandStream::open(
         authority.session_commands(),
         admitted,
