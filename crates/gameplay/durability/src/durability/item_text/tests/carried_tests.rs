@@ -26,6 +26,17 @@ async fn write(
     text: &str,
     fence: CurrentCharacterItemFence,
 ) -> TestResult<std::result::Result<ItemTextWriteOutcome, ItemTextWriteError>> {
+    write_with_depot(h, item, command, text, fence, None).await
+}
+
+async fn write_with_depot(
+    h: &Harness,
+    item: u8,
+    command: u64,
+    text: &str,
+    fence: CurrentCharacterItemFence,
+    open_depot: Option<(u16, u8)>,
+) -> TestResult<std::result::Result<ItemTextWriteOutcome, ItemTextWriteError>> {
     let seal = h.recovery.seal_current().map_err(native::debug)?;
     let authority = h
         .root
@@ -34,8 +45,14 @@ async fn write(
         .map_err(native::debug)?;
     let request = carried_request(item, command, text)?;
     let policy = MailTextPolicy::from_qualified_content(request.definition.clone(), [1; 32], 511);
+    let permit = super::super::super::spell_owner_commit::SpellLanePermit::of_fresh_scope(
+        fence.runtime_scope,
+    )
+    .await?;
     Ok(h.root
-        .commit_item_text_rewrite(&authority, &h.node, fence, policy, request)
+        .commit_item_text_rewrite(
+            &permit, &authority, &h.node, fence, policy, request, open_depot,
+        )
         .await)
 }
 
@@ -85,6 +102,102 @@ async fn fixture(h: &Harness) -> TestResult {
         sqlx::pool::PoolConnectionReturnDisposition::ReturnedToIdle
     ));
     Ok(())
+}
+
+async fn depot_fixture(h: &Harness) -> TestResult {
+    fixture(h).await?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_item_character_depot_locations VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,7,17,1)")
+        .bind(id(111).as_slice()).bind(native::id(native::WORLD).as_slice()).bind(native::id(native::CHARACTER).as_slice()).execute(&mut *tx).await?;
+    sqlx::query(
+        "INSERT INTO game_character_depot_box_counters VALUES(encode($1,'hex')::uuid,7,17,2,1)",
+    )
+    .bind(native::id(native::CHARACTER).as_slice())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+#[test]
+fn write_postgres_depot_custody_binding_and_historical_replay() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let h = Harness::create(admin, "write_depot", false).await?;
+        let result = async {
+            depot_fixture(&h).await?;
+            let seal = h.recovery.seal_current().map_err(native::debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(native::debug)?;
+            let fence = native::item_fence()?;
+            let (world, channel) = scope_of(&fence)?;
+            for (lane_world, lane_channel) in [
+                (WorldId::decode(&id(90))?, channel),
+                (world, crate::foundation::ChannelId::decode(&id(91))?),
+            ] {
+                let permit = super::super::super::spell_owner_commit::SpellLanePermit::of_fresh_lane(lane_world, lane_channel).await;
+                let request = carried_request(111, 20, "refused")?;
+                let policy = MailTextPolicy::from_qualified_content(request.definition.clone(), [1; 32], 511);
+                assert!(matches!(h.root.commit_item_text_rewrite(&permit, &authority, &h.node, fence, policy, request, Some((7, 17))).await, Err(ItemTextWriteError::AuthorityRejected)));
+            }
+            // Owner-observed open box data is an explicit fixture here. These
+            // cases qualify storage custody, not the uninstalled TEXT/view route.
+            for (command, access) in [(1, None), (2, Some((8, 17))), (3, Some((7, 1))), (4, Some((7, 0))), (5, Some((7, 18)))] {
+                assert!(matches!(write_with_depot(&h, 111, command, "refused", native::item_fence()?, access).await?, Err(ItemTextWriteError::NotReachable)));
+            }
+            assert_eq!(h.count("game_item_text_write_receipts").await?, 0);
+            let written = write_with_depot(&h, 111, 6, "depot\ntext", native::item_fence()?, Some((7, 17))).await??;
+            assert_eq!(written, ItemTextWriteOutcome { text_revision: 1, changed: true, replayed: false });
+            // A current request requires the open view, but a historical retry
+            // still returns its first outcome after that view is closed.
+            assert!(matches!(write(&h, 111, 7, "replacement", native::item_fence()?).await?, Err(ItemTextWriteError::NotReachable)));
+            let replay = write(&h, 111, 6, "depot\ntext", native::item_fence()?).await??;
+            assert_eq!(replay, ItemTextWriteOutcome { replayed: true, ..written });
+            let binding = carried_request(111, 6, "depot\ntext")?.freeze_receipt_binding(fence.character_id);
+            assert_eq!(h.root.reconcile_item_text_rewrite(&authority, &binding).await?, Some(replay));
+            let mut stale = native::item_fence()?;
+            stale.connection_generation = crate::foundation::ConnectionGeneration::new(2)?;
+            assert!(matches!(write_with_depot(&h, 111, 8, "refused", stale, Some((7, 17))).await?, Err(ItemTextWriteError::AuthorityRejected)));
+            for (command, mutation, restore) in [
+                (9, "UPDATE game_item_character_depot_locations SET character_id=game_character_uuid_v7()", "UPDATE game_item_character_depot_locations SET character_id=(SELECT character_id FROM game_character_roots LIMIT 1)"),
+                (10, "UPDATE game_item_character_depot_locations SET world_id=game_character_uuid_v7()", "UPDATE game_item_character_depot_locations SET world_id=(SELECT world_id FROM game_character_roots LIMIT 1)"),
+                (11, "UPDATE game_item_instances SET definition_revision_ref='other-revision'", "UPDATE game_item_instances SET definition_revision_ref='definition-r1'"),
+            ] {
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::raw_sql(mutation).execute(&mut *tx).await?;
+                tx.commit().await?;
+                assert!(matches!(write_with_depot(&h, 111, command, "refused", native::item_fence()?, Some((7, 17))).await?, Err(ItemTextWriteError::NotReachable)));
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+                sqlx::raw_sql(restore).execute(&mut *tx).await?;
+                tx.commit().await?;
+            }
+            // An open box cannot grant custody of a detached item or somebody
+            // else's tree, and the depot seam does not admit nested depot bags.
+            let mut tx = h.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+            sqlx::query("DELETE FROM game_item_container_slots").execute(&mut *tx).await?;
+            tx.commit().await?;
+            assert!(matches!(write_with_depot(&h, 108, 12, "refused", native::item_fence()?, Some((7, 17))).await?, Err(ItemTextWriteError::NotReachable)));
+            let text: (String, String) = sqlx::query_as("SELECT text,text_revision::text FROM game_item_texts WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(111).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(text, ("depot\ntext".into(), "1".into()));
+            let counters: (String, i32) = sqlx::query_as("SELECT next_ordinal::text,committed FROM game_character_depot_box_counters")
+                .fetch_one(&h.pool).await?;
+            assert_eq!(counters, ("2".into(), 1));
+            assert_eq!(h.count("game_item_text_write_receipts").await?, 1);
+            assert_eq!(h.root_revision().await?, "1");
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }.await;
+        h.cleanup().await?;
+        if result.is_ok() { eprintln!("WRITE-NATIVE-PG depot custody, closed view data, fences and historical replay PASS"); }
+        result
+    })
 }
 
 #[test]
@@ -172,19 +285,28 @@ fn write_postgres_carried_nested_equipment_fences_and_replay() -> TestResult {
 
 #[test]
 fn write_postgres_carried_custody_revalidates_after_item_lock() -> TestResult {
+    custody_revalidates_after_item_lock(false)
+}
+
+#[test]
+fn write_postgres_depot_custody_revalidates_after_item_lock() -> TestResult {
+    custody_revalidates_after_item_lock(true)
+}
+
+fn custody_revalidates_after_item_lock(depot: bool) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
     runtime()?.block_on(async move {
         let h = Harness::create(admin, "write_custody_wait", false).await?;
         let result = async {
-            fixture(&h).await?;
+            if depot { depot_fixture(&h).await?; } else { fixture(&h).await?; }
             let mut blocker = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *blocker).await?;
             let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()").fetch_one(&mut *blocker).await?;
             sqlx::query("SELECT 1 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")
-                .bind(id(105).as_slice()).execute(&mut *blocker).await?;
-            let writing = write(&h, 108, 1, "must not commit", native::item_fence()?);
+                .bind(id(if depot { 111 } else { 105 }).as_slice()).execute(&mut *blocker).await?;
+            let writing = write_with_depot(&h, if depot { 111 } else { 108 }, 1, "must not commit", native::item_fence()?, depot.then_some((7, 17)));
             tokio::pin!(writing);
             // Observe a real waiter on this exact blocking backend, without a
             // timing-based assumption that the writer has already read ancestry.
@@ -211,8 +333,13 @@ fn write_postgres_carried_custody_revalidates_after_item_lock() -> TestResult {
             // Only a privileged fixture may change custody while the real
             // writer holds its Character root. This models post-wait drift;
             // ordinary runtime moves serialize on that root as well.
-            sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
-                .bind(id(101).as_slice()).execute(&mut *blocker).await?;
+            if depot {
+                sqlx::query("UPDATE game_item_character_depot_locations SET box_number=16 WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(111).as_slice()).execute(&mut *blocker).await?;
+            } else {
+                sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(101).as_slice()).execute(&mut *blocker).await?;
+            }
             blocker.commit().await?;
             assert!(matches!(writing.await?, Err(ItemTextWriteError::NotReachable)));
             assert_eq!(h.count("game_item_texts").await?, 0);

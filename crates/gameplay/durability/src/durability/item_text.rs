@@ -1,8 +1,8 @@
-//! WRITE-1: content-qualified rewrites in the held container tree and equipment.
+//! WRITE-1: content-qualified rewrites in held custody and an owner's open depot box.
 //!
 //! This is a bounded producer with its native storage ACL in migration 0101 and
 //! registered Content/storage modules, awaiting actual transport composition.
-//! It admits neither write-once definitions nor external custody locations.
+//! It admits neither write-once definitions nor Ground/house custody locations.
 //! The compositor must also apply the Channel trade owner's physical exclusion
 //! under its mutation lane (WRITE-0 §5.1). Do not activate this writer before
 //! that guard and the actual transport composition are integrated.
@@ -17,6 +17,7 @@ use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::check_uuid_v7;
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
 use super::runtime_scope_assignment::NodeIncarnationProof;
+use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
 use crate::foundation::{CommandRef, WorldId};
@@ -299,15 +300,29 @@ impl DurabilityRoot {
 
     /// Commit a bounded rewrite; exact terminal replay never reacquires item
     /// authority. Every new write independently proves the live content digest,
-    /// recovery, node, session, admission, root and current held custody.
+    /// recovery, node, session, admission, root and current custody.
+    /// `open_depot` is current owner-observed (town, box) data, not client input
+    /// or durable authority. The compositor must check the connection's open
+    /// view and locker reach under the mutation lane, retaining that lane through
+    /// this call. Storage independently checks exact Character/World custody.
+    /// It is deliberately excluded from historical request binding: closing a
+    /// view must not prevent an exact terminal replay or COMMIT reconciliation.
+    #[allow(clippy::too_many_arguments)]
     pub async fn commit_item_text_rewrite(
         &self,
+        permit: &SpellLanePermit,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         policy: MailTextPolicy,
         request: ItemTextWriteRequest,
+        open_depot: Option<(u16, u8)>,
     ) -> Result<ItemTextWriteOutcome> {
+        let (world, channel) =
+            scope_of(&fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
+        permit
+            .check_channel(world, channel)
+            .map_err(|_| ItemTextWriteError::AuthorityRejected)?;
         if request.command.game_session_id() != fence.game_session_id
             || check_uuid_v7(&request.item_instance_id).is_err()
         {
@@ -326,7 +341,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    match rewrite(&mut tx, &node, &fence, &policy, &request).await {
+                    match rewrite(&mut tx, &node, &fence, &policy, &request, open_depot).await {
                         Ok(outcome) => {
                             commit_semantic_transaction(tx, deadline).await?;
                             Ok(Ok(outcome))
@@ -346,6 +361,7 @@ async fn rewrite(
     fence: &CurrentCharacterItemFence,
     policy: &MailTextPolicy,
     request: &ItemTextWriteRequest,
+    open_depot: Option<(u16, u8)>,
 ) -> Result<ItemTextWriteOutcome> {
     let character = fence.character_id.as_bytes();
     let binding = request.freeze_receipt_binding(fence.character_id);
@@ -378,7 +394,7 @@ async fn rewrite(
         return Err(ItemTextWriteError::AuthorityRejected);
     }
     let text = qualified_text(policy, request)?;
-    lock_carried_text_item(tx, fence, request).await?;
+    lock_carried_text_item(tx, fence, request, open_depot).await?;
     persist_rewrite(tx, character, request, text).await
 }
 
@@ -408,11 +424,14 @@ async fn carried_text_path(
 /// The current Character root is already locked. Match the existing carried-use
 /// lock order: every ancestor ItemInstance in UUID order, then a fresh custody
 /// read after waiting. A foreign, detached, cyclic or overdeep path fails closed.
-/// Open external containers, Ground and houses need their own location fences.
+/// Depot transfers use the same Character root/item lock order. Only a direct
+/// box entry is admitted: the depot writer does not yet host nested containers.
+/// Ground and houses need their own location fences.
 async fn lock_carried_text_item(
     tx: &mut Transaction<'_, Postgres>,
     fence: &CurrentCharacterItemFence,
     request: &ItemTextWriteRequest,
+    open_depot: Option<(u16, u8)>,
 ) -> Result<()> {
     let (world, _) = scope_of(fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
     let path = carried_text_path(tx, &request.item_instance_id).await?;
@@ -438,7 +457,7 @@ async fn lock_carried_text_item(
     if locked != items || carried_text_path(tx, &request.item_instance_id).await? != path {
         return Err(ItemTextWriteError::NotReachable);
     }
-    let owned: bool = sqlx::query_scalar(
+    let held: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_item_instances i \
           WHERE i.item_instance_id=encode($1,'hex')::uuid \
             AND i.definition_family=$2 AND i.definition_production_key=$3 AND i.definition_revision_ref=$4 \
@@ -459,7 +478,36 @@ async fn lock_carried_text_item(
     .bind(path.len() == 1)
     .fetch_one(&mut **tx)
     .await?;
-    if !owned {
+    if held {
+        return Ok(());
+    }
+    let Some((town, box_number)) = open_depot else {
+        return Err(ItemTextWriteError::NotReachable);
+    };
+    if path.len() != 1 || !(1..=oteryn_gameplay_items::depot::DEPOT_BOXES).contains(&box_number) {
+        return Err(ItemTextWriteError::NotReachable);
+    }
+    // Separate post-lock statement: a pre-wait location snapshot is not proof
+    // of current custody. No depot counter changes when only text changes.
+    let in_box: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_item_instances i \
+          JOIN game_item_character_depot_locations d USING (item_instance_id, world_id) \
+          WHERE i.item_instance_id=encode($1,'hex')::uuid \
+            AND i.definition_family=$2 AND i.definition_production_key=$3 AND i.definition_revision_ref=$4 \
+            AND d.character_id=encode($5,'hex')::uuid AND d.world_id=encode($6,'hex')::uuid \
+            AND d.town_id=$7 AND d.box_number=$8)",
+    )
+    .bind(request.item_instance_id.as_slice())
+    .bind(&request.definition.family)
+    .bind(&request.definition.production_key)
+    .bind(&request.definition.revision_ref)
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(world.as_bytes().as_slice())
+    .bind(i32::from(town))
+    .bind(i16::from(box_number))
+    .fetch_one(&mut **tx)
+    .await?;
+    if !in_box {
         return Err(ItemTextWriteError::NotReachable);
     }
     Ok(())
