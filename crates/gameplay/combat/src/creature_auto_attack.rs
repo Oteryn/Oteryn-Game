@@ -1011,6 +1011,18 @@ impl AutoAttackOwner {
             };
             remaining = remaining.saturating_sub(armor);
         }
+        if !vitals.reflect_equipment_damage(
+            runtime,
+            facts.issuer,
+            facts.target,
+            facts.session,
+            Some("physical"),
+            remaining,
+            format!("melee:{}", source.entry_index).as_bytes(),
+            now,
+        ) {
+            return Err(AttackError::MissingVitals);
+        }
         let damage = if remaining == 0 {
             None
         } else {

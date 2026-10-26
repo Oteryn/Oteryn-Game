@@ -1,0 +1,17 @@
+{
+  "id": 48,
+  "name": "CHANNEL_LIST",
+  "owner_decision": "PREMIUM-CHANNEL-1 owner decision (PREMCHAN)",
+  "owner": "Game Channel configuration / current Channel owner",
+  "capability": 83,
+  "revision": "1 for the immutable served-channel configuration; reconnect snapshots reproduce it",
+  "delta_types": [],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "CHANNEL_LIST_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/channel_list_v1.proto#ChannelListV1",
+      "max_payload_bytes": 40
+    }
+  ]
+}

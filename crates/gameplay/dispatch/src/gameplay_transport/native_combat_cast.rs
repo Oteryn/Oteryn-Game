@@ -2439,7 +2439,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let intent = *intent;
         // SPELL-TARGET-1: the held attack target (ATTACK-0 §4), read last in the lock order.
-        let (attack_target, pvp_secure) = {
+        let (attack_target, pvp_modes) = {
             let mut attack = self.states.attack.lock().await;
             // Best-effort allocation before SQL/installation; failure grants no activity.
             attack.prepare_shared_experience_record(&runtime, actor, session);
@@ -2448,7 +2448,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let state = attack.combat_state(actor, session, self.owner_now());
             (
                 legacy.as_ref().and_then(|r| r.creature).or(state.target),
-                state.modes.secure,
+                attack.expert_modes(actor, session),
             )
         };
         // The attempt lives in the external context before any committing await. Deadline
@@ -2555,7 +2555,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                     } else if ordinary_combat::applicable(spell) {
                         ordinary_combat::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),attack_target,pvp_secure,&mut draw).await
+                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),attack_target,pvp_modes,&mut draw).await
                     } else {
                         prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
@@ -2638,7 +2638,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 let pvp_current=super::super::pvp_live::record_spell_harm(
                     &mut tx,owner.root,&authority,runtime,states,room,objects,
                     &attempt.prepared.batch,&mut attempt.prepared.installation.as_mut().ok_or(DurabilityError::Unavailable)?.player,
-                    pvp_secure,attempt.request.operations.iter().any(|operation|matches!(operation,
+                    pvp_modes,attempt.request.operations.iter().any(|operation|matches!(operation,
                         crate::durability::spell_items_abi::SpellItemOperation::MintGround{definition,..}
                         if definition.field_class!=crate::durability::spell_items_abi::SpellFieldClass::NotField))).await.is_ok();
                 (if pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {

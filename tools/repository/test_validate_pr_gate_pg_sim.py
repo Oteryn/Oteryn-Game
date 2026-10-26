@@ -41,10 +41,11 @@ class QualificationPlacementTests(unittest.TestCase):
 
     def test_rust_fast_runner_toggle_and_hosted_cache(self):
         job = self.pr.split("  rust_fast:\n", 1)[1].split("\n  rust_supply_chain:\n", 1)[0]
-        # Pin the complete expression: unset/off defaults to hosted, and only
-        # same-repository, non-dependabot PRs may execute on the owner's PC.
+        # Pin the complete expression: unset/off defaults to hosted, only the
+        # Clippy leg uses the PC, and only same-repository, non-dependabot PRs
+        # may execute on the owner's PC.
         expected = (
-            "${{ (vars.OTERYN_SELF_HOSTED_RUST == 'on' && "
+            "${{ (vars.OTERYN_SELF_HOSTED_RUST == 'on' && matrix.kind == 'clippy' && "
             "github.event.pull_request.head.repo.full_name == github.repository && "
             "github.actor != 'dependabot[bot]') && "
             "fromJSON('[\"self-hosted\",\"linux\",\"x64\",\"oteryn-molehill\"]') "

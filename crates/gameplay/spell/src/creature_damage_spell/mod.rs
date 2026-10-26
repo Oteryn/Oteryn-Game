@@ -1966,6 +1966,20 @@ impl DamageSpellOwner {
             occurrence,
         } in prepared.targets
         {
+            if source.element.as_deref() != Some("mana_drain")
+                && !vitals.reflect_equipment_damage(
+                    runtime,
+                    proposal.issuer,
+                    target,
+                    session,
+                    source.element.as_deref(),
+                    amount,
+                    format!("spell:{:?}:{}", source.list, source.entry_index).as_bytes(),
+                    now,
+                )
+            {
+                return Err(AttackError::MissingVitals);
+            }
             if blocked {
                 result.targets.push((
                     target,

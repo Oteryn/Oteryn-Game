@@ -1,0 +1,12 @@
+{
+  "id": 92,
+  "name": "ZONES_NOLOGOUT_V1",
+  "owner_decision": "ZONES-NOLOGOUT-1, NIGHT-W1 owner allocation",
+  "owner": "current ChannelRuntime",
+  "command_types": [],
+  "state_domains": [
+    57
+  ],
+  "offered": true,
+  "offer_gate": "Only selected capability 92 receives domain 57. Zone enforcement also applies to legacy logout command 23; legacy sessions receive its existing BUSY refusal."
+}

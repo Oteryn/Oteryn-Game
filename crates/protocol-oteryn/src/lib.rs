@@ -23,6 +23,7 @@ pub mod attack;
 pub mod bed;
 pub mod bestiary;
 pub mod capability_tables;
+pub mod channel_list;
 pub mod charm;
 pub mod charm_progression;
 mod charm_wire;
@@ -54,6 +55,7 @@ pub mod party;
 pub mod player_report;
 pub mod player_trade;
 pub mod presentation;
+pub mod pvp_expert;
 pub mod quest_log;
 pub mod refusal_detail;
 mod registered_capabilities;
@@ -78,6 +80,7 @@ pub mod world_object;
 pub mod world_spatial;
 pub mod world_spatial_entities;
 pub mod world_weather;
+pub mod zones_nologout;
 // End sorted module declarations.
 
 pub use contract_registries::{PROTOCOL_OTERYN_V1_REGISTRY_JSON, RESOURCE_LIMITS_REGISTRY_JSON};

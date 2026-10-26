@@ -29,7 +29,7 @@ pub(super) async fn qualify(
     let critical = EquippedOffence {
         critical_chance: 10_000,
         critical_damage: u16::MAX,
-        ..leech
+        ..leech.clone()
     };
     let creature;
     {
@@ -96,7 +96,7 @@ async fn passes(
             let runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             let state = states.get_mut(&runtime, actor, session).ok_or("state")?;
-            state.install_equipped_offence(offence);
+            state.install_equipped_offence(offence.clone());
             // Keep both pools below their maxima so every leech is visible.
             state.health = state.health.min(state.facts.max_health / 4);
         }

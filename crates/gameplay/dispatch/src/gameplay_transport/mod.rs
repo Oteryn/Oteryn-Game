@@ -43,6 +43,7 @@ mod creature_field;
 mod death_ml_loss_postgres;
 mod depot;
 mod equipment_move;
+mod equipment_reflection;
 mod field_removal;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
@@ -80,6 +81,7 @@ mod monster_profile_cycle;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod monster_quest_death;
+mod mount_taming;
 mod newhaven_arrival;
 mod newhaven_travel;
 mod npc_actor;
@@ -98,6 +100,7 @@ mod party_xp_command;
 mod promotion_death;
 mod promotion_login;
 mod pvp_death;
+mod pvp_expert;
 mod pvp_live;
 mod quest_admission;
 mod quest_log_source;
@@ -297,6 +300,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub evidence: &'a FreshEvidenceSource,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
+    /// PREMCHAN: static configuration of the served Game Channel.
+    pub premium_only: bool,
     /// ADMIT0 §3.2: the requirements boot validated against this generation's real offer
     /// before readiness. Immutable data; it never stands in for current scope authority.
     pub required_capabilities:
@@ -338,6 +343,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
 
 /// Explicit listener configuration; nothing has a production default.
 pub struct GameplayListenerConfig {
+    pub server_motd: String,
     pub certificates: Vec<rustls::pki_types::CertificateDer<'static>>,
     pub private_key: rustls::pki_types::PrivateKeyDer<'static>,
     /// At most the registered 256.
@@ -467,6 +473,7 @@ impl ConnectionIdentifiers for SecureIdentifiers {
 /// supplies account security and signing trust, and the durable commit
 /// revalidates all of them.
 pub struct ComposedFreshAdmission<'a, 'f, 's> {
+    pub server_motd: &'a str,
     /// The diagnostic writer supplied with the composed gameplay owners.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
     pub root: &'a DurabilityRoot,
@@ -476,6 +483,8 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub reset_epoch: u64,
     pub world_id: WorldId,
     pub channel_id: ChannelId,
+    /// PREMCHAN: static configuration, shared by admission and the channel-list projection.
+    pub premium_only: bool,
     /// See [`GameplaySeamOwners::required_capabilities`].
     pub required_capabilities:
         std::sync::Arc<world_required_capabilities::BoundRequiredCapabilities>,

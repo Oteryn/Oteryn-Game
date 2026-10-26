@@ -56,7 +56,7 @@ pub(super) async fn prepare_inner(
         &oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
     )>,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
-    pvp_secure: bool,
+    pvp_modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     if !applicable(spell)
@@ -167,7 +167,7 @@ pub(super) async fn prepare_inner(
         bindings,
     } = qualify_targets(
         tx, root, authority, runtime, states, room, objects, spell, intent, profile, actor, named,
-        pvp_secure, &players, &creatures, spatial,
+        pvp_modes, &players, &creatures, spatial,
     )
     .await?;
     let PaidPreparation {
@@ -459,7 +459,7 @@ async fn qualify_targets(
     profile: &crate::spell::executable_catalog::OperationalProfile,
     actor: ExactActorRef,
     named: Option<(ExactActorRef, &ParameterSpellCastIntent)>,
-    pvp_secure: bool,
+    pvp_modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     players: &[(ExactActorRef, GameSessionId, PlayerSpellState)],
     creatures: &[crate::foundation::CompanionSnapshot],
     spatial: SpatialPhase,
@@ -498,7 +498,7 @@ async fn qualify_targets(
                 continue;
             }
             if let Ok(facts) = crate::gameplay_transport::pvp_live::legal_player(
-                tx, root, authority, runtime, states, room, objects, actor, *target, pvp_secure,
+                tx, root, authority, runtime, states, room, objects, actor, *target, pvp_modes,
             )
             .await
             {

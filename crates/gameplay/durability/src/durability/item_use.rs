@@ -46,6 +46,7 @@ use sqlx::postgres::PgConnection;
 mod carried_inventory;
 mod carried_source;
 pub mod mining;
+pub mod mount_taming;
 
 pub use carried_inventory::ItemUseInventory;
 use carried_source::lock_use_path;
@@ -55,6 +56,7 @@ use carried_source::lock_use_path;
 pub enum ItemUseKind {
     Food,
     Potion,
+    MountTaming,
     PickRefine {
         tool: [u8; 16],
         wire_binding: [u8; 32],
@@ -67,6 +69,7 @@ impl ItemUseKind {
         match self {
             Self::Food => ITEM_USE_CAUSE_FOOD,
             Self::Potion => ITEM_USE_CAUSE_POTION,
+            Self::MountTaming => mount_taming::TAMING_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
     }
@@ -181,8 +184,11 @@ impl ItemUseRequest {
             return Err(ItemUseError::InvalidInput);
         }
         let flask_valid = match (&self.flask, self.kind) {
-            (ItemUseFlaskPlan::None, ItemUseKind::Food | ItemUseKind::Potion) => true,
-            (_, ItemUseKind::Food) => false,
+            (
+                ItemUseFlaskPlan::None,
+                ItemUseKind::Food | ItemUseKind::Potion | ItemUseKind::MountTaming,
+            ) => true,
+            (_, ItemUseKind::Food | ItemUseKind::MountTaming) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
                 ItemUseFlaskPlan::Stack {
@@ -329,7 +335,10 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: ItemUseRequest,
     ) -> Result<ItemUseOutcome> {
-        if matches!(request.kind, ItemUseKind::PickRefine { .. }) {
+        if matches!(
+            request.kind,
+            ItemUseKind::PickRefine { .. } | ItemUseKind::MountTaming
+        ) {
             return Err(ItemUseError::InvalidInput);
         }
         self.commit_use(authority, node, fence, request, None).await

@@ -81,6 +81,9 @@ pub struct ListenerConfig {
 pub struct ScopeConfig {
     pub world_id: String,
     pub channel_id: String,
+    /// PREMCHAN: static eligibility of this Game Channel; existing configurations stay public.
+    #[serde(default)]
+    pub premium_only: bool,
     pub assignment_wait_ms: u64,
     /// Required explicit non-production first-slice actor bound. No fallback exists.
     pub preproduction_actor_capacity: u32,
@@ -248,6 +251,9 @@ pub struct BootConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    /// Optional message shown once after login in this configured World (NOLOGOUT-RL-01).
+    #[serde(default)]
+    pub server_motd: String,
     pub staff: Option<crate::durability::staff::StaffConfig>,
     pub listener: ListenerConfig,
     pub scope: ScopeConfig,
@@ -404,6 +410,9 @@ impl NodeConfig {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
+        if self.server_motd.len() > oteryn_protocol_oteryn::zones_nologout::MAX_SERVER_MOTD_BYTES {
+            return reject("server_motd");
+        }
         let listener = &self.listener;
         if !(1..=MAX_ENTRY_DEADLINE_MS).contains(&listener.entry_deadline_ms) {
             return reject("listener.entry_deadline_ms");
@@ -818,6 +827,21 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
 "#;
 
     #[test]
+    fn premchan_static_scope_configuration_defaults_public_and_accepts_premium_only() {
+        let public = NodeConfig::parse(NODE.as_bytes()).expect("public configuration");
+        assert!(!public.scope.premium_only);
+        let premium = NODE.replace("[scope]", "[scope]\npremium_only = true");
+        assert!(
+            NodeConfig::parse(premium.as_bytes())
+                .expect("premium configuration")
+                .scope
+                .premium_only
+        );
+        let invalid = NODE.replace("[scope]", "[scope]\npremium_only = 1");
+        assert!(NodeConfig::parse(invalid.as_bytes()).is_err());
+    }
+
+    #[test]
     fn complete_node_configuration_parses() {
         let config = NodeConfig::parse(NODE.as_bytes()).expect("valid configuration");
         assert_eq!(config.listener.max_connections, 256);
@@ -833,6 +857,29 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
             config.platform.runtime_status.map(|s| s.assignment_epoch),
             Some(1)
         );
+    }
+
+    #[test]
+    fn nologout_motd_config_bounds() {
+        assert_eq!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("default")
+                .server_motd,
+            ""
+        );
+        for text in ["a".repeat(255), "é".repeat(127), String::new()] {
+            let document = format!("server_motd = {text:?}\n{NODE}");
+            assert_eq!(
+                NodeConfig::parse(document.as_bytes())
+                    .expect("bounded")
+                    .server_motd,
+                text
+            );
+        }
+        for text in ["a".repeat(256), "é".repeat(128)] {
+            let document = format!("server_motd = {text:?}\n{NODE}");
+            assert!(NodeConfig::parse(document.as_bytes()).is_err());
+        }
     }
 
     #[test]

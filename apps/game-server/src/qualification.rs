@@ -1637,6 +1637,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
+            server_motd: String::new(),
             certificates: vec![certificate.clone()],
             private_key: key.into(),
             max_connections: 256,
@@ -1651,6 +1652,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             evidence: &fresh_evidence,
             world_id: world,
             channel_id: channel,
+            premium_only: false,
             // ADMIT0: the same binding boot derives. The entry-room seam declares
             // `SEAM_REQUIRED_CAPABILITIES` (ADMIT-CAP-1); the spell seam declares none.
             required_capabilities:

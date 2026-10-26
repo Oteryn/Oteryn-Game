@@ -18,6 +18,18 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     admitted: &mut AdmittedSession,
     domains: &mut Vec<OwnedDomain>,
 ) -> Result<InitialSnapshot, ServeEnd> {
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(oteryn_protocol_oteryn::channel_list::STATE_DOMAIN_CHANNEL_LIST)
+    {
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::channel_list::STATE_DOMAIN_CHANNEL_LIST,
+            revision: 1,
+            snapshot_type: 1,
+            payload: authority.channel_list().ok_or(ServeEnd::Disconnected)?,
+        });
+    }
     // USE-WIRE-V1 (#162 5868482467): for a session served domain 2 (a fixture World session,
     // without capability 18), the join/resync snapshot also carries the door's current
     // `WORLD_OBJECT_OVERLAY`, the same code path a reconnect resumes through, so a resumed
@@ -399,6 +411,30 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
             revision: admitted.continuity.npc.window_revision,
             snapshot_type: SNAPSHOT_TYPE_NPC_TRADE_WINDOW_V1,
             payload: window,
+        });
+    }
+    // Normalize expert/world modes before observing domain 10 so both snapshots carry
+    // the same authoritative fight tuple (in particular Hardcore's secure=false).
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(oteryn_protocol_oteryn::pvp_expert::STATE_DOMAIN_EXPERT_FIGHT_MODES)
+    {
+        let state = authority
+            .observe_expert_modes(actor, admitted.game_session_id)
+            .await
+            .ok_or(ServeEnd::Disconnected)?;
+        let combat = &mut admitted.continuity.combat;
+        combat.expert_revision = combat
+            .expert_revision
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        combat.expert_sent = Some(state);
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::pvp_expert::STATE_DOMAIN_EXPERT_FIGHT_MODES,
+            revision: combat.expert_revision,
+            snapshot_type: 1,
+            payload: oteryn_protocol_oteryn::pvp_expert::encode_expert_fight_modes(&state),
         });
     }
     // ATTACK-1b: with capability 17, domain 10 above every revision the session has seen. The

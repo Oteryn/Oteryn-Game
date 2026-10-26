@@ -444,6 +444,7 @@ impl ChannelRuntimeV1 {
                 },
                 ordinal,
                 origin: None,
+                reflection: None,
             })
         } else {
             None

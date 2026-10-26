@@ -16,6 +16,8 @@ use crate::project::{CreatureFacts, Families, LegacyPosition};
 use crate::sector::{Item, Tile};
 use crate::spawn;
 
+pub mod subareas;
+
 /// What a palette key of the World Project resolves to in the pinned content revision.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Resolution {
@@ -974,6 +976,7 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
     }
     let skipped: BTreeSet<String> = state.diagnostics.iter().map(|d| d.key.clone()).collect();
     let manifest = Manifest {
+        subareas: subareas::realize(input, resolver, &npc_report)?,
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,
         projection_class: "server".into(),
@@ -1129,6 +1132,7 @@ pub fn equivalence(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let expected = Manifest {
+        subareas: subareas::realize(input, resolver, &npc_report)?,
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,
         projection_class: "server".into(),
@@ -1150,6 +1154,7 @@ pub fn equivalence(
     };
     let got = &read.manifest;
     for (field, same) in [
+        ("subareas", expected.subareas == got.subareas),
         ("format", expected.format == got.format),
         (
             "min_reader_version",

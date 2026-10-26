@@ -8,6 +8,11 @@ mod composed;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     mechanic_authority_methods!();
+    /// PREMCHAN: the bounded list of Game Channels served by this owner. This node currently
+    /// serves exactly one Channel. No routing or admission authority is granted by the list.
+    fn channel_list(&self) -> Option<Vec<u8>> {
+        None
+    }
     /// The production session owner retains command truth across connection replacement.
     /// Transport-only authorities may omit the resumable command directory.
     fn session_commands(
@@ -258,6 +263,11 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    /// World-configured login text; empty means no message.
+    fn server_motd(&self) -> &str {
+        ""
+    }
+
     fn take_tutorial_notice(
         &self,
         _session: GameSessionId,
@@ -331,6 +341,18 @@ pub trait FreshAdmissionAuthority {
                 ..UseOutcome::rejected()
             }
         }
+    }
+
+    /// MOUNTTAME: replay is resolved before current item and creature visibility.
+    fn tame_mount(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _visible: bool,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
     }
 
     /// MINING-1: original USE is retained for replay before either handle is resolved.
@@ -902,6 +924,24 @@ pub trait FreshAdmissionAuthority {
         _modes: FightModes,
     ) -> impl Future<Output = AttackIntentDisposition> {
         async { AttackIntentDisposition::Rejected }
+    }
+
+    fn expert_fight_modes(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _command_id: u64,
+        _modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    ) -> impl Future<Output = AttackIntentDisposition> {
+        async { AttackIntentDisposition::Rejected }
+    }
+
+    fn observe_expert_modes(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes>> {
+        async { None }
     }
 
     /// ATTACK-1b: the admitted actor's `ACTOR_COMBAT_STATE` (domain 10) for the snapshot, or

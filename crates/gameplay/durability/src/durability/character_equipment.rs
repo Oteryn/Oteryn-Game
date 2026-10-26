@@ -64,6 +64,8 @@ impl CombatMode {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EquippedItem {
+    /// Stored forge tier, read under the same item/root locks as equipment custody.
+    pub tier: u8,
     pub slot: u8,
     pub item_instance_id: [u8; 16],
     pub definition: super::item_mint::TypedDefinitionRef,
@@ -295,7 +297,7 @@ pub async fn read_equipment_in_transaction(
     // The validated equipment authority already holds the Character root lock.
     // Slot locations are immutable (INSERT/DELETE only); lock their actual item
     // rows, as the custody exclusivity trigger does, without requiring slot UPDATE.
-    let rows=sqlx::query("SELECT s.slot,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.lifecycle,i.world_id::text AS item_world,s.world_id::text AS slot_world FROM game_character_equipment_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot FOR UPDATE OF i")
+    let rows=sqlx::query("SELECT s.slot,COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.lifecycle,i.world_id::text AS item_world,s.world_id::text AS slot_world FROM game_character_equipment_slots s JOIN game_item_instances i USING(item_instance_id) WHERE s.character_id=encode($1,'hex')::uuid ORDER BY s.slot FOR UPDATE OF i")
         .bind(authority.fence.character_id.as_bytes().as_slice()).fetch_all(&mut **tx).await?;
     if rows.len() > 9 {
         return Err(rejected("equipment slot bound"));
@@ -310,6 +312,10 @@ pub async fn read_equipment_in_transaction(
             return Err(rejected("equipment corrupt actual custody"));
         }
         items.push(EquippedItem {
+            tier: u8::try_from(row.try_get::<i16, _>("tier")?)
+                .ok()
+                .filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX)
+                .ok_or(rejected("equipment tier"))?,
             slot: u8::try_from(row.try_get::<i16, _>("slot")?)
                 .map_err(|_| rejected("equipment slot"))?,
             item_instance_id: uuid(row.try_get("item_instance_id")?)?,

@@ -583,7 +583,40 @@ Supersession requires named product/playtest, economy, PvP abuse, availability/r
 - physical DB/control-plane schema;
 - concrete ANL/protocol IDs;
 - production admin exception implementation;
-- Premium/VIP/commerce or paid queue priority.
+- VIP/commerce or paid queue priority.
+
+PREMIUM-CHANNEL-1 owner decision (PREMCHAN): `premium_only` is static configuration of a
+Game Channel (currently `scope.premium_only`, default false), alongside its WorldId and
+ChannelId. It describes a parallel world simulation, never a chat room. The Channel model
+is an Oteryn/MU design; Canary has no equivalent Game Channels. Its nearest precedent is
+Premium-area entry: `canary:data-otservbr-global/scripts/movements/rookgaard/premium_bridge.lua:11`
+and the guarded teleport refusal at
+`canary:data-otservbr-global/scripts/movements/oramond/teleport.lua:25` ("You need a premium
+account to access this area."). Crystal additionally checks special tiles in movement:
+`crystal:src/game/game.cpp:1761`.
+
+Authenticated fresh admission, including destination admission after a safe Channel switch
+(§7), requires current Premium from the existing PREM-1 owner for a premium-only Channel.
+Missing, expired, revoked, uncertain or not-yet-delivered Premium fails closed with the typed
+`PremiumRequired` refusal through the existing rejection path: no player reservation, nonce
+consumption, session/lease or Character mutation. No paid queue/switch priority is granted.
+A bounded two-second warm-up may start the existing account puller after authentication;
+failed/cancelled attempts release their temporary registration without stopping another
+session's pulls. PREM-1 may maintain its own evidence fences; this grants no gameplay write.
+The final admission transaction also reads a live PREM-1 gate through its existing locked
+owner predicate, retaining all capability, authority and session-generation fences. A
+gate that closes while reservation or database locks are awaited cannot create a session.
+
+Expiry while already present causes no forced kick, migration or authority release. Existing
+same-Channel session/reconnect/recovery rules remain in force (§7); the next **fresh** admission
+(including to the same Channel after session end) or destination entry checks Premium again.
+Other Premium benefits continue their own moment-of-use checks.
+
+The server's served-channel list carries `premium_only` under capability 83 `CHANNEL_LIST_V1`,
+domain 48, snapshot type 1 (`channel_list_v1.proto`); unselected clients receive no new domain.
+Current node composition serves one configured Channel, so this list has one entry (40 bytes).
+It does not invent a cross-node directory or change Platform directory/grant ownership (§30).
+Changing the static flag requires the normal stop/reconfigure/boot and policy-revision discipline.
 
 ## 37. Acceptance consequence
 

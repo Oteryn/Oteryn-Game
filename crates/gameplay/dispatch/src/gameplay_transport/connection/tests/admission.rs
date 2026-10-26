@@ -72,12 +72,78 @@ fn admission_accepts_only_after_the_owning_authority_commits() -> Result<(), Box
 #[test]
 fn admission_refusal_writes_no_acceptance() -> Result<(), Box<dyn Error>> {
     run(async {
-        for refusal in [AdmissionRefusal::Rejected, AdmissionRefusal::Unavailable] {
+        for refusal in [
+            AdmissionRefusal::Rejected,
+            AdmissionRefusal::Unavailable,
+            AdmissionRefusal::PremiumRequired,
+        ] {
             let authority = Authority::new(Err(refusal));
             let (end, frames) = drive(&authority, &[bootstrap(1, 1, b"grant")]).await?;
             assert_eq!(end, ConnectionEnd::AdmissionRefused(refusal));
             assert_eq!(authority.calls.get(), 1);
             assert!(frames.is_empty());
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn premchan_served_channel_list_is_capability_gated_and_keeps_the_flag()
+-> Result<(), Box<dyn Error>> {
+    struct ChannelAuthority(bool);
+    impl FreshAdmissionAuthority for ChannelAuthority {
+        async fn admit(
+            &self,
+            _: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+        async fn observe(&self, _: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+        fn channel_list(&self) -> Option<Vec<u8>> {
+            Some(oteryn_protocol_oteryn::channel_list::encode_channel_list(
+                &WORLD, &CHANNEL, self.0,
+            ))
+        }
+    }
+    run(async {
+        for premium in [false, true] {
+            for selected in [false, true] {
+                let mut admitted = positioned()?;
+                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    PRODUCTION_OFFERED_CAPABILITIES,
+                    if selected { &[83] } else { &[] },
+                )
+                .ok_or("selection")?;
+                let (end, frames) =
+                    drive_session(&ChannelAuthority(premium), admitted, &[]).await?;
+                assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+                let mut lists = Vec::new();
+                for frame in frames {
+                    let envelope = decode_wire_envelope(&frame)?;
+                    if envelope.message_type() == MessageType::SnapshotChunk {
+                        for domain in
+                            oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?.1
+                        {
+                            if domain.domain_id == 48 {
+                                assert_eq!((domain.revision, domain.snapshot_type), (1, 1));
+                                lists.push(domain.payload.to_vec());
+                            }
+                        }
+                    }
+                }
+                if selected {
+                    let mut expected = vec![0x0a, 38, 0x0a, 16];
+                    expected.extend_from_slice(&WORLD);
+                    expected.extend_from_slice(&[0x12, 16]);
+                    expected.extend_from_slice(&CHANNEL);
+                    expected.extend_from_slice(&[0x18, u8::from(premium)]);
+                    assert_eq!(lists, vec![expected]);
+                } else {
+                    assert!(lists.is_empty());
+                }
+            }
         }
         Ok(())
     })

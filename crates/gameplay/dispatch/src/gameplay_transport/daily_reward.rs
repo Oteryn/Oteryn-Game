@@ -324,7 +324,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match self
             .root
-            .commit_daily_reward_claim(self.character, self.holder, fence, request, plan)
+            .commit_daily_reward_claim(
+                self.character,
+                self.holder,
+                fence,
+                request,
+                plan,
+                &super::spell_premium_coordinator::DailyRewardPremium(self.premium_coordinator),
+            )
             .await
         {
             Ok(DailyRewardClaimOutcome::Committed(receipt)) => wire::DailyRewardResult {

@@ -2572,6 +2572,7 @@ async fn boot_and_serve(
     // D3 step 9: three loops under one shutdown token.
     let shutdown = CancellationToken::new();
     let listener_config = GameplayListenerConfig {
+        server_motd: config.server_motd.clone(),
         certificates: material.gameplay_chain.clone(),
         private_key: material.gameplay_key.clone_key(),
         max_connections: usize::try_from(config.listener.max_connections)
@@ -2593,6 +2594,7 @@ async fn boot_and_serve(
         evidence,
         world_id: material.world,
         channel_id: material.channel,
+        premium_only: config.scope.premium_only,
         required_capabilities: required_capabilities.clone(),
         runtime: &runtime,
         movement_cells: &movement_cells,
