@@ -1,0 +1,1 @@
+{"id":114,"name":"QUICK_LOOT","owner_decision":"QUICKLOOT-1","capability":98,"payload_schema":"docs/contracts/protocol-oteryn/v1/quick_loot_v1.proto#QuickLootRequestV1","result_schema":"docs/contracts/protocol-oteryn/v1/quick_loot_v1.proto#QuickLootResultV1","max_payload_bytes":64,"max_result_payload_bytes":16384}

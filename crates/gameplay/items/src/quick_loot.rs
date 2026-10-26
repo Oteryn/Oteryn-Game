@@ -10,6 +10,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub const MAX_NEARBY_CORPSES: usize = 30;
 /// Top-damage/party exclusivity after death.
 pub const EXCLUSIVE_LOOT_MILLIS: u64 = 10_000;
+/// QUICKLOOT1-RL-1280: maximum item moves attempted by one command.
+pub const MAX_TRANSFERS_PER_COMMAND: usize = 1_280;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LootCategory {
@@ -85,6 +87,49 @@ pub struct Skipped<K> {
 pub struct ManualLootPlan<K> {
     pub accepted: Vec<PlannedTransfer<K>>,
     pub skipped: Vec<Skipped<K>>,
+}
+
+/// Result of committing one admitted transfer through the custody owner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TransferCommit {
+    Committed,
+    /// Capacity, weight, stale custody, or another owner-side rule refused the move.
+    Refused,
+}
+
+/// The result of executing a bounded plan. The original stable plan order is retained.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManualLootExecution<K> {
+    pub accepted: Vec<PlannedTransfer<K>>,
+    pub skipped: Vec<PlannedTransfer<K>>,
+}
+
+/// Executes every admitted move inside the caller's single item-owner transaction.
+///
+/// The callback is deliberately the existing custody/capacity owner boundary: this module never
+/// mutates item truth. A caller opens one transaction, calls this function, then commits once.
+/// Refusing one item does not prevent later items from being attempted, matching Global's
+/// accepted/skipped result lists.
+pub fn execute_bounded_plan<K: Copy>(
+    plan: &ManualLootPlan<K>,
+    mut transfer: impl FnMut(PlannedTransfer<K>) -> TransferCommit,
+) -> ManualLootExecution<K> {
+    let mut result = ManualLootExecution {
+        accepted: Vec::with_capacity(plan.accepted.len()),
+        skipped: Vec::new(),
+    };
+    for move_ in plan
+        .accepted
+        .iter()
+        .copied()
+        .take(MAX_TRANSFERS_PER_COMMAND)
+    {
+        match transfer(move_) {
+            TransferCommit::Committed => result.accepted.push(move_),
+            TransferCommit::Refused => result.skipped.push(move_),
+        }
+    }
+    result
 }
 
 /// Builds the stable transfer order for a manual command. This is intentionally only admission:
@@ -279,6 +324,35 @@ mod tests {
                 .iter()
                 .all(|entry| entry.recipient == Recipient::Container(7))
         );
+    }
+
+    #[test]
+    fn bounded_execution_reports_each_owner_refusal_and_keeps_order() {
+        let moves = (0..=MAX_TRANSFERS_PER_COMMAND)
+            .map(|item| PlannedTransfer {
+                corpse: 1,
+                item,
+                recipient: Recipient::MainContainer,
+            })
+            .collect();
+        let plan = ManualLootPlan {
+            accepted: moves,
+            skipped: Vec::new(),
+        };
+        let mut calls = 0;
+        let result = execute_bounded_plan(&plan, |move_| {
+            calls += 1;
+            if move_.item % 2 == 0 {
+                TransferCommit::Committed
+            } else {
+                TransferCommit::Refused
+            }
+        });
+        assert_eq!(calls, MAX_TRANSFERS_PER_COMMAND);
+        assert_eq!(result.accepted.first().map(|entry| entry.item), Some(0));
+        assert_eq!(result.skipped.first().map(|entry| entry.item), Some(1));
+        assert_eq!(result.accepted.len(), MAX_TRANSFERS_PER_COMMAND / 2);
+        assert_eq!(result.skipped.len(), MAX_TRANSFERS_PER_COMMAND / 2);
     }
 
     #[test]

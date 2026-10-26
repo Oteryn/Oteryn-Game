@@ -1,0 +1,5 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+message QuickLootRequestV1 { uint32 action = 1; bytes corpse = 2; uint32 category = 3; uint32 recipient = 4; bytes recipient_id = 5; bool fallback_to_main = 6; }
+message QuickLootItemResultV1 { bytes item = 1; bool accepted = 2; }
+message QuickLootResultV1 { repeated QuickLootItemResultV1 items = 1; }

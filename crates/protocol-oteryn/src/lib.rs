@@ -56,6 +56,7 @@ pub mod player_report;
 pub mod player_trade;
 pub mod presentation;
 pub mod quest_log;
+pub mod quick_loot;
 pub mod refusal_detail;
 mod registered_capabilities;
 pub mod server_save_countdown;
