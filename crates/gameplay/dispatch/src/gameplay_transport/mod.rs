@@ -94,6 +94,7 @@ mod npc_voice;
 mod paced_movement;
 pub mod party_command;
 mod party_kill_settlement;
+mod party_skull;
 mod party_spell_feedback;
 mod party_spell_owner;
 mod party_xp;

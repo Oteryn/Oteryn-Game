@@ -105,6 +105,7 @@ fn fuzz_entity_snapshot_and_delta_decoders() {
             let fields = EntityFields {
                 item_handles,
                 light,
+                party_icons: false,
             };
             codec(
                 "decode_world_spatial_entities_snapshot_with_fields",

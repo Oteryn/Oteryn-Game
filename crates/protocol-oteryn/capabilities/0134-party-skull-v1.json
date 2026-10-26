@@ -1,0 +1,20 @@
+{
+  "id": 134,
+  "name": "PARTY_SKULL_V1",
+  "constant": "party_skull::CAPABILITY_PARTY_SKULL_V1",
+  "requires": [
+    6,
+    42
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    155
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}
