@@ -590,6 +590,11 @@ pub mod tests {
             (4, 5, true, false, false),
             (5, 17, true, false, false),
             (6, 20, false, true, false),
+            (7, 8, false, false, false),
+            (8, 9, true, false, false),
+            (9, 12, false, true, false),
+            (10, 24, false, false, true),
+            (11, 29, true, false, false),
         ];
         let world = world_from_bundle(bundle(Some(vec![Sector {
             floor: -7,
@@ -612,7 +617,7 @@ pub mod tests {
                 .collect(),
         }])));
         let (_, cells) = cells(&world);
-        for (x, _, protection, no_pvp, pvp) in cases {
+        for (x, flags, protection, no_pvp, pvp) in cases {
             let tile = cells
                 .spell_tiles()
                 .lookup(cells.scope(), at(i32::from(x)))
@@ -620,6 +625,16 @@ pub mod tests {
             assert_eq!(tile.flags().protection_zone, protection, "x {x}");
             assert_eq!(tile.no_pvp_zone(), Some(no_pvp), "x {x}");
             assert_eq!(tile.pvp_zone(), Some(pvp), "x {x}");
+            assert_eq!(
+                world
+                    .overlay()
+                    .base()
+                    .tile(x, 0, -7)
+                    .expect("base zone tile")
+                    .no_logout(),
+                flags & 8 != 0,
+                "x {x}"
+            );
         }
     }
 

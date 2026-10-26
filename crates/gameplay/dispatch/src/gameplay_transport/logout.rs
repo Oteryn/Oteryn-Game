@@ -10,6 +10,8 @@ use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
 /// What the connection does after one logout command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogoutReply {
+    /// NOLOGOUT refuses without releasing the session; capability 92 carries its text.
+    NoLogout,
     /// Write this result. `Accepted` only once the terminal release has committed and the actor
     /// has left the Channel; the connection then stops reading and closes.
     Result(LogoutResult),
@@ -57,6 +59,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return LogoutReply::Result(LogoutResult::Busy);
         };
         let session = admitted.game_session_id;
+        match self.no_logout_zone(actor).await {
+            Some(true) => return LogoutReply::NoLogout,
+            None => return LogoutReply::Result(LogoutResult::Busy),
+            Some(false) => {}
+        }
         if self.states.newhaven_travel.held(session) {
             return LogoutReply::Result(LogoutResult::Busy);
         }
@@ -75,6 +82,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return LogoutReply::Result(LogoutResult::InFight { retry_after_ms });
         }
         self.release_logout(admitted, actor, controller).await
+    }
+
+    async fn no_logout_zone(&self, actor: ExactActorRef) -> Option<bool> {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        // This format has no OTBM zones; retain its existing logout behavior, including
+        // engineering runtimes whose synthetic content pin does not bind a map projection.
+        if matches!(
+            self.movement_cells.index(),
+            NativeMovementCollisionIndex::Entry(_)
+        ) {
+            return Some(false);
+        }
+        let mut runtime = self.runtime.lock().await;
+        let scope = self.movement_cells.scope();
+        if scope.world_id != runtime.binding().world_id()
+            || scope.world_id != runtime.content_pin().world_id()
+            || scope.generation_digest != runtime.content_pin().server_artifact_digest()
+        {
+            return None;
+        }
+        let position = runtime.borrow_movement_position().read(actor).ok()?;
+        if position.context() != runtime.pinned_movement_context() {
+            return None;
+        }
+        let position = position.position();
+        let cell = crate::content::LogicalCell {
+            x: position.x,
+            y: position.y,
+            z: i32::from(position.floor),
+        };
+        match self.movement_cells.index() {
+            NativeMovementCollisionIndex::Bundle(index) => {
+                use crate::map::boot::BundleCollisionIndexExt;
+                // Check the bundle scope even on a tile whose mutable stack is unknown to spells.
+                index.lookup(scope, cell).ok()?;
+                let pos = crate::content::bundle_spell_tiles::tile_pos(cell)?;
+                let tile = index.map().overlay.base().tile(pos.x, pos.y, pos.floor)?;
+                Some(tile.no_logout())
+            }
+            NativeMovementCollisionIndex::Source(world) => Some(
+                world
+                    .immutable_tile(scope, cell)
+                    .ok()?
+                    .source_step()?
+                    .no_logout,
+            ),
+            // The engineering fixture format has no OTBM zones.
+            NativeMovementCollisionIndex::Entry(_) => Some(false),
+        }
     }
     /// The `retry_after_ms` of a running in-fight deadline (ATTACK-0 §4), or `None`. A dead
     /// actor is not held, as at a closed client's release (`held_step`). The PvE deadline

@@ -498,6 +498,7 @@ pub fn qualify(
                 immutable_floor_changes.into_iter().collect(),
                 row.otbm_flags & 1 == 0 && row.otbm_flags & 4 != 0,
                 row.otbm_flags & 1 == 0 && row.otbm_flags & 4 == 0 && row.otbm_flags & 16 != 0,
+                row.otbm_flags & 8 != 0,
             ),
         );
         let tile = if dynamic.is_empty() {
@@ -510,6 +511,7 @@ pub fn qualify(
                 floor_changes.into_iter().collect(),
                 row.otbm_flags & 1 == 0 && row.otbm_flags & 4 != 0,
                 row.otbm_flags & 1 == 0 && row.otbm_flags & 4 == 0 && row.otbm_flags & 16 != 0,
+                row.otbm_flags & 8 != 0,
             ))
         } else {
             None
@@ -635,6 +637,20 @@ mod tests {
     const SOURCE: &[u8] = include_bytes!(
         "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
     );
+    #[test]
+    fn nologout_source_flags_survive_immutable_tile_qualification() {
+        let scope = scope();
+        let map = qualify(SOURCE, scope.clone()).unwrap();
+        let source: SourceWorldDocument = serde_json::from_slice(SOURCE).unwrap();
+        for row in source.tiles {
+            let [x, y, z] = row.native_position;
+            let tile = map.immutable_tile(&scope, LogicalCell { x, y, z }).unwrap();
+            assert_eq!(
+                tile.source_step().unwrap().no_logout,
+                row.otbm_flags & 8 != 0
+            );
+        }
+    }
     #[test]
     fn mutable_source_capture_stays_unknown_until_actual_item_owner() {
         let scope = scope();

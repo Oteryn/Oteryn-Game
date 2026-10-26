@@ -81,6 +81,7 @@ const SECTOR_TILES: usize = (SECTOR_SIZE as usize) * (SECTOR_SIZE as usize);
 /// ground item (§1.3).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct BaseTile {
+    no_logout: bool,
     first_entry: u32,
     entries: u16,
     /// The ground item's stored ground speed, also for a non-walkable ground; 0 without one.
@@ -172,6 +173,10 @@ pub struct TileView<'a> {
 }
 
 impl<'a> TileView<'a> {
+    /// Retained OTBM NOLOGOUT, independent of mutable items and spell qualification.
+    pub fn no_logout(&self) -> bool {
+        self.tile.no_logout
+    }
     fn range(&self) -> std::ops::Range<usize> {
         let first = self.tile.first_entry as usize;
         first..first + usize::from(self.tile.entries)
@@ -532,6 +537,7 @@ impl Builder {
                     .ok_or_else(|| malformed("too many top-level entries"))?;
             }
             self.tiles.push(BaseTile {
+                no_logout: tile.flags & 8 != 0,
                 first_entry,
                 entries,
                 ground_speed,

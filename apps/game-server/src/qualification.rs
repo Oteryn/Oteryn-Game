@@ -1637,6 +1637,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     let serve = serve_gameplay(
         &listener,
         GameplayListenerConfig {
+            server_motd: String::new(),
             certificates: vec![certificate.clone()],
             private_key: key.into(),
             max_connections: 256,

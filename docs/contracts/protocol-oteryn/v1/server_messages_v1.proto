@@ -1,0 +1,11 @@
+// ZONES-NOLOGOUT-1: capability 92, domain 57. Reuses TutorialNoticeV1 status_text bytes.
+// Snapshot: empty=1 or the once-per-login configured MOTD. Delta: status_text only.
+// Text is 1..=255 UTF-8 bytes; message is at most 260 bytes. No hint IDs.
+syntax = "proto3";
+package oteryn.protocol.v1.server_messages;
+message ServerMessageV1 {
+  oneof message {
+    uint32 empty = 1; // Exactly 1; snapshot only.
+    string status_text = 2;
+  }
+}

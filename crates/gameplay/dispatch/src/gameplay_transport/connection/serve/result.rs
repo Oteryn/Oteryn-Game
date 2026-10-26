@@ -234,6 +234,10 @@ pub(super) fn encode(
                 payload,
             )
         }
+        Dispatch::NoLogout => (
+            CommandStatus::Rejected,
+            encode_logout_result(LogoutResult::Busy).map_err(|_| ServeEnd::Disconnected)?,
+        ),
         Dispatch::Achievements(AccountAchievementsReply::Page(payload)) => {
             // The page is written once; move it out instead of copying up to 32 KiB.
             (CommandStatus::Accepted, std::mem::take(payload))
