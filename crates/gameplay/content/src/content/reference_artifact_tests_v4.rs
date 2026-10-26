@@ -303,3 +303,58 @@ fn typed_codec_rejects_noncanonical_and_projection_unsafe_shapes() -> Result<(),
     assert!(parse_typed_client_item(V4, &stack_contradiction, &index).is_err());
     Ok(())
 }
+
+#[test]
+fn eqmod2_reflect_percent_all_round_trips_with_its_percent_shape() -> Result<(), ContentError> {
+    use ReferenceItemField::{Known, Unknown};
+    let mut item = oracle_weapon(false)?;
+    item.semantics.skill_modifiers = Known(ReferenceItemSkillModifiers {
+        modifiers: Known(vec![ReferenceModifierBinding {
+            kind: ReferenceSkillModifierKind::ReflectPercentAll,
+            target_domain: Unknown,
+            evaluation_phase: Unknown,
+            priority: Unknown,
+            parameter: Known(ReferenceModifierParameter::RationalPercent(
+                ReferenceRationalPercent::new(25, 2)?,
+            )),
+        }]),
+    });
+    let definitions = vec![source_definition(item.clone())?];
+    let server = encode_typed_item(
+        &item,
+        ReferenceArtifactProjection::ServerAuthoritative,
+        &definitions,
+        V4,
+    )?;
+    let index = vec![IndexEntry {
+        identity: identity()?,
+        body_offset: 0,
+        body_length: server.len(),
+        body_digest: sha256(&server),
+    }];
+    let decoded = parse_typed_server_item(V4, &server, &index)?;
+    assert_eq!(decoded.semantics, item.semantics);
+    assert_eq!(
+        crate::content::item_abilities::item_offence_modifiers(&decoded.semantics).reflect_percent,
+        1250
+    );
+    let Known(group) = &mut item.semantics.skill_modifiers else {
+        unreachable!()
+    };
+    let Known(modifiers) = &mut group.modifiers else {
+        unreachable!()
+    };
+    modifiers[0].parameter = Known(ReferenceModifierParameter::SignedPoints(
+        ReferenceSignedPoints(10),
+    ));
+    assert!(
+        encode_typed_item(
+            &item,
+            ReferenceArtifactProjection::ServerAuthoritative,
+            &definitions,
+            V4
+        )
+        .is_err()
+    );
+    Ok(())
+}

@@ -112,6 +112,23 @@ pub struct SourceAppearanceTarget<'a> {
     pub immunities: Vec<crate::foundation::ConditionType>,
 }
 pub trait PlayerLethalVitals {
+    /// EQMOD2: the incoming source calls once after blocking and before HP/mana shield.
+    /// The source stream's clock is strictly increasing; extension hits never enter here.
+    #[allow(clippy::too_many_arguments)]
+    fn reflect_equipment_damage(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _element: Option<&str>,
+        _magnitude: u32,
+        _stream: &[u8],
+        _now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        true
+    }
+
     /// Source cast owns occurrence/replay and independently current tile/Combat admission.
     /// The actual Player and physical Creature stores are staged together or all refuse.
     fn apply_source_appearance_batch(

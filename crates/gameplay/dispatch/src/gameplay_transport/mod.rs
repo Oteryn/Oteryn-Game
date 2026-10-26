@@ -42,6 +42,7 @@ mod corpse_decay;
 mod death_ml_loss_postgres;
 mod depot;
 mod equipment_move;
+mod equipment_reflection;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
 pub mod gameplay_drain;
