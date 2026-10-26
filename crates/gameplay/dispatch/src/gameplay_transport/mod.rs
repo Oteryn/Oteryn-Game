@@ -53,6 +53,7 @@ mod highscores;
 mod house_query;
 mod house_transfer;
 mod hunting_stamina;
+mod imbuement_clock;
 mod input_gate;
 mod item_craft;
 mod item_look;
