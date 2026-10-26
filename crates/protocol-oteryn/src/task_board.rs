@@ -40,6 +40,13 @@ pub struct TaskBoardReply {
     pub kills: i64,
     pub points: i64,
     pub tasks: Vec<TaskBoardTask>,
+    pub bounty_selected: u8,
+    pub bounty_kills: i64,
+    pub bounty_points: i64,
+    pub reroll_tokens: u8,
+    pub next_difficulty: u8,
+    pub talisman_owned: bool,
+    pub talisman_level: u8,
 }
 
 fn valid_race(race: &str) -> bool {
@@ -53,14 +60,14 @@ fn valid_race(race: &str) -> bool {
 }
 
 pub fn encode_task_board_request(r: &TaskBoardRequest) -> Result<Vec<u8>, Error> {
-    let task_ok = if r.action == 0 {
-        r.task == 0
-    } else if r.action >= 3 {
-        (1..=3).contains(&usize::from(r.task))
-    } else {
-        (1..=MAX_TASKS).contains(&usize::from(r.task))
+    let task_ok = match r.action {
+        0 | 5 | 6 => r.task == 0,
+        1 | 2 => (1..=MAX_TASKS).contains(&usize::from(r.task)),
+        3 | 4 => (1..=12).contains(&usize::from(r.task)),
+        7 => (1..=4).contains(&usize::from(r.task)),
+        _ => false,
     };
-    if r.action > 4 || !task_ok {
+    if !task_ok {
         return Err(Error::Malformed);
     }
     let mut out = Vec::new();
@@ -107,6 +114,12 @@ pub fn encode_task_board_reply(r: &TaskBoardReply) -> Result<Vec<u8>, Error> {
     };
     if !kills_ok
         || r.points < 0
+        || r.bounty_selected > 12
+        || r.bounty_kills < 0
+        || r.bounty_points < 0
+        || r.reroll_tokens > 10
+        || r.next_difficulty > 4
+        || r.talisman_level > 10
         || r.tasks
             .iter()
             .any(|task| !valid_race(&task.race) || task.required <= 0 || task.claimed_at_unix < 0)
@@ -125,6 +138,13 @@ pub fn encode_task_board_reply(r: &TaskBoardReply) -> Result<Vec<u8>, Error> {
         push_varint_field(&mut entry, 3, task.claimed_at_unix as u64);
         push_message_field(&mut out, 5, &entry);
     }
+    push_varint_field(&mut out, 6, u64::from(r.bounty_selected));
+    push_varint_field(&mut out, 7, r.bounty_kills as u64);
+    push_varint_field(&mut out, 8, r.bounty_points as u64);
+    push_varint_field(&mut out, 9, u64::from(r.reroll_tokens));
+    push_varint_field(&mut out, 10, u64::from(r.next_difficulty));
+    push_varint_field(&mut out, 11, u64::from(r.talisman_owned));
+    push_varint_field(&mut out, 12, u64::from(r.talisman_level));
     if out.len() > MAX_REPLY_BYTES {
         return Err(Error::LimitExceeded);
     }
@@ -163,6 +183,9 @@ pub fn decode_task_board_reply(bytes: &[u8]) -> Result<TaskBoardReply, Error> {
         return Err(Error::LimitExceeded);
     }
     let (mut refused, mut selected, mut kills, mut points) = (None, None, None, None);
+    let (mut bounty_selected, mut bounty_kills, mut bounty_points) = (None, None, None);
+    let (mut reroll_tokens, mut next_difficulty, mut talisman_owned, mut talisman_level) =
+        (None, None, None, None);
     let mut tasks = Vec::new();
     let mut at = 0;
     while at < bytes.len() {
@@ -187,6 +210,32 @@ pub fn decode_task_board_reply(bytes: &[u8]) -> Result<TaskBoardReply, Error> {
                 }
                 tasks.push(decode_task(read_bytes(bytes, &mut at)?)?);
             }
+            48 => set_once(
+                &mut bounty_selected,
+                u8::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
+            )?,
+            56 => set_once(&mut bounty_kills, read_i64(bytes, &mut at)?)?,
+            64 => set_once(&mut bounty_points, read_i64(bytes, &mut at)?)?,
+            72 => set_once(
+                &mut reroll_tokens,
+                u8::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
+            )?,
+            80 => set_once(
+                &mut next_difficulty,
+                u8::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
+            )?,
+            88 => set_once(
+                &mut talisman_owned,
+                match read_varint(bytes, &mut at)? {
+                    0 => false,
+                    1 => true,
+                    _ => return Err(Error::Malformed),
+                },
+            )?,
+            96 => set_once(
+                &mut talisman_level,
+                u8::try_from(read_varint(bytes, &mut at)?).map_err(|_| Error::Malformed)?,
+            )?,
             _ => return Err(Error::Malformed),
         }
     }
@@ -196,6 +245,13 @@ pub fn decode_task_board_reply(bytes: &[u8]) -> Result<TaskBoardReply, Error> {
         kills: kills.ok_or(Error::Malformed)?,
         points: points.ok_or(Error::Malformed)?,
         tasks,
+        bounty_selected: bounty_selected.ok_or(Error::Malformed)?,
+        bounty_kills: bounty_kills.ok_or(Error::Malformed)?,
+        bounty_points: bounty_points.ok_or(Error::Malformed)?,
+        reroll_tokens: reroll_tokens.ok_or(Error::Malformed)?,
+        next_difficulty: next_difficulty.ok_or(Error::Malformed)?,
+        talisman_owned: talisman_owned.ok_or(Error::Malformed)?,
+        talisman_level: talisman_level.ok_or(Error::Malformed)?,
     };
     // Strict: only the canonical encoding (field order, minimal varints) decodes.
     if encode_task_board_reply(&r)? != bytes {

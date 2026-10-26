@@ -1293,8 +1293,18 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .soul_kills
                 .mark(super::soul_kill_live::soul_hook(xp));
         }
-        // TASKBOARD-1 §2.4: the settled kill credits the principal's active Task Board task.
+        // TASKBOARD-FULL-1: Global excludes summoned creatures even when they share a catalogue
+        // race with an ordinary spawn. Ask the physical summon owner at the kill caller, rather
+        // than trusting donor/content flags.
+        let killed_summon = admission
+            .runtime
+            .lock()
+            .await
+            .native_summon_master(entry.target)
+            .is_some();
+        // TASKBOARD-1 §2.4: the settled non-summon kill credits the principal's active board.
         if outcome.is_ok()
+            && !killed_summon
             && let Some(race) = &entry.row.race
         {
             admission

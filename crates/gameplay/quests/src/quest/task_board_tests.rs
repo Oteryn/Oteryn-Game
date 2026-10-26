@@ -170,6 +170,59 @@ fn bounty_offer_is_selected_credited_and_claimed_once() {
 }
 
 #[test]
+fn bounty_configuration_rerolls_and_a_cap_do_not_block_completion() {
+    let catalogue = catalogue();
+    let mut stored = BTreeMap::new();
+    apply(
+        &catalogue,
+        &mut stored,
+        &bounty_difficulty_transition(4),
+        NOW,
+    )
+    .expect("difficulty");
+    stored.insert(REROLL_TOKENS.to_owned(), REROLL_TOKEN_CAP);
+    apply(&catalogue, &mut stored, &bounty_reroll_transition(), NOW).expect("paid reroll");
+    assert_eq!(state(&stored).reroll_tokens, 9);
+    apply(
+        &catalogue,
+        &mut stored,
+        &bounty_free_reroll_transition(),
+        NOW,
+    )
+    .expect("daily reroll");
+    assert_eq!(
+        apply(
+            &catalogue,
+            &mut stored,
+            &bounty_free_reroll_transition(),
+            NOW + DAILY_SECONDS - 1
+        ),
+        Err(QuestRefusal::StageMismatch)
+    );
+    let (number, offer) = offers(BountyDifficulty::Master)
+        .next()
+        .expect("master catalogue");
+    apply(
+        &catalogue,
+        &mut stored,
+        &bounty_select_transition(number),
+        NOW,
+    )
+    .expect("select");
+    stored.insert(BOUNTY_KILLS.to_owned(), offer.required);
+    stored.insert(REROLL_TOKENS.to_owned(), REROLL_TOKEN_CAP);
+    apply(
+        &catalogue,
+        &mut stored,
+        &bounty_claim_at_cap_transition(number),
+        NOW,
+    )
+    .expect("claim at cap");
+    assert_eq!(state(&stored).reroll_tokens, REROLL_TOKEN_CAP);
+    assert_eq!(state(&stored).bounty_points, offer.points);
+}
+
+#[test]
 fn with_quest_refuses_a_quest_already_present_and_keeps_other_hashes() {
     let catalogue = catalogue();
     assert!(matches!(

@@ -70,12 +70,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         } // No runtime mutex is held across the revision slot or the durable write.
         let session = admitted.game_session_id;
+        let current_board = self.task_board_tracks(session).map(|tracks| task_board::state(&tracks));
         let transition_key = match request.action {
             0 => None,
             1 => Some(task_board::select_transition(request.task)),
             2 => Some(task_board::claim_transition(request.task)),
             3 => Some(task_board::bounty_select_transition(request.task)),
+            4 if current_board.is_some_and(|state| state.reroll_tokens == task_board::REROLL_TOKEN_CAP) =>
+                Some(task_board::bounty_claim_at_cap_transition(request.task)),
             4 => Some(task_board::bounty_claim_transition(request.task)),
+            5 => Some(task_board::bounty_reroll_transition()),
+            6 => Some(task_board::bounty_free_reroll_transition()),
+            7 => Some(task_board::bounty_difficulty_transition(request.task)),
             _ => return TaskBoardReply::Rejected,
         };
         let mut refused = false;
@@ -206,6 +212,13 @@ fn board_reply(refused: bool, tracks: &std::collections::BTreeMap<String, i64>) 
                 claimed_at_unix,
             })
             .collect(),
+        bounty_selected: state.bounty_selected,
+        bounty_kills: state.bounty_kills,
+        bounty_points: state.bounty_points,
+        reroll_tokens: u8::try_from(state.reroll_tokens).unwrap_or(0),
+        next_difficulty: state.bounty_difficulty,
+        talisman_owned: state.talisman_owned,
+        talisman_level: state.talisman_level,
     }
 }
 

@@ -30,6 +30,32 @@ pub const BOUNTY_POINTS: &str = "oteryn:taskboard/weekly/bounty/points";
 pub const REROLL_TOKENS: &str = "oteryn:taskboard/weekly/bounty/reroll-tokens";
 pub const BOUNTY_DIFFICULTY: &str = "oteryn:taskboard/weekly/bounty/next-difficulty";
 pub const REROLL_TOKEN_CAP: i64 = 10;
+pub const FREE_REROLL_AT: &str = "oteryn:taskboard/weekly/bounty/free-reroll-at";
+pub const TALISMAN_OWNED: &str = "oteryn:taskboard/weekly/bounty/talisman-owned";
+pub const TALISMAN_LEVEL: &str = "oteryn:taskboard/weekly/bounty/talisman-level";
+pub const TALISMAN_GOLD_COST: i64 = 5_000;
+pub const DAILY_SECONDS: i64 = 86_400;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BountyDifficulty {
+    Beginner = 1,
+    Adept = 2,
+    Expert = 3,
+    Master = 4,
+}
+
+impl BountyDifficulty {
+    #[must_use]
+    pub fn from_number(value: u8) -> Option<Self> {
+        match value {
+            1 => Some(Self::Beginner),
+            2 => Some(Self::Adept),
+            3 => Some(Self::Expert),
+            4 => Some(Self::Master),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BountyOffer {
@@ -38,17 +64,19 @@ pub struct BountyOffer {
     pub points: i64,
     pub experience: i64,
     pub variant_multiplier: i64,
+    pub difficulty: BountyDifficulty,
 }
 
 /// The three qualified Beginner offers. The silver and gold slots apply Global's x2/x4 reward
 /// variants; completing any offer also awards one reroll token.
-pub const BOUNTY_OFFERS: [BountyOffer; 3] = [
+pub const BOUNTY_OFFERS: [BountyOffer; 12] = [
     BountyOffer {
         race: "oteryn:creature.rat",
         required: 50,
         points: 3,
         experience: EXPERIENCE,
         variant_multiplier: 1,
+        difficulty: BountyDifficulty::Beginner,
     },
     BountyOffer {
         race: "oteryn:creature.cave_rat",
@@ -56,6 +84,7 @@ pub const BOUNTY_OFFERS: [BountyOffer; 3] = [
         points: 6,
         experience: EXPERIENCE * 2,
         variant_multiplier: 2,
+        difficulty: BountyDifficulty::Beginner,
     },
     BountyOffer {
         race: "oteryn:creature.rotworm",
@@ -63,8 +92,116 @@ pub const BOUNTY_OFFERS: [BountyOffer; 3] = [
         points: 12,
         experience: EXPERIENCE * 4,
         variant_multiplier: 4,
+        difficulty: BountyDifficulty::Beginner,
+    },
+    BountyOffer {
+        race: "oteryn:creature.troll",
+        required: 100,
+        points: 7,
+        experience: 7_500,
+        variant_multiplier: 1,
+        difficulty: BountyDifficulty::Adept,
+    },
+    BountyOffer {
+        race: "oteryn:creature.cyclops",
+        required: 150,
+        points: 14,
+        experience: 15_000,
+        variant_multiplier: 2,
+        difficulty: BountyDifficulty::Adept,
+    },
+    BountyOffer {
+        race: "oteryn:creature.minotaur",
+        required: 200,
+        points: 28,
+        experience: 30_000,
+        variant_multiplier: 4,
+        difficulty: BountyDifficulty::Adept,
+    },
+    BountyOffer {
+        race: "oteryn:creature.dragon",
+        required: 200,
+        points: 16,
+        experience: 40_000,
+        variant_multiplier: 1,
+        difficulty: BountyDifficulty::Expert,
+    },
+    BountyOffer {
+        race: "oteryn:creature.hero",
+        required: 300,
+        points: 32,
+        experience: 80_000,
+        variant_multiplier: 2,
+        difficulty: BountyDifficulty::Expert,
+    },
+    BountyOffer {
+        race: "oteryn:creature.hydra",
+        required: 400,
+        points: 64,
+        experience: 160_000,
+        variant_multiplier: 4,
+        difficulty: BountyDifficulty::Expert,
+    },
+    BountyOffer {
+        race: "oteryn:creature.demon",
+        required: 300,
+        points: 27,
+        experience: 150_000,
+        variant_multiplier: 1,
+        difficulty: BountyDifficulty::Master,
+    },
+    BountyOffer {
+        race: "oteryn:creature.grim_reaper",
+        required: 450,
+        points: 54,
+        experience: 300_000,
+        variant_multiplier: 2,
+        difficulty: BountyDifficulty::Master,
+    },
+    BountyOffer {
+        race: "oteryn:creature.destroyer",
+        required: 600,
+        points: 108,
+        experience: 600_000,
+        variant_multiplier: 4,
+        difficulty: BountyDifficulty::Master,
     },
 ];
+
+pub fn offers(difficulty: BountyDifficulty) -> impl Iterator<Item = (u8, &'static BountyOffer)> {
+    (1_u8..)
+        .zip(BOUNTY_OFFERS.iter())
+        .filter(move |(_, offer)| offer.difficulty == difficulty)
+}
+
+#[must_use]
+pub fn bounty_reroll_transition() -> String {
+    format!("{QUEST}/bounty/reroll")
+}
+#[must_use]
+pub fn bounty_free_reroll_transition() -> String {
+    format!("{QUEST}/bounty/free-reroll")
+}
+#[must_use]
+pub fn bounty_difficulty_transition(number: u8) -> String {
+    format!("{QUEST}/bounty/difficulty-{number}")
+}
+#[must_use]
+pub fn talisman_purchase_transition() -> String {
+    format!("{QUEST}/bounty/talisman/purchase")
+}
+#[must_use]
+pub fn talisman_upgrade_transition(level: u8) -> String {
+    format!("{QUEST}/bounty/talisman/upgrade-{level}")
+}
+
+/// The Global caps, expressed in basis points. Upgrade costs remain deliberately unqualified;
+/// callers must not expose upgrades until a sourced curve is installed.
+#[must_use]
+pub fn talisman_benefits(level: u8) -> (u16, u16, u16, u16) {
+    let regular = u16::from(level.min(10)) * 500;
+    (regular, regular, regular, u16::from(level.min(10)) * 1_000)
+}
 
 #[must_use]
 pub fn bounty_select_transition(number: u8) -> String {
@@ -77,6 +214,10 @@ pub fn bounty_kill_transition(number: u8) -> String {
 #[must_use]
 pub fn bounty_claim_transition(number: u8) -> String {
     format!("{QUEST}/bounty/claim-{number}")
+}
+#[must_use]
+pub fn bounty_claim_at_cap_transition(number: u8) -> String {
+    format!("{QUEST}/bounty/claim-at-cap-{number}")
 }
 
 /// One kill task: the Bestiary race key (the Creature identity key) and the required kills.
@@ -180,6 +321,9 @@ pub fn tracks() -> Vec<QuestTrack> {
         track(BOUNTY_POINTS, POINTS_MAX),
         track(REROLL_TOKENS, REROLL_TOKEN_CAP),
         track(BOUNTY_DIFFICULTY, 4),
+        track(FREE_REROLL_AT, i64::MAX),
+        track(TALISMAN_OWNED, 1),
+        track(TALISMAN_LEVEL, 10),
     ];
     tracks.extend(numbers().map(|(number, _)| track(claimed_at_track(number), i64::MAX)));
     tracks
@@ -256,7 +400,43 @@ pub fn transitions() -> Vec<QuestTransition> {
                 ],
                 Some(offer.experience),
             ),
+            transition(
+                bounty_claim_at_cap_transition(index),
+                vec![
+                    effect(BOUNTY_SELECTED, C::Eq(selected), K::Set(0)),
+                    effect(BOUNTY_KILLS, C::Ge(offer.required), K::Set(0)),
+                    effect(BOUNTY_POINTS, C::Any, K::Add(offer.points)),
+                    effect(REROLL_TOKENS, C::Eq(REROLL_TOKEN_CAP), K::Add(0)),
+                ],
+                Some(offer.experience),
+            ),
         ]);
+    }
+    result.push(transition(
+        bounty_reroll_transition(),
+        vec![
+            effect(BOUNTY_SELECTED, C::Eq(0), K::Add(0)),
+            effect(REROLL_TOKENS, C::Ge(1), K::Add(-1)),
+        ],
+        None,
+    ));
+    result.push(transition(
+        bounty_free_reroll_transition(),
+        vec![
+            effect(BOUNTY_SELECTED, C::Eq(0), K::Add(0)),
+            effect(FREE_REROLL_AT, C::ElapsedAtLeast(DAILY_SECONDS), K::SetNow),
+        ],
+        None,
+    ));
+    for difficulty in 1..=4 {
+        result.push(transition(
+            bounty_difficulty_transition(difficulty),
+            vec![
+                effect(BOUNTY_SELECTED, C::Eq(0), K::Add(0)),
+                effect(BOUNTY_DIFFICULTY, C::Any, K::Set(i64::from(difficulty))),
+            ],
+            None,
+        ));
     }
     result
 }
@@ -279,6 +459,9 @@ pub struct TaskBoardState {
     pub bounty_kills: i64,
     pub bounty_points: i64,
     pub reroll_tokens: i64,
+    pub bounty_difficulty: u8,
+    pub talisman_owned: bool,
+    pub talisman_level: u8,
 }
 
 #[must_use]
@@ -297,6 +480,9 @@ pub fn state(tracks: &BTreeMap<String, i64>) -> TaskBoardState {
         bounty_kills: value(BOUNTY_KILLS),
         bounty_points: value(BOUNTY_POINTS),
         reroll_tokens: value(REROLL_TOKENS),
+        bounty_difficulty: u8::try_from(value(BOUNTY_DIFFICULTY)).unwrap_or(0),
+        talisman_owned: value(TALISMAN_OWNED) == 1,
+        talisman_level: u8::try_from(value(TALISMAN_LEVEL)).unwrap_or(0),
     }
 }
 
