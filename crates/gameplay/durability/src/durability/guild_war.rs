@@ -6,9 +6,11 @@ use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::durability::runtime_scope_assignment::NodeIncarnationProof;
 use crate::durability::DurabilityRoot;
 use crate::foundation::CommandRef;
-use oteryn_gameplay_social_rules::guild::validate_guild_war_terms;
+use oteryn_gameplay_social_rules::guild::{guild_war_end, validate_guild_war_terms, GuildWarEnd};
 use oteryn_protocol_oteryn::guild_war::{GuildWarIntent, GuildWarResult};
 use sqlx::Row;
+
+const GUILD_WAR_PASS_MAX: i64 = 100;
 
 impl DurabilityRoot {
     #[allow(
@@ -57,6 +59,77 @@ impl DurabilityRoot {
             match result { Ok(value) => { commit_semantic_transaction(tx, deadline).await?; Ok(Ok(value)) }, Err(GuildError::Unavailable(error)) => Err(error), Err(error) => Ok(Err(error)) }
         })).await?
     }
+
+    /// End at most one bounded page of active wars. The database clock and locked score are the
+    /// facts supplied to the shared rule; current recovery and World assignment authorize writes.
+    pub async fn finish_due_guild_wars(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        world: crate::foundation::WorldId,
+    ) -> Result<usize, GuildError> {
+        let recovery = authority.record_for(self).map_err(|_| GuildError::NotCurrent)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            lock_admission_relations(&mut tx).await?;
+            if !crate::durability::runtime_scope_assignment::prove_current_incarnation(&mut tx, &node).await? {
+                return Err(crate::durability::DurabilityError::Unavailable);
+            }
+            super::guild::assert_guild_job_world(&mut tx, &node, world)
+                .await
+                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+            let rows = sqlx::query("SELECT war_id::text,frag_limit,declaring_frags,opposing_frags,ends_at,floor(extract(epoch FROM transaction_timestamp())*1000)::bigint AS now FROM game_guild_wars WHERE world_id=encode($1,'hex')::uuid AND state=2 ORDER BY war_id LIMIT $2 FOR UPDATE")
+                .bind(world.as_bytes().as_slice()).bind(GUILD_WAR_PASS_MAX).fetch_all(&mut *tx).await?;
+            let mut ended = 0usize;
+            for row in rows {
+                let limit = u16::try_from(row.try_get::<i32, _>("frag_limit")?).map_err(|_| crate::durability::DurabilityError::InvalidStoredState)?;
+                let declaring = u16::try_from(row.try_get::<i32, _>("declaring_frags")?).map_err(|_| crate::durability::DurabilityError::InvalidStoredState)?;
+                let opposing = u16::try_from(row.try_get::<i32, _>("opposing_frags")?).map_err(|_| crate::durability::DurabilityError::InvalidStoredState)?;
+                let Some(reason) = guild_war_end(limit, [declaring, opposing], row.try_get("ends_at")?, row.try_get("now")?) else { continue };
+                let war: String = row.try_get("war_id")?;
+                sqlx::query("UPDATE game_guild_wars SET state=3,ended_reason=$2 WHERE war_id=$1::uuid AND state=2")
+                    .bind(war).bind(match reason { GuildWarEnd::FragLimit => 1i16, GuildWarEnd::Duration => 2i16 }).execute(&mut *tx).await?;
+                ended += 1;
+            }
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(ended)
+        })).await.map_err(GuildError::from)
+    }
+}
+
+/// Attribute the last damaging player from the fenced PvP ledger to the one active war between
+/// the killer's and victim's current guilds. The death occurrence makes replay exactly-once.
+pub(crate) async fn attribute_guild_war_frag_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    victim: crate::domain::CharacterId,
+    world: crate::foundation::WorldId,
+    occurrence: &[u8; 16],
+    contributors: &[crate::durability::pvp_death_request::PvpDeathContributor],
+) -> Result<(), crate::durability::DurabilityError> {
+    if contributors.is_empty() {
+        return Ok(());
+    }
+    let contributor_ids: Vec<Vec<u8>> = contributors.iter().map(|c| c.character_id.as_bytes().to_vec()).collect();
+    let row = sqlx::query("SELECT w.war_id::text,w.declaring_guild::text,kg.guild_id::text AS killer_guild,vg.guild_id::text AS victim_guild,h.attacker::text AS killer FROM game_character_pvp_harm h JOIN game_guild_members km ON km.character_id=h.attacker JOIN game_guilds kg ON kg.guild_id=km.guild_id AND kg.world_id=encode($2,'hex')::uuid JOIN game_guild_members vm ON vm.character_id=encode($1,'hex')::uuid JOIN game_guilds vg ON vg.guild_id=vm.guild_id AND vg.world_id=kg.world_id JOIN game_guild_wars w ON w.world_id=kg.world_id AND w.state=2 AND ((w.declaring_guild=kg.guild_id AND w.opposing_guild=vg.guild_id) OR (w.opposing_guild=kg.guild_id AND w.declaring_guild=vg.guild_id)) WHERE h.victim=encode($1,'hex')::uuid AND h.attacker=ANY(SELECT encode(x,'hex')::uuid FROM unnest($3::bytea[]) x) AND h.damage>0 AND h.created_at>=clock_timestamp()-interval '5 minutes' ORDER BY h.created_at DESC LIMIT 1 FOR UPDATE OF w")
+        .bind(victim.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(contributor_ids).fetch_optional(&mut **tx).await?;
+    let Some(row) = row else { return Ok(()) };
+    let war: String = row.try_get("war_id")?;
+    let declaring: String = row.try_get("declaring_guild")?;
+    let killer_guild: String = row.try_get("killer_guild")?;
+    let victim_guild: String = row.try_get("victim_guild")?;
+    let killer: String = row.try_get("killer")?;
+    let inserted = sqlx::query("INSERT INTO game_guild_war_frags(death_occurrence_id,war_id,killer_character_id,victim_character_id,killer_guild,victim_guild,occurred_at) VALUES(encode($1,'hex')::uuid,$2::uuid,$3::uuid,encode($4,'hex')::uuid,$5::uuid,$6::uuid,floor(extract(epoch FROM transaction_timestamp())*1000)::bigint) ON CONFLICT(death_occurrence_id) DO NOTHING")
+        .bind(occurrence.as_slice()).bind(&war).bind(killer).bind(victim.as_bytes().as_slice()).bind(&killer_guild).bind(victim_guild).execute(&mut **tx).await?.rows_affected();
+    if inserted == 1 {
+        let declaring_kill = killer_guild == declaring;
+        if sqlx::query("UPDATE game_guild_wars SET declaring_frags=declaring_frags+CASE WHEN $2 THEN 1 ELSE 0 END,opposing_frags=opposing_frags+CASE WHEN $2 THEN 0 ELSE 1 END WHERE war_id=$1::uuid AND state=2")
+            .bind(war).bind(declaring_kill).execute(&mut **tx).await?.rows_affected() != 1 {
+            return Err(crate::durability::DurabilityError::InvalidStoredState);
+        }
+    }
+    Ok(())
 }
 
 async fn leader_guild(tx:&mut sqlx::Transaction<'_,sqlx::Postgres>,actor:&[u8;16],world:&[u8;16])->Result<[u8;16],GuildError>{let row=sqlx::query("SELECT g.guild_id::text FROM game_guild_members m JOIN game_guilds g USING(guild_id) WHERE m.character_id=encode($1,'hex')::uuid AND m.rank_level=1 AND g.world_id=encode($2,'hex')::uuid AND g.state IN(1,2) FOR UPDATE OF g").bind(actor.as_slice()).bind(world.as_slice()).fetch_optional(&mut **tx).await?.ok_or(GuildError::InvalidInput)?;let text:String=row.try_get(0)?;uuid_text(&text).map_err(|_|GuildError::InvalidInput)}

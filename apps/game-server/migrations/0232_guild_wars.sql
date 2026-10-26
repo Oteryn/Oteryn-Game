@@ -21,8 +21,20 @@ CREATE TABLE game_guild_war_commands (
  game_session_id UUID NOT NULL, command_id BIGINT NOT NULL, wire_sha256 BYTEA NOT NULL CHECK(octet_length(wire_sha256)=32),
  war_id UUID NOT NULL REFERENCES game_guild_wars, result SMALLINT NOT NULL, PRIMARY KEY(game_session_id,command_id)
 );
+CREATE TABLE game_guild_war_frags (
+ death_occurrence_id UUID PRIMARY KEY,
+ war_id UUID NOT NULL REFERENCES game_guild_wars,
+ killer_character_id UUID NOT NULL REFERENCES game_character_roots,
+ victim_character_id UUID NOT NULL REFERENCES game_character_roots,
+ killer_guild UUID NOT NULL REFERENCES game_guilds,
+ victim_guild UUID NOT NULL REFERENCES game_guilds,
+ occurred_at BIGINT NOT NULL,
+ CHECK(killer_character_id<>victim_character_id),
+ CHECK(killer_guild<>victim_guild)
+);
 CREATE FUNCTION game_guild_war_rows_immutable() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'guild war receipts are immutable'; END $$;
 CREATE TRIGGER game_guild_war_commands_immutable BEFORE UPDATE OR DELETE ON game_guild_war_commands FOR EACH ROW EXECUTE FUNCTION game_guild_war_rows_immutable();
 GRANT SELECT,INSERT,UPDATE ON game_guild_wars TO oteryn_game_runtime;
 GRANT SELECT,INSERT ON game_guild_war_commands TO oteryn_game_runtime;
-GRANT SELECT ON game_guild_wars,game_guild_war_commands TO oteryn_game_control;
+GRANT SELECT,INSERT ON game_guild_war_frags TO oteryn_game_runtime;
+GRANT SELECT ON game_guild_wars,game_guild_war_commands,game_guild_war_frags TO oteryn_game_control;
