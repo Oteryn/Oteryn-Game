@@ -143,7 +143,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 };
                 match self
                     .root
-                    .unlock_character_title(self.character, character, title, now, expiry)
+                    .unlock_character_title(self.character, self.holder, fence, title, now, expiry)
                     .await
                 {
                     Ok(_) => CharacterInfoReply::Payload(vec![2, title as u8]),
@@ -152,7 +152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             CharacterInfoOperation::Select(title) => match self
                 .root
-                .select_character_title(self.character, character, title)
+                .select_character_title(self.character, self.holder, fence, title)
                 .await
             {
                 Ok(revision) => {
@@ -163,8 +163,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => CharacterInfoReply::Rejected,
             },
             CharacterInfoOperation::QuerySelf(page) => {
-                self.character_info_read(character, character, page, now)
-                    .await
+                self.character_info_read(fence, character, page, now).await
             }
             CharacterInfoOperation::QueryVisible {
                 character: target,
@@ -173,14 +172,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Ok(target) = crate::domain::CharacterId::from_bytes(target) else {
                     return CharacterInfoReply::Rejected;
                 };
-                self.character_info_read(character, target, page, now).await
+                self.character_info_read(fence, target, page, now).await
             }
             CharacterInfoOperation::LookVisible { character: target } => {
                 let Ok(target) = crate::domain::CharacterId::from_bytes(target) else {
                     return CharacterInfoReply::Rejected;
                 };
                 self.character_info_read(
-                    character,
+                    fence,
                     target,
                     PageRequest {
                         offset: 0,
@@ -195,14 +194,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     async fn character_info_read(
         &self,
-        viewer: crate::domain::CharacterId,
+        fence: crate::durability::item_transfer::CurrentCharacterItemFence,
         target: crate::domain::CharacterId,
         page: PageRequest,
         now: i64,
     ) -> CharacterInfoReply {
         let mut bytes = match self
             .root
-            .read_character_info(self.character, viewer, target, page, now)
+            .read_character_info(self.character, fence.character_id, target, page, now)
             .await
         {
             Ok(bytes) => bytes,
@@ -218,7 +217,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let titles = match self
             .root
-            .read_and_requalify_character_titles(self.character, target, facts, now)
+            .read_and_requalify_character_titles(
+                self.character,
+                self.holder,
+                fence,
+                target,
+                facts,
+                now,
+            )
             .await
         {
             Ok(titles) => titles,
@@ -250,6 +256,49 @@ pub(super) use composed_methods;
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn every_operation_fits_registered_limit() -> Result<(), Box<dyn std::error::Error>> {
+        let registry: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/contracts/protocol-oteryn/v1/registry/command_types/0113-character-info.json"
+        )))?;
+        let maximum = registry["max_payload_bytes"]
+            .as_u64()
+            .ok_or("registered payload limit")? as usize;
+        let mut visible = vec![1];
+        visible.extend_from_slice(&[1; 16]);
+        visible.extend_from_slice(&[0, 0, 50]);
+        let mut look = vec![4];
+        look.extend_from_slice(&[1; 16]);
+        for payload in [
+            vec![0, 0, 0, 50],
+            visible,
+            vec![2, 1],
+            vec![3, 0],
+            vec![3, 4],
+            look,
+        ] {
+            let operation = decode(&payload).map_err(|_| "invalid operation fixture")?;
+            let encoded = oteryn_protocol_oteryn::encode_client_command(
+                1,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id: 1,
+                    command_type: oteryn_protocol_oteryn::character_info::COMMAND_TYPE_CHARACTER_INFO,
+                    payload: &payload,
+                },
+            )?;
+            let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&encoded)?;
+            let command = envelope.client_command(1)?;
+            assert_eq!(
+                u64::from(command.command_type),
+                registry["id"].as_u64().ok_or("command id")?
+            );
+            assert!(command.payload.len() <= maximum, "{payload:?}");
+            assert_eq!(decode(command.payload), Ok(operation));
+        }
+        assert_eq!(maximum, 20);
+        Ok(())
+    }
     #[test]
     fn bounds_pages() {
         assert!(decode(&[0, 0, 0, 0]).is_err());

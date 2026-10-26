@@ -1,0 +1,24 @@
+{
+  "id": 52,
+  "name": "EXPERT_FIGHT_MODES",
+  "owner_decision": "PVP-EXPERT-1 owner task; PVP-0 section 6.6",
+  "owner": "current ChannelRuntime",
+  "capability": 87,
+  "revision": "Monotonic per GameSession, retained across reconnect; snapshot increments above previous revision, delta replaces all modes.",
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "EXPERT_FIGHT_MODES_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/pvp_expert_v1.proto#ExpertFightModesV1",
+      "max_payload_bytes": 8
+    }
+  ],
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "EXPERT_FIGHT_MODES_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/pvp_expert_v1.proto#ExpertFightModesV1",
+      "max_payload_bytes": 8
+    }
+  ]
+}

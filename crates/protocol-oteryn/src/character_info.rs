@@ -120,7 +120,10 @@ pub fn qualified_selection(
     facts: TitleFacts,
     now_unix_ms: i64,
 ) -> Option<CharacterTitle> {
-    selected.filter(|title| valid_at(qualify(*title, facts), now_unix_ms))
+    selected.filter(|title| {
+        let qualification = qualify(*title, facts);
+        qualification.lifetime == TitleLifetime::Permanent || valid_at(qualification, now_unix_ms)
+    })
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -194,6 +197,14 @@ mod tests {
                 1
             ),
             None
+        );
+    }
+
+    #[test]
+    fn earned_permanent_selection_survives_changed_facts() {
+        assert_eq!(
+            qualified_selection(Some(CharacterTitle::AdeptArmorer), TitleFacts::default(), 1),
+            Some(CharacterTitle::AdeptArmorer)
         );
     }
 
