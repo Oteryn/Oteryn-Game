@@ -102,6 +102,16 @@ async fn channel_snapshot(
 
 #[test]
 fn premchan_entry_uses_premium_owner_and_releases_failed_attempts() -> TestResult {
+    // The composed admission future overflows the default test-thread stack.
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| premchan_scenario().map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "premchan PostgreSQL scenario panicked")??;
+    Ok(())
+}
+
+fn premchan_scenario() -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "premchan", true, false).await?;
         eprintln!("POSTGRES_STARTED PREMCHAN");
