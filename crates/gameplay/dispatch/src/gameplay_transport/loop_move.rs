@@ -373,6 +373,23 @@ pub(super) async fn move_loop_item(
             let Some((base, at, content_revision, placement_context)) = &pins else {
                 return refused(LoopMoveRefusal::NotSupported);
             };
+            let echo_tile = match (
+                u16::try_from(to.x),
+                u16::try_from(to.y),
+                i8::try_from(to.floor),
+            ) {
+                (Ok(x), Ok(y), Ok(floor)) => Some(super::echo_raid::Tile { x, y, floor }),
+                _ => None,
+            };
+            if echo_tile.is_some_and(|tile| {
+                admission
+                    .states
+                    .echo_raids
+                    .lock()
+                    .is_ok_and(|echoes| echoes.blocks_item(tile))
+            }) {
+                return refused(LoopMoveRefusal::Blocked);
+            }
             match drop_cell(base, *at, to) {
                 Ok(spatial_position) => LoopDestination::Ground(LoopGround {
                     spatial_position,

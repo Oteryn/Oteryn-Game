@@ -86,10 +86,6 @@ where
             return Err(ServeEnd::Disconnected);
         }
         Next::Probe => {
-            // Channel mechanics run from the owner's cadence even when no player moves. The
-            // operation is idempotent for a cadence instant, so multiple sessions cannot create
-            // a second echo for a subarea.
-            authority.drive_echo_cadence();
             let probe = match session.liveness.tick() {
                 Ok(probe_id) => encode_liveness_probe(session.generation, probe_id),
                 Err(LivenessEnd::ControlLost) => {

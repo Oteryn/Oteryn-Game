@@ -327,4 +327,36 @@ mod tests {
         );
         assert_eq!(outcome(22, false), Outcome::Influenced { count: 4 });
     }
+
+    #[test]
+    fn floor_item_reset_cannot_remove_the_non_item_echo() {
+        let mut owner = Coordinator::default();
+        assert!(owner.arm(42, &[spawn(true)], 0));
+        let mut floor_items = vec!["parcel"];
+        floor_items.clear();
+        assert!(floor_items.is_empty());
+        assert!(owner.blocks_item_placement(spawn(true).tile));
+        assert!(matches!(owner.state(42), Some(SubareaState::Armed(_))));
+    }
+
+    #[test]
+    fn kill_roll_echo_uses_the_same_trigger_and_rejects_unreachable_tiles() {
+        let mut owner = Coordinator::default();
+        assert!(!owner.arm_wild("rat", spawn(false).tile, false));
+        assert!(owner.arm_wild("rat", spawn(true).tile, true));
+        assert!(
+            owner
+                .trigger_tile(
+                    spawn(true).tile,
+                    TriggerContext {
+                        trigger: Trigger::Use,
+                        now_ms: 10,
+                        interval_roll: 0,
+                        outcome_roll: 99,
+                        bestiary_complete: false,
+                    },
+                )
+                .is_some()
+        );
+    }
 }

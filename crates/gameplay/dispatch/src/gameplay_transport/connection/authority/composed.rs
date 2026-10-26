@@ -174,12 +174,6 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.server_save.current()
     }
 
-    fn drive_echo_cadence(&self) {
-        if let Ok(mut echoes) = self.states.echo_raids.lock() {
-            echoes.drive(self.owner_now().get());
-        }
-    }
-
     fn server_motd(&self) -> &str {
         self.server_motd
     }
@@ -490,6 +484,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> UseOutcome {
+        self.trigger_echo_use(actor).await;
         self.use_backpack_item(actor, command, item).await
     }
 
@@ -582,6 +577,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         target: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        self.trigger_echo_use(actor).await;
         self.use_world_object(actor, command, target).await
     }
 

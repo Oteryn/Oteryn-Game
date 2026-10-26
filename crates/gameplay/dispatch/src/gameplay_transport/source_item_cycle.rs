@@ -71,6 +71,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     gate.begin_turn();
                 }
             }
+            // ECHORAID: exactly this unique Channel/server owner cadence advances replacement
+            // timers and administrative expiry. Connection liveness probes must never drive
+            // Channel-global state (and therefore cannot multiply work by connection count).
+            if let Ok(mut echoes) = self.states.echo_raids.lock() {
+                echoes.drive(self.owner_now().get() / 1_000);
+            }
             self.tick_timed_items().await;
             if !self.ensure_source_map_initialized().await {
                 continue;
