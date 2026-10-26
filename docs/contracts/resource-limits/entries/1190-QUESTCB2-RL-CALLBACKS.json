@@ -1,0 +1,20 @@
+{
+  "id": "QUESTCB2-RL-CALLBACKS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
+  "resource": "World callbacks in the embedded content document",
+  "unit": "callbacks",
+  "hard_maximum": 128,
+  "configurable_range": {
+    "minimum": 128,
+    "maximum": 128
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Refuse invalid content before enabling callbacks; no partial effects.",
+  "client_visible": false,
+  "boundary_tests": [
+    "quest_world_callbacks_reject_ambiguous_and_unbounded_authoring"
+  ],
+  "consumers": [
+    "crates/gameplay/quests/src/quest/world_callbacks.rs"
+  ]
+}

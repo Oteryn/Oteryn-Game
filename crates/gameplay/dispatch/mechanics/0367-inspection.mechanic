@@ -1,0 +1,7 @@
+name=inspection
+commands=153
+transport=inspection
+composed=inspection
+authority=inspection
+[route]
+routing::inspection::route(authority, &mut session.admitted, command, &session.visibility, &session.item_view).await

@@ -16,6 +16,7 @@
 41 guild
 68 guild
 69 guild
+119 guild
 60 staff
 61 staff
 22 quest_log

@@ -51,13 +51,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
+        let include_guildhall = admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::house::CAPABILITY_GUILDHALL_V1);
         if kind == wire::COMMAND_TYPE_GUILD_BANK_QUERY {
             let Ok(query) = wire::decode_guild_bank_query(payload) else {
                 return GuildReply::Rejected;
             };
             return reply(
                 self.root
-                    .query_guild_bank(self.character, self.holder, fence, query)
+                    .query_guild_bank(self.character, self.holder, fence, query, include_guildhall)
                     .await,
             );
         }
@@ -93,6 +97,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         before: None,
                         after_claim: None,
                     },
+                    include_guildhall,
                 )
                 .await
             {

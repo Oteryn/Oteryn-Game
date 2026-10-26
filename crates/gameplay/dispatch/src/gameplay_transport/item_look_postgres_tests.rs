@@ -269,6 +269,10 @@ pub(super) fn large_stack(scenario: fn() -> TestResult) -> TestResult {
 }
 
 fn scenario() -> TestResult {
+    scenario_with_inspection(None)
+}
+
+pub(super) fn scenario_with_inspection(inspection: Option<bool>) -> TestResult {
     run(async |admin| {
         reset();
         let harness = Harness::create_with_admission_seed(admin, "item_look", true, false).await?;
@@ -451,20 +455,50 @@ fn scenario() -> TestResult {
         );
         admitted.runtime_actor = Some(actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
-        admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 28])
-                .ok_or("4, 6, 18 and 28 are selectable")?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            if inspection == Some(true) {
+                &[4, 6, 18, 28, 132]
+            } else {
+                &[4, 6, 18, 28]
+            },
+        )
+        .ok_or("4, 6, 18 and 28 are selectable")?;
         let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
             .current_session_at(admitted.game_session_id)
             .await?;
         admitted.item_fence = item_fence_of(current);
 
         seed_main_backpack(&harness, &[]).await?;
-        tokio::time::timeout(
-            std::time::Duration::from_secs(30),
-            serve_looks(&owner, admitted, own, rat),
-        )
-        .await??;
+        if inspection.is_some() {
+            sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT(character_id) DO NOTHING").bind(id(41).as_slice()).execute(&harness.pool).await?;
+        }
+
+        if inspection == Some(true) {
+            sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4) ON CONFLICT DO NOTHING").bind(admitted.world_id.as_bytes().as_slice()).bind(admitted.channel_id.as_bytes().as_slice()).execute(&harness.pool).await?;
+            sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
+                .bind(admitted.world_id.as_bytes().as_slice()).bind(admitted.channel_id.as_bytes().as_slice()).bind(active.identity().server_artifact_digest().as_slice()).bind(active.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+            // Equipment observations, unlike LOOK, qualify the durable content pin too.
+            owner
+                .root
+                .read_movement_equipment(
+                    owner.character,
+                    owner.holder,
+                    &admitted.item_fence.ok_or("inspection fixture item fence")?,
+                    native.source_digest(),
+                )
+                .await
+                .map_err(debug)?;
+        }
+        if let Some(enabled) = inspection {
+            super::inspection::serve_inspections(&owner, admitted, own, enabled).await?;
+        } else {
+            tokio::time::timeout(
+                std::time::Duration::from_secs(30),
+                serve_looks(&owner, admitted, own, rat),
+            )
+            .await??;
+        }
         drop(owner);
         drop(authority);
         drop(seal);

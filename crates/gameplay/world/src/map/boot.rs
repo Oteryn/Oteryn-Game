@@ -464,7 +464,11 @@ impl BundleWorld {
 
     /// Whether a player can enter `pos`.
     pub fn enterable(&self, pos: TilePos) -> bool {
-        enterable(&self.base, &self.blocked, pos) && !self.map.facts.doors().blocks(pos)
+        !self
+            .map
+            .facts
+            .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
+            && !self.map.facts.doors().blocks(pos)
     }
 
     /// The ground speed a step onto `pos` uses. This is the one switch point: Engineering 150
@@ -545,7 +549,12 @@ impl BundleCollisionData {
             .tile(pos.x, pos.y, pos.floor)
             .ok_or(StaticCellEngineError::Absent)?;
         Ok(
-            if enterable(&self.base, &self.blocked, pos) && !self.map.facts.doors().blocks(pos) {
+            if !self
+                .map
+                .facts
+                .quest_callback_blocked(&self.base, pos, self.blocked.contains(&pos))
+                && !self.map.facts.doors().blocks(pos)
+            {
                 CollisionClass::Walkable
             } else {
                 CollisionClass::Blocked
