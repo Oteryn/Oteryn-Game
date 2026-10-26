@@ -1,0 +1,10 @@
+{
+  "id": 103,
+  "name": "GUILD_WAR_V1",
+  "owner_decision": "GUILD-WAR-1 parity slice 2026-10-26",
+  "owner": "Game Guild durable owner",
+  "command_types": [119],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Only admitted sessions selecting capability 103 may declare or accept wars; durable leader and session fences remain authoritative."
+}

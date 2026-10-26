@@ -1,6 +1,29 @@
 use super::*;
 
 #[test]
+fn global_war_terms_and_end_precedence() {
+    assert_eq!(validate_guild_war_terms(10, 7), Ok(()));
+    assert_eq!(validate_guild_war_terms(1_000, 180), Ok(()));
+    assert_eq!(
+        validate_guild_war_terms(9, 7),
+        Err(GuildRuleError::InvalidWarTerms)
+    );
+    assert_eq!(
+        validate_guild_war_terms(10, 181),
+        Err(GuildRuleError::InvalidWarTerms)
+    );
+    assert_eq!(
+        guild_war_end(10, [10, 0], 50, 49),
+        Some(GuildWarEnd::FragLimit)
+    );
+    assert_eq!(
+        guild_war_end(10, [0, 0], 50, 50),
+        Some(GuildWarEnd::Duration)
+    );
+    assert_eq!(guild_war_end(10, [9, 9], 50, 49), None);
+}
+
+#[test]
 fn guild_names_reuse_character_policy_and_key_without_a_second_normalizer()
 -> Result<(), InvalidGuildName> {
     assert!(GuildName::parse(&"a".repeat(29)).is_ok());

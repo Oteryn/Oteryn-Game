@@ -38,6 +38,7 @@ pub enum GuildRuleError {
     InvalidRankCount,
     GuildDisbanding,
     GuildDeadlinePassed,
+    InvalidWarTerms,
 }
 
 /// Lower numbers outrank higher numbers; this is only the numeric part of command eligibility.
