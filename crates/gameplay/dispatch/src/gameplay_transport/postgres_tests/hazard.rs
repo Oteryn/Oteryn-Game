@@ -25,6 +25,8 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 
+const SPELL_CASTER_XP: i64 = 98_800;
+
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {
     x: 33502,
     y: 32874,
@@ -381,13 +383,13 @@ fn scenario() -> TestResult {
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
-        let (controller, pin) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
-                world,
-                Some(include_bytes!(
-                    "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-                )),
-            );
+        let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
+            world,
+            "content-1",
+            Some(include_bytes!(
+                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+            )),
+        )?;
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
         let room = combat_room(world, channel, &pin, native)?;
@@ -570,11 +572,12 @@ fn scenario() -> TestResult {
                         actor,
                         session,
                         crate::spell::cast::CharacterCastFacts {
-                            vocation: crate::spell::Vocation::Monk,
+                            vocation: crate::spell::Vocation::Sorcerer,
+                            level: 20,
                             max_health: 100_000,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
-                        (3, 7_000_000),
+                        (0, 0),
                         owner.owner_now(),
                     )
                     .is_some()
@@ -714,7 +717,8 @@ fn scenario() -> TestResult {
                 (
                     hazard::PRIMAL_MENACE,
                     MovementLocalPosition {
-                        x: 33506,
+                        x: 33503,
+                        y: 32875,
                         ..OPEN_BOSS
                     },
                 ),
@@ -749,6 +753,9 @@ fn scenario() -> TestResult {
             ));
             drop(runtime);
             outgoing_swing_checks(&mut owner, actor, session).await?;
+            // Cast before the AI turn moves these newly admitted source actors.
+            let kill_command_id =
+                outgoing_spell_checks(&mut owner, actor, session, target, &harness).await?;
             combat_checks(&mut owner, actor, session, target).await?;
             let mut runtime = owner.runtime.lock().await;
             let health = runtime
@@ -757,7 +764,7 @@ fn scenario() -> TestResult {
                 .health;
             let command = crate::foundation::CommandRef::new(
                 session,
-                crate::foundation::CommandId::new(1000).map_err(debug)?,
+                crate::foundation::CommandId::new(kill_command_id).map_err(debug)?,
             );
             runtime
                 .borrow_exact_actor_commit_at(owner.owner_now().get() / 1000)
@@ -823,7 +830,7 @@ fn scenario() -> TestResult {
         let xp:i64=sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
             .bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(
-            xp, 0,
+            xp, SPELL_CASTER_XP,
             "a qualification without an admitted reward row grants no XP"
         );
         // Query reflects the upgrade but never auto-selects the new level.
@@ -1309,6 +1316,347 @@ fn critical_time(
                 .is_some_and(|(_, critical)| critical)
         })
         .ok_or_else(|| "qualified critical occurrence in bounded source stream".into())
+}
+
+// The real native cast dispatcher joins durable build/payment, World hazard
+// locks and the physical batch. A dodge still spends mana and advances cooldown.
+async fn outgoing_spell_checks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    target: crate::foundation::ExactActorRef,
+    harness: &Harness,
+) -> TestResult<u64> {
+    use super::death_ml_loss_composed::current_fence;
+    use crate::durability::character_build::{
+        BuildCause, BuildChangeRequest, BuildOccurrence, DurableBuildState, convert_vocation,
+    };
+    use crate::durability::character_progression::{
+        ExperienceAwardRequest, ExperienceRewardOccurrence,
+    };
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::actor_spell::{
+        SpellCastDisposition, SpellCastIntent, SpellTarget,
+    };
+    use crate::gameplay_transport::hazard::combat;
+
+    let native = owner
+        .active_generation
+        .ok_or("spell generation")?
+        .native_gameplay()
+        .ok_or("spell content")?;
+    let formula = native.training_formula().ok_or("spell training")?;
+    let build =
+        convert_vocation(formula, &DurableBuildState::default(), "sorcerer").map_err(debug)?;
+    owner
+        .root
+        .commit_character_build(
+            owner.character,
+            owner.holder,
+            current_fence(owner, session).await?,
+            BuildChangeRequest {
+                occurrence: BuildOccurrence::from_bytes(occurrence(145)).map_err(debug)?,
+                cause: BuildCause::VocationChoice,
+                before: DurableBuildState::default(),
+                after: build.clone(),
+                pruned_stance: None,
+            },
+            formula,
+        )
+        .await
+        .map_err(debug)?;
+    let progression = owner
+        .progression_binding(session)
+        .ok_or("spell progression")?;
+    owner
+        .root
+        .commit_character_experience(
+            owner.character,
+            owner.holder,
+            current_fence(owner, session).await?,
+            ExperienceAwardRequest {
+                occurrence: ExperienceRewardOccurrence::from_bytes(occurrence(146))
+                    .map_err(debug)?,
+                amount: oteryn_simulation_determinism::ExactI64::new(SPELL_CASTER_XP),
+                context: progression.context.clone(),
+                policy_revision: progression.policy_revision.clone(),
+                reward_revision: progression.reward_revision.clone(),
+                policy: progression.policy.clone(),
+            },
+        )
+        .await
+        .map_err(debug)?;
+    owner
+        .root
+        .initialize_familiar_group(
+            owner.character,
+            owner.holder,
+            current_fence(owner, session).await?,
+        )
+        .await
+        .map_err(debug)?;
+    {
+        let runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        assert!(states.load_owned_build(&runtime, actor, session, &build));
+        let player = states
+            .get_mut(&runtime, actor, session)
+            .ok_or("spell player")?;
+        player
+            .enable_owned_training(&build, formula)
+            .map_err(debug)?;
+    }
+    let original_book = owner.spells;
+    owner.spells = native.spell_book();
+    let index = (1..=owner.spells.source_len())
+        .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
+        .find(|i| {
+            owner
+                .spells
+                .indexed(*i)
+                .is_some_and(|s| s.key == "candidate:spell/energy_strike")
+        })
+        .ok_or("energy strike")?;
+    let mut next_id = 200_000;
+    for should_dodge in [true, false] {
+        owner.clock_origin -= Duration::from_secs(5);
+        let (command_id, position, before) = {
+            let runtime = owner.runtime.lock().await;
+            assert!(combat::eligible(&runtime, target));
+            let command_id = (next_id..next_id + 100_000)
+                .find(|id| {
+                    let command = CommandRef::new(session, CommandId::new(*id).expect("nonzero"));
+                    combat::spell_dodge_roll(&runtime, actor, target, command, 0)
+                        .is_some_and(|roll| combat::dodges(1, roll) == should_dodge)
+                })
+                .ok_or("bounded spell dodge occurrence")?;
+            (
+                command_id,
+                runtime
+                    .read_actor_position(target)
+                    .map_err(debug)?
+                    .position(),
+                runtime
+                    .creature_combat_facts(target, owner.owner_now().get() / 1000)
+                    .map_err(debug)?
+                    .health,
+            )
+        };
+        next_id = command_id + 1;
+        let intent = SpellCastIntent {
+            spell: index,
+            target: SpellTarget::Position(
+                oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                },
+            ),
+            aim_at_target: false,
+        };
+        let mana_before = owner
+            .observe_actor_vitals(actor, session)
+            .await
+            .ok_or("spell mana")?
+            .1
+            .mana;
+        let outcome = owner
+            .cast_spell_dispatch(actor, session, command_id, intent)
+            .await
+            .ok_or("spell completed")?;
+        assert_eq!(
+            outcome.disposition,
+            SpellCastDisposition::Cast,
+            "forced spell dodge={should_dodge}"
+        );
+        let after = owner
+            .runtime
+            .lock()
+            .await
+            .creature_combat_facts(target, owner.owner_now().get() / 1000)
+            .map_err(debug)?
+            .health;
+        if should_dodge {
+            assert_eq!(before, after, "forced spell dodge");
+        } else {
+            assert!(
+                after < before,
+                "forced spell non-dodge: {before} -> {after}"
+            );
+        }
+        let mana_after = owner
+            .observe_actor_vitals(actor, session)
+            .await
+            .ok_or("paid spell mana")?
+            .1
+            .mana;
+        assert_eq!(
+            mana_before - mana_after,
+            20,
+            "dodge still pays the source cost"
+        );
+        let replay = owner
+            .cast_spell_dispatch(actor, session, command_id, intent)
+            .await
+            .ok_or("spell replay completed")?;
+        assert_eq!(replay.disposition, SpellCastDisposition::Cast);
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .creature_combat_facts(target, owner.owner_now().get() / 1000)
+                .map_err(debug)?
+                .health,
+            after
+        );
+        assert_eq!(
+            owner
+                .observe_actor_vitals(actor, session)
+                .await
+                .ok_or("replay mana")?
+                .1
+                .mana,
+            mana_after
+        );
+        let cooling = owner
+            .cast_spell_dispatch(actor, session, next_id, intent)
+            .await
+            .ok_or("cooldown completed")?;
+        assert_eq!(cooling.disposition, SpellCastDisposition::CoolingDown);
+        next_id += 1;
+    }
+    // A source wand uses the same swing owner as fists, with the real
+    // equipment reader and mana payment before the hazard health parser.
+    {
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::raw_sql(sqlx::AssertSqlSafe(
+            crate::durability::item_fee_burn::test_support::item(
+                190,
+                "oteryn:item.tibia.i25760",
+                "definition-r1",
+                1,
+            ),
+        ))
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,6,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(190).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_equipment_state SET revision=revision+1 WHERE character_id=encode($1,'hex')::uuid")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+    }
+    for should_dodge in [true, false] {
+        owner.clock_origin -= Duration::from_secs(3);
+        let (command_id, before) = {
+            let runtime = owner.runtime.lock().await;
+            let command_id = (next_id..next_id + 100_000)
+                .find(|id| {
+                    let command = CommandRef::new(session, CommandId::new(*id).expect("nonzero"));
+                    combat::swing_dodge_roll(&runtime, actor, target, command, 0)
+                        .is_some_and(|roll| combat::dodges(1, roll) == should_dodge)
+                })
+                .ok_or("bounded wand dodge")?;
+            let generation = runtime
+                .visible_entities()
+                .creatures
+                .iter()
+                .find(|c| c.actor == target)
+                .ok_or("wand target")?
+                .generation;
+            assert_eq!(
+                owner.states.attack.lock().await.set_target(
+                    &runtime,
+                    owner.rooms.gate_auto_attack(),
+                    actor,
+                    session,
+                    owner.owner_now(),
+                    Some(EntityRef {
+                        identity: target.placement_identity(),
+                        generation
+                    }),
+                    command_id,
+                ),
+                oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+            );
+            (
+                command_id,
+                runtime
+                    .creature_combat_facts(target, owner.owner_now().get() / 1000)
+                    .map_err(debug)?
+                    .health,
+            )
+        };
+        next_id = command_id + 1;
+        owner.refresh_attack_weapon(actor, session).await;
+        let mana_before = owner
+            .observe_actor_vitals(actor, session)
+            .await
+            .ok_or("wand mana")?
+            .1
+            .mana;
+        owner.drain_auto_attacks().await;
+        let after = owner
+            .runtime
+            .lock()
+            .await
+            .creature_combat_facts(target, owner.owner_now().get() / 1000)
+            .map_err(debug)?
+            .health;
+        if should_dodge {
+            assert_eq!(before, after, "forced wand dodge");
+        } else {
+            assert!(after < before, "forced wand non-dodge: {before} -> {after}");
+        }
+        let mana_after = owner
+            .observe_actor_vitals(actor, session)
+            .await
+            .ok_or("paid wand mana")?
+            .1
+            .mana;
+        assert!(
+            mana_after < mana_before,
+            "the ranged owner must pay even on dodge"
+        );
+        owner.drain_auto_attacks().await;
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .creature_combat_facts(target, owner.owner_now().get() / 1000)
+                .map_err(debug)?
+                .health,
+            after,
+            "timer prevents duplicate wand hit"
+        );
+        assert_eq!(
+            owner
+                .observe_actor_vitals(actor, session)
+                .await
+                .ok_or("wand replay mana")?
+                .1
+                .mana,
+            mana_after
+        );
+    }
+    {
+        let runtime = owner.runtime.lock().await;
+        owner.states.attack.lock().await.set_target(
+            &runtime,
+            owner.rooms.gate_auto_attack(),
+            actor,
+            session,
+            owner.owner_now(),
+            None,
+            next_id,
+        );
+    }
+    owner.spells = original_book;
+    Ok(next_id)
 }
 
 // Force the real swing owner through both sides of the hazard draw. The bounded

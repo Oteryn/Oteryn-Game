@@ -44,6 +44,7 @@ pub async fn prepare_from_owners(
     training_occurrence: BuildOccurrence,
     now: SemanticTimeMicros,
     rune: Option<&ItemSpellCastIntent>,
+    hazard_level: u8,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     let Execution::NativeProfile(profile) = &spell.execution else {
@@ -196,6 +197,7 @@ pub async fn prepare_from_owners(
         training_formula,
         position,
         stage,
+        hazard_level,
     )?;
     let PaidPreparation {
         paid,
@@ -230,6 +232,7 @@ pub async fn prepare_from_owners(
         binding,
         attacker,
         stamp,
+        hazard_level,
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
@@ -565,6 +568,7 @@ fn prepare_preview(
     training_formula: &crate::content::training_formula::CompiledTrainingFormula,
     position: TilePosition,
     stage: u8,
+    hazard_level: u8,
 ) -> Result<PreviewPhase, SpellCastDisposition> {
     let b = owned.binding();
     let actor = b.actor;
@@ -615,7 +619,7 @@ fn prepare_preview(
     let binding = serde_json::to_vec(
         &json!({"intent":source_cast_intent(intent,rune),"spell":profile.spell(),
         "equipment_revision":b.equipment_revision,"character_revision":b.character_revision,
-        "source_stage":stage,"capture_format":"owner-debug-r21",
+        "source_stage":stage,"hazard_level":hazard_level,"capture_format":"owner-debug-r21",
         // Immutable receipts only; these captures grant no owner authority.
         "native_facts":format!("{facts:?}"),
         "magnitude_facts":format!("{:?}",owned.magnitude()),
@@ -760,6 +764,7 @@ fn prepare_payment(
     binding: Vec<u8>,
     attacker: CharacterId,
     stamp: Option<crate::foundation::RuntimeWorkStamp>,
+    hazard_level: u8,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PaidPreparation, SpellCastDisposition> {
     let b = owned.binding();
@@ -824,6 +829,14 @@ fn prepare_payment(
         },
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
+    crate::gameplay_transport::hazard::combat::dodge_spell_effects(
+        runtime,
+        actor,
+        command,
+        hazard_level,
+        &mut lowered.batch.effects,
+    )
+    .ok_or(SpellCastDisposition::Rejected)?;
     crate::spell::native_cast_commit::finalize_paid_combat_cast(
         before,
         spell,

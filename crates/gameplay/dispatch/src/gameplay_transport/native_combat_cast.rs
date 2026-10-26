@@ -2470,6 +2470,15 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
                 let mut owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
                     command,runtime,actor,state,active,*access,owner.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
+                let hazard_level = if spell.aggressive && super::super::hazard::combat::in_area(runtime, actor) {
+                    let scope = item_tx::assert_spell_item_scope_in_transaction(
+                        &mut tx, permit, owner.root, owner.character, owner.holder,
+                        authority.runtime_scope(), authority.scope_generation(),
+                    ).await.map_err(|_| DurabilityError::Unavailable)?;
+                    super::super::hazard::combat::effective_level(
+                        &mut tx, owner.root, &scope, runtime, actor, session,
+                    ).await.map_err(|_| DurabilityError::Unavailable)?
+                } else { 0 };
                 if pending.is_none(){
                     if states.apply_current_premium(runtime,actor,session,&owned,owner.owner_now().get())
                         .map_err(|_|DurabilityError::Unavailable)? {
@@ -2524,7 +2533,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     } else if let Some(parameter)=parameter.as_ref(){
                         match super::parameter_cast::resolve_named_player_in_transaction(&mut tx,owner.root,&authority,runtime,states,parameter).await {
                             Ok(super::parameter_cast::NamedPlayerResolution::Found(target))=>ordinary_combat::prepare_named(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                                owner.spells,spell,&intent,command,occurrence,training_occurrence,now,parameter,&target,&mut draw).await,
+                                owner.spells,spell,&intent,command,occurrence,training_occurrence,now,parameter,&target,hazard_level,&mut draw).await,
                             Ok(super::parameter_cast::NamedPlayerResolution::Absent(reason))=>prepare_named_failure(&mut tx,&authority,runtime,states,room,objects,content,&owned,spell,parameter,command,occurrence,training_occurrence,now,reason).await,
                             Err(disposition)=>Err(disposition),
                         }
@@ -2542,10 +2551,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
                     } else if ordinary_combat::applicable(spell) {
                         ordinary_combat::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),attack_target,pvp_secure,&mut draw).await
+                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),attack_target,pvp_secure,hazard_level,&mut draw).await
                     } else {
                         prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
+                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),hazard_level,&mut draw).await
                     };
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{
@@ -2622,11 +2631,19 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         Err(_)=>false,
                     }
                 }else{true};
+                let hazard_current = match serde_json::from_slice::<serde_json::Value>(&attempt.prepared.batch.binding) {
+                    Ok(binding) => match binding.get("hazard_level") {
+                        Some(level) => level.as_u64() == Some(u64::from(hazard_level)),
+                        // Non-combat/self constructors do not consume the dodge input.
+                        None => true,
+                    },
+                    Err(_) => false,
+                };
                 let pvp_current=super::super::pvp_live::record_spell_harm(
                     &mut tx,owner.root,&authority,runtime,states,room,objects,
                     &attempt.prepared.batch,&mut attempt.prepared.installation.as_mut().ok_or(DurabilityError::Unavailable)?.player,
                     pvp_secure).await.is_ok();
-                (if pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
+                (if hazard_current && pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
                     attempt.prepared.validate_new_write(runtime,states,&owned,&attempt.owned,spell,
                         owner.owner_now().get(),reconnect.as_ref())
                 } else { Err(Error::SnapshotChanged) }).map_err(|_|item_tx::SpellItemError::Rejected(NATIVE_NEW_WRITE_REFUSED))

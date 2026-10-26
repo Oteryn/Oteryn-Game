@@ -247,6 +247,27 @@ impl ChannelRuntimeV1 {
             }
             OwnerCombatChange::Damage {
                 target_atom,
+                magnitude: 0,
+            } => {
+                // A source-qualified dodge consumes the atomic spell occurrence,
+                // without admitting a zero hit to the positive-damage ledger.
+                let Slot::CreatureOccupied {
+                    target_identity,
+                    health,
+                    ..
+                } = &next.slots[index]
+                else {
+                    return Err(Error::InvalidBatch);
+                };
+                if target_identity.as_ref() != target_atom.as_bytes() {
+                    return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureTargetMismatch));
+                }
+                if *health <= 0 {
+                    return Err(Error::Owner(oteryn_gameplay_domain::domain::carrier_values::CarrierError::CreatureNotActionable));
+                }
+            }
+            OwnerCombatChange::Damage {
+                target_atom,
                 magnitude,
             } => {
                 let mut hit_binding = digest.to_vec();

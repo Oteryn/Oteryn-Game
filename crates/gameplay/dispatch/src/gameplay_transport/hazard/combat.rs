@@ -52,7 +52,10 @@ pub(in crate::gameplay_transport) fn eligible(
             .is_ok_and(|s| s.state.master.is_none())
 }
 
-fn in_area(runtime: &ChannelRuntimeV1, actor: ExactActorRef) -> bool {
+pub(in crate::gameplay_transport) fn in_area(
+    runtime: &ChannelRuntimeV1,
+    actor: ExactActorRef,
+) -> bool {
     runtime.read_actor_position(actor).is_ok_and(|p| {
         let p = p.position();
         hazard::contains(p.x, p.y, p.floor)
@@ -373,6 +376,62 @@ pub(in crate::gameplay_transport) fn swing_dodge_roll(
         &GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest()),
         occurrence,
         "hazard.dodge",
+        0,
+    )
+    .ok()
+}
+
+/// Retain a zero-damage effect so the physical receipt, payment and cooldowns
+/// still commit. Healing and condition installation keep their source semantics.
+pub(in crate::gameplay_transport) fn dodge_spell_effects(
+    runtime: &ChannelRuntimeV1,
+    caster: ExactActorRef,
+    command: CommandRef,
+    level: u8,
+    effects: &mut [crate::spell::combat_batch::OwnerCombatEffect],
+) -> Option<()> {
+    use crate::spell::combat_batch::OwnerCombatChange;
+    for effect in effects {
+        if !eligible(runtime, effect.target) || level == 0 {
+            continue;
+        }
+        let damage = match &mut effect.change {
+            OwnerCombatChange::Damage { magnitude, .. } => magnitude,
+            OwnerCombatChange::DamageWithHealing { damage, .. } => damage,
+            _ => continue,
+        };
+        if *damage > 0
+            && dodges(
+                level,
+                spell_dodge_roll(runtime, caster, effect.target, command, effect.sub_ordinal)?,
+            )
+        {
+            *damage = 0;
+        }
+    }
+    Some(())
+}
+
+pub(in crate::gameplay_transport) fn spell_dodge_roll(
+    runtime: &ChannelRuntimeV1,
+    source: ExactActorRef,
+    target: ExactActorRef,
+    lineage: CommandRef,
+    ordinal: u16,
+) -> Option<u64> {
+    let occurrence = oteryn_gameplay_combat_rules::resolution::swing_occurrence(
+        source.placement_identity(),
+        (
+            *lineage.game_session_id().as_bytes(),
+            lineage.command_id().get(),
+        ),
+        ordinal,
+        &target.placement_identity(),
+    );
+    deterministic_decision_u64(
+        &GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest()),
+        occurrence,
+        "hazard.spell.dodge",
         0,
     )
     .ok()

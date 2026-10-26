@@ -165,6 +165,7 @@ pub(super) async fn prepare(
     legacy: Option<&super::super::super::rune_use_bridge::LegacyRuneUse>,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     pvp_secure: bool,
+    hazard_level: u8,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     prepare_inner(
@@ -189,6 +190,7 @@ pub(super) async fn prepare(
         None,
         attack_target,
         pvp_secure,
+        hazard_level,
         draw,
     )
     .await
@@ -214,6 +216,7 @@ pub(super) async fn prepare_named(
     now: SemanticTimeMicros,
     parameter: &oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
     proposal: &super::super::parameter_cast::QualifiedNamedPlayer,
+    hazard_level: u8,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     proposal
@@ -270,6 +273,7 @@ pub(super) async fn prepare_named(
         Some((named_target, parameter)),
         None,
         true,
+        hazard_level,
         draw,
     )
     .await
@@ -312,6 +316,7 @@ fn lower(
     command: CommandRef,
     occurrence: &AbilityOccurrence,
     now: SemanticTimeMicros,
+    hazard_level: u8,
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<Output, SpellCastDisposition> {
     let mut applications: Vec<(u64, u64, Vec<ResolvedEffect>)> = Vec::new();
@@ -539,7 +544,7 @@ fn lower(
     let mut batch=OwnerCombatBatch{caster:owned.binding().actor,attacker:CharacterId::decode(&owned.binding().character).map_err(|_|SpellCastDisposition::Rejected)?,
         current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,
         effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":match named {Some((_,parameter))=>source_parameter_intent(&parameter.intent,parameter)?,None=>source_cast_intent(intent,rune)},"source_named_target":named.map(|(a,_)|format!("{a:?}")),"parameter_result":if named.is_some(){Some(oteryn_protocol_oteryn::actor_spell_v2::encode_parameter_spell_cast_result(&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult{disposition:SpellCastDisposition::Cast,feedback:None,editor:None}).map_err(|_|SpellCastDisposition::Rejected)?)}else{None},"source_definition":format!("{spell:?}"),
-            "capture_format":"ordinary-owner-r21","pvp_targets":pvp_targets.iter().map(|(actor,black)|json!([crate::spell::combat_execution::actor_atom(*actor),black])).collect::<Vec<_>>(),"source_world_capture_digest":sha2::Sha256::digest(format!("{world:?}").as_bytes()).to_vec(),"source_hit_delays":source_delays,"source_chain_origins":paid.resolution.chain.iter().map(|hit|json!([hit.hit.creature,hit.hit.step,hit.hit.from.x,hit.hit.from.y,hit.hit.from.floor])).collect::<Vec<_>>(),"equipment_facts":format!("{:?}",owned.equipment()),
+            "capture_format":"ordinary-owner-r21","hazard_level":hazard_level,"pvp_targets":pvp_targets.iter().map(|(actor,black)|json!([crate::spell::combat_execution::actor_atom(*actor),black])).collect::<Vec<_>>(),"source_world_capture_digest":sha2::Sha256::digest(format!("{world:?}").as_bytes()).to_vec(),"source_hit_delays":source_delays,"source_chain_origins":paid.resolution.chain.iter().map(|hit|json!([hit.hit.creature,hit.hit.step,hit.hit.from.x,hit.hit.from.y,hit.hit.from.floor])).collect::<Vec<_>>(),"equipment_facts":format!("{:?}",owned.equipment()),
             "magnitude_facts":format!("{:?}",owned.magnitude()),"selected_variant":format!("{:?}",paid.resolution.ability_variant),
             "harmony_gained":paid.harmony_gained,"harmony_gain_healing_profile":if paid.harmony_gain_healing.is_some(){Some(crate::spell::actor_execution::harmony_gain_profile()?)}else{None},
             "source_party":party.as_ref().map(|p|format!("{:?}",p.source()))})).map_err(|_|SpellCastDisposition::Rejected)?};
@@ -722,6 +727,14 @@ fn lower(
             }
         }
     }
+    crate::gameplay_transport::hazard::combat::dodge_spell_effects(
+        runtime,
+        batch.caster,
+        command,
+        hazard_level,
+        &mut batch.effects,
+    )
+    .ok_or(SpellCastDisposition::Rejected)?;
     let source = spell
         .authored
         .as_ref()

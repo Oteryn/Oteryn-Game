@@ -554,6 +554,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
                     let authority = due_authority.read_authority();
+                    // Resolve against the current World/party/selection while this
+                    // same transaction still holds the physical owner guards.
+                    let hazard_level = if crate::gameplay_transport::hazard::combat::in_area(
+                        runtime,
+                        saved.binding.caster,
+                    ) {
+                        let scope = item_tx::assert_spell_item_scope_in_transaction(
+                            &mut tx,
+                            permit,
+                            owner.root,
+                            owner.character,
+                            owner.holder,
+                            authority.runtime_scope(),
+                            authority.scope_generation(),
+                        )
+                        .await
+                        .map_err(|_| DurabilityError::Unavailable)?;
+                        crate::gameplay_transport::hazard::combat::effective_level(
+                            &mut tx,
+                            owner.root,
+                            &scope,
+                            runtime,
+                            saved.binding.caster,
+                            saved.binding.command.game_session_id(),
+                        )
+                        .await
+                        .map_err(|_| DurabilityError::Unavailable)?
+                    } else {
+                        0
+                    };
                     let state = states
                         .get(
                             runtime,
@@ -606,6 +636,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let object = source.as_object_mut().ok_or(DurabilityError::Unavailable)?;
                         object.remove("source_presentation_bytes");
                         object.insert("ordinary_due_phase".into(), saved.phase.into());
+                        object.insert("hazard_due_level".into(), hazard_level.into());
                         let binding = serde_json::to_vec(&source)
                             .map_err(|_| DurabilityError::Unavailable)?;
                         let mut batch = crate::spell::combat_batch::OwnerCombatBatch {
@@ -702,6 +733,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             return Err(DurabilityError::Unavailable);
                         }
                         effect.sub_ordinal = saved.sub_ordinal;
+                        crate::gameplay_transport::hazard::combat::dodge_spell_effects(
+                            runtime,
+                            batch.caster,
+                            batch.command,
+                            hazard_level,
+                            std::slice::from_mut(&mut effect),
+                        )
+                        .ok_or(DurabilityError::Unavailable)?;
                         batch.effects = vec![effect];
                         let presentation = states
                             .presentations
@@ -738,6 +777,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .map_err(|_| DurabilityError::Unavailable)?;
                     }
                     if let Some(resolved) = &saved.resolved {
+                        let captured: serde_json::Value =
+                            serde_json::from_slice(&resolved.batch.binding)
+                                .map_err(|_| DurabilityError::Unavailable)?;
+                        if captured["hazard_due_level"].as_u64() != Some(u64::from(hazard_level)) {
+                            return Err(DurabilityError::Unavailable);
+                        }
                         if resolved.owned.binding() != owned.binding()
                             || resolved.owned.durable_build() != owned.durable_build()
                             || resolved.owned.equipment() != owned.equipment()

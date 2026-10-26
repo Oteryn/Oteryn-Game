@@ -142,6 +142,49 @@ fn three_effect_candidate_stages_real_slots_and_one_commit_installs_all() {
 }
 
 #[test]
+fn hazard_zero_damage_spell_batch_commits_once_without_a_health_hit() {
+    let mut f = fixture(1);
+    let dodged = batch(&f, 1, vec![damage(f.targets[0], 0, 0)]);
+    let staged = f.runtime.stage_spell_batch(&dodged).expect("dodge stages");
+    let receipt = f.runtime.commit_spell_batch(staged).expect("dodge commits");
+    assert!(receipt.applied);
+    assert_eq!(receipt.effects.len(), 1);
+    assert!(receipt.effects[0].health.is_none());
+    assert_eq!(health(&f, 0), 20);
+    let replay = f.runtime.stage_spell_batch(&dodged).expect("dodge replay");
+    assert!(
+        !f.runtime
+            .commit_spell_batch(replay)
+            .expect("receipt")
+            .applied
+    );
+    assert_eq!(health(&f, 0), 20);
+
+    let negative = batch(&f, 2, vec![damage(f.targets[0], 0, -1)]);
+    assert!(matches!(
+        f.runtime.stage_spell_batch(&negative),
+        Err(Error::Owner(CarrierError::InvalidDamage))
+    ));
+    let mut wrong = batch(&f, 2, vec![damage(f.targets[0], 0, 0)]);
+    if let OwnerCombatChange::Damage { target_atom, .. } = &mut wrong.effects[0].change {
+        *target_atom = "wrong:creature".into();
+    }
+    assert!(matches!(
+        f.runtime.stage_spell_batch(&wrong),
+        Err(Error::Owner(CarrierError::CreatureTargetMismatch))
+    ));
+    assert_eq!(health(&f, 0), 20);
+    let lethal = batch(&f, 2, vec![damage(f.targets[0], 0, 20)]);
+    let staged = f.runtime.stage_spell_batch(&lethal).expect("lethal stage");
+    f.runtime.commit_spell_batch(staged).expect("lethal commit");
+    let dead = batch(&f, 3, vec![damage(f.targets[0], 0, 0)]);
+    assert!(matches!(
+        f.runtime.stage_spell_batch(&dead),
+        Err(Error::Owner(CarrierError::CreatureNotActionable))
+    ));
+}
+
+#[test]
 fn original_typed_batch_retention_survives_lethal_targets_and_is_not_an_alias() {
     let mut f = fixture(1);
     // Nonzero global hit ordinal is still whole-cast phase0, not a deferred timer phase.

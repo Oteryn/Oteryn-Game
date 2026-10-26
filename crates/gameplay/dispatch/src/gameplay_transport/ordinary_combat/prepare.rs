@@ -57,6 +57,7 @@ pub(super) async fn prepare_inner(
     )>,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     pvp_secure: bool,
+    hazard_level: u8,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     if !applicable(spell)
@@ -200,6 +201,7 @@ pub(super) async fn prepare_inner(
         &pvp_targets,
         chain_start,
         caster_position,
+        hazard_level,
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
@@ -660,6 +662,7 @@ fn prepare_payment(
     pvp_targets: &[(ExactActorRef, bool)],
     chain_start: ChainStart,
     caster_position: TilePosition,
+    hazard_level: u8,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PaidPreparation, SpellCastDisposition> {
     let prepare_paid = |draw: &mut dyn FnMut(i64, i64) -> i64| {
@@ -732,6 +735,7 @@ fn prepare_payment(
         command,
         occurrence,
         now,
+        hazard_level,
         &mut |minimum, _| minimum,
     )
     .inspect_err(|_reason| {
@@ -821,6 +825,7 @@ fn prepare_payment(
         command,
         occurrence,
         now,
+        hazard_level,
         draw,
     )?;
     let training = before
