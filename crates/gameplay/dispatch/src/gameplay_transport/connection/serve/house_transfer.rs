@@ -145,7 +145,7 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             let command = envelope
                 .client_command(generation)
                 .map_err(ServeEnd::Closed)?;
-            let permit = authority.enter_input().await;
+            let permit = authority.enter_input(admitted.game_session_id).await;
             if permit.is_some() && !authority.house_transfer_input(admitted).await {
                 return Err(ServeEnd::Disconnected);
             }

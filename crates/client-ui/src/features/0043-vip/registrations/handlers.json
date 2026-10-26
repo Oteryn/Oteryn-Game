@@ -1,0 +1,19 @@
+{
+  "mechanic": "0043-vip",
+  "kind": "handlers",
+  "id": "0043-vip-unsupported",
+  "status": "unsupported",
+  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "commands": [
+    48,
+    49,
+    50
+  ],
+  "not_applicable": {
+    "state": "Unsupported until the owning mechanic migration.",
+    "protocol": "Unsupported until the owning mechanic migration.",
+    "view": "Unsupported until the owning mechanic migration.",
+    "input": "Unsupported until the owning mechanic migration.",
+    "settings": "Unsupported until the owning mechanic migration."
+  }
+}

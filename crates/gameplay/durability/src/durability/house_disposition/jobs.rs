@@ -11,6 +11,7 @@ impl DurabilityRoot {
         scope: RuntimeScopeRefV1,
         generation: u64,
     ) -> Result<()> {
+        super::guildhall::drain(self, permit, authority, node, scope, generation).await?;
         let recovery = authority
             .record_for(self)
             .map_err(|_| HouseDispositionError::Rejected)?;

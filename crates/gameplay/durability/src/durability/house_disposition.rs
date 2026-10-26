@@ -16,6 +16,7 @@ use serde_json::Value;
 use sqlx::{Postgres, Transaction};
 
 mod audit;
+mod guildhall;
 mod jobs;
 
 #[derive(Debug)]

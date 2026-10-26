@@ -112,6 +112,9 @@ where
     A: FreshAdmissionAuthority,
 {
     loop {
+        if !authority.prepare_quest_callback_resume(&mut admitted).await {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
         if admitted.item_fence.is_some_and(|fence| {
             matches!(
                 fence.runtime_scope,

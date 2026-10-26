@@ -13,6 +13,11 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::CommandRef;
 use oteryn_gameplay_housing::house_management::{HouseManagementAction, valid_move_out_date};
 pub use query::HouseManagementSummary;
+#[derive(Debug, Clone)]
+pub struct QualifiedHouse {
+    pub key: String,
+    pub kind: &'static str,
+}
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 type Tx<'a> = Transaction<'a, Postgres>;
@@ -135,6 +140,9 @@ async fn apply(
     }
     let world = request.house.world_id();
     let house = request.house.house_key();
+    // Membership precedes property in the shared Guild/House lock order.
+    sqlx::query("SELECT g.guild_id FROM game_guilds g JOIN game_house_properties p ON p.owner_guild_id=g.guild_id WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=$2 FOR SHARE OF g")
+        .bind(world.as_bytes().as_slice()).bind(house).fetch_optional(&mut **tx).await?;
     // Property before ACL/notice, consistent with auction/settlement and ACL revision trigger.
     let property = sqlx::query("SELECT state,content_digest,ownership_generation::text,acl_revision::text FROM game_house_property_lock(encode($1,'hex')::uuid,$2)")
         .bind(world.as_bytes().as_slice()).bind(house).fetch_optional(&mut **tx).await?
@@ -145,8 +153,8 @@ async fn apply(
         return Err(HouseManagementError::Rejected);
     }
     let ownership = numeric_u64(&property, "ownership_generation")?;
-    let owner: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(owner_character_id) FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND ownership_revision=$3::text::numeric FOR UPDATE")
-        .bind(world.as_bytes().as_slice()).bind(house).bind(ownership.to_string()).fetch_optional(&mut **tx).await?;
+    let owner: Option<Vec<u8>> = sqlx::query_scalar("SELECT uuid_send(game_house_effective_owner(world_id,house_key)) FROM game_house_ownership WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND ownership_revision=$3::text::numeric FOR UPDATE")
+        .bind(world.as_bytes().as_slice()).bind(house).bind(ownership.to_string()).fetch_one(&mut **tx).await?;
     let owner = owner.ok_or(HouseManagementError::Rejected)?;
     let revision = match &request.action {
         HouseManagementAction::ReplaceAcl {

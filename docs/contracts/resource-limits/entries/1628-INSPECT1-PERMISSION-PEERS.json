@@ -1,0 +1,22 @@
+{
+  "id": "INSPECT1-PERMISSION-PEERS",
+  "owner_contract": "protocol-oteryn/v1/inspection-v1.md",
+  "resource": "Pending requesters or individual grants per current player session",
+  "unit": "peers per list",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Refuse new entries at capacity; requests expire after 60 seconds and session release forgets grants.",
+  "client_visible": true,
+  "boundary_tests": [
+    "inspection_permissions_bind_both_actor_generations_and_forget",
+    "inspection_postgres_trade_counterpart_requires_current_offer_and_leaf_index"
+  ],
+  "consumers": [
+    "crates/gameplay/dispatch/src/gameplay_transport/inspection.rs"
+  ],
+  "notes": "INSPECT-1 resource 1628; all permission state is ephemeral."
+}

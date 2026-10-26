@@ -31,23 +31,32 @@ message HouseIntentV1 {
 message HouseQueryV1 { bytes world_id = 1; string town = 2; optional string cursor = 3; }
 message HouseSummaryV1 {
   string house_key = 1;
+  uint32 kind = 11; // present only with selected capability 99: 1 private house, 2 shop, 3 Guildhall
   uint32 state = 2; // native property state 1..6
   uint64 rent_gold = 3;
   uint64 revision = 4;
   uint64 acl_revision = 10; // property-global CAS revision for all lists
-  bool owned = 5; // true only for this Character
+  bool owned = 5; // true for the personal owner or current Guild leader
   uint64 current_price = 7;
   optional uint64 ends_at_unix_ms = 8;
-  optional uint64 own_bid_maximum = 9; // this Character only
+  optional uint64 own_bid_maximum = 9; // personal bidder or current Guild leader
   optional uint64 move_out_unix_ms = 6; // current owner only, same ownership generation
 }
 message HouseResultV1 {
-  uint32 disposition = 1; // 1 OK, 2 REJECTED, 3 CONFLICT; no result on ambiguous commit
+  uint32 disposition = 1; // 1 OK, 2 REJECTED, 3 CONFLICT; capability 99 adds 4 NOT_GUILD_LEADER, 5 GUILD_INACTIVE, 6 GUILD_ALREADY_HAS_HALL, 7 GUILD_ALREADY_BIDDING, 8 INSUFFICIENT_FUNDS, 9 BALANCE_LIMIT, 10 STALE_LEADER, 11 NO_CHANGE; no result on ambiguous commit
   uint64 revision = 2; // ACL/notice revision; 0 on refusal
   repeated HouseSummaryV1 houses = 3; // <=20, sorted by native House key
   optional string cursor = 4; // exclusive keyset cursor only when more results exist
 }
 // No unsolicited state/domain. An unselected command is REJECTED with empty payload before decode.
-// Unsupported native owners (acquisition/exit) refuse; transfer is deferred by OWN0.
+// Guildhall intents require selected capabilities 49 and 99. Leadership transfer resolves the new payer without transferring item custody; commercial transfer is deferred by OWN0.
 // Move-out OK records a notice, not execution of disposition; cancellation clears that notice.
 // Rent is a read-only catalogue/property projection; no player-supplied amount is debited.
+
+// Capability 99 (requires 40/49), command 115; result is GuildIntentResultV1.
+// The native Guild owner validates leader/vice, expected revision and both Premium Accounts.
+message GuildhallLeadershipV1 { bytes guild_id = 1; bytes successor_character_id = 2; uint64 expected_revision = 3; }
+
+// Under selected capability 99, Guild Bank ledger entries also carry kinds
+// 4 Hall reserve (debit), 5 Hall refund (credit), 6 Hall payment (burn or surplus refund).
+// Without 99, that query projects only kinds 1..3; native ordinals/cursors remain stable.

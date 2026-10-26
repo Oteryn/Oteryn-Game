@@ -535,7 +535,8 @@ pub fn resolve_map_target<F: MapFacts, C>(
     }
     let placement_key = u64::from_be_bytes(key.try_into().map_err(|_| nothing)?);
     let (pos, ordinal) = view::placement_of(placement_key).ok_or(nothing)?;
-    if !unhidden_base_entry(source.overlay, pos, ordinal) {
+    if !unhidden_base_entry(source.overlay, pos, ordinal) || source.facts.base_hidden(placement_key)
+    {
         return Err(nothing);
     }
     if target.expected_revision != source.facts.object_revision(placement_key) {
@@ -584,7 +585,9 @@ pub fn resolve_map_handle<F: MapFacts>(
                 return Err(stale);
             }
             let (pos, ordinal) = view::placement_of(placement_key).ok_or(stale)?;
-            if !unhidden_base_entry(source.overlay, pos, ordinal) {
+            if !unhidden_base_entry(source.overlay, pos, ordinal)
+                || source.facts.base_hidden(placement_key)
+            {
                 return Err(stale);
             }
             Ok(MapHandleTarget::Base {

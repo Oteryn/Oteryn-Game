@@ -56,7 +56,9 @@ where
             Err(error) => return Err(close(stream, session.admitted, error).await),
         },
     };
-    let mut input_permit = authority.enter_input().await;
+    let mut input_permit = authority
+        .enter_input(session.admitted.game_session_id)
+        .await;
     if input_permit.is_some() && !authority.house_transfer_input(session.admitted).await {
         return Err(ServeEnd::Disconnected);
     }
@@ -251,7 +253,9 @@ where
             target,
         ))
         .await?;
-        input_permit = authority.enter_input().await;
+        input_permit = authority
+            .enter_input(session.admitted.game_session_id)
+            .await;
         match walked {
             autowalk::WalkOutcome::Arrived if input_permit.is_some() => {
                 // The walk already published its steps. Only relocation by the retried USE
@@ -284,6 +288,15 @@ where
             &mut session.buffered,
         )
         .await;
+    }
+    // The STEP itself is already committed even if its follow-up callback is uncertain.
+    // USE has no terminal effect result until the callback receipt is reconciled.
+    if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+        && authority
+            .quest_callback_unresolved(session.admitted.game_session_id)
+            .await
+    {
+        return Err(ServeEnd::Disconnected);
     }
     dispatch = bank_inventory(authority, session, dispatch).await?;
     drop(input_permit);
