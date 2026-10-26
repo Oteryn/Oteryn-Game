@@ -2,9 +2,11 @@
 //! `D3-CORPSE-CONTAINER-LOOT-WINDOW-DECAY-V1` §4.6/§4.7, D135/D136; DUR-03
 //! §39.1/§39.4).
 //!
-//! A corpse decays at the durable absolute deadline
+//! A rat corpse decays at the durable absolute deadline
 //! `materialized_at + 60 s` of its own `CORPSE_MATERIALIZATION` MINT receipt
-//! (never `occurred_at`). Decay retires every live entry of its container and
+//! (never `occurred_at`). Summer corpses first transform through the existing
+//! durable Item chain owner; their terminal deadline is materialization + 670 s.
+//! Decay retires every live entry of its container and
 //! then the corpse itself; nothing drops to Ground. It is N+1 separate
 //! one-item logical transactions, never one multi-item transaction: one step
 //! per live entry, then one step for the corpse, admitted only once no live
@@ -132,9 +134,10 @@ impl DecayRetireStep {
 }
 
 /// One live corpse of a scope and its durable decay deadline.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CorpseDecayDeadline {
     pub corpse_item_instance_id: [u8; 16],
+    pub definition: super::item_mint::TypedDefinitionRef,
     pub materialized_at_unix_ms: i64,
     pub decay_at_unix_ms: i64,
 }
@@ -413,7 +416,7 @@ async fn admit(
         })));
     };
     let corpse = sqlx::query(
-        "SELECT r.materialized_at, g.world_id::text, g.channel_id::text, \
+        "SELECT game_corpse_retirement_deadline(r.item_instance_id) AS deadline, game_corpse_terminal_stage_ready(r.item_instance_id) AS terminal_stage_ready, g.world_id::text, g.channel_id::text, \
                 g.runtime_scope_ownership_generation::text, g.spatial_position, g.corpse_ref, \
                 g.map_revision, g.content_revision, g.native_room_placement_context, \
                 floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS database_now \
@@ -440,12 +443,11 @@ async fn admit(
     if uuid_text(item.try_get("world_id")?)? != world_id {
         return Err(DurabilityError::InvalidStoredState);
     }
-    let materialized_at: Option<i64> = corpse.try_get("materialized_at")?;
-    let deadline_unix_ms = materialized_at
-        .and_then(corpse_decay_at_unix_ms)
-        .ok_or(DurabilityError::InvalidStoredState)?;
+    let deadline_unix_ms: i64 = corpse.try_get("deadline")?;
     let database_now_unix_ms: i64 = corpse.try_get("database_now")?;
-    if database_now_unix_ms < deadline_unix_ms {
+    if database_now_unix_ms < deadline_unix_ms
+        || !corpse.try_get::<bool, _>("terminal_stage_ready")?
+    {
         return Ok(Err(DecayRetireError::Refused(
             DecayRetireRefusal::NotYetDue,
         )));

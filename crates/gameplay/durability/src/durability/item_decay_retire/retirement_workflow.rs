@@ -385,7 +385,7 @@ impl DurabilityRoot {
                     .fetch_one(&mut *tx)
                     .await?;
                     let rows = sqlx::query(
-                        "SELECT g.item_instance_id::text, r.materialized_at \
+                        "SELECT g.item_instance_id::text, r.materialized_at, game_corpse_retirement_deadline(g.item_instance_id) AS deadline, i.definition_family, i.definition_production_key, i.definition_revision_ref \
                            FROM game_item_ground_locations g \
                            JOIN game_item_mint_receipts r ON r.item_instance_id = g.item_instance_id \
                            JOIN game_item_instances i ON i.item_instance_id = g.item_instance_id \
@@ -413,9 +413,13 @@ impl DurabilityRoot {
                             materialized_at_unix_ms.ok_or(DurabilityError::InvalidStoredState)?;
                         corpses.push(CorpseDecayDeadline {
                             corpse_item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
+                            definition: super::super::item_mint::TypedDefinitionRef {
+                                family: row.try_get("definition_family")?,
+                                production_key: row.try_get("definition_production_key")?,
+                                revision_ref: row.try_get("definition_revision_ref")?,
+                            },
                             materialized_at_unix_ms,
-                            decay_at_unix_ms: corpse_decay_at_unix_ms(materialized_at_unix_ms)
-                                .ok_or(DurabilityError::InvalidStoredState)?,
+                            decay_at_unix_ms: row.try_get("deadline")?,
                         });
                     }
                     commit_semantic_transaction(tx, deadline).await?;

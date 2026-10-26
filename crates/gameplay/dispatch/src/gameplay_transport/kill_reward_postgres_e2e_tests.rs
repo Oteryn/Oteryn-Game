@@ -46,6 +46,10 @@ const PASS: Duration = Duration::from_secs(3);
 #[path = "kill_reward_postgres_fixture/scenario_thread.rs"]
 pub(super) mod scenario_thread;
 
+#[path = "kill_reward_postgres_fixture/summer_settlement.rs"]
+mod summer_settlement;
+use summer_settlement::qualify_summer_settlement;
+
 #[test]
 fn auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres() -> TestResult {
     scenario_thread::run("kill-reward-e2e", scenario)
@@ -81,8 +85,8 @@ fn summer_radiant_all_six_execute_attacks_through_the_production_owner() -> Test
 }
 
 #[test]
-fn summer_radiant_all_six_kills_refuse_unadmitted_corpse_settlement_on_postgres() -> TestResult {
-    scenario_thread::run("summer-radiant-refusals", || {
+fn summer_radiant_all_six_kills_settle_and_decay_on_postgres() -> TestResult {
+    scenario_thread::run("summer-radiant-settlements", || {
         for name in [
             "acolyte",
             "inquisitor",
@@ -97,11 +101,18 @@ fn summer_radiant_all_six_kills_refuse_unadmitted_corpse_settlement_on_postgres(
     })
 }
 
+#[test]
+fn summer_corpse_stages_recover_under_a_new_process_and_owner_generation() -> TestResult {
+    scenario_thread::run("summer-corpse-handoff", || {
+        scenario_with_creature(Some(true), false, Some("warden"), true)
+    })
+}
+
 fn scenario_with_creature(
     reconcile: Option<bool>,
     capacity: bool,
     radiant: Option<&str>,
-    refuse_radiant_settlement: bool,
+    settle_radiant: bool,
 ) -> TestResult {
     run(async |admin| {
         let harness =
@@ -196,30 +207,75 @@ fn scenario_with_creature(
             || "oteryn:creature.rat".to_owned(),
             |name| format!("oteryn:creature.radiant_{name}"),
         );
-        if refuse_radiant_settlement {
-            assert_eq!(
-                native.reward_table().row(&creature_key),
-                Err(crate::content::creature_reward::NoSettlementReason::CorpseItemInadmissible),
-                "{creature_key} must refuse for its actual unadmitted corpse"
-            );
+        let expected_xp = if settle_radiant {
+            native
+                .reward_table()
+                .row(&creature_key)
+                .map_err(debug)?
+                .xp_amount
+                .get()
+        } else {
+            5
+        };
+        if settle_radiant {
+            let exact = match radiant {
+                Some("acolyte") => 32_960,
+                Some("inquisitor") => 32_460,
+                Some("paragon") => 34_780,
+                Some("templar") => 34_520,
+                Some("warden") => 35_540,
+                Some("zealot") => 35_220,
+                _ => return Err("unknown Summer Radiant".into()),
+            };
+            assert_eq!(expected_xp, exact, "{creature_key} exact native XP");
+        }
+        if settle_radiant {
+            // Select a positive real occurrence without changing a drop probability.
+            // Roll back unused player reservations to advance the reusable creature
+            // slot's generation (player slot 1, creature slot 2), then spawn and kill that actual native creature.
+            let reward = native.reward_table().row(&creature_key).map_err(debug)?;
+            let mut generation = None;
+            for candidate in 1..=20_000 {
+                let death = oteryn_gameplay_items::loot_plan::LootPlanDeathKey::new(
+                    id(42),
+                    id(43),
+                    1,
+                    2,
+                    candidate,
+                );
+                let plan = oteryn_gameplay_items::loot_plan::plan_creature_loot(
+                    death,
+                    &reward.loot_table_ref,
+                    &reward.loot_table,
+                )?;
+                if !plan.entries.is_empty() {
+                    generation = Some(candidate);
+                    break;
+                }
+            }
+            for _ in 1..generation.ok_or("positive bounded native loot occurrence")? {
+                let unused = runtime
+                    .reserve_fresh_session(GameSessionId::decode(&id(245)).map_err(debug)?)
+                    .map_err(debug)?;
+                runtime
+                    .rollback_definitely_uncommitted(unused)
+                    .map_err(debug)?;
+            }
         }
         runtime
             .realize_native_qualification_spawn(channel_pin, &creature_key, OPEN_RAT)
             .map_err(debug)?;
-        let (rat, target_actor) = {
+        let rat = {
             let creature = runtime
                 .visible_entities()
                 .creatures
                 .first()
                 .copied()
                 .expect("the rat is visible");
-            (
-                EntityRef {
-                    identity: creature.actor.placement_identity(),
-                    generation: creature.generation,
-                },
-                creature.actor,
-            )
+            EntityRef {
+                identity: creature.actor.placement_identity(),
+                generation: creature.generation,
+            }
         };
 
         let door_content =
@@ -325,11 +381,7 @@ fn scenario_with_creature(
                             // Level 50 overcomes the rat's defence and armor. A high-level
                             // attacker kills the real Radiant in bounded swings;
                             // its native HP, defence, loot and corpse facts stay unchanged.
-                            level: if refuse_radiant_settlement {
-                                1_000_000
-                            } else {
-                                50
-                            },
+                            level: if settle_radiant { 1_000_000 } else { 50 },
                             max_health: if radiant.is_some() { 1_000_000 } else { 185 },
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
@@ -340,7 +392,7 @@ fn scenario_with_creature(
             );
         }
 
-        if radiant.is_some() && !refuse_radiant_settlement {
+        if radiant.is_some() && !settle_radiant {
             let initial = {
                 let runtime = owner.runtime.lock().await;
                 owner
@@ -439,13 +491,7 @@ fn scenario_with_creature(
                 .await
                 .kills()
                 .has_session(session);
-            let refused_kill = refuse_radiant_settlement
-                && !owner
-                    .runtime
-                    .lock()
-                    .await
-                    .contains_live_creature(target_actor);
-            if queued || refused_kill {
+            if queued {
                 break;
             }
             swings += 1;
@@ -455,56 +501,24 @@ fn scenario_with_creature(
                 .checked_sub(PASS)
                 .expect("a monotonic clock older than the passes");
         }
-        // No durable rewards exist before the reward drain, including a refused kill.
+        // No durable rewards exist before the reward drain.
         assert_eq!(xp_receipts(&harness).await?, 0);
         assert_eq!(corpse_receipts(&harness).await?, 0);
 
-        if refuse_radiant_settlement {
-            assert!(
-                !owner
-                    .runtime
-                    .lock()
-                    .await
-                    .contains_live_creature(target_actor),
-                "{creature_key} must actually die through auto-attack dispatch"
-            );
-            assert!(
-                !owner
-                    .states
-                    .attack
-                    .lock()
-                    .await
-                    .kills()
-                    .has_session(session),
-                "{creature_key} must refuse before queuing a durable settlement"
-            );
-            for _ in 0..2 {
-                assert_eq!(
-                    owner.drain_kill_rewards(session).await,
-                    DrainOutcome::Drained
-                );
-                assert_eq!(xp_receipts(&harness).await?, 0);
-                assert_eq!(corpse_receipts(&harness).await?, 0);
-                let consequences: (i64, i64, i64, i64, i64) = sqlx::query_as(
-                    "SELECT (SELECT count(*) FROM game_item_mint_receipts), \
-                     (SELECT count(*) FROM game_item_corpse_container_entries), \
-                     (SELECT count(*) FROM game_character_bestiary_kill_receipts), \
-                     (SELECT count(*) FROM game_character_bestiary_progress), \
-                     (SELECT count(*) FROM game_character_progression_state WHERE total_experience<>0)",
-                ).fetch_one(&harness.pool).await?;
-                assert_eq!(
-                    consequences,
-                    (0, 0, 0, 0, 0),
-                    "{creature_key} refusal must leave no durable rewards on repeated drain"
-                );
-            }
-            drop(owner);
-            drop(authority);
-            drop(seal);
-            harness.cleanup().await?;
-            return Ok(());
-        }
-
+        let replay = if settle_radiant {
+            let attack = owner.states.attack.lock().await;
+            let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
+                attack.kills().take(session, 2)
+            else {
+                return Err("queued real kill".into());
+            };
+            let entry = taken.entry().ok_or("captured kill")?;
+            let replay = (entry.facts, entry.target, entry.activity_observed_at);
+            taken.requeue();
+            Some(replay)
+        } else {
+            None
+        };
         let mut drains = 0;
         while owner.drain_kill_rewards(session).await != DrainOutcome::Drained {
             drains += 1;
@@ -521,13 +535,13 @@ fn scenario_with_creature(
             "the settled kill leaves the queue"
         );
 
-        // XP: exactly one committed receipt, the production rat's 5 XP on the fenced Character.
+        // XP: exactly one committed receipt for the native amount on the fenced Character.
         assert_eq!(xp_receipts(&harness).await?, 1);
         let experience: i64 =
             sqlx::query_scalar("SELECT total_experience FROM game_character_progression_state")
                 .fetch_one(&harness.pool)
                 .await?;
-        assert_eq!(experience, 5);
+        assert_eq!(experience, expected_xp);
         // Corpse: one materialized corpse minted for this Character's kill, and its loot rows
         // are children of that very corpse.
         assert_eq!(corpse_receipts(&harness).await?, 1);
@@ -537,14 +551,67 @@ fn scenario_with_creature(
         )
         .fetch_one(&harness.pool)
         .await?;
-        assert!(children >= 1, "the corpse carries the rat's loot");
+        assert!(
+            children >= 1,
+            "{creature_key} commits a positive native loot plan"
+        );
 
+        if let Some((facts, target, observed)) = replay {
+            {
+                let mut runtime = owner.runtime.lock().await;
+                let attack = owner.states.attack.lock().await;
+                crate::gameplay_transport::kill_reward::record_creature_kill(
+                    &mut runtime,
+                    crate::gameplay_transport::kill_reward::KillSink {
+                        activity: &[],
+                        queue: attack.kills(),
+                        rewards: native.reward_table(),
+                    },
+                    target,
+                    facts.principal,
+                    facts.death_at_ms,
+                    observed,
+                );
+                assert!(
+                    attack.kills().has_session(session),
+                    "the same committed kill is replayed through the router"
+                );
+            }
+            assert_eq!(
+                owner.drain_kill_rewards(session).await,
+                DrainOutcome::Drained
+            );
+            assert_eq!(xp_receipts(&harness).await?, 1);
+            assert_eq!(corpse_receipts(&harness).await?, 1);
+            let replay_children: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_item_corpse_container_entries")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(
+                replay_children, children,
+                "kill replay never duplicates loot"
+            );
+        }
+        if settle_radiant {
+            qualify_summer_settlement(
+                &mut owner,
+                &harness,
+                &creature_key,
+                expected_xp,
+                children,
+                reconcile == Some(true),
+                replay
+                    .map(|(_, target, _)| target)
+                    .ok_or("real captured kill")?,
+            )
+            .await?;
+        }
         let children = if capacity {
             super::summer_corpse_capacity::qualify(&mut owner, &harness).await?
         } else {
             children
         };
-        let decay = match reconcile {
+        let decay = match reconcile.filter(|_| !settle_radiant) {
             Some(reconcile) => {
                 super::corpse_decay::qualify(&mut owner, &harness, children, reconcile)
                     .await

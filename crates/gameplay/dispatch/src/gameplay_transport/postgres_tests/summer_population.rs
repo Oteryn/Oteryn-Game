@@ -13,18 +13,15 @@ use std::sync::Arc;
 use std::time::Duration;
 
 #[test]
-fn summer_population_all_six_radiant_rewards_require_corpse_admission() -> TestResult {
-    use crate::content::creature_reward::NoSettlementReason;
-
+fn summer_population_all_six_radiant_rewards_admit_native_corpses() -> TestResult {
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (controller, _) =
         crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
     let active = controller.active().ok_or("activated generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
-    // Exercise the manifest-derived table used by the production reward drain. No
-    // synthetic Item facts, replacement corpse, or rat-only decay exception can
-    // qualify these creatures. Positive settlement remains a separate acceptance
-    // requirement once the Item/WorldObject owners admit their corpse contracts.
+    // Exercise the manifest-derived table used by the production reward drain.
+    // Corpse and loot admission comes from the committed Item definitions; the
+    // positive PostgreSQL router cases qualify their actual durable lifecycle.
     for name in [
         "acolyte",
         "inquisitor",
@@ -58,10 +55,13 @@ fn summer_population_all_six_radiant_rewards_require_corpse_admission() -> TestR
             melee.source_revision,
             "201189f871d23597b82caf88fd611454a2ddefb8"
         );
-        assert_eq!(
-            native.reward_table().row(&key),
-            Err(NoSettlementReason::CorpseItemInadmissible),
-            "{key} must not silently settle with an unadmitted corpse"
+        let reward = native.reward_table().row(&key).map_err(debug)?;
+        assert!(reward.xp_amount.get() > 0);
+        assert!(
+            reward
+                .corpse_item
+                .production_key
+                .starts_with("oteryn:item.tibia.i54")
         );
     }
     Ok(())
