@@ -20,7 +20,8 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{CommandId, RuntimeScopeRefV1};
 use crate::map::view;
 use oteryn_gameplay_items::imbuement::{
-    IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_CLEAR_GOLD, IMBUEMENT_TIER_RULES, imbuement_recipe,
+    IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_CLEAR_GOLD, IMBUEMENT_ETCHER_ITEM_ID,
+    IMBUEMENT_TIER_RULES, imbuement_recipe, imbuement_scroll,
 };
 use oteryn_protocol_oteryn::imbuement as wire;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
@@ -107,6 +108,75 @@ pub(super) enum Decision {
     Reply(wire::ImbuementReply),
     Apply { slot: u8, offer: wire::ImbuementOffer },
     Clear { slot: u8 },
+}
+
+/// Result of qualifying an inventory USE-with before the durable owner consumes its source.
+/// In particular, `Etch` describes all rows in one outcome; callers must never loop single-slot
+/// shrine clears because that can consume the device after a partial clear.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "qualified before durable USE-with is connected")
+)]
+pub enum ImbuementItemDecision {
+    NotAnImbuementItem,
+    Refused(ImbuementResult),
+    ApplyScroll { slot: u8, family: u8, tier: u8 },
+    Etch { slots: Vec<u8> },
+}
+
+/// Global etcher/filled-scroll rules which do not depend on shrine, quest or Premium access.
+/// Scrolls select the first empty slot, while normal compatibility and category-conflict gates
+/// remain in force. Consumption belongs to the same durable transaction as the returned change.
+#[cfg_attr(
+    not(test),
+    expect(dead_code, reason = "qualified before durable USE-with is connected")
+)]
+pub fn decide_imbuement_item_use(
+    source_item_id: u32,
+    allowance: Option<&Allowance>,
+    applied: &[StoredImbuement],
+) -> ImbuementItemDecision {
+    let Some(allowance) = allowance else {
+        return if source_item_id == IMBUEMENT_ETCHER_ITEM_ID
+            || imbuement_scroll(source_item_id).is_some()
+        {
+            ImbuementItemDecision::Refused(ImbuementResult::NotAllowed)
+        } else {
+            ImbuementItemDecision::NotAnImbuementItem
+        };
+    };
+    if source_item_id == IMBUEMENT_ETCHER_ITEM_ID {
+        let mut slots: Vec<u8> = applied.iter().map(|row| row.slot).collect();
+        slots.sort_unstable();
+        slots.dedup();
+        return if slots.is_empty() {
+            ImbuementItemDecision::Refused(ImbuementResult::NotAllowed)
+        } else {
+            ImbuementItemDecision::Etch { slots }
+        };
+    }
+    let Some(scroll) = imbuement_scroll(source_item_id) else {
+        return ImbuementItemDecision::NotAnImbuementItem;
+    };
+    if !allowance.offers.iter().any(|offer| {
+        offer.family == scroll.family && offer.tier == scroll.tier
+    }) || applied
+        .iter()
+        .any(|row| row.category + 1 == scroll.family)
+    {
+        return ImbuementItemDecision::Refused(ImbuementResult::NotAllowed);
+    }
+    (0..allowance.slot_count)
+        .find(|slot| !applied.iter().any(|row| row.slot == *slot))
+        .map_or(
+            ImbuementItemDecision::Refused(ImbuementResult::SlotOccupied),
+            |slot| ImbuementItemDecision::ApplyScroll {
+                slot,
+                family: scroll.family,
+                tier: scroll.tier,
+            },
+        )
 }
 
 fn reply(result: ImbuementResult) -> wire::ImbuementReply {

@@ -220,6 +220,49 @@ fn imbuement_shrine_keys_are_sorted_for_binary_search() {
 }
 
 #[test]
+fn filled_scroll_bypasses_access_but_keeps_target_slot_and_category_rules() {
+    let allowance = allowance(&content(
+        ReferenceItemField::Known(2),
+        allowed(&[ReferenceImbuementFamily::CriticalHit]),
+        ReferenceItemField::NotApplicable,
+    ))
+    .expect("allowance");
+    assert_eq!(
+        decide_imbuement_item_use(51_462, Some(&allowance), &[]),
+        ImbuementItemDecision::ApplyScroll { slot: 0, family: 1, tier: 3 }
+    );
+    assert_eq!(
+        decide_imbuement_item_use(51_462, Some(&allowance), &[row(0, 9)]),
+        ImbuementItemDecision::ApplyScroll { slot: 1, family: 1, tier: 3 }
+    );
+    assert_eq!(
+        decide_imbuement_item_use(51_462, Some(&allowance), &[row(0, 0)]),
+        ImbuementItemDecision::Refused(ImbuementResult::NotAllowed)
+    );
+    assert_eq!(
+        decide_imbuement_item_use(51_462, None, &[]),
+        ImbuementItemDecision::Refused(ImbuementResult::NotAllowed)
+    );
+}
+
+#[test]
+fn etcher_clears_every_occupied_slot_once_and_is_not_extraction() {
+    let allowance = Allowance { slot_count: 3, offers: vec![] };
+    assert_eq!(
+        decide_imbuement_item_use(51_443, Some(&allowance), &[row(2, 3), row(0, 7)]),
+        ImbuementItemDecision::Etch { slots: vec![0, 2] }
+    );
+    assert_eq!(
+        decide_imbuement_item_use(51_443, Some(&allowance), &[]),
+        ImbuementItemDecision::Refused(ImbuementResult::NotAllowed)
+    );
+    assert_eq!(
+        decide_imbuement_item_use(30_31, Some(&allowance), &[]),
+        ImbuementItemDecision::NotAnImbuementItem
+    );
+}
+
+#[test]
 fn imbuement_allowance_of_activated_native_content_follows_generated_slots() {
     use crate::content::native_gameplay::test_support::{
         activated_with_item_keys, activated_with_loot_tables,

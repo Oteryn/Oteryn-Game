@@ -74,3 +74,37 @@ fn imbuement_catalogue_matches_tier_rules_and_covers_every_single_family() {
     assert_eq!(imbuement_recipe(2, 1), None);
     assert_eq!(IMBUEMENT_CATALOGUE_REVISION.len(), 64);
 }
+
+#[test]
+fn filled_scroll_ids_round_trip_only_intricate_and_powerful_recipes() {
+    let mut ids = std::collections::BTreeSet::new();
+    for scroll in IMBUEMENT_SCROLLS {
+        assert!(ids.insert(scroll.item_id), "duplicate scroll id");
+        assert!(matches!(scroll.tier, 2 | 3));
+        assert!(imbuement_recipe(scroll.family, scroll.tier).is_some());
+        assert_eq!(imbuement_scroll(scroll.item_id), Some(scroll));
+        assert_eq!(
+            scroll_for_imbuement(scroll.family, scroll.tier),
+            Some(scroll)
+        );
+    }
+    assert_eq!(ids.len(), 36);
+    assert_eq!(imbuement_scroll(IMBUEMENT_ETCHER_ITEM_ID), None);
+    assert_eq!(imbuement_scroll(51_443), None);
+    assert_eq!(scroll_for_imbuement(1, 1), None);
+    assert_eq!(scroll_for_imbuement(13, 2), None);
+    assert_eq!(BLANK_IMBUEMENT_SCROLL_GOLD, 25_000);
+    assert_eq!(BLANK_IMBUEMENT_SCROLL_TOMES, 5);
+    assert_eq!(BLANK_IMBUEMENT_SCROLL_ITEM_ID, 51_442);
+    assert!(can_buy_blank_imbuement_scroll(true, 5));
+    assert!(!can_buy_blank_imbuement_scroll(false, 5));
+    assert!(!can_buy_blank_imbuement_scroll(true, 4));
+    assert_eq!(
+        qualify_scroll_inscription(1, 3, true, true)
+            .map(|(scroll, recipe)| (scroll.item_id, recipe.key)),
+        Some((51_462, "oteryn:imbuement.strike"))
+    );
+    assert!(qualify_scroll_inscription(1, 1, true, true).is_none());
+    assert!(qualify_scroll_inscription(1, 3, false, true).is_none());
+    assert!(qualify_scroll_inscription(1, 3, true, false).is_none());
+}
