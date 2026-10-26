@@ -25,6 +25,22 @@ pub trait FreshAdmissionAuthority {
     ) -> impl Future<Output = super::super::house_transfer::TransferResult> {
         async { Some((None, Vec::new())) }
     }
+    fn gameplay_idle_policy(&self) -> super::GameplayIdlePolicy {
+        super::GameplayIdlePolicy::default()
+    }
+
+    /// Server clock; deterministic transport qualification may supply a controlled clock.
+    fn gameplay_idle_now(&self) -> tokio::time::Instant {
+        tokio::time::Instant::now()
+    }
+
+    /// `(training, no_logout_tile)` from the existing owners. Unknown facts defer idle removal.
+    fn gameplay_idle_exemptions(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<(bool, bool)>> {
+        async { Some((false, false)) }
+    }
     /// PREMCHAN: the bounded list of Game Channels served by this owner. This node currently
     /// serves exactly one Channel. No routing or admission authority is granted by the list.
     fn channel_list(&self) -> Option<Vec<u8>> {

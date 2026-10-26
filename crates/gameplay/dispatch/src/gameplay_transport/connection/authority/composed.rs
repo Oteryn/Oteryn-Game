@@ -838,6 +838,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.exercise_training(admitted, command, intent, weapon, dummy)
             .await
     }
+    fn gameplay_idle_policy(&self) -> super::super::GameplayIdlePolicy {
+        self.states.gameplay_idle_policy
+    }
+
+    async fn gameplay_idle_exemptions(&self, admitted: AdmittedSession) -> Option<(bool, bool)> {
+        let actor = admitted.runtime_actor?;
+        let mut runtime = self.runtime.lock().await;
+        runtime.owner_fence().ok()?;
+        let facts = runtime
+            .player_control_facts(actor, admitted.game_session_id)
+            .ok()?;
+        if facts.control_loss.is_some() {
+            return None;
+        }
+        let no_logout = self.no_logout_tile(&mut runtime, actor)?;
+        drop(runtime);
+        Some((self.idle_training(admitted).await?, no_logout))
+    }
+
     async fn training_activity(&self, admitted: AdmittedSession, kind: u32) -> bool {
         self.loop_training_activity(admitted, kind).await
     }

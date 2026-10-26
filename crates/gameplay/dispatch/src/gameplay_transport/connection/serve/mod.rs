@@ -6,6 +6,7 @@ mod autowalk;
 mod command;
 mod creature_push;
 mod house_transfer;
+mod idle;
 mod inbound;
 mod party_skull;
 mod player_trade;
