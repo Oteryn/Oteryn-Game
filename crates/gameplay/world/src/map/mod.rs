@@ -135,6 +135,7 @@ pub use crate::content::world_reward_claims::UniqueEntry;
 /// ground item, walkable flag and ground speed. It holds no overlay and is never mutated.
 #[derive(Debug)]
 pub struct WorldBase {
+    pub subareas: oteryn_world_bundle::subarea::Table,
     digest: [u8; 32],
     content_revision: String,
     /// Ascending sector keys ([`sector_key`]), one per entry of `sectors`.
@@ -406,6 +407,7 @@ pub fn load_with_spawns(
     let spawns = visited.spawns;
     Ok((
         WorldBase {
+            subareas: visited.manifest.subareas,
             digest: visited.digest,
             content_revision: visited.manifest.identity.content_revision,
             keys: builder.keys,

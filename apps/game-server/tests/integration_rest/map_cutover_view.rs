@@ -60,6 +60,7 @@ fn bundle() -> Result<(Vec<u8>, BundlePins), Box<dyn StdError>> {
     };
     let dropped = placement_key(at(5), 1).ok_or("placement key")?;
     let manifest = Manifest {
+        subareas: Default::default(),
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,
         projection_class: "server".into(),

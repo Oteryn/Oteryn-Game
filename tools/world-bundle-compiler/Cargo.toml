@@ -12,6 +12,7 @@ category = "tool"
 release-role = "tool-only"
 
 [dependencies]
+lzma-rs.workspace = true
 oteryn-world-bundle = { version = "=0.1.0", path = "../../crates/world-bundle", features = ["writer"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

@@ -163,7 +163,7 @@ pub(super) fn world(
     )
     .map_err(debug)
 }
-pub(super) async fn seed(h: &Harness, bundle: [u8; 32]) -> TestResult {
+pub(in super::super) async fn seed(h: &Harness, bundle: [u8; 32]) -> TestResult {
     // Explicit fixture seed, never a product writer. Runtime assertions below use the
     // normal restricted runtime role, including fee audit and revision constraints.
     let mut tx = h.pool.begin().await?;
@@ -235,7 +235,7 @@ pub(super) async fn seed(h: &Harness, bundle: [u8; 32]) -> TestResult {
     Ok(())
 }
 
-pub(super) async fn exchange(
+pub(in super::super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,

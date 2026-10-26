@@ -345,6 +345,7 @@ pub mod tests {
             None,
         ];
         let manifest = Manifest {
+            subareas: Default::default(),
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,
             projection_class: "server".into(),

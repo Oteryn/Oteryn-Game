@@ -2690,6 +2690,7 @@ dependencies = [
 name = "oteryn-world-bundle-compiler"
 version = "0.1.0"
 dependencies = [
+ "lzma-rs",
  "oteryn-world-bundle",
  "serde",
  "serde_json",

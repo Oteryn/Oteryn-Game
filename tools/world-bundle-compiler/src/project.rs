@@ -25,6 +25,8 @@ pub type LegacyPosition = (u16, u16, u8);
 /// The families one compilation checks the placements against.
 #[derive(Clone, Debug, Default)]
 pub struct Families {
+    /// Verified client masks; empty only in synthetic compiler fixtures.
+    pub subareas: crate::compile::subareas::Source,
     /// `Transition.Teleport` records, keyed by their `from` position, valued by `to`.
     pub teleports: BTreeMap<LegacyPosition, LegacyPosition>,
     /// Engine house ids of the House catalogue, the ids B3 tiles carry.

@@ -3,7 +3,7 @@
   "world_schema_version": "reference-schema-v1",
   "content_revision": "npc-premium-services-20261022-r1",
   "content_lock_digest": "06201a8f693ef231059f18c099a85a39e5c44515447b836ac2c17fa572684d1a",
-  "min_runtime_version": "1",
+  "min_runtime_version": "2",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
