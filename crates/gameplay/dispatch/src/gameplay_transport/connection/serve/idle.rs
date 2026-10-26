@@ -53,9 +53,10 @@ where
         };
         match authority.logout(session.admitted).await {
             LogoutReply::Result(LogoutResult::Accepted) => return Err(ServeEnd::LoggedOut),
-            // Keep the expired timer armed. A fight lock or transient busy release is
+            // Keep the expired timer armed. A NOLOGOUT tile, fight lock or busy release is
             // retried at the next cadence, without repeating the warning.
-            LogoutReply::Result(LogoutResult::InFight { .. } | LogoutResult::Busy) => {}
+            LogoutReply::NoLogout
+            | LogoutReply::Result(LogoutResult::InFight { .. } | LogoutResult::Busy) => {}
             LogoutReply::Unknown => return Err(ServeEnd::Disconnected),
         }
     }

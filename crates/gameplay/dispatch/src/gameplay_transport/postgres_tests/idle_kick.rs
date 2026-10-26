@@ -98,6 +98,7 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
         dropped_teleports: vec![],
         spawns: Default::default(),
         npcs: Default::default(),
+        subareas: Default::default(),
     };
     let bytes = writer::write(
         &manifest,
@@ -314,12 +315,7 @@ fn case(protected: bool, stale: bool) -> TestResult {
                         if protected && probes == 3 {
                             // Race the initial exemption read: the real logout sees a
                             // relocation back onto NOLOGOUT before its release fence.
-                            assert_eq!(
-                                *clock.replies.borrow(),
-                                [LogoutReply::Result(
-                                    oteryn_protocol_oteryn::logout::LogoutResult::Busy
-                                )]
-                            );
+                            assert_eq!(*clock.replies.borrow(), [LogoutReply::NoLogout]);
                             let active: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_sessions WHERE session_state=2").fetch_one(&h.pool).await?;
                             assert_eq!(active, 1, "NOLOGOUT rechecked at the release fence");
                             clock.relocate_on_logout.set(false);

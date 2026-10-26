@@ -12,6 +12,7 @@ struct IdleAuthority {
     now: Cell<Instant>,
     training: Cell<bool>,
     no_logout: Cell<bool>,
+    no_logout_reply: Cell<bool>,
     fight: Cell<bool>,
     unknown: Cell<bool>,
     logouts: Cell<usize>,
@@ -25,6 +26,7 @@ impl IdleAuthority {
             now: Cell::new(now),
             training: Cell::new(false),
             no_logout: Cell::new(false),
+            no_logout_reply: Cell::new(false),
             fight: Cell::new(false),
             unknown: Cell::new(false),
             logouts: Cell::new(0),
@@ -63,6 +65,8 @@ impl FreshAdmissionAuthority for IdleAuthority {
         self.logouts.set(self.logouts.get() + 1);
         if self.unknown.get() {
             LogoutReply::Unknown
+        } else if self.no_logout_reply.get() {
+            LogoutReply::NoLogout
         } else if self.fight.get() {
             LogoutReply::Result(LogoutResult::InFight { retry_after_ms: 1 })
         } else {
@@ -300,8 +304,12 @@ fn idle_kick_no_logout_and_fight_refusal_preserve_the_expired_timer() -> Result<
             client.tick().await?;
             assert_eq!((client.warnings, owner.logouts.get()), (1, 1));
             owner.fight.set(false);
-            assert!(client.receive().await.is_err());
+            owner.no_logout_reply.set(true);
+            client.tick().await?;
             assert_eq!((client.warnings, owner.logouts.get()), (1, 2));
+            owner.no_logout_reply.set(false);
+            assert!(client.receive().await.is_err());
+            assert_eq!((client.warnings, owner.logouts.get()), (1, 3));
             Ok(())
         })
         .await?;

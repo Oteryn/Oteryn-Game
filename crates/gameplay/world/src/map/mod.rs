@@ -83,7 +83,6 @@ const SECTOR_TILES: usize = (SECTOR_SIZE as usize) * (SECTOR_SIZE as usize);
 struct BaseTile {
     no_logout: bool,
     protection_zone: bool,
-    no_logout: bool,
     first_entry: u32,
     entries: u16,
     /// The ground item's stored ground speed, also for a non-walkable ground; 0 without one.
@@ -184,11 +183,6 @@ impl<'a> TileView<'a> {
     /// Retained OTBM protection zone, independent of mutable items and spell qualification.
     pub fn protection_zone(&self) -> bool {
         self.tile.protection_zone
-    }
-
-    /// Retained OTBM NOLOGOUT flag (bit 3), independent of item/spell tile qualification.
-    pub fn no_logout(&self) -> bool {
-        self.tile.no_logout
     }
 
     fn range(&self) -> std::ops::Range<usize> {
@@ -554,7 +548,6 @@ impl Builder {
             self.tiles.push(BaseTile {
                 no_logout: tile.flags & 8 != 0,
                 protection_zone: tile.flags & 1 != 0,
-                no_logout: tile.flags & (1 << 3) != 0,
                 first_entry,
                 entries,
                 ground_speed,
