@@ -17538,7 +17538,9 @@
           "state": "UNKNOWN"
         }
       },
-      "attributes": {},
+      "attributes": {
+        "speed_bonus": 0
+      },
       "admission": {
         "materializable": true,
         "stack_class": "StackCapable",
