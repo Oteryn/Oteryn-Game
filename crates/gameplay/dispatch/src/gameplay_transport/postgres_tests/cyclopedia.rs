@@ -239,8 +239,45 @@ fn scenario() -> TestResult {
         let (_, discovered) = support::exchange(&owner, &mut admitted, 13, 72, &[]).await?;
         assert_eq!(discovered[9], 1);
         assert_eq!(discovered[28], 0);
+        // A second native subarea is independently auto-activated through real dispatch.
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let mut movement = runtime.borrow_movement_position();
+            let mut before = movement.read(deps.actor).map_err(debug)?;
+            while before.position().x < 32 {
+                let at = before.position();
+                before = movement
+                    .commit_cardinal(before, MovementLocalPosition { x: at.x + 1, ..at })
+                    .map_err(debug)?;
+            }
+        }
+        let (_, second) = support::exchange(&owner, &mut admitted, 14, 72, &[]).await?;
+        assert_eq!(second[9], 0);
         assert_eq!(
-            support::exchange(&owner, &mut admitted, 14, 73, &request(4, 0))
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_character_cyclopedia WHERE subarea IN (109,110)"
+            )
+            .fetch_one(&h.pool)
+            .await?,
+            2
+        );
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let mut movement = runtime.borrow_movement_position();
+            let before = movement.read(deps.actor).map_err(debug)?;
+            movement
+                .commit_cardinal(
+                    before,
+                    MovementLocalPosition {
+                        x: 31,
+                        y: 1,
+                        floor: 7,
+                    },
+                )
+                .map_err(debug)?;
+        }
+        assert_eq!(
+            support::exchange(&owner, &mut admitted, 15, 73, &request(4, 0))
                 .await?
                 .0,
             CommandStatus::Rejected
@@ -249,7 +286,7 @@ fn scenario() -> TestResult {
         assert_eq!(initial[27], 1, "fixture World must allow a donation");
         let before_donation = admitted;
         let (_, donated) =
-            support::exchange_inventory(&owner, &mut admitted, 15, 73, &request(4, 15)).await?;
+            support::exchange_inventory(&owner, &mut admitted, 16, 73, &request(4, 15)).await?;
         assert_eq!(donated[0], 0);
         assert_eq!(pool(&donated), 15);
         let balance: i64 = sqlx::query_scalar("SELECT balance FROM game_account_bank_balances")
@@ -273,20 +310,20 @@ fn scenario() -> TestResult {
         owner.active_generation = Some(generation);
         owner.premium_coordinator = Some(&premium);
         assert_eq!(
-            support::exchange(&owner, &mut admitted, 15, 73, &request(4, 15)).await?,
+            support::exchange(&owner, &mut admitted, 16, 73, &request(4, 15)).await?,
             (CommandStatus::DuplicateReplay, donated.clone())
         );
         let GuildReply::Payload(retry) = owner
-            .cyclopedia_command(before_donation, 15, 73, &request(4, 15))
+            .cyclopedia_command(before_donation, 16, 73, &request(4, 15))
             .await
         else {
             return Err("donation receipt".into());
         };
         assert_eq!(retry, donated);
-        let (_, reloaded) = support::exchange(&owner, &mut admitted, 16, 72, &[]).await?;
+        let (_, reloaded) = support::exchange(&owner, &mut admitted, 17, 72, &[]).await?;
         assert_eq!(reloaded[9], 1);
         assert_eq!(pool(&reloaded), 15);
-        let (_, poor) = support::exchange(&owner, &mut admitted, 17, 73, &request(4, 1000)).await?;
+        let (_, poor) = support::exchange(&owner, &mut admitted, 18, 73, &request(4, 1000)).await?;
         assert_eq!(poor[0], 6);
         assert_eq!(pool(&poor), 15);
         let mut stale = admitted;
@@ -295,7 +332,7 @@ fn scenario() -> TestResult {
         stale.item_fence = Some(fence);
         assert!(matches!(
             owner
-                .cyclopedia_command(stale, 18, 73, &request(4, 1))
+                .cyclopedia_command(stale, 19, 73, &request(4, 1))
                 .await,
             GuildReply::Rejected
         ));
@@ -328,18 +365,18 @@ fn scenario() -> TestResult {
             .execute(&h.pool)
             .await?;
         assert_eq!(
-            support::exchange(&owner, &mut admitted, 18, 72, &[])
+            support::exchange(&owner, &mut admitted, 19, 72, &[])
                 .await?
                 .0,
             CommandStatus::Rejected,
             "old boot cannot cross the active epoch"
         );
         owner.reset_epoch = 1;
-        let (_, epoch) = support::exchange(&owner, &mut admitted, 19, 72, &[]).await?;
+        let (_, epoch) = support::exchange(&owner, &mut admitted, 20, 72, &[]).await?;
         assert_eq!(epoch[27], 2);
         assert_eq!(pool(&epoch), 0);
         let (_, frozen_pool) =
-            support::exchange(&owner, &mut admitted, 20, 73, &request(4, 1)).await?;
+            support::exchange(&owner, &mut admitted, 21, 73, &request(4, 1)).await?;
         assert_eq!(
             frozen_pool[0], 7,
             "current improved area refuses donation atomically"

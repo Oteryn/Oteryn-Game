@@ -56,6 +56,74 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) fn cyclopedia_content(&self, at: Point) -> Option<content::AdmittedArea> {
         content::admit(self, at)
     }
+    /// Process a POI on the committed movement path. This is server-owned input: clients no
+    /// longer need to issue operation 3 after each step.
+    pub(super) async fn cyclopedia_find_after_step(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        movement_revision: u64,
+    ) {
+        let Some(current) = super::character_gameplay_fence::current(self, session, false).await
+        else {
+            return;
+        };
+        let (at, area) = {
+            let mut runtime = self.runtime.lock().await;
+            let Ok(snapshot) = runtime.borrow_movement_position().read(actor) else {
+                return;
+            };
+            if snapshot.revision() != movement_revision {
+                return;
+            }
+            let position = snapshot.position();
+            let at = Point {
+                x: position.x,
+                y: position.y,
+                floor: -position.floor,
+            };
+            let Some(area) = self.cyclopedia_content(at) else {
+                return;
+            };
+            (at, area)
+        };
+        let id = (1_u64 << 63) | movement_revision;
+        let Ok(id) = CommandId::new(id) else { return };
+        let derive = |tag: &[u8]| super::npc_trade_command::derived(tag, session, id.get());
+        let mut hash = Sha256::new();
+        hash.update(b"oteryn:cyclopedia-auto-find:v1");
+        hash.update(area.subarea.to_be_bytes());
+        hash.update(at.x.to_be_bytes());
+        hash.update(at.y.to_be_bytes());
+        hash.update(at.floor.to_be_bytes());
+        let request = MapRequest {
+            command: CommandRef::new(session, id),
+            action: MapAction::Find,
+            binding: hash.finalize().into(),
+            occurrence: derive(b"cyclopedia:auto-find:occurrence"),
+            bundle: area.digest,
+            epoch: self.reset_epoch,
+            pool: area.pool,
+            region: area.region,
+            subarea: area.subarea,
+            at,
+            fee: None,
+            transaction: derive(b"cyclopedia:auto-find:fee"),
+            event: derive(b"cyclopedia:auto-find:event"),
+            now: super::npc_trade_command::unix_ms_now(),
+        };
+        let mut slot = self.revision_sequencer.acquire(current.character_id).await;
+        let _ = slot
+            .cyclopedia(
+                self.root,
+                self.character,
+                self.holder,
+                current,
+                request,
+                &Premium(None),
+            )
+            .await;
+    }
     pub(super) async fn cyclopedia_wire(
         &self,
         admitted: AdmittedSession,

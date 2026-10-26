@@ -130,29 +130,50 @@ pub(super) fn world(
                 parent: Some(23),
                 source_record_sha256: hash.clone(),
             },
+            oteryn_world_bundle::subarea::Area {
+                id: 110,
+                key: "oteryn:content.area.subregion.svargrond".into(),
+                name: "Svargrond".into(),
+                parent: Some(23),
+                source_record_sha256: hash.clone(),
+            },
         ],
-        masks: vec![oteryn_world_bundle::subarea::Mask {
-            subarea: 109,
-            asset: format!("content/assets/files/subarea-0109-{hash}.bmp.lzma"),
-            compressed_sha256: hash.clone(),
-            bmp_sha256: hash.clone(),
-            source_record_sha256: hash,
-            source_tiles: 64,
-            admitted_tiles: 64,
-        }],
+        masks: [109, 110]
+            .into_iter()
+            .map(|subarea| oteryn_world_bundle::subarea::Mask {
+                subarea,
+                asset: format!("content/assets/files/subarea-{subarea:04}-{hash}.bmp.lzma"),
+                compressed_sha256: hash.clone(),
+                bmp_sha256: hash.clone(),
+                source_record_sha256: hash.clone(),
+                source_tiles: 64,
+                admitted_tiles: 64,
+            })
+            .collect(),
         runs: (0..2)
-            .map(|y| oteryn_world_bundle::subarea::Run {
-                floor: -7,
-                y,
-                begin: 0,
-                end: 32,
-                subarea: 109,
+            .flat_map(|y| {
+                [
+                    oteryn_world_bundle::subarea::Run {
+                        floor: -7,
+                        y,
+                        begin: 0,
+                        end: 32,
+                        subarea: 109,
+                    },
+                    oteryn_world_bundle::subarea::Run {
+                        floor: -7,
+                        y,
+                        begin: 32,
+                        end: 64,
+                        subarea: 110,
+                    },
+                ]
             })
             .collect(),
     };
     let mut tiles = Vec::new();
     for y in 0..2 {
-        for x in 0..32 {
+        for x in 0..64 {
             tiles.push(Tile {
                 x,
                 y,

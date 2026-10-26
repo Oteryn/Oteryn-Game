@@ -118,10 +118,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok((snapshot, duration)) => {
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.states.chat.close_out_of_range(&runtime, session);
+                let revision = snapshot.revision();
+                let observation = Self::observation(&runtime, snapshot.position());
+                drop(states);
+                drop(runtime);
+                drop(permit);
+                self.cyclopedia_find_after_step(actor, session, revision)
+                    .await;
                 (
                     StepOutcome {
                         disposition: StepDisposition::Moved,
-                        moved_to: Some(Self::observation(&runtime, snapshot.position())),
+                        moved_to: Some(observation),
                     },
                     Some(duration),
                 )

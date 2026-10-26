@@ -59,6 +59,83 @@ pub enum MapRefusal {
     NoExploration,
     InsufficientPool,
 }
+
+/// Map information unlocked by the share of a main area's discovered subareas.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct AreaDisclosure {
+    pub npcs: bool,
+    pub passages_and_teleports: bool,
+    pub creatures: bool,
+}
+
+impl AreaDisclosure {
+    /// Uses integer cross multiplication so 1/3 does not accidentally satisfy 30% due to
+    /// rounding, while an exact threshold always does.
+    pub fn for_progress(discovered: u32, total: u32) -> Option<Self> {
+        if total == 0 || discovered > total {
+            return None;
+        }
+        let discovered = u64::from(discovered);
+        let total = u64::from(total);
+        Some(Self {
+            npcs: discovered * 100 >= total * 30,
+            passages_and_teleports: discovered * 100 >= total * 70,
+            creatures: discovered == total,
+        })
+    }
+}
+
+/// The next permanent reward Charos may grant. Grants at lower thresholds must already exist.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CharosReward {
+    Outfit,
+    FirstAddon,
+    SecondAddon,
+}
+
+pub fn next_charos_reward(completed_areas: u8, granted_stage: u8) -> Option<CharosReward> {
+    match (completed_areas, granted_stage) {
+        (20.., 2) => Some(CharosReward::SecondAddon),
+        (15.., 1) => Some(CharosReward::FirstAddon),
+        (10.., 0) => Some(CharosReward::Outfit),
+        _ => None,
+    }
+}
+
+/// Summer-2026 Discovery speed inside a fully discovered area.
+///
+/// The endpoints are official Global evidence. Owner decision 22 supplies the per-area fallback
+/// associated with pinned Crystal `201189f871d23597b82caf88fd611454a2ddefb8`; it is deliberately
+/// marked not verified against Global. Twenty discoverable areas therefore yield 100..=195.
+pub fn discovery_speed_bonus(completed_areas: u8, current_area_discovered: bool) -> u16 {
+    if !current_area_discovered || completed_areas == 0 {
+        return 0;
+    }
+    100 + 5 * u16::from(completed_areas.min(20) - 1)
+}
+
+/// Select the daily donation and random improved-respawn areas from all eligible areas.
+/// The highest qualifying pool wins (lowest id breaks an exact tie); the random lane excludes
+/// both yesterday's improved areas and today's donation winner.
+pub fn daily_area_boosts(
+    areas: &[(u32, u64)],
+    previous: &[u32],
+    random_draw: u64,
+) -> (Option<u32>, Option<u32>) {
+    let donation = areas
+        .iter()
+        .filter(|(area, pool)| *pool >= 10_000_000 && !previous.contains(area))
+        .max_by(|a, b| a.1.cmp(&b.1).then_with(|| b.0.cmp(&a.0)))
+        .map(|(area, _)| *area);
+    let candidates: Vec<_> = areas
+        .iter()
+        .map(|(area, _)| *area)
+        .filter(|area| Some(*area) != donation && !previous.contains(area))
+        .collect();
+    let random = (!candidates.is_empty() && random_draw % 100 < 33)
+        .then(|| candidates[(random_draw as usize / 100) % candidates.len()]);
+    (donation, random)
+}
 impl BasicArea {
     pub fn content_digest() -> [u8; 32] {
         Sha256::digest(include_bytes!(
@@ -182,6 +259,11 @@ impl BasicArea {
                 Ok(true)
             }
             MapAction::Find => {
+                let activated = if state.exploration.is_none() && !state.discovered {
+                    self.apply(state, MapAction::Query, pool, at, false, occurrence)?
+                } else {
+                    false
+                };
                 let Some(exploration) = state.exploration.as_mut() else {
                     return Err(MapRefusal::NoExploration);
                 };
@@ -198,7 +280,8 @@ impl BasicArea {
                     state.discovered = true;
                     state.exploration = None;
                 }
-                Ok(state.discovered
+                Ok(activated
+                    || state.discovered
                     || state
                         .exploration
                         .as_ref()
@@ -212,6 +295,53 @@ impl BasicArea {
 mod tests {
     #![allow(clippy::panic)]
     use super::*;
+    #[test]
+    fn disclosure_charos_and_local_speed_follow_area_progress() {
+        assert_eq!(AreaDisclosure::for_progress(0, 0), None);
+        assert_eq!(
+            AreaDisclosure::for_progress(3, 10),
+            Some(AreaDisclosure {
+                npcs: true,
+                passages_and_teleports: false,
+                creatures: false,
+            })
+        );
+        assert_eq!(
+            AreaDisclosure::for_progress(7, 10),
+            Some(AreaDisclosure {
+                npcs: true,
+                passages_and_teleports: true,
+                creatures: false,
+            })
+        );
+        assert_eq!(
+            AreaDisclosure::for_progress(10, 10),
+            Some(AreaDisclosure {
+                npcs: true,
+                passages_and_teleports: true,
+                creatures: true,
+            })
+        );
+        assert_eq!(next_charos_reward(9, 0), None);
+        assert_eq!(next_charos_reward(10, 0), Some(CharosReward::Outfit));
+        assert_eq!(next_charos_reward(15, 1), Some(CharosReward::FirstAddon));
+        assert_eq!(next_charos_reward(20, 2), Some(CharosReward::SecondAddon));
+        assert_eq!(next_charos_reward(20, 3), None);
+        assert_eq!(discovery_speed_bonus(20, false), 0);
+        assert_eq!(discovery_speed_bonus(0, true), 0);
+        assert_eq!(discovery_speed_bonus(1, true), 100);
+        assert_eq!(discovery_speed_bonus(10, true), 145);
+        assert_eq!(discovery_speed_bonus(20, true), 195);
+        assert_eq!(discovery_speed_bonus(21, true), 195);
+        assert_eq!(
+            daily_area_boosts(&[(23, 10_000_000), (24, 12_000_000), (25, 0)], &[], 0),
+            (Some(24), Some(23))
+        );
+        assert_eq!(
+            daily_area_boosts(&[(23, 12_000_000), (24, 12_000_000)], &[23], 32),
+            (Some(24), None)
+        );
+    }
     #[test]
     fn cyclopedia_basic_progress_is_private_deterministic_and_seven_finds_complete() {
         let Some(area) = BasicArea::embedded() else {

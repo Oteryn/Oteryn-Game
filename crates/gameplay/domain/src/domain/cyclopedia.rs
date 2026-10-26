@@ -90,4 +90,7 @@ mod tests {
 }
 
 mod basic;
-pub use basic::{BasicArea, Exploration, MapAction, MapProgress, MapRefusal, Point};
+pub use basic::{
+    AreaDisclosure, BasicArea, CharosReward, Exploration, MapAction, MapProgress, MapRefusal,
+    Point, daily_area_boosts, discovery_speed_bonus, next_charos_reward,
+};
