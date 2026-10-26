@@ -122,6 +122,17 @@ pub fn project(
     let empty_equipment = equipment.items.is_empty().then_some(0);
     let attributes = MagnitudeOwnedAttributes {
         policy: native.magnitude_policy(),
+        item_augments: equipment
+            .items
+            .iter()
+            .filter_map(|item| {
+                native.item_policy(
+                    &item.definition.production_key,
+                    &item.definition.revision_ref,
+                )
+            })
+            .flat_map(|policy| policy.record().attributes.spell_augments.iter().cloned())
+            .collect(),
         owner_revisions: Some((
             equipment.character_revision,
             equipment.revision,

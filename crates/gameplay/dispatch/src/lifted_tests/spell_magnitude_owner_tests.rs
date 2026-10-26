@@ -148,6 +148,7 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
         });
     }
     let attributes = MagnitudeOwnedAttributes {
+        item_augments: Vec::new(),
         policy: MagnitudePolicy::Strict,
         owner_revisions: None,
         binding: MagnitudeOwnerBinding {
@@ -946,4 +947,112 @@ fn source_damage_healing_uses_current_policy_and_stale_hp_fails_before_any_heal(
         "unknown element has no fabricated response"
     );
     assert!(policy.damage_healing("energy", -1).is_err());
+}
+
+#[test]
+fn item_spell_augments_named_base_healing_critical_and_unchanged_owner_binding() {
+    use oteryn_gameplay_content::content::item_spell_augments::{
+        ItemSpellAugment, ItemSpellAugmentKind as K,
+    };
+    let mut f = fixture();
+    f.state = PlayerSpellState::new(FACTS, 0, 0).expect("player");
+    f.attributes.binding.player_revision = f.state.revision();
+    f.attributes.base_critical_chance_permyriad = Some(0);
+    f.attributes.base_critical_extra_permyriad = Some(0);
+    f.attributes.equipment_critical_chance_permyriad = Some(0);
+    f.attributes.equipment_critical_extra_permyriad = Some(0);
+    f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+        numerator: 0,
+        denominator: 1,
+    });
+    f.attributes.item_augments = vec![
+        ItemSpellAugment {
+            spell: "light healing".into(),
+            kind: K::BaseHealing,
+            value: 400,
+        },
+        ItemSpellAugment {
+            spell: "other spell".into(),
+            kind: K::BaseHealing,
+            value: 100000,
+        },
+        ItemSpellAugment {
+            spell: "light healing".into(),
+            kind: K::BaseDamage,
+            value: 400,
+        },
+        ItemSpellAugment {
+            spell: "light healing".into(),
+            kind: K::CriticalHitChance,
+            value: 10000,
+        },
+        ItemSpellAugment {
+            spell: "light healing".into(),
+            kind: K::CriticalExtraDamage,
+            value: 5000,
+        },
+    ];
+    let catalog: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+    ))
+    .expect("catalog");
+    let row = catalog["bundles"]
+        .as_array()
+        .expect("bundles")
+        .iter()
+        .find(|row| row["bundle"]["spell"]["identity"]["key"] == "candidate:spell/light_healing")
+        .expect("source spell");
+    let mut spell = oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+        &row["bundle"],
+        &row["dependencies"],
+    )
+    .expect("spell");
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat");
+    };
+    combat.element = Element::Healing;
+    combat.block_armor = false;
+    combat.hits.truncate(1);
+    combat.hits[0].bonus_percent = 0;
+    combat.hits[0].side_percent = None;
+    let hit = combat.hits[0].clone();
+    let mut owner = qualify(&f, &p).expect("current owner");
+    owner.select_item_spell(&spell).expect("selected spell");
+    assert_eq!(
+        owner.finish(&p, &hit, &f.bindings[1], &mut |_, _| panic!(
+            "healing has no critical roll"
+        )),
+        Ok(108)
+    );
+    owner
+        .validate_current(&f.runtime, &f.state, &f.attributes, &[])
+        .expect("unchanged original facts");
+    spell.name = "unrelated spell".into();
+    owner.select_item_spell(&spell).expect("different name");
+    assert_eq!(
+        owner.finish(&p, &hit, &f.bindings[1], &mut |_, _| panic!("no roll")),
+        Ok(104)
+    );
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat");
+    };
+    combat.element = Element::Physical;
+    let mut damage_owner = qualify(&f, &p).expect("damage owner");
+    spell.name = "Light Healing".into();
+    damage_owner
+        .select_item_spell(&spell)
+        .expect("exact case-folded match");
+    assert_eq!(
+        damage_owner.finish(&p, &hit, &f.bindings[1], &mut |_, max| max),
+        Ok(153)
+    );
+    // 101 + trunc(4%) = 105; critical +50% = 157; mitigation 5% = 149; Wheel flat +4.
+    let mut changed = f.attributes.clone();
+    changed.item_augments.clear();
+    assert!(
+        owner
+            .validate_current(&f.runtime, &f.state, &changed, &[])
+            .is_err()
+    );
 }

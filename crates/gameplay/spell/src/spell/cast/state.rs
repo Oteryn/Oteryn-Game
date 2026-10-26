@@ -317,6 +317,21 @@ impl PlayerSpellState {
             && self.cooldowns.canonical_deadlines() == anchor.cooldown_deadlines
     }
 
+    /// Restore spell leech within the already revisioned, paid batch successor.
+    pub fn apply_batch_leech(&mut self, health_gain: u32, mana_gain: u32) {
+        if self.health == 0 {
+            return;
+        }
+        self.health = self.health.max(
+            self.health
+                .saturating_add(health_gain)
+                .min(self.facts.max_health),
+        );
+        self.mana = self
+            .mana
+            .max(self.mana.saturating_add(mana_gain).min(self.facts.max_mana));
+    }
+
     pub fn apply_batch_heal(&mut self, magnitude: i64) -> Result<(), SpellCastDisposition> {
         let magnitude = u64::try_from(magnitude).map_err(|_| SpellCastDisposition::Rejected)?;
         if self.health > self.facts.max_health {
