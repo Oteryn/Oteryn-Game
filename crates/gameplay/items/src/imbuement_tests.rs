@@ -4,9 +4,17 @@ use super::*;
 fn utility_categories_run_online_and_combat_categories_pause() {
     assert!(consumes_elapsed(8, false));
     assert!(consumes_elapsed(9, false));
+    assert!(consumes_elapsed(12, false));
     assert!(consumes_elapsed(0, true));
     assert!(!consumes_elapsed(0, false));
     assert!(!consumes_elapsed(19, false));
+    for category in 0..20 {
+        assert_eq!(
+            consumes_elapsed(category, false),
+            matches!(category, 8 | 9 | 12)
+        );
+        assert!(consumes_elapsed(category, true));
+    }
 }
 
 #[test]

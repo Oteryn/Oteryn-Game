@@ -33,12 +33,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         let settled = self.checkpoint_timed_equipment(actor, session, true).await;
-        self.states
-            .timed_items
-            .imbuements
-            .lock()
-            .await
-            .remove(&session);
+        if settled {
+            self.states
+                .timed_items
+                .imbuements
+                .lock()
+                .await
+                .remove(&session);
+        }
         settled
     }
 
@@ -96,12 +98,6 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
         };
-        let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
-        let elapsed_imbuement = {
-            let mut clocks = self.states.timed_items.imbuements.lock().await;
-            let previous = clocks.insert(session, now).unwrap_or(now);
-            now.saturating_sub(previous)
-        };
         let native = {
             let runtime = self.runtime.lock().await;
             if runtime.owner_fence().is_err()
@@ -140,37 +136,11 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return false,
         };
-        if elapsed_imbuement > 0 {
-            let in_combat = self
-                .observe_actor_combat_state(actor, session)
-                .await
-                .is_some_and(|state| state.in_fight);
-            let mut hash = Sha256::new();
-            hash.update(b"oteryn:imbuement-checkpoint:v1");
-            hash.update(session.as_bytes());
-            hash.update(fence.connection_generation.get().to_be_bytes());
-            hash.update(now.to_be_bytes());
-            let digest: [u8; 32] = hash.finalize().into();
-            let mut transaction = [0_u8; 16];
-            transaction.copy_from_slice(&digest[..16]);
-            transaction[6] = (transaction[6] & 15) | 0x70;
-            transaction[8] = (transaction[8] & 63) | 0x80;
-            if self
-                .root
-                .checkpoint_imbuements(
-                    self.character,
-                    self.holder,
-                    fence,
-                    transaction,
-                    elapsed_imbuement.min(604_800_000),
-                    in_combat,
-                    super::npc_trade_command::unix_ms_now(),
-                )
-                .await
-                .is_err()
-            {
-                return false;
-            }
+        if !self
+            .checkpoint_imbuement_equipment(actor, session, fence)
+            .await
+        {
+            return false;
         }
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
         let Some(mut active_mana_shield) =

@@ -12,12 +12,12 @@ pub const IMBUEMENT_SLOTS_MAX: u8 = 3;
 /// Accepted accounting rule IMBUE-FORGE0 §4.3/R1.
 pub const IMBUEMENT_CHECKPOINT_INTERVAL_MS: u64 = 60_000;
 
-/// Capacity (Featherweight) and speed (Swiftness) are utility imbuements. Global consumes
-/// their budget whenever the item is worn and the character is online; every other category
-/// consumes only while the wearer is in combat. Protection-zone presence is deliberately not
-/// an input: Global's fight state, rather than a donor-specific PZ shortcut, is authoritative.
+/// Speed and capacity consume while equipped and online (TibiaWiki, Imbuing).
+/// Combat categories follow the fight state, including a fight hidden by a PZ.
+/// Paralysis deflection keeps pinned Canary's non-aggressive classification
+/// (47dfd51f, imbuements.xml category 19); not verified against Global.
 pub fn consumes_elapsed(category: u8, in_combat: bool) -> bool {
-    matches!(category, 8 | 9) || in_combat
+    matches!(category, 8 | 9 | 12) || in_combat
 }
 // Reference: https://github.com/opentibiabr/canary/blob/04b83b51/data/XML/imbuements.xml
 pub const IMBUEMENT_CLEAR_GOLD: u64 = 15_000;

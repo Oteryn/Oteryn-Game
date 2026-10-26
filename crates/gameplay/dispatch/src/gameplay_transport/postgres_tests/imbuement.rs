@@ -23,21 +23,29 @@ const CHARM: &str = "oteryn:item.tibia.i11444";
 
 #[test]
 fn imbuement_wire_dispatch_reads_the_carried_item_and_fails_closed_without_writes() -> TestResult {
-    spawn(false)
+    spawn(false, false)
 }
 
 #[test]
 fn imbuement_wire_dispatch_applies_and_clears_at_a_shrine_in_one_fenced_transaction() -> TestResult {
-    spawn(true)
+    spawn(true, false)
 }
 
-fn spawn(shrine: bool) -> TestResult {
+#[test]
+fn imbuement_elapsed_dispatch_pauses_expires_replays_and_reloads() -> TestResult {
+    spawn(true, true)
+}
+
+#[path = "imbuement/elapsed.rs"]
+mod elapsed;
+
+fn spawn(shrine: bool, elapsed: bool) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(shrine).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(shrine, elapsed).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "imbuement wire e2e panic")??;
     Ok(())
@@ -45,7 +53,7 @@ fn spawn(shrine: bool) -> TestResult {
 
 /// The test map holds the sword's bag at x 6, where the actor stands, and at x 7 either a
 /// loose gold coin or an imbuing shrine.
-fn scenario(shrine: bool) -> TestResult {
+fn scenario(shrine: bool, elapsed: bool) -> TestResult {
     run(async move |admin| {
         let name = if shrine {
             "imbuement_shrine"
@@ -195,7 +203,9 @@ fn scenario(shrine: bool) -> TestResult {
             &[4, 6, 12, 14, 18, CAPABILITY_IMBUE_V1],
         )
         .ok_or("imbuement capability selectable")?;
-        if shrine {
+        if elapsed {
+            elapsed::exercise(&harness, &mut owner, sword_ref, admitted, deps.actor).await?;
+        } else if shrine {
             at_the_shrine(&harness, &owner, sword_ref, admitted).await?;
         } else {
             out_of_reach(&harness, &owner, sword_ref, admitted).await?;
@@ -534,9 +544,9 @@ async fn exchange(
         }),
     )
     .await?;
-    let ConnectionEnd::AdmittedThenDisconnected(admitted) = end.ok_or("server did not finish")?
-    else {
-        return Err("server ended before admission".into());
+    let end = end.ok_or("server did not finish")?;
+    let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else {
+        return Err(format!("server ended before admission: {end:?}").into());
     };
     let (status, reply) = result.ok_or("client did not finish")??;
     Ok((admitted, status, reply))
