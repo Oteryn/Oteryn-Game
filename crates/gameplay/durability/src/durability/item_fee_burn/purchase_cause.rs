@@ -6,6 +6,7 @@ impl FeeBurnCause {
     pub(super) fn kind(&self) -> i16 {
         match self {
             Self::MarketFee { .. } => 6,
+            Self::NpcTravel { .. } => 8,
             Self::AreaDonation { .. } => 4,
             Self::CharmUnassign { .. } => CAUSE_CHARM_UNASSIGN,
             Self::NpcRepair { .. } => 5,
@@ -21,7 +22,8 @@ impl FeeBurnCause {
             }
             Self::CharmUnassign { occurrence, .. } => occurrence.as_bytes(),
             Self::NpcRepair { occurrence, .. } | Self::Imbuement { occurrence, .. } => occurrence,
-            Self::PromotionPurchase { occurrence, .. }
+            Self::NpcTravel { occurrence, .. }
+            | Self::PromotionPurchase { occurrence, .. }
             | Self::BlessingPurchase { occurrence, .. } => occurrence,
         }
     }
@@ -32,9 +34,9 @@ impl FeeBurnCause {
             Self::CharmUnassign { charm, .. } => charm.as_str(),
             Self::NpcRepair { .. } => "oteryn:service.repair.aldo",
             Self::Imbuement { .. } => "oteryn:service.imbuement",
-            Self::PromotionPurchase { service, .. } | Self::BlessingPurchase { service, .. } => {
-                service
-            }
+            Self::NpcTravel { service, .. }
+            | Self::PromotionPurchase { service, .. }
+            | Self::BlessingPurchase { service, .. } => service,
         }
     }
     pub(super) fn charm_key(&self) -> Option<&str> {
@@ -50,6 +52,9 @@ impl FeeBurnCause {
                 check_uuid_v7(offer).map_err(|_| FeeBurnError::InvalidInput)
             }
             Self::CharmUnassign { .. } => Ok(()),
+            Self::NpcTravel { service, .. } if service.starts_with("oteryn:service.travel.") => {
+                Ok(())
+            }
             Self::AreaDonation { area: 1, .. } => Ok(()),
             Self::NpcRepair { occurrence, repair }
                 if repair.occurrence.as_slice() == occurrence =>
@@ -104,6 +109,13 @@ impl FeeBurnCause {
                     occurrence: occurrence.as_bytes().to_vec(),
                 })
             }
+            Self::NpcTravel {
+                service,
+                occurrence,
+            } => FeeBurnCauseV1::NpcTravel(OneItemNpcPurchaseV1 {
+                service_key: service.clone(),
+                occurrence: occurrence.to_vec(),
+            }),
             Self::PromotionPurchase {
                 service,
                 occurrence,

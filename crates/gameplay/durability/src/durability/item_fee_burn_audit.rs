@@ -87,6 +87,8 @@ pub enum FeeBurnCauseV1 {
     MarketFee(OneItemMarketFeeV1),
     #[prost(message, tag = "7")]
     Imbuement(Box<OneItemImbuementV1>),
+    #[prost(message, tag = "8")]
+    NpcTravel(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
 }
 
@@ -110,6 +112,7 @@ pub struct OneItemFeeBurnCauseV1 {
             5, // NpcRepair
             6, // MarketFee
             7, // Imbuement
+            8, // NpcTravel
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,
@@ -299,7 +302,11 @@ pub fn check_fee_burn(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         || value.committed_character_revision
             < if matches!(
                 value.cause.as_ref().and_then(|c| c.cause.as_ref()),
-                Some(FeeBurnCauseV1::NpcRepair(_) | FeeBurnCauseV1::Imbuement(_))
+                Some(
+                    FeeBurnCauseV1::NpcRepair(_)
+                        | FeeBurnCauseV1::Imbuement(_)
+                        | FeeBurnCauseV1::NpcTravel(_)
+                )
             ) {
                 1
             } else {
