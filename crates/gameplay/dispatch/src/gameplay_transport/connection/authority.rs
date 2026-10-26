@@ -283,6 +283,19 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    /// An ambiguous quest callback commit has no terminal command result yet.
+    fn quest_callback_unresolved(&self, _session: GameSessionId) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    /// Reconcile retained callback truth before opening a resumed command stream/snapshot.
+    fn prepare_quest_callback_resume(
+        &self,
+        _admitted: &mut AdmittedSession,
+    ) -> impl Future<Output = bool> {
+        async { true }
+    }
+
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
     /// #162 5868482467), applied by the Channel owner.
     ///

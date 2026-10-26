@@ -106,6 +106,9 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    if !authority.prepare_quest_callback_resume(&mut admitted).await {
+        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    }
     let generation = admitted.continuity.connection_generation;
     let playable = matches!(
         admitted.first_entry,

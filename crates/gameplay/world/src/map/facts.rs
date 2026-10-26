@@ -34,6 +34,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
 
+mod quest_callbacks;
+use quest_callbacks::CallbackStates;
+
 type RotationStates = BTreeMap<u64, (u64, EntryFacts)>;
 
 /// The served definition of the Item a palette key names.
@@ -100,6 +103,7 @@ pub struct BundleFacts {
     doors: DoorBook,
     /// Scope-ephemeral fact overrides, like doors; never an ItemInstance owner.
     rotations: Mutex<Arc<RotationStates>>,
+    callbacks: Mutex<Arc<CallbackStates>>,
 }
 
 const AMBIGUOUS: u32 = u32::MAX;
@@ -136,6 +140,7 @@ impl BundleFacts {
             house_doors: Vec::new(),
             doors: DoorBook::default(),
             rotations: Mutex::default(),
+            callbacks: Mutex::default(),
         })
     }
 
@@ -304,6 +309,7 @@ impl BundleFacts {
     pub fn pinned(&self) -> PinnedFacts<'_> {
         PinnedFacts {
             facts: self,
+            callbacks: self.callbacks.lock().ok().map(|s| Arc::clone(&s)),
             doors: self.doors.snapshot(),
             rotations: self.rotations.lock().ok().map(|states| Arc::clone(&states)),
         }
@@ -639,6 +645,15 @@ impl MapFacts for BundleFacts {
         self.placements[found].1.attrs.text.as_deref()
     }
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
+        if let Some((_, facts)) = self
+            .callbacks
+            .lock()
+            .ok()?
+            .changed
+            .get(&placement_key(pos, ordinal)?)
+        {
+            return Some(*facts);
+        }
         let rotations = self.rotations.lock().ok()?;
         self.entry(pos, ordinal, id, None, &rotations)
     }
@@ -651,7 +666,18 @@ impl MapFacts for BundleFacts {
         self.houses.binary_search(&pos).is_ok()
     }
 
+    fn base_hidden(&self, key: u64) -> bool {
+        self.callbacks
+            .lock()
+            .map_or(true, |s| s.hidden.contains(&key))
+    }
+
     fn object_revision(&self, placement_key: u64) -> u64 {
+        if let Ok(s) = self.callbacks.lock()
+            && let Some((r, _)) = s.changed.get(&placement_key)
+        {
+            return *r;
+        }
         self.rotations.lock().map_or(u64::MAX, |states| {
             states.get(&placement_key).map_or_else(
                 || self.doors.revision(placement_key),
@@ -663,6 +689,7 @@ impl MapFacts for BundleFacts {
 
 /// [`BundleFacts`] with the door states of one read ([`BundleFacts::pinned`]).
 pub struct PinnedFacts<'a> {
+    callbacks: Option<Arc<CallbackStates>>,
     facts: &'a BundleFacts,
     doors: DoorStates,
     rotations: Option<Arc<RotationStates>>,
@@ -673,6 +700,14 @@ impl MapFacts for PinnedFacts<'_> {
         self.facts.base_text(key)
     }
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts> {
+        if let Some((_, facts)) = self
+            .callbacks
+            .as_ref()?
+            .changed
+            .get(&placement_key(pos, ordinal)?)
+        {
+            return Some(*facts);
+        }
         self.facts.entry(
             pos,
             ordinal,
@@ -690,7 +725,18 @@ impl MapFacts for PinnedFacts<'_> {
         self.facts.house_tile(pos)
     }
 
+    fn base_hidden(&self, key: u64) -> bool {
+        self.callbacks
+            .as_ref()
+            .is_none_or(|s| s.hidden.contains(&key))
+    }
+
     fn object_revision(&self, placement_key: u64) -> u64 {
+        if let Some(s) = &self.callbacks
+            && let Some((r, _)) = s.changed.get(&placement_key)
+        {
+            return *r;
+        }
         self.rotations.as_ref().map_or(u64::MAX, |states| {
             states.get(&placement_key).map_or_else(
                 || {

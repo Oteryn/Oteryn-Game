@@ -25,6 +25,7 @@ pub mod native_world_read;
 pub mod party_kill_xp;
 pub mod player_report;
 pub mod prey;
+pub mod quest_world_callback;
 pub mod raid_schedule;
 pub mod staff;
 pub mod vip;

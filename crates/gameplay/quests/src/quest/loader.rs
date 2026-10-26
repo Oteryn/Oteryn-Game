@@ -196,7 +196,10 @@ struct RequestedBy {
 pub fn load_embedded_quest_state(
     content_revision: &str,
 ) -> Result<LoweredQuestState, QuestLoadError> {
-    parse_quest_state(EMBEDDED, content_revision)
+    let mut lowered = parse_quest_state(EMBEDDED, content_revision)?;
+    lowered.catalogue =
+        super::world_callbacks::extend(lowered.catalogue).map_err(QuestLoadError::Json)?;
+    Ok(lowered)
 }
 
 /// Parse one lowered quest content document for `content_revision`.

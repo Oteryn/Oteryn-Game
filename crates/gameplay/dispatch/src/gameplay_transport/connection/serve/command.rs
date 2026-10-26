@@ -242,6 +242,15 @@ where
         )
         .await;
     }
+    // The STEP itself is already committed even if its follow-up callback is uncertain.
+    // USE has no terminal effect result until the callback receipt is reconciled.
+    if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+        && authority
+            .quest_callback_unresolved(session.admitted.game_session_id)
+            .await
+    {
+        return Err(ServeEnd::Disconnected);
+    }
     dispatch = bank_inventory(authority, session, dispatch).await?;
     drop(input_permit);
     if matches!(dispatch, Dispatch::Appearance(None) | Dispatch::House(None)) {

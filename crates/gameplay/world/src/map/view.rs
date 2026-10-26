@@ -57,6 +57,10 @@ pub struct EntryFacts {
 /// content generation.
 pub trait MapFacts {
     /// The facts of top-level base entry `ordinal` of `pos`, whose compact id is `id`.
+    fn base_hidden(&self, _key: u64) -> bool {
+        false
+    }
+
     fn base_entry(&self, pos: TilePos, ordinal: u8, id: u32) -> Option<EntryFacts>;
     /// The facts of an overlay-added or Ground item, from its item content definition.
     fn added_entry(&self, item: &AddedItem) -> Option<EntryFacts>;
@@ -211,7 +215,12 @@ pub fn compose_into(
             let hidden = u8::try_from(this)
                 .ok()
                 .is_some_and(|ordinal| overlay.is_some_and(|view| view.is_hidden(ordinal)));
-            if hidden {
+            if hidden
+                || u8::try_from(this)
+                    .ok()
+                    .and_then(|o| placement_key(pos, o))
+                    .is_some_and(|k| facts.base_hidden(k))
+            {
                 continue;
             }
             let ordinal = u8::try_from(this)

@@ -87,6 +87,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
         // MAP-CUTOVER-1b (§1.2): a bundle World has no field items; a step reads only the bundle
         // collision index.
+        let origin = runtime.read_actor_position(actor).ok();
         let outcome = if self.bundle_map().is_some() {
             states.step_with_creature_field_contact(
                 &mut runtime,
@@ -116,6 +117,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match outcome {
             Ok((snapshot, duration)) => {
+                drop(states);
+                drop(runtime);
+                let snapshot = match origin {
+                    Some(origin) => {
+                        self.step_quest_callback(actor, session, origin, snapshot)
+                            .await
+                    }
+                    None => snapshot,
+                };
+                let runtime = self.runtime.lock().await;
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.states.chat.close_out_of_range(&runtime, session);
                 (

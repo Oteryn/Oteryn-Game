@@ -35,13 +35,15 @@
 //! `QUESTSTATE0-RL-01`, `-05`, `-07`, `-08` and `QUESTGATE0-RL-10`; over a bound the load fails
 //! closed.
 
-
-
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use oteryn_gameplay_quests::quest::{
+    QUESTGATE0_RL_10, QUESTSTATE0_RL_01, QUESTSTATE0_RL_05, QUESTSTATE0_RL_07,
+    QUESTSTATE0_RL_08_STATES, QUESTSTATE0_RL_08_TRACKS, QuestRefusal, QuestStateCatalogue,
+    QuestTrackChange, valid_quest_key,
+};
 use oteryn_simulation_determinism::ExactI64;
-use oteryn_gameplay_quests::quest::{QUESTGATE0_RL_10, QUESTSTATE0_RL_01, QUESTSTATE0_RL_05, QUESTSTATE0_RL_07, QUESTSTATE0_RL_08_STATES, QUESTSTATE0_RL_08_TRACKS, QuestRefusal, QuestStateCatalogue, QuestTrackChange, valid_quest_key};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -72,6 +74,8 @@ pub enum QuestCause {
     Command(CommandRef),
     /// A USE interaction: its CommandRef.
     Use(CommandRef),
+    /// Server-owned committed movement revision, in its own cause namespace.
+    Step(CommandRef),
     /// A reward-claim obligation (§5.4): the claim's CommandRef.
     ClaimObligation(CommandRef),
     /// A creature-death reward occurrence.
@@ -83,6 +87,7 @@ impl QuestCause {
         match self {
             Self::Command(_) => "command",
             Self::Use(_) => "use",
+            Self::Step(_) => "step",
             Self::ClaimObligation(_) => "claim_obligation",
             Self::CreatureDeath(_) => "creature_death",
         }
@@ -92,7 +97,10 @@ impl QuestCause {
     /// (occurrence, 0).
     fn key(self) -> ([u8; 16], u64) {
         match self {
-            Self::Command(command) | Self::Use(command) | Self::ClaimObligation(command) => (
+            Self::Command(command)
+            | Self::Use(command)
+            | Self::Step(command)
+            | Self::ClaimObligation(command) => (
                 *command.game_session_id().as_bytes(),
                 command.command_id().get(),
             ),
@@ -111,6 +119,7 @@ impl QuestCause {
         Ok(match kind {
             "command" => Self::Command(command()?),
             "use" => Self::Use(command()?),
+            "step" => Self::Step(command()?),
             "claim_obligation" => Self::ClaimObligation(command()?),
             "creature_death" if ordinal == 0 => {
                 Self::CreatureDeath(ExperienceRewardOccurrence::from_bytes(id).map_err(invalid)?)
@@ -339,6 +348,55 @@ impl DurabilityRoot {
         request: QuestTransitionRequest,
         catalogue: Arc<QuestStateCatalogue>,
     ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner(authority, node, fence, request, catalogue, None)
+            .await
+    }
+
+    /// A content-bound world callback uses the same fenced quest writer and receipt.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_character_world_callback(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        context: super::quest_world_callback::QuestWorldContext,
+    ) -> Result<QuestTransitionOutcome> {
+        self.commit_quest_inner(authority, node, fence, request, catalogue, Some(context))
+            .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn commit_quest_inner(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: Arc<QuestStateCatalogue>,
+        context: Option<super::quest_world_callback::QuestWorldContext>,
+    ) -> Result<QuestTransitionOutcome> {
+        let callback = if context.is_some() {
+            Some(
+                oteryn_gameplay_quests::quest::world_callbacks::load()
+                    .map_err(|_| CharacterProgressionError::InvalidInput)?
+                    .into_iter()
+                    .find(|c| c.key == request.transition_key)
+                    .ok_or(CharacterProgressionError::InvalidInput)?,
+            )
+        } else {
+            None
+        };
+        // Altar transitions cannot be invoked through a weaker generic quest caller.
+        if context.is_none()
+            && oteryn_gameplay_quests::quest::world_callbacks::load()
+                .map_err(|_| CharacterProgressionError::InvalidInput)?
+                .iter()
+                .any(|c| c.key == request.transition_key && !c.offerings.is_empty())
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         if fence.character_lease_generation == 0
             || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
             || !valid_quest_key(&request.transition_key)
@@ -348,12 +406,22 @@ impl DurabilityRoot {
         // §5.3: a command cause belongs to the fenced GameSession; a still-pending one after a
         // same-GameSession reconnect commits with the current generation, and a replaced
         // session's command is refused. An obligation may come from an earlier session.
-        if let QuestCause::Command(command) | QuestCause::Use(command) = request.cause
+        if let QuestCause::Command(command) | QuestCause::Use(command) | QuestCause::Step(command) =
+            request.cause
             && command.game_session_id() != fence.game_session_id
         {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
-        let binding = request_binding(fence.character_id, &request);
+        let mut binding = request_binding(fence.character_id, &request);
+        if let Some(context) = &context {
+            let bytes = serde_json::to_vec(&(context, &callback))
+                .map_err(|_| CharacterProgressionError::InvalidInput)?;
+            let digest = Sha256::new()
+                .chain_update(binding)
+                .chain_update(bytes)
+                .finalize();
+            binding[1..].copy_from_slice(&digest);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
@@ -564,6 +632,9 @@ impl DurabilityRoot {
                         Err(refusal) => {
                             let Some(claim) = obligation else {
                                 // Dropping the transaction rolls back: nothing is written.
+                                if context.is_some() {
+                                    tx.rollback().await?;
+                                }
                                 return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
                             };
                             let next = if refusal == QuestRefusal::RevisionMismatch {
@@ -594,6 +665,9 @@ impl DurabilityRoot {
                         }
                     };
 
+                    if let (Some(callback), Some(context)) = (&callback, &context)
+                        && !super::quest_world_callback::consume(&mut tx, fence, &request, callback, context).await?
+                    { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     let committed_revision = root
                         .revision
                         .checked_add(1)
@@ -1260,7 +1334,10 @@ impl oteryn_gameplay_quests::quest::log::QuestLogFacts for QuestStateCopy {
         self.tracks().get(track).copied()
     }
 
-    fn quest_state(&self, quest: &str) -> Option<oteryn_gameplay_quests::quest::log::QuestLogState<'_>> {
+    fn quest_state(
+        &self,
+        quest: &str,
+    ) -> Option<oteryn_gameplay_quests::quest::log::QuestLogState<'_>> {
         self.states()
             .get(quest)
             .map(|state| oteryn_gameplay_quests::quest::log::QuestLogState {
@@ -1313,11 +1390,15 @@ mod tests {
         let base = request(QuestCause::Command(command(2, 7)), "oteryn:t/1");
         let binding = request_binding(character, &base);
         assert_eq!(binding[0], 1);
-        assert!(binding.len() <= oteryn_gameplay_quests::quest::QUESTSTATE0_RL_04, "RL-04");
+        assert!(
+            binding.len() <= oteryn_gameplay_quests::quest::QUESTSTATE0_RL_04,
+            "RL-04"
+        );
         assert_eq!(binding, request_binding(character, &base.clone()));
         let death = ExperienceRewardOccurrence::from_bytes(id(2)).expect("occurrence");
         for changed in [
             request(QuestCause::Use(command(2, 7)), "oteryn:t/1"),
+            request(QuestCause::Step(command(2, 7)), "oteryn:t/1"),
             request(QuestCause::ClaimObligation(command(2, 7)), "oteryn:t/1"),
             request(QuestCause::CreatureDeath(death), "oteryn:t/1"),
             request(QuestCause::Command(command(2, 8)), "oteryn:t/1"),
@@ -1336,6 +1417,7 @@ mod tests {
         for cause in [
             QuestCause::Command(command(2, 7)),
             QuestCause::Use(command(2, u64::MAX)),
+            QuestCause::Step(command(2, u64::MAX)),
             QuestCause::ClaimObligation(command(3, 1)),
             QuestCause::CreatureDeath(death),
         ] {

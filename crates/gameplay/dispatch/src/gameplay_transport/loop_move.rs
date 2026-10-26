@@ -128,6 +128,9 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn base_hidden(&self, key: u64) -> bool {
+        self.inner.base_hidden(key)
+    }
     fn base_text(&self, key: u64) -> Option<&str> {
         self.inner.base_text(key)
     }

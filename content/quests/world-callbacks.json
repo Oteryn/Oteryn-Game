@@ -1,0 +1,266 @@
+{
+  "schema": 1,
+  "callbacks": [
+    {
+      "key": "oteryn:quest-callback/behemoth",
+      "quest": "oteryn:quest.behemoth_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 30009,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": false,
+      "passages": [
+        {
+          "position": {
+            "x": 33295,
+            "y": 31677,
+            "floor": -15
+          },
+          "appearance": 1791
+        },
+        {
+          "position": {
+            "x": 33296,
+            "y": 31677,
+            "floor": -15
+          },
+          "appearance": 1791
+        },
+        {
+          "position": {
+            "x": 33297,
+            "y": 31677,
+            "floor": -15
+          },
+          "appearance": 1791
+        },
+        {
+          "position": {
+            "x": 33298,
+            "y": 31677,
+            "floor": -15
+          },
+          "appearance": 1791
+        },
+        {
+          "position": {
+            "x": 33299,
+            "y": 31677,
+            "floor": -15
+          },
+          "appearance": 1791
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/behemoth/action-lever.lua:1-28",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/behemoth/action-lever.lua:1-28"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/giant-smithhammer",
+      "quest": "oteryn:quest.giant_smithhammer_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 30024,
+        "action": null,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32780,
+            "y": 32231,
+            "floor": -8
+          },
+          "appearance": 389
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/giant_smithhammer/lever.lua:1-18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/giant_smithhammer/lever.lua:1-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/liquid-black-shortcut",
+      "quest": "oteryn:quest.liquid_black_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 57746,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 33478,
+        "y": 31314,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u9_4/liquid_black_quest/visitor",
+          "minimum": 4,
+          "maximum": 5,
+          "set": 5
+        }
+      ],
+      "offerings": [],
+      "return_on_failure": true,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/liquid_black/movements_shortcut.lua:1-23",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/liquid_black/movements_shortcut.lua:1-23"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/paradox-skulls",
+      "quest": "oteryn:quest.the_paradox_tower_quest",
+      "trigger": "step_in",
+      "selector": {
+        "position": null,
+        "unique": 25012,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32479,
+        "y": 31923,
+        "floor": -7
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/first_paradox_access",
+          "minimum": -1,
+          "maximum": 1,
+          "set": 1
+        }
+      ],
+      "offerings": [
+        {
+          "position": {
+            "x": 32563,
+            "y": 31957,
+            "floor": -1
+          },
+          "item": "oteryn:item.tibia.i3114",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32565,
+            "y": 31957,
+            "floor": -1
+          },
+          "item": "oteryn:item.tibia.i3114",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32567,
+            "y": 31957,
+            "floor": -1
+          },
+          "item": "oteryn:item.tibia.i3114",
+          "count": 1
+        },
+        {
+          "position": {
+            "x": 32569,
+            "y": 31957,
+            "floor": -1
+          },
+          "item": "oteryn:item.tibia.i3114",
+          "count": 1
+        }
+      ],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_paradox_tower/movement_sacrifice_skulls.lua:1-41",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_sacrifice_skulls.lua:1-41"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/hellgate-bridge",
+      "quest": "oteryn:quest.hellgate_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50027,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32627,
+            "y": 31699,
+            "floor": -10
+          },
+          "appearance": 622,
+          "replacement": 5770
+        },
+        {
+          "position": {
+            "x": 32628,
+            "y": 31699,
+            "floor": -10
+          },
+          "appearance": 622,
+          "replacement": 5770
+        },
+        {
+          "position": {
+            "x": 32629,
+            "y": 31699,
+            "floor": -10
+          },
+          "appearance": 622,
+          "replacement": 5770
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/others/actions_hellgate_lever.lua:1-34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_hellgate_lever.lua:1-34"
+      ]
+    }
+  ]
+}

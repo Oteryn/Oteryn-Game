@@ -404,6 +404,36 @@ impl RevisionSlot {
         .await
     }
 
+    /// World callback storage and altar inputs share one revision slot and transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_callback(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        context: super::quest_world_callback::QuestWorldContext,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_world_callback(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    context.clone(),
+                )
+            },
+        )
+        .await
+    }
+
     /// The XP award of one pending quest XP obligation at the cursor (QUEST-GATE-0 §5.5), under
     /// the active progression `policy` (its `reward_revision`, never the quest content
     /// revision). The XP binding includes the revision, so a mismatch fails closed.

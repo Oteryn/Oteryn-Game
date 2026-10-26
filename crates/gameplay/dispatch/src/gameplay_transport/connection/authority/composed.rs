@@ -543,6 +543,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ///
     /// C2: a `USE` naming the injected entry chest is routed to [`Self::use_chest`] instead;
     /// every other placement takes the unchanged door path.
+    async fn quest_callback_unresolved(&self, session: GameSessionId) -> bool {
+        self.has_pending_quest_callback(session)
+    }
+
+    async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
+        if !tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            self.reconcile_quest_callbacks(),
+        )
+        .await
+        .unwrap_or(false)
+        {
+            return false;
+        }
+        admitted.continuity.next_command_id == 1
+            || self
+                .states
+                .command_ingress
+                .recover_trade_continuity(admitted)
+                .is_some()
+    }
+
     async fn use_object(
         &self,
         actor: ExactActorRef,
@@ -676,7 +698,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     }
 
     async fn enter_input(&self) -> Option<input_gate::InputPermit<'_>> {
-        self.states.input_gate.enter().await
+        let permit = self.states.input_gate.enter().await?;
+        if !tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            self.reconcile_quest_callbacks(),
+        )
+        .await
+        .unwrap_or(false)
+        {
+            return None;
+        }
+        Some(permit)
     }
 
     async fn resume(
