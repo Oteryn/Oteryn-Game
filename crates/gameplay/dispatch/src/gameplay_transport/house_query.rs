@@ -14,8 +14,25 @@ struct Catalogue {
 #[derive(Deserialize)]
 struct Record {
     identity: Identity,
+    kind: CatalogueKind,
     town: Town,
     provenance: Provenance,
+}
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub(super) enum CatalogueKind {
+    PrivateHouse,
+    Shop,
+    Guildhall,
+}
+impl CatalogueKind {
+    fn database(self) -> &'static str {
+        match self {
+            Self::PrivateHouse => "private_house",
+            Self::Shop => "shop",
+            Self::Guildhall => "guildhall",
+        }
+    }
 }
 #[derive(Deserialize)]
 struct Identity {
@@ -39,6 +56,12 @@ pub(super) fn source_house_id(key: &str) -> Option<u32> {
         .find(|house| house.identity.key == key)
         .map(|house| house.provenance.engine_house.house_id)
         .filter(|id| *id != 0)
+}
+pub(super) fn source_house_kind(key: &str) -> Option<CatalogueKind> {
+    catalogue()?
+        .iter()
+        .find(|house| house.identity.key == key)
+        .map(|house| house.kind)
 }
 fn catalogue() -> Option<&'static Vec<Record>> {
     static CATALOGUE: OnceLock<Option<Vec<Record>>> = OnceLock::new();
@@ -106,7 +129,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let houses = catalogue()?
             .iter()
             .filter(|h| h.town.key == query.town)
-            .map(|h| h.identity.key.clone())
+            .map(|h| crate::durability::house_management::QualifiedHouse {
+                key: h.identity.key.clone(),
+                kind: h.kind.database(),
+            })
             .collect();
         match self
             .root
@@ -126,22 +152,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let next = more.then(|| rows.last().map(|r| r.house.clone())).flatten();
                 let rows: Vec<_> = rows
                     .into_iter()
-                    .map(|r| wire::HouseSummary {
-                        house: r.house,
-                        state: r.state,
-                        rent: r.rent,
-                        revision: r.revision,
-                        acl_revision: r.acl_revision,
-                        owned: r.owned,
-                        move_out_ms: r.move_out_ms,
-                        price: r.price,
-                        ends_ms: r.ends_ms,
-                        own_maximum: r.own_maximum,
+                    .map(|r| {
+                        Some(wire::HouseSummary {
+                            house: r.house,
+                            kind: match r.kind.as_str() {
+                                "private_house" => wire::HouseKind::PrivateHouse,
+                                "shop" => wire::HouseKind::Shop,
+                                "guildhall" => wire::HouseKind::Guildhall,
+                                _ => return None,
+                            },
+                            state: r.state,
+                            rent: r.rent,
+                            revision: r.revision,
+                            acl_revision: r.acl_revision,
+                            owned: r.owned,
+                            move_out_ms: r.move_out_ms,
+                            price: r.price,
+                            ends_ms: r.ends_ms,
+                            own_maximum: r.own_maximum,
+                        })
                     })
-                    .collect();
+                    .collect::<Option<Vec<_>>>()?;
                 wire::encode_house_page(&rows, next.as_deref()).ok()
             }
             Err(error) => super::house_intent::reply(Err(error)),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shipped_catalogue_retains_all_three_global_building_classes() {
+        assert!(catalogue().is_some(), "shipped catalogue parses");
+        let empty = Vec::new();
+        let catalogue = catalogue().unwrap_or(&empty);
+        assert_eq!(
+            catalogue
+                .iter()
+                .filter(|h| h.kind == CatalogueKind::Guildhall)
+                .count(),
+            66
+        );
+        assert_eq!(
+            catalogue
+                .iter()
+                .filter(|h| h.kind == CatalogueKind::Shop)
+                .count(),
+            51
+        );
+        assert_eq!(
+            source_house_kind("oteryn:content.house.zz_kept_key"),
+            Some(CatalogueKind::Guildhall)
+        );
     }
 }

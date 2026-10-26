@@ -13,6 +13,11 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::CommandRef;
 use oteryn_gameplay_housing::house_management::{HouseManagementAction, valid_move_out_date};
 pub use query::HouseManagementSummary;
+#[derive(Debug, Clone)]
+pub struct QualifiedHouse {
+    pub key: String,
+    pub kind: &'static str,
+}
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
 type Tx<'a> = Transaction<'a, Postgres>;

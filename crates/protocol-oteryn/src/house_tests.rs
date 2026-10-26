@@ -122,6 +122,7 @@ fn house_results_page_limit_and_typed_refusal() {
     );
     let row = HouseSummary {
         house: "h".into(),
+        kind: HouseKind::Guildhall,
         state: 3,
         rent: 0,
         revision: 1,
@@ -132,6 +133,10 @@ fn house_results_page_limit_and_typed_refusal() {
         ends_ms: None,
         own_maximum: None,
     };
+    let encoded = encode_house_page(std::slice::from_ref(&row), None);
+    assert!(encoded.is_ok());
+    let encoded = encoded.unwrap_or_default();
+    assert!(encoded.windows(2).any(|field| field == [88, 3]));
     assert!(encode_house_page(&vec![row.clone(); PAGE_SIZE], None).is_ok());
     assert!(encode_house_page(&vec![row; PAGE_SIZE + 1], None).is_err());
 }

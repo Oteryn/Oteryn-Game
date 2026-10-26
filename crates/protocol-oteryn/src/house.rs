@@ -49,6 +49,7 @@ pub struct HouseQuery {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HouseSummary {
     pub house: String,
+    pub kind: HouseKind,
     pub state: u8,
     pub rent: u64,
     pub revision: u64,
@@ -58,6 +59,12 @@ pub struct HouseSummary {
     pub price: u64,
     pub ends_ms: Option<u64>,
     pub own_maximum: Option<u64>,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HouseKind {
+    PrivateHouse = 1,
+    Shop = 2,
+    Guildhall = 3,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HouseDisposition {
@@ -275,6 +282,7 @@ pub fn encode_house_page(rows: &[HouseSummary], cursor: Option<&str>) -> Result<
         }
         let mut b = Vec::new();
         bytes(&mut b, 1, row.house.as_bytes());
+        scalar(&mut b, 11, row.kind as u64);
         scalar(&mut b, 2, row.state.into());
         scalar(&mut b, 3, row.rent);
         scalar(&mut b, 4, row.revision);

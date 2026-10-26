@@ -61,6 +61,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.content_pin().server_artifact_digest()
         };
         if let wire::HouseAction::Bid(maximum) = intent.action {
+            // Guildhall custody belongs to GUILDHALL-1. Never route its qualified
+            // catalogue identity through the personal Account/Character bidder.
+            if super::house_query::source_house_kind(&intent.house)
+                == Some(super::house_query::CatalogueKind::Guildhall)
+            {
+                return refuse();
+            }
             let Some(gate) = self.premium_coordinator else {
                 return refuse();
             };

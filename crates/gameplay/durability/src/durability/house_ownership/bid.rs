@@ -72,6 +72,9 @@ pub(super) async fn bid_in_transaction(
         .try_into()
         .map_err(|_| HouseOwnershipError::InvalidInput)?;
     let property = lock_property(tx, world.as_bytes(), &request.house_key).await?;
+    if property.try_get::<&str, _>("kind")? == "guildhall" {
+        return Err(HouseOwnershipError::Ineligible);
+    }
     // Opening cannot be authorized by an anchor. The bundle lane supplies the
     // qualified acquisition catalogue together with accepted runtime entry/exit.
     if property.try_get::<i16, _>("state")? == 1 {
