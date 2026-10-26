@@ -1,0 +1,18 @@
+{
+  "mechanic": "0051-staff",
+  "kind": "handlers",
+  "id": "0051-staff-unsupported",
+  "status": "unsupported",
+  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "commands": [
+    60,
+    61
+  ],
+  "not_applicable": {
+    "state": "Unsupported until the owning mechanic migration.",
+    "protocol": "Unsupported until the owning mechanic migration.",
+    "view": "Unsupported until the owning mechanic migration.",
+    "input": "Unsupported until the owning mechanic migration.",
+    "settings": "Unsupported until the owning mechanic migration."
+  }
+}
