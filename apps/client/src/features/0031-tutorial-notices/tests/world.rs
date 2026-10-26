@@ -1,3 +1,9 @@
+use crate::map::{START, World};
+
+fn repo() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
+}
+
 #[test]
 fn tutorial_map_window_is_decoded_at_the_real_join_position() -> Result<(), String> {
     let center = (32472, 32288, 7);

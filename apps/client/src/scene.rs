@@ -5,7 +5,7 @@
 //! whose positions are not map positions still draws the start area around its actor.
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
-use crate::world::{BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, World};
+use crate::map::{BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, World};
 use oteryn_client_simulation::scene::{scene_origin, visit_scene};
 use oteryn_renderer::{
     AtlasImage, BatchError, MAX_BATCH_QUADS, SpriteBatch, TileBatch, TileCoord, TileView,

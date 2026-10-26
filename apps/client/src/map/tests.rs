@@ -1,6 +1,5 @@
 use super::*;
 use oteryn_client_assets::world::{Budget, MANIFEST_PATH, decode_region};
-include!("tutorial_window_tests.rs");
 
 fn repo() -> std::path::PathBuf {
     std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -72,5 +71,26 @@ fn a_region_that_does_not_match_its_digest_is_refused() -> Result<(), String> {
     assert!(bad.is_err());
     let missing = World::load(&repo().join("no-such-root"));
     assert!(missing.is_err());
+    Ok(())
+}
+
+#[test]
+#[allow(deprecated)]
+fn the_legacy_facade_keeps_the_composed_world_type_and_constants() -> Result<(), BatchError> {
+    let world: World = crate::world::World::builtin()?;
+    assert_eq!(crate::world::ASSET_DIR_ENV, crate::map::ASSET_DIR_ENV);
+    assert_eq!(crate::world::START, START);
+    assert_eq!(crate::world::START_FLOOR, START_FLOOR);
+    assert_eq!(crate::world::MAX_TILE_DRAWS, MAX_TILE_DRAWS);
+    assert_eq!(crate::world::PLAYER_LOOK_TYPE, PLAYER_LOOK_TYPE);
+    assert_eq!(crate::world::RADIUS, RADIUS);
+    assert_eq!(crate::world::SCAN_MARGIN, SCAN_MARGIN);
+    assert_eq!(crate::world::BLACK_CELL, BLACK_CELL);
+    assert_eq!(crate::world::MARKER_CELL, MARKER_CELL);
+    assert_eq!(crate::world::TARGET_CELL, TARGET_CELL);
+    let tile: crate::world::MapTile = MapTile::default();
+    let draws: &[crate::world::Draw] = world.player(StepDir::South);
+    assert!(tile.under.is_empty());
+    assert_eq!(draws[0].cell, MARKER_CELL);
     Ok(())
 }

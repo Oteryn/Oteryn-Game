@@ -97,7 +97,7 @@ fn clicking_an_entity_or_an_object_targets_it_and_draws_a_highlight() -> Result<
 
 #[test]
 fn a_displaced_sprite_two_tiles_past_the_view_is_drawn() -> Result<(), BatchError> {
-    use crate::world::MapTile;
+    use crate::map::MapTile;
     // Column 16 and row 12 of the view, displaced back into its last column and row.
     let reach = |x, y| {
         let tile = MapTile {
@@ -143,7 +143,7 @@ fn a_view_at_the_edge_of_the_coordinate_space_builds() -> Result<(), BatchError>
 fn the_start_area_draws_real_sprites_around_the_player() -> Result<(), String> {
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
     let world = Arc::new(World::load(&root)?);
-    let start = TileCoord::new(crate::world::START.0, crate::world::START.1);
+    let start = TileCoord::new(crate::map::START.0, crate::map::START.1);
     let scene = Scene::centered_on(
         world,
         Some(TileCoord::new(0, 0)),
