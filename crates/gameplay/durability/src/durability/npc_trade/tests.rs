@@ -394,3 +394,18 @@ fn buy_bank_fallback_burns_every_coin_and_never_changes_junior_or_v1_rules() {
         Err(NpcTradeError::DoesNotFit)
     ));
 }
+
+#[test]
+fn only_albinius_exact_blank_scroll_offer_activates_the_durable_gate() {
+    let mut value = request(NpcTradeSide::Buy, 1, 25_000);
+    value.cause.npc_key = ALBINIUS.into();
+    value.item.definition.production_key = BLANK_IMBUEMENT_SCROLL.into();
+    value.offer_count = 1;
+    assert!(is_albinius_blank_scroll(&value));
+
+    value.unit_price += 1;
+    assert!(!is_albinius_blank_scroll(&value));
+    value.unit_price -= 1;
+    value.cause.npc_key = "oteryn:npc.someone_else".into();
+    assert!(!is_albinius_blank_scroll(&value));
+}
