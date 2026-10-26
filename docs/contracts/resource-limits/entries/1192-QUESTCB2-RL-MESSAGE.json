@@ -1,0 +1,20 @@
+{
+  "id": "QUESTCB2-RL-MESSAGE",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
+  "resource": "UTF-8 failure message",
+  "unit": "bytes",
+  "hard_maximum": 256,
+  "configurable_range": {
+    "minimum": 256,
+    "maximum": 256
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Refuse invalid content before enabling callbacks; no partial effects.",
+  "client_visible": false,
+  "boundary_tests": [
+    "quest_world_callbacks_reject_ambiguous_and_unbounded_authoring"
+  ],
+  "consumers": [
+    "crates/gameplay/quests/src/quest/world_callbacks.rs"
+  ]
+}

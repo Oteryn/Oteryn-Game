@@ -15,7 +15,7 @@ message GuildBankQuery { optional bytes guild = 1; optional uint64 before = 2; o
 message GuildBankClaim { bytes guild = 1; uint64 amount = 2; }
 message GuildBankEntry {
   uint64 ordinal = 1; // positive i64, strictly descending in reply
-  uint32 kind = 2; // 1 deposit, 2 withdraw, 3 payout
+  uint32 kind = 2; // 1 deposit, 2 withdraw, 3 payout; negotiated capability 99 adds 4 Hall reserve, 5 Hall refund, 6 Hall payment
   uint64 amount = 3;
   uint64 before = 4;
   uint64 after = 5;

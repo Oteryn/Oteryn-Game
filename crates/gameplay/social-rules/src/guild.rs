@@ -1,5 +1,43 @@
 //! Pure GUILD0 eligibility and deadline predicates over caller-supplied locked facts.
 pub use oteryn_gameplay_domain::domain::guild::*;
+
+/// Global guild-war limits: leaders choose 10..=1000 frags and 7..=180 days.
+pub const GUILD_WAR_MIN_FRAGS: u16 = 10;
+pub const GUILD_WAR_MAX_FRAGS: u16 = 1_000;
+pub const GUILD_WAR_MIN_DAYS: u16 = 7;
+pub const GUILD_WAR_MAX_DAYS: u16 = 180;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GuildWarEnd {
+    FragLimit,
+    Duration,
+}
+
+pub fn validate_guild_war_terms(frag_limit: u16, duration_days: u16) -> Result<(), GuildRuleError> {
+    if (GUILD_WAR_MIN_FRAGS..=GUILD_WAR_MAX_FRAGS).contains(&frag_limit)
+        && (GUILD_WAR_MIN_DAYS..=GUILD_WAR_MAX_DAYS).contains(&duration_days)
+    {
+        Ok(())
+    } else {
+        Err(GuildRuleError::InvalidWarTerms)
+    }
+}
+
+#[must_use]
+pub fn guild_war_end(
+    frag_limit: u16,
+    frags: [u16; 2],
+    ends_at: i64,
+    now: i64,
+) -> Option<GuildWarEnd> {
+    if frags.into_iter().any(|value| value >= frag_limit) {
+        Some(GuildWarEnd::FragLimit)
+    } else if now >= ends_at {
+        Some(GuildWarEnd::Duration)
+    } else {
+        None
+    }
+}
 pub trait GuildRankRules {
     fn may_set_rank(self, target: Self, proposed: Self) -> bool;
     fn may_exclude(self, target: Self) -> bool;

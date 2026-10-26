@@ -158,6 +158,8 @@ pub(super) async fn write_deadline_in_transaction(
         return Err(CharacterProgressionError::InvalidInput);
     }
     super::party_pz_fact::lock_in_transaction(tx, target.character_id.as_bytes()).await?;
+    // EXCLUDED is evaluated before the conflicting row is locked. Refresh
+    // from the clock after that wait so it cannot consume the write-ahead.
     let written = sqlx::query(
         "INSERT INTO game_character_pvp_state AS s \
             (character_id, world_id, logout_block_until, pz_block_until, \
@@ -167,9 +169,9 @@ pub(super) async fn write_deadline_in_transaction(
              CASE WHEN $4 THEN clock_timestamp() + $6 * interval '1 millisecond' END, \
              CASE WHEN $5 THEN clock_timestamp() + $6 * interval '1 millisecond' END) \
          ON CONFLICT (character_id) DO UPDATE SET \
-             logout_block_until = GREATEST(s.logout_block_until, EXCLUDED.logout_block_until), \
-             pz_block_until = GREATEST(s.pz_block_until, EXCLUDED.pz_block_until), \
-             white_skull_until = GREATEST(s.white_skull_until, EXCLUDED.white_skull_until), \
+             logout_block_until = CASE WHEN $3 THEN GREATEST(s.logout_block_until, clock_timestamp() + $6 * interval '1 millisecond') ELSE s.logout_block_until END, \
+             pz_block_until = CASE WHEN $4 THEN GREATEST(s.pz_block_until, clock_timestamp() + $6 * interval '1 millisecond') ELSE s.pz_block_until END, \
+             white_skull_until = CASE WHEN $5 THEN GREATEST(s.white_skull_until, clock_timestamp() + $6 * interval '1 millisecond') ELSE s.white_skull_until END, \
              revision = s.revision + 1 \
          WHERE s.world_id = EXCLUDED.world_id",
     )

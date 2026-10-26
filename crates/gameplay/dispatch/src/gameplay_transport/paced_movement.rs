@@ -86,6 +86,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
         // A field-enabled World reads dynamic Ground Items before committing its step.
+        let origin = runtime.read_actor_position(actor).ok();
         let outcome = if self.bundle_map().is_some()
             && self
                 .required_capabilities
@@ -121,6 +122,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match outcome {
             Ok((snapshot, duration)) => {
+                drop(states);
+                drop(runtime);
+                let snapshot = match origin {
+                    Some(origin) => {
+                        self.step_quest_callback(actor, session, origin, snapshot)
+                            .await
+                    }
+                    None => snapshot,
+                };
+                let runtime = self.runtime.lock().await;
                 // NPC-TALK-2: a customer who stepped out of talk range ends its conversation now.
                 self.states.chat.close_out_of_range(&runtime, session);
                 (
