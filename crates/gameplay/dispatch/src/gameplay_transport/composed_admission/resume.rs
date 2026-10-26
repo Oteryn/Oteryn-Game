@@ -9,7 +9,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(AdmissionRefusal::Unavailable);
         };
-        let admitted = self.resume_lost(attempt).await?;
+        let admitted = if let Some(admitted) = self
+            .recover_transferred_house(connection::ResumeAttempt {
+                game_session_id: attempt.game_session_id,
+                recovery_material: attempt.recovery_material,
+                transport: attempt.transport,
+                last_applied_server_sequence: attempt.last_applied_server_sequence,
+                supported_capabilities: attempt.supported_capabilities,
+            })
+            .await?
+        {
+            admitted
+        } else {
+            self.resume_lost(attempt).await?
+        };
         // ATTACK-0 §3 Reconnect: only the target is cleared; the in-fight deadline is kept.
         if let Some(actor) = admitted.runtime_actor {
             self.states

@@ -1,23 +1,33 @@
 //! RANGED-ATTACK-1: real admission, equipment owner, auto-attack and durable reload.
 #![allow(clippy::expect_used, clippy::unwrap_used)]
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
+use crate::foundation::{
+    ChannelId, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId, WorldId,
+};
+use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
+use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::attack::AttackIntentDisposition;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::time::Duration;
 use tokio::sync::Mutex;
-use crate::foundation::{ChannelId, ChannelRuntimeV1, GameSessionId, MovementLocalPosition, NodeId, WorldId};
-use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
-const OPEN_RAT: MovementLocalPosition = MovementLocalPosition { x: 1, y: 11, floor: -7 };
+const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
+    x: 1,
+    y: 11,
+    floor: -7,
+};
 const PASS: Duration = Duration::from_secs(3);
 #[test]
 fn ranged_attack_postgres_bow_kills_at_four_consumes_and_reloads() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-bow", || scenario(3350, 4, true, 100, false, false))
+    super::kill_reward_e2e::scenario_thread::run("ranged-bow", || {
+        scenario(3350, 4, true, 100, false, false)
+    })
 }
 #[test]
 fn ranged_attack_postgres_wand_pays_mana_and_deals_death() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-wand", || scenario(25760, 3, false, 100, false, false))
+    super::kill_reward_e2e::scenario_thread::run("ranged-wand", || {
+        scenario(25760, 3, false, 100, false, false)
+    })
 }
 #[test]
 fn ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free() -> TestResult {
@@ -29,17 +39,71 @@ fn ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free() -> T
 }
 #[test]
 fn ranged_attack_postgres_throwing_breaks_in_the_hand_by_source_chance() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-throwing", || scenario(3287, 3, false, 100, false, false))
+    super::kill_reward_e2e::scenario_thread::run("ranged-throwing", || {
+        scenario(3287, 3, false, 100, false, false)
+    })
 }
 #[test]
 fn ranged_attack_postgres_projectile_wall_refuses_without_cost() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-wall", || scenario(3350, 6, true, 100, true, false))
+    super::kill_reward_e2e::scenario_thread::run("ranged-wall", || {
+        scenario(3350, 6, true, 100, true, false)
+    })
 }
 #[test]
 fn ranged_attack_postgres_reconcile_spends_once_without_late_damage_or_training() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("ranged-reconcile", || scenario(3350, 4, true, 100, false, true))
+    super::kill_reward_e2e::scenario_thread::run("ranged-reconcile", || {
+        scenario(3350, 4, true, 100, false, true)
+    })
 }
-fn scenario(weapon: u32, distance: i32, ammo: bool, mana: u32, blocked: bool, reconcile: bool) -> TestResult {
+#[test]
+fn quick_loot_quiver_extra_postgres_selects_compatible_and_consumes_exact_stack() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("quick-quiver-extra", || {
+        scenario_with_quiver(3350, 4, true, 100, false, false, Some(10))
+    })
+}
+#[test]
+fn quick_loot_quiver_shield_postgres_selects_compatible_and_consumes_exact_stack() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("quick-quiver-shield", || {
+        scenario_with_quiver(3350, 4, true, 100, false, false, Some(6))
+    })
+}
+#[test]
+fn quick_loot_quiver_empty_postgres_refuses_without_cost() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("quick-quiver-empty", || {
+        scenario_with_quiver(3350, 4, false, 100, false, false, Some(10))
+    })
+}
+#[test]
+fn quick_loot_quiver_replay_postgres_does_not_spend_twice() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("quick-quiver-replay", || {
+        scenario_with_quiver(3350, 4, true, 100, false, true, Some(10))
+    })
+}
+fn scenario(
+    weapon: u32,
+    distance: i32,
+    ammo: bool,
+    mana: u32,
+    blocked: bool,
+    reconcile: bool,
+) -> TestResult {
+    scenario_with_quiver(weapon, distance, ammo, mana, blocked, reconcile, None)
+}
+#[allow(clippy::too_many_arguments)]
+fn scenario_with_quiver(
+    weapon: u32,
+    distance: i32,
+    ammo: bool,
+    mana: u32,
+    blocked: bool,
+    reconcile: bool,
+    quiver_slot: Option<i16>,
+) -> TestResult {
+    let initial_ammo = if quiver_slot.is_some() && reconcile {
+        1
+    } else {
+        100
+    };
     // restore_saved_vitals clamps to the owned maximum; all payment assertions start there.
     let mana = mana.min(crate::gameplay_transport::actor_spell::tests::FACTS.max_mana);
     run(async |admin| {
@@ -77,18 +141,92 @@ fn scenario(weapon: u32, distance: i32, ammo: bool, mana: u32, blocked: bool, re
             pin.identity().client_artifact_digest(),
             pin.frame_binding().digest(),
             room.map_revision_digest(),
-            if blocked { (7, 13, -7) } else { (OPEN_RAT.x + distance, OPEN_RAT.y, OPEN_RAT.floor) },
+            if blocked {
+                (7, 13, -7)
+            } else {
+                (OPEN_RAT.x + distance, OPEN_RAT.y, OPEN_RAT.floor)
+            },
         );
 
         // Test-only custody provisioning. Every tested count change uses the real owner.
         {
             let mut tx = harness.pool.begin().await?;
-            sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
-            for (seed, item, count, slot) in [(70, weapon, if weapon == 3287 { 100 } else { 1 }, 6), (71, 3447, 100, 10)] {
-                if slot == 10 && !ammo { continue; }
-                sqlx::raw_sql(sqlx::AssertSqlSafe(crate::durability::item_fee_burn::test_support::item(seed, &format!("oteryn:item.tibia.i{item}"), "definition-r1", count))).execute(&mut *tx).await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            if let Some(slot) = quiver_slot {
+                sqlx::raw_sql(sqlx::AssertSqlSafe(
+                    crate::durability::item_fee_burn::test_support::item(
+                        72,
+                        "oteryn:item.tibia.i35562",
+                        "definition-r1",
+                        1,
+                    ),
+                ))
+                .execute(&mut *tx)
+                .await?;
+                sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)").bind(id(41).as_slice()).bind(id(42).as_slice()).bind(slot).bind(id(72).as_slice()).execute(&mut *tx).await?;
+                if ammo {
+                    sqlx::raw_sql(sqlx::AssertSqlSafe(
+                        crate::durability::item_fee_burn::test_support::item(
+                            73,
+                            "oteryn:item.tibia.i3446",
+                            "definition-r1",
+                            100,
+                        ),
+                    ))
+                    .execute(&mut *tx)
+                    .await?;
+                    sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,encode($1,'hex')::uuid)").bind(id(73).as_slice()).bind(id(42).as_slice()).bind(id(72).as_slice()).execute(&mut *tx).await?;
+                }
+            }
+            for (seed, item, count, slot) in [
+                (
+                    70,
+                    weapon,
+                    if weapon == 3287 { 100 } else { 1 },
+                    if quiver_slot.is_some() { 5 } else { 6 },
+                ),
+                (71, 3447, initial_ammo, 10),
+            ] {
+                if slot == 10 && !ammo {
+                    continue;
+                }
+                sqlx::raw_sql(sqlx::AssertSqlSafe(
+                    crate::durability::item_fee_burn::test_support::item(
+                        seed,
+                        &format!("oteryn:item.tibia.i{item}"),
+                        "definition-r1",
+                        count,
+                    ),
+                ))
+                .execute(&mut *tx)
+                .await?;
+                if quiver_slot.is_some() && slot == 10 {
+                    sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($1,'hex')::uuid)").bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(72).as_slice()).execute(&mut *tx).await?;
+                    continue;
+                }
                 sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)")
                     .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(slot as i16).bind(id(seed).as_slice()).execute(&mut *tx).await?;
+            }
+            if quiver_slot == Some(10) && ammo {
+                for (seed, key, count) in [
+                    (75, "oteryn:item.tibia.i35562", 1),
+                    (76, "oteryn:item.tibia.i3447", 100),
+                ] {
+                    sqlx::raw_sql(sqlx::AssertSqlSafe(
+                        crate::durability::item_fee_burn::test_support::item(
+                            seed,
+                            key,
+                            "definition-r1",
+                            count,
+                        ),
+                    ))
+                    .execute(&mut *tx)
+                    .await?;
+                }
+                sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,6,encode($3,'hex')::uuid,encode($3,'hex')::uuid)").bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(75).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($1,'hex')::uuid)").bind(id(76).as_slice()).bind(id(42).as_slice()).bind(id(75).as_slice()).execute(&mut *tx).await?;
             }
             tx.commit().await?;
         }
@@ -124,11 +262,29 @@ fn scenario(weapon: u32, distance: i32, ammo: bool, mana: u32, blocked: bool, re
         if matches!(weapon, 25760 | 3287) {
             // An elemental wand must pass physical immunity. This distinguishes its element
             // from a fist/physical hit through the real dispatch.
-            let mut rat = native.policies().policies().iter().find(|p| p.definition_key == "oteryn:creature.rat").ok_or("rat policy")?.as_ref().clone();
+            let mut rat = native
+                .policies()
+                .policies()
+                .iter()
+                .find(|p| p.definition_key == "oteryn:creature.rat")
+                .ok_or("rat policy")?
+                .as_ref()
+                .clone();
             rat.damage_immunities.push("physical".into());
-            let policies = crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(native.source_digest(), vec![rat]).map_err(debug)?;
-            runtime.install_companion_policies(policies).map_err(debug)?;
-        } else { native.install_companion_policies(&mut runtime).map_err(debug)?; }
+            let policies =
+                crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
+                    native.source_digest(),
+                    vec![rat],
+                )
+                .map_err(debug)?;
+            runtime
+                .install_companion_policies(policies)
+                .map_err(debug)?;
+        } else {
+            native
+                .install_companion_policies(&mut runtime)
+                .map_err(debug)?;
+        }
         let reservation = runtime.reserve_fresh_session(session).map_err(debug)?;
         let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
         // A2: the admitted session's Character lease bound to its slot, as first entry does; the
@@ -264,29 +420,182 @@ fn scenario(weapon: u32, distance: i32, ammo: bool, mana: u32, blocked: bool, re
             let mut states = owner.states.spell_states.lock().await;
             let state = states.get_mut(&runtime, actor, session).ok_or("player")?;
             state.restore_saved_vitals(1000, mana);
-            let build = crate::durability::character_build::DurableBuildState::new("paladin", (0, 0), [(80, 0); 7]).map_err(debug)?;
-            state.enable_owned_training(&build, native.training_formula().ok_or("training formula")?).map_err(debug)?;
+            let build = crate::durability::character_build::DurableBuildState::new(
+                "paladin",
+                (0, 0),
+                [(80, 0); 7],
+            )
+            .map_err(debug)?;
+            state
+                .enable_owned_training(&build, native.training_formula().ok_or("training formula")?)
+                .map_err(debug)?;
         }
-        {
+        if quiver_slot.is_some() {
+            use crate::gameplay_transport::connection::{
+                AdmittedSession, ControllerBinding, FirstEntryOutcome, FreshAdmissionAuthority,
+                SessionContinuity,
+            };
+            let mut admitted = AdmittedSession {
+                game_session_id: session,
+                world_id: world,
+                channel_id: channel,
+                runtime_actor: Some(actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: Some(ControllerBinding {
+                    transport: crate::foundation::AuthenticatedTransportRefV1::decode(&[9; 16])
+                        .map_err(debug)?,
+                    account_id: id(40),
+                }),
+                continuity: SessionContinuity::FRESH,
+                item_fence: None,
+            };
+            admitted.continuity.selected_capabilities =
+                crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                    owner.offered_capabilities(),
+                    &[6, 17],
+                )
+                .ok_or("attack capabilities")?;
+            let payload = oteryn_protocol_oteryn::attack::encode_attack_target_intent(Some(&rat))
+                .map_err(debug)?;
+            let frame = oteryn_protocol_oteryn::encode_client_command(
+                1,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id: 1,
+                    command_type: 11,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)?;
+            let mut input = u32::try_from(frame.len())?.to_be_bytes().to_vec();
+            input.extend(frame);
+            let (end, output) =
+                super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
+            let mut cursor = output.as_slice();
+            let mut accepted = false;
+            while !cursor.is_empty() {
+                let length = u32::from_be_bytes(cursor.get(..4).ok_or("attack length")?.try_into()?)
+                    as usize;
+                let envelope = oteryn_protocol_oteryn::decode_wire_envelope(
+                    cursor.get(4..4 + length).ok_or("attack frame")?,
+                )
+                .map_err(debug)?;
+                cursor = &cursor[4 + length..];
+                if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
+                    let reply = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
+                        .map_err(debug)?;
+                    assert_eq!(
+                        reply.status,
+                        crate::foundation::CommandStatus::Accepted,
+                        "{end}"
+                    );
+                    assert_eq!(
+                        oteryn_protocol_oteryn::attack::decode_attack_intent_result(reply.payload)
+                            .map_err(debug)?,
+                        AttackIntentDisposition::Ok
+                    );
+                    accepted = true;
+                }
+            }
+            assert!(accepted, "attack travelled through serve_admitted: {end}");
+        } else {
             let runtime = owner.runtime.lock().await;
-            assert_eq!(owner.states.attack.lock().await.set_target(&runtime, Some(&room), actor, session, owner.owner_now(), Some(rat), 1), AttackIntentDisposition::Ok);
+            assert_eq!(
+                owner.states.attack.lock().await.set_target(
+                    &runtime,
+                    Some(&room),
+                    actor,
+                    session,
+                    owner.owner_now(),
+                    Some(rat),
+                    1
+                ),
+                AttackIntentDisposition::Ok
+            );
+        }
+        if quiver_slot.is_some() {
+            use crate::durability::item_loop_move::ItemLoopContent;
+            let weights = crate::gameplay_transport::item_ref_admission::NativeItemWeights(native);
+            let equipment =
+                crate::gameplay_transport::equipment_move::read_current_equipment(&owner, session)
+                    .await
+                    .ok_or("quiver equipment read")?;
+            assert!(
+                equipment
+                    .items
+                    .iter()
+                    .any(|i| weights.is_quiver(&i.definition)),
+                "active quiver policy"
+            );
+            let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                harness.root.clone(),
+            )
+            .current_session_at(session)
+            .await?
+            .0;
+            let current =
+                crate::gameplay_transport::item_fence_of(current).ok_or("quiver fence")?;
+            let entries = harness
+                .root
+                .read_quiver_ammunition(&authority, &harness.node, &current, equipment, &weights)
+                .await
+                .map_err(|e| format!("quiver entries {e:?}"))?;
+            assert_eq!(
+                entries.len(),
+                if ammo {
+                    if quiver_slot == Some(10) { 3 } else { 2 }
+                } else {
+                    0
+                },
+                "direct quiver entries"
+            );
         }
         if reconcile {
             owner.refresh_attack_weapon(actor, session).await;
-            owner.park_committed_ranged_shot_for_test(actor, session).await?;
+            owner
+                .park_committed_ranged_shot_for_test(actor, session)
+                .await?;
             owner.drain_auto_attacks().await;
             let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
-            assert_eq!(quantity, 99);
-            let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE swing_ordinal IS NOT NULL").fetch_one(&harness.pool).await?;
+            assert_eq!(quantity, i64::from(initial_ammo - 1));
+            if quiver_slot == Some(10) {
+                let shield:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(76).as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(shield, 100, "Extra precedes Shield on a reconciled shot");
+            }
+
+            let count: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_spell_item_receipts WHERE swing_ordinal IS NOT NULL",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
             assert_eq!(count, 1, "reconciliation never burns a second arrow");
             let runtime = owner.runtime.lock().await;
             let creature = runtime.visible_entities().creatures[0].actor;
             let snapshot = runtime.companion_snapshot(creature).map_err(debug)?;
-            assert_eq!(snapshot.health, snapshot.maximum_health, "unknown acknowledgement delivers no late hit");
+            assert_eq!(
+                snapshot.health, snapshot.maximum_health,
+                "unknown acknowledgement delivers no late hit"
+            );
             let states = owner.states.spell_states.lock().await;
-            let checkpoint = states.get(&runtime, actor, session).ok_or("caster")?.prepare_training_checkpoint(owner.owner_now().get(), native.training_formula().ok_or("formula")?, crate::durability::character_build::BuildOccurrence::from_bytes(id(93)).map_err(debug)?, true).map_err(debug)?;
-            assert!(checkpoint.is_none(), "reconciliation credits no skill tries");
-            drop(states); drop(runtime); drop(owner); drop(authority); drop(seal);
+            let checkpoint = states
+                .get(&runtime, actor, session)
+                .ok_or("caster")?
+                .prepare_training_checkpoint(
+                    owner.owner_now().get(),
+                    native.training_formula().ok_or("formula")?,
+                    crate::durability::character_build::BuildOccurrence::from_bytes(id(93))
+                        .map_err(debug)?,
+                    true,
+                )
+                .map_err(debug)?;
+            assert!(
+                checkpoint.is_none(),
+                "reconciliation credits no skill tries"
+            );
+            drop(states);
+            drop(runtime);
+            drop(owner);
+            drop(authority);
+            drop(seal);
             return harness.cleanup().await;
         }
         let mut shots = 0;
@@ -294,10 +603,27 @@ fn scenario(weapon: u32, distance: i32, ammo: bool, mana: u32, blocked: bool, re
         for _ in 0..if weapon == 3287 { 100 } else { 30 } {
             owner.refresh_attack_weapon(actor, session).await;
             owner.drain_auto_attacks().await;
-            killed = owner.states.attack.lock().await.kills().has_session(session);
-            let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE swing_ordinal IS NOT NULL").fetch_one(&harness.pool).await?;
+            killed = owner
+                .states
+                .attack
+                .lock()
+                .await
+                .kills()
+                .has_session(session);
+            let count: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_spell_item_receipts WHERE swing_ordinal IS NOT NULL",
+            )
+            .fetch_one(&harness.pool)
+            .await?;
             shots = count;
-            if killed || blocked || distance > 6 || (weapon == 3350 && !ammo) || (weapon == 25760 && mana == 0) { break; }
+            if killed
+                || blocked
+                || distance > 6
+                || (weapon == 3350 && !ammo)
+                || (weapon == 25760 && mana == 0)
+            {
+                break;
+            }
             owner.clock_origin = owner.clock_origin.checked_sub(PASS).ok_or("clock")?;
         }
         if weapon == 3350 && distance <= 6 && ammo && !blocked {
@@ -305,29 +631,75 @@ fn scenario(weapon: u32, distance: i32, ammo: bool, mana: u32, blocked: bool, re
             assert!(shots > 0);
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
-            let checkpoint = states.get(&runtime, actor, session).ok_or("bow caster")?
-                .prepare_training_checkpoint(owner.owner_now().get(), native.training_formula().ok_or("formula")?, crate::durability::character_build::BuildOccurrence::from_bytes(id(91)).map_err(debug)?, true).map_err(debug)?.ok_or("distance training")?;
-            assert!(checkpoint.request.after.skills()[4].1 > 0, "bow trains distance");
+            let checkpoint = states
+                .get(&runtime, actor, session)
+                .ok_or("bow caster")?
+                .prepare_training_checkpoint(
+                    owner.owner_now().get(),
+                    native.training_formula().ok_or("formula")?,
+                    crate::durability::character_build::BuildOccurrence::from_bytes(id(91))
+                        .map_err(debug)?,
+                    true,
+                )
+                .map_err(debug)?
+                .ok_or("distance training")?;
+            assert!(
+                checkpoint.request.after.skills()[4].1 > 0,
+                "bow trains distance"
+            );
             drop(states);
             drop(runtime);
             let remaining: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
-            assert_eq!(remaining, 100-shots, "durable reload sees exactly one arrow per shot");
+            assert_eq!(
+                remaining,
+                100 - shots,
+                "durable reload sees exactly one arrow per shot"
+            );
+            if quiver_slot == Some(10) {
+                let shield:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(76).as_slice()).fetch_one(&harness.pool).await?;
+                assert_eq!(shield, 100, "Extra precedes Shield");
+            }
         } else if weapon == 3287 {
             assert!(!killed, "physical immunity blocks the throwing damage");
             let remaining: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(70).as_slice()).fetch_one(&harness.pool).await?;
-            assert!(shots > 0 && shots < 100, "source break chance breaks some, retains others");
-            assert_eq!(remaining, 100-shots, "only broken throwing stars leave the hand");
+            assert!(
+                shots > 0 && shots < 100,
+                "source break chance breaks some, retains others"
+            );
+            assert_eq!(
+                remaining,
+                100 - shots,
+                "only broken throwing stars leave the hand"
+            );
         } else if weapon == 25760 && mana > 0 && distance <= 3 {
             assert!(killed, "wand damage reaches the monster");
             let runtime = owner.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
             let caster = states.get(&runtime, actor, session).ok_or("wand caster")?;
             assert!(caster.vitals().mana < mana);
-            let checkpoint = caster.prepare_training_checkpoint(owner.owner_now().get(), native.training_formula().ok_or("formula")?, crate::durability::character_build::BuildOccurrence::from_bytes(id(92)).map_err(debug)?, true).map_err(debug)?.ok_or("mana training")?;
+            let checkpoint = caster
+                .prepare_training_checkpoint(
+                    owner.owner_now().get(),
+                    native.training_formula().ok_or("formula")?,
+                    crate::durability::character_build::BuildOccurrence::from_bytes(id(92))
+                        .map_err(debug)?,
+                    true,
+                )
+                .map_err(debug)?
+                .ok_or("mana training")?;
             // Crossing a magic level consumes its required mana; compare both level and remainder.
-            let expected = oteryn_gameplay_progression::mana_training::advance(native.training_formula().ok_or("formula")?, "paladin", 0,
-                checkpoint.request.before.magic(), u64::from(mana-caster.vitals().mana));
-            assert_eq!(checkpoint.request.after.magic(), expected, "mana spent trains magic");
+            let expected = oteryn_gameplay_progression::mana_training::advance(
+                native.training_formula().ok_or("formula")?,
+                "paladin",
+                0,
+                checkpoint.request.before.magic(),
+                u64::from(mana - caster.vitals().mana),
+            );
+            assert_eq!(
+                checkpoint.request.after.magic(),
+                expected,
+                "mana spent trains magic"
+            );
         } else {
             assert!(!killed);
             assert_eq!(shots, 0, "a refused shot consumes nothing");
