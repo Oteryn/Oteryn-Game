@@ -10,6 +10,7 @@ pub(super) fn world(
         TerrainKind,
     };
     let manifest = Manifest {
+        subareas: Default::default(),
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,
         projection_class: "server".into(),

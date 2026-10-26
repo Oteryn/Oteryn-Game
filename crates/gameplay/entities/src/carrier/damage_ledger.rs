@@ -46,6 +46,8 @@ pub struct DamageReceipts {
     /// The owner clock (ms) of the turn that committed the lethal receipt, when that turn
     /// supplied one. Set once by the lethal commit; a replay never changes it.
     lethal_at_ms: Option<u64>,
+    /// EQMOD2: source-owned streams have their own clock, never a player command number.
+    pub(super) reflection_marks: std::collections::BTreeMap<[u8; 32], u64>,
 }
 
 impl DamageReceipts {
@@ -83,9 +85,16 @@ impl DamageReceipts {
     /// its attacker is currently tracked with a high-water mark, and either its origin lease
     /// generation was superseded (fenced, and refused by [`DamageContributors::admission`], so
     /// it can never be re-applied) or the current session's mark covers its
-    /// `(sequence, sub_ordinal)`. An unsequenced receipt is never evictable.
+    /// `(sequence, sub_ordinal)`. EQMOD2 reflections instead use the source stream's
+    /// retained clock. Other unsequenced receipts are never evictable.
     fn oldest_evictable(&self, contributors: &DamageContributors) -> Option<usize> {
         self.entries.iter().position(|record| {
+            if let Some((key, sequence)) = record.reflection {
+                return self
+                    .reflection_marks
+                    .get(&key)
+                    .is_some_and(|mark| *mark >= sequence);
+            }
             let Some((character, lease, session, sequence, sub_ordinal)) = record.origin else {
                 return false;
             };
@@ -641,6 +650,7 @@ impl ChannelActorCarrier {
             result,
             ordinal,
             origin: attacker.map(AttackerCommand::origin),
+            reflection: None,
         };
         if fail_before_write {
             return Err(CarrierError::InjectedCommitFailure);

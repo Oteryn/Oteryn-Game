@@ -174,6 +174,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.server_save.current()
     }
 
+    fn server_motd(&self) -> &str {
+        self.server_motd
+    }
+
     fn take_tutorial_notice(
         &self,
         session: GameSessionId,
@@ -477,6 +481,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         item: item_view::ItemKey,
     ) -> UseOutcome {
         self.use_backpack_item(actor, command, item).await
+    }
+
+    async fn tame_mount(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        visible: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.tame_mount_impl(actor, command, intent, source, visible)
+            .await
     }
 
     async fn use_pick(

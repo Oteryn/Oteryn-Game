@@ -102,6 +102,7 @@ pub enum SourceFloorChange {
 /// Explicit source-loader facts. Missing means unknown, not height0/no stairs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QualifiedSourceStepTile {
+    pub no_logout: bool,
     pub height_count: u16,
     pub floor_changes: Vec<SourceFloorChange>,
     no_pvp_zone: bool,
@@ -122,6 +123,7 @@ impl QualifiedSpellTile {
         floor_changes: Vec<SourceFloorChange>,
         no_pvp_zone: bool,
         pvp_zone: bool,
+        no_logout: bool,
     ) -> Self {
         Self {
             ground_present: ground.is_some(),
@@ -130,6 +132,7 @@ impl QualifiedSpellTile {
             top_source_ids,
             flags,
             source_step: Some(QualifiedSourceStepTile {
+                no_logout,
                 height_count,
                 floor_changes,
                 no_pvp_zone,

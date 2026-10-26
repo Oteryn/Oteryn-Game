@@ -87,6 +87,9 @@ where
             },
         );
     }
+    if let Some(message) = zones_nologout_transport::snapshot(authority, admitted) {
+        payloads.push(message.map_err(|()| ServeEnd::Disconnected)?);
+    }
     let mut domains = payloads
         .iter()
         .map(|domain| DomainSnapshot {
@@ -109,6 +112,7 @@ where
             return Err(ServeEnd::Disconnected);
         }
     }
+    zones_nologout_transport::delivered(admitted);
     if let Some(trade) = payloads
         .iter()
         .find(|p| p.domain_id == oteryn_protocol_oteryn::player_trade::STATE_DOMAIN_PLAYER_TRADE)

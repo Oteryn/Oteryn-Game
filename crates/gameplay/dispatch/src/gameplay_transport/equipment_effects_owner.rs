@@ -83,8 +83,12 @@ fn in_own_slot(
     semantic_slot: ReferenceEquipmentSlot,
 ) -> bool {
     matches!(&semantics.equipment, ReferenceItemField::Known(group)
-        if matches!(&group.patterns, ReferenceItemField::Known(patterns)
-            if patterns.iter().any(|pattern| pattern.primary_slot == ReferenceItemField::Known(semantic_slot))))
+    if matches!(&group.patterns, ReferenceItemField::Known(patterns)
+        if patterns.iter().any(|pattern| match pattern.primary_slot {
+            ReferenceItemField::Known(primary) => primary == semantic_slot
+                || matches!((primary, semantic_slot), (ReferenceEquipmentSlot::Weapon, ReferenceEquipmentSlot::Shield) | (ReferenceEquipmentSlot::Shield, ReferenceEquipmentSlot::Weapon)),
+            _ => false,
+        })))
 }
 
 /// ENERGY-RING-1: only a mana-shield marker on the active form of a worn ring counts.
@@ -189,38 +193,73 @@ pub(in crate::gameplay_transport) fn equipped_offence(
     if equipment.content_digest != content.source_digest() {
         return None;
     }
-    let sums = equipment
-        .items
-        .iter()
-        .try_fold([0_i64; 4], |mut sums, item| {
-            if item.definition.family != "Item" {
-                return None;
-            }
-            let (slot, semantic_slot) = canonical_slot(item.slot)?;
-            let policy = content.item_policy(
-                &item.definition.production_key,
-                &item.definition.revision_ref,
-            )?;
-            let semantics = &policy.record().semantics;
-            let contributes = !item_ability_profile(semantics).ok()?.timed
-                && slot != EquipmentSlot::Ammo
-                && in_own_slot(semantics, semantic_slot);
-            if contributes {
-                let offence = item_offence_modifiers(semantics);
-                for (sum, value) in sums.iter_mut().zip([
-                    offence.critical_chance,
-                    offence.critical_damage,
-                    offence.life_leech,
-                    offence.mana_leech,
-                ]) {
-                    *sum = sum.saturating_add(value);
-                }
-            }
-            Some(sums)
-        })?;
-    Some(EquippedOffence::from_sums(
-        sums[0], sums[1], sums[2], sums[3],
-    ))
+    let mut tiers = (0, 0);
+    let mut sums = [0_i64; 7];
+    let mut shots = std::collections::BTreeMap::<u16, i64>::new();
+    for item in &equipment.items {
+        if item.definition.family != "Item" {
+            return None;
+        }
+        let (slot, semantic_slot) = canonical_slot(item.slot)?;
+        let policy = content.item_policy(
+            &item.definition.production_key,
+            &item.definition.revision_ref,
+        )?;
+        let semantics = &policy.record().semantics;
+        if item.tier > 0 {
+            let facts = oteryn_gameplay_items::item_ref_admission::generation_item_facts(
+                content,
+                &item.definition,
+            )
+            .ok()?;
+            crate::domain::forge::ForgeItemShape::from_content(
+                &facts,
+                policy.record().authoring.forge,
+                crate::domain::forge::ItemTier::new(item.tier)?,
+            )
+            .ok()?;
+        }
+
+        if item.slot == 4 && in_own_slot(semantics, semantic_slot) {
+            tiers.1 = item.tier;
+        }
+        if item.slot == 6
+            && matches!(&semantics.weapon, ReferenceItemField::Known(weapon)
+            if matches!(weapon.weapon_type, ReferenceItemField::Known(kind) if !matches!(kind, crate::content::ReferenceWeaponType::Shield)))
+        {
+            tiers.0 = item.tier;
+        }
+        if item_ability_profile(semantics).ok()?.timed
+            || slot == EquipmentSlot::Ammo
+            || !in_own_slot(semantics, semantic_slot)
+        {
+            continue;
+        }
+        let offence = item_offence_modifiers(semantics);
+        for (sum, value) in sums.iter_mut().zip([
+            offence.critical_chance,
+            offence.critical_damage,
+            offence.life_leech,
+            offence.mana_leech,
+            offence.cleave,
+            offence.reflect_percent,
+            offence.reflect_flat,
+        ]) {
+            *sum = sum.saturating_add(value);
+        }
+        for (range, damage) in offence.perfect_shot {
+            let sum = shots.entry(range).or_default();
+            *sum = sum.saturating_add(damage);
+        }
+    }
+    let mut offence = EquippedOffence::from_sums(sums[0], sums[1], sums[2], sums[3]);
+    offence.cleave = u64::try_from(sums[4].max(0)).ok()?;
+    offence.reflect_percent = u64::try_from(sums[5].max(0)).ok()?;
+    offence.reflect_flat = u32::try_from(sums[6].clamp(0, i64::from(u32::MAX))).ok()?;
+    offence.perfect_shot = shots;
+    offence.weapon_tier = tiers.0;
+    offence.boots_tier = tiers.1;
+    Some(offence)
 }
 
 /// The 413 equippable production profiles have known zero raw speed. The two potion profiles

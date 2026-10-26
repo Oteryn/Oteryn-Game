@@ -37,6 +37,7 @@ pub(super) enum Case {
     Stale,
     OneHit,
     PzContention,
+    Eqmod2,
 }
 #[test]
 fn party_xp_real_dispatch_equal_split() -> TestResult {
@@ -149,13 +150,16 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
-    let (controller, pin) =
+    let (controller, pin) = if matches!(case, Case::Eqmod2) {
+        super::equipment_mods::activate(world)?
+    } else {
         crate::content::native_gameplay::test_support::activated_with_loot_tables(
             world,
             Some(include_bytes!(
                 "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
             )),
-        );
+        )
+    };
     let active = controller.active().expect("active");
     let native = active.native_gameplay().expect("native");
     let room = pin.qualified_room().clone();
@@ -201,7 +205,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         ("oteryn:creature.rat", 11),
         ("oteryn:creature.cave_rat", 12),
     ] {
-        if y == 12 && !matches!(case, Case::Concurrent | Case::OneHit) {
+        if y == 12 && !matches!(case, Case::Concurrent | Case::OneHit | Case::Eqmod2) {
             continue;
         }
         let policy = runtime.companion_policy(key).map_err(debug)?;
@@ -420,6 +424,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     if matches!(case, Case::Stamina) {
         return super::hunting_stamina::qualify(&mut owner, h, &players).await;
+    }
+    if matches!(case, Case::Eqmod2) {
+        return super::equipment_mods::qualify(&mut owner, h, &players).await;
     }
     if matches!(case, Case::Offence) {
         return super::equipped_offence::qualify(&mut owner, h, &players).await;
@@ -656,7 +663,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 );
                 break;
             }
-            assert!(pass + 1 < REAL_SWING_PASSES, "ally earned committed activity");
+            assert!(
+                pass + 1 < REAL_SWING_PASSES,
+                "ally earned committed activity"
+            );
             drop(runtime);
             owner.clock_origin = owner
                 .clock_origin

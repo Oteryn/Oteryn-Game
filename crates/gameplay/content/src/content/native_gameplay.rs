@@ -30,6 +30,8 @@ pub mod cosmetics_loader;
 mod cosmetics_view;
 pub use cosmetics_view::NativeCosmeticsView;
 
+pub mod mount_taming;
+
 mod native_cosmetics;
 
 pub const MAGIC: &[u8; 8] = b"OTNGP01\0";

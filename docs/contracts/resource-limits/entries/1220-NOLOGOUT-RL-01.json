@@ -1,0 +1,22 @@
+{
+  "id": "NOLOGOUT-RL-01",
+  "owner_contract": "ZONES_NOLOGOUT_V1.md",
+  "resource": "configured server MOTD",
+  "unit": "UTF-8 bytes",
+  "hard_maximum": 255,
+  "configurable_range": {
+    "minimum": 0,
+    "maximum": 255
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Rejected during node configuration validation and before listener startup. Empty disables MOTD; one bounded message is included after login, with no reconnect replay.",
+  "client_visible": true,
+  "boundary_tests": [
+    "nologout_motd_config_bounds",
+    "nologout_motd_once_and_capability_gate"
+  ],
+  "consumers": [
+    "apps/game-server/src/node/config.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/zones_nologout_transport.rs"
+  ]
+}

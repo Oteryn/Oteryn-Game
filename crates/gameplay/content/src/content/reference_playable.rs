@@ -365,7 +365,7 @@ item_enum!(ReferenceSkillModifierKind {
     ManaTicks = 25, PerfectShotDamage = 26, PerfectShotRange = 27,
     ReflectDamage = 28, SkillAxe = 29, SkillClub = 30, SkillDistance = 31,
     SkillFist = 32, SkillShield = 33, SkillSword = 34, Speed = 35,
-    SuppressDrown = 36, SuppressDrunk = 37,
+    SuppressDrown = 36, SuppressDrunk = 37, ReflectPercentAll = 38,
 });
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -2229,6 +2229,7 @@ fn validate_modifier_parameter(
             matches!(parameter, Parameter::Boolean(_))
         }
         Kind::CleavePercent
+        | Kind::ReflectPercentAll
         | Kind::CriticalHitChance
         | Kind::CriticalHitDamage
         | Kind::LifeLeechAmount
