@@ -176,7 +176,7 @@ fn bounty_configuration_rerolls_and_a_cap_do_not_block_completion() {
     apply(
         &catalogue,
         &mut stored,
-        &bounty_difficulty_transition(4),
+        &bounty_difficulty_transition(1),
         NOW,
     )
     .expect("difficulty");
@@ -199,9 +199,9 @@ fn bounty_configuration_rerolls_and_a_cap_do_not_block_completion() {
         ),
         Err(QuestRefusal::StageMismatch)
     );
-    let (number, offer) = offers(BountyDifficulty::Master)
+    let (number, offer) = offers(BountyDifficulty::Beginner)
         .next()
-        .expect("master catalogue");
+        .expect("beginner catalogue");
     apply(
         &catalogue,
         &mut stored,

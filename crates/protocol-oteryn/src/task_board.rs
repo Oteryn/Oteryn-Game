@@ -63,8 +63,9 @@ pub fn encode_task_board_request(r: &TaskBoardRequest) -> Result<Vec<u8>, Error>
     let task_ok = match r.action {
         0 | 5 | 6 => r.task == 0,
         1 | 2 => (1..=MAX_TASKS).contains(&usize::from(r.task)),
-        3 | 4 => (1..=12).contains(&usize::from(r.task)),
-        7 => (1..=4).contains(&usize::from(r.task)),
+        3 | 4 => (1..=3).contains(&usize::from(r.task)),
+        // Higher difficulty catalogues remain source-conflicted and are not runtime-admitted.
+        7 => r.task == 1,
         _ => false,
     };
     if !task_ok {
@@ -114,7 +115,7 @@ pub fn encode_task_board_reply(r: &TaskBoardReply) -> Result<Vec<u8>, Error> {
     };
     if !kills_ok
         || r.points < 0
-        || r.bounty_selected > 12
+        || r.bounty_selected > 3
         || r.bounty_kills < 0
         || r.bounty_points < 0
         || r.reroll_tokens > 10

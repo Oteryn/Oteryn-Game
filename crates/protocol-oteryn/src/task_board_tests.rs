@@ -32,10 +32,10 @@ fn task_board_request_strict_codec() {
         (1, 5),
         (2, 3),
         (3, 1),
-        (4, 12),
+        (4, 3),
         (5, 0),
         (6, 0),
-        (7, 4),
+        (7, 1),
     ];
     for (action, task) in valid {
         let r = TaskBoardRequest { action, task };
@@ -51,7 +51,7 @@ fn task_board_request_strict_codec() {
         unknown.extend_from_slice(&[24, 1]);
         assert!(decode_task_board_request(&unknown).is_err());
     }
-    for (action, task) in [(0, 1), (1, 0), (2, 6), (3, 13), (5, 1), (7, 5)] {
+    for (action, task) in [(0, 1), (1, 0), (2, 6), (3, 4), (5, 1), (7, 2)] {
         let r = TaskBoardRequest { action, task };
         assert!(encode_task_board_request(&r).is_err(), "{r:?}");
         assert!(decode_task_board_request(&[8, action, 16, task]).is_err());

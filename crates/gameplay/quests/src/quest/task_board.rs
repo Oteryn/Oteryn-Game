@@ -69,7 +69,11 @@ pub struct BountyOffer {
 
 /// The three qualified Beginner offers. The silver and gold slots apply Global's x2/x4 reward
 /// variants; completing any offer also awards one reroll token.
-pub const BOUNTY_OFFERS: [BountyOffer; 12] = [
+// Keep this runtime catalogue deliberately narrower than the reference-data catalogue.  The
+// retained source audit marks the higher-tier creature/XP combinations as conflicting and blocks
+// their native admission (`docs/reference/content-prep/prey-content-1/task-reward-source-check.json`).
+// In particular, do not turn donor defaults into live Global behaviour here.
+pub const BOUNTY_OFFERS: [BountyOffer; 3] = [
     BountyOffer {
         race: "oteryn:creature.rat",
         required: 50,
@@ -93,78 +97,6 @@ pub const BOUNTY_OFFERS: [BountyOffer; 12] = [
         experience: EXPERIENCE * 4,
         variant_multiplier: 4,
         difficulty: BountyDifficulty::Beginner,
-    },
-    BountyOffer {
-        race: "oteryn:creature.troll",
-        required: 100,
-        points: 7,
-        experience: 7_500,
-        variant_multiplier: 1,
-        difficulty: BountyDifficulty::Adept,
-    },
-    BountyOffer {
-        race: "oteryn:creature.cyclops",
-        required: 150,
-        points: 14,
-        experience: 15_000,
-        variant_multiplier: 2,
-        difficulty: BountyDifficulty::Adept,
-    },
-    BountyOffer {
-        race: "oteryn:creature.minotaur",
-        required: 200,
-        points: 28,
-        experience: 30_000,
-        variant_multiplier: 4,
-        difficulty: BountyDifficulty::Adept,
-    },
-    BountyOffer {
-        race: "oteryn:creature.dragon",
-        required: 200,
-        points: 16,
-        experience: 40_000,
-        variant_multiplier: 1,
-        difficulty: BountyDifficulty::Expert,
-    },
-    BountyOffer {
-        race: "oteryn:creature.hero",
-        required: 300,
-        points: 32,
-        experience: 80_000,
-        variant_multiplier: 2,
-        difficulty: BountyDifficulty::Expert,
-    },
-    BountyOffer {
-        race: "oteryn:creature.hydra",
-        required: 400,
-        points: 64,
-        experience: 160_000,
-        variant_multiplier: 4,
-        difficulty: BountyDifficulty::Expert,
-    },
-    BountyOffer {
-        race: "oteryn:creature.demon",
-        required: 300,
-        points: 27,
-        experience: 150_000,
-        variant_multiplier: 1,
-        difficulty: BountyDifficulty::Master,
-    },
-    BountyOffer {
-        race: "oteryn:creature.grim_reaper",
-        required: 450,
-        points: 54,
-        experience: 300_000,
-        variant_multiplier: 2,
-        difficulty: BountyDifficulty::Master,
-    },
-    BountyOffer {
-        race: "oteryn:creature.destroyer",
-        required: 600,
-        points: 108,
-        experience: 600_000,
-        variant_multiplier: 4,
-        difficulty: BountyDifficulty::Master,
     },
 ];
 
