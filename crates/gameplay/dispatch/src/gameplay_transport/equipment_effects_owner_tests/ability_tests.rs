@@ -36,6 +36,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // reward_bags.lua/items.xml/appearances.dat, with reward ids checked against Crystal ff7ede59.
     // 43884/43887 have speed_bonus=10; the other 25 profiles have speed_bonus=0.
     ("REWARD-BAG-1", 27),
+    // Decision 25 text profiles: 15 one-way sources, their fixed targets and
+    // readable carriers. These add no equipment or speed qualification.
+    ("WRITE-CONTENT-1", 92),
 ];
 
 #[test]
@@ -64,10 +67,27 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
                 record.production_definition.production_key
             );
         } else {
-            assert!(!matches!(
-                record.semantics.equipment,
-                ReferenceItemField::Known(_)
-            ));
+            if matches!(
+                record.production_definition.production_key.as_str(),
+                "oteryn:item.tibia.i9215"
+                    | "oteryn:item.tibia.i9216"
+                    | "oteryn:item.tibia.i9217"
+                    | "oteryn:item.tibia.i9221"
+                    | "oteryn:item.tibia.i31268"
+            ) {
+                // WRITE-CONTENT-1 preserves these source equipment facts but
+                // grants no mint/equip admission or speed qualification.
+                assert!(matches!(
+                    record.semantics.equipment,
+                    ReferenceItemField::Known(_)
+                ));
+                assert!(!record.admission.materializable);
+            } else {
+                assert!(!matches!(
+                    record.semantics.equipment,
+                    ReferenceItemField::Known(_)
+                ));
+            }
             unknown_speed.insert(record.production_definition.production_key.clone());
         }
         let equipment = snapshot(&content, &record.production_definition.production_key, 10);
@@ -88,6 +108,18 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             [
                 2012, 2013, 2014, 2015, 2016, 2017, 2021, 2022, 2023, 2024, 2597, 2598, 2602, 2605,
                 6121, 6122, 10322, 12782, 12783,
+            ]
+            .map(|id| format!("oteryn:item.tibia.i{id}")),
+        )
+        .chain(
+            [
+                347, 401, 635, 636, 637, 638, 639, 640, 641, 642, 2813, 2814, 2815, 2817, 2818, 2819,
+                2821, 2824, 2825, 2826, 2827, 2828, 2829, 2830, 2831, 2832, 2833, 2834, 2835,
+                2838, 2839, 2840, 2841, 2842, 2843, 2844, 2845, 2846, 2847, 3212, 3505, 3507,
+                4100, 4842, 4843, 5785, 5799, 5805, 5806, 5807, 5956, 6386, 6538, 7879, 8150,
+                8151, 8155, 8156, 8737, 9206, 9207, 9208, 9209, 9210, 9211, 9212, 9213, 9214,
+                9215, 9216, 9217, 9218, 9219, 9220, 9221, 9222, 9223, 9224, 9538, 9614, 15276,
+                15633, 19072, 19073, 19074, 21445, 27932, 27933, 27934, 28572, 31266, 31268,
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )

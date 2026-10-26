@@ -1162,6 +1162,23 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay unexpected Item candidate proof"));
             }
             exact(&binding.target, ProjectV2Family::Item)?;
+            // WRITE0-RL-01: text belongs to a single item. Unmaterializable map
+            // carriers may retain unknown stack facts; they grant no mint permission.
+            if let super::ReferenceItemField::Known(text) = &record.semantics.readable_writeable {
+                use super::ReferenceItemField as F;
+                if text.writeable == F::Known(true)
+                    && (text.readable != F::Known(true)
+                        || record.admission.stack_class != NativeItemStackClass::NonStackable
+                        || !matches!(text.max_text_length, F::Known(1..=4_000))
+                        || matches!(&record.semantics.stack, F::Known(stack)
+                            if stack.stackable == F::Known(true))
+                        || (record.admission.materializable
+                            && !matches!(&record.semantics.stack, F::Known(stack)
+                                if stack.stackable == F::Known(false))))
+                {
+                    return Err(invalid("native gameplay writable item bounds or stack"));
+                }
+            }
             if record.attributes.rune_consumption.is_some() {
                 use super::{ReferenceItemField as F, ReferenceItemType};
                 if !matches!(&record.semantics.classification,
@@ -1192,6 +1209,30 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                     .any(|w| w[0] >= w[1])
             {
                 return Err(invalid("native gameplay item admission destinations"));
+            }
+        }
+        // WRITE-0 §5.3 / owner decision 25: a write-once transform ends in
+        // an explicitly readable, nonwritable definition of this same pin.
+        // Checking the complete set also rejects missing targets and cycles.
+        for record in &items.records {
+            use super::ReferenceItemField as F;
+            let F::Known(text) = &record.semantics.readable_writeable else {
+                continue;
+            };
+            let F::Known(target) = &text.write_once_target else {
+                continue;
+            };
+            if text.writeable != F::Known(true)
+                || !items.records.iter().any(|candidate| {
+                    candidate.production_definition.production_key == target.key
+                        && candidate.production_definition.revision_ref == target.revision
+                        && matches!(&candidate.semantics.readable_writeable,
+                            F::Known(fixed) if fixed.readable == F::Known(true)
+                                && fixed.writeable == F::Known(false)
+                                && fixed.write_once_target == F::NotApplicable)
+                })
+            {
+                return Err(invalid("native gameplay write-once target is not fixed"));
             }
         }
         Some(items)
@@ -1688,6 +1729,175 @@ mod tests {
         qualify_native_entry_room_with_gameplay,
     };
     use serde_json::Value;
+    #[test]
+    fn writable_profiles_survive_native_artifact_and_preserve_definition_admission() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for (id, maximum) in [
+            (2813, 511),
+            (2815, 511),
+            (2598, 1023),
+            (3505, 1999),
+            (3507, 79),
+        ] {
+            let record = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap()
+                .record();
+            assert_eq!(record.admission.materializable, id == 2815);
+            assert_eq!(
+                record.admission.stack_class,
+                NativeItemStackClass::NonStackable
+            );
+            let F::Known(text) = &record.semantics.readable_writeable else {
+                panic!("qualified document semantics missing");
+            };
+            assert_eq!(text.readable, F::Known(true));
+            assert_eq!(text.writeable, F::Known(true));
+            assert_eq!(text.max_text_length, F::Known(maximum));
+            assert_eq!(text.write_once_target, F::NotApplicable);
+        }
+        // The two source mappings form a cycle; neither is silently chosen.
+        for id in [2816, 2837] {
+            assert!(
+                decoded
+                    .state
+                    .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                    .is_none()
+            );
+        }
+        for (source, target) in [(2817, 2819), (2818, 2834), (2839, 2824)] {
+            let record = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{source}"), "definition-r1")
+                .unwrap()
+                .record();
+            let F::Known(text) = &record.semantics.readable_writeable else {
+                panic!("write-once source missing");
+            };
+            let F::Known(to) = &text.write_once_target else {
+                panic!("write-once transform missing");
+            };
+            assert_eq!(to.key, format!("oteryn:item.tibia.i{target}"));
+            let fixed = decoded
+                .state
+                .item_policy(&to.key, &to.revision)
+                .unwrap()
+                .record();
+            assert!(matches!(&fixed.semantics.readable_writeable,
+                F::Known(text) if text.readable == F::Known(true)
+                    && text.writeable == F::Known(false)
+                    && text.write_once_target == F::NotApplicable));
+        }
+        for id in [27932, 27933, 27934] {
+            let record = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap()
+                .record();
+            assert!(matches!(&record.semantics.readable_writeable,
+                F::Known(text) if text.max_text_length == F::Known(1500)));
+        }
+        let profiles: Value =
+            serde_json::from_slice(&supplied.item_profiles.as_ref().unwrap().bytes).unwrap();
+        for failure in ["writable", "unknown", "missing", "cycle"] {
+            let mut changed = profiles.clone();
+            let rows = changed["records"].as_array_mut().unwrap();
+            if failure == "missing" {
+                rows.retain(|row| row["production_binding"]["external_id"] != "2819");
+            } else {
+                let fixed = rows
+                    .iter_mut()
+                    .find(|row| row["production_binding"]["external_id"] == "2819")
+                    .unwrap();
+                let text = &mut fixed["semantics"]["readable_writeable"]["value"];
+                text["writeable"] = if failure == "unknown" {
+                    serde_json::json!({"state":"UNKNOWN"})
+                } else {
+                    serde_json::json!({"state":"KNOWN","value":true})
+                };
+                if failure == "cycle" {
+                    text["write_once_target"] = serde_json::json!({"state":"KNOWN","value":{
+                        "key":"oteryn:item.tibia.i2817","revision":"definition-r1"
+                    }});
+                }
+            }
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&changed).unwrap()));
+            assert!(
+                compile_native_gameplay(baseline.compiled(), &supplied).is_err(),
+                "{failure}"
+            );
+        }
+        for (field, replacement, accepted) in [
+            (
+                "max_text_length",
+                serde_json::json!({"state":"KNOWN","value":4000}),
+                true,
+            ),
+            (
+                "max_text_length",
+                serde_json::json!({"state":"KNOWN","value":4001}),
+                false,
+            ),
+            (
+                "max_text_length",
+                serde_json::json!({"state":"KNOWN","value":0}),
+                false,
+            ),
+            (
+                "max_text_length",
+                serde_json::json!({"state":"UNKNOWN"}),
+                false,
+            ),
+            (
+                "readable",
+                serde_json::json!({"state":"KNOWN","value":false}),
+                false,
+            ),
+        ] {
+            let mut changed = profiles.clone();
+            let row = changed["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|r| r["production_binding"]["external_id"] == "2815")
+                .unwrap();
+            row["semantics"]["readable_writeable"]["value"][field] = replacement;
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&changed).unwrap()));
+            assert_eq!(
+                compile_native_gameplay(baseline.compiled(), &supplied).is_ok(),
+                accepted
+            );
+        }
+        for field in ["admission", "semantics", "unknown_stack"] {
+            let mut changed = profiles.clone();
+            let row = changed["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|r| r["production_binding"]["external_id"] == "2815")
+                .unwrap();
+            if field == "admission" {
+                row["admission"]["stack_class"] = serde_json::json!("StackCapable");
+            } else if field == "semantics" {
+                row["semantics"]["stack"] = serde_json::json!({"state":"KNOWN","value":{
+                    "stackable":{"state":"KNOWN","value":true},"stack_max":{"state":"KNOWN","value":100}
+                }});
+            } else {
+                row["semantics"]["stack"] = serde_json::json!({"state":"UNKNOWN"});
+            }
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&changed).unwrap()));
+            assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+        }
+    }
     #[test]
     fn ranged_profiles_survive_native_artifact_and_incomplete_weapon_is_rejected() {
         let world = test_source(1).unwrap().world_id;
