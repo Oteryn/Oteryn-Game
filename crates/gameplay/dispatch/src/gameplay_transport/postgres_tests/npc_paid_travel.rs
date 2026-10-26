@@ -654,6 +654,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
                 ground_speed: Some(150),
             }),
         }],
+        subareas: Default::default(),
         draft_areas: vec![],
         skipped_provisional_keys: vec![],
         dropped_teleports: vec![],

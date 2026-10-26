@@ -19,6 +19,122 @@ pub enum RashidCity {
     Carlin,
 }
 
+/// Native Global position belonging to one city.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RashidPlacement {
+    pub city: RashidCity,
+    pub x: i32,
+    pub y: i32,
+    pub floor: i16,
+}
+
+/// Resolve the native placement from the accepted world-reset epoch. Epoch zero is the
+/// catalogue's Monday boundary; subsequent accepted server saves advance the weekday. This is
+/// deliberately independent of process start time and the host calendar.
+#[must_use]
+pub const fn placement_after_server_save(epoch: u64) -> RashidPlacement {
+    match epoch % 7 {
+        0 => RashidPlacement {
+            city: RashidCity::Svargrond,
+            x: 32_207,
+            y: 31_155,
+            floor: 7,
+        },
+        1 => RashidPlacement {
+            city: RashidCity::LibertyBay,
+            x: 32_300,
+            y: 32_837,
+            floor: 7,
+        },
+        2 => RashidPlacement {
+            city: RashidCity::PortHope,
+            x: 32_577,
+            y: 32_753,
+            floor: 7,
+        },
+        3 => RashidPlacement {
+            city: RashidCity::Ankrahmun,
+            x: 33_066,
+            y: 32_879,
+            floor: 6,
+        },
+        4 => RashidPlacement {
+            city: RashidCity::Darashia,
+            x: 33_235,
+            y: 32_483,
+            floor: 7,
+        },
+        5 => RashidPlacement {
+            city: RashidCity::Edron,
+            x: 33_166,
+            y: 31_810,
+            floor: 6,
+        },
+        _ => RashidPlacement {
+            city: RashidCity::Carlin,
+            x: 32_328,
+            y: 31_782,
+            floor: 6,
+        },
+    }
+}
+
+/// Facts owned by the item/travel callbacks and consumed when a mission is handed in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MissionProof {
+    DeerTrophy,
+    HeavyPackage,
+    ScarabCheese {
+        age_seconds: u16,
+        forbidden_transport: bool,
+    },
+    FineVase {
+        broken: bool,
+        paid_gold: u16,
+    },
+    CrimsonSword {
+        paid_gold: u16,
+        ores_spent: u8,
+    },
+    GoldfishBowl,
+    SundayRecognition,
+}
+
+/// Mission order and exact Global acceptance constraints. The caller remains responsible for
+/// atomically consuming the named item and committing the corresponding quest transition.
+#[must_use]
+pub const fn accepts_mission(day_since_monday: u8, completed: u8, proof: MissionProof) -> bool {
+    match (day_since_monday, completed, proof) {
+        (0, 0, MissionProof::DeerTrophy) | (1, 1, MissionProof::HeavyPackage) => true,
+        (
+            2,
+            2,
+            MissionProof::ScarabCheese {
+                age_seconds,
+                forbidden_transport,
+            },
+        ) => age_seconds <= 30 * 60 && !forbidden_transport,
+        (
+            3,
+            3,
+            MissionProof::FineVase {
+                broken: false,
+                paid_gold: 1_000,
+            },
+        ) => true,
+        (
+            4,
+            4,
+            MissionProof::CrimsonSword {
+                paid_gold,
+                ores_spent: 3,
+            },
+        ) => paid_gold <= 400,
+        (5, 5, MissionProof::GoldfishBowl) | (6, 6, MissionProof::SundayRecognition) => true,
+        _ => false,
+    }
+}
+
 /// Resolve placement from the accepted server-save day, never the host's local weekday.
 #[must_use]
 pub const fn city_after_server_save(day_since_monday: u8) -> Option<RashidCity> {
@@ -60,6 +176,67 @@ mod tests {
         assert_eq!(city_after_server_save(5), Some(RashidCity::Edron));
         assert_eq!(city_after_server_save(6), Some(RashidCity::Carlin));
         assert_eq!(city_after_server_save(7), None);
+        assert_eq!(placement_after_server_save(0).city, RashidCity::Svargrond);
+        assert_eq!(placement_after_server_save(6).city, RashidCity::Carlin);
+        assert_eq!(
+            placement_after_server_save(7),
+            placement_after_server_save(0)
+        );
+    }
+
+    #[test]
+    fn mission_sequence_enforces_provenance_and_weekday() {
+        assert!(accepts_mission(0, 0, MissionProof::DeerTrophy));
+        assert!(accepts_mission(
+            2,
+            2,
+            MissionProof::ScarabCheese {
+                age_seconds: 1_800,
+                forbidden_transport: false
+            }
+        ));
+        assert!(!accepts_mission(
+            2,
+            2,
+            MissionProof::ScarabCheese {
+                age_seconds: 1_801,
+                forbidden_transport: false
+            }
+        ));
+        assert!(!accepts_mission(
+            2,
+            2,
+            MissionProof::ScarabCheese {
+                age_seconds: 10,
+                forbidden_transport: true
+            }
+        ));
+        assert!(!accepts_mission(
+            3,
+            3,
+            MissionProof::FineVase {
+                broken: true,
+                paid_gold: 1_000
+            }
+        ));
+        assert!(accepts_mission(
+            4,
+            4,
+            MissionProof::CrimsonSword {
+                paid_gold: 400,
+                ores_spent: 3
+            }
+        ));
+        assert!(!accepts_mission(
+            4,
+            4,
+            MissionProof::CrimsonSword {
+                paid_gold: 401,
+                ores_spent: 3
+            }
+        ));
+        assert!(accepts_mission(6, 6, MissionProof::SundayRecognition));
+        assert!(!accepts_mission(5, 6, MissionProof::SundayRecognition));
     }
 
     #[test]

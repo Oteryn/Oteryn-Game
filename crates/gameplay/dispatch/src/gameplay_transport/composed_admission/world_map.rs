@@ -70,10 +70,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             kind,
             identity: entry.actor.placement_identity(),
             generation: entry.generation,
-            position: ActorPosition {
-                x: entry.position.x,
-                y: entry.position.y,
-                floor: entry.position.floor,
+            position: if kind == VisibleKind::Npc
+                && runtime
+                    .npc_key(entry.actor)
+                    .is_some_and(oteryn_gameplay_npc::rashid::is_rashid)
+            {
+                let placed =
+                    oteryn_gameplay_npc::rashid::placement_after_server_save(self.reset_epoch);
+                ActorPosition {
+                    x: placed.x,
+                    y: placed.y,
+                    floor: placed.floor,
+                }
+            } else {
+                ActorPosition {
+                    x: entry.position.x,
+                    y: entry.position.y,
+                    floor: entry.position.floor,
+                }
             },
             revision: entry.revision,
         })
