@@ -423,7 +423,7 @@ fn scenario() -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            8,
+            16,
             channel_pin.clone(),
         )
         .map_err(debug)?;
@@ -714,21 +714,30 @@ fn scenario() -> TestResult {
         let qualification = {
             let mut runtime = owner.runtime.lock().await;
             let sources = [
-                ("canary:creature/rat", OPEN_BOSS),
+                (
+                    "canary:creature/rat",
+                    vec![
+                        OPEN_BOSS,
+                        MovementLocalPosition {
+                            y: OPEN_PLAYER.y - 1,
+                            ..OPEN_BOSS
+                        },
+                    ],
+                ),
                 (
                     hazard::PRIMAL_MENACE,
-                    MovementLocalPosition {
+                    vec![MovementLocalPosition {
                         x: 33503,
                         y: 32875,
                         ..OPEN_BOSS
-                    },
+                    }],
                 ),
             ]
             .into_iter()
             .map(|(key, p)| {
                 let policy = runtime.companion_policy(key).map_err(debug)?;
                 Ok((
-                    vec![(p.x, p.y, p.floor)],
+                    p.into_iter().map(|p| (p.x, p.y, p.floor)).collect(),
                     60_000,
                     5_000,
                     key.to_owned(),
@@ -754,9 +763,14 @@ fn scenario() -> TestResult {
             ));
             drop(runtime);
             outgoing_swing_checks(&mut owner, actor, session).await?;
+            let next_command = outgoing_cleave_checks(&mut owner, actor, session, &harness).await?;
+            let next_command =
+                outgoing_distance_checks(&mut owner, actor, session, &harness, next_command)
+                    .await?;
             // Cast before the AI turn moves these newly admitted source actors.
             let kill_command_id =
-                outgoing_spell_checks(&mut owner, actor, session, target, &harness).await?;
+                outgoing_spell_checks(&mut owner, actor, session, target, &harness, next_command)
+                    .await?;
             outgoing_condition_checks(&mut owner, actor, session, target).await?;
             combat_checks(&mut owner, actor, session, target).await?;
             let mut runtime = owner.runtime.lock().await;
@@ -1328,6 +1342,7 @@ async fn outgoing_spell_checks(
     session: GameSessionId,
     target: crate::foundation::ExactActorRef,
     harness: &Harness,
+    mut next_id: u64,
 ) -> TestResult<u64> {
     use super::death_ml_loss_composed::current_fence;
     use crate::durability::character_build::{
@@ -1410,7 +1425,6 @@ async fn outgoing_spell_checks(
     }
     let original_book = owner.spells;
     owner.spells = native.spell_book();
-    let mut next_id = 200_000;
     for (key, mana_cost, native_cast, should_dodge) in [
         ("candidate:spell/energy_strike", 20, false, true),
         ("candidate:spell/energy_strike", 20, false, false),
@@ -1593,8 +1607,6 @@ async fn outgoing_spell_checks(
         .await?;
         sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,6,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
             .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(190).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("UPDATE game_character_equipment_state SET revision=revision+1 WHERE character_id=encode($1,'hex')::uuid")
-            .bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
     }
     for should_dodge in [true, false] {
@@ -1758,6 +1770,637 @@ async fn outgoing_cast(
         }
         _ => None,
     }
+}
+
+// Fixture-only custody provisioning. Every shot cost uses the production item owner.
+async fn swing_equipment(
+    harness: &Harness,
+    weapon: Option<(u8, &str, u32)>,
+    ammo: bool,
+) -> TestResult {
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND slot IN (6,10)")
+        .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    for (seed, key, count, slot) in weapon
+        .into_iter()
+        .map(|(seed, key, count)| (seed, key, count, 6_i16))
+        .chain(ammo.then_some((194, "oteryn:item.tibia.i3447", 100, 10)))
+    {
+        sqlx::raw_sql(sqlx::AssertSqlSafe(
+            crate::durability::item_fee_burn::test_support::item(seed, key, "definition-r1", count),
+        ))
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,encode($4,'hex')::uuid,encode($4,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(slot).bind(id(seed).as_slice()).execute(&mut *tx).await?;
+    }
+    // Custody setup is fixture-only. Leave the revision/last-transaction pair owned by
+    // the real shot receipts intact; every tested payment advances it through that owner.
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn swing_target(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    target: crate::foundation::ExactActorRef,
+    command: u64,
+) -> TestResult {
+    let runtime = owner.runtime.lock().await;
+    let generation = runtime
+        .visible_entities()
+        .creatures
+        .iter()
+        .find(|c| c.actor == target)
+        .ok_or("hazard swing target")?
+        .generation;
+    let mut attack = owner.states.attack.lock().await;
+    assert!(attack.set_modes(
+        &runtime,
+        actor,
+        session,
+        oteryn_protocol_oteryn::attack::FightModes {
+            fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
+            ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
+        }
+    ));
+    assert_eq!(
+        attack.set_target(
+            &runtime,
+            owner.rooms.gate_auto_attack(),
+            actor,
+            session,
+            owner.owner_now(),
+            Some(EntityRef {
+                identity: target.placement_identity(),
+                generation
+            }),
+            command
+        ),
+        oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+    );
+    Ok(())
+}
+
+async fn outgoing_cleave_checks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    harness: &Harness,
+) -> TestResult<u64> {
+    use crate::combat_attack::{AttackConstants, FightMode, player_melee_formula};
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::hazard::combat;
+    use oteryn_gameplay_combat_rules::resolution;
+    use oteryn_simulation_determinism::GameplayDecisionRoot;
+    use sha2::{Digest, Sha256};
+
+    swing_equipment(harness, Some((191, "oteryn:item.tibia.i3264", 1)), false).await?;
+    let constants = AttackConstants::checked_in().ok_or("cleave constants")?;
+    let (primary, flank, before_primary, before_flank, bounds, policy, digest, original_offence) = {
+        let runtime = owner.runtime.lock().await;
+        let primary = runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .find(|c| {
+                runtime
+                    .companion_snapshot(c.actor)
+                    .is_ok_and(|s| s.state.policy.definition_key == "canary:creature/rat")
+                    && runtime
+                        .read_actor_position(c.actor)
+                        .is_ok_and(|p| p.position() == OPEN_BOSS)
+            })
+            .ok_or("cleave primary")?
+            .actor;
+        let p = MovementLocalPosition {
+            y: OPEN_PLAYER.y - 1,
+            ..OPEN_BOSS
+        };
+        let policy = runtime
+            .companion_policy("canary:creature/rat")
+            .map_err(debug)?;
+        let flank = runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .find(|c| {
+                c.actor != primary
+                    && runtime
+                        .read_actor_position(c.actor)
+                        .is_ok_and(|at| at.position() == p)
+            })
+            .ok_or("cleave flank")?
+            .actor;
+        assert!(combat::eligible(&runtime, primary) && combat::eligible(&runtime, flank));
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states
+            .get_mut(&runtime, actor, session)
+            .ok_or("cleave state")?;
+        let original = state.equipped_offence();
+        // Explicit 100% cleave fixture isolates the hazard parser from low-skill rounding
+        // and rat defence. It does not assert an item's production cleave coefficient.
+        state.install_equipped_offence(resolution::equipped_offence::EquippedOffence {
+            cleave: 10_000,
+            ..Default::default()
+        });
+        let facts = state.character_facts();
+        let skills = state
+            .swing_skills(2, owner.owner_now().get())
+            .ok_or("sword skills")?
+            .unwrap_or(crate::spell::cast::SwingSkills {
+                attack: constants.starting_skill,
+                shielding: constants.starting_skill,
+            });
+        let bounds = player_melee_formula(constants)
+            .bounds(&crate::spell::formula::FormulaInputs {
+                level: facts.level,
+                magic_level: facts.magic_level,
+                base_power: None,
+                attack_skill: skills.attack,
+                attack_value: 14,
+                attack_factor: constants.fight_mode(FightMode::Offensive).attack_factor,
+                shielding_skill: skills.shielding,
+                shield_defense: None,
+            })
+            .map_err(debug)?;
+        (
+            primary,
+            flank,
+            runtime
+                .creature_combat_facts(primary, 0)
+                .map_err(debug)?
+                .health,
+            runtime
+                .creature_combat_facts(flank, 0)
+                .map_err(debug)?
+                .health,
+            bounds,
+            policy,
+            runtime.content_pin().server_artifact_digest(),
+            original,
+        )
+    };
+    let mut next_id = 1_000_000;
+    for (primary_dodge, flank_dodge) in [(true, false), (false, true), (true, true), (false, false)]
+    {
+        owner.clock_origin -= Duration::from_secs(3);
+        let (command, expected) = {
+            let mut runtime = owner.runtime.lock().await;
+            runtime
+                .set_test_creature_health(primary, 10_000)
+                .map_err(debug)?;
+            runtime
+                .set_test_creature_health(flank, 10_000)
+                .map_err(debug)?;
+            (next_id..next_id + 10_000_000)
+                .find_map(|command| {
+                    let lineage = CommandRef::new(session, CommandId::new(command).ok()?);
+                    let mut expected = [0; 2];
+                    for (i, (target, dodge)) in [(primary, primary_dodge), (flank, flank_dodge)]
+                        .into_iter()
+                        .enumerate()
+                    {
+                        if combat::dodges(
+                            1,
+                            combat::swing_dodge_roll(&runtime, actor, target, lineage, 0)?,
+                        ) != dodge
+                        {
+                            return None;
+                        }
+                        let root = GameplayDecisionRoot::from_bytes(if i == 0 {
+                            digest
+                        } else {
+                            Sha256::new()
+                                .chain_update(digest)
+                                .chain_update(target.placement_identity())
+                                .finalize()
+                                .into()
+                        });
+                        let raw = resolution::swing_draw(
+                            &root,
+                            actor.placement_identity(),
+                            (*session.as_bytes(), command),
+                            0,
+                            b"damage-draw",
+                            "attack.damage",
+                            bounds.0,
+                            bounds.1,
+                        )?;
+                        let damage = resolution::creature_mitigated(
+                            &root,
+                            constants,
+                            actor.placement_identity(),
+                            (*session.as_bytes(), command),
+                            0,
+                            raw,
+                            true,
+                            policy.defense?,
+                            policy.armor?,
+                        )?;
+                        let damage = resolution::creature_physical_response(&policy, damage)?;
+                        if damage <= 0 {
+                            return None;
+                        }
+                        expected[i] = if dodge { 0 } else { damage };
+                    }
+                    Some((command, expected))
+                })
+                .ok_or("bounded independent cleave draws")?
+        };
+        next_id = command + 1;
+        swing_target(owner, actor, session, primary, command).await?;
+        owner.refresh_attack_weapon(actor, session).await;
+        let equipment =
+            crate::gameplay_transport::equipment_move::read_current_equipment(owner, session)
+                .await
+                .ok_or("cleave equipment read")?;
+        assert!(matches!(
+            crate::gameplay_transport::attack::swing_weapon(
+                owner
+                    .active_generation
+                    .ok_or("cleave generation")?
+                    .native_gameplay()
+                    .ok_or("cleave native")?,
+                &equipment.items
+            ),
+            Some(crate::gameplay_transport::attack::SwingWeapon::Melee { attack: 14, .. })
+        ));
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert_eq!(
+                states
+                    .get(&runtime, actor, session)
+                    .ok_or("cleave offence")?
+                    .equipped_offence()
+                    .cleave,
+                10_000
+            );
+        }
+        owner.drain_auto_attacks().await;
+        for (target, damage) in [(primary, expected[0]), (flank, expected[1])] {
+            assert_eq!(
+                10_000
+                    - owner
+                        .runtime
+                        .lock()
+                        .await
+                        .creature_combat_facts(target, 0)
+                        .map_err(debug)?
+                        .health,
+                damage,
+                "independent cleave primary={primary_dodge} flank={flank_dodge}"
+            );
+        }
+        owner.drain_auto_attacks().await;
+        for (target, damage) in [(primary, expected[0]), (flank, expected[1])] {
+            assert_eq!(
+                10_000
+                    - owner
+                        .runtime
+                        .lock()
+                        .await
+                        .creature_combat_facts(target, 0)
+                        .map_err(debug)?
+                        .health,
+                damage,
+                "cleave retry consumes no second hit"
+            );
+        }
+    }
+    {
+        let mut runtime = owner.runtime.lock().await;
+        runtime
+            .set_test_creature_health(primary, before_primary)
+            .map_err(debug)?;
+        runtime
+            .set_test_creature_health(flank, before_flank)
+            .map_err(debug)?;
+        owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .get_mut(&runtime, actor, session)
+            .ok_or("restore cleave offence")?
+            .install_equipped_offence(original_offence);
+    }
+    owner
+        .states
+        .attack
+        .lock()
+        .await
+        .clear_target(actor, session);
+    swing_equipment(harness, None, false).await?;
+    Ok(next_id)
+}
+
+async fn outgoing_distance_checks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    harness: &Harness,
+    mut next_id: u64,
+) -> TestResult<u64> {
+    use crate::combat_attack::{AttackConstants, FightMode};
+    use crate::content::{ProjectV2RangedElement, ProjectV2RangedWeapon};
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::hazard::combat;
+    use oteryn_gameplay_combat_rules::{attack::ranged, resolution};
+    use oteryn_simulation_determinism::GameplayDecisionRoot;
+    let native = owner
+        .active_generation
+        .ok_or("ranged generation")?
+        .native_gameplay()
+        .ok_or("ranged content")?;
+    let constants = AttackConstants::checked_in().ok_or("distance constants")?;
+    let (target, before_health, policy, root, skills, facts) = {
+        let runtime = owner.runtime.lock().await;
+        let target = runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .find(|c| {
+                runtime
+                    .companion_snapshot(c.actor)
+                    .is_ok_and(|s| s.state.policy.definition_key == "canary:creature/rat")
+                    && runtime
+                        .read_actor_position(c.actor)
+                        .is_ok_and(|p| p.position() == OPEN_BOSS)
+            })
+            .ok_or("distance rat")?
+            .actor;
+        assert!(combat::eligible(&runtime, target));
+        let states = owner.states.spell_states.lock().await;
+        let state = states
+            .get(&runtime, actor, session)
+            .ok_or("distance state")?;
+        (
+            target,
+            runtime
+                .creature_combat_facts(target, 0)
+                .map_err(debug)?
+                .health,
+            runtime
+                .companion_snapshot(target)
+                .map_err(debug)?
+                .state
+                .policy
+                .clone(),
+            GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest()),
+            state
+                .swing_skills(4, owner.owner_now().get())
+                .ok_or("distance skills")?
+                .unwrap_or(crate::spell::cast::SwingSkills {
+                    attack: constants.starting_skill,
+                    shielding: constants.starting_skill,
+                }),
+            state.character_facts(),
+        )
+    };
+    for (seed, key, bow) in [
+        (192, "oteryn:item.tibia.i3350", true),
+        (193, "oteryn:item.tibia.i3287", false),
+    ] {
+        swing_equipment(harness, Some((seed, key, if bow { 1 } else { 100 })), bow).await?;
+        let profile = native
+            .item_policy(key, "definition-r1")
+            .ok_or("distance weapon")?
+            .record()
+            .authoring
+            .ranged
+            .as_ref()
+            .ok_or("ranged authoring")?;
+        let (attack, shot, cap, bonus) = match profile {
+            ProjectV2RangedWeapon::Distance {
+                attack, hit_chance, ..
+            } => {
+                let ammo = native
+                    .item_policy("oteryn:item.tibia.i3447", "definition-r1")
+                    .ok_or("arrow")?
+                    .record()
+                    .authoring
+                    .ranged
+                    .as_ref()
+                    .ok_or("arrow profile")?;
+                let ProjectV2RangedWeapon::Ammunition {
+                    attack: ammo_attack,
+                    hit_chance: shot,
+                    max_hit_chance,
+                    element,
+                    elemental_attack,
+                    ..
+                } = ammo
+                else {
+                    return Err("arrow kind".into());
+                };
+                assert_eq!(
+                    (*element, *elemental_attack),
+                    (ProjectV2RangedElement::Physical, 0)
+                );
+                (
+                    u32::from(*attack) + u32::from(*ammo_attack),
+                    *shot,
+                    *max_hit_chance,
+                    i32::from(*hit_chance),
+                )
+            }
+            ProjectV2RangedWeapon::Throwing {
+                attack,
+                hit_chance,
+                max_hit_chance,
+                element,
+                elemental_attack,
+                ..
+            } => {
+                assert_eq!(
+                    (*element, *elemental_attack),
+                    (ProjectV2RangedElement::Physical, 0)
+                );
+                (u32::from(*attack), *hit_chance, *max_hit_chance, 0)
+            }
+            _ => return Err("distance fixture kind".into()),
+        };
+        let bounds = ranged::player_distance_formula()
+            .bounds(&crate::spell::formula::FormulaInputs {
+                level: facts.level,
+                magic_level: facts.magic_level,
+                base_power: None,
+                attack_skill: skills.attack,
+                attack_value: attack,
+                attack_factor: constants.fight_mode(FightMode::Offensive).attack_factor,
+                shielding_skill: skills.shielding,
+                shield_defense: None,
+            })
+            .map_err(debug)?;
+        let chance = ranged::shot_hit_chance(
+            u32::from(cap),
+            u32::try_from(shot).ok(),
+            Some(bonus),
+            1,
+            skills.attack,
+        )
+        .ok_or("shot chance")?;
+        let quantity_seed = if bow { 194 } else { seed };
+        for (dodge, breaks, reconcile) in if bow {
+            vec![
+                (true, true, false),
+                (false, true, false),
+                (false, true, true),
+            ]
+        } else {
+            vec![
+                (true, true, false),
+                (true, false, false),
+                (false, true, false),
+                (false, false, false),
+            ]
+        } {
+            owner.clock_origin -= Duration::from_secs(3);
+            let (command, damage) = {
+                let mut runtime = owner.runtime.lock().await;
+                runtime
+                    .set_test_creature_health(target, 10_000)
+                    .map_err(debug)?;
+                (next_id..next_id + 1_000_000)
+                    .find_map(|command| {
+                        let lineage = CommandRef::new(session, CommandId::new(command).ok()?);
+                        if combat::dodges(
+                            1,
+                            combat::swing_dodge_roll(&runtime, actor, target, lineage, 0)?,
+                        ) != dodge
+                        {
+                            return None;
+                        }
+                        let draw = |tag, domain, min, max| {
+                            resolution::swing_draw(
+                                &root,
+                                actor.placement_identity(),
+                                (*session.as_bytes(), command),
+                                0,
+                                tag,
+                                domain,
+                                min,
+                                max,
+                            )
+                        };
+                        if !ranged::shot_hits(
+                            chance,
+                            u64::try_from(draw(b"hit-chance", "attack.hit-chance", 0, 99)?).ok()?,
+                        ) {
+                            return None;
+                        }
+                        if !bow && (draw(b"break", "attack.break", 0, 99)? < 10) != breaks {
+                            return None;
+                        }
+                        let raw = draw(b"damage-draw", "attack.damage", bounds.0, bounds.1)?;
+                        let damage = resolution::swing_mitigated(
+                            &root,
+                            constants,
+                            actor.placement_identity(),
+                            (*session.as_bytes(), command),
+                            0,
+                            raw,
+                            None,
+                            policy.armor?,
+                        )?;
+                        let damage =
+                            resolution::creature_damage_response(&policy, damage, "physical")?;
+                        (damage > 0).then_some((command, damage))
+                    })
+                    .ok_or("bounded hazard distance/break draw")?
+            };
+            next_id = command + 1;
+            swing_target(owner, actor, session, target, command).await?;
+            owner.refresh_attack_weapon(actor, session).await;
+            let quantity = || async {
+                sqlx::query_scalar::<_,i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(quantity_seed).as_slice()).fetch_one(&harness.pool).await
+            };
+            let before = quantity().await?;
+            let mana = owner
+                .observe_actor_vitals(actor, session)
+                .await
+                .ok_or("distance mana")?
+                .1
+                .mana;
+            if reconcile {
+                owner
+                    .park_committed_ranged_shot_for_test(actor, session)
+                    .await?;
+            }
+            owner.drain_auto_attacks().await;
+            let expected = if dodge || reconcile { 0 } else { damage };
+            assert_eq!(
+                10_000
+                    - owner
+                        .runtime
+                        .lock()
+                        .await
+                        .creature_combat_facts(target, 0)
+                        .map_err(debug)?
+                        .health,
+                expected,
+                "bow={bow} dodge={dodge} breaks={breaks} reconcile={reconcile}"
+            );
+            assert_eq!(
+                quantity().await?,
+                before - i64::from(breaks),
+                "payment/break is independent of hazard dodge"
+            );
+            assert_eq!(
+                owner
+                    .observe_actor_vitals(actor, session)
+                    .await
+                    .ok_or("paid distance mana")?
+                    .1
+                    .mana,
+                mana
+            );
+            owner.drain_auto_attacks().await;
+            assert_eq!(
+                quantity().await?,
+                before - i64::from(breaks),
+                "retry spends no second projectile"
+            );
+            assert_eq!(
+                10_000
+                    - owner
+                        .runtime
+                        .lock()
+                        .await
+                        .creature_combat_facts(target, 0)
+                        .map_err(debug)?
+                        .health,
+                expected,
+                "retry deals no late damage"
+            );
+        }
+        owner
+            .states
+            .attack
+            .lock()
+            .await
+            .clear_target(actor, session);
+    }
+    owner
+        .runtime
+        .lock()
+        .await
+        .set_test_creature_health(target, before_health)
+        .map_err(debug)?;
+    swing_equipment(harness, None, false).await?;
+    let mut tx = harness.pool.begin().await?;
+    crate::durability::spell_item_transaction::verify_spell_item_chain(&mut tx)
+        .await
+        .map_err(debug)?;
+    tx.rollback().await?;
+    Ok(next_id)
 }
 
 // The canonical Creature store is seeded with a typed player DOT, then the real
@@ -1985,6 +2628,9 @@ async fn outgoing_swing_checks(
                 runtime
                     .companion_snapshot(c.actor)
                     .is_ok_and(|s| s.state.policy.definition_key == "canary:creature/rat")
+                    && runtime
+                        .read_actor_position(c.actor)
+                        .is_ok_and(|p| p.position() == OPEN_BOSS)
             })
             .ok_or("hazard swing rat")?;
         let snapshot = runtime.companion_snapshot(rat.actor).map_err(debug)?;
