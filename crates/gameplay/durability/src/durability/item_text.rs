@@ -1,8 +1,9 @@
-//! WRITE-1: content-qualified rewrites in held custody and an owner's open depot box.
+//! WRITE-1: content-qualified rewrites in held, depot and loop-drop custody.
 //!
 //! This is a bounded producer with its native storage ACL in migration 0101 and
 //! registered Content/storage modules, awaiting actual transport composition.
-//! It admits neither write-once definitions nor Ground/house custody locations.
+//! It admits neither write-once definitions nor house custody locations.
+//! Ground admission is limited to direct loop drops, with owner-observed reach data.
 //! The compositor must also apply the Channel trade owner's physical exclusion
 //! under its mutation lane (WRITE-0 §5.1). Do not activate this writer before
 //! that guard and the actual transport composition are integrated.
@@ -13,6 +14,7 @@ use super::character_progression::numeric_u64;
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
+use super::item_loop_move::LoopGround;
 use super::item_mint::TypedDefinitionRef;
 use super::item_mint_audit::check_uuid_v7;
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
@@ -307,6 +309,10 @@ impl DurabilityRoot {
     /// this call. Storage independently checks exact Character/World custody.
     /// It is deliberately excluded from historical request binding: closing a
     /// view must not prevent an exact terminal replay or COMMIT reconciliation.
+    /// `ground` is likewise current owner-observed placement DATA, after checking
+    /// one-tile same-floor reach under the retained lane. Storage independently
+    /// locks and checks exact current loop-drop custody; this tuple grants no reach.
+    /// Other Ground sources and external container trees remain unavailable.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_item_text_rewrite(
         &self,
@@ -317,6 +323,7 @@ impl DurabilityRoot {
         policy: MailTextPolicy,
         request: ItemTextWriteRequest,
         open_depot: Option<(u16, u8)>,
+        ground: Option<LoopGround>,
     ) -> Result<ItemTextWriteOutcome> {
         let (world, channel) =
             scope_of(&fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
@@ -341,7 +348,17 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    match rewrite(&mut tx, &node, &fence, &policy, &request, open_depot).await {
+                    match rewrite(
+                        &mut tx,
+                        &node,
+                        &fence,
+                        &policy,
+                        &request,
+                        open_depot,
+                        ground.as_ref(),
+                    )
+                    .await
+                    {
                         Ok(outcome) => {
                             commit_semantic_transaction(tx, deadline).await?;
                             Ok(Ok(outcome))
@@ -362,6 +379,7 @@ async fn rewrite(
     policy: &MailTextPolicy,
     request: &ItemTextWriteRequest,
     open_depot: Option<(u16, u8)>,
+    ground: Option<&LoopGround>,
 ) -> Result<ItemTextWriteOutcome> {
     let character = fence.character_id.as_bytes();
     let binding = request.freeze_receipt_binding(fence.character_id);
@@ -394,7 +412,7 @@ async fn rewrite(
         return Err(ItemTextWriteError::AuthorityRejected);
     }
     let text = qualified_text(policy, request)?;
-    lock_carried_text_item(tx, fence, request, open_depot).await?;
+    lock_carried_text_item(tx, fence, request, open_depot, ground).await?;
     persist_rewrite(tx, character, request, text).await
 }
 
@@ -426,12 +444,14 @@ async fn carried_text_path(
 /// read after waiting. A foreign, detached, cyclic or overdeep path fails closed.
 /// Depot transfers use the same Character root/item lock order. Only a direct
 /// box entry is admitted: the depot writer does not yet host nested containers.
-/// Ground and houses need their own location fences.
+/// A direct loop drop retains the shared Ground owner lock and the current
+/// scope assignment lock acquired by the Character fence. Houses remain closed.
 async fn lock_carried_text_item(
     tx: &mut Transaction<'_, Postgres>,
     fence: &CurrentCharacterItemFence,
     request: &ItemTextWriteRequest,
     open_depot: Option<(u16, u8)>,
+    ground: Option<&LoopGround>,
 ) -> Result<()> {
     let (world, _) = scope_of(fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
     let path = carried_text_path(tx, &request.item_instance_id).await?;
@@ -481,6 +501,12 @@ async fn lock_carried_text_item(
     if held {
         return Ok(());
     }
+    if path.len() == 1
+        && let Some(ground) = ground
+        && lock_ground_text_item(tx, fence, request, ground).await?
+    {
+        return Ok(());
+    }
     let Some((town, box_number)) = open_depot else {
         return Err(ItemTextWriteError::NotReachable);
     };
@@ -511,6 +537,56 @@ async fn lock_carried_text_item(
         return Err(ItemTextWriteError::NotReachable);
     }
     Ok(())
+}
+
+/// Location data is read after all ancestor/item locks. The existing Character
+/// fence retains the current Channel assignment FOR SHARE, including its owner
+/// generation and Node incarnation. Key 33 is the existing Ground owner lock,
+/// enforced on every location mutation by game_item_ground_owner_lock. The runtime
+/// has no UPDATE privilege on Ground rows, so a direct FOR SHARE would be refused.
+/// Read custody in a separate statement after this lock too. No census or move.
+async fn lock_ground_text_item(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    request: &ItemTextWriteRequest,
+    ground: &LoopGround,
+) -> Result<bool> {
+    if super::spell_items_abi::decode_ground_cell(&ground.spatial_position).is_err() {
+        return Err(ItemTextWriteError::NotReachable);
+    }
+    let (world, channel) = scope_of(fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
+    sqlx::query(
+        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))",
+    )
+    .bind(world.as_bytes().as_slice())
+    .bind(channel.as_bytes().as_slice())
+    .execute(&mut **tx)
+    .await?;
+    Ok(sqlx::query_scalar::<_, bool>(
+        "SELECT true FROM game_item_ground_locations g \
+          JOIN game_item_instances i USING (item_instance_id, world_id) \
+          WHERE g.item_instance_id=encode($1,'hex')::uuid \
+            AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid \
+            AND g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
+            AND g.spatial_position=$5 AND g.map_revision=$6 AND g.content_revision=$7 \
+            AND g.native_room_placement_context=$8 AND game_item_loop_drop_ref(g.corpse_ref) \
+            AND i.definition_family=$9 AND i.definition_production_key=$10 AND i.definition_revision_ref=$11 \
+          FOR SHARE OF i",
+    )
+    .bind(request.item_instance_id.as_slice())
+    .bind(world.as_bytes().as_slice())
+    .bind(channel.as_bytes().as_slice())
+    .bind(fence.scope_ownership_generation.get().to_string())
+    .bind(&ground.spatial_position)
+    .bind(&ground.map_revision)
+    .bind(&ground.content_revision)
+    .bind(&ground.placement_context)
+    .bind(&request.definition.family)
+    .bind(&request.definition.production_key)
+    .bind(&request.definition.revision_ref)
+    .fetch_optional(&mut **tx)
+    .await?
+    .unwrap_or(false))
 }
 
 /// The identical physical key is shared by the writer and historical reader.

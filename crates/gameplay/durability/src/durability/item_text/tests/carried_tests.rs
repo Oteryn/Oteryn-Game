@@ -3,6 +3,8 @@
 use super::*;
 use crate::bestiary_postgres_harness::{self as native, Harness, configured_admin, runtime};
 
+mod ground_tests;
+
 fn carried_request(item: u8, command: u64, text: &str) -> TestResult<ItemTextWriteRequest> {
     Ok(ItemTextWriteRequest {
         command: CommandRef::new(
@@ -37,6 +39,18 @@ async fn write_with_depot(
     fence: CurrentCharacterItemFence,
     open_depot: Option<(u16, u8)>,
 ) -> TestResult<std::result::Result<ItemTextWriteOutcome, ItemTextWriteError>> {
+    write_with_custody(h, item, command, text, fence, open_depot, None).await
+}
+
+async fn write_with_custody(
+    h: &Harness,
+    item: u8,
+    command: u64,
+    text: &str,
+    fence: CurrentCharacterItemFence,
+    open_depot: Option<(u16, u8)>,
+    ground: Option<LoopGround>,
+) -> TestResult<std::result::Result<ItemTextWriteOutcome, ItemTextWriteError>> {
     let seal = h.recovery.seal_current().map_err(native::debug)?;
     let authority = h
         .root
@@ -51,7 +65,7 @@ async fn write_with_depot(
     .await?;
     Ok(h.root
         .commit_item_text_rewrite(
-            &permit, &authority, &h.node, fence, policy, request, open_depot,
+            &permit, &authority, &h.node, fence, policy, request, open_depot, ground,
         )
         .await)
 }
@@ -142,7 +156,7 @@ fn write_postgres_depot_custody_binding_and_historical_replay() -> TestResult {
                 let permit = super::super::super::spell_owner_commit::SpellLanePermit::of_fresh_lane(lane_world, lane_channel).await;
                 let request = carried_request(111, 20, "refused")?;
                 let policy = MailTextPolicy::from_qualified_content(request.definition.clone(), [1; 32], 511);
-                assert!(matches!(h.root.commit_item_text_rewrite(&permit, &authority, &h.node, fence, policy, request, Some((7, 17))).await, Err(ItemTextWriteError::AuthorityRejected)));
+                assert!(matches!(h.root.commit_item_text_rewrite(&permit, &authority, &h.node, fence, policy, request, Some((7, 17)), None).await, Err(ItemTextWriteError::AuthorityRejected)));
             }
             // Owner-observed open box data is an explicit fixture here. These
             // cases qualify storage custody, not the uninstalled TEXT/view route.
