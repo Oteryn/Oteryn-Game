@@ -41,6 +41,7 @@ mod corpse_decay;
 #[path = "tests/death_ml_loss_postgres.rs"]
 mod death_ml_loss_postgres;
 mod depot;
+mod echo_raid;
 mod equipment_move;
 mod equipment_reflection;
 mod first_vocation_vitals;

@@ -35,6 +35,7 @@ oteryn-gameplay-content = { version = "=0.1.0", path = "../content" }
 oteryn-gameplay-domain = { version = "=0.1.0", path = "../domain" }
 oteryn-gameplay-durability = { version = "=0.1.0", path = "../durability" }
 oteryn-gameplay-encounters = { version = "=0.1.0", path = "../encounters" }
+oteryn-gameplay-encounter-rules = { version = "=0.1.0", path = "../encounter-rules" }
 oteryn-gameplay-entities = { version = "=0.1.0", path = "../entities" }
 oteryn-gameplay-foundation = { version = "=0.1.0", path = "../foundation" }
 oteryn-gameplay-monster-ai = { version = "=0.1.0", path = "../monster-ai" }

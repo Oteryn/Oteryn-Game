@@ -346,7 +346,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         direction: StepDirection,
     ) -> (StepOutcome, Option<Duration>) {
-        self.tutorial_paced_step(actor, session, direction).await
+        let result = self.tutorial_paced_step(actor, session, direction).await;
+        if let Some(moved) = result.0.moved_to {
+            self.trigger_echo_step(session, moved.actor_position);
+        }
+        result
     }
 
     async fn turn_actor_valid(&self, actor: ExactActorRef, session: GameSessionId) -> bool {

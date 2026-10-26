@@ -21,6 +21,8 @@ pub struct ChannelSessionStates {
     pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
     /// SESSION-INGRESS-1: the ordered command stream and latest terminal result per session.
     pub command_ingress: super::session_ingress::SessionCommands,
+    /// ECHORAID: non-item echoes, replacement timers and live raid actors owned by this Channel.
+    pub(super) echo_raids: std::sync::Mutex<super::echo_raid::EchoRaidRuntime>,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub fence_holders: FenceHolders,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.

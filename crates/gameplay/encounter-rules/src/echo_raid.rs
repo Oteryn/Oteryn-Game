@@ -119,6 +119,7 @@ pub struct TriggerContext {
 #[derive(Default)]
 pub struct Coordinator {
     subareas: BTreeMap<u16, SubareaState>,
+    wild: BTreeMap<Tile, Echo>,
 }
 
 impl Coordinator {
@@ -174,6 +175,24 @@ impl Coordinator {
         })
     }
 
+    /// Atomically consumes whichever timed or kill-created echo occupies `tile`.
+    pub fn trigger_tile(&mut self, tile: Tile, context: TriggerContext) -> Option<Raid> {
+        if let Some((&subarea, _)) = self
+            .subareas
+            .iter()
+            .find(|(_, state)| matches!(state, SubareaState::Armed(echo) if echo.tile == tile))
+        {
+            return self.trigger(subarea, tile, context);
+        }
+        let echo = self.wild.remove(&tile)?;
+        Some(Raid {
+            creature: echo.creature,
+            tile,
+            outcome: outcome(context.outcome_roll, context.bestiary_complete),
+            despawn_at_ms: context.now_ms.saturating_add(RAID_LIFETIME_MS),
+        })
+    }
+
     /// Kill-created echoes occupy the corpse tile and never replace a subarea's timed echo.
     pub fn wild_echo(creature: impl Into<String>, tile: Tile, reachable: bool) -> Option<Echo> {
         reachable.then(|| Echo {
@@ -182,10 +201,35 @@ impl Coordinator {
         })
     }
 
+    /// Installs a successful kill roll without displacing a timed subarea echo.
+    pub fn arm_wild(&mut self, creature: impl Into<String>, tile: Tile, reachable: bool) -> bool {
+        let Some(echo) = Self::wild_echo(creature, tile, reachable) else {
+            return false;
+        };
+        self.wild.insert(tile, echo).is_none()
+    }
+
+    /// Expires due timers and repairs missing subarea state using compiler-admitted candidates.
+    pub fn drive(
+        &mut self,
+        now_ms: u64,
+        candidates: &BTreeMap<u16, Vec<EligibleSpawn>>,
+        entropy: u64,
+    ) {
+        for (&subarea, spawns) in candidates {
+            let due = matches!(self.subareas.get(&subarea), Some(SubareaState::Waiting { due_ms }) if *due_ms <= now_ms);
+            if due {
+                self.subareas.remove(&subarea);
+            }
+            self.watchdog(subarea, spawns, entropy ^ u64::from(subarea));
+        }
+    }
+
     pub fn blocks_item_placement(&self, tile: Tile) -> bool {
         self.subareas
             .values()
             .any(|state| matches!(state, SubareaState::Armed(echo) if echo.tile == tile))
+            || self.wild.contains_key(&tile)
     }
 }
 
