@@ -1,6 +1,6 @@
-# Oteryn World Bundle format (v4; the file name keeps V1)
+# Oteryn World Bundle format (v5; the file name keeps V1)
 
-- Format ID: `OTERYN_WORLD_BUNDLE/v4` (v1, v2 and v3 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
+- Format ID: `OTERYN_WORLD_BUNDLE/v5` (v1, v2, v3 and v4 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
 - Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
@@ -34,7 +34,7 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | Offset | Size | Field | Rule |
 |---|---|---|---|
 | 0 | 4 | magic | `"OTWB"` |
-| 4 | 2 | `format_version` u16 | `4` |
+| 4 | 2 | `format_version` u16 | `5` |
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
@@ -58,8 +58,9 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 
 | Field | Meaning |
 |---|---|
-| `format` | `"OTERYN_WORLD_BUNDLE/v4"` |
-| `min_reader_version` | lowest reader `format_version` able to read the file; `4` |
+| `subareas` | Typed client-mask admission (§15), covered by the bundle digest. Written first. |
+| `format` | `"OTERYN_WORLD_BUNDLE/v5"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file; `5` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
 | `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
@@ -128,7 +129,7 @@ already writes canonical varints.
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
   it decompresses the frame, so a corrupt frame never reaches the decompressor.
-- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v4" || 0x00 || file[0 .. len − 32])`, stored
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v5" || 0x00 || file[0 .. len − 32])`, stored
   as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
   content revision), the tables and every frame, the spawn and NPC frames included. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
@@ -540,3 +541,51 @@ bundle.
 
 The game server reads the NPC table through the shared reader and does nothing with it until
 NPC-ACTOR-1. There is no wire change.
+
+## 15. Format v5 (SUBAREA-ADMIT-1)
+
+Version 5 adds the required `subareas` manifest member; the frame layout stays the same.
+The current reader rejects v1–v4. Runtime compatibility version is 2. Recompile and
+repin bundles together with the reader deployment; never relabel old bundle bytes.
+
+`subareas` is `Table` in `crates/world-bundle/src/subarea.rs`. Its client version is
+`15.30`, and its candidate SHA-256 pins the historical, unchanged source candidate.
+Areas are sorted by positive `cipsoft/map_area` source id, with their native content
+key, name, parent source id and source-record hash. These are source identities;
+they do not settle the separate discovery/donation eligibility decisions.
+The 443 region/subregion records and 22 city records are one catalogue. A parent
+must resolve to a root region. Masks are sorted uniquely by subarea id and preserve
+the asset locator, compressed/BMP/source-record hashes, source and admitted counts.
+Masks with zero native tiles remain in the table with their provenance.
+
+Admission re-decodes the existing framed LZMA/BMP assets, verifies the compressed
+and decoded hashes and raw import dimensions/anchor/provenance, and requires exact
+agreement with the candidate's nonzero 32-bit pixel runs. BMP top-down and bottom-up
+orientation are handled explicitly. The source frame maps x/y unchanged and z to
+native floor `-z`. All 209 existing masks are at source z=7; no vertical projection,
+underground approximation, rectangle replacement or fallback id is admitted.
+
+Source masks must be disjoint. Native admission intersects each mask with served,
+in-bounds, classified walkable ground without a wall or solid item. Within each
+subarea, a cardinal walkable component is admitted only when it reaches an entry:
+a walkable boundary crossing from a served cell outside that mask, a declared
+teleport destination, or a travel destination not held by NPC/travel admission.
+Display/label positions are not entry evidence. Components without an entry are
+dropped at compile time. This is reachability from a subarea entry, not a promise
+that every region is reachable from the World's starting town without quest gates.
+
+Native membership is a list of half-open horizontal runs `{floor,y,begin,end,subarea}`
+sorted by `(floor,y,begin)`, disjoint across all masks. Reader and writer reject
+bad order, overlaps, out-of-world runs, unknown ids, malformed hashes, bad parents,
+and counts that disagree with the runs. Lookup is a binary search over these runs;
+unknown coverage remains unknown. The empty/default table is only for synthetic
+fixtures; the repository compiler always loads and verifies the source catalogue.
+Limits SUBAREA-RL-01 through SUBAREA-RL-10 bound input bytes, LZMA memory/output,
+areas, masks, runs, tiles and the read-only command result.
+
+The runtime loads this table into the shared immutable `WorldBase`; Channel overlays
+cannot change membership. Source inputs also participate in the compiler input
+fingerprint. `pin-refresh` derives the new bundle digest, and `pin-check` retains
+the normal two-build byte equality and full equivalence proof, including membership.
+The client 15.30 source files remain reference evidence and are not newly copied or
+redistributed by this change.

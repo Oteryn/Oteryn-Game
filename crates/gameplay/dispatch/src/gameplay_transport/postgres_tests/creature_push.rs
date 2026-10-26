@@ -47,6 +47,7 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
         }),
     };
     let manifest = Manifest {
+        subareas: Default::default(),
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,
         projection_class: "server".into(),

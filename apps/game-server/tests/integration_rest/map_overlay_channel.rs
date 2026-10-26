@@ -127,7 +127,7 @@ fn assemble(tiles: &[Tile]) -> Result<(Vec<u8>, [u8; 32]), Box<dyn StdError>> {
     let npc_frame = compress(&npc_raw)?;
     let u32_of = |value: usize| (value as u32).to_le_bytes();
     let mut out = b"OTWB".to_vec();
-    out.extend_from_slice(&4u16.to_le_bytes());
+    out.extend_from_slice(&bundle::VERSION.to_le_bytes());
     out.extend_from_slice(&[0, 0]);
     out.extend_from_slice(&u32_of(json.len()));
     out.extend_from_slice(&u32_of(1));
@@ -153,7 +153,7 @@ fn assemble(tiles: &[Tile]) -> Result<(Vec<u8>, [u8; 32]), Box<dyn StdError>> {
     out.extend_from_slice(&npc_frame);
     let body = out.len();
     let digest: [u8; 32] = Sha256::new()
-        .chain_update(b"OTERYN_WORLD_BUNDLE/v4\0")
+        .chain_update(b"OTERYN_WORLD_BUNDLE/v5\0")
         .chain_update(&out)
         .finalize()
         .into();

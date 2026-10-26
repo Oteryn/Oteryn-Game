@@ -185,6 +185,7 @@ fn project(root: &Path) -> Result<Project, Error> {
         families.add_spawns(&shard)?;
     }
     add_npc_families(root, &mut families)?;
+    families.subareas = compile::subareas::Source::load(root)?;
     Ok(Project {
         index,
         regions,
@@ -335,12 +336,15 @@ fn run_compile(root: &Path, identity: &Path, out: &Path, class: &str) -> Result<
 }
 
 /// The repository paths the compiler reads or builds from: a path is a directory prefix when it
-/// ends with `/`. `tools/repository/classify_pr_test_lanes.py` lists the same paths
-/// (`WORLD_BUNDLE_INPUT_PATHS`); a test keeps the two equal. A PR that adds a build input adds
-/// its path to both lists. The root `Cargo.toml` and `Cargo.lock` enter the `inputs_digest` in
+/// ends with `/`. The repository CI router follows candidate build/source references; this
+/// list also binds those inputs to the pin artifact fingerprint. Add each new compiler input
+/// here. The root `Cargo.toml` and `Cargo.lock` enter the `inputs_digest` in
 /// the World-scoped form of `cargo_inputs`; the lane still runs on any change to them.
 const INPUT_PATHS: &[&str] = &[
     "content/world/",
+    "content/cyclopedia/",
+    "content/assets/files/",
+    "imports/cipsoft-staticdata/map/subareas/",
     "content/houses/",
     "content/creatures/definitions/",
     "content/items/definitions/",
