@@ -9,12 +9,24 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 # Canary 47dfd51 SoulPit.SoulCoresConfiguration.monsterVariationsSoulCore.
+# Event links use exact names from both pinned Item XMLs and existing canonical Creatures.
+# Their source hashes and remaining gaps are in soulpit-metadata-source-proof.json.
 VARIANT_CORES = {
-    'horse': 48961, 'brown_horse': 48962, 'grey_horse': 48963,
-    'nomad': 47558, 'nomad_blue': 48965, 'nomad_female': 48966,
-    'purple_butterfly': 47490, 'butterfly': 47503, 'blue_butterfly': 47503,
+    'blue_butterfly': 47503,
+    'bride_of_night': 47662,
+    'brown_horse': 48962,
+    'butterfly': 47503,
+    'doomsday_cultist': 47658,
+    'grey_horse': 48963,
+    'horse': 48961,
+    'midnight_warrior': 47660,
+    'nomad': 47558,
+    'nomad_blue': 48965,
+    'nomad_female': 48966,
+    'purple_butterfly': 47490,
     'red_butterfly': 47504,
 }
+
 OUTPUT = ROOT / 'crates/gameplay/items/src/soulpit_species.json'
 
 

@@ -16,6 +16,13 @@ struct Record {
     identity: Identity,
     town: Town,
     provenance: Provenance,
+    entrance: Entrance,
+}
+#[derive(Deserialize)]
+struct Entrance {
+    x: i32,
+    y: i32,
+    z: i16,
 }
 #[derive(Deserialize)]
 struct Identity {
@@ -39,6 +46,14 @@ pub(super) fn source_house_id(key: &str) -> Option<u32> {
         .find(|house| house.identity.key == key)
         .map(|house| house.provenance.engine_house.house_id)
         .filter(|id| *id != 0)
+}
+pub(super) fn entrance(key: &str) -> Option<crate::foundation::LocalPosition> {
+    let record = catalogue()?.iter().find(|r| r.identity.key == key)?;
+    Some(crate::foundation::LocalPosition {
+        x: record.entrance.x,
+        y: record.entrance.y,
+        floor: record.entrance.z,
+    })
 }
 fn catalogue() -> Option<&'static Vec<Record>> {
     static CATALOGUE: OnceLock<Option<Vec<Record>>> = OnceLock::new();

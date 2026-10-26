@@ -536,6 +536,14 @@
     "occurrence": "common"
   },
   {
+    "creature": "oteryn:creature.bride_of_night",
+    "revision": "definition-r1",
+    "core": 47662,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
     "creature": "oteryn:creature.brimstone_bug",
     "revision": "definition-r1",
     "core": 47688,
@@ -1518,6 +1526,14 @@
     "class": "Mammal",
     "difficulty": "medium",
     "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.doomsday_cultist",
+    "revision": "definition-r1",
+    "core": 47658,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "very_rare"
   },
   {
     "creature": "oteryn:creature.dragolisk",
@@ -3532,6 +3548,14 @@
     "revision": "definition-r1",
     "core": 47659,
     "class": "Slime",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.midnight_warrior",
+    "revision": "definition-r1",
+    "core": 47660,
+    "class": "Human",
     "difficulty": "medium",
     "occurrence": "very_rare"
   },

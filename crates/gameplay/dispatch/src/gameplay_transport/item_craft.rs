@@ -63,6 +63,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command: CommandRef::new(command.game_session_id, id),
             source: [0; 16],
             target: None,
+            ground_inputs: Vec::new(),
             station: None,
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).ok()?,
         };
@@ -82,6 +83,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .ok()?
         {
+            self.states.loop_ground.invalidate();
             return disposition(result);
         }
         let Some(ItemKey::Instance(source)) = source else {
@@ -113,21 +115,46 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return disposition(UseDisposition::Rejected);
             }
-            return disposition(
-                self.root
-                    .craft_item(
-                        &_permit,
-                        self.character,
-                        self.holder,
-                        fence,
-                        request,
-                        native,
-                        &NativeItemWeights(native),
-                        false,
-                    )
-                    .await
-                    .ok()??,
-            );
+            let (at, index) = {
+                let mut runtime = self.runtime.lock().await;
+                (
+                    super::bundle_map_position(&mut runtime, self.movement_cells, actor)?,
+                    pinned_index(&runtime, self.active_generation)?,
+                )
+            };
+            let ground =
+                super::loop_move::loop_ground(self, at.map.overlay.base(), Some(index)).await?;
+            for item in [source, target] {
+                if let Some((pos, _)) = ground.ground_entry(&item) {
+                    if i16::from(pos.floor) != at.at.floor
+                        || at.at.x.abs_diff(i32::from(pos.x)) > 1
+                        || at.at.y.abs_diff(i32::from(pos.y)) > 1
+                    {
+                        return disposition(UseDisposition::TooFar);
+                    }
+                    let mut cell = Vec::with_capacity(10);
+                    cell.extend_from_slice(&i32::from(pos.x).to_be_bytes());
+                    cell.extend_from_slice(&i32::from(pos.y).to_be_bytes());
+                    cell.extend_from_slice(&i16::from(pos.floor).to_be_bytes());
+                    request.ground_inputs.push((item, cell));
+                }
+            }
+            let result = self
+                .root
+                .craft_item(
+                    &_permit,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    native,
+                    &NativeItemWeights(native),
+                    false,
+                )
+                .await;
+            // A failed acknowledgement can still have committed; discard the projection either way.
+            self.states.loop_ground.invalidate();
+            return disposition(result.ok()??);
         }
         request.station = Some({
             let mut runtime = self.runtime.lock().await;

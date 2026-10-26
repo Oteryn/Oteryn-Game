@@ -1,0 +1,86 @@
+{
+  "schema": "OTERYN_SOULPIT_METADATA_SOURCE_FACTS/v1",
+  "canary_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+  "global_evidence": "not verified against Global",
+  "mapped_existing_canonical_creatures": [
+    {
+      "core": 47658,
+      "creature": "oteryn:creature.doomsday_cultist",
+      "class": "Human",
+      "difficulty": "easy"
+    },
+    {
+      "core": 47660,
+      "creature": "oteryn:creature.midnight_warrior",
+      "class": "Human",
+      "difficulty": "medium"
+    },
+    {
+      "core": 47662,
+      "creature": "oteryn:creature.bride_of_night",
+      "class": "Human",
+      "difficulty": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "source": "canary",
+      "path": "data/items/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "source": "crystal",
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    },
+    {
+      "source": "crystal",
+      "path": "data-global/monster/humans/doomsday_cultist.lua",
+      "sha256": "4d8dde5565af22c248d45054f0b96e9898dfa78042c0a9e5e85dbf1a8f3468ae"
+    },
+    {
+      "source": "crystal",
+      "path": "data-global/monster/humans/midnight_warrior.lua",
+      "sha256": "9e2f9ba83b92c68a1a27600cbdd3b9818f3d87a69e5a8820706532ea5a2ca27a"
+    },
+    {
+      "source": "crystal",
+      "path": "data-global/monster/humans/bride of night.lua",
+      "sha256": "73eccbdb57819fd0b4a415679c054df2f74800eb25118ceb72c41a57528ccbcf"
+    },
+    {
+      "source": "crystal",
+      "path": "data-global/monster/quests/a_piece_of_cake/cake_golem.lua",
+      "sha256": "48471262a6d87ca938218890cc10f3839bd072dbf9f71301e63df155933595cf"
+    }
+  ],
+  "unresolved_cores": [
+    47654,
+    47691,
+    47697,
+    47773,
+    48089,
+    49007,
+    49033,
+    49034,
+    49035,
+    49036,
+    49037,
+    49040,
+    49041
+  ],
+  "unresolved_reason": "Both pinned XMLs prove core identity and physical facts but not Creature/Bestiary taxonomy. No matching canonical Creature identity exists for these 13 names. Pinned Crystal contains Cake Golem Bestiary metadata (Construct, easy) but admitting that Creature requires the owning Creature import and its dependent profiles; the other 12 have no matching pinned monster Lua file. No fabricated Creature aliases or inferred difficulty tiers were added.",
+  "excluded_47899": "Canary XML, appearances and Falcon Knight Creature exist, but pinned Crystal XML and the owning canonical Item binding table have no 47899. Existing Item admission requires an owning identity binding; do not bypass that proof with a numeric alias.",
+  "metadata_without_canonical_identity": [
+    {
+      "core": 47691,
+      "source_creature_name": "Cake Golem",
+      "source_bestiary_race_id": 680,
+      "class": "Construct",
+      "difficulty": "easy",
+      "global_evidence": "not verified against Global",
+      "status": "Requires owning canonical Creature identity/import; not an executable species row"
+    }
+  ]
+}

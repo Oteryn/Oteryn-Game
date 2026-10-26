@@ -20,13 +20,16 @@ use serde_json::{Value, json};
 use sqlx::Row;
 
 pub(crate) mod audit;
+mod custody;
 
 #[derive(Debug, Clone)]
 pub struct ItemCraftRequest {
     pub command: CommandRef,
     pub source: [u8; 16],
-    /// SOULPIT: a second carried core; the same instance consumes two units of its stack.
+    /// SOULPIT: a second input in carried or observed Ground custody; one stack consumes two units.
     pub target: Option<[u8; 16]>,
+    /// Ground observations resolved within reach by the dispatch owner; at most two inputs.
+    pub ground_inputs: Vec<([u8; 16], Vec<u8>)>,
     /// The cooking station; without it, `target` selects fusion, otherwise a reward-bag draw.
     pub station: Option<TypedDefinitionRef>,
     /// Original bounded USE bytes. Replay compares these before resolving current handles.
@@ -51,6 +54,10 @@ impl DurabilityRoot {
         if request.command.game_session_id() != fence.game_session_id
             || request.intent.is_empty()
             || request.intent.len() > oteryn_protocol_oteryn::world_object::MAX_USE_INTENT_BYTES
+            || request.ground_inputs.len() > 2
+            || request.ground_inputs.iter().any(|(item, cell)| {
+                cell.len() != 10 || (*item != request.source && Some(*item) != request.target)
+            })
             || content.loop_content_digest() != native.source_digest()
         {
             return Ok(Some(UseDisposition::Rejected));
@@ -99,7 +106,7 @@ async fn write<C: ItemLoopContent>(
     // The root fence serializes custody. Lock both inputs in UUID order before reading either.
     sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid OR item_instance_id=encode($2,'hex')::uuid ORDER BY item_instance_id FOR UPDATE")
         .bind(request.source.as_slice()).bind(request.target.unwrap_or(request.source).as_slice()).fetch_all(&mut ***tx).await?;
-    let source = carried_source(tx, fence, request.source).await?;
+    let source = custody::source(tx, fence, request, request.source).await?;
     let Some(source) = source else {
         return Ok(UseDisposition::StaleState);
     };
@@ -114,7 +121,7 @@ async fn write<C: ItemLoopContent>(
         1
     };
     let secondary = match request.target.filter(|id| *id != request.source) {
-        Some(id) => match carried_source(tx, fence, id).await? {
+        Some(id) => match custody::source(tx, fence, request, id).await? {
             Some(row) => Some(row),
             None => return Ok(UseDisposition::StaleState),
         },
@@ -172,12 +179,15 @@ async fn write<C: ItemLoopContent>(
         // The current core is valid, but there are not two units to combine.
         return Ok(UseDisposition::NotPossible);
     }
-    let parent: Vec<u8> = source.try_get("parent")?;
-    if let Some(row) = &secondary
-        && row.try_get::<Vec<u8>, _>("parent")? != parent
-    {
-        return Ok(UseDisposition::Rejected);
-    }
+    // Outputs enter the main backpack. Input custody is independently retained in the receipt.
+    let Some(parent) = sqlx::query_scalar::<_, Vec<u8>>("SELECT uuid_send(item_instance_id) FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await? else {
+        return Ok(UseDisposition::NoRoom);
+    };
+    let direct = |row: &sqlx::postgres::PgRow| -> Result<bool, sqlx::Error> {
+        let location: Value = row.try_get("custody")?;
+        Ok(location["kind"] == "main" && row.try_get::<Vec<u8>, _>("parent")? == parent)
+    };
     let occupied: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(&parent).fetch_one(&mut ***tx).await?;
     let tree_count: i64 = sqlx::query_scalar(
         "WITH RECURSIVE tree(item_instance_id,depth) AS ( \
@@ -189,11 +199,27 @@ async fn write<C: ItemLoopContent>(
     let secondary_frees_slot = secondary
         .as_ref()
         .is_some_and(|row| row.try_get::<i64, _>("quantity").ok() == Some(1));
-    let freed = i64::from(quantity == source_units) + i64::from(secondary_frees_slot);
+    let freed = i64::from(quantity == source_units && direct(&source)?)
+        + i64::from(
+            secondary_frees_slot && secondary.as_ref().map(direct).transpose()?.unwrap_or(false),
+        );
+    let in_tree = |row: &sqlx::postgres::PgRow| -> Result<bool, sqlx::Error> {
+        let location: Value = row.try_get("custody")?;
+        Ok(matches!(location["kind"].as_str(), Some("main" | "nested")))
+    };
+    let tree_freed = i64::from(quantity == source_units && in_tree(&source)?)
+        + i64::from(
+            secondary_frees_slot
+                && secondary
+                    .as_ref()
+                    .map(in_tree)
+                    .transpose()?
+                    .unwrap_or(false),
+        );
     if tree_count
         + i64::try_from(conversion.outputs.len())
             .map_err(|_| DurabilityError::InvalidStoredState)?
-        - freed
+        - tree_freed
         > 500
     {
         return Ok(UseDisposition::NoRoom);
@@ -239,6 +265,25 @@ async fn write<C: ItemLoopContent>(
         };
         used_weight += u64::from(weight);
     }
+    if source.try_get::<Value, _>("custody")?["kind"] == "ground" {
+        used_weight -= u64::from(unit_weight)
+            * u64::try_from(source_units).map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
+    if let Some(row) = &secondary
+        && row.try_get::<Value, _>("custody")?["kind"] == "ground"
+    {
+        let target = TypedDefinitionRef {
+            family: row.try_get("definition_family")?,
+            production_key: row.try_get("definition_production_key")?,
+            revision_ref: row.try_get("definition_revision_ref")?,
+        };
+        used_weight -= u64::from(
+            content
+                .loop_facts(&target)
+                .and_then(|f| f.weight)
+                .ok_or(DurabilityError::InvalidStoredState)?,
+        );
+    }
     let mut output_weight = 0_u64;
     for (definition, count) in &conversion.outputs {
         let Some(facts) = content.loop_facts(definition) else {
@@ -271,7 +316,7 @@ async fn write<C: ItemLoopContent>(
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut outputs = Vec::new();
     for (position, (definition, count)) in conversion.outputs.iter().enumerate() {
-        let output_ordinal = if quantity == source_units && position == 0 {
+        let output_ordinal = if quantity == source_units && direct(&source)? && position == 0 {
             source.try_get::<String, _>("ordinal")?
         } else {
             ordinal = ordinal
@@ -298,6 +343,12 @@ async fn write<C: ItemLoopContent>(
         &before,
         source_units,
         secondary_before.as_ref(),
+        &source.try_get::<Value, _>("custody")?,
+        secondary
+            .as_ref()
+            .map(|row| row.try_get::<Value, _>("custody"))
+            .transpose()?
+            .as_ref(),
         &outputs,
         &transaction,
         &event,
@@ -312,25 +363,29 @@ async fn write<C: ItemLoopContent>(
         .as_ref()
         .map(|row| row.try_get::<String, _>("ordinal"))
         .transpose()?;
-    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,source_units,secondary_item_instance_id,secondary_parent_item_instance_id,secondary_ordinal,secondary_before) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,encode($18,'hex')::uuid,$19::text::numeric,$20)")
-        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(i16::try_from(source_units).map_err(|_| DurabilityError::InvalidStoredState)?).bind(request.target.filter(|id| *id != request.source).map(|id| id.to_vec())).bind(&secondary_parent).bind(&secondary_ordinal).bind(&secondary_before).execute(&mut ***tx).await?;
+    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,source_units,secondary_item_instance_id,secondary_parent_item_instance_id,secondary_ordinal,secondary_before,source_custody,secondary_custody,input_channel_id) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16,encode($17,'hex')::uuid,encode($18,'hex')::uuid,$19::text::numeric,$20,$21,$22,encode($23,'hex')::uuid)")
+        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(i16::try_from(source_units).map_err(|_| DurabilityError::InvalidStoredState)?).bind(request.target.filter(|id| *id != request.source).map(|id| id.to_vec())).bind(&secondary_parent).bind(&secondary_ordinal).bind(&secondary_before).bind(source.try_get::<Value, _>("custody")?).bind(secondary.as_ref().map(|r| r.try_get::<Value, _>("custody")).transpose()?).bind(scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?.1.as_bytes().as_slice()).execute(&mut ***tx).await?;
     sqlx::query("UPDATE game_item_instances SET quantity=quantity-$3,lifecycle=CASE WHEN quantity=$3 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(request.source.as_slice()).bind(&transaction).bind(source_units).execute(&mut ***tx).await?;
     if quantity == source_units {
-        sqlx::query(
-            "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
-        )
-        .bind(request.source.as_slice())
-        .execute(&mut ***tx)
-        .await?;
+        custody::remove(tx, request.source, &source).await?;
     }
     if let Some(id) = request.target.filter(|id| *id != request.source) {
         sqlx::query("UPDATE game_item_instances SET quantity=quantity-1,lifecycle=CASE WHEN quantity=1 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(id.as_slice()).bind(&transaction).execute(&mut ***tx).await?;
         if secondary_frees_slot {
-            sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(id.as_slice()).execute(&mut ***tx).await?;
+            custody::remove(
+                tx,
+                id,
+                secondary
+                    .as_ref()
+                    .ok_or(DurabilityError::InvalidStoredState)?,
+            )
+            .await?;
         }
     }
+    sqlx::query("UPDATE game_character_equipment_state SET revision=revision+1,last_transaction_id=$2::uuid WHERE character_id=encode($1,'hex')::uuid AND EXISTS(SELECT 1 FROM game_item_craft_records WHERE transaction_id=$2::uuid AND equipment_revision_before IS NOT NULL)")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
     for output in outputs {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(($1->>'item')::uuid,encode($2,'hex')::uuid,'Item',$1->>'key',$1->>'revision',($1->>'count')::bigint,1,$3::uuid)")
             .bind(&output).bind(world.as_bytes().as_slice()).bind(&transaction).execute(&mut ***tx).await?;
@@ -340,14 +395,4 @@ async fn write<C: ItemLoopContent>(
     sqlx::query("INSERT INTO game_item_audit_outbox(event_id,transaction_id,transaction_ordinal,transaction_count,event_type_id,schema_revision,retention_profile_id,item_instance_id,occurred_at,expires_at,envelope,envelope_sha256,publication_state) VALUES($1::uuid,$2::uuid,1,1,2,$3,$4,encode($5,'hex')::uuid,$6,$6+$7,$8,sha256($8),1)")
         .bind(&event).bind(&transaction).bind(i64::from(tuple.schema_revision())).bind(tuple.retention_profile_id()).bind(request.source.as_slice()).bind(occurred).bind(super::item_mint_audit::AUDIT_RETENTION_P90D_MS).bind(&envelope).execute(&mut ***tx).await?;
     Ok(UseDisposition::Committed)
-}
-
-async fn carried_source(
-    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
-    fence: CurrentCharacterItemFence,
-    item: [u8; 16],
-) -> Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
-    let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    Ok(sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id")
-        .bind(item.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?)
 }

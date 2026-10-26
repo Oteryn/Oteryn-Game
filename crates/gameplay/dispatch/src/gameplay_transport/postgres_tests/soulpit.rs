@@ -103,7 +103,7 @@ fn soulpit_fusion_wire_atomic_replay_restart_and_refusals() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "soulpit e2e panic")??;
     Ok(())
@@ -116,13 +116,29 @@ fn soulpit_transformations_wire_difficulties_ominous_replay_and_restart() -> Tes
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "soulpit transformations e2e panic")??;
     Ok(())
 }
 
-fn scenario(transformations: bool) -> TestResult {
+#[path = "soulpit/custody.rs"]
+mod custody_cases;
+
+#[test]
+fn soulpit_fusion_custody_wire_nested_equipment_ground_and_recovery() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "soulpit custody panic")??;
+    Ok(())
+}
+
+fn scenario(transformations: bool, custody: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "soulpit", true, false).await?;
         super::reset();
@@ -234,6 +250,13 @@ fn scenario(transformations: bool) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+        if custody {
+            custody_cases::run(&harness, &deps, &authority, &mut owner, fence, native).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if transformations {
             transformation_cases(&harness, &deps, &authority, &mut owner, fence, native).await?;
             drop(owner);
@@ -362,7 +385,6 @@ fn scenario(transformations: bool) -> TestResult {
         let (next, lone) = exchange_pair(
             &owner,
             next,
-            2,
             reference(orc).ok_or("orc")?,
             reference(orc).ok_or("orc")?,
         )
@@ -379,7 +401,6 @@ fn scenario(transformations: bool) -> TestResult {
         let (next, fused) = exchange_pair(
             &owner,
             next,
-            3,
             reference(orc).ok_or("orc")?,
             reference(orc).ok_or("orc")?,
         )
@@ -398,7 +419,6 @@ fn scenario(transformations: bool) -> TestResult {
         let (_, rejected) = exchange_pair(
             &owner,
             next,
-            4,
             reference(bag).ok_or("bag")?,
             reference(outputs[0]["key"].as_str().ok_or("output key")?)
                 .ok_or("output definition")?,
@@ -542,7 +562,6 @@ fn scenario(transformations: bool) -> TestResult {
 async fn exchange_pair(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
-    command_id: u64,
     source_definition: std::num::NonZeroU32,
     target_definition: std::num::NonZeroU32,
 ) -> TestResult<(
@@ -561,6 +580,25 @@ async fn exchange_pair(
     let exchanging = async move {
         let mut source = None;
         let mut target = None;
+        let mut bags = Vec::new();
+        let bag_definition = owner
+            .active_generation
+            .and_then(|active| active.native_gameplay())
+            .and_then(|native| native.item_index())
+            .and_then(|index| {
+                index.definition_ref("Item", "oteryn:item.tibia.i2854", "definition-r1")
+            });
+        let mut record = |entry: oteryn_protocol_oteryn::item_view::ItemEntry| {
+            if entry.item_definition_ref == source_definition {
+                source = Some(entry.handle);
+            }
+            if entry.item_definition_ref == target_definition {
+                target = Some(entry.handle);
+            }
+            if Some(entry.item_definition_ref) == bag_definition {
+                bags.push(entry.handle);
+            }
+        };
         loop {
             let raw = super::item_look::read_frame(&mut client).await?;
             let envelope = crate::foundation::decode_wire_envelope(&raw)?;
@@ -571,17 +609,40 @@ async fn exchange_pair(
                     if domain.domain_id
                         == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
                     {
-                        let inventory =
-                            oteryn_protocol_oteryn::item_view::decode_character_inventory(
-                                domain.payload,
-                            )
-                            .map_err(debug)?;
-                        for entry in inventory.main_backpack.into_iter().chain(inventory.entries) {
-                            if entry.item_definition_ref == source_definition {
-                                source = Some(entry.handle);
-                            }
-                            if entry.item_definition_ref == target_definition {
-                                target = Some(entry.handle);
+                        let inventory = oteryn_protocol_oteryn::item_view::decode_character_inventory_with_equip_drop(domain.payload, admitted.continuity.selected_capabilities.contains(12)).map_err(debug)?;
+                        for entry in inventory
+                            .main_backpack
+                            .into_iter()
+                            .chain(inventory.entries)
+                            .chain(inventory.equipment.into_iter().map(|entry| entry.item))
+                        {
+                            record(entry);
+                        }
+                    }
+                    if domain.domain_id
+                        == oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+                    {
+                        let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
+                            domain.payload,
+                        )
+                        .map_err(debug)?;
+                        for tile in map.tiles {
+                            for item in tile.items {
+                                if let (
+                                    oteryn_protocol_oteryn::world_map::MapDefinition::Item(
+                                        reference,
+                                    ),
+                                    oteryn_protocol_oteryn::world_map::MapOrigin::Handle(handle),
+                                ) = (item.definition, item.origin)
+                                {
+                                    record(oteryn_protocol_oteryn::item_view::ItemEntry {
+                                        handle,
+                                        item_definition_ref: reference,
+                                        count: std::num::NonZeroU32::new(item.count)
+                                            .ok_or("count")?,
+                                        sub_type: item.sub_type,
+                                    });
+                                }
                             }
                         }
                     }
@@ -591,6 +652,63 @@ async fn exchange_pair(
                 break;
             }
         }
+        // Open carried bags through command 21, then use only handles delivered in domain 14.
+        let mut opened = std::collections::BTreeSet::new();
+        let mut next_command = admitted.continuity.next_command_id;
+        while (source.is_none() || target.is_none()) && !bags.is_empty() {
+            let bag = bags.remove(0);
+            if !opened.insert(bag) {
+                continue;
+            }
+            let payload = oteryn_protocol_oteryn::container_tree::encode_container_view_intent(
+                &oteryn_protocol_oteryn::container_tree::ContainerViewIntent::Open {
+                    handle: bag,
+                    replace_view: None,
+                },
+            )
+            .map_err(debug)?;
+            let frame = oteryn_protocol_oteryn::encode_client_command(
+                1,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id: next_command,
+                    command_type: 21,
+                    payload: &payload,
+                },
+            )?;
+            client.write_u32(u32::try_from(frame.len())?).await?;
+            client.write_all(&frame).await?;
+            next_command += 1;
+            loop {
+                let raw = super::item_look::read_frame(&mut client).await?;
+                let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+                if envelope.message_type() == crate::foundation::MessageType::StateDelta {
+                    let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
+                    if delta.domain_id
+                        == oteryn_protocol_oteryn::container_tree::STATE_DOMAIN_CONTAINER_VIEWS
+                    {
+                        let views = oteryn_protocol_oteryn::container_tree::decode_container_views(
+                            delta.payload,
+                        )
+                        .map_err(debug)?;
+                        for entry in views.views.into_iter().flat_map(|view| view.entries) {
+                            if entry.item_definition_ref == source_definition {
+                                source = Some(entry.handle);
+                            }
+                            if entry.item_definition_ref == target_definition {
+                                target = Some(entry.handle);
+                            }
+                            if Some(entry.item_definition_ref) == bag_definition
+                                && !opened.contains(&entry.handle)
+                            {
+                                bags.push(entry.handle);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        let command_id = next_command;
         let payload = encode_item_use_intent(&UseIntent {
             target: UseTarget::Item(source.ok_or("live source core handle")?),
             use_with: None,
@@ -648,8 +766,10 @@ async fn exchange_pair(
         }),
     )
     .await?;
-    let result = result.ok_or("client did not finish")??;
     let end = end.ok_or("server did not finish")?;
+    let result = result
+        .ok_or("client did not finish")?
+        .map_err(|error| format!("{error}; connection ended: {end:?}"))?;
     let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else {
         return Err(format!("{end:?}").into());
     };
@@ -680,12 +800,15 @@ async fn transformation_cases(
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18, 114])
             .ok_or("transformation capabilities")?;
     // Fixed server entropy is a database fixture, never a client-controlled draw.
-    for (index, (tool, difficulty, ominous, desired)) in [
-        (49164, "easy", false, "medium"),
-        (49164, "challenging", false, "challenging"),
-        (37110, "medium", false, "easy"),
-        (37110, "harmless", false, "harmless"),
-        (49164, "easy", true, "easy"),
+    for (index, (tool, difficulty, ominous, desired, exact_core)) in [
+        (49164, "easy", false, "medium", None),
+        (49164, "challenging", false, "challenging", None),
+        (37110, "medium", false, "easy", None),
+        (37110, "harmless", false, "harmless", None),
+        (49164, "easy", true, "easy", None),
+        (49164, "easy", false, "medium", Some(47658_u64)),
+        (49164, "medium", false, "hard", Some(47660)),
+        (49164, "medium", false, "hard", Some(47662)),
     ]
     .into_iter()
     .enumerate()
@@ -693,7 +816,10 @@ async fn transformation_cases(
         let command = u64::try_from(index)? + 1;
         let own = species
             .iter()
-            .find(|s| s["difficulty"] == difficulty)
+            .find(|s| {
+                s["difficulty"] == difficulty
+                    && exact_core.is_none_or(|core| s["core"].as_u64() == Some(core))
+            })
             .ok_or("test difficulty")?;
         let core = own["core"].as_u64().ok_or("core id")?;
         let tool_key = format!("oteryn:item.tibia.i{tool}");
@@ -720,7 +846,6 @@ async fn transformation_cases(
         let (next, result) = exchange_pair(
             owner,
             admitted,
-            command,
             reference(&tool_key).ok_or("tool ref")?,
             reference(&core_key).ok_or("core ref")?,
         )

@@ -452,6 +452,8 @@ pub struct AdmissionAuthorityPublicationV1 {
     changes: Vec<AdmissionAuthorityPublicationChangeV1>,
 }
 
+mod house_transfer;
+
 impl AdmissionAuthorityPublicationV1 {
     pub fn prepare(
         source: &dyn AdmissionAuthorityOwningPublisherV1,
@@ -1633,6 +1635,145 @@ impl AdmissionAuthorityPublicationFlowV1 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn house_transfer_claims_require_exact_source_next_lease_and_unchanged_ownership()
+    -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        let id = |last| {
+            let mut bytes = [0; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes[15] = last;
+            bytes
+        };
+        let source = GameSessionId::decode(&id(10))
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        let destination = GameSessionId::decode(&id(11))
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        let mut account = Owner.resolve_publication(100)?.remove(0);
+        let mut character = game_domain_changes()?.remove(0);
+        let character_id = match character.key {
+            AdmissionAuthorityGuardKeyV1::Character(id) => id,
+            _ => unreachable!(),
+        };
+        let account_id = match &account.key {
+            AdmissionAuthorityGuardKeyV1::Account { account_id } => account_id.clone(),
+            _ => unreachable!(),
+        };
+        if let AdmissionAuthorityGuardStateV1::Account { presence, .. } = &mut account.state {
+            *presence = Some((character_id, source));
+        }
+        if let AdmissionAuthorityGuardStateV1::Character {
+            account_id: held,
+            holder,
+            ..
+        } = &mut character.state
+        {
+            *held = account_id;
+            *holder = Some(source);
+        }
+        let current = vec![Some(account.clone()), Some(character.clone())];
+        let mut next = vec![account, character];
+        for row in &mut next {
+            row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: row.publication_revision,
+            };
+            row.publication_revision += 1;
+            row.source.source_revision += 1;
+            row.source.decision_identity = "house-transfer".into();
+            match &mut row.state {
+                AdmissionAuthorityGuardStateV1::Account { presence, security } => {
+                    *presence = Some((character_id, destination));
+                    security.provenance.publication_revision = row.publication_revision;
+                }
+                AdmissionAuthorityGuardStateV1::Character {
+                    holder,
+                    lease_generation,
+                    ..
+                } => {
+                    *holder = Some(destination);
+                    *lease_generation += 1;
+                }
+                _ => unreachable!(),
+            }
+        }
+        assert!(
+            AdmissionAuthorityPublicationV1::prepare_house_transfer(
+                &ChangedOwner(next.clone()),
+                &current,
+                character_id,
+                (source, destination),
+                100
+            )
+            .is_ok()
+        );
+        assert!(
+            AdmissionAuthorityPublicationV1::prepare(&ChangedOwner(next.clone()), 100)?
+                .validate_locked(&current)
+                .is_err()
+        );
+        for mutation in 0..8 {
+            let mut changed = next.clone();
+            match mutation {
+                0 => changed[0].source.authority = "foreign-owner".into(),
+                1 => {
+                    changed[1].precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                        expected_publication_revision: 99,
+                    }
+                }
+                2 => {
+                    if let AdmissionAuthorityGuardStateV1::Account { presence, .. } =
+                        &mut changed[0].state
+                    {
+                        *presence = Some((character_id, source));
+                    }
+                }
+                3 => {
+                    if let AdmissionAuthorityGuardStateV1::Character {
+                        lease_generation, ..
+                    } = &mut changed[1].state
+                    {
+                        *lease_generation += 1;
+                    }
+                }
+                4 => {
+                    if let AdmissionAuthorityGuardStateV1::Character { account_id, .. } =
+                        &mut changed[1].state
+                    {
+                        *account_id = "another-account".into();
+                    }
+                }
+                5 => {
+                    if let AdmissionAuthorityGuardStateV1::Character { eligible, .. } =
+                        &mut changed[1].state
+                    {
+                        *eligible = false;
+                    }
+                }
+                6 => {
+                    if let AdmissionAuthorityGuardStateV1::Account { security, .. } =
+                        &mut changed[0].state
+                    {
+                        security.allowed = false;
+                    }
+                }
+                _ => {
+                    changed.pop();
+                }
+            }
+            assert!(
+                AdmissionAuthorityPublicationV1::prepare_house_transfer(
+                    &ChangedOwner(changed),
+                    &current,
+                    character_id,
+                    (source, destination),
+                    100
+                )
+                .is_err(),
+                "mutation {mutation}"
+            );
+        }
+        Ok(())
+    }
     fn test_security() -> FreshEvidenceProvenanceV1 {
         FreshEvidenceProvenanceV1 {
             source_authority: "authenticated-platform-security".into(),

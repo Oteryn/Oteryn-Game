@@ -57,14 +57,41 @@ fn scenario() -> TestResult {
 
 #[test]
 fn soulpit_acquisition_real_dispatch_retains_core_prism_and_replay() -> TestResult {
-    scenario_thread::run("soulpit-acquisition", || scenario_with_soulpit(None, true))
+    scenario_thread::run("soulpit-acquisition", || {
+        scenario_with_soulpit(None, true, None)
+    })
+}
+
+#[test]
+fn soulpit_acquisition_core_mint_failure_recovers_same_receipts() -> TestResult {
+    scenario_thread::run("soulpit-core-recovery", || {
+        scenario_with_soulpit(None, true, Some("core"))
+    })
+}
+
+#[test]
+fn soulpit_acquisition_prism_mint_failure_recovers_same_receipts() -> TestResult {
+    scenario_thread::run("soulpit-prism-recovery", || {
+        scenario_with_soulpit(None, true, Some("prism"))
+    })
+}
+
+#[test]
+fn soulpit_acquisition_stale_scope_cannot_mint_core_or_prism() -> TestResult {
+    scenario_thread::run("soulpit-stale-authority", || {
+        scenario_with_soulpit(None, true, Some("stale"))
+    })
 }
 
 pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
-    scenario_with_soulpit(reconcile, false)
+    scenario_with_soulpit(reconcile, false, None)
 }
 
-fn scenario_with_soulpit(reconcile: Option<bool>, soulpit: bool) -> TestResult {
+fn scenario_with_soulpit(
+    reconcile: Option<bool>,
+    soulpit: bool,
+    recovery: Option<&str>,
+) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
@@ -429,6 +456,94 @@ fn scenario_with_soulpit(reconcile: Option<bool>, soulpit: bool) -> TestResult {
                 observed,
             );
             assert!(attack.kills().has_session(session));
+        }
+        if let Some(recovery) = recovery {
+            if recovery == "stale" {
+                // Replace only live scope generation; the captured death and principal stay valid.
+                let mut tx = harness.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query("UPDATE game_runtime_scope_assignments SET ownership_generation=ownership_generation+1 WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid")
+                    .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&mut *tx).await?;
+                tx.commit().await?;
+                let _outcome = owner.drain_kill_rewards(session).await;
+                let items: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key IN ('oteryn:item.tibia.i47398','oteryn:item.tibia.i49164')").fetch_one(&harness.pool).await?;
+                assert_eq!(items, 0);
+                assert_eq!(corpse_receipts(&harness).await?, 0);
+                assert_eq!(xp_receipts(&harness).await?, 0);
+                drop(owner);
+                drop(authority);
+                drop(seal);
+                return harness.cleanup().await;
+            }
+            let trigger = match recovery {
+                "core" => {
+                    "CREATE TRIGGER soulpit_injected_mint BEFORE INSERT ON game_item_instances FOR EACH ROW WHEN (NEW.definition_production_key='oteryn:item.tibia.i47398') EXECUTE FUNCTION soulpit_injected_mint()"
+                }
+                "prism" => {
+                    "CREATE TRIGGER soulpit_injected_mint BEFORE INSERT ON game_item_instances FOR EACH ROW WHEN (NEW.definition_production_key='oteryn:item.tibia.i49164') EXECUTE FUNCTION soulpit_injected_mint()"
+                }
+                _ => return Err("unknown recovery fixture".into()),
+            };
+            sqlx::raw_sql("CREATE SEQUENCE soulpit_mint_attempt; CREATE FUNCTION soulpit_injected_mint() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('soulpit_mint_attempt'); RAISE EXCEPTION 'soulpit injected acquisition failure'; END $$").execute(&harness.pool).await?;
+            sqlx::raw_sql(trigger).execute(&harness.pool).await?;
+            assert_eq!(
+                owner.drain_kill_rewards(session).await,
+                DrainOutcome::Deferred
+            );
+            assert!(
+                sqlx::query_scalar::<_, bool>("SELECT is_called FROM soulpit_mint_attempt")
+                    .fetch_one(&harness.pool)
+                    .await?,
+                "failure reached selected core/prism mint"
+            );
+            let failed_key = if recovery == "core" {
+                "oteryn:item.tibia.i47398"
+            } else {
+                "oteryn:item.tibia.i49164"
+            };
+            let failed: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1",
+            )
+            .bind(failed_key)
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(failed, 0, "failed mint has no durable instance");
+            let reserved: Vec<String> = sqlx::query_scalar("SELECT transaction_id::text FROM game_item_mint_reservations ORDER BY transaction_id").fetch_all(&harness.pool).await?;
+            assert!(!reserved.is_empty());
+            assert_eq!(xp_receipts(&harness).await?, 1);
+            assert_eq!(corpse_receipts(&harness).await?, 1);
+            assert!(
+                owner
+                    .states
+                    .attack
+                    .lock()
+                    .await
+                    .kills()
+                    .has_session(session)
+            );
+            sqlx::raw_sql("DROP TRIGGER soulpit_injected_mint ON game_item_instances; DROP FUNCTION soulpit_injected_mint(); DROP SEQUENCE soulpit_mint_attempt").execute(&harness.pool).await?;
+            assert_eq!(
+                owner.drain_kill_rewards(session).await,
+                DrainOutcome::Drained
+            );
+            let reused: Vec<String> = sqlx::query_scalar("SELECT transaction_id::text FROM game_item_mint_reservations ORDER BY transaction_id").fetch_all(&harness.pool).await?;
+            assert!(
+                reserved.iter().all(|id| reused.contains(id)),
+                "recovery keeps every frozen transaction identity"
+            );
+            let committed: i64 = sqlx::query_scalar(
+                "SELECT count(*) FROM game_item_mint_receipts WHERE transaction_id::text=ANY($1)",
+            )
+            .bind(&reserved)
+            .fetch_one(&harness.pool)
+            .await?;
+            assert_eq!(
+                usize::try_from(committed)?,
+                reserved.len(),
+                "every pre-failure reservation commits under its original transaction"
+            );
         }
         let mut drains = 0;
         while owner.drain_kill_rewards(session).await != DrainOutcome::Drained {

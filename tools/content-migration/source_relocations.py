@@ -19,13 +19,15 @@ from pathlib import Path
 RELOCATIONS = {
     # ADR-0019 stage 1 carve: the Item identity module moved into the gameplay content
     # crate. Only its two include_bytes! prefixes gained one `../`; the explicit
-    # APPEARANCE_ONLY_ITEM_IDS cohort the pins guard is unchanged.
+    # APPEARANCE_ONLY_ITEM_IDS cohort the pins guard is unchanged. DUP-GUARD-1 later
+    # moved its unit tests to the content crate's item_identity_tests.rs; production
+    # code and the cohort are byte-identical.
     (
         "apps/game-server/src/content/item_identity.rs",
         "0df52c391a1d56e5d82be269ddcd480233f923007cfdf35b9a79226bf2868dde",
     ): (
         "crates/gameplay/content-promotion/src/content/item_identity.rs",
-        "40c254806d0a55b5c2e938801beb9f0d17430a6825662ac31c89ca83747f3bea",
+        "12b998650847975760f4f5abbbf38e2f0eba1c11b51e844e5c89c74854103544",
     ),
     # The same carve: the A12 helper reads the native admission through this ledger.
     (
