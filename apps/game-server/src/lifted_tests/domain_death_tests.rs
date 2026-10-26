@@ -55,33 +55,20 @@ fn build_loss(
 }
 
 #[test]
-fn build_loss_floors_each_family_and_relevels_with_its_own_requirements() {
+fn build_loss_preserves_each_family_with_its_own_requirements() {
     let formula = LossFormula(|family, _| Some(100 * (family as u64 + 1)));
     let before = loss_build((2, 50), [(12, 50); 7]);
     let after = build_loss(&formula, &before, 3, 1).expect("valid capped loss");
     assert_eq!(after.vocation(), "knight");
-    assert_eq!(after.magic(), (1, 67));
-    assert_eq!(
-        after.skills(),
-        [
-            (11, 100),
-            (11, 134),
-            (11, 167),
-            (11, 200),
-            (11, 234),
-            (11, 267),
-            (11, 300)
-        ]
-    );
+    assert_eq!(after, before);
 }
 
 #[test]
-fn full_build_loss_stops_at_each_family_seed() {
+fn full_experience_loss_preserves_trained_build_and_seed() {
     let formula = LossFormula(|_, _| Some(100));
     let before = loss_build((2, 50), [(12, 50); 7]);
     let after = build_loss(&formula, &before, 40, 40).expect("full capped loss");
-    assert_eq!(after.magic(), (0, 0));
-    assert_eq!(after.skills(), [(10, 0); 7]);
+    assert_eq!(after, before);
     assert_eq!(after.vocation(), before.vocation());
     let seed = loss_build((0, 0), [(10, 0); 7]);
     assert_eq!(build_loss(&formula, &seed, 40, 40), Ok(seed));
@@ -112,9 +99,8 @@ fn build_loss_uses_the_actual_capped_death_experience() {
         ExactI64::new(40),
         death.experience_lost,
     )
-    .expect("same loss ratio as the death");
-    assert_eq!(after.magic(), (0, 0));
-    assert_eq!(after.skills(), [(10, 0); 7]);
+    .expect("capped XP loss preserves build");
+    assert_eq!(after, before);
 }
 
 #[test]
@@ -160,13 +146,12 @@ fn build_loss_rejects_unreachable_or_unnormalized_builds() {
 }
 
 #[test]
-fn build_loss_preserves_saturated_progress_when_no_loss_is_taken() {
+fn build_loss_preserves_saturated_progress_even_when_experience_is_lost() {
     let formula = LossFormula(|_, _| Some(MAX_BUILD_PROGRESS - 1));
     let before = loss_build((2, 0), [(12, 0); 7]);
     assert_eq!(build_loss(&formula, &before, 100, 0), Ok(before.clone()));
     let after = build_loss(&formula, &before, 2, 1).expect("saturated cumulative sum");
-    assert_eq!(after.magic(), (0, MAX_BUILD_PROGRESS / 2 + 1));
-    assert_eq!(after.skills(), [(10, MAX_BUILD_PROGRESS / 2 + 1); 7]);
+    assert_eq!(after, before);
 }
 
 #[test]
@@ -178,13 +163,39 @@ fn build_loss_handles_signed_storage_maxima_without_overflow() {
     );
     let after = build_loss(&formula, &before, i64::MAX, i64::MAX - 1)
         .expect("exact product wider than u64");
-    assert_eq!(after.magic(), (0, 1));
-    assert_eq!(after.skills(), [(10, 1); 7]);
+    assert_eq!(after, before);
     let ceiling = LossFormula(|_, level| (level < 12).then_some(100));
     let before = loss_build((1, 50), [(11, MAX_BUILD_PROGRESS); 7]);
     let after = build_loss(&ceiling, &before, 1, 1).expect("unreachable next level is a ceiling");
-    assert_eq!(after.magic(), (0, 0));
-    assert_eq!(after.skills(), [(10, 0); 7]);
+    assert_eq!(after, before);
+}
+
+#[test]
+fn trained_death_keeps_all_build_progress_while_d58_experience_drops() {
+    let formula = LossFormula(|_, _| Some(100));
+    let before = loss_build((3, 50), [(14, 50); 7]);
+    for blessings in 0..=MAX_REGULAR_BLESSINGS {
+        for promoted in [false, true] {
+            let mut death = input(&[], blessings);
+            death.level = 50;
+            death.total_experience = ExactI64::new(1_000_000);
+            death.promotion_benefit_current = promoted;
+            let outcome = calculate_pve_death(&death, &ROOT, occurrence(91)).expect("death");
+            let expected =
+                112_900 * (100 - 8 * i64::from(blessings) - if promoted { 30 } else { 0 }) / 100;
+            assert_eq!(outcome.experience_lost.get(), expected);
+            assert_eq!(outcome.experience_after.get(), 1_000_000 - expected);
+            assert_eq!(
+                calculate_death_build_loss(
+                    &formula,
+                    &before,
+                    death.total_experience,
+                    outcome.experience_lost
+                ),
+                Ok(before.clone())
+            );
+        }
+    }
 }
 
 const ROOT: GameplayDecisionRoot = GameplayDecisionRoot::from_bytes([7; 32]);
