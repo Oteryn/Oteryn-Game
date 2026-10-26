@@ -9,6 +9,62 @@ pub enum ForgeCreature {
 pub const FIENDISH_RESPAWN_SECONDS: u16 = 270;
 pub const FIENDISH_SIMULTANEOUS_MAX: u8 = 4;
 pub const SHARED_XP_RANGE_XY: u16 = 30;
+pub const FIENDISH_RESPAWN_MICROS: u64 = FIENDISH_RESPAWN_SECONDS as u64 * 1_000_000;
+
+/// Stable facts owned by the spawn lane. `eligible` is content admission's decision (bosses,
+/// summons and harmless creatures are excluded there); this module deliberately does not infer
+/// eligibility from a creature name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ForgeSpawnCandidate {
+    pub spawn_identity: u64,
+    pub eligible: bool,
+    pub alive: bool,
+}
+
+/// A bounded, deterministic world-tick plan. The production owner applies these identities to
+/// its live spawn records; keeping the plan value-only makes retrying a tick side-effect free.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FiendishTickPlan {
+    pub selected: Vec<u64>,
+    pub next_tick_micros: u64,
+}
+
+/// Select enough eligible live spawns to restore the Global four-fiend population. Existing
+/// fiends are retained first and candidates are then ordered by a deterministic rotation, so
+/// replicas produce the same plan without random or wall-clock authority.
+#[must_use]
+pub fn plan_fiendish_tick(
+    now_micros: u64,
+    world_seed: u64,
+    existing: &[u64],
+    candidates: &[ForgeSpawnCandidate],
+) -> FiendishTickPlan {
+    let mut selected: Vec<u64> = existing
+        .iter()
+        .copied()
+        .filter(|id| {
+            candidates
+                .iter()
+                .any(|c| c.spawn_identity == *id && c.eligible && c.alive)
+        })
+        .collect();
+    selected.sort_unstable();
+    selected.dedup();
+    selected.truncate(usize::from(FIENDISH_SIMULTANEOUS_MAX));
+
+    let mut eligible: Vec<u64> = candidates
+        .iter()
+        .filter(|c| c.eligible && c.alive && !selected.contains(&c.spawn_identity))
+        .map(|c| c.spawn_identity)
+        .collect();
+    eligible.sort_unstable_by_key(|id| id.wrapping_sub(world_seed));
+    let missing = usize::from(FIENDISH_SIMULTANEOUS_MAX).saturating_sub(selected.len());
+    selected.extend(eligible.into_iter().take(missing));
+    FiendishTickPlan {
+        selected,
+        next_tick_micros: now_micros.saturating_add(FIENDISH_RESPAWN_MICROS),
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ForgeRecipientFacts {
@@ -141,5 +197,38 @@ mod tests {
         // The deterministic roll is reduced within the difficulty band; hostile input cannot
         // escape the admitted Global quantity range.
         assert_eq!(super::slivers(6, u8::MAX), 6);
+    }
+
+    #[test]
+    fn tick_retains_live_fiends_and_refills_to_four() {
+        use super::{FIENDISH_RESPAWN_MICROS, ForgeSpawnCandidate};
+        let candidates: Vec<_> = (1..=7)
+            .map(|spawn_identity| ForgeSpawnCandidate {
+                spawn_identity,
+                eligible: spawn_identity != 6,
+                alive: spawn_identity != 7,
+            })
+            .collect();
+        let plan = super::plan_fiendish_tick(9, 3, &[2, 7, 99], &candidates);
+        assert_eq!(plan.selected, vec![2, 3, 4, 5]);
+        assert_eq!(plan.next_tick_micros, 9 + FIENDISH_RESPAWN_MICROS);
+    }
+
+    #[test]
+    fn tick_never_exceeds_available_or_global_cap() {
+        use super::ForgeSpawnCandidate;
+        let candidates = [ForgeSpawnCandidate {
+            spawn_identity: 8,
+            eligible: true,
+            alive: true,
+        }];
+        assert_eq!(
+            super::plan_fiendish_tick(u64::MAX, 0, &[], &candidates).selected,
+            [8]
+        );
+        assert_eq!(
+            super::plan_fiendish_tick(u64::MAX, 0, &[], &candidates).next_tick_micros,
+            u64::MAX
+        );
     }
 }
