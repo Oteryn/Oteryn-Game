@@ -189,3 +189,15 @@ remaining_unknowns:
   - Global evidence for contested routes
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates WO-1."
 ```
+
+## Summer owner decision 21 (2026-10-26): appearance-only ground 44576
+
+The accepted appearance-only route owns `oteryn:terrain.tibia.i44576` directly.
+It creates no Item identity, Item binding, Item alias or `item_pointer`. The verified
+official client appearance supplies ground kind, walkability, speed 150, automap
+and client projection; missing XML collision/floor-change facts remain UNKNOWN.
+The existing palette slot resolves directly to this Terrain record. Source regeneration
+must verify the client artifact and official membership before emitting it. This
+bounded exception leaves all existing Item-backed routes and their bidirectional
+pointer requirements in force. The nine formerly held Radiant cells are admitted
+only through their actual ground, yielding all 398 authored spawn points.

@@ -1,6 +1,6 @@
 {
   "schema": "OTERYN_NPC_PLACEMENT_SCOPE/v1",
-  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell",
+  "scope": "NPC-PLACE-1a first set: the Rookgaard starter-area NPCs that have a promotion candidate placement and an admitted definition; TUTORIAL-1: owner-authorized Anna and seagull Newhaven departures; ITEM-TIMED-1: Aldo repair at the agreeing Canary/Crystal promotion-candidate cell; SUMMER: Mayor Pocaro at the admitted Summer source-map cell (dialogue presence only)",
   "npcs": [
     "oteryn:npc.a_seagull",
     "oteryn:npc.al_dee",
@@ -19,6 +19,7 @@
     "oteryn:npc.hyacinth",
     "oteryn:npc.kepar",
     "oteryn:npc.lily",
+    "oteryn:npc.mayor_pocaro",
     "oteryn:npc.norma",
     "oteryn:npc.obi",
     "oteryn:npc.paulie",

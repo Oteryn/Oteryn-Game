@@ -94,6 +94,24 @@ qualification/activation seams; provisioning valid bytes does not issue authorit
 The example intentionally does not change the control-plane issuance or activate a
 running deployment.
 
+Summer owner decision 22 is recorded in `summer-source-qualification.json`. The normal
+`register_spell_families.py` producer carries these limitations into the generated
+Creature records as `source_qualification`, under the Creature provider's manifest digest.
+The runtime retains the annotation in the active generation. Radiant attack and loot
+rows remain provisional pinned donor values, **not verified against Global**; boss HP
+and scaling retain the same limitation. This metadata does not activate an encounter or
+admit an unsupported corpse lifecycle.
+
+The Summer producer also binds all six Radiants' pinned physical melee rows to the
+existing `monster_melee` owner (2,000 ms, 100% chance, primary physical damage only).
+The production-owner PostgreSQL test exercises damage for every Radiant. The exact
+loot tables are exercised by the deterministic planner with their original probabilities;
+that check does not qualify corpse materialization, loot custody or durable settlement.
+Nine boss profiles select base HP/XP from Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+with individual source paths and SHA256s in the owning input. Those values include donor
+placeholders and remain **not verified against Global**. Difficulty scaling and encounter
+admission depend on BOSSENC-1 and are not implemented by these base profiles.
+
 ## Versioned optional owner profiles
 
 The explicit candidate manifest `/v2` requires a fifth file pin `item_profiles` and

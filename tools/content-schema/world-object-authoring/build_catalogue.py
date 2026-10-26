@@ -352,6 +352,14 @@ def outputs(
             files[index_path] = (
                 json.dumps(index, indent=2, ensure_ascii=False) + "\n"
             ).encode()
+    if include_qualified:
+        import summer_ground
+
+        files[summer_ground.SHARD] = summer_ground.outputs()[summer_ground.SHARD]
+        index_path = "content/world/terrain/index.json"
+        index = json.loads(files[index_path])
+        index["notes"] += summer_ground.MARKER_NOTE
+        files[index_path] = (json.dumps(index, indent=2, ensure_ascii=False) + "\n").encode()
     return files, world_objects.census_document_bytes(result)
 
 

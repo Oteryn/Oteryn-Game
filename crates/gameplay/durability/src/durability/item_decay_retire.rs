@@ -76,7 +76,8 @@ const EVENT_TYPE_ID: i64 = mint_audit::EVENT_TYPE_ID as i64;
 pub use crate::foundation::owner_timer::{COMBAT01_CORPSES_PER_SCOPE, CORPSE_DECAY_AFTER_MS};
 /// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): at most this many
 /// entry steps precede one corpse step.
-const CORPSE_CONTAINER_ENTRIES_MAX: usize = 16;
+const CORPSE_CONTAINER_ENTRIES_MAX: usize =
+    crate::foundation::loot_data::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX;
 
 /// The durable decay deadline of `materialized_at`, or `None` on overflow.
 #[must_use]

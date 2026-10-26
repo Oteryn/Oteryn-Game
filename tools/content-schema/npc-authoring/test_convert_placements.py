@@ -54,6 +54,18 @@ class ConvertPlacementsTest(unittest.TestCase):
         cells = [(r["declaration"]["cell"]["x"], r["declaration"]["cell"]["y"], r["declaration"]["cell"]["floor"]) for r in self.records]
         self.assertEqual(len(cells), len(set(cells)))
 
+    def test_summer_mayor_uses_his_admitted_cell_and_actual_source_revision(self):
+        mayor = next(r["declaration"] for r in self.records
+                     if r["declaration"]["npc"] == "oteryn:npc.mayor_pocaro")
+        self.assertEqual(mayor["cell"], {"x": 34073, "y": 32504, "floor": 6})
+        self.assertEqual(mayor["direction"], "north")
+        self.assertEqual(mayor["provenance"][0]["revision"],
+                         "00ce02a57ca5a12e48f32a3476e37471167e4c3f")
+        candidate = next(c for c in json.loads(cp.CANDIDATES.read_text())["candidates"]
+                         if c["identity"]["key"] == mayor["npc"])
+        self.assertEqual(mayor["provenance"][0]["definition_sha256"],
+                         candidate["provenance"]["crystal"]["sha256"])
+
     def test_index_counts_and_held_digest(self):
         self.assertEqual(self.index["record_count"], len(self.records))
         self.assertEqual(self.index["held"]["count"], len(self.held))

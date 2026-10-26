@@ -19,6 +19,17 @@ const FAREWELLS: [&str; 3] = ["bye", "farewell", "goodbye"];
 /// Words that ask what the NPC offers.
 const TOPICS: [&str; 4] = ["job", "offer", "trade", "travel"];
 
+fn literal_keyword(keyword: &crate::content::ProjectV2DialogueKeyword) -> bool {
+    keyword.reply.len() == 1
+        && keyword.children.is_empty()
+        && !keyword.fallback
+        && !keyword.only_unfocus
+        && !keyword.reset
+        && !keyword.ungreet
+        && keyword.move_up.is_none()
+        && keyword.links.is_empty()
+}
+
 /// What one NPC says, from its generated catalogue replies.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NpcTalkEntry {
@@ -136,16 +147,10 @@ impl NpcTalkBook {
                     };
                     if dialogue.greet.len() != 1
                         || dialogue.farewell.len() != 1
-                        || dialogue.keywords.iter().any(|keyword| {
-                            keyword.reply.len() != 1
-                                || !keyword.children.is_empty()
-                                || keyword.fallback
-                                || keyword.only_unfocus
-                                || keyword.reset
-                                || keyword.ungreet
-                                || keyword.move_up.is_some()
-                                || !keyword.links.is_empty()
-                        })
+                        || dialogue
+                            .keywords
+                            .iter()
+                            .any(|keyword| !literal_keyword(keyword))
                     {
                         continue;
                     }
@@ -154,6 +159,28 @@ impl NpcTalkBook {
                         dialogue.farewell[0].clone(),
                         None,
                         dialogue.keywords.clone(),
+                    )
+                } else if reference.key == "oteryn:npc.mayor_pocaro" && npc.services.is_empty() {
+                    // SUMMER: the model's historical `bank_dialogue` carrier holds the
+                    // admitted messages for every Dialogue-backed NPC. Only this Mayor's
+                    // literal, single-line lore is qualified here. Quest callbacks and
+                    // multipart/stateful branches remain outside the talk consumer.
+                    let Some(dialogue) = &npc.bank_dialogue else {
+                        continue;
+                    };
+                    if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
+                        continue;
+                    }
+                    (
+                        dialogue.greet[0].clone(),
+                        dialogue.farewell[0].clone(),
+                        None,
+                        dialogue
+                            .keywords
+                            .iter()
+                            .filter(|keyword| literal_keyword(keyword))
+                            .cloned()
+                            .collect(),
                     )
                 } else {
                     continue;
@@ -486,5 +513,56 @@ mod bank_dialogue_tests {
             Some("Farewell from the admitted Dialogue.".into())
         );
         assert_eq!(engaged, None);
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, reason = "repository catalogue qualification")]
+mod summer_dialogue_tests {
+    use super::*;
+
+    #[test]
+    fn summer_population_mayor_book_retains_only_literal_admitted_topics() {
+        let content =
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content"));
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            content,
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .expect("catalogue");
+        let model = catalogue.service_model_for_project().expect("model");
+        let book = NpcTalkBook::from_model(&model);
+        let mayor = book
+            .get("oteryn:npc.mayor_pocaro")
+            .expect("admitted Mayor lore");
+        assert!(mayor.admitted_dialogue);
+        assert!(mayor.offers.is_empty());
+        assert!(mayor.dialogue_keywords.iter().all(literal_keyword));
+        let source = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == "oteryn:npc.mayor_pocaro")
+            .and_then(|(_, npc)| npc.bank_dialogue.as_ref())
+            .expect("authored Dialogue");
+        let held = source
+            .keywords
+            .iter()
+            .filter(|keyword| !literal_keyword(keyword))
+            .collect::<Vec<_>>();
+        assert!(
+            !held.is_empty(),
+            "the source has multipart branches outside this slice"
+        );
+        for keyword in held {
+            assert!(
+                !mayor
+                    .dialogue_keywords
+                    .iter()
+                    .any(|admitted| admitted.key == keyword.key)
+            );
+        }
+        // This task does not activate the other Summer NPCs' dialogue consumers.
+        assert!(book.get("oteryn:npc.captain_corsarah").is_none());
     }
 }

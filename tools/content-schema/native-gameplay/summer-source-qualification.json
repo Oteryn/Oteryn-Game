@@ -1,0 +1,696 @@
+{
+  "schema": "OTERYN_SUMMER_SOURCE_QUALIFICATION/v1",
+  "records": [
+    {
+      "creature": "oteryn:creature.radiant_acolyte",
+      "qualification": "Pinned Crystal attacks and loot: not verified against Global. Decision 22 permits provisional routing; HP and XP are separately verified.",
+      "source": {
+        "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/monster/summer_update_2026/radiant_acolyte.lua",
+        "sha256": "91249bdc22676aa763bddf3d39f969c8c5134ec39ec4aa69eb3961597349e75e"
+      },
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -950,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 18,
+              "effect": "CONST_ME_ICEAREA",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_ICEDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HITAREA",
+              "interval": 2000,
+              "maxDamage": -900,
+              "minDamage": -500,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_LARGEROCK",
+              "target": true,
+              "type": "COMBAT_PHYSICALDAMAGE"
+            },
+            "line": 86,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          83,
+          87
+        ]
+      },
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Book of Faith"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 900,
+              "name": "Blank Imbuement Scroll"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant acolyte soul core"
+            },
+            "line": 78,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          79
+        ]
+      }
+    },
+    {
+      "creature": "oteryn:creature.radiant_inquisitor",
+      "qualification": "Pinned Crystal attacks and loot: not verified against Global. Decision 22 permits provisional routing; HP and XP are separately verified.",
+      "source": {
+        "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/monster/summer_update_2026/radiant_inquisitor.lua",
+        "sha256": "4f2322a464960e912678f202cf4bb5e85956ab7c05bcd3201597ee4eb5580912"
+      },
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          83,
+          85
+        ]
+      },
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Blue Quiver"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Golden Belt"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant inquisitor soul core"
+            },
+            "line": 78,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          79
+        ]
+      }
+    },
+    {
+      "creature": "oteryn:creature.radiant_paragon",
+      "qualification": "Pinned Crystal attacks and loot: not verified against Global. Decision 22 permits provisional routing; HP and XP are separately verified.",
+      "source": {
+        "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/monster/summer_update_2026/radiant_paragon.lua",
+        "sha256": "22f7b06ee14e51ef3a24406080e0bba167b16d8bd50c297f8d03d86b554cf6ca"
+      },
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 83,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 17,
+              "effect": "CONST_ME_FIREAREA",
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": -650,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_FIREDAMAGE"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HOLYDAMAGE",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_HOLY",
+              "target": true,
+              "type": "COMBAT_HOLYDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          82,
+          86
+        ]
+      },
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Blue Quiver"
+            },
+            "line": 74,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 4000,
+              "maxCount": 3,
+              "name": "Broken Arrow"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant paragon soul core"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          73,
+          78
+        ]
+      }
+    },
+    {
+      "creature": "oteryn:creature.radiant_templar",
+      "qualification": "Pinned Crystal attacks and loot: not verified against Global. Decision 22 permits provisional routing; HP and XP are separately verified.",
+      "source": {
+        "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/monster/summer_update_2026/radiant_templar.lua",
+        "sha256": "474f73259395a49cd864b459e75ce555830cd206a8066ec85ad95b45c69719a6"
+      },
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 83,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 17,
+              "effect": "CONST_ME_ENERGYAREA",
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": -650,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_ENERGYDAMAGE"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HOLYDAMAGE",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_HOLY",
+              "target": true,
+              "type": "COMBAT_HOLYDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 12,
+              "effect": "CONST_ME_MAGIC_RED",
+              "interval": 2000,
+              "maxDamage": -800,
+              "minDamage": -400,
+              "name": "combat",
+              "range": 7,
+              "target": true,
+              "type": "COMBAT_LIFEDRAIN"
+            },
+            "line": 86,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          82,
+          87
+        ]
+      },
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Ceremonial Bowl"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant templar soul core"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          78
+        ]
+      }
+    },
+    {
+      "creature": "oteryn:creature.radiant_warden",
+      "qualification": "Pinned Crystal attacks and loot: not verified against Global. Decision 22 permits provisional routing; HP and XP are separately verified.",
+      "source": {
+        "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/monster/summer_update_2026/radiant_warden.lua",
+        "sha256": "475758dd0bcd5e158bf187fcf85c3ece75c3c5e45dada8b33aa952aad319233f"
+      },
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 17,
+              "effect": "CONST_ME_FIREAREA",
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": -650,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_FIREDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HOLYDAMAGE",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_HOLY",
+              "target": true,
+              "type": "COMBAT_HOLYDAMAGE"
+            },
+            "line": 86,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 14,
+              "effect": "CONST_ME_ICEAREA",
+              "interval": 2000,
+              "maxDamage": -980,
+              "minDamage": -600,
+              "name": "combat",
+              "radius": 3,
+              "target": false,
+              "type": "COMBAT_ICEDAMAGE"
+            },
+            "line": 87,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          83,
+          88
+        ]
+      },
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "id": 860
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Tatty Robe"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant warden soul core"
+            },
+            "line": 78,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          79
+        ]
+      }
+    },
+    {
+      "creature": "oteryn:creature.radiant_zealot",
+      "qualification": "Pinned Crystal attacks and loot: not verified against Global. Decision 22 permits provisional routing; HP and XP are separately verified.",
+      "source": {
+        "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+        "path": "data-global/monster/summer_update_2026/radiant_zealot.lua",
+        "sha256": "50c798cd64a710ccd54023efb01e2277e0f271c7d7fe403497383e85a553b895"
+      },
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 17,
+              "effect": "CONST_ME_ENERGYAREA",
+              "interval": 2000,
+              "maxDamage": -1040,
+              "minDamage": -640,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_ENERGYDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HOLYDAMAGE",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_HOLY",
+              "target": true,
+              "type": "COMBAT_HOLYDAMAGE"
+            },
+            "line": 86,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 12,
+              "effect": "CONST_ME_MAGIC_RED",
+              "interval": 2000,
+              "maxDamage": -800,
+              "minDamage": -400,
+              "name": "combat",
+              "range": 7,
+              "target": true,
+              "type": "COMBAT_LIFEDRAIN"
+            },
+            "line": 87,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 10,
+              "effect": "CONST_ME_MAGIC_BLUE",
+              "interval": 2000,
+              "maxDamage": -600,
+              "minDamage": -300,
+              "name": "combat",
+              "range": 7,
+              "target": true,
+              "type": "COMBAT_MANADRAIN"
+            },
+            "line": 88,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          83,
+          89
+        ]
+      },
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 900,
+              "name": "Etcher"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 900,
+              "name": "Loose Prayer Beads"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant zealot soul core"
+            },
+            "line": 78,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          79
+        ]
+      }
+    },
+    {
+      "creature": "oteryn:creature.maior_domus",
+      "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/bosses/maior_domus.lua","sha256":"4c8eb8cdc9229a518503ae34fcd3cfe92df6eae4469bf2ffa4c75974b4dbf6e0","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/bosses/maior_domus.lua"},
+      "fallback_health": 50000,
+      "fallback_experience": 3500000,
+      "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
+    },
+    {
+      "creature": "oteryn:creature.maior_domus_final",
+      "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/bosses/maior_domus_final.lua","sha256":"c9c1d0d12efe2ab6b0a13cd0540942305b54a10f9ef73a14fee015c2dedc8114","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/bosses/maior_domus_final.lua"},
+      "fallback_health": 65000,
+      "fallback_experience": 0,
+      "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
+    },
+    {
+      "creature": "oteryn:creature.mimar_haffar",
+      "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/bosses/mimar_haffar.lua","sha256":"81f309cdcb0b8aacf0eb2f891fec73213090d5ba823001bcfe99edc02ad1eb39","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/bosses/mimar_haffar.lua"},
+      "fallback_health": 50000,
+      "fallback_experience": 3500000,
+      "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
+    },
+    {
+      "creature": "oteryn:creature.mimar_haffar_final",
+      "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/bosses/mimar_haffar_final.lua","sha256":"38d56bec07a17c70d2437b41f166d3ff695ac95d5c516ddc4eb51d58fb75b168","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/bosses/mimar_haffar_final.lua"},
+      "fallback_health": 65000,
+      "fallback_experience": 0,
+      "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
+    },
+    {
+      "creature": "oteryn:creature.moonspawn_juggernaut",
+      "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/moonspawn_juggernaut.lua","sha256":"d5975211ab16bd13c257dbb2eb2bb2aa5f8ae3b560d5414eda92613649643686","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/moonspawn_juggernaut.lua"},
+      "fallback_health": 6000,
+      "fallback_experience": 10000,
+      "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
+    },
+    {
+      "creature": "oteryn:creature.phosphorus",
+      "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/bosses/phosphorus.lua","sha256":"d375b689750a49fe9c96fef1a3eea846bdc53ea02fdd7133360afe10049a2e43","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/bosses/phosphorus.lua"},
+      "fallback_health": 70000,
+      "fallback_experience": 16000000,
+      "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
+    },
+    {
+      "creature": "oteryn:creature.phosphorus_final",
+      "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/bosses/phosphorus_final.lua","sha256":"23511b2488d62dd81b597552bb270479020f81b7ad61c5b7d4e7539a0ac1b9d4","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/bosses/phosphorus_final.lua"},
+      "fallback_health": 90000,
+      "fallback_experience": 0,
+      "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
+    },
+    {
+      "creature": "oteryn:creature.rakesh_moonfang",
+      "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/bosses/rakesh_moonfang.lua","sha256":"eaa0c4c38a68422e12dd16059061767e129b1cfd071a4b5c659e065f0f24bab6","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/bosses/rakesh_moonfang.lua"},
+      "fallback_health": 25500,
+      "fallback_experience": 25500,
+      "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
+    },
+    {
+      "creature": "oteryn:creature.the_moonsnow_magnolia",
+      "source": {"crystal_revision":"201189f871d23597b82caf88fd611454a2ddefb8","path":"data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia.lua","sha256":"aae1c55aad1328c02d4220f0e06dccfb6027510d02262d997000aead96f7abae","url":"https://raw.githubusercontent.com/zimbadev/crystalserver/201189f871d23597b82caf88fd611454a2ddefb8/data-global/monster/summer_update_2026/bosses/the_moonsnow_magnolia.lua"},
+      "fallback_health": 52000,
+      "fallback_experience": 240000,
+      "qualification": "Existing pinned donor boss profile, including HP and scaling: not verified against Global. No encounter activation or Global parity is implied."
+    }
+  ]
+}

@@ -31,7 +31,8 @@ pub const LOOT_MINT_TYPED_CAUSE: &str = "loot_mint";
 pub const ITEM_LIFECYCLE_LIVE: u32 = 1;
 /// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): the corpse-loot MINT's
 /// placement ordinal is `1..=` this many.
-pub const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: u64 = 16;
+pub const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: u64 =
+    crate::foundation::loot_data::CORPSE_CONTAINER_ENTRIES_MAX as u64;
 
 pub(super) const ENVELOPE_REVISION: u32 = 1;
 pub(super) const DURABLE_AUDIT: i32 = 2;
@@ -1671,7 +1672,7 @@ pub(super) mod tests {
 
     #[test]
     fn corpse_loot_mint_destination_is_closed() {
-        // Ordinal 0 and the 17th entry are outside 1..=16.
+        // Ordinal 0 and the 31st entry are outside 1..=30.
         for ordinal in [0, GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1] {
             assert_eq!(
                 encode_mint_event(identity(), corpse_mint(ordinal), Type2EventTuple::V1),

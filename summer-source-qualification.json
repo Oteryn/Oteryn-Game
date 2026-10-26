@@ -1,0 +1,1799 @@
+{
+  "bosses": {
+    "entry_exit_cooldown_quest_qualification": "UNKNOWN",
+    "live_health_and_scaling": "UNKNOWN",
+    "native_mimar_health": 460000,
+    "native_mimar_health_newly_qualified": false,
+    "official_mechanics_evidence": [
+      {
+        "date": "2026-08-18",
+        "facts": [
+          "encounter initial trapped soul charges matter",
+          "both energy cannons fully charged unlock vulnerability"
+        ],
+        "url": "https://www.tibia.com/news/?id=8933&subtopic=newsarchive"
+      },
+      {
+        "date": "2026-09-22",
+        "facts": [
+          "moonsilver custodians teleport to the boss arena"
+        ],
+        "url": "https://www.tibia.com/news/?subtopic=news"
+      }
+    ],
+    "static_spawn_counts": {
+      "maior_domus": 0,
+      "maior_domus_final": 0,
+      "mimar_haffar": 0,
+      "mimar_haffar_final": 0,
+      "moonspawn_juggernaut": 0,
+      "phosphorus": 0,
+      "phosphorus_final": 0,
+      "rakesh_moonfang": 0,
+      "the_moonsnow_magnolia": 0
+    }
+  },
+  "corpses": [
+    {
+      "admission_authorized": false,
+      "canonical_binding": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i54399",
+        "revision": "definition-r1"
+      },
+      "canonical_item_contract_resolved": false,
+      "canonical_source_decay_closure": {
+        "diagnostics": [],
+        "runtime_qualified": false,
+        "source_closure_complete": true,
+        "steps": [
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54399",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 10000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54398"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "10"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54399
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54398",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 300000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54397"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "300"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54398
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54397",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 300000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54396"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "300"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54397
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54396",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 60000,
+            "raw_attributes": {
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "0"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "60"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "remove_if_not_loaded_from_map",
+            "source_item_id": 54396,
+            "terminal_guard": {
+              "is_loaded_from_map": "UNKNOWN_CONTEXT"
+            }
+          }
+        ]
+      },
+      "diagnostics": [
+        {
+          "accepted_runtime_ceiling": 16,
+          "code": "SOURCE_CAPACITY_EXCEEDS_D3_16",
+          "source_capacity": 30,
+          "source_value_preserved": true
+        },
+        {
+          "code": "NATIVE_WEIGHT_UNIT_UNQUALIFIED"
+        },
+        {
+          "code": "TEMPORAL_MODE_UNQUALIFIED"
+        },
+        {
+          "code": "WORLD_OBJECT_CORPSE_ROUTE_REQUIRED_BY_ITEM_SCHEMA_5m"
+        }
+      ],
+      "materializable_authorized": false,
+      "promotion_candidates": [
+        {
+          "decoder_row": {
+            "field_path": "presentation.name",
+            "native_key": "oteryn:item.tibia.i54399",
+            "source_item_id": 54399,
+            "source_value": "shattered remains",
+            "typed_value": {
+              "kind": "TEXT",
+              "value": "shattered remains"
+            }
+          },
+          "disposition": "PREPARED_UNKNOWN_LOWERING_CANDIDATE",
+          "field_path": "presentation.name",
+          "native_key": "oteryn:item.tibia.i54399",
+          "source_item_id": 54399,
+          "source_value": "shattered remains",
+          "typed_value": {
+            "kind": "TEXT",
+            "value": "shattered remains"
+          }
+        },
+        {
+          "decoder_row": {
+            "field_path": "container.capacity",
+            "native_key": "oteryn:item.tibia.i54399",
+            "source_item_id": 54399,
+            "source_value": 30,
+            "typed_value": {
+              "kind": "CAPACITY_U16",
+              "value": 30
+            }
+          },
+          "disposition": "PREPARED_UNKNOWN_LOWERING_CANDIDATE",
+          "field_path": "container.capacity",
+          "native_key": "oteryn:item.tibia.i54399",
+          "source_item_id": 54399,
+          "source_value": 30,
+          "typed_value": {
+            "kind": "CAPACITY_U16",
+            "value": 30
+          }
+        }
+      ],
+      "runtime_qualified": false,
+      "selected_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_appearance": {
+        "flags": {
+          "corpse": true,
+          "player_corpse": false,
+          "take": false,
+          "unmove": true
+        },
+        "id": 54399
+      },
+      "source_item_id": 54399
+    },
+    {
+      "admission_authorized": false,
+      "canonical_binding": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i54407",
+        "revision": "definition-r1"
+      },
+      "canonical_item_contract_resolved": false,
+      "canonical_source_decay_closure": {
+        "diagnostics": [],
+        "runtime_qualified": false,
+        "source_closure_complete": true,
+        "steps": [
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54407",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 10000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54406"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "10"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54407
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54406",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 300000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54405"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "300"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54406
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54405",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 300000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54404"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "300"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54405
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54404",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 60000,
+            "raw_attributes": {
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "0"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "60"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "remove_if_not_loaded_from_map",
+            "source_item_id": 54404,
+            "terminal_guard": {
+              "is_loaded_from_map": "UNKNOWN_CONTEXT"
+            }
+          }
+        ]
+      },
+      "diagnostics": [
+        {
+          "accepted_runtime_ceiling": 16,
+          "code": "SOURCE_CAPACITY_EXCEEDS_D3_16",
+          "source_capacity": 30,
+          "source_value_preserved": true
+        },
+        {
+          "code": "NATIVE_WEIGHT_UNIT_UNQUALIFIED"
+        },
+        {
+          "code": "TEMPORAL_MODE_UNQUALIFIED"
+        },
+        {
+          "code": "WORLD_OBJECT_CORPSE_ROUTE_REQUIRED_BY_ITEM_SCHEMA_5m"
+        }
+      ],
+      "materializable_authorized": false,
+      "promotion_candidates": [
+        {
+          "decoder_row": {
+            "field_path": "presentation.name",
+            "native_key": "oteryn:item.tibia.i54407",
+            "source_item_id": 54407,
+            "source_value": "dead radiant paragon",
+            "typed_value": {
+              "kind": "TEXT",
+              "value": "dead radiant paragon"
+            }
+          },
+          "disposition": "PREPARED_UNKNOWN_LOWERING_CANDIDATE",
+          "field_path": "presentation.name",
+          "native_key": "oteryn:item.tibia.i54407",
+          "source_item_id": 54407,
+          "source_value": "dead radiant paragon",
+          "typed_value": {
+            "kind": "TEXT",
+            "value": "dead radiant paragon"
+          }
+        },
+        {
+          "decoder_row": {
+            "field_path": "container.capacity",
+            "native_key": "oteryn:item.tibia.i54407",
+            "source_item_id": 54407,
+            "source_value": 30,
+            "typed_value": {
+              "kind": "CAPACITY_U16",
+              "value": 30
+            }
+          },
+          "disposition": "PREPARED_UNKNOWN_LOWERING_CANDIDATE",
+          "field_path": "container.capacity",
+          "native_key": "oteryn:item.tibia.i54407",
+          "source_item_id": 54407,
+          "source_value": 30,
+          "typed_value": {
+            "kind": "CAPACITY_U16",
+            "value": 30
+          }
+        }
+      ],
+      "runtime_qualified": false,
+      "selected_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_appearance": {
+        "flags": {
+          "corpse": true,
+          "player_corpse": false,
+          "take": false,
+          "unmove": true
+        },
+        "id": 54407
+      },
+      "source_item_id": 54407
+    },
+    {
+      "admission_authorized": false,
+      "canonical_binding": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i54415",
+        "revision": "definition-r1"
+      },
+      "canonical_item_contract_resolved": false,
+      "canonical_source_decay_closure": {
+        "diagnostics": [],
+        "runtime_qualified": false,
+        "source_closure_complete": true,
+        "steps": [
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54415",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 10000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54414"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "10"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54415
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54414",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 300000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54413"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "300"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54414
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54413",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 300000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54412"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "300"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54413
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54412",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 60000,
+            "raw_attributes": {
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "0"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "60"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "remove_if_not_loaded_from_map",
+            "source_item_id": 54412,
+            "terminal_guard": {
+              "is_loaded_from_map": "UNKNOWN_CONTEXT"
+            }
+          }
+        ]
+      },
+      "diagnostics": [
+        {
+          "accepted_runtime_ceiling": 16,
+          "code": "SOURCE_CAPACITY_EXCEEDS_D3_16",
+          "source_capacity": 30,
+          "source_value_preserved": true
+        },
+        {
+          "code": "NATIVE_WEIGHT_UNIT_UNQUALIFIED"
+        },
+        {
+          "code": "TEMPORAL_MODE_UNQUALIFIED"
+        },
+        {
+          "code": "WORLD_OBJECT_CORPSE_ROUTE_REQUIRED_BY_ITEM_SCHEMA_5m"
+        }
+      ],
+      "materializable_authorized": false,
+      "promotion_candidates": [
+        {
+          "decoder_row": {
+            "field_path": "presentation.name",
+            "native_key": "oteryn:item.tibia.i54415",
+            "source_item_id": 54415,
+            "source_value": "shattered remains",
+            "typed_value": {
+              "kind": "TEXT",
+              "value": "shattered remains"
+            }
+          },
+          "disposition": "PREPARED_UNKNOWN_LOWERING_CANDIDATE",
+          "field_path": "presentation.name",
+          "native_key": "oteryn:item.tibia.i54415",
+          "source_item_id": 54415,
+          "source_value": "shattered remains",
+          "typed_value": {
+            "kind": "TEXT",
+            "value": "shattered remains"
+          }
+        },
+        {
+          "decoder_row": {
+            "field_path": "container.capacity",
+            "native_key": "oteryn:item.tibia.i54415",
+            "source_item_id": 54415,
+            "source_value": 30,
+            "typed_value": {
+              "kind": "CAPACITY_U16",
+              "value": 30
+            }
+          },
+          "disposition": "PREPARED_UNKNOWN_LOWERING_CANDIDATE",
+          "field_path": "container.capacity",
+          "native_key": "oteryn:item.tibia.i54415",
+          "source_item_id": 54415,
+          "source_value": 30,
+          "typed_value": {
+            "kind": "CAPACITY_U16",
+            "value": 30
+          }
+        }
+      ],
+      "runtime_qualified": false,
+      "selected_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_appearance": {
+        "flags": {
+          "corpse": true,
+          "player_corpse": false,
+          "take": false,
+          "unmove": true
+        },
+        "id": 54415
+      },
+      "source_item_id": 54415
+    },
+    {
+      "admission_authorized": false,
+      "canonical_binding": {
+        "family": "Item",
+        "key": "oteryn:item.tibia.i54678",
+        "revision": "definition-r1"
+      },
+      "canonical_item_contract_resolved": false,
+      "canonical_source_decay_closure": {
+        "diagnostics": [],
+        "runtime_qualified": false,
+        "source_closure_complete": true,
+        "steps": [
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54678",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 10000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54679"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "10"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54678
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54679",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 300000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54680"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "300"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54679
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54680",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 300000,
+            "raw_attributes": {
+              "containersize": [
+                {
+                  "key": "containerSize",
+                  "value": "30"
+                }
+              ],
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "54681"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "300"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "transform",
+            "source_item_id": 54680
+          },
+          {
+            "binding": {
+              "family": "Item",
+              "key": "oteryn:item.tibia.i54681",
+              "revision": "definition-r1"
+            },
+            "duration_ms": 60000,
+            "raw_attributes": {
+              "decayto": [
+                {
+                  "key": "decayTo",
+                  "value": "0"
+                }
+              ],
+              "duration": [
+                {
+                  "key": "duration",
+                  "value": "60"
+                }
+              ],
+              "fluidsource": [
+                {
+                  "key": "fluidSource",
+                  "value": "blood"
+                }
+              ]
+            },
+            "source_action": "remove_if_not_loaded_from_map",
+            "source_item_id": 54681,
+            "terminal_guard": {
+              "is_loaded_from_map": "UNKNOWN_CONTEXT"
+            }
+          }
+        ]
+      },
+      "diagnostics": [
+        {
+          "accepted_runtime_ceiling": 16,
+          "code": "SOURCE_CAPACITY_EXCEEDS_D3_16",
+          "source_capacity": 30,
+          "source_value_preserved": true
+        },
+        {
+          "code": "NATIVE_WEIGHT_UNIT_UNQUALIFIED"
+        },
+        {
+          "code": "TEMPORAL_MODE_UNQUALIFIED"
+        },
+        {
+          "code": "WORLD_OBJECT_CORPSE_ROUTE_REQUIRED_BY_ITEM_SCHEMA_5m"
+        }
+      ],
+      "materializable_authorized": false,
+      "promotion_candidates": [
+        {
+          "decoder_row": {
+            "field_path": "presentation.name",
+            "native_key": "oteryn:item.tibia.i54678",
+            "source_item_id": 54678,
+            "source_value": "shattered remains",
+            "typed_value": {
+              "kind": "TEXT",
+              "value": "shattered remains"
+            }
+          },
+          "disposition": "PREPARED_UNKNOWN_LOWERING_CANDIDATE",
+          "field_path": "presentation.name",
+          "native_key": "oteryn:item.tibia.i54678",
+          "source_item_id": 54678,
+          "source_value": "shattered remains",
+          "typed_value": {
+            "kind": "TEXT",
+            "value": "shattered remains"
+          }
+        },
+        {
+          "decoder_row": {
+            "field_path": "container.capacity",
+            "native_key": "oteryn:item.tibia.i54678",
+            "source_item_id": 54678,
+            "source_value": 30,
+            "typed_value": {
+              "kind": "CAPACITY_U16",
+              "value": 30
+            }
+          },
+          "disposition": "PREPARED_UNKNOWN_LOWERING_CANDIDATE",
+          "field_path": "container.capacity",
+          "native_key": "oteryn:item.tibia.i54678",
+          "source_item_id": 54678,
+          "source_value": 30,
+          "typed_value": {
+            "kind": "CAPACITY_U16",
+            "value": 30
+          }
+        }
+      ],
+      "runtime_qualified": false,
+      "selected_source_revision": "00ce02a57ca5a12e48f32a3476e37471167e4c3f",
+      "source_appearance": {
+        "flags": {
+          "corpse": true,
+          "player_corpse": false,
+          "take": false,
+          "unmove": true
+        },
+        "id": 54678
+      },
+      "source_item_id": 54678
+    }
+  ],
+  "ground_44576": {
+    "evidence_path": "tools/content-schema/world-authoring/samples/appearance-only-ids-v1.json",
+    "exact_item_binding": null,
+    "official_appearance_evidence": {
+      "class": "ground",
+      "id": 44576,
+      "occurrences_on_base_map": 1030,
+      "speed": 150
+    },
+    "qualification": {
+      "compiler_test": "summer_population_mayor_and_radiants_bind_to_real_map_cells",
+      "item_alias_created": false,
+      "realized_radiant_points": 398,
+      "terrain_identity": "oteryn:terrain.tibia.i44576",
+      "terrain_shard": "content/world/terrain/terrain-08612-08612.json",
+      "world_bundle_digest": "e3854ec7afe4e513d878ee75ad40498b33a458aa4f518ae6525a5c38abc3714f"
+    },
+    "runtime_qualified": true,
+    "source_xml_records": []
+  },
+  "live_creatures": {
+    "mimarhaffar": {
+      "error": "HTTP Error 502: Bad Gateway",
+      "url": "https://api.tibiadata.com/v4/creature/mimarhaffar"
+    },
+    "moonspawnjuggernaut": {
+      "error": "HTTP Error 502: Bad Gateway",
+      "url": "https://api.tibiadata.com/v4/creature/moonspawnjuggernaut"
+    },
+    "radiantacolyte": {
+      "api_information": {
+        "api": {
+          "commit": "d53b603c7e235c45268bcf878ef2921b2356cf75",
+          "release": "4.10.0",
+          "version": 4
+        },
+        "status": {
+          "http_code": 200
+        },
+        "tibia_urls": [
+          "https://www.tibia.com/library/?subtopic=creatures&race=radiantacolyte"
+        ],
+        "timestamp": "2026-10-26T13:06:49Z"
+      },
+      "facts": {
+        "experience_points": 32960,
+        "hitpoints": 34600,
+        "is_lootable": true,
+        "loot_list": null
+      },
+      "url": "https://api.tibiadata.com/v4/creature/radiantacolyte"
+    },
+    "radiantinquisitor": {
+      "api_information": {
+        "api": {
+          "commit": "d53b603c7e235c45268bcf878ef2921b2356cf75",
+          "release": "4.10.0",
+          "version": 4
+        },
+        "status": {
+          "http_code": 200
+        },
+        "tibia_urls": [
+          "https://www.tibia.com/library/?subtopic=creatures&race=radiantinquisitor"
+        ],
+        "timestamp": "2026-10-26T13:06:49Z"
+      },
+      "facts": {
+        "experience_points": 32460,
+        "hitpoints": 34800,
+        "is_lootable": true,
+        "loot_list": null
+      },
+      "url": "https://api.tibiadata.com/v4/creature/radiantinquisitor"
+    },
+    "radiantparagon": {
+      "api_information": {
+        "api": {
+          "commit": "d53b603c7e235c45268bcf878ef2921b2356cf75",
+          "release": "4.10.0",
+          "version": 4
+        },
+        "status": {
+          "http_code": 200
+        },
+        "tibia_urls": [
+          "https://www.tibia.com/library/?subtopic=creatures&race=radiantparagon"
+        ],
+        "timestamp": "2026-10-26T13:06:49Z"
+      },
+      "facts": {
+        "experience_points": 34780,
+        "hitpoints": 36000,
+        "is_lootable": true,
+        "loot_list": null
+      },
+      "url": "https://api.tibiadata.com/v4/creature/radiantparagon"
+    },
+    "radianttemplar": {
+      "api_information": {
+        "api": {
+          "commit": "d53b603c7e235c45268bcf878ef2921b2356cf75",
+          "release": "4.10.0",
+          "version": 4
+        },
+        "status": {
+          "http_code": 200
+        },
+        "tibia_urls": [
+          "https://www.tibia.com/library/?subtopic=creatures&race=radianttemplar"
+        ],
+        "timestamp": "2026-10-26T13:06:49Z"
+      },
+      "facts": {
+        "experience_points": 34520,
+        "hitpoints": 37000,
+        "is_lootable": true,
+        "loot_list": null
+      },
+      "url": "https://api.tibiadata.com/v4/creature/radianttemplar"
+    },
+    "radiantwarden": {
+      "api_information": {
+        "api": {
+          "commit": "d53b603c7e235c45268bcf878ef2921b2356cf75",
+          "release": "4.10.0",
+          "version": 4
+        },
+        "status": {
+          "http_code": 200
+        },
+        "tibia_urls": [
+          "https://www.tibia.com/library/?subtopic=creatures&race=radiantwarden"
+        ],
+        "timestamp": "2026-10-26T13:06:49Z"
+      },
+      "facts": {
+        "experience_points": 35540,
+        "hitpoints": 38500,
+        "is_lootable": true,
+        "loot_list": null
+      },
+      "url": "https://api.tibiadata.com/v4/creature/radiantwarden"
+    },
+    "radiantzealot": {
+      "api_information": {
+        "api": {
+          "commit": "d53b603c7e235c45268bcf878ef2921b2356cf75",
+          "release": "4.10.0",
+          "version": 4
+        },
+        "status": {
+          "http_code": 200
+        },
+        "tibia_urls": [
+          "https://www.tibia.com/library/?subtopic=creatures&race=radiantzealot"
+        ],
+        "timestamp": "2026-10-26T12:58:02Z"
+      },
+      "facts": {
+        "experience_points": 35220,
+        "hitpoints": 36500,
+        "is_lootable": true,
+        "loot_list": null
+      },
+      "url": "https://api.tibiadata.com/v4/creature/radiantzealot"
+    }
+  },
+  "pass2_web_verification": {
+    "date": "2026-10-26",
+    "disposition": "No exact attack damage, drop probabilities or boss HP/scaling established; existing pinned donor values remain provisional, not verified against Global. No new runtime values selected.",
+    "sources": [
+      {
+        "finding": "Abilities and exact loot are missing; stale future-update information cannot override live API HP/XP.",
+        "url": "https://tibia.fandom.com/wiki/Radiant_Acolyte"
+      },
+      {
+        "finding": "Qualitative loot rarity does not establish exact probabilities or damage ranges.",
+        "url": "https://www.tibiawiki.com.br/index.php?stableid=440253&title=Radiant_Acolyte"
+      },
+      {
+        "finding": "Lists all six Radiants, Mimar Haffar and Moonspawn Juggernaut with missing abilities.",
+        "url": "https://tibia.fandom.com/wiki/Monsters_Missing_Abilities"
+      },
+      {
+        "finding": "Mimar and Juggernaut values are unknown.",
+        "url": "https://tibia.fandom.com/wiki/List_of_Creatures_by_Experience_to_Hit_Points_Ratio"
+      }
+    ]
+  },
+  "pass3_source_annotations": {
+    "annotation": "not verified against Global",
+    "generated_provider": "content/creatures/definitions/spell-native-profiles.json",
+    "input": "tools/content-schema/native-gameplay/summer-source-qualification.json",
+    "scope": "Six Radiants and nine boss profiles; source annotations only, no encounter activation."
+  },
+  "radiant_donor_comparison": [
+    {
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -950,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 18,
+              "effect": "CONST_ME_ICEAREA",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_ICEDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HITAREA",
+              "interval": 2000,
+              "maxDamage": -900,
+              "minDamage": -500,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_LARGEROCK",
+              "target": true,
+              "type": "COMBAT_PHYSICALDAMAGE"
+            },
+            "line": 86,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          83,
+          87
+        ]
+      },
+      "creature": "acolyte",
+      "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "health_experience_matches_live": true,
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Book of Faith"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 900,
+              "name": "Blank Imbuement Scroll"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant acolyte soul core"
+            },
+            "line": 78,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          79
+        ]
+      },
+      "native_experience": 32960,
+      "native_health": 34600,
+      "path": "data-global/monster/summer_update_2026/radiant_acolyte.lua",
+      "sha256": "91249bdc22676aa763bddf3d39f969c8c5134ec39ec4aa69eb3961597349e75e"
+    },
+    {
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          83,
+          85
+        ]
+      },
+      "creature": "inquisitor",
+      "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "health_experience_matches_live": true,
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Blue Quiver"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Golden Belt"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant inquisitor soul core"
+            },
+            "line": 78,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          79
+        ]
+      },
+      "native_experience": 32460,
+      "native_health": 34800,
+      "path": "data-global/monster/summer_update_2026/radiant_inquisitor.lua",
+      "sha256": "4f2322a464960e912678f202cf4bb5e85956ab7c05bcd3201597ee4eb5580912"
+    },
+    {
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 83,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 17,
+              "effect": "CONST_ME_FIREAREA",
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": -650,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_FIREDAMAGE"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HOLYDAMAGE",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_HOLY",
+              "target": true,
+              "type": "COMBAT_HOLYDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          82,
+          86
+        ]
+      },
+      "creature": "paragon",
+      "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "health_experience_matches_live": true,
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Blue Quiver"
+            },
+            "line": 74,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 4000,
+              "maxCount": 3,
+              "name": "Broken Arrow"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant paragon soul core"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          73,
+          78
+        ]
+      },
+      "native_experience": 34780,
+      "native_health": 36000,
+      "path": "data-global/monster/summer_update_2026/radiant_paragon.lua",
+      "sha256": "22f7b06ee14e51ef3a24406080e0bba167b16d8bd50c297f8d03d86b554cf6ca"
+    },
+    {
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 83,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 17,
+              "effect": "CONST_ME_ENERGYAREA",
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": -650,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_ENERGYDAMAGE"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HOLYDAMAGE",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_HOLY",
+              "target": true,
+              "type": "COMBAT_HOLYDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 12,
+              "effect": "CONST_ME_MAGIC_RED",
+              "interval": 2000,
+              "maxDamage": -800,
+              "minDamage": -400,
+              "name": "combat",
+              "range": 7,
+              "target": true,
+              "type": "COMBAT_LIFEDRAIN"
+            },
+            "line": 86,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          82,
+          87
+        ]
+      },
+      "creature": "templar",
+      "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "health_experience_matches_live": true,
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Ceremonial Bowl"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant templar soul core"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          78
+        ]
+      },
+      "native_experience": 34520,
+      "native_health": 37000,
+      "path": "data-global/monster/summer_update_2026/radiant_templar.lua",
+      "sha256": "474f73259395a49cd864b459e75ce555830cd206a8066ec85ad95b45c69719a6"
+    },
+    {
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 17,
+              "effect": "CONST_ME_FIREAREA",
+              "interval": 2000,
+              "maxDamage": -1050,
+              "minDamage": -650,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_FIREDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HOLYDAMAGE",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_HOLY",
+              "target": true,
+              "type": "COMBAT_HOLYDAMAGE"
+            },
+            "line": 86,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 14,
+              "effect": "CONST_ME_ICEAREA",
+              "interval": 2000,
+              "maxDamage": -980,
+              "minDamage": -600,
+              "name": "combat",
+              "radius": 3,
+              "target": false,
+              "type": "COMBAT_ICEDAMAGE"
+            },
+            "line": 87,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          83,
+          88
+        ]
+      },
+      "creature": "warden",
+      "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "health_experience_matches_live": true,
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 4000,
+              "id": 860
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 4000,
+              "name": "Tatty Robe"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant warden soul core"
+            },
+            "line": 78,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          79
+        ]
+      },
+      "native_experience": 35540,
+      "native_health": 38500,
+      "path": "data-global/monster/summer_update_2026/radiant_warden.lua",
+      "sha256": "475758dd0bcd5e158bf187fcf85c3ece75c3c5e45dada8b33aa952aad319233f"
+    },
+    {
+      "attacks": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 100,
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": 0,
+              "name": "melee"
+            },
+            "line": 84,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 17,
+              "effect": "CONST_ME_ENERGYAREA",
+              "interval": 2000,
+              "maxDamage": -1040,
+              "minDamage": -640,
+              "name": "combat",
+              "radius": 4,
+              "target": false,
+              "type": "COMBAT_ENERGYDAMAGE"
+            },
+            "line": 85,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 15,
+              "effect": "CONST_ME_HOLYDAMAGE",
+              "interval": 2000,
+              "maxDamage": -1000,
+              "minDamage": -600,
+              "name": "combat",
+              "range": 7,
+              "shootEffect": "CONST_ANI_HOLY",
+              "target": true,
+              "type": "COMBAT_HOLYDAMAGE"
+            },
+            "line": 86,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 12,
+              "effect": "CONST_ME_MAGIC_RED",
+              "interval": 2000,
+              "maxDamage": -800,
+              "minDamage": -400,
+              "name": "combat",
+              "range": 7,
+              "target": true,
+              "type": "COMBAT_LIFEDRAIN"
+            },
+            "line": 87,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 10,
+              "effect": "CONST_ME_MAGIC_BLUE",
+              "interval": 2000,
+              "maxDamage": -600,
+              "minDamage": -300,
+              "name": "combat",
+              "range": 7,
+              "target": true,
+              "type": "COMBAT_MANADRAIN"
+            },
+            "line": 88,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ESTIMATE_NOT_GLOBAL",
+        "source_lines": [
+          83,
+          89
+        ]
+      },
+      "creature": "zealot",
+      "crystal_revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "health_experience_matches_live": true,
+      "loot": {
+        "entries": [
+          {
+            "fields": {
+              "chance": 900,
+              "name": "Etcher"
+            },
+            "line": 75,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 900,
+              "name": "Loose Prayer Beads"
+            },
+            "line": 76,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 150,
+              "name": "Gilded Bell"
+            },
+            "line": 77,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          },
+          {
+            "fields": {
+              "chance": 100,
+              "name": "radiant zealot soul core"
+            },
+            "line": 78,
+            "qualification_note": "Provisional pinned Crystal value; not verified against Global."
+          }
+        ],
+        "qualification": "DONOR_ONLY_GLOBAL_PROBABILITY_UNKNOWN",
+        "source_lines": [
+          74,
+          79
+        ]
+      },
+      "native_experience": 35220,
+      "native_health": 36500,
+      "path": "data-global/monster/summer_update_2026/radiant_zealot.lua",
+      "sha256": "50c798cd64a710ccd54023efb01e2277e0f271c7d7fe403497383e85a553b895"
+    }
+  ],
+  "retrieved_utc": "2026-10-26",
+  "source_epochs": {
+    "00ce02a57ca5a12e48f32a3476e37471167e4c3f": {
+      "appearances_sha256": "17a72b30b5c3c9ca8c1283cfb2febd2a93a145ff8ab66916f7a412d0f1dee5a1",
+      "xml_sha256": "13a8773e34085daad1a716465c0510060d1f2255c4bc69995fd160c8b4afcece"
+    },
+    "ff7ede593c69d4c658b382c97443e8155926924a": {
+      "appearances_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+      "xml_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+    }
+  }
+}

@@ -462,7 +462,10 @@ mod tests {
             |r| r.corpse_entry.as_mut().unwrap().corpse_item_instance_id = uuid(ENTRY),
             // Ordinal zero and GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX + 1.
             |r| r.corpse_entry.as_mut().unwrap().placement_ordinal = 0,
-            |r| r.corpse_entry.as_mut().unwrap().placement_ordinal = 17,
+            |r| {
+                r.corpse_entry.as_mut().unwrap().placement_ordinal =
+                    mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1;
+            },
             // A partial reduction instead of a retirement to exactly 0.
             |r| r.after.as_mut().unwrap().quantity = 1,
             // Still live after.

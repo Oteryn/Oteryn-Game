@@ -56,6 +56,35 @@ fn scenario() -> TestResult {
 }
 
 pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
+    scenario_with_capacity(reconcile, false)
+}
+
+pub(super) fn scenario_with_capacity(reconcile: Option<bool>, capacity: bool) -> TestResult {
+    scenario_with_creature(reconcile, capacity, None)
+}
+
+#[test]
+fn summer_radiant_all_six_execute_attacks_through_the_production_owner() -> TestResult {
+    scenario_thread::run("summer-radiant-attacks", || {
+        for name in [
+            "acolyte",
+            "inquisitor",
+            "paragon",
+            "templar",
+            "warden",
+            "zealot",
+        ] {
+            scenario_with_creature(None, false, Some(name))?;
+        }
+        Ok(())
+    })
+}
+
+fn scenario_with_creature(
+    reconcile: Option<bool>,
+    capacity: bool,
+    radiant: Option<&str>,
+) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
@@ -145,8 +174,12 @@ pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
         runtime
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
+        let creature_key = radiant.map_or_else(
+            || "oteryn:creature.rat".to_owned(),
+            |name| format!("oteryn:creature.radiant_{name}"),
+        );
         runtime
-            .realize_native_qualification_spawn(channel_pin, "oteryn:creature.rat", OPEN_RAT)
+            .realize_native_qualification_spawn(channel_pin, &creature_key, OPEN_RAT)
             .map_err(debug)?;
         let rat = {
             let creature = runtime
@@ -264,6 +297,7 @@ pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
                             // Level 50 keeps minimum fist damage above the rat's defence and
                             // armor, independent of the content-digest-seeded RNG stream.
                             level: 50,
+                            max_health: if radiant.is_some() { 1_000_000 } else { 185 },
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
                         (3, 7_000_000),
@@ -271,6 +305,66 @@ pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
                     )
                     .is_some()
             );
+        }
+
+        if radiant.is_some() {
+            let initial = {
+                let runtime = owner.runtime.lock().await;
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .get(&runtime, actor, session)
+                    .ok_or("player spell state")?
+                    .vitals()
+                    .health
+            };
+            let mut damaged = false;
+            for _ in 0..32 {
+                owner.drain_monster_melee().await;
+                let runtime = owner.runtime.lock().await;
+                let states = owner.states.spell_states.lock().await;
+                let state = states
+                    .get(&runtime, actor, session)
+                    .ok_or("player spell state")?;
+                if state.vitals().health < initial {
+                    damaged = true;
+                    // A repeated owner call inside the same think window cannot apply the
+                    // source attack twice. All content and attack schedules are unmodified.
+                    let after = state.vitals();
+                    drop(states);
+                    drop(runtime);
+                    owner.drain_monster_melee().await;
+                    let runtime = owner.runtime.lock().await;
+                    assert_eq!(
+                        owner
+                            .states
+                            .spell_states
+                            .lock()
+                            .await
+                            .get(&runtime, actor, session)
+                            .ok_or("player spell state")?
+                            .vitals(),
+                        after
+                    );
+                    break;
+                }
+                drop(states);
+                drop(runtime);
+                owner.clock_origin = owner.clock_origin.checked_sub(PASS).ok_or("attack clock")?;
+            }
+            assert!(
+                damaged,
+                "{creature_key} must execute a real damaging attack"
+            );
+            assert_eq!(xp_receipts(&harness).await?, 0);
+            assert_eq!(corpse_receipts(&harness).await?, 0);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
         }
 
         // ARCH-PROGRESSION-SOURCE-0 §1.5: the session's progression binding, formed by the
@@ -360,6 +454,11 @@ pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
         .await?;
         assert!(children >= 1, "the corpse carries the rat's loot");
 
+        let children = if capacity {
+            super::summer_corpse_capacity::qualify(&mut owner, &harness).await?
+        } else {
+            children
+        };
         let decay = match reconcile {
             Some(reconcile) => {
                 super::corpse_decay::qualify(&mut owner, &harness, children, reconcile)

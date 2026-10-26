@@ -205,6 +205,9 @@ pub struct CreatureProfileRecord {
     pub monster_melee: Option<NativeMonsterMeleeProfile>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub source_item_abilities: Vec<ProjectV2AuthoringProfile>,
+    /// Owner decision 22: explicit provenance limitation retained in the pinned generation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_qualification: Option<String>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -2856,6 +2859,38 @@ mod tests {
             "proposal-content-r1"
         );
     }
+    #[test]
+    fn summer_corpse_capacity_reward_admission_accepts_thirty_and_refuses_thirty_one() {
+        use super::super::creature_reward::NoSettlementReason;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let keys: &[u8] =
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
+        for (capacity, materializable) in [(30, true), (31, true), (30, false)] {
+            let mut section: serde_json::Value =
+                serde_json::from_slice(SAMPLE_LOOT_TABLES).unwrap();
+            section["items"][0]["container_capacity"] = capacity.into();
+            section["items"][0]["materializable"] = materializable.into();
+            let bytes = serde_json::to_vec(&section).unwrap();
+            let mut supplied = v7_input(Some(keys));
+            supplied.loot_tables = Some(pinned(&bytes));
+            let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+            let state = decode(&compiled.server_artifact).unwrap().state;
+            let reward = state.reward_table().row("canary:creature/rat");
+            if capacity == 30 && materializable {
+                assert_eq!(
+                    reward.unwrap().xp_amount,
+                    oteryn_simulation_determinism::ExactI64::new(5)
+                );
+            } else {
+                assert_eq!(
+                    reward.unwrap_err(),
+                    NoSettlementReason::CorpseItemInadmissible
+                );
+            }
+        }
+    }
+
     #[test]
     fn loot_section_selects_v8_and_builds_the_reward_table() {
         use super::super::creature_reward::NoSettlementReason;

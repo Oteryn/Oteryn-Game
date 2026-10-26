@@ -920,11 +920,15 @@ mod tests {
 
     #[test]
     fn corpse_container_capacity_accepts_the_full_plan_and_rejects_one_over() {
-        // Equal by construction to the accepted loot-plan ceiling.
-        assert_eq!(
-            GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
-            oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX
+        // A complete accepted loot plan fits the container; SUMMER decision 20
+        // increases container capacity without increasing generated loot.
+        assert!(
+            check_corpse_container_capacity(
+                oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX
+            )
+            .is_ok()
         );
+        assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
         assert!(check_corpse_container_capacity(0).is_ok());
         assert!(check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX).is_ok());
         assert_eq!(
