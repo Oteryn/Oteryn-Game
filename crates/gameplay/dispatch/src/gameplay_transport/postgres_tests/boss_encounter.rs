@@ -76,6 +76,117 @@ async fn exchange(
     result.map_err(|error| format!("cooldown command {id} ended {ended:?}: {error}").into())
 }
 
+// Keep one connection alive across the changes. Its initial valid command
+// reconciles carried commands before the interpretation changes; later commands
+// then exercise the actual cooldown handler rather than setup/reconciliation.
+async fn qualify_interpretation_changes(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    pool: &sqlx::PgPool,
+) -> TestResult {
+    let before = *admitted;
+    let fence = before.item_fence.ok_or("missing cooldown fence")?;
+    let (mut server, mut client) = tokio::io::duplex(4096);
+    let serving = async {
+        let ended = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
+        drop(server);
+        ended
+    };
+    let driving = async {
+        loop {
+            let frame = read_frame(&mut client).await?;
+            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
+                == MessageType::SnapshotCommit
+            {
+                break;
+            }
+        }
+        let generation = before.continuity.connection_generation;
+        let mut command_id = before.continuity.next_command_id;
+        let (status, payload) = query(&mut client, generation, command_id).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(page(&payload)?.1.len(), 64);
+        command_id += 1;
+        for index in 0..4 {
+            let mut revisions = ["profile-1", "ruleset-1", "content-1", "starter-1"];
+            revisions[index] = "boss-incompatible-2";
+            sqlx::query("SELECT game_character_configure_interpretation($1,$2,$3,$4)")
+                .bind(revisions[0])
+                .bind(revisions[1])
+                .bind(revisions[2])
+                .bind(revisions[3])
+                .execute(pool)
+                .await?;
+            assert!(
+                owner
+                    .root
+                    .read_boss_cooldown_list(owner.character, owner.holder, fence, &[])
+                    .await?
+                    .is_none(),
+                "interpretation column {index}"
+            );
+            let (status, payload) = query(&mut client, generation, command_id).await?;
+            assert_eq!(
+                status,
+                CommandStatus::Rejected,
+                "interpretation column {index}"
+            );
+            assert!(payload.is_empty());
+            command_id += 1;
+            // Restore by publishing a new interpretation, preserving history.
+            sqlx::query("SELECT game_character_configure_interpretation('profile-1','ruleset-1','content-1','starter-1')")
+                .execute(pool).await?;
+            let (status, payload) = query(&mut client, generation, command_id).await?;
+            assert_eq!(status, CommandStatus::Accepted);
+            assert_eq!(page(&payload)?.1.len(), 64);
+            command_id += 1;
+        }
+        client.shutdown().await?;
+        Ok(())
+    };
+    let (ended, result): (_, TestResult) = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        fixture::join_two(serving, driving),
+    )
+    .await?;
+    result?;
+    let ConnectionEnd::AdmittedThenDisconnected(current) = ended else {
+        return Err(format!("interpretation connection ended {ended:?}").into());
+    };
+    *admitted = current;
+    Ok(())
+}
+
+async fn query(
+    client: &mut tokio::io::DuplexStream,
+    generation: u64,
+    command_id: u64,
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    write_frame(
+        client,
+        &encode_client_command(
+            generation,
+            &ClientCommandValue {
+                command_id,
+                command_type: COMMAND_TYPE_BOSS_COOLDOWNS,
+                payload: &[],
+            },
+        )
+        .map_err(debug)?,
+    )
+    .await?;
+    loop {
+        let frame = read_frame(client).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(result.command_id, command_id);
+            assert!(result.payload.len() <= MAX_RESULT_BYTES);
+            return Ok((result.status, result.payload.to_vec()));
+        }
+    }
+}
+
 // Change durable authority only after the real Channel snapshot committed.
 // This is a bare FND-04 Instance session, not a fabricated activity admission.
 // The old Channel actor and its selected capability cannot keep reading for it.
@@ -108,7 +219,7 @@ async fn refuse_live_instance_scope(
             &encode_client_command(
                 admitted.continuity.connection_generation,
                 &ClientCommandValue {
-                    command_id: 6,
+                    command_id: admitted.continuity.next_command_id,
                     command_type: COMMAND_TYPE_BOSS_COOLDOWNS,
                     payload: &[],
                 },
@@ -346,6 +457,11 @@ fn scenario() -> TestResult {
         let (status, payload) = exchange(&owner, &mut without_capability, 5, &[]).await?;
         assert_eq!(status, CommandStatus::Rejected);
         assert!(payload.is_empty());
+        // The command stream is shared by both capability selections. Carry
+        // the returned sequence/command continuity into the selected connection.
+        let selected = admitted.continuity.selected_capabilities;
+        admitted = without_capability;
+        admitted.continuity.selected_capabilities = selected;
         use crate::gameplay_transport::guild_intent::GuildReply;
         assert!(matches!(
             owner
@@ -423,6 +539,7 @@ fn scenario() -> TestResult {
                 .await?
                 .is_none()
         );
+        qualify_interpretation_changes(&owner, &mut admitted, &h.pool).await?;
         refuse_live_instance_scope(&owner, admitted, &h.pool).await?;
         // No query changes the Character revision or its cooldown rows.
         let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")

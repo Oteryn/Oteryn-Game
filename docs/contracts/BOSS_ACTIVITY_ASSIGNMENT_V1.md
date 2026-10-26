@@ -120,6 +120,22 @@ the placed cell. This is durable consumer qualification with fixture coordinates
 not real-dispatch Instance admission, D119 destination resolution or restart
 qualification.
 
+Command 133's durable cooldown reader uses the item-only Character fence,
+including the live root's account, World and current Game-owned interpretation,
+before reading cooldown rows. It does not require an expected CharacterRevision:
+an unrelated Character write is not a stale item/session fence. The
+`boss_cooldown_list_postgres_real_dispatch` case changes each of profile, ruleset,
+content and starter-template interpretation independently after the real Channel
+snapshot. Both the direct durable read and command 133 refuse; the wire result is
+Rejected with no payload. Publishing a new matching interpretation restores
+accepted wire reads between cases. The fixture carries command-stream
+continuity from its capability-refusal exchange, so sequence/setup failure
+cannot stand in for the interpretation refusal. All four changes run on one
+live connection after an accepted command completes carried-command
+reconciliation. History is preserved through the operator's append-only interpretation publisher. This
+qualifies the Channel consumer's Character-root fence, not a successful Instance
+session, activity handoff or Instance gameplay.
+
 The cooldown real-connection case changes the durable session to a bare,
 unallocated Instance after the Channel snapshot commits, then attempts to send
 command 133 over that connection. The connection may close before that write;

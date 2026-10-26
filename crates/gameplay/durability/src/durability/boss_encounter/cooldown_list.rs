@@ -1,6 +1,6 @@
 //! Bounded, current-session-fenced read of the shared cooldown owner.
 use super::super::character_authority::ReconciledCharacterAuthority;
-use super::super::character_progression::assert_session_fence;
+use super::super::character_progression::assert_item_only_fence;
 use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::*;
@@ -10,7 +10,9 @@ use oteryn_protocol_oteryn::boss_encounter::{
 
 impl super::super::DurabilityRoot {
     /// Read only this admitted Character's page under current recovery, session, lease,
-    /// assignment and node proofs. The semantic-pass deadline bounds every database wait.
+    /// assignment, node and live Character-root interpretation proofs. This is an item-only
+    /// read: unrelated CharacterRevision advances do not invalidate it. The semantic-pass
+    /// deadline bounds every database wait.
     pub async fn read_boss_cooldown_list(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -32,7 +34,10 @@ impl super::super::DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                    if assert_item_only_fence(&mut tx, &fence, &node)
+                        .await?
+                        .is_err()
+                    {
                         return Ok(None);
                     }
                     // C collation is also the primary-key collation, matching Rust key ordering.
