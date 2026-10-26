@@ -176,6 +176,11 @@ impl QualifiedCompanionTouches {
 }
 
 impl StagedSpellBatch {
+    /// Read-only staged physical HP transitions, before the common atomic install.
+    pub fn preview_effect_receipts(&self) -> &[super::runtime_actor_spell_types::EffectReceipt] {
+        &self.receipt.effects
+    }
+
     pub fn batch(&self) -> &OwnerCombatBatch {
         &self.batch
     }

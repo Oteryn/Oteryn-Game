@@ -1,5 +1,8 @@
 //! QUESTCB2: altar inputs are consumed in the existing quest transition transaction.
-use super::{DurabilityError, character_progression::CurrentCharacterGameplayFence};
+use super::{
+    DurabilityError, character_progression::CurrentCharacterGameplayFence,
+    spell_owner_commit::SpellLanePermit,
+};
 use oteryn_gameplay_quests::quest::world_callbacks::{Callback, Position};
 use serde::{Deserialize, Serialize};
 use sqlx::Row;
@@ -16,6 +19,7 @@ pub struct QuestWorldContext {
 
 pub(super) async fn consume(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     fence: CurrentCharacterGameplayFence,
     request: &super::quest_state::QuestTransitionRequest,
     callback: &Callback,
@@ -46,6 +50,7 @@ pub(super) async fn consume(
     if callback.offerings.is_empty() {
         return Ok(true);
     }
+    permit.check_channel(world_id, channel_id)?;
     // Stable tile order and then instance order. A single item cannot satisfy two altars.
     let mut offerings = callback.offerings.iter().collect::<Vec<_>>();
     offerings.sort_by_key(|o| o.position);

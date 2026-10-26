@@ -1,5 +1,7 @@
 //! Protocol-neutral, non-authoritative client projection model.
 
+pub mod world;
+
 use oteryn_foundation::ClientSessionEpoch;
 use std::collections::BTreeMap;
 

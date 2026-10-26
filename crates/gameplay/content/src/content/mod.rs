@@ -50,6 +50,7 @@ mod fixture;
 pub mod item_abilities;
 mod item_family;
 pub mod item_ref;
+pub mod item_spell_augments;
 mod model;
 pub mod native_cell_lookup;
 pub mod native_gameplay;

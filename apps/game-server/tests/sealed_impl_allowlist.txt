@@ -100,6 +100,7 @@ apps/game-server/src/lifted_tests/auto/bed_sleep_postgres_cases.rs | house_prese
 crates/gameplay/spell/src/spell/source_map_initialization.rs | map_initializer_seal::Sealed | CurrentNativeMapInitialization<'_>
 crates/gameplay/spell/src/spell/world_execution.rs | relocation_seal::Sealed | SpellRelocationProof<'_, '_>
 crates/gameplay/world/src/map/floor.rs | source_step_seal::Sealed | BundleStepProof<'_>
+crates/gameplay/world/src/map/floor/quest_callback.rs | source_step_seal::Sealed | CallbackTeleport<'_>
 # World qualifies rope origin and landing and revalidates them at commit;
 # same Movement proof boundary as BundleStepProof and SourceStepProof (CP review required).
 crates/gameplay/world/src/map/floor/rope.rs | source_step_seal::Sealed | RopeProof<'_>

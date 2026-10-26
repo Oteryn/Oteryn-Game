@@ -18,6 +18,12 @@ pub(super) struct Run {
     checkpoint_due: u64,
     pending: Option<(CurrentCharacterGameplayFence, ExerciseCheckpoint)>,
 }
+impl Run {
+    pub(super) fn matches_session(&self, admitted: AdmittedSession) -> Option<bool> {
+        (admitted.runtime_actor == Some(self.actor) && admitted.item_fence == Some(self.fence))
+            .then_some(true)
+    }
+}
 fn occurrence() -> Option<BuildOccurrence> {
     let mut bytes = crate::gameplay_transport::SecureIdentifiers::random::<16>()?;
     bytes[6] = (bytes[6] & 15) | 0x70;

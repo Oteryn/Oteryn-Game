@@ -243,6 +243,8 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quick_loot_item_profiles
     quick_loot_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import item_spell_augment_profiles
+    item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)
     descriptors = spell_import.descriptors(root, generated)
     for family, path in FAMILY_INDEXES.items():

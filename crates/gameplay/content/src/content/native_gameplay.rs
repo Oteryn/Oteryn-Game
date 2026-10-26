@@ -288,6 +288,9 @@ pub struct PresentationProfilesDocument {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NativeItemAttributes {
+    /// Server-only numerical Item augments. Missing preserves pre-augment artifact bytes.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub spell_augments: Vec<super::item_spell_augments::ItemSpellAugment>,
     /// None is unknown, never a zero equipment contribution.
     pub speed_bonus: Option<i32>,
     pub blocks_movement: Option<bool>,
@@ -1151,6 +1154,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                     || record.attributes.immovable_block_solid != Some(false)
                     || record.attributes.field_condition.is_some()
                     || record.attributes.rune_consumption.is_some()
+                    || !record.attributes.spell_augments.is_empty()
                     || record.attributes.field_replaceable.is_some()
                     || record.attributes.has_height.is_some_and(|height| height)
                 {
@@ -1174,6 +1178,25 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 field
                     .validate_for(&field.source.server, external)
                     .map_err(|_| invalid("native gameplay item field source recipe"))?;
+            }
+            use super::item_spell_augments::{ItemSpellAugmentKind, MAX_ITEM_SPELL_AUGMENTS};
+            if record.attributes.spell_augments.len() > MAX_ITEM_SPELL_AUGMENTS
+                || record.attributes.spell_augments.iter().any(|augment| {
+                    augment.spell.is_empty()
+                        || augment.spell.len() > 128
+                        || augment.spell != augment.spell.to_ascii_lowercase()
+                        || !augment
+                            .spell
+                            .bytes()
+                            .all(|b| b.is_ascii_lowercase() || b == b' ' || b == b'\'')
+                        || augment.value
+                            > match augment.kind {
+                                ItemSpellAugmentKind::Cooldown => 86_400_000,
+                                _ => 100_000,
+                            }
+                })
+            {
+                return Err(invalid("native gameplay Item spell augment bounds"));
             }
             exact(&record.authoring.item, ProjectV2Family::Item)?;
             super::project::validate_native_gameplay_item(&record.authoring)
@@ -1714,6 +1737,42 @@ mod tests {
         qualify_native_entry_room_with_gameplay,
     };
     use serde_json::Value;
+    #[test]
+    fn item_spell_augments_artifact_roundtrip_and_bounds() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let mut profiles: Value =
+            serde_json::from_slice(&supplied.item_profiles.as_ref().unwrap().bytes).unwrap();
+        let augment =
+            serde_json::json!({"spell":"a".repeat(128),"kind":"base_damage","value":100000});
+        profiles["records"][0]["attributes"]["spell_augments"] =
+            serde_json::json!(vec![augment; 16]);
+        supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let records = decoded.state.items.as_ref().unwrap();
+        assert_eq!(records.records[0].attributes.spell_augments.len(), 16);
+        for invalid in [
+            serde_json::json!([{ "spell":"a".repeat(129), "kind":"base_damage", "value":0 }]),
+            serde_json::json!([{ "spell":"a", "kind":"base_damage", "value":100001 }]),
+            serde_json::json!([{ "spell":"a", "kind":"cooldown", "value":86400001 }]),
+            serde_json::json!(vec![
+                serde_json::json!({"spell":"a","kind":"base_healing","value":0});
+                17
+            ]),
+            serde_json::json!([{ "spell":"", "kind":"base_damage", "value":0 }]),
+            serde_json::json!([{ "spell":"a", "kind":"wheel", "value":0 }]),
+        ] {
+            profiles["records"][0]["attributes"]["spell_augments"] = invalid;
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+            assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+        }
+    }
+
     #[test]
     fn ranged_profiles_survive_native_artifact_and_incomplete_weapon_is_rejected() {
         let world = test_source(1).unwrap().world_id;

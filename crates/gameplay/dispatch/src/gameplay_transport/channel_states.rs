@@ -23,6 +23,8 @@ pub struct ChannelSessionStates {
     pub command_ingress: super::session_ingress::SessionCommands,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub fence_holders: FenceHolders,
+    /// IDLEKICK: operator thresholds, shared by every connection served by this owner.
+    pub gameplay_idle_policy: super::connection::GameplayIdlePolicy,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
     pub input_gate: input_gate::InputGate,
     pub(super) inspection_permissions: super::inspection::Permissions,
