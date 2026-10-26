@@ -1,0 +1,17 @@
+{
+  "id": 93,
+  "name": "SUBAREA_V1",
+  "constant": "cyclopedia::CAPABILITY_SUBAREA_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    109
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

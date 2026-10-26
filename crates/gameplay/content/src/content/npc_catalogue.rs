@@ -17,6 +17,7 @@ use super::{
 pub mod premium_services;
 pub mod replies;
 pub mod service;
+pub mod travel;
 #[allow(
     unused_imports,
     reason = "read by NPC talk (NPC-TALK-1), which has no boot caller yet"

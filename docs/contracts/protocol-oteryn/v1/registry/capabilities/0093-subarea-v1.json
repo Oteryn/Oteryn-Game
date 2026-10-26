@@ -1,0 +1,13 @@
+{
+  "id": 93,
+  "name": "SUBAREA_V1",
+  "owner_decision": "SUBAREA-ADMIT-1",
+  "owner": "World bundle Area membership",
+  "requires": [],
+  "command_types": [
+    109
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Composed bundle with typed admitted source masks; subarea_available."
+}

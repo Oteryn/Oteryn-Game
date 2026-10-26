@@ -1,0 +1,24 @@
+{
+  "id": "SUBAREA-RL-10",
+  "owner_contract": "OTERYN_WORLD_BUNDLE_FORMAT_V1.md#15-format-v5-subarea-admit-1",
+  "resource": "current subarea result",
+  "unit": "bytes",
+  "hard_maximum": 9,
+  "configurable_range": {
+    "minimum": 9,
+    "maximum": 9
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Checked before decoding/retaining membership; bounded by the existing manifest byte cap as well.",
+  "client_visible": true,
+  "boundary_tests": [
+    "subarea_reader_checks_limits_and_fails_closed_on_partial_tables",
+    "subarea_bmp_orientation_shape_framing_and_allocation_bounds",
+    "subarea_postgres_real_dispatch"
+  ],
+  "consumers": [
+    "crates/world-bundle/src/subarea.rs",
+    "tools/world-bundle-compiler/src/compile/subareas.rs",
+    "crates/protocol-oteryn/src/cyclopedia.rs"
+  ]
+}

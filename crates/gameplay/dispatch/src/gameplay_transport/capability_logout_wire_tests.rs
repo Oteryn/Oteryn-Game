@@ -1,13 +1,12 @@
 use super::super::super::connection::LogoutReply;
 use super::*;
 use crate::foundation::CommandStatus;
-use oteryn_protocol_oteryn::logout::{
-    LogoutResult, decode_logout_result, encode_logout_intent,
-};
+use oteryn_protocol_oteryn::logout::{LogoutResult, decode_logout_result, encode_logout_intent};
 use oteryn_protocol_oteryn::{decode_command_result, decode_protocol_error};
 use std::time::Duration;
 
 struct LogoutAuthority {
+    motd: &'static str,
     reply: Cell<LogoutReply>,
     /// How long one logout takes; frames read meanwhile are held.
     delay: Duration,
@@ -20,6 +19,7 @@ struct LogoutAuthority {
 impl LogoutAuthority {
     fn new(reply: LogoutReply) -> Self {
         Self {
+            motd: "",
             reply: Cell::new(reply),
             delay: Duration::ZERO,
             logouts: Cell::new(0),
@@ -30,6 +30,9 @@ impl LogoutAuthority {
 }
 
 impl FreshAdmissionAuthority for LogoutAuthority {
+    fn server_motd(&self) -> &str {
+        self.motd
+    }
     async fn admit(
         &self,
         _attempt: FreshAdmissionAttempt<'_>,
@@ -171,9 +174,180 @@ fn step() -> Vec<u8> {
     oteryn_protocol_oteryn::world_spatial::encode_step_intent(StepDirection::North)
 }
 
+type ServerMessages = (Vec<Vec<u8>>, Vec<String>);
+
+fn server_messages(frames: &[Vec<u8>]) -> Result<ServerMessages, Box<dyn Error>> {
+    use oteryn_protocol_oteryn::tutorial_notices::{TutorialNotice, decode_tutorial_notice};
+    use oteryn_protocol_oteryn::{decode_snapshot_chunk, decode_state_delta};
+    let (mut snapshots, mut messages) = (Vec::new(), Vec::new());
+    for frame in frames {
+        let envelope = decode_wire_envelope(frame)?;
+        match envelope.message_type() {
+            MessageType::SnapshotChunk => {
+                for domain in decode_snapshot_chunk(envelope.payload())?.1 {
+                    if domain.domain_id == 57 {
+                        snapshots.push(domain.payload.to_vec());
+                    }
+                }
+            }
+            MessageType::StateDelta => {
+                let delta = decode_state_delta(envelope.payload())?;
+                if delta.domain_id == 57 {
+                    assert_eq!((delta.base_revision, delta.new_revision), (0, 1));
+                    let TutorialNotice::StatusText(text) =
+                        decode_tutorial_notice(delta.payload).map_err(|e| format!("{e:?}"))?
+                    else {
+                        return Err("status text".into());
+                    };
+                    messages.push(text);
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok((snapshots, messages))
+}
+
 #[test]
-fn without_capability_21_a_logout_is_refused_before_the_authority() -> Result<(), Box<dyn Error>>
-{
+fn nologout_motd_once_and_capability_gate() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+        authority.motd = "Welcome to Oteryn!";
+        let (end, written) = serve_open(&authority, admitted(&[92])?, &[], Duration::ZERO).await?;
+        let (snapshots, messages) = server_messages(&written)?;
+        assert_eq!(messages, Vec::<String>::new());
+        assert_eq!(
+            snapshots,
+            [
+                oteryn_protocol_oteryn::tutorial_notices::encode_tutorial_notice(
+                    &oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
+                        authority.motd.into()
+                    )
+                )
+                .map_err(|e| format!("{e:?}"))?
+            ]
+        );
+        let ConnectionEnd::AdmittedThenDisconnected(mut resumed) = end else {
+            return Err("disconnect".into());
+        };
+        assert!(resumed.continuity.server_motd_sent);
+        resumed.continuity.connection_generation += 1;
+        let (_, written) = serve_open(&authority, resumed, &[], Duration::ZERO).await?;
+        assert_eq!(server_messages(&written)?, (vec![vec![8, 1]], vec![]));
+        let (_, written) = serve_open(&authority, admitted(&[])?, &[], Duration::ZERO).await?;
+        assert_eq!(server_messages(&written)?, (vec![], vec![]));
+        authority.motd = "";
+        let (_, written) = serve_open(&authority, admitted(&[92])?, &[], Duration::ZERO).await?;
+        assert_eq!(server_messages(&written)?, (vec![vec![8, 1]], vec![]));
+        Ok(())
+    })
+}
+
+#[test]
+fn nologout_interrupted_snapshot_does_not_consume_the_motd() -> Result<(), Box<dyn Error>> {
+    run(async {
+        let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
+        authority.motd = "Welcome to Oteryn!";
+        // One byte of capacity forces each frame to be drained before the next can finish.
+        let (mut server, mut client) = tokio::io::duplex(1);
+        let serving = serve_admitted(&mut server, admitted(&[92])?, &authority, IDLE_LIVENESS);
+        let disconnecting = async move {
+            for expected in [MessageType::SnapshotBegin, MessageType::SnapshotChunk] {
+                let length = client.read_u32().await?;
+                let mut frame = vec![0; length as usize];
+                client.read_exact(&mut frame).await?;
+                assert_eq!(decode_wire_envelope(&frame)?.message_type(), expected);
+            }
+            // Drop before SnapshotCommit can be delivered.
+            drop(client);
+            Ok::<_, Box<dyn Error>>(())
+        };
+        let (mut serving, mut disconnecting) =
+            (std::pin::pin!(serving), std::pin::pin!(disconnecting));
+        let mut disconnected = None;
+        let end = std::future::poll_fn(|context| {
+            if disconnected.is_none()
+                && let std::task::Poll::Ready(result) = disconnecting.as_mut().poll(context)
+            {
+                disconnected = Some(result);
+            }
+            serving.as_mut().poll(context)
+        })
+        .await;
+        disconnected.ok_or("missing disconnect")??;
+        let ConnectionEnd::AdmittedThenDisconnected(mut resumed) = end else {
+            return Err("disconnect".into());
+        };
+        assert!(!resumed.continuity.server_motd_sent);
+        resumed.continuity.connection_generation += 1;
+        let (_, frames) = serve_open(&authority, resumed, &[], Duration::ZERO).await?;
+        let (snapshots, _) = server_messages(&frames)?;
+        assert_eq!(snapshots.len(), 1);
+        assert_eq!(
+            snapshots[0],
+            oteryn_protocol_oteryn::tutorial_notices::encode_tutorial_notice(
+                &oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
+                    authority.motd.into()
+                )
+            )
+            .map_err(|e| format!("{e:?}"))?
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn nologout_refusals_keep_playing_and_send_the_global_message_only_with_92()
+-> Result<(), Box<dyn Error>> {
+    run(async {
+        for (reply, message, expected) in [
+            (
+                LogoutReply::NoLogout,
+                "You can not logout here.",
+                LogoutResult::Busy,
+            ),
+            (
+                LogoutReply::Result(LogoutResult::InFight {
+                    retry_after_ms: 1000,
+                }),
+                "You may not logout during or immediately after a fight!",
+                LogoutResult::InFight {
+                    retry_after_ms: 1000,
+                },
+            ),
+        ] {
+            for selected in [&[21][..], &[21, 92][..]] {
+                let authority = LogoutAuthority::new(reply);
+                let frames = [command(1, 23, &[]), command(2, 1, &step())];
+                let (end, written) = serve_open(
+                    &authority,
+                    admitted(selected)?,
+                    &frames,
+                    Duration::from_millis(10),
+                )
+                .await?;
+                assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+                assert_eq!(authority.steps.get(), 1);
+                assert_eq!(
+                    logout_result(&results(&written)?, 1)?,
+                    (CommandStatus::Rejected, expected)
+                );
+                assert_eq!(
+                    server_messages(&written)?.1,
+                    if selected.contains(&92) {
+                        vec![message.to_owned()]
+                    } else {
+                        vec![]
+                    }
+                );
+            }
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn without_capability_21_a_logout_is_refused_before_the_authority() -> Result<(), Box<dyn Error>> {
     run(async {
         let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Accepted));
         let frames = [command(1, 23, &encode_logout_intent())];
@@ -237,8 +411,8 @@ fn accepted_is_written_then_the_connection_closes_without_reading_further()
 }
 
 #[test]
-fn in_fight_is_rejected_with_its_retry_and_the_session_keeps_playing()
--> Result<(), Box<dyn Error>> {
+fn in_fight_is_rejected_with_its_retry_and_the_session_keeps_playing() -> Result<(), Box<dyn Error>>
+{
     run(async {
         let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::InFight {
             retry_after_ms: 1_500,
@@ -275,8 +449,8 @@ fn in_fight_is_rejected_with_its_retry_and_the_session_keeps_playing()
 }
 
 #[test]
-fn busy_is_rejected_and_a_step_held_behind_the_logout_runs_after_it()
--> Result<(), Box<dyn Error>> {
+fn busy_is_rejected_and_a_step_held_behind_the_logout_runs_after_it() -> Result<(), Box<dyn Error>>
+{
     run(async {
         let mut authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
         authority.delay = Duration::from_millis(30);
@@ -306,8 +480,7 @@ fn busy_is_rejected_and_a_step_held_behind_the_logout_runs_after_it()
 }
 
 #[test]
-fn an_unknown_outcome_writes_no_result_and_ends_as_a_disconnect() -> Result<(), Box<dyn Error>>
-{
+fn an_unknown_outcome_writes_no_result_and_ends_as_a_disconnect() -> Result<(), Box<dyn Error>> {
     run(async {
         let authority = LogoutAuthority::new(LogoutReply::Unknown);
         let frames = [
@@ -400,8 +573,7 @@ fn a_second_logout_before_an_accepted_result_is_a_protocol_error_after_the_logou
 }
 
 #[test]
-fn a_second_logout_held_behind_a_paced_step_is_a_protocol_error() -> Result<(), Box<dyn Error>>
-{
+fn a_second_logout_held_behind_a_paced_step_is_a_protocol_error() -> Result<(), Box<dyn Error>> {
     run(async {
         // Both logouts are read and held while step 2 waits for its pace, so the first one
         // starts with the second already held (#2127 Codex P2 4279788741).
@@ -442,8 +614,7 @@ fn a_second_logout_held_behind_a_paced_step_is_a_protocol_error() -> Result<(), 
 }
 
 #[test]
-fn a_second_logout_after_the_first_result_is_an_ordinary_command() -> Result<(), Box<dyn Error>>
-{
+fn a_second_logout_after_the_first_result_is_an_ordinary_command() -> Result<(), Box<dyn Error>> {
     run(async {
         let authority = LogoutAuthority::new(LogoutReply::Result(LogoutResult::Busy));
         let frames = [

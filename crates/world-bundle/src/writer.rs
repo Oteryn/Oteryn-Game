@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v4`: the shared byte writer used by the compiler and test fixtures.
+//! `OTERYN_WORLD_BUNDLE/v5`: the shared byte writer used by the compiler and test fixtures.
 
 use sha2::{Digest, Sha256};
 
