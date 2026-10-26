@@ -464,7 +464,9 @@ async fn step(
     action: ImbuementAction,
     expected: ImbuementResult,
 ) -> TestResult {
-    let (end, status, reply) = exchange(owner, sword_ref, *next, command, Some(action), true).await?;
+    let (end, status, reply) = exchange(owner, sword_ref, *next, command, Some(action), true)
+        .await
+        .map_err(|error| format!("imbuement command {command}: {error}"))?;
     assert_eq!(status, CommandStatus::Accepted, "command {command}");
     assert_eq!(
         reply.map(|reply| reply.result),

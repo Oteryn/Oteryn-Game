@@ -216,11 +216,15 @@ BEGIN
  ELSIF NEW.action=2 THEN
   DELETE FROM game_item_imbuements WHERE item_instance_id=NEW.item_instance_id AND slot=NEW.slot;
   IF NOT FOUND THEN RAISE EXCEPTION 'imbuement clear found no row' USING ERRCODE='23514'; END IF;
- ELSE
+ ELSIF NEW.action=3 THEN
   UPDATE game_item_instances SET definition_family=NEW.output_definition_family,
     definition_production_key=NEW.output_production_key,definition_revision_ref=NEW.output_revision_ref,
-    last_transaction_id=NEW.transaction_id WHERE item_instance_id=NEW.item_instance_id;
+    last_transaction_id=NEW.transaction_id WHERE item_instance_id=NEW.item_instance_id
+      AND definition_family='Item' AND definition_production_key='oteryn:item.tibia.i51442'
+      AND quantity=1 AND lifecycle=1;
   IF NOT FOUND THEN RAISE EXCEPTION 'blank scroll disappeared' USING ERRCODE='23514'; END IF;
+ ELSE
+  RAISE EXCEPTION 'unknown imbuement action' USING ERRCODE='23514';
  END IF;
  RETURN NULL;
 END $$;
@@ -244,10 +248,10 @@ BEGIN
          AND b.imbuement_revision=r.imbuement_revision AND b.tier=r.tier AND b.remaining_ms=72000000
          AND b.applying_transaction_id=r.transaction_id AND b.applying_occurrence_id=r.transaction_id))
     OR (r.action=2 AND EXISTS(SELECT 1 FROM game_item_imbuements b WHERE b.item_instance_id=r.item_instance_id AND b.slot=r.slot))
-    OR (r.action=3 AND NOT EXISTS(SELECT 1 FROM game_item_instances i WHERE i.item_instance_id=r.item_instance_id
-         AND i.definition_family=r.output_definition_family AND i.definition_production_key=r.output_production_key
-         AND i.definition_revision_ref=r.output_revision_ref AND i.lifecycle=1 AND i.quantity=1
-         AND i.last_transaction_id=r.transaction_id))
+    OR (r.action=3 AND NOT EXISTS(SELECT 1 FROM game_item_instances target WHERE target.item_instance_id=r.item_instance_id
+         AND target.definition_family=r.output_definition_family AND target.definition_production_key=r.output_production_key
+         AND target.definition_revision_ref=r.output_revision_ref AND target.lifecycle=1 AND target.quantity=1
+         AND target.last_transaction_id=r.transaction_id))
     OR NOT EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_container_slots s
                     ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id
                    WHERE e.item_instance_id=r.item_instance_id AND e.character_id=r.character_id
