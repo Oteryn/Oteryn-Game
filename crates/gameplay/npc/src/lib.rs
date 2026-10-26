@@ -8,6 +8,7 @@ pub mod npc_promotion;
 pub mod npc_talk;
 pub mod npc_travel;
 pub mod npc_voice;
+pub mod rashid;
 pub mod vocation_choice;
 
 use oteryn_gameplay_content::content;

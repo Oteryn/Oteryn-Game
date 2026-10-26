@@ -210,6 +210,24 @@ pub(super) async fn trade(
             },
         )
     };
+    // RASHID: the open window is not authority to bypass Sunday's durable recognition. Replay
+    // remains above this check so a committed command stays replayable after a copy refresh.
+    if oteryn_gameplay_npc::rashid::is_rashid(&offer.npc_key) {
+        let unlocked = admission
+            .states
+            .quest_sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| sessions.get(&session)?.copy.as_ref().cloned())
+            .and_then(|copy| {
+                copy.tracks()
+                    .get(oteryn_gameplay_npc::rashid::MISSION_07_TRACK)
+                    .copied()
+            });
+        if !oteryn_gameplay_npc::rashid::trade_unlocked(unlocked) {
+            return Err(Box::new(NpcTradeStep::rejected()));
+        }
+    }
     let Some(native) = admission
         .active_generation
         .and_then(ActiveGeneration::native_gameplay)
