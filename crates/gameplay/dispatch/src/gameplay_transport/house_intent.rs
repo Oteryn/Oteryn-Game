@@ -15,9 +15,10 @@ pub(super) async fn dispatch(
     command: UseCommand,
     body: &[u8],
     query: bool,
+    include_kind: bool,
 ) -> Option<Vec<u8>> {
     if query {
-        return super::house_query::dispatch(authority, actor, command, body).await;
+        return super::house_query::dispatch(authority, actor, command, body, include_kind).await;
     }
     let Ok(intent) = wire::decode_house_intent(body) else {
         return Some(wire::encode_house_result(D::Rejected, 0));
@@ -61,6 +62,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.content_pin().server_artifact_digest()
         };
         if let wire::HouseAction::Bid(maximum) = intent.action {
+            let Some(kind) = super::house_query::source_house_kind(&intent.house) else {
+                return refuse();
+            };
             let Some(gate) = self.premium_coordinator else {
                 return refuse();
             };
@@ -78,11 +82,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             operation_id.copy_from_slice(&digest[..16]);
             operation_id[6] = (operation_id[6] & 15) | 0x70;
             operation_id[8] = (operation_id[8] & 63) | 0x80;
+            let catalogue_rent = super::house_query::source_house_rent(&intent.house)?;
             let request = crate::durability::house_ownership::HouseBidRequest {
                 operation_id,
                 command: command_ref,
                 house_key: intent.house,
                 maximum,
+                content_digest,
+                kind: kind.database(),
+                catalogue_rent,
             };
             return match self
                 .root
@@ -90,11 +98,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 Ok(_) => Some(wire::encode_house_result(D::Ok, 0)),
-                Err(crate::durability::house_ownership::HouseOwnershipError::Unavailable(_)) => {
+                Err(crate::durability::house_ownership::HouseOwnershipError::Unavailable(error)) => {
+                    #[cfg(test)]
+                    eprintln!("House bid unavailable: {error:?}");
+                    #[cfg(not(test))]
+                    let _ = error;
                     None
                 }
                 Err(crate::durability::house_ownership::HouseOwnershipError::RequestConflict) => {
                     Some(wire::encode_house_result(D::Conflict, 0))
+                }
+                Err(crate::durability::house_ownership::HouseOwnershipError::Guildhall(reason)) => {
+                    use oteryn_gameplay_housing::guildhall::GuildhallRefusal as R;
+                    let disposition = match reason {
+                        R::NotGuildLeader => D::NotGuildLeader,
+                        R::GuildInactive => D::GuildInactive,
+                        R::GuildAlreadyHasHall => D::GuildAlreadyHasHall,
+                        R::GuildAlreadyBidding => D::GuildAlreadyBidding,
+                        R::InsufficientFunds => D::InsufficientFunds,
+                        R::BalanceLimit => D::BalanceLimit,
+                        R::StaleLeader => D::StaleLeader,
+                        R::NoChange => D::NoChange,
+                        R::PersonalHouseLimitExceeded => D::Rejected,
+                    };
+                    Some(wire::encode_house_result(disposition, 0))
                 }
                 Err(_) => refuse(),
             };
@@ -209,6 +236,7 @@ macro_rules! authority_methods {
             _actor: crate::foundation::ExactActorRef,
             _command: UseCommand,
             _query: oteryn_protocol_oteryn::house::HouseQuery,
+            _include_kind: bool,
         ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
             async {
                 Some(oteryn_protocol_oteryn::house::encode_house_result(
@@ -235,8 +263,9 @@ macro_rules! composed_methods {
             actor: ExactActorRef,
             command: connection::UseCommand,
             query: oteryn_protocol_oteryn::house::HouseQuery,
+            include_kind: bool,
         ) -> Option<Vec<u8>> {
-            self.query_houses(actor, command, query).await
+            self.query_houses(actor, command, query, include_kind).await
         }
     };
 }

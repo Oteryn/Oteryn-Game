@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0039-timed-item",
+    "kind": "handlers",
+    "id": "0039-timed-item-unsupported",
+    "status": "unsupported",
+    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "commands": [
+      38
+    ],
+    "not_applicable": {
+      "state": "Unsupported until the owning mechanic migration.",
+      "protocol": "Unsupported until the owning mechanic migration.",
+      "view": "Unsupported until the owning mechanic migration.",
+      "input": "Unsupported until the owning mechanic migration.",
+      "settings": "Unsupported until the owning mechanic migration."
+    }
+  }
+]

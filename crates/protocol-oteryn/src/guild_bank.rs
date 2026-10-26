@@ -36,7 +36,7 @@ pub struct GuildBankQuery {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GuildBankEntry {
     pub ordinal: u64,
-    /// 1 deposit, 2 withdraw, 3 disband payout. Symbolic storage kinds have no event IDs.
+    /// 1 deposit, 2 withdraw, 3 disband payout; capability 99 adds 4 Hall reserve, 5 Hall refund, 6 Hall payment. Symbolic storage kinds have no event IDs.
     pub kind: u8,
     pub amount: u64,
     pub before: u64,
@@ -188,16 +188,20 @@ fn entry_bytes(e: &GuildBankEntry) -> WireResult<Vec<u8>> {
     if e.ordinal == 0
         || e.ordinal > i64::MAX as u64
         || e.kind == 0
-        || e.kind > 3
+        || e.kind > 6
         || e.amount == 0
         || e.amount > BALANCE_MAX
         || e.before > BALANCE_MAX
         || e.after > BALANCE_MAX
-        || (if e.kind == 1 {
-            e.before.checked_add(e.amount)
+        || if e.kind == 6 {
+            e.before.abs_diff(e.after) != e.amount
         } else {
-            e.before.checked_sub(e.amount)
-        }) != Some(e.after)
+            (if matches!(e.kind, 1 | 5) {
+                e.before.checked_add(e.amount)
+            } else {
+                e.before.checked_sub(e.amount)
+            }) != Some(e.after)
+        }
     {
         return malformed();
     }

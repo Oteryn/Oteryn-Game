@@ -1,8 +1,8 @@
 //! GUILD-BANK-1: admitted session -> real command/result bytes -> runtime-role PostgreSQL -> reload.
 #[path = "guild_bank/seed.rs"]
-mod bank_seed;
+pub(super) mod bank_seed;
 #[path = "guild_bank/transport.rs"]
-mod transport;
+pub(super) mod transport;
 use super::fixture::{self, Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::domain::{CharacterId, guild::GuildId};
