@@ -48,6 +48,7 @@ pub mod logout;
 pub mod loop_training;
 pub mod market;
 pub mod npc_service;
+pub mod npc_shop;
 pub mod party;
 pub mod player_report;
 pub mod player_trade;

@@ -16,6 +16,11 @@
 //!   then the coin MINT of the price: crystal, platinum, gold, each only when positive, each at
 //!   most 100. Free entries are counted after the burn.
 //!
+//! - SELL_ALL (NPC-TRADE-SELLALL-1, `commit_npc_sell_all`): the SELL of every live direct entry
+//!   holding the offer's definition at its current revision with no contents and its default
+//!   state, each burned whole in display order, for `unit_price` per unit, under the coin MINT and
+//!   free-entry rules of SELL. The stored and audited quantity is the units sold.
+//!
 //! The cause record is keyed by (occurrence, Character) forever: a replay with the same binding
 //! returns the first outcome without reacquiring session authority, a changed binding conflicts.
 //! Any refusal writes nothing. The caller supplies the offer from the server catalogue at the
@@ -163,6 +168,8 @@ pub struct NpcTradeReceipt {
     pub side: NpcTradeSide,
     pub quantity: u32,
     pub unit_price: u64,
+    /// A sell-all (NPC-TRADE-SELLALL-1): `quantity` is the units it sold.
+    pub sell_all: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -252,14 +259,26 @@ fn is_coin(definition: &TypedDefinitionRef) -> bool {
 }
 
 /// Closed request shape: identities, price bounds, the coin definitions, a non-coin item and a
-/// backpack declaring a capacity within `GAMEITEM01-CONTAINER-ENTRIES-MAX`.
-fn validate(request: &NpcTradeRequest) -> Result<(u64, u32)> {
+/// backpack declaring a capacity within `GAMEITEM01-CONTAINER-ENTRIES-MAX`. A sell-all names one
+/// unit of a count-1 SELL offer; its total and units come from the plan (`None` here).
+fn validate(request: &NpcTradeRequest, sell_all: bool) -> Result<Option<(u64, u32)>> {
     let cause = &request.cause;
-    let total = rules::trade_total(
-        cause.side == NpcTradeSide::Buy,
-        request.quantity,
-        request.unit_price,
-    )?;
+    let priced = if sell_all {
+        if cause.side != NpcTradeSide::Sell
+            || request.quantity != 1
+            || request.offer_count != 1
+            || request.unit_price > rules::NPC_TRADE_SELL_GOLD_UNITS_MAX
+        {
+            return Err(NpcTradeError::InvalidInput);
+        }
+        None
+    } else {
+        Some(rules::trade_total(
+            cause.side == NpcTradeSide::Buy,
+            request.quantity,
+            request.unit_price,
+        )?)
+    };
     let ids = [request.transaction_id, request.event_id]
         .into_iter()
         .chain(request.output_item_instance_ids)
@@ -294,16 +313,21 @@ fn validate(request: &NpcTradeRequest) -> Result<(u64, u32)> {
     {
         return Err(NpcTradeError::InvalidInput);
     }
-    Ok((total, item_units(request)?))
+    match priced {
+        Some(total) => Ok(Some((total, item_units(request)?))),
+        None => Ok(None),
+    }
 }
 
 /// SHA-256 over the semantic request: the cause, the CommandRef, the Character, its World, the
 /// quantity, the price and the offer's item. The TransactionId, EventId, time and output
-/// identities are retry-local and excluded.
+/// identities are retry-local and excluded. A sell-all appends one marker byte, so a trade's
+/// binding never equals a sell-all's.
 fn request_binding(
     fence: &CurrentCharacterItemFence,
     world_id: WorldId,
     request: &NpcTradeRequest,
+    sell_all: bool,
 ) -> Vec<u8> {
     let text = |digest: &mut Sha256, value: &str| {
         digest.update(u32::try_from(value.len()).unwrap_or(u32::MAX).to_be_bytes());
@@ -328,6 +352,9 @@ fn request_binding(
     text(&mut digest, &item.family);
     text(&mut digest, &item.production_key);
     text(&mut digest, &item.revision_ref);
+    if sell_all {
+        digest.update([1]);
+    }
     digest.finalize().to_vec()
 }
 
@@ -408,6 +435,18 @@ fn plan_sell(
     Ok(rules::plan_sell(&plan_input(request), total, units, capacity, entries)?.into())
 }
 
+/// A sell-all's plan with its total and the units it sells.
+fn plan_sell_all(
+    request: &NpcTradeRequest,
+    capacity: usize,
+    entries: &[Entry],
+) -> Result<(Plan, u64, u32)> {
+    let (plan, units) =
+        rules::plan_sell_all(&plan_input(request), request.unit_price, capacity, entries)?;
+    let total = plan.minted_gold_units;
+    Ok((plan.into(), total, units))
+}
+
 /// Takes the occurrence's trade lock: a commit and a replay read of one occurrence serialize.
 async fn lock_occurrence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -447,7 +486,7 @@ impl DurabilityRoot {
                     lock_occurrence(&mut tx, &occurrence).await?;
                     let Some(row) = sqlx::query(
                         "SELECT occurrence_id::text, npc_key, catalogue_revision::text, \
-                                offer_index, side, quantity, unit_price::text \
+                                offer_index, side, quantity, unit_price::text, sell_all \
                            FROM game_npc_trades \
                           WHERE game_session_id = encode($1,'hex')::uuid \
                             AND command_id = $2::text::numeric(20,0) \
@@ -479,6 +518,7 @@ impl DurabilityRoot {
                         quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
                             .map_err(|_| DurabilityError::InvalidStoredState)?,
                         unit_price: numeric_u64(&row, "unit_price")?,
+                        sell_all: row.try_get("sell_all")?,
                     };
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(Some(receipt)))
@@ -497,10 +537,36 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         request: NpcTradeRequest,
     ) -> Result<NpcTradeOutcome> {
+        self.commit_trade(authority, node, fence, request, false)
+            .await
+    }
+
+    /// Commit one sell-all (NPC-TRADE-SELLALL-1, see the module documentation) of a count-1 SELL
+    /// offer: `request.quantity` is 1 and `unit_price` the price per unit. The replay, refusal
+    /// and conflict rules of `commit_npc_trade` apply unchanged.
+    pub async fn commit_npc_sell_all(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: NpcTradeRequest,
+    ) -> Result<NpcTradeOutcome> {
+        self.commit_trade(authority, node, fence, request, true)
+            .await
+    }
+
+    async fn commit_trade(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: NpcTradeRequest,
+        sell_all: bool,
+    ) -> Result<NpcTradeOutcome> {
         let (world_id, channel_id) =
             scope_of(&fence).map_err(|_| NpcTradeError::AuthorityRejected)?;
-        let (total, units) = validate(&request)?;
-        let binding = request_binding(&fence, world_id, &request);
+        let priced = validate(&request, sell_all)?;
+        let binding = request_binding(&fence, world_id, &request, sell_all);
         let recovery = authority
             .record_for(self)
             .map_err(|_| NpcTradeError::AuthorityRejected)?;
@@ -595,15 +661,20 @@ impl DurabilityRoot {
                         .and_then(|capacity| usize::try_from(capacity).ok())
                         .unwrap_or(0);
                     let entries = lock_entries(&mut tx, &backpack, world_id).await?;
-                    let plan = match request.cause.side {
-                        NpcTradeSide::Buy => plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id)),
-                        NpcTradeSide::Sell => plan_sell(&request, total, units, capacity, &entries),
+                    let plan = match (priced, request.cause.side) {
+                        (None, _) => plan_sell_all(&request, capacity, &entries),
+                        (Some((total, units)), NpcTradeSide::Buy) => plan_buy(&request, total, units, capacity, &entries, tx.tuple().tuple(), super::bank::fee_payer_is_junior(fence.character_id))
+                            .map(|plan| (plan, total, units)),
+                        (Some((total, units)), NpcTradeSide::Sell) => plan_sell(&request, total, units, capacity, &entries)
+                            .map(|plan| (plan, total, units)),
                     };
-                    let mut plan = match plan {
+                    let (mut plan, total, units) = match plan {
                         Ok(plan) => plan,
                         Err(NpcTradeError::Unavailable(error)) => return Err(error),
                         Err(error) => return Ok(Err(error)),
                     };
+                    // A sell-all records and audits the units it sold as its quantity.
+                    let quantity = if sell_all { units } else { request.quantity };
 
                     if plan.bank_debit_gold_units > 0 {
                         // The complete native Character fence already locked the live payer
@@ -624,7 +695,13 @@ impl DurabilityRoot {
                     }
                     let tuple = tx.tuple().tuple();
                     let message = trade_message(
-                        &fence, world_id, channel_id, &backpack, &request, total, &plan,
+                        &fence,
+                        world_id,
+                        channel_id,
+                        &backpack,
+                        &request,
+                        (quantity, total, sell_all),
+                        &plan,
                     );
                     let envelope = match encode_npc_trade_event(
                         NpcTradeEventIdentity {
@@ -645,7 +722,7 @@ impl DurabilityRoot {
                         (world_id, channel_id),
                         &backpack,
                         &request,
-                        (total, units),
+                        (quantity, total, units, sell_all),
                         &binding,
                         &plan,
                         &envelope,
@@ -722,7 +799,7 @@ fn trade_message(
     channel_id: crate::foundation::ChannelId,
     backpack: &[u8; 16],
     request: &NpcTradeRequest,
-    total: u64,
+    (quantity, total, sell_all): (u32, u64, bool),
     plan: &Plan,
 ) -> OneItemNpcTradeV1 {
     let definition = |line: &NpcTradeLine| match line.coin {
@@ -763,12 +840,13 @@ fn trade_message(
         channel_id: channel_id.as_bytes().to_vec(),
         runtime_scope_ownership_generation: fence.scope_ownership_generation.get(),
         backpack_item_instance_id: backpack.to_vec(),
-        quantity: request.quantity,
+        quantity,
         unit_price: request.unit_price,
         total_gold_units: total,
         burned_gold_units: plan.burned_gold_units,
         minted_gold_units: plan.minted_gold_units,
         bank_debit: plan.bank_debit.clone(),
+        sell_all,
         lines: plan
             .lines
             .iter()
@@ -792,7 +870,7 @@ async fn apply_trade(
     (world_id, channel_id): (WorldId, crate::foundation::ChannelId),
     backpack: &[u8; 16],
     request: &NpcTradeRequest,
-    (total, units): (u64, u32),
+    (quantity, total, units, sell_all): (u32, u64, u32, bool),
     binding: &[u8],
     plan: &Plan,
     envelope: &[u8],
@@ -808,13 +886,15 @@ async fn apply_trade(
            quantity, unit_price, total_gold_units, item_definition_family, \
            item_definition_production_key, item_definition_revision_ref, item_instance_id, \
            item_units, backpack_item_instance_id, burned_gold_units, minted_gold_units, \
-           line_count, occurred_at, envelope_sha256, committed_at, bank_debit_gold_units) \
+           line_count, occurred_at, envelope_sha256, committed_at, bank_debit_gold_units, \
+           sell_all) \
          VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, $5::text::numeric(20,0), encode($6,'hex')::uuid, $7, \
            encode($8,'hex')::uuid, encode($9,'hex')::uuid, $10::text::numeric(20,0), $11, \
            $12::text::numeric(20,0), $13, $14, $15, $16, $17, $18, $19, $20, \
            encode($21,'hex')::uuid, $22, encode($23,'hex')::uuid, $24, $25, $26, $27, \
-           sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29)",
+           sha256($28), floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $29, \
+           $30)",
     )
     .bind(request.transaction_id.as_slice())
     .bind(request.event_id.as_slice())
@@ -830,7 +910,7 @@ async fn apply_trade(
     .bind(cause.catalogue_revision.to_string())
     .bind(i32::try_from(cause.offer_index).map_err(|_| DurabilityError::InvalidStoredState)?)
     .bind(i16::try_from(cause.side.code()).map_err(|_| DurabilityError::InvalidStoredState)?)
-    .bind(i64::from(request.quantity))
+    .bind(i64::from(quantity))
     .bind(gold(request.unit_price)?)
     .bind(gold(total)?)
     .bind(&item.family)
@@ -845,6 +925,7 @@ async fn apply_trade(
     .bind(request.occurred_at_unix_ms)
     .bind(envelope)
     .bind(gold(plan.bank_debit_gold_units)?)
+    .bind(sell_all)
     .execute(&mut **tx)
     .await?;
 

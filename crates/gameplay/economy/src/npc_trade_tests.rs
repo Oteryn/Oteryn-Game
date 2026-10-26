@@ -419,3 +419,83 @@ fn scalar_price_and_item_units_keep_the_request_limits() {
         );
     }
 }
+
+#[test]
+fn a_sell_all_burns_every_eligible_stack_whole_and_mints_their_price() {
+    let mut contained = entry(1, 9, sword(), 5);
+    contained.not_default = true;
+    let mut gone = entry(5, 6, sword(), 7);
+    gone.live = false;
+    let mut other_revision = sword();
+    other_revision.revision_ref = "oteryn:rev.2".into();
+    let entries = [
+        contained,
+        entry(2, 8, sword(), 1),
+        entry(3, 7, sword(), 100),
+        gone,
+        entry(6, 5, other_revision, 9),
+        entry(4, 3, coin(Coin::Gold), 4),
+    ];
+    let value = request(NpcTradeSide::Sell, 1, 99);
+    let (plan, units) = super::plan_sell_all(&input(&value), 99, 20, &entries).unwrap();
+    assert_eq!(units, 101);
+    assert_eq!(plan.minted_gold_units, 9_999);
+    assert_eq!(plan.item_instance_id, id(2));
+    assert_eq!(
+        plan.lines
+            .iter()
+            .map(|line| (
+                line.kind,
+                line.item_instance_id,
+                line.placement_ordinal,
+                line.coin,
+                line.quantity_before,
+                line.quantity_after
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            (NpcTradeLineKind::ItemBurn, id(2), 8, None, 1, 0),
+            (NpcTradeLineKind::ItemBurn, id(3), 7, None, 100, 0),
+            (
+                NpcTradeLineKind::CoinMint,
+                id(91),
+                10,
+                Some(Coin::Platinum),
+                0,
+                99
+            ),
+            (
+                NpcTradeLineKind::CoinMint,
+                id(92),
+                11,
+                Some(Coin::Gold),
+                0,
+                99
+            ),
+        ]
+    );
+    // Nothing eligible, a price over the SELL maximum and no room for the coins are refused.
+    assert_eq!(
+        super::plan_sell_all(&input(&value), 99, 20, &entries[3..]).err(),
+        Some(PlanError::ItemNotFound)
+    );
+    assert_eq!(
+        super::plan_sell_all(&input(&value), 10_000, 20, &entries).err(),
+        Some(PlanError::InvalidInput)
+    );
+    assert_eq!(
+        super::plan_sell_all(&input(&value), u64::MAX, 20, &entries).err(),
+        Some(PlanError::InvalidInput)
+    );
+    assert_eq!(
+        super::plan_sell_all(&input(&value), 99, 5, &entries).err(),
+        Some(PlanError::DoesNotFit)
+    );
+    assert!(super::plan_sell_all(&input(&value), 99, 6, &entries).is_ok());
+    // A price of 0 burns the stacks and mints nothing.
+    let (free, units) = super::plan_sell_all(&input(&value), 0, 20, &entries).unwrap();
+    assert_eq!(
+        (units, free.minted_gold_units, free.lines.len()),
+        (101, 0, 2)
+    );
+}

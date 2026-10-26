@@ -190,6 +190,7 @@ pub(super) fn encode(
             (*status, payload.clone())
         }
         Dispatch::Reply(status, payload) => (*status, std::mem::take(payload)),
+        Dispatch::NpcShop(status, payload, _, _) => (*status, std::mem::take(payload)),
         Dispatch::QuestLog(_) => (CommandStatus::Accepted, Vec::new()),
         Dispatch::Chat(result, _) => {
             let Ok(payload) = encode_chat_intent_result(result) else {

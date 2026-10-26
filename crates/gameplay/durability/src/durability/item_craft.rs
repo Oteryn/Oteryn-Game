@@ -1,4 +1,5 @@
-//! CRAFT-1: one fenced, receipt-keyed consume/mint transaction. Basic fixed cooking only.
+//! CRAFT-1: one fenced, receipt-keyed consume/mint transaction. Basic fixed cooking and
+//! REWARD-CHEST-WIRE-1 reward bags only.
 use super::character_authority::ReconciledCharacterAuthority;
 use super::character_equipment::assert_current_equipment_in_transaction;
 use super::db::begin_type2_transaction;
@@ -12,6 +13,7 @@ use super::{DurabilityError, DurabilityRoot};
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use crate::foundation::CommandRef;
 use oteryn_gameplay_items::item_craft::cooking_conversion;
+use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use serde_json::{Value, json};
 use sqlx::Row;
@@ -22,7 +24,8 @@ pub(crate) mod audit;
 pub struct ItemCraftRequest {
     pub command: CommandRef,
     pub source: [u8; 16],
-    pub station: TypedDefinitionRef,
+    /// The cooking station; `None` selects the reward-bag draw for this command and source.
+    pub station: Option<TypedDefinitionRef>,
     /// Original bounded USE bytes. Replay compares these before resolving current handles.
     pub intent: Vec<u8>,
 }
@@ -101,7 +104,15 @@ async fn write<C: ItemLoopContent>(
         production_key: source.try_get("definition_production_key")?,
         revision_ref: source.try_get("definition_revision_ref")?,
     };
-    let Some(conversion) = cooking_conversion(native, &definition, &request.station) else {
+    let conversion = match &request.station {
+        Some(station) => cooking_conversion(native, &definition, station),
+        None => reward_bag_conversion(
+            native,
+            &definition,
+            reward_bag_draw(*fence.game_session_id.as_bytes(), request.command.command_id().get(), request.source),
+        ),
+    };
+    let Some(conversion) = conversion else {
         return Ok(UseDisposition::NothingToUse);
     };
     let before: Value = source.try_get("before_item")?;

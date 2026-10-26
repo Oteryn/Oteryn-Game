@@ -333,6 +333,74 @@ pub fn plan_sell(
     })
 }
 
+/// Lines of a sell-all (NPC-TRADE-SELLALL-1): a whole BURN of every live default stack of the
+/// item, highest ordinal first, and the coin MINT of `unit_price` times their units. The plan's
+/// item is the first stack burned. Returns the plan and the units sold.
+pub fn plan_sell_all(
+    request: &PlanInput<'_>,
+    unit_price: u64,
+    capacity: usize,
+    entries: &[Entry],
+) -> Result<(Plan, u32), PlanError> {
+    let sold: Vec<&Entry> = entries
+        .iter()
+        .filter(|entry| {
+            entry.live && entry.definition == request.item.definition && !entry.not_default
+        })
+        .collect();
+    let first = sold.first().ok_or(PlanError::ItemNotFound)?;
+    let units = sold
+        .iter()
+        .try_fold(0_u32, |units, entry| units.checked_add(entry.quantity))
+        .ok_or(PlanError::InvalidState)?;
+    let total = unit_price
+        .checked_mul(u64::from(units))
+        .ok_or(PlanError::InvalidInput)?;
+    if units == 0 || total > NPC_TRADE_SELL_GOLD_UNITS_MAX {
+        return Err(PlanError::InvalidInput);
+    }
+    let coins = sell_coins(total).ok_or(PlanError::InvalidInput)?;
+    if entries.len() - sold.len() + coins.len() > capacity {
+        return Err(PlanError::DoesNotFit);
+    }
+    let mut lines: Vec<NpcTradeLine> = sold
+        .iter()
+        .map(|entry| NpcTradeLine {
+            kind: NpcTradeLineKind::ItemBurn,
+            item_instance_id: entry.item_instance_id,
+            placement_ordinal: entry.placement_ordinal,
+            coin: None,
+            quantity_before: entry.quantity,
+            quantity_after: 0,
+        })
+        .collect();
+    let [crystal, platinum, gold] = request.output_item_instance_ids;
+    let mut ordinal = first_mint_ordinal(entries)?;
+    for (coin, quantity) in coins {
+        lines.push(NpcTradeLine {
+            kind: NpcTradeLineKind::CoinMint,
+            item_instance_id: match coin {
+                Coin::Crystal => crystal,
+                Coin::Platinum => platinum,
+                Coin::Gold => gold,
+            },
+            placement_ordinal: ordinal,
+            coin: Some(coin),
+            quantity_before: 0,
+            quantity_after: quantity,
+        });
+        ordinal = ordinal.checked_add(1).ok_or(PlanError::DoesNotFit)?;
+    }
+    let plan = Plan {
+        bank_debit_gold_units: 0,
+        lines,
+        burned_gold_units: 0,
+        minted_gold_units: total,
+        item_instance_id: first.item_instance_id,
+    };
+    Ok((plan, units))
+}
+
 /// After the highest ordinal the backpack held before the trade (entries are highest first).
 fn first_mint_ordinal(entries: &[Entry]) -> Result<u64, PlanError> {
     entries

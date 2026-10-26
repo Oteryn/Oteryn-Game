@@ -1,0 +1,27 @@
+syntax = "proto3";
+package oteryn.protocol.v1.npc_shop;
+// Capability 81 NPC_SHOP_V1 (requires capability 3), command 97 NPC_SHOP (NPC-TRADE-SELLALL-1).
+// The intent names one offer of the trade window the server projected (domain 8), as
+// NpcTradeIntentV1 does. Strict codec: duplicate/unknown fields and zero or unknown enums are
+// refused; at most 55 request and 524 result bytes.
+import "npc_service_v1.proto";
+import "world_spatial_v1.proto";
+enum NpcShopAction {
+  NPC_SHOP_ACTION_UNSPECIFIED = 0;
+  NPC_SHOP_ACTION_LOOK = 1; // the offer item's server description; no state changes
+  NPC_SHOP_ACTION_SELL_ALL = 2; // every carried stack of the offer item, one NPC trade
+}
+message NpcShopIntentV1 {
+  oteryn.protocol.v1.world_spatial.EntityRefV1 npc_actor = 1;
+  uint64 catalogue_revision = 2;
+  uint32 offer_index = 3; // below MAX_OFFERS (1024)
+  oteryn.protocol.v1.npc_service.NpcTradeSide side = 4; // SELL_ALL requires SELL
+  NpcShopAction action = 5;
+  uint32 expected_unit_price = 6; // must equal the offer's price, else STALE
+}
+message NpcShopResultV1 {
+  oteryn.protocol.v1.npc_service.NpcIntentDisposition disposition = 1;
+  string look_text = 2; // OK LOOK only; at most 512 UTF-8 bytes
+  uint32 sold_units = 3; // OK SELL_ALL only; 1..2000 (SELLALL1-RL-02)
+  uint64 total_gold_units = 4; // OK SELL_ALL only; sold_units * unit price, <= 1009999
+}

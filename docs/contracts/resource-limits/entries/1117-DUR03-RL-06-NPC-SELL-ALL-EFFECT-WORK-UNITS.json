@@ -1,0 +1,23 @@
+{
+  "id": "DUR03-RL-06-NPC-SELL-ALL-EFFECT-WORK-UNITS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_NPC0_NPC_RUNTIME_SERVICE_DECISION_2026-09-30.md",
+  "resource": "Effect work units of one DUR-03 NPC sell-all transaction",
+  "unit": "work units per logical transaction",
+  "hard_maximum": 66,
+  "configurable_range": {
+    "minimum": 66,
+    "maximum": 66
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "20 item BURNs (2 each) and 3 coin MINTs (3 each) plus the trade; checked before any write.",
+  "client_visible": false,
+  "boundary_tests": [
+    "the measured 20-stack sell-all is exactly 66",
+    "max+1 rejected (CAPACITY_EXCEEDED)"
+  ],
+  "consumers": [
+    "apps/game-server/src/durability/npc_trade_audit.rs",
+    "apps/game-server/src/durability/npc_trade.rs (in-transaction NPC sell-all: plan and usage checked before any write; migration 0211 re-proves the lines at commit)"
+  ],
+  "notes": "NPC-TRADE-SELLALL-1 (command 97 NPC_SHOP, action SELL_ALL): a SELL of every carried stack of the offer item, `OneItemNpcTradeV1.sell_all` = 15; up to 20 whole item BURN lines of one definition revision and up to 3 coin MINTs. The NPC trade rows DUR03-RL-*-NPC-TRADE-* are unchanged and still bound every trade that is not a sell-all."
+}

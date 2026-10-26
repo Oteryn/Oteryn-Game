@@ -1,0 +1,44 @@
+{
+  "base_main": "575bcf7c94201fa80a6838e7fc8303d90038dc30",
+  "starting_head": "3a4f8bf24b0e5cb537a17cd8b0bf9d325d157cc8",
+  "out_of_scope": [],
+  "unchanged_other_quests": 351,
+  "unchanged_catalogs": 9,
+  "unchanged_encounter_behavior": [
+    "claustrophobic_inferno_raid_1",
+    "claustrophobic_inferno_raid_2",
+    "claustrophobic_inferno_raid_3",
+    "goshnars_malice",
+    "goshnars_spite",
+    "goshnars_cruelty",
+    "goshnars_hatred"
+  ],
+  "intentional_encounter_behavior_repairs": [
+    "goshnars_greed",
+    "goshnars_megalomania"
+  ],
+  "prior_unresolved_topics_preserved": 22,
+  "current_unresolved_rows": 45,
+  "runtime_enabled": false,
+  "npc_capture": {
+    "old_sha256": "567842f0359a80cd99b65f3373252afb262dc294d3ae26d266962b7ee9257473",
+    "new_sha256": "b639c66d68eb4eec6d6dd8296822cabcde8d0e2c93bb3a75b4719ea0f581e08b",
+    "changed_top_level_fields": [
+      "quest_inputs"
+    ],
+    "changed_quest_inputs": [
+      {
+        "path": "content/quests/definitions/index.json",
+        "old_sha256": "980241b47c201d2a1b5088dab834c311c5ae33ac51556604da2a2a091f2c7f5d",
+        "new_sha256": "8b8231902abf4df6e5f8cb922a807c42af6fab4aa0ccc854881510ab3d0d9ccf"
+      },
+      {
+        "path": "content/quests/definitions/quests-00200-00299.json",
+        "old_sha256": "0d316f7d7aef995de97ea460b7084554438a7d172d6bd89f2014437059e4e16c",
+        "new_sha256": "3d912641e8365d283557b836e4273fad6a9498ada342a3de3cac408171087c66"
+      }
+    ],
+    "donor_pins_unchanged": true
+  },
+  "validated_sources_count": 26
+}

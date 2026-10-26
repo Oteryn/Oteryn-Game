@@ -1,0 +1,19 @@
+{
+  "id": "SELLALL1-RL-02",
+  "owner_contract": "protocol-oteryn/v1/npc_shop_v1.proto",
+  "resource": "Item units one NPC sell-all sells",
+  "unit": "units per command",
+  "hard_maximum": 2000,
+  "configurable_range": {
+    "minimum": 2000,
+    "maximum": 2000
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "20 stacks of the 100-unit stack maximum; checked in the plan and the audit gate.",
+  "client_visible": true,
+  "boundary_tests": [
+    "max=2,000 units admitted",
+    "2,001 units rejected"
+  ],
+  "notes": "`NpcShopResultV1.sold_units`."
+}

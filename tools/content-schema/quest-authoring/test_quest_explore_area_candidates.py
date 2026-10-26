@@ -19,13 +19,13 @@ class QuestExploreAreaCandidatesTest(unittest.TestCase):
     def test_population_is_exact_and_fail_closed(self):
         self.assertEqual(
             {
-                "explore_stages": 248,
+                "explore_stages": 247,
                 "canonical_areas": 970,
                 "statuses": {
                     "AMBIGUOUS_MULTIPLE_AREAS": 36,
                     "EXACT_SINGLE_AREA_ONLY_TARGET": 10,
                     "EXACT_SINGLE_AREA_WITH_OTHER_TARGETS": 10,
-                    "NO_EXACT_AREA": 192,
+                    "NO_EXACT_AREA": 191,
                 },
                 "exact_area_candidates": 20,
                 "clean_single_target_candidates": 10,
