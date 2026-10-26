@@ -137,3 +137,146 @@ $arm$ from begin_at for 5);
       AND r.created_xact_id=pg_current_xact_id()) THEN RETURN OLD; END IF;
 $arm$ from begin_at for 5);
 END $migration$;
+
+-- Blank-scroll inscription extends the shrine receipt rather than creating a second item owner.
+-- Action 3 consumes the same recipe/fee as apply and transforms the blank instance in place,
+-- preserving custody and making the filled scroll immediately tradeable.
+ALTER TABLE game_item_imbuement_records
+  ADD COLUMN output_definition_family TEXT,
+  ADD COLUMN output_production_key TEXT,
+  ADD COLUMN output_revision_ref TEXT;
+ALTER TABLE game_item_imbuement_records DROP CONSTRAINT game_item_imbuement_records_action_check;
+ALTER TABLE game_item_imbuement_records ADD CONSTRAINT game_item_imbuement_records_action_check
+  CHECK(action IN (1,2,3));
+ALTER TABLE game_item_imbuement_records DROP CONSTRAINT game_item_imbuement_records_check;
+ALTER TABLE game_item_imbuement_records ADD CONSTRAINT game_item_imbuement_records_check CHECK(
+ (action=1 AND jsonb_array_length(materials) BETWEEN 1 AND 3
+   AND fee_gold_units=(CASE tier WHEN 1 THEN 5000 WHEN 2 THEN 30000 ELSE 200000 END)
+   AND output_definition_family IS NULL AND output_production_key IS NULL AND output_revision_ref IS NULL)
+ OR (action=2 AND jsonb_array_length(materials)=0 AND fee_gold_units=15000
+   AND output_definition_family IS NULL AND output_production_key IS NULL AND output_revision_ref IS NULL)
+ OR (action=3 AND tier IN (2,3) AND jsonb_array_length(materials) BETWEEN 1 AND 3
+   AND fee_gold_units=(CASE tier WHEN 2 THEN 30000 ELSE 200000 END)
+   AND output_definition_family='Item' AND output_production_key IS NOT NULL
+   AND output_revision_ref IS NOT NULL));
+
+CREATE OR REPLACE FUNCTION game_item_imbuement_admit() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE i game_item_instances%ROWTYPE; m JSONB; b game_item_imbuements%ROWTYPE;
+BEGIN
+ IF EXISTS(SELECT 1 FROM game_item_imbuement_records WHERE created_xact_id=pg_current_xact_id()) THEN
+  RAISE EXCEPTION 'one imbuement command per transaction' USING ERRCODE='23514'; END IF;
+ SELECT * INTO i FROM game_item_instances WHERE item_instance_id=NEW.item_instance_id FOR UPDATE;
+ IF i.item_instance_id IS NULL OR i.lifecycle<>1 OR i.world_id<>NEW.world_id OR i.definition_family<>'Item'
+    OR (NEW.action=3 AND (i.definition_production_key<>'oteryn:item.tibia.i51442' OR i.quantity<>1))
+    OR NOT EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_container_slots s
+                    ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id
+                   WHERE e.item_instance_id=i.item_instance_id AND e.character_id=NEW.character_id
+                     AND e.world_id=NEW.world_id AND e.parent_item_instance_id=NEW.parent_item_instance_id
+                     AND e.placement_ordinal=NEW.item_ordinal)
+ THEN RAISE EXCEPTION 'imbuement target must be an eligible carried entry' USING ERRCODE='23514'; END IF;
+ SELECT * INTO b FROM game_item_imbuements WHERE item_instance_id=NEW.item_instance_id AND slot=NEW.slot;
+ IF NEW.action=1 AND (b.item_instance_id IS NOT NULL OR EXISTS(SELECT 1 FROM game_item_imbuements
+      WHERE item_instance_id=NEW.item_instance_id AND category=NEW.category))
+ THEN RAISE EXCEPTION 'imbuement slot or category is occupied' USING ERRCODE='23514'; END IF;
+ IF NEW.action=2 AND (b.item_instance_id IS NULL OR (b.category,b.imbuement_key,b.imbuement_revision,b.tier)
+      IS DISTINCT FROM (NEW.category,NEW.imbuement_key,NEW.imbuement_revision,NEW.tier))
+ THEN RAISE EXCEPTION 'imbuement clear must name the stored row' USING ERRCODE='23514'; END IF;
+ IF NEW.action=3 AND EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=NEW.item_instance_id)
+ THEN RAISE EXCEPTION 'blank scroll has item state' USING ERRCODE='23514'; END IF;
+ IF (SELECT count(DISTINCT value->>'item') FROM jsonb_array_elements(NEW.materials))<>jsonb_array_length(NEW.materials)
+ THEN RAISE EXCEPTION 'duplicate imbuement material' USING ERRCODE='23514'; END IF;
+ FOR m IN SELECT value FROM jsonb_array_elements(NEW.materials) LOOP
+  SELECT * INTO i FROM game_item_instances WHERE item_instance_id=(m->>'item')::uuid FOR UPDATE;
+  IF i.item_instance_id IS NULL OR i.item_instance_id=NEW.item_instance_id OR to_jsonb(i)<>m->'before'
+     OR i.lifecycle<>1 OR i.world_id<>NEW.world_id OR i.definition_family<>'Item'
+     OR (m->>'count')::bigint NOT BETWEEN 1 AND i.quantity
+     OR EXISTS(SELECT 1 FROM game_item_keys WHERE item_instance_id=i.item_instance_id)
+     OR EXISTS(SELECT 1 FROM game_item_timed_states WHERE item_instance_id=i.item_instance_id)
+     OR EXISTS(SELECT 1 FROM game_item_texts WHERE item_instance_id=i.item_instance_id)
+     OR EXISTS(SELECT 1 FROM game_item_imbuements WHERE item_instance_id=i.item_instance_id)
+     OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id)
+     OR EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id)
+     OR NOT EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id
+                     AND e.character_id=NEW.character_id AND e.world_id=NEW.world_id
+                     AND e.parent_item_instance_id=NEW.parent_item_instance_id
+                     AND e.placement_ordinal=(m->>'ordinal')::numeric)
+  THEN RAISE EXCEPTION 'imbuement requires unchanged plain carried materials' USING ERRCODE='23514'; END IF;
+ END LOOP;
+ NEW.created_xact_id:=pg_current_xact_id(); RETURN NEW;
+END $$;
+
+CREATE OR REPLACE FUNCTION game_item_imbuement_write() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ IF NEW.action=1 THEN
+  INSERT INTO game_item_imbuements(item_instance_id,slot,category,imbuement_key,imbuement_revision,tier,
+    remaining_ms,applying_occurrence_id,applying_transaction_id)
+  VALUES(NEW.item_instance_id,NEW.slot,NEW.category,NEW.imbuement_key,NEW.imbuement_revision,NEW.tier,
+    72000000,NEW.transaction_id,NEW.transaction_id);
+ ELSIF NEW.action=2 THEN
+  DELETE FROM game_item_imbuements WHERE item_instance_id=NEW.item_instance_id AND slot=NEW.slot;
+  IF NOT FOUND THEN RAISE EXCEPTION 'imbuement clear found no row' USING ERRCODE='23514'; END IF;
+ ELSE
+  UPDATE game_item_instances SET definition_family=NEW.output_definition_family,
+    definition_production_key=NEW.output_production_key,definition_revision_ref=NEW.output_revision_ref,
+    last_transaction_id=NEW.transaction_id WHERE item_instance_id=NEW.item_instance_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'blank scroll disappeared' USING ERRCODE='23514'; END IF;
+ END IF;
+ RETURN NULL;
+END $$;
+
+-- The existing deferred consistency function remains authoritative for materials and fee. Teach
+-- its item-count and target predicates about the one additional transformed target row.
+CREATE OR REPLACE FUNCTION game_item_imbuement_complete(p_transaction UUID) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE r game_item_imbuement_records%ROWTYPE; i game_item_instances%ROWTYPE; m JSONB; lines INTEGER;
+BEGIN
+ SELECT * INTO r FROM game_item_imbuement_records WHERE transaction_id=p_transaction;
+ SELECT f.line_count INTO lines FROM game_item_fee_burns f
+  WHERE f.transaction_id=r.transaction_id AND f.cause_kind=7 AND f.cause_occurrence_id=r.transaction_id
+    AND f.event_id=r.event_id AND f.character_id=r.character_id AND f.world_id=r.world_id
+    AND f.fee_gold_units=r.fee_gold_units AND f.created_xact_id=pg_current_xact_id();
+ IF r.transaction_id IS NULL OR r.created_xact_id<>pg_current_xact_id() OR lines IS NULL
+    OR (SELECT count(*) FROM game_item_instances WHERE last_transaction_id=r.transaction_id)
+       <>jsonb_array_length(r.materials)+lines+(CASE WHEN r.action=3 THEN 1 ELSE 0 END)
+    OR (r.action=1 AND NOT EXISTS(SELECT 1 FROM game_item_imbuements b WHERE b.item_instance_id=r.item_instance_id
+         AND b.slot=r.slot AND b.category=r.category AND b.imbuement_key=r.imbuement_key
+         AND b.imbuement_revision=r.imbuement_revision AND b.tier=r.tier AND b.remaining_ms=72000000
+         AND b.applying_transaction_id=r.transaction_id AND b.applying_occurrence_id=r.transaction_id))
+    OR (r.action=2 AND EXISTS(SELECT 1 FROM game_item_imbuements b WHERE b.item_instance_id=r.item_instance_id AND b.slot=r.slot))
+    OR (r.action=3 AND NOT EXISTS(SELECT 1 FROM game_item_instances i WHERE i.item_instance_id=r.item_instance_id
+         AND i.definition_family=r.output_definition_family AND i.definition_production_key=r.output_production_key
+         AND i.definition_revision_ref=r.output_revision_ref AND i.lifecycle=1 AND i.quantity=1
+         AND i.last_transaction_id=r.transaction_id))
+    OR NOT EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_container_slots s
+                    ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id
+                   WHERE e.item_instance_id=r.item_instance_id AND e.character_id=r.character_id
+                     AND e.parent_item_instance_id=r.parent_item_instance_id)
+ THEN RAISE EXCEPTION 'incomplete atomic imbuement' USING ERRCODE='23514'; END IF;
+ FOR m IN SELECT value FROM jsonb_array_elements(r.materials) LOOP
+  SELECT * INTO i FROM game_item_instances WHERE item_instance_id=(m->>'item')::uuid;
+  IF i.quantity<>(m->'before'->>'quantity')::bigint-(m->>'count')::bigint
+     OR i.lifecycle<>(CASE WHEN i.quantity=0 THEN 2 ELSE 1 END)
+     OR i.last_transaction_id IS DISTINCT FROM r.transaction_id
+     OR (to_jsonb(i)-ARRAY['quantity','lifecycle','last_transaction_id','state_revision']) IS DISTINCT FROM
+        ((m->'before')-ARRAY['quantity','lifecycle','last_transaction_id','state_revision'])
+     OR (i.quantity=0 AND EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id))
+     OR (i.quantity>0 AND NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id
+          AND character_id=r.character_id AND parent_item_instance_id=r.parent_item_instance_id
+          AND placement_ordinal=(m->>'ordinal')::numeric))
+  THEN RAISE EXCEPTION 'imbuement material consumption mismatch' USING ERRCODE='23514'; END IF;
+ END LOOP;
+END $$;
+
+DO $migration$
+DECLARE body TEXT; begin_at INT;
+BEGIN
+ body:=pg_get_functiondef('game_item_instance_change_proven()'::regprocedure);
+ begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+ EXECUTE overlay(body placing E'BEGIN\n'||$arm$
+  IF EXISTS(SELECT 1 FROM game_item_imbuement_records r WHERE r.action=3
+      AND r.item_instance_id=NEW.item_instance_id AND r.transaction_id=NEW.last_transaction_id
+      AND r.created_xact_id=pg_current_xact_id()) THEN
+    PERFORM game_item_imbuement_complete(NEW.last_transaction_id); RETURN NULL; END IF;
+$arm$ from begin_at for 5);
+END $migration$;

@@ -21,8 +21,9 @@ use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{CommandId, ExactActorRef, RuntimeScopeRefV1};
 use crate::map::view;
 use oteryn_gameplay_items::imbuement::{
-    IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_CLEAR_GOLD, IMBUEMENT_ETCHER_ITEM_ID,
-    IMBUEMENT_TIER_RULES, imbuement_recipe, imbuement_scroll,
+    BLANK_IMBUEMENT_SCROLL_ITEM_ID, IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_CLEAR_GOLD,
+    IMBUEMENT_ETCHER_ITEM_ID, IMBUEMENT_SCROLLS, IMBUEMENT_TIER_RULES, imbuement_recipe,
+    imbuement_scroll,
 };
 use oteryn_protocol_oteryn::imbuement as wire;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
@@ -102,6 +103,24 @@ pub(super) fn allowance(
         })
         .collect();
     Some(Allowance { slot_count, offers })
+}
+
+fn blank_scroll_allowance() -> Allowance {
+    Allowance {
+        slot_count: 1,
+        offers: IMBUEMENT_SCROLLS
+            .iter()
+            .map(|scroll| {
+                let rules = IMBUEMENT_TIER_RULES[usize::from(scroll.tier - 1)];
+                wire::ImbuementOffer {
+                    family: scroll.family,
+                    tier: scroll.tier,
+                    gold: u32::try_from(rules.apply_gold).unwrap_or(u32::MAX),
+                    requires_premium: rules.requires_premium,
+                }
+            })
+            .collect(),
+    }
 }
 
 /// The outcome of the item gates: a reply, or a write that shrine access, Premium, the
@@ -460,7 +479,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Only a carried, unequipped instance can be a main backpack direct entry; the owner
         // read below decides that, so every other handle is the same NOT_ALLOWED.
-        let (decision, instance) = match views.resolve(request.item) {
+        let (decision, instance, blank) = match views.resolve(request.item) {
             Some(key @ ItemKey::Instance(instance)) if views.equipped_slot(&key).is_none() => {
                 let target = match self
                     .root
@@ -478,7 +497,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     generation.activation_sequence() == pin
                         && generation.identity().world_id() == runtime.content_pin().world_id()
                 });
+                let blank = target.as_ref().is_some_and(|target| {
+                    target.definition.production_key
+                        == format!("oteryn:item.tibia.i{BLANK_IMBUEMENT_SCROLL_ITEM_ID}")
+                });
                 let allowance = target.as_ref().and_then(|target| {
+                    if blank {
+                        return Some(blank_scroll_allowance());
+                    }
                     let definition = &target.definition;
                     let policy = generation?
                         .native_gameplay()?
@@ -493,7 +519,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .flatten()
                 });
                 let applied = target.as_ref().map_or(&[][..], |t| t.applied.as_slice());
-                (decide(request.action, allowance.as_ref(), applied), instance)
+                (
+                    decide(request.action, allowance.as_ref(), applied),
+                    instance,
+                    blank,
+                )
             }
             _ => return encode(&reply(ImbuementResult::NotAllowed)),
         };
@@ -503,21 +533,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(recipe) = imbuement_recipe(offer.family, offer.tier) else {
                     return encode(&reply(ImbuementResult::NotAllowed));
                 };
-                let write = ImbuementWrite::Apply {
-                    slot,
-                    category: offer.family - 1,
-                    imbuement_key: recipe.key.into(),
-                    imbuement_revision: IMBUEMENT_CATALOGUE_REVISION.into(),
-                    tier: offer.tier,
-                    gold: recipe.apply_gold,
-                    materials: recipe
-                        .materials
-                        .iter()
-                        .map(|&(key, count)| ImbuementMaterialNeed {
-                            production_key: key.into(),
-                            count,
-                        })
-                        .collect(),
+                let materials = recipe
+                    .materials
+                    .iter()
+                    .map(|&(key, count)| ImbuementMaterialNeed {
+                        production_key: key.into(),
+                        count,
+                    })
+                    .collect();
+                let write = if blank {
+                    let Some(scroll) = oteryn_gameplay_items::imbuement::scroll_for_imbuement(
+                        offer.family,
+                        offer.tier,
+                    ) else {
+                        return encode(&reply(ImbuementResult::NotAllowed));
+                    };
+                    ImbuementWrite::Inscribe {
+                        category: offer.family - 1,
+                        imbuement_key: recipe.key.into(),
+                        imbuement_revision: IMBUEMENT_CATALOGUE_REVISION.into(),
+                        tier: offer.tier,
+                        gold: recipe.apply_gold,
+                        materials,
+                        output: TypedDefinitionRef {
+                            family: "Item".into(),
+                            production_key: format!("oteryn:item.tibia.i{}", scroll.item_id),
+                            revision_ref: "definition-r1".into(),
+                        },
+                    }
+                } else {
+                    ImbuementWrite::Apply {
+                        slot,
+                        category: offer.family - 1,
+                        imbuement_key: recipe.key.into(),
+                        imbuement_revision: IMBUEMENT_CATALOGUE_REVISION.into(),
+                        tier: offer.tier,
+                        gold: recipe.apply_gold,
+                        materials,
+                    }
                 };
                 (write, recipe.requires_premium)
             }

@@ -50,6 +50,17 @@ pub enum ImbuementWrite {
         slot: u8,
         gold: u64,
     },
+    /// Turn the carried blank scroll itself into the filled definition. The blank, recipe
+    /// materials and fee remain one receipt-backed transaction.
+    Inscribe {
+        category: u8,
+        imbuement_key: String,
+        imbuement_revision: String,
+        tier: u8,
+        gold: u64,
+        materials: Vec<ImbuementMaterialNeed>,
+        output: TypedDefinitionRef,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -242,7 +253,7 @@ async fn apply(
             row.try_get::<i64, _>(4)?,
         ));
     }
-    let (action, slot, category, key, revision, tier, gold, needs) = match &command.write {
+    let (record_action, audit_action, slot, category, key, revision, tier, gold, needs, output) = match &command.write {
         ImbuementWrite::Apply {
             slot,
             category,
@@ -259,6 +270,7 @@ async fn apply(
             }
             (
                 IMBUEMENT_ACTION_APPLY,
+                IMBUEMENT_ACTION_APPLY,
                 *slot,
                 *category,
                 imbuement_key.clone(),
@@ -266,6 +278,7 @@ async fn apply(
                 *tier,
                 *gold,
                 materials.as_slice(),
+                None,
             )
         }
         ImbuementWrite::Clear { slot, gold } => {
@@ -277,6 +290,7 @@ async fn apply(
             };
             (
                 IMBUEMENT_ACTION_CLEAR,
+                IMBUEMENT_ACTION_CLEAR,
                 *slot,
                 u8::try_from(*category).map_err(|_| DurabilityError::InvalidStoredState)?,
                 key.clone(),
@@ -284,6 +298,32 @@ async fn apply(
                 u8::try_from(*tier).map_err(|_| DurabilityError::InvalidStoredState)?,
                 *gold,
                 &[][..],
+                None,
+            )
+        }
+        ImbuementWrite::Inscribe {
+            category,
+            imbuement_key,
+            imbuement_revision,
+            tier,
+            gold,
+            materials,
+            output,
+        } => {
+            if !stored.is_empty() || target_definition.production_key != "oteryn:item.tibia.i51442" {
+                return Ok(ImbuementResult::NotAllowed);
+            }
+            (
+                3,
+                IMBUEMENT_ACTION_APPLY,
+                0,
+                *category,
+                imbuement_key.clone(),
+                imbuement_revision.clone(),
+                *tier,
+                *gold,
+                materials.as_slice(),
+                Some(output),
             )
         }
     };
@@ -358,10 +398,11 @@ async fn apply(
     sqlx::query(
         "INSERT INTO game_item_imbuement_records(transaction_id,event_id,game_session_id,command_id, \
            character_id,world_id,request_binding,action,item_instance_id,parent_item_instance_id, \
-           item_ordinal,slot,category,imbuement_key,imbuement_revision,tier,fee_gold_units,materials,occurred_at) \
+           item_ordinal,slot,category,imbuement_key,imbuement_revision,tier,fee_gold_units,materials,occurred_at, \
+           output_definition_family,output_production_key,output_revision_ref) \
          VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric, \
            encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid, \
-           $11::text::numeric,$12,$13,$14,$15,$16,$17,$18::text::jsonb,$19)",
+           $11::text::numeric,$12,$13,$14,$15,$16,$17,$18::text::jsonb,$19,$20,$21,$22)",
     )
     .bind(command.transaction_id.as_slice())
     .bind(command.event_id.as_slice())
@@ -370,7 +411,7 @@ async fn apply(
     .bind(character)
     .bind(world)
     .bind(command.binding.as_slice())
-    .bind(i16::try_from(action).map_err(|_| ImbuementWriteError::InvalidInput)?)
+    .bind(i16::try_from(record_action).map_err(|_| ImbuementWriteError::InvalidInput)?)
     .bind(command.item.as_slice())
     .bind(bag.as_slice())
     .bind(target_ordinal.to_string())
@@ -382,6 +423,9 @@ async fn apply(
     .bind(i64::try_from(gold).map_err(|_| ImbuementWriteError::InvalidInput)?)
     .bind(serde_json::Value::Array(materials).to_string())
     .bind(command.occurred_at_unix_ms)
+    .bind(output.map(|value| value.family.as_str()))
+    .bind(output.map(|value| value.production_key.as_str()))
+    .bind(output.map(|value| value.revision_ref.as_str()))
     .execute(&mut ***tx)
     .await?;
     // Materials leave before the fee plans its coins, so the change follows the remaining entries.
@@ -411,7 +455,7 @@ async fn apply(
     }
     let audit = OneItemImbuementV1 {
         occurrence: command.transaction_id.to_vec(),
-        action,
+        action: audit_action,
         item: Some(target_state),
         placement_ordinal: target_ordinal,
         slot: u32::from(slot),

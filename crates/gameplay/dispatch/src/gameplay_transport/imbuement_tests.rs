@@ -263,6 +263,19 @@ fn etcher_clears_every_occupied_slot_once_and_is_not_extraction() {
 }
 
 #[test]
+fn blank_scroll_window_contains_only_intricate_and_powerful_scroll_recipes() {
+    let allowance = blank_scroll_allowance();
+    assert_eq!(allowance.slot_count, 1);
+    assert_eq!(allowance.offers.len(), IMBUEMENT_SCROLLS.len());
+    assert!(allowance.offers.iter().all(|offer| matches!(offer.tier, 2 | 3)));
+    assert!(allowance.offers.iter().all(|offer| offer.requires_premium));
+    assert!(matches!(
+        decide(ImbuementAction::Apply { slot: 0, imbuement: 0 }, Some(&allowance), &[]),
+        Decision::Apply { .. }
+    ));
+}
+
+#[test]
 fn imbuement_allowance_of_activated_native_content_follows_generated_slots() {
     use crate::content::native_gameplay::test_support::{
         activated_with_item_keys, activated_with_loot_tables,
