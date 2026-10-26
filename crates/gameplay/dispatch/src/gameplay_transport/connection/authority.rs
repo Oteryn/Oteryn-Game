@@ -400,6 +400,19 @@ pub trait FreshAdmissionAuthority {
         async { Some(UseOutcome::rejected()) }
     }
 
+    /// IMBUEITEMS-1: filled scroll or etcher USE-with an inventory item.
+    /// `None` leaves the intent to the existing map-use handlers.
+    fn use_imbuement_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     fn offline_training(
         &self,
         _admitted: AdmittedSession,
