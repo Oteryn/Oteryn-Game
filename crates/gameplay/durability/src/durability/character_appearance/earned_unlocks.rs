@@ -3,7 +3,7 @@ use super::stored::{AppearanceReadError, read_account_appearance_unlocks};
 use crate::domain::{AccountId, CharacterId};
 use sqlx::PgConnection;
 
-pub(super) async fn read(
+pub(in crate::durability) async fn read(
     connection: &mut PgConnection,
     character: CharacterId,
     grant_keys: &[String],

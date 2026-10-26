@@ -364,7 +364,7 @@ async fn case(h: &Harness) -> TestResult {
     assert_eq!(consumed, 2);
     Ok(())
 }
-async fn drive(
+pub(super) async fn drive(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     exit: bool,
@@ -449,7 +449,7 @@ async fn drive(
 // Initial authority fixture: the composition owns these two guards before the
 // transfer. The runtime readiness still comes from the native assignment API.
 // Negative cases above never derive their current facts from the transfer record.
-async fn prepare_owned_session(h: &Harness) -> TestResult {
+pub(super) async fn prepare_owned_session(h: &Harness) -> TestResult {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::foundation::admission_authority_publication::*;
     let now: i64 =
@@ -503,8 +503,8 @@ async fn prepare_owned_session(h: &Harness) -> TestResult {
     Ok(())
 }
 
-struct RecoverySource {
-    evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+pub(super) struct RecoverySource {
+    pub(super) evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     task: tokio::task::JoinHandle<()>,
 }
 impl Drop for RecoverySource {
@@ -513,7 +513,7 @@ impl Drop for RecoverySource {
     }
 }
 impl RecoverySource {
-    async fn start(h: &Harness) -> TestResult<Self> {
+    pub(super) async fn start(h: &Harness) -> TestResult<Self> {
         use crate::durability::native_admission_source::{
             DescriptorRegistration, FreshStoreProvenance,
         };
@@ -840,7 +840,7 @@ fn bytes(out: &mut Vec<u8>, tag: u8, value: &[u8]) {
     out.extend_from_slice(value);
 }
 
-fn transfer_bundle(
+pub(super) fn transfer_bundle(
     world: crate::foundation::WorldId,
     channel: crate::foundation::ChannelId,
 ) -> TestResult<crate::map::boot::BundleWorld> {

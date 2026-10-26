@@ -1,0 +1,10 @@
+{
+  "id": 154,
+  "name": "PODIUM",
+  "owner_decision": "PODIUM-1 server-first task 2026-10-26",
+  "capability": 133,
+  "payload_schema": "podium.rs#Request",
+  "result_schema": "podium.rs#encode_result",
+  "max_payload_bytes": 556,
+  "max_result_payload_bytes": 25
+}

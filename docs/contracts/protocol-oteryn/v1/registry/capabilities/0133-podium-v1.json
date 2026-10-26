@@ -1,0 +1,12 @@
+{
+  "id": 133,
+  "name": "PODIUM_V1",
+  "owner_decision": "PODIUM-1 server-first task 2026-10-26",
+  "owner": "Game Item and House owners",
+  "command_types": [
+    154
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Closed until house Item view, map appearance delta and native client window prerequisites are qualified."
+}

@@ -1,0 +1,10 @@
+name=podium
+commands=154
+transport=podium
+composed=podium
+authority=podium
+[route]
+match routing::podium::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

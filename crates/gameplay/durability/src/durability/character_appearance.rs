@@ -152,7 +152,7 @@ pub struct AppearanceValidationContext<C> {
 
 mod character_sex;
 mod current_appearance;
-mod earned_unlocks;
+pub(super) mod earned_unlocks;
 pub use current_appearance::CurrentCharacterAppearance;
 
 impl DurabilityRoot {
