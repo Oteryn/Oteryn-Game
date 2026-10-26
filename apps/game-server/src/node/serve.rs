@@ -2593,6 +2593,7 @@ async fn boot_and_serve(
         evidence,
         world_id: material.world,
         channel_id: material.channel,
+        premium_only: config.scope.premium_only,
         required_capabilities: required_capabilities.clone(),
         runtime: &runtime,
         movement_cells: &movement_cells,

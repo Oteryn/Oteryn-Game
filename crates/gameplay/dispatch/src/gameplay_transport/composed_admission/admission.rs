@@ -60,6 +60,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // composition and commit, leaving it stale. Such a round is retried from fresh
         // evidence, bounded; the grant replay key still admits at most one GameSession.
         let mut round = 0;
+        let mut premium_entry = None;
         let (request, reservation) = loop {
             round += 1;
             let last = round >= FRESH_ADMISSION_ROUNDS;
@@ -129,6 +130,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let transition =
                 FreshAdmissionClaimTransitionV1::prepare(&composition, &authorization, now)
                     .map_err(|_| Rejected)?;
+            // PREMCHAN: the grant now authenticates this account and destination. A voluntary
+            // transfer enters through this same fresh-admission boundary (GAME-CHANNEL-01 §7).
+            // Refuse before any player reservation, nonce consumption or session/lease write.
+            if self.premium_only && premium_entry.is_none() {
+                premium_entry = self
+                    .begin_premium_channel_entry(
+                        *record.account_id.as_bytes(),
+                        attempt.game_session_id,
+                    )
+                    .await?;
+            }
             // ADMIT0 §4 / FND-04A §7 step 14: only now, after grant authentication and the
             // safe ownership/world classification, may a missing requirement be revealed.
             // The binding is this composition's independently resolved observation; the
@@ -159,6 +171,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut prepared = PreparedRequest(None);
             flow.submit(&mut prepared).map_err(|_| Rejected)?;
             let request = prepared.0.ok_or(Unavailable)?;
+            // The warm-up and other owner reads may have crossed expiry. Read PREM-1 again
+            // at the entry decision; a retry must never reuse a previous open gate.
+            if self.premium_only
+                && self
+                    .premium_gate(*record.account_id.as_bytes())
+                    .await
+                    .require()
+                    .is_err()
+            {
+                return Err(AdmissionRefusal::PremiumRequired);
+            }
             // Capacity is reserved only after every semantic/authentication check,
             // but before the durable GameSession mutation. M+1 therefore rejects
             // without creating a playable/committed session.
@@ -171,17 +194,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 Err(refusal) => return Err(refusal),
             };
-            match self
+            let outcome = self
                 .root
                 .commit_composed_fresh_admission(
                     self.character,
                     self.holder,
                     &composition,
                     &request,
-                    capabilities.current_check(),
+                    self.channel_entry_check(
+                        *record.account_id.as_bytes(),
+                        capabilities.current_check(),
+                    ),
                 )
-                .await
+                .await;
+            if matches!(
+                outcome,
+                Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority)
+            ) && self.premium_only
+                && self
+                    .premium_gate(*record.account_id.as_bytes())
+                    .await
+                    .require()
+                    .is_err()
             {
+                self.rollback_runtime_player(reservation).await?;
+                return Err(AdmissionRefusal::PremiumRequired);
+            }
+            match outcome {
                 Ok(
                     FreshAdmissionDurableOutcomeV1::Committed(_)
                     | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
@@ -283,6 +322,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // PREM-1b: pull Premium before any Premium read; admission does not wait on it.
         self.admit_premium(*record.account_id.as_bytes(), attempt.game_session_id);
+        if let Some(entry) = premium_entry {
+            entry.retain();
+        }
         self.admit_promotion(attempt.game_session_id).await;
         let mut admitted = AdmittedSession {
             game_session_id: attempt.game_session_id,

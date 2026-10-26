@@ -1651,6 +1651,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             evidence: &fresh_evidence,
             world_id: world,
             channel_id: channel,
+            premium_only: false,
             // ADMIT0: the same binding boot derives. The entry-room seam declares
             // `SEAM_REQUIRED_CAPABILITIES` (ADMIT-CAP-1); the spell seam declares none.
             required_capabilities:

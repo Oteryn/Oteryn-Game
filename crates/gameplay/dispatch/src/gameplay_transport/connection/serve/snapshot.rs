@@ -18,6 +18,18 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
     admitted: &mut AdmittedSession,
     domains: &mut Vec<OwnedDomain>,
 ) -> Result<InitialSnapshot, ServeEnd> {
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(oteryn_protocol_oteryn::channel_list::STATE_DOMAIN_CHANNEL_LIST)
+    {
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::channel_list::STATE_DOMAIN_CHANNEL_LIST,
+            revision: 1,
+            snapshot_type: 1,
+            payload: authority.channel_list().ok_or(ServeEnd::Disconnected)?,
+        });
+    }
     // USE-WIRE-V1 (#162 5868482467): for a session served domain 2 (a fixture World session,
     // without capability 18), the join/resync snapshot also carries the door's current
     // `WORLD_OBJECT_OVERLAY`, the same code path a reconnect resumes through, so a resumed
