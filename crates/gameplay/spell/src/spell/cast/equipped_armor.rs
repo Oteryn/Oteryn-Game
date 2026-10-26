@@ -54,8 +54,8 @@ impl PlayerSpellState {
     /// PARITY-EQUIP-MODIFIERS-1: the critical hit and leech of the worn equipment, installed with
     /// the armor; zero before any install.
     #[must_use]
-    pub const fn equipped_offence(&self) -> EquippedOffence {
-        self.equipped_offence
+    pub fn equipped_offence(&self) -> EquippedOffence {
+        self.equipped_offence.clone()
     }
 
     /// Replace the offence with that of a fresh committed equipment read.
@@ -107,8 +107,9 @@ mod tests {
             critical_damage: 2500,
             life_leech: 1800,
             mana_leech: 100,
+            ..EquippedOffence::default()
         };
-        state.install_equipped_offence(offence);
+        state.install_equipped_offence(offence.clone());
         assert_eq!(state.equipped_offence(), offence);
         assert_eq!(state.revision(), revision, "armor is no vitals write");
     }

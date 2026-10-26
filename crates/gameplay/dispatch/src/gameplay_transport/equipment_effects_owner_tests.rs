@@ -70,6 +70,7 @@ fn snapshot(content: &NativeGameplayState, key: &str, slot: u8) -> EquipmentSnap
         revision: 1,
         combat_mode: None,
         items: vec![EquippedItem {
+            tier: 0,
             slot,
             item_instance_id: [2; 16],
             quantity: 1,

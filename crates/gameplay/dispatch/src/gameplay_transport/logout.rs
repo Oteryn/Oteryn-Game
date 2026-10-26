@@ -10,6 +10,8 @@ use crate::foundation::{ExactActorRef, GameSessionId, GameSessionState};
 /// What the connection does after one logout command.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogoutReply {
+    /// NOLOGOUT refuses without releasing the session; capability 92 carries its text.
+    NoLogout,
     /// Write this result. `Accepted` only once the terminal release has committed and the actor
     /// has left the Channel; the connection then stops reading and closes.
     Result(LogoutResult),
@@ -18,6 +20,12 @@ pub enum LogoutReply {
     /// fence until the outcome is known (`ControlLossResult::Terminal`).
     Unknown,
 }
+
+struct LogoutZones {
+    no_logout: bool,
+    protection_zone: Option<bool>,
+}
+
 /// `retry_after_ms` of an in-fight refusal: the time left until `until`, rounded up to whole
 /// milliseconds and within `1..=ATTACK0-RL-03`.
 pub(super) fn in_fight_retry_after_ms(until_micros: u64, now_micros: u64) -> u32 {
@@ -57,6 +65,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return LogoutReply::Result(LogoutResult::Busy);
         };
         let session = admitted.game_session_id;
+        let Some(zones) = self.logout_zones(actor).await else {
+            return LogoutReply::Result(LogoutResult::Busy);
+        };
+        if zones.no_logout {
+            return LogoutReply::NoLogout;
+        }
         if self.states.newhaven_travel.held(session) {
             return LogoutReply::Result(LogoutResult::Busy);
         }
@@ -71,21 +85,104 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // ordinary unknown/control-loss path without authorizing a terminal release.
             return LogoutReply::Unknown;
         }
-        if let Some(retry_after_ms) = self.logout_in_fight(actor, session).await {
+        // Reconciliation can finish a retained spell relocation. Use its current cell
+        // for both zone checks instead of carrying a pre-reconciliation PZ exception.
+        let Some(zones) = self.logout_zones(actor).await else {
+            return LogoutReply::Result(LogoutResult::Busy);
+        };
+        if zones.no_logout {
+            return LogoutReply::NoLogout;
+        }
+        if let Some(retry_after_ms) = self
+            .logout_in_fight(actor, session, zones.protection_zone)
+            .await
+        {
             return LogoutReply::Result(LogoutResult::InFight { retry_after_ms });
         }
         self.release_logout(admitted, actor, controller).await
+    }
+
+    async fn logout_zones(&self, actor: ExactActorRef) -> Option<LogoutZones> {
+        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+        let mut runtime = self.runtime.lock().await;
+        // This format has no OTBM zones; retain its existing logout behavior, including
+        // engineering runtimes whose synthetic content pin does not bind a map projection.
+        if matches!(
+            self.movement_cells.index(),
+            NativeMovementCollisionIndex::Entry(_)
+        ) {
+            return Some(LogoutZones {
+                no_logout: false,
+                protection_zone: super::actor_spell::qualified_protection_zone(
+                    &mut runtime,
+                    self.movement_cells,
+                    actor,
+                ),
+            });
+        }
+        let scope = self.movement_cells.scope();
+        if scope.world_id != runtime.binding().world_id()
+            || scope.world_id != runtime.content_pin().world_id()
+        {
+            return None;
+        }
+        let position = runtime.borrow_movement_position().read(actor).ok()?;
+        if position.context() != runtime.pinned_movement_context() {
+            return None;
+        }
+        let position = position.position();
+        let cell = crate::content::LogicalCell {
+            x: position.x,
+            y: position.y,
+            z: i32::from(position.floor),
+        };
+        match self.movement_cells.index() {
+            NativeMovementCollisionIndex::Bundle(index) => {
+                use crate::map::boot::BundleCollisionIndexExt;
+                use sha2::{Digest, Sha256};
+                // Bundle cells inherit the entry scope's gameplay generation. The zone
+                // evidence belongs to the independently pinned map, not that artifact.
+                let map_revision: [u8; 32] =
+                    Sha256::digest(scope.map_revision.as_str().as_bytes()).into();
+                if map_revision != runtime.content_pin().map_revision_digest() {
+                    return None;
+                }
+                // Check the bundle scope even on a tile whose mutable stack is unknown to spells.
+                index.lookup(scope, cell).ok()?;
+                let pos = crate::content::bundle_spell_tiles::tile_pos(cell)?;
+                let tile = index.map().overlay.base().tile(pos.x, pos.y, pos.floor)?;
+                Some(LogoutZones {
+                    no_logout: tile.no_logout(),
+                    protection_zone: Some(tile.protection_zone()),
+                })
+            }
+            NativeMovementCollisionIndex::Source(world) => {
+                if scope.generation_digest != runtime.content_pin().server_artifact_digest() {
+                    return None;
+                }
+                let tile = world.immutable_tile(scope, cell).ok()?;
+                Some(LogoutZones {
+                    no_logout: tile.source_step()?.no_logout,
+                    protection_zone: Some(tile.flags().protection_zone),
+                })
+            }
+            // The engineering fixture format has no OTBM zones.
+            NativeMovementCollisionIndex::Entry(_) => Some(LogoutZones {
+                no_logout: false,
+                protection_zone: None,
+            }),
+        }
     }
     /// The `retry_after_ms` of a running in-fight deadline (ATTACK-0 §4), or `None`. A dead
     /// actor is not held, as at a closed client's release (`held_step`). The PvE deadline
     /// and the PvP block do not hold an actor standing in a protection zone
     /// (`in_fight_logout_retry`).
-    async fn logout_in_fight(&self, actor: ExactActorRef, session: GameSessionId) -> Option<u32> {
-        let in_protection_zone = super::actor_spell::qualified_protection_zone(
-            &mut *self.runtime.lock().await,
-            self.movement_cells,
-            actor,
-        );
+    async fn logout_in_fight(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        in_protection_zone: Option<bool>,
+    ) -> Option<u32> {
         let fact = self.combat_lock_fact(actor, session).await;
         in_fight_logout_retry(
             fact.pvp == super::combat_lock_fact::PvpLockSource::LiveBlocked,

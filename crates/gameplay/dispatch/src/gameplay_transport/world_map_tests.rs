@@ -200,6 +200,7 @@ fn bundle_bytes(
         })
         .collect();
     let manifest = Manifest {
+        subareas: Default::default(),
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,
         projection_class: "server".into(),
@@ -1439,10 +1440,14 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
     assert_eq!((updates, bytes, digest.as_str()), GOLDEN);
 }
 
+// Re-recorded for bundle format v5 (SUBAREA-ADMIT-1): the fixture bundles' digests changed, and
+// a byte-by-byte comparison showed that only the 32-byte `MapViewHeaderV1.bundle_digest` of
+// the 283 payload-carrying updates differs from the v4 recording; update count and length are
+// unchanged.
 const GOLDEN: (usize, usize, &str) = (
     324,
     5_431_963,
-    "2920e8ef47cb4578c6481a9824ae755fbdb99abdd0ac141034abe81e657d86df",
+    "dd9033c2bc9ad2946e8020f2b18e3edb7693ec5c14e93e73e366c397df0deaca",
 );
 
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------

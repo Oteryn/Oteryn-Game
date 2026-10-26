@@ -59,6 +59,7 @@ pub(super) enum Dispatch {
     ),
     /// LOGOUT-WIRE-1: command 23; `ACCEPTED` ends the connection after the result.
     Logout(LogoutResult),
+    NoLogout,
     House(Option<Vec<u8>>),
     Unregistered,
 }

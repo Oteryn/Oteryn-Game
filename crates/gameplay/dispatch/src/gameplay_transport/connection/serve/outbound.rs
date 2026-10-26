@@ -52,7 +52,7 @@ where
     if write_frame(stream, &result).await.is_err() {
         return Err(ServeEnd::Disconnected);
     }
-    if matches!(dispatch, Dispatch::Logout(_)) {
+    if matches!(dispatch, Dispatch::Logout(_) | Dispatch::NoLogout) {
         if outcome.second_logout {
             return Err(close(
                 stream,
@@ -91,6 +91,22 @@ where
     A: FreshAdmissionAuthority,
 {
     match dispatch {
+        Dispatch::NoLogout | Dispatch::Logout(LogoutResult::InFight { .. }) => {
+            use oteryn_protocol_oteryn::zones_nologout::{IN_FIGHT_MESSAGE, NO_LOGOUT_MESSAGE};
+            let text = if matches!(dispatch, Dispatch::NoLogout) {
+                NO_LOGOUT_MESSAGE
+            } else {
+                IN_FIGHT_MESSAGE
+            };
+            zones_nologout_transport::emit(
+                stream,
+                &mut session.admitted,
+                &mut session.sequence,
+                text,
+            )
+            .await
+            .ok_or(ServeEnd::Disconnected)?;
+        }
         Dispatch::Step(outcome, _) => {
             effects::step(stream, authority, session, outcome).await?;
         }
@@ -332,7 +348,7 @@ where
         | Dispatch::Vip(_)
         | Dispatch::Appearance(_)
         | Dispatch::Training(_)
-        | Dispatch::Logout(_)
+        | Dispatch::Logout(LogoutResult::Accepted | LogoutResult::Busy)
         | Dispatch::House(_)
         | Dispatch::Unregistered => {}
     }

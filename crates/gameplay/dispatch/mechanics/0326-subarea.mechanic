@@ -1,0 +1,11 @@
+name=subarea
+commands=109
+transport=subarea
+composed=subarea
+authority=subarea
+offer=35,subarea::offered,subarea_available
+[route]
+match routing::subarea::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

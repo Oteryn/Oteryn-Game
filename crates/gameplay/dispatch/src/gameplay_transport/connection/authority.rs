@@ -265,6 +265,11 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    /// World-configured login text; empty means no message.
+    fn server_motd(&self) -> &str {
+        ""
+    }
+
     fn take_tutorial_notice(
         &self,
         _session: GameSessionId,
@@ -351,6 +356,18 @@ pub trait FreshAdmissionAuthority {
                 ..UseOutcome::rejected()
             }
         }
+    }
+
+    /// MOUNTTAME: replay is resolved before current item and creature visibility.
+    fn tame_mount(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _visible: bool,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
     }
 
     /// MINING-1: original USE is retained for replay before either handle is resolved.

@@ -145,6 +145,8 @@ pub struct ChannelSpellStates {
         oteryn_gameplay_combat_rules::pvp::CombatLock,
     )>,
     pub(in crate::gameplay_transport) deaths: Vec<(ExactActorRef, GameSessionId, PlayerDeath)>,
+    pub(super) equipment_reflection_kills:
+        Vec<(ExactActorRef, crate::combat::CapturedRewardPrincipal, u64)>,
     mint_death: fn() -> Option<PlayerDeathOccurrence>,
     source_secondary_memos: Vec<actor_conditions::NativeSecondaryMemo>,
     source_damage: Vec<NativeSourceMemo<crate::player_lethal::PlayerDamageReceipt>>,
@@ -281,6 +283,7 @@ impl Default for ChannelSpellStates {
             monster_ai_cursor: Default::default(),
             pvp_locks: Vec::new(),
             deaths: Vec::new(),
+            equipment_reflection_kills: Vec::new(),
             mint_death: mint_player_death_occurrence,
             source_secondary_memos: Vec::new(),
             source_damage: Vec::new(),
@@ -995,6 +998,22 @@ impl ChannelSpellStates {
 }
 
 impl CreatureBiteVitals for ChannelSpellStates {
+    fn reflect_equipment_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        magnitude: u32,
+        stream: &[u8],
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        self.reflect_equipment(
+            runtime, source, target, session, element, magnitude, stream, now,
+        )
+    }
+
     fn apply_creature_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -1223,6 +1242,22 @@ impl ChannelSpellStates {
     }
 }
 impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
+    fn reflect_equipment_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        magnitude: u32,
+        stream: &[u8],
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        self.reflect_equipment(
+            runtime, source, target, session, element, magnitude, stream, now,
+        )
+    }
+
     fn apply_source_appearance_batch(
         &mut self,
         runtime: &mut ChannelRuntimeV1,

@@ -63,6 +63,8 @@ mod damage_ledger;
 #[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
 
+mod equipment_reflection;
+
 #[cfg(any(test, feature = "test-support"))]
 mod fixtures;
 
@@ -435,9 +437,11 @@ pub struct OwnerCommitRecord {
     pub(crate) result: OwnerDamageResult,
     /// D142: this creature generation's owner damage-application ordinal of this receipt.
     pub(crate) ordinal: u64,
-    /// D141: `Some` for an attributed commit (its replay identity), `None` for an unsequenced
-    /// one, which is never evictable.
+    /// D141: the player-command replay identity. Source-owned reflections use their
+    /// separate mark; other unsequenced receipts remain non-evictable.
     pub(crate) origin: Option<DamageOrigin>,
+    /// EQMOD2: source stream key and semantic clock, independent of player commands.
+    pub(super) reflection: Option<([u8; 32], u64)>,
 }
 
 #[cfg(any(test, feature = "test-support"))]

@@ -26,6 +26,230 @@ fn loop_training_postgres_exercise_real_wire_atomic_stop_replay_fence_and_reload
         .map_err(|_| "exercise PG panic")??;
     Ok(())
 }
+
+#[test]
+fn loop_training_postgres_statue_logout_checks_player_tile_and_pinned_map() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            for (flags, expected) in [([1, 1], 3), ([1, 9], 3), ([9, 1], 4)] {
+                statue_scenario(flags, expected).map_err(|error| error.to_string())?;
+            }
+            Ok::<_, String>(())
+        })?
+        .join()
+        .map_err(|_| "statue logout PG panic")??;
+    Ok(())
+}
+
+fn statue_scenario(flags: [u32; 2], expected: u8) -> TestResult {
+    run(async |admin| {
+        let h = Harness::create_with_admission_seed(admin, "nologout_statue", true, false).await?;
+        eprintln!("POSTGRES_STARTED statue logout {flags:?}");
+        prepare_current_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut deps = Dependencies::new()?;
+        let (controller, pin) =
+            super::super::death_ml_loss_composed::production_generation_with_pin(
+                deps.admitted.world_id,
+                "content-1",
+            )?;
+        let active = controller.active().ok_or("active")?;
+        let index = active
+            .native_gameplay()
+            .and_then(|native| native.item_index())
+            .ok_or("items")?;
+        let world = super::world::training_world(index, deps.admitted, flags)?;
+        let cells = world
+            .movement_cells(deps.room.movement_cells())
+            .map_err(debug)?;
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            deps.admitted.world_id,
+            deps.admitted.channel_id,
+            crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            ChannelContentPin::from_activation(
+                deps.admitted.world_id,
+                1,
+                active.identity().server_artifact_digest(),
+                active.identity().client_artifact_digest(),
+                pin.frame_binding().digest(),
+                world.map_revision_digest(),
+                (1, 0, 7),
+            ),
+        )
+        .map_err(debug)?;
+        // Bundle cells inherit the entry generation; the actor's map pin is independent.
+        assert_ne!(
+            cells.scope().generation_digest,
+            runtime.content_pin().server_artifact_digest()
+        );
+        let reservation = runtime
+            .reserve_fresh_session(deps.admitted.game_session_id)
+            .map_err(debug)?;
+        deps.actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+        runtime
+            .initialize_pinned_test_position(
+                deps.actor,
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 7,
+                },
+            )
+            .map_err(debug)?;
+        deps.runtime = tokio::sync::Mutex::new(runtime);
+        let mut owner = deps.owner(&h, &authority);
+        owner.active_generation = Some(active);
+        owner.movement_cells = &cells;
+        deps.initialize(&owner).await;
+        let mut rates = TrainingRates::from_json(include_bytes!(
+            "../../../../../../../rulesets/training/provisional-v1.json"
+        ))
+        .map_err(debug)?;
+        rates.enabled = true;
+        owner.states.training.config = Some(Arc::new(rates));
+        let mut admitted = deps.admitted;
+        admitted.runtime_actor = Some(deps.actor);
+        admitted.first_entry = FirstEntryOutcome::Positioned;
+        let current =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                .current_session(admitted.game_session_id)
+                .await?;
+        admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+        owner.admit_loop_training(&mut admitted).await;
+        assert_eq!(admitted.first_entry, FirstEntryOutcome::Positioned);
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 21, 54])
+                .ok_or("selection")?;
+        let command = UseCommand {
+            game_session_id: admitted.game_session_id,
+            command_id: 1,
+            item_fence: admitted.item_fence,
+        };
+        let (consumer, clock, activation, _) =
+            crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
+        h.root
+            .latch_premium_activation(
+                &activation.activation_id,
+                activation.switch_over_us,
+                activation.switch_over_us + 60_000_000,
+            )
+            .await
+            .map_err(debug)?;
+        let premium =
+            crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
+                consumer,
+                Some(clock),
+                Some(activation),
+                Some(h.root.clone()),
+            );
+        owner.premium_coordinator = Some(&premium);
+
+        let statue = |digest| -> TestResult<ItemKey> {
+            Ok(ItemKey::MapBase {
+                bundle_digest: digest,
+                placement_key: crate::map::view::placement_key(
+                    crate::map::overlay::TilePos {
+                        x: 2,
+                        y: 0,
+                        floor: -7,
+                    },
+                    1,
+                )
+                .ok_or("statue")?,
+                reset_epoch: 0,
+            })
+        };
+        let mut items = SessionItemView::resume(ItemViewContinuity::default()).with_map_view();
+        let payload = |items: &mut SessionItemView, target| -> TestResult<Vec<u8>> {
+            let handle = items
+                .map_view(&[target], |table| {
+                    table
+                        .handle(&target)
+                        .ok_or(crate::gameplay_transport::item_view::ItemViewError::LimitExceeded)
+                })
+                .map_err(debug)?;
+            let mut bytes = Vec::new();
+            field(&mut bytes, 8, handle.get());
+            Ok(bytes)
+        };
+        // A different map with clear player flags still cannot authorize statue logout.
+        let wrong_world = super::world::training_world(index, admitted, [1, 17])?;
+        let wrong_cells = wrong_world
+            .movement_cells(deps.room.movement_cells())
+            .map_err(debug)?;
+        owner.movement_cells = &wrong_cells;
+        let wrong_payload = payload(&mut items, statue(wrong_world.base().digest())?)?;
+        let refused = crate::gameplay_transport::loop_training::wire::dispatch(
+            &owner,
+            admitted,
+            command,
+            COMMAND_TYPE_OFFLINE_TRAINING,
+            &wrong_payload,
+            Some(&items),
+        )
+        .await
+        .ok_or("mismatched map refusal")?;
+        assert_eq!(refused.disposition, 4);
+        let still_active: (i16, i64) = sqlx::query_as(
+            "SELECT session_state,(SELECT count(*) FROM game_character_training_markers WHERE cause='logout') FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid"
+        ).bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(still_active, (2, 0));
+
+        owner.movement_cells = &cells;
+        owner.clock_origin -= Duration::from_secs(1);
+        let bytes = payload(&mut items, statue(world.base().digest())?)?;
+        let result = crate::gameplay_transport::loop_training::wire::dispatch(
+            &owner,
+            admitted,
+            UseCommand {
+                command_id: 2,
+                ..command
+            },
+            COMMAND_TYPE_OFFLINE_TRAINING,
+            &bytes,
+            Some(&items),
+        )
+        .await
+        .ok_or("statue logout")?;
+        assert_eq!(
+            result.disposition, expected,
+            "player/statue flags {flags:?}"
+        );
+        let state: (i16, i64, i16) = sqlx::query_as(
+            "SELECT session_state,(SELECT count(*) FROM game_character_training_markers WHERE cause='logout'),(SELECT offline_skill FROM game_character_build_state) FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid"
+        ).bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        if expected == 3 {
+            assert_eq!(state, (3, 1, 3));
+            assert_eq!(result.pool_seconds, 43200);
+        } else {
+            assert_eq!(state, (2, 0, -1));
+            assert!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .player_control_facts(deps.actor, admitted.game_session_id)
+                    .is_ok()
+            );
+        }
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
+    })
+}
+
 fn scenario() -> TestResult {
     run(async |admin| {
         let h = Harness::create_with_admission_seed(admin, "loop_training_exercise", true, false)
@@ -47,7 +271,7 @@ fn scenario() -> TestResult {
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("item index")?;
-        let world = super::world::training_world(index, deps.admitted)?;
+        let world = super::world::training_world(index, deps.admitted, [1, 1])?;
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;

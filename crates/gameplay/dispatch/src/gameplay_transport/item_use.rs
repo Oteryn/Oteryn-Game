@@ -96,7 +96,9 @@ impl ItemUseGate {
         let (ready, cooldown) = match kind {
             ItemUseKind::Food => (&mut self.food_ready_ms, FOOD_COOLDOWN_MS),
             ItemUseKind::Potion => (&mut self.potion_ready_ms, POTION_COOLDOWN_MS),
-            ItemUseKind::PickRefine { .. } => return Err(UseDisposition::Rejected),
+            ItemUseKind::PickRefine { .. } | ItemUseKind::MountTaming => {
+                return Err(UseDisposition::Rejected);
+            }
         };
         if now_ms < *ready {
             return Err(UseDisposition::Exhausted);
