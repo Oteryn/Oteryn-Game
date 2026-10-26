@@ -1,6 +1,7 @@
-//! CHARACTER-INFO-1 installed-schema qualification for durable unlock/select.
+//! CHARACTER-INFO-1 fenced durable unlock/select, replay and stale generation.
 use super::fixture::{Harness, run};
-use super::{TestResult, prepare_current_session};
+use super::{TestResult, debug, prepare_current_session};
+use oteryn_protocol_oteryn::character_info::CharacterTitle;
 
 #[test]
 fn character_title_unlock_and_selection_are_durable_and_referential() -> TestResult {
@@ -11,26 +12,61 @@ fn character_title_unlock_and_selection_are_durable_and_referential() -> TestRes
         let harness =
             Harness::create_with_admission_seed(admin, "character_title", false, false).await?;
         prepare_current_session(&harness).await?;
-        let character: String =
-            sqlx::query_scalar("SELECT character_id::text FROM game_character_roots LIMIT 1")
+        let character: Vec<u8> =
+            sqlx::query_scalar("SELECT uuid_send(character_id) FROM game_character_roots LIMIT 1")
                 .fetch_one(&harness.pool)
                 .await?;
-        sqlx::query("INSERT INTO game_character_titles(character_id,title,earned_at_unix_ms) VALUES($1::uuid,1,100)").bind(&character).execute(&harness.pool).await?;
-        sqlx::query("INSERT INTO game_character_title_selection(character_id,title,revision) VALUES($1::uuid,1,1)").bind(&character).execute(&harness.pool).await?;
-        let selected: Option<i16> = sqlx::query_scalar(
-            "SELECT title FROM game_character_title_selection WHERE character_id=$1::uuid",
+        let character = crate::domain::CharacterId::from_bytes(
+            character.try_into().map_err(|_| "character id length")?,
         )
-        .bind(&character)
-        .fetch_one(&harness.pool)
-        .await?;
-        assert_eq!(selected, Some(1));
-        let invalid = sqlx::query(
-            "UPDATE game_character_title_selection SET title=2 WHERE character_id=$1::uuid",
-        )
-        .bind(&character)
-        .execute(&harness.pool)
-        .await;
-        assert!(invalid.is_err(), "selection must reference an earned title");
+        .map_err(debug)?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        assert!(
+            harness
+                .root
+                .unlock_character_title(
+                    &authority,
+                    character,
+                    CharacterTitle::AdeptArmorer,
+                    100,
+                    None
+                )
+                .await
+                .map_err(debug)?
+        );
+        assert!(
+            !harness
+                .root
+                .unlock_character_title(
+                    &authority,
+                    character,
+                    CharacterTitle::AdeptArmorer,
+                    100,
+                    None
+                )
+                .await
+                .map_err(debug)?,
+            "replay is idempotent"
+        );
+        let revision = harness
+            .root
+            .select_character_title(&authority, character, Some(CharacterTitle::AdeptArmorer))
+            .await
+            .map_err(debug)?;
+        assert_eq!(revision, 1);
+        assert!(
+            harness
+                .root
+                .select_character_title(&authority, character, Some(CharacterTitle::AdeptEnhancer))
+                .await
+                .is_err(),
+            "unearned selection is rejected"
+        );
         Ok(())
     })
 }
