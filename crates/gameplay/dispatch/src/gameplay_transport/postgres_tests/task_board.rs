@@ -329,6 +329,20 @@ fn scenario() -> TestResult {
                     )
                     .is_some()
             );
+            // This tests task credit, not combat odds. A trained fist makes even the
+            // minimum real swing lethal after the production rat's defence and armor,
+            // independent of the content digest that seeds the swing draws.
+            let mut skills = [(10, 0); 7];
+            skills[0] = (1_000, 0);
+            let build = crate::durability::character_build::DurableBuildState::new(
+                "monk",
+                (crate::gameplay_transport::actor_spell::tests::FACTS.magic_level.try_into()?, 0),
+                skills,
+            )
+            .map_err(debug)?;
+            assert!(owner.states.spell_states.lock().await.load_owned_build(
+                &runtime, actor, session, &build,
+            ));
         }
         owner.admit_progression_session(&mut admitted).await;
         assert!(owner.progression_binding(session).is_some());
@@ -417,6 +431,13 @@ fn scenario() -> TestResult {
             assert!(drains < 8, "the queued kill settles");
         }
         assert_eq!(experience(&harness).await?, RAT_XP);
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
+                .fetch_one(&harness.pool)
+                .await?,
+            1,
+            "the real kill's XP receipt is committed"
+        );
         let credited = board(&owner, &mut admitted, 0, 0).await?;
         assert_eq!((credited.selected, credited.kills), (1, 1), "the real kill counts");
 

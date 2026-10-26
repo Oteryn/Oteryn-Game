@@ -536,6 +536,11 @@ fn lower(
     } else {
         None
     };
+    if let Some(owner) = magnitude.as_mut() {
+        owner
+            .select_item_spell(spell)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+    }
     let mut batch=OwnerCombatBatch{caster:owned.binding().actor,attacker:CharacterId::decode(&owned.binding().character).map_err(|_|SpellCastDisposition::Rejected)?,
         current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,
         effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":match named {Some((_,parameter))=>source_parameter_intent(&parameter.intent,parameter)?,None=>source_cast_intent(intent,rune)},"source_named_target":named.map(|(a,_)|format!("{a:?}")),"parameter_result":if named.is_some(){Some(oteryn_protocol_oteryn::actor_spell_v2::encode_parameter_spell_cast_result(&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult{disposition:SpellCastDisposition::Cast,feedback:None,editor:None}).map_err(|_|SpellCastDisposition::Rejected)?)}else{None},"source_definition":format!("{spell:?}"),
@@ -2133,6 +2138,12 @@ pub(in crate::gameplay_transport) async fn prepare_due(
             now.get() / 1000,
         )
         .map_err(|_| SpellCastDisposition::Rejected)
+        .and_then(|mut owner| {
+            owner
+                .select_item_spell(spell)
+                .map_err(|_| SpellCastDisposition::Rejected)?;
+            Ok(owner)
+        })
     };
     let mut preview_owner = qualify(&preview)?;
     let NativeCombatPlan::Combat(preview_combat) = &preview else {
