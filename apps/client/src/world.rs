@@ -10,13 +10,12 @@
 //! builtin cells.
 
 use crate::input::StepDir;
-use oteryn_client_assets::DrawCell;
 use oteryn_client_assets::window::{ResolvedWindow, within_draw_cap};
 use oteryn_client_domain::world::CELL_PX;
 use oteryn_client_simulation::world::{project_cell, project_tile};
-use oteryn_renderer::world::{BUILTIN_CELLS, MAX_CELLS, atlas_from_cells, builtin_rgba};
+use oteryn_renderer::world::{BUILTIN_CELLS, WorldAtlas, builtin_rgba};
 use oteryn_renderer::{AtlasImage, BatchError};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::path::Path;
 
 /// Names the local asset root.
@@ -88,33 +87,18 @@ impl World {
             mut sheets,
         } = ResolvedWindow::load_around(root, center)?;
 
-        // Cells in sprite order, so each sheet is decoded once; past the atlas cap they are dropped.
-        let mut cells = BTreeMap::new();
-        for cell in entries
-            .iter()
-            .flat_map(|(_, items)| items.iter().flat_map(|(_, _, cells)| cells))
-            .chain(player.iter().flatten())
-        {
-            cells.insert((cell.sprite_id, cell.cell_x, cell.cell_y), 0_u16);
-        }
-        let mut rgba = builtin_rgba();
-        let mut next = BUILTIN_CELLS;
-        for (key, slot) in &mut cells {
-            if next >= MAX_CELLS {
-                break;
-            }
-            let pixels = sheets
-                .cell_rgba(key.0, key.1, key.2)
-                .map_err(|error| format!("sprite {}: {error}", key.0))?;
-            *slot = next as u16;
-            rgba.extend_from_slice(&pixels);
-            next += 1;
-        }
-        let slot = |cell: &DrawCell| {
-            cells
-                .get(&(cell.sprite_id, cell.cell_x, cell.cell_y))
-                .copied()
-        };
+        let atlas = WorldAtlas::prepare(
+            entries
+                .iter()
+                .flat_map(|(_, items)| items.iter().flat_map(|(_, _, cells)| cells))
+                .chain(player.iter().flatten()),
+            |sprite, x, y| {
+                sheets
+                    .cell_rgba(sprite, x, y)
+                    .map_err(|error| error.to_string())
+            },
+        )?;
+        let slot = |cell: &oteryn_client_assets::DrawCell| atlas.slot(cell);
         let tiles = entries
             .iter()
             .map(|(position, items)| (*position, project_tile(items, slot)))
@@ -128,7 +112,7 @@ impl World {
         for cells in &player {
             within_draw_cap(cells.len()).map_err(|error| format!("outfit: {error}"))?;
         }
-        let atlas = atlas_from_cells(rgba, next).map_err(|error| format!("atlas: {error}"))?;
+        let atlas = atlas.into_image();
         Ok(Self {
             center,
             atlas,

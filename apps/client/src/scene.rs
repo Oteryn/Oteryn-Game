@@ -5,10 +5,7 @@
 //! whose positions are not map positions still draws the start area around its actor.
 
 use crate::input::{StepDir, TargetKind, Targetable, pick_target};
-use crate::world::{
-    BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, TARGET_CELL, World,
-};
-use oteryn_client_assets::CELL_PX;
+use crate::world::{BLACK_CELL, Draw, MARKER_CELL, MAX_TILE_DRAWS, SCAN_MARGIN, World};
 use oteryn_client_simulation::scene::{scene_origin, visit_scene};
 use oteryn_renderer::{
     AtlasImage, BatchError, MAX_BATCH_QUADS, SpriteBatch, TileBatch, TileCoord, TileView,
@@ -132,41 +129,34 @@ impl Scene {
     /// player, then what goes over them.
     /// The target highlight is drawn last.
     fn rebuild_sprites(&mut self) -> Result<(), BatchError> {
-        let mut sprites = SpriteBatch::new();
         let (atlas, origin) = (self.world.atlas(), self.view.origin());
-        visit_scene(
-            (origin.x, origin.y),
-            self.anchor.map(|anchor| (anchor.x, anchor.y)),
-            ((self.own.x, self.own.y), self.world.player(self.facing)),
-            |x, y| self.world.tile(x, y),
-            |x, y| {
-                // One glyph per tile however many markers and entities stand on it.
-                self.visible
-                    .iter()
-                    .any(|v| {
-                        v.tile == TileCoord::new(x, y) && (v.kind == TargetKind::Object || v.glyph)
-                    })
-                    .then_some(Draw {
-                        cell: MARKER_CELL,
-                        offset: [0, 0],
-                    })
+        let sprites = oteryn_renderer::world::sprite_batch(
+            &self.view,
+            atlas,
+            |emit| {
+                visit_scene(
+                    (origin.x, origin.y),
+                    self.anchor.map(|anchor| (anchor.x, anchor.y)),
+                    ((self.own.x, self.own.y), self.world.player(self.facing)),
+                    |x, y| self.world.tile(x, y),
+                    |x, y| {
+                        // One glyph per tile however many markers and entities stand on it.
+                        self.visible
+                            .iter()
+                            .any(|v| {
+                                v.tile == TileCoord::new(x, y)
+                                    && (v.kind == TargetKind::Object || v.glyph)
+                            })
+                            .then_some(Draw {
+                                cell: MARKER_CELL,
+                                offset: [0, 0],
+                            })
+                    },
+                    emit,
+                )
             },
-            |(x, y), draw| {
-                sprites
-                    .push_offset(
-                        &self.view,
-                        atlas,
-                        TileCoord::new(x, y),
-                        draw.cell,
-                        draw.offset,
-                        CELL_PX,
-                    )
-                    .map(|_| ())
-            },
+            self.target.map(|target| target.tile),
         )?;
-        if let Some(target) = self.target {
-            sprites.push(&self.view, atlas, target.tile, TARGET_CELL)?;
-        }
         self.sprites = sprites;
         Ok(())
     }
