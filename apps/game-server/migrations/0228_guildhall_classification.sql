@@ -947,8 +947,11 @@ CREATE FUNCTION game_house_guild_disband_released_proven(g UUID,w UUID) RETURNS 
 $$;
 CREATE OR REPLACE FUNCTION game_guild_bank_release_ready(g UUID,w UUID) RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
  SELECT game_house_guild_disband_released_proven(g,w) IS TRUE
- AND NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-  WHERE n.nspname=current_schema() AND c.relkind IN('r','p') AND
+ -- The pinned search_path starts with pg_catalog, so current_schema() is not
+ -- the Game schema. Resolve it from a known Game relation instead.
+ AND NOT EXISTS(SELECT 1 FROM pg_class c
+  WHERE c.relnamespace=(SELECT relnamespace FROM pg_class WHERE oid='game_guilds'::regclass)
+   AND c.relkind IN('r','p') AND
    (c.relname LIKE 'game_guildhall_%' OR c.relname LIKE 'game_house_guild_%'))
 $$;
 DO $$ DECLARE f RECORD; BEGIN
