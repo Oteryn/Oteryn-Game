@@ -876,18 +876,24 @@ fn strict_http_framing_rejects_ambiguous_names_controls_and_signed_lengths()
 fn character_bootstrap_intent_read_uses_its_separate_endpoint()
 -> Result<(), Box<dyn std::error::Error>> {
     const BODY: &str =
-        r#"{"contract_version":1,"operation_id":"01890f4e-7c00-7000-8000-000000000001"}"#;
+        r#"{"contract_version":3,"operation_id":"01890f4e-7c00-7000-8000-000000000001"}"#;
     const INTENT: &str = r#"{"contract_version":1,"variant":"OPERATOR_CONTROL_PLANE_BOOTSTRAP"}"#;
     assert_eq!(
         Operation::ReadCharacterBootstrapIntentV1.path(),
         "/internal/v1/game-auth/character-bootstrap-intents/read"
+    );
+    assert_eq!(
+        oteryn_gameplay_durability::character_bootstrap_intent::encode_read_request([
+            0x01, 0x89, 0x0f, 0x4e, 0x7c, 0x00, 0x70, 0x00, 0x80, 0, 0, 0, 0, 0, 0, 1,
+        ]),
+        BODY
     );
     runtime()?.block_on(async {
         let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await?;
         let port = listener.local_addr()?.port();
         let acceptor = tokio_rustls::TlsAcceptor::from(server_config(1)?);
         let server = tokio::spawn(async move {
-            for status in ["200 OK", "404 Not Found"] {
+            for status in ["200 OK", "404 Not Found", "400 Bad Request"] {
                 let (tcp, _) = listener.accept().await?;
                 let mut tls = acceptor.accept(tcp).await?;
                 let mut request = vec![0u8; 4096];
@@ -925,12 +931,22 @@ fn character_bootstrap_intent_read_uses_its_separate_endpoint()
             native_admission_source::read_character_bootstrap_intent(&issuer, BODY, &mut permit)
                 .await?;
         assert_eq!(raw, INTENT.as_bytes());
-        // Unknown or expired intent is bounded unavailability, not a fallback.
-        assert!(matches!(
-            native_admission_source::read_character_bootstrap_intent(&issuer, BODY, &mut permit)
-                .await,
-            Err(native_admission_source::SourceError::Unavailable)
-        ));
+        // Unknown/expired intents and a producer rejecting the requested contract version
+        // remain bounded unavailability. A version-2 producer rejects the version-3 read.
+        for status in [404, 400] {
+            assert!(
+                matches!(
+                    native_admission_source::read_character_bootstrap_intent(
+                        &issuer,
+                        BODY,
+                        &mut permit
+                    )
+                    .await,
+                    Err(native_admission_source::SourceError::Unavailable)
+                ),
+                "HTTP {status} must fail closed"
+            );
+        }
         server.await??;
         // A descriptor configured for another source cannot read intents.
         assert!(matches!(

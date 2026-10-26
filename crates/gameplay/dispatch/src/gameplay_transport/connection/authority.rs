@@ -52,10 +52,12 @@ pub trait FreshAdmissionAuthority {
         async { Err(AdmissionRefusal::Unavailable) }
     }
 
-    /// OPS-SAVE-2: the permit one player command runs under, or `None` once the node is
-    /// quiescing for its shutdown save: the command then has no effect and gets a rejected
-    /// result. Authorities without a shutdown save never refuse.
-    fn enter_input(&self) -> impl Future<Output = Option<InputPermit<'_>>> {
+    /// OPS-SAVE-2: one admitted session's input permit. Quiescing for shutdown or unresolved
+    /// gameplay work in that session refuses new effects. Injected authorities are ungated.
+    fn enter_input(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<InputPermit<'_>>> {
         async { Some(InputPermit::ungated()) }
     }
 
@@ -311,6 +313,19 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    /// An ambiguous quest callback commit has no terminal command result yet.
+    fn quest_callback_unresolved(&self, _session: GameSessionId) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    /// Reconcile retained callback truth before opening a resumed command stream/snapshot.
+    fn prepare_quest_callback_resume(
+        &self,
+        _admitted: &mut AdmittedSession,
+    ) -> impl Future<Output = bool> {
+        async { true }
+    }
+
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
     /// #162 5868482467), applied by the Channel owner.
     ///
@@ -383,6 +398,19 @@ pub trait FreshAdmissionAuthority {
         _target: Option<ItemKey>,
     ) -> impl Future<Output = Option<UseOutcome>> {
         async { Some(UseOutcome::rejected()) }
+    }
+
+    /// IMBUEITEMS-1: filled scroll or etcher USE-with an inventory item.
+    /// `None` leaves the intent to the existing map-use handlers.
+    fn use_imbuement_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
     }
 
     fn offline_training(

@@ -146,11 +146,16 @@ fee and resource spent exactly once and the item's new state durable?
 
 ### 4.2 When time runs
 
-- **Aggressive types** tick while the item sits in an equipment slot (not a container), the actor
-  is in fight (ATTACK-0 deadline), and the actor's tile is not a protection zone.
-- **Non-aggressive types** (speed, capacity, paralysis deflection) tick while equipped.
-- Nothing ticks offline or in a container. Effects apply while the item is equipped and has
-  time left. This makes the manual's "equipped and hunting" exact (Canary; `PARITY_PENDING`).
+- **Combat types** tick while equipped and the ATTACK-0/PvP fight state is active.
+- **Utility types** (speed and capacity) tick whenever equipped and online. Paralysis
+  deflection retains the pinned Canary non-aggressive rule, **not verified against Global**.
+- Nothing ticks offline or in a container. Effects apply while equipped and time remains.
+- **IMBUE-TIME-1 Global qualification (2026-10-26):** [Tibia's manual](https://www.tibia.com/gameguides/?section=characters&subtopic=manual)
+  confirms twenty hours of equipped hunting; [TibiaWiki's Imbuing rules](https://tibia.fandom.com/wiki/Imbuing)
+  distinguish combat from speed/capacity and explicitly state that PZ hides the logout block
+  without necessarily ending combat. This supersedes this section's earlier donor-derived
+  PZ shortcut. The pinned Canary/Crystal
+  PZ/config behavior is reference evidence, not verified against Global.
 
 ### 4.3 Accounting (architect ruling R1)
 

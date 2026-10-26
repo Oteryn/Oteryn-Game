@@ -27,7 +27,7 @@ pub(super) async fn replace(
     let house = request.house.house_key();
     // Canonical entries only. Legacy spell editors are not another live management truth.
     if !owner {
-        let subowner:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_acl_entries WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND list_key='subowner' AND character_id=encode($3,'hex')::uuid)")
+        let subowner:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_access(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid) WHERE role='SUBOWNER' AND NOT content_fenced)")
             .bind(world.as_bytes().as_slice()).bind(house).bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
         if !subowner || list != HouseManagementList::Guest {
             return Err(HouseManagementError::Rejected);

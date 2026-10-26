@@ -1,5 +1,8 @@
 //! Machine validation for workspace membership, roles and internal edges.
 
+mod client_fragments;
+pub mod client_layering;
+pub mod client_structure;
 mod gameplay;
 mod sources;
 
@@ -60,6 +63,10 @@ pub fn validate_workspace(root: &Path) -> Result<(), String> {
     validate_production_closure(&policy)?;
     gameplay::validate(root, &policy, &metadata)?;
     validate_restricted_calls(root)?;
+    client_layering::validate(root, &metadata)?;
+    if root.join("crates/client-ui").is_dir() {
+        client_structure::validate(root)?;
+    }
     for member in &policy.members {
         if policy
             .forbidden_fragments

@@ -45,7 +45,8 @@ use super::db::{
 use super::item_mint::{TypedDefinitionRef, uuid_text};
 use super::item_mint_audit::{
     self as mint_audit, AuditError, ITEM_LIFECYCLE_LIVE, OneItemStateV1,
-    OneItemTypedDefinitionRevisionV1, Type2EventTuple, check_content_key, check_uuid_v7,
+    OneItemTypedDefinitionRevisionV1, Type2EventTuple, Type2Transaction, check_content_key,
+    check_uuid_v7,
 };
 use super::item_transfer::{
     CurrentCharacterItemFence, GAMEITEM01_CONTAINER_ENTRIES_MAX, ItemDefinitionFacts,
@@ -194,6 +195,8 @@ pub enum NpcTradeError {
     DoesNotFit,
     /// SELL: no direct entry holds the offer's item as §5.4 requires.
     ItemNotFound,
+    /// A server-owned condition attached to this NPC offer is not currently satisfied.
+    RequirementNotMet,
     /// The occurrence committed with another binding.
     ConflictingOccurrence,
     /// The CommandRef or a retry-local identity is already used by another trade.
@@ -232,6 +235,7 @@ impl std::fmt::Display for NpcTradeError {
             Self::CapacityExceeded => formatter.write_str("NPC trade needs too many coin stacks"),
             Self::DoesNotFit => formatter.write_str("NPC trade outputs do not fit the backpack"),
             Self::ItemNotFound => formatter.write_str("no item to sell"),
+            Self::RequirementNotMet => formatter.write_str("NPC trade requirement is not met"),
             Self::ConflictingOccurrence => {
                 formatter.write_str("NPC trade occurrence was reused with a different binding")
             }
@@ -241,6 +245,56 @@ impl std::fmt::Display for NpcTradeError {
             Self::Unavailable(error) => write!(formatter, "NPC trade storage failed: {error:?}"),
         }
     }
+}
+
+const ALBINIUS: &str = "oteryn:npc.albinius";
+const BLANK_IMBUEMENT_SCROLL: &str = "oteryn:item.tibia.i51442";
+const HEAVY_OLD_TOME: &str = "oteryn:item.tibia.i23986";
+const FORGOTTEN_KNOWLEDGE: &str = "oteryn:quest.forgotten_knowledge_quest";
+
+/// The one catalogue offer whose access is owned jointly by the NPC and quest owners. Keeping
+/// this recognition beside the durable commit prevents a forged catalogue request from opting
+/// out of the gate and makes retries observe either the complete purchase or no purchase.
+fn is_albinius_blank_scroll(request: &NpcTradeRequest) -> bool {
+    request.cause.npc_key == ALBINIUS
+        && request.cause.side == NpcTradeSide::Buy
+        && request.item.definition.production_key == BLANK_IMBUEMENT_SCROLL
+        && request.quantity == 1
+        && request.offer_count == 1
+        && request.unit_price == 25_000
+}
+
+async fn albinius_blank_scroll_gate(
+    tx: &mut Type2Transaction<'_>,
+    character: CharacterId,
+    backpack: &[u8; 16],
+) -> std::result::Result<bool, sqlx::Error> {
+    let completed: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_quest_states \
+          WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 \
+            AND completed_character_revision IS NOT NULL)",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(FORGOTTEN_KNOWLEDGE)
+    .fetch_one(&mut ***tx)
+    .await?;
+    if !completed {
+        return Ok(false);
+    }
+    let tome_stacks: Vec<i64> = sqlx::query_scalar(
+        "SELECT i.quantity::bigint FROM game_item_container_entries e \
+           JOIN game_item_instances i USING(item_instance_id,world_id) \
+          WHERE e.character_id=encode($1,'hex')::uuid \
+            AND e.parent_item_instance_id=encode($2,'hex')::uuid \
+            AND i.lifecycle=1 AND i.definition_family='Item' \
+            AND i.definition_production_key=$3 FOR UPDATE OF i,e",
+    )
+    .bind(character.as_bytes().as_slice())
+    .bind(backpack.as_slice())
+    .bind(HEAVY_OLD_TOME)
+    .fetch_all(&mut ***tx)
+    .await?;
+    Ok(tome_stacks.into_iter().sum::<i64>() >= 5)
 }
 
 impl std::error::Error for NpcTradeError {}
@@ -645,6 +699,19 @@ impl DurabilityRoot {
                     let Some(backpack) = backpack else {
                         return Ok(Err(NpcTradeError::NoBackpack));
                     };
+                    let backpack_id = uuid_text(
+                        &backpack.try_get::<String, _>("item_instance_id")?,
+                    )?;
+                    if is_albinius_blank_scroll(&request)
+                        && !albinius_blank_scroll_gate(
+                            &mut tx,
+                            fence.character_id,
+                            &backpack_id,
+                        )
+                        .await?
+                    {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
                     let declared = &request.backpack.definition;
                     if backpack.try_get::<String, _>("definition_family")? != declared.family
                         || backpack.try_get::<String, _>("definition_production_key")?

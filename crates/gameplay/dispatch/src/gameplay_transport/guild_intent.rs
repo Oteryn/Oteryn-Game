@@ -28,6 +28,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_type: u32,
         payload: &[u8],
     ) -> GuildReply {
+        if super::guild_war::owns(command_type) {
+            return self.guild_war_wire(admitted, command_id, payload).await;
+        }
         if super::guild_bank::owns(command_type) {
             return self
                 .guild_bank_wire(admitted, command_id, command_type, payload)
@@ -77,6 +80,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_or(GuildReply::Unavailable, GuildReply::Payload),
                 Err(error) => failure(error),
             };
+        }
+        if command_type == oteryn_protocol_oteryn::house::COMMAND_TYPE_GUILDHALL_LEADERSHIP {
+            return self.guildhall_leadership(admitted, command_id, payload).await;
         }
         if command_type != wire::COMMAND_TYPE_GUILD_INTENT {
             return GuildReply::Rejected;
