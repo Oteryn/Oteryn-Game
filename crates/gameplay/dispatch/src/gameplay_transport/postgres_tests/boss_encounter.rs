@@ -485,6 +485,23 @@ fn scenario() -> TestResult {
                 deps.actor.0.actor_local_generation,
             ));
         assert_eq!(instance_actor.channel_id(), None);
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
+            assert_eq!(
+                runtime.read_actor_position(instance_actor),
+                Err(crate::foundation::CarrierError::WrongScope)
+            );
+            assert_eq!(
+                runtime.borrow_movement_position().read(instance_actor),
+                Err(crate::foundation::CarrierError::WrongScope)
+            );
+            assert_eq!(
+                runtime.read_actor_position(deps.actor).map_err(debug)?,
+                before
+            );
+            assert_eq!(before.context(), runtime.pinned_movement_context());
+        }
         let mut wrong_actor = admitted;
         wrong_actor.runtime_actor = Some(instance_actor);
         assert!(matches!(

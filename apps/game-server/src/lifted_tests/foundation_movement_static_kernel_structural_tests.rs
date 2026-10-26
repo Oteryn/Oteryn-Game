@@ -188,7 +188,7 @@ impl Harness {
             .expect("admit fixture actor");
         let context = PreProductionPositionContext::for_test(
             owner.world_id(),
-            owner.channel_id(),
+            owner.channel_id().expect("Channel fixture"),
             owner.current_generation(),
             11,
             12,
@@ -612,7 +612,7 @@ fn recycled_actor_and_stale_owner_reject_before_cell_lookup() {
         .owner
         .advance(PreProductionContinuityGrant::fixture(
             fixture.owner.world_id(),
-            fixture.owner.channel_id(),
+            fixture.owner.channel_id().expect("Channel fixture"),
             ScopeOwnershipGeneration::new(2).expect("new owner generation"),
         ))
         .expect("advance owner");

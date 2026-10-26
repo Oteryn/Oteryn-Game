@@ -198,10 +198,37 @@ Instance digests use separate domains and include the World, Instance, ownership
 and local actor generations. Channel ActorRef and death-reference/key Debug text
 retain their pre-scope shapes for native intent/owner-binding compatibility. No origin Channel is part of an Instance actor.
 
-This actor representation does not admit an Instance. Existing Channel spell/item
+The carrier's namespace grant, independent continuity guard and actor storage
+now retain `RuntimeScopeRefV1`; each position context retains that exact scope
+through a lossless private representation. Actor issuance,
+lookups, position commits and damage commits compare the exact World, scope kind,
+scope identity and ownership generation. Claiming or advancing one namespace
+cannot claim or advance another, including a Channel and Instance with identical
+UUID bytes. The bone-overlord owner compares its Channel group against this typed
+carrier scope. Channel position-context Debug bytes retain their original shape
+because existing spell/relocation receipt bindings include those bytes.
+The position representation uses the fixed UUIDv7 version nibble as a local kind
+tag (7 Channel, 15 Instance, restored to 7 on decode). It retains every variable
+UUID bit and the owning World without inventing a Channel identity. It is never
+a wire, persisted or assignment key. The direct enum representation failed the
+existing 176-byte Slot layout checks; this private 32-byte representation keeps
+those checks unchanged. Malformed Instance identities refuse before namespace
+claim or allocation. Qualification covers compact round trips and malformed
+version/variant/nil Instance identities as well as the existing Slot budget.
+
+`boss_activity_carrier_*` tests qualify isolated kernel slots, movement, damage
+and replay in synthetic Channel and Instance namespaces, including equal local
+slots/coordinates/UUIDs, a different World, generation replacement and retirement.
+These tests construct private synthetic grants; the only production grant issuer
+is still the existing committed Channel assignment facade. They are not accepted
+participant sessions or real-dispatch Instance gameplay. Channel death receipt
+and reward occurrence producers explicitly refuse an Instance namespace rather
+than derive a Channel from its identity or origin.
+
+This representation does not admit an Instance. Existing Channel spell/item
 writers reject Instance actors, and the committed creature-death/loot key remains
-Channel-only, captured from the validated Channel owner. Generalizing the carrier,
-InstanceRuntime, successful Instance consumers and handoff/recovery remains open.
+Channel-only, captured from the validated Channel owner. InstanceRuntime,
+successful Instance consumers and handoff/recovery remain open.
 The cooldown real-dispatch PostgreSQL scenario checks the admitted Channel path
 and directly checks refusal of a typed Instance actor at its composed command
 boundary; that refusal is not successful Instance admission evidence.

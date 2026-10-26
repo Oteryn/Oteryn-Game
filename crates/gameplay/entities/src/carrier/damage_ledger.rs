@@ -823,9 +823,8 @@ impl ChannelActorCarrier {
             character: winner.character,
             lease_generation,
             session,
-            actor: ExactActorRef(ActorRef::from_owner_parts(
-                self.world_id,
-                self.channel_id,
+            actor: ExactActorRef(ActorRef::from_scoped_owner_parts(
+                self.runtime_scope,
                 self.scope_generation,
                 ActorLocalId(
                     u32::try_from(slot_index + 1)
@@ -842,6 +841,7 @@ impl ChannelActorCarrier {
         actor_ref: ActorRef,
     ) -> Result<CommittedLethalReceipt, CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
+        self.channel_id()?;
         if let Some(existing) = self
             .corpse_projections
             .iter()
@@ -884,7 +884,7 @@ impl ChannelActorCarrier {
             projection: RuntimeCorpseProjection {
                 occurrence: CreatureDeathOccurrenceRef {
                     actor: ExactActorRef(actor_ref),
-                    channel_id: self.channel_id,
+                    channel_id: self.channel_id()?,
                     commit_binding: copy_bounded_binding(&committed.binding)?,
                     damage: committed.damage,
                     health_before: committed.result.health_before,
@@ -1025,8 +1025,7 @@ impl ChannelActorCarrier {
     /// Whether `actor`'s committed death is projected and retained in this world, Channel and
     /// scope generation.
     pub(super) fn retains_corpse_projection(&self, actor: ExactActorRef) -> bool {
-        actor.world_id() == self.world_id
-            && actor.runtime_scope() == RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
+        actor.runtime_scope() == self.runtime_scope
             && actor.scope_generation() == self.scope_generation
             && self
                 .corpse_projections
@@ -1132,7 +1131,7 @@ impl ChannelActorCarrier {
         {
             return Err(CarrierError::CapacityExceeded);
         }
-        let occurrence = mint_reward_occurrence_bytes(actor_ref, self.channel_id, character);
+        let occurrence = mint_reward_occurrence_bytes(actor_ref, self.channel_id()?, character);
         self.death_reward_occurrences.push(DeathRewardOccurrence {
             actor: actor_ref,
             character,

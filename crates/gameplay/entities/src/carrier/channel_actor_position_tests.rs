@@ -11,10 +11,12 @@ fn uuid_v7(seed: u64) -> [u8; 16] {
 
 fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
     PreProductionContinuityGrant {
-        world_id: oteryn_gameplay_foundation::foundation::WorldId::decode(&uuid_v7(seed))
-            .expect("world fixture"),
-        channel_id: oteryn_gameplay_foundation::foundation::ChannelId::decode(&uuid_v7(seed + 1))
-            .expect("channel fixture"),
+        runtime_scope: RuntimeScopeRefV1::channel(
+            oteryn_gameplay_foundation::foundation::WorldId::decode(&uuid_v7(seed))
+                .expect("world fixture"),
+            oteryn_gameplay_foundation::foundation::ChannelId::decode(&uuid_v7(seed + 1))
+                .expect("channel fixture"),
+        ),
         scope_generation: oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(
             generation,
         )
@@ -31,8 +33,8 @@ fn fixture(seed: u64, capacity: usize) -> (NamespaceContinuityGuard, ChannelActo
 
 fn context(continuity: &NamespaceContinuityGuard) -> PreProductionPositionContext {
     PreProductionPositionContext {
-        world_id: continuity.world_id,
-        channel_id: continuity.channel_id,
+        scope: positions::PositionScope::new(continuity.runtime_scope)
+            .expect("valid scoped context"),
         scope_generation: continuity.current_generation,
         coordinate_frame_marker: 11,
         map_revision_marker: 12,
@@ -87,7 +89,7 @@ fn scope_and_context_fields_fail_independently_without_mutation() {
 
     let mut wrong_world = actor;
     wrong_world.runtime_scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-        grant(30, 1).world_id,
+        grant(30, 1).runtime_scope.world_id(),
         oteryn_gameplay_foundation::foundation::ExactActorRef(wrong_world)
             .channel_id()
             .expect("Channel actor"),
@@ -96,7 +98,7 @@ fn scope_and_context_fields_fail_independently_without_mutation() {
     wrong_channel.runtime_scope =
         oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
             oteryn_gameplay_foundation::foundation::ExactActorRef(wrong_channel).world_id(),
-            grant(30, 1).channel_id,
+            grant(30, 1).channel_id().expect("Channel fixture"),
         );
     let mut wrong_scope = actor;
     wrong_scope.set_scope_generation(
@@ -125,8 +127,18 @@ fn scope_and_context_fields_fail_independently_without_mutation() {
     for changed in 0..6 {
         let mut wrong = scope;
         match changed {
-            0 => wrong.world_id = grant(31, 1).world_id,
-            1 => wrong.channel_id = grant(31, 1).channel_id,
+            0 => {
+                wrong.scope = positions::PositionScope::channel(
+                    grant(31, 1).runtime_scope.world_id(),
+                    continuity.channel_id().expect("Channel fixture"),
+                )
+            }
+            1 => {
+                wrong.scope = positions::PositionScope::channel(
+                    continuity.runtime_scope.world_id(),
+                    grant(31, 1).channel_id().expect("Channel fixture"),
+                )
+            }
             2 => {
                 wrong.scope_generation =
                     oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(2)

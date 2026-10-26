@@ -1,5 +1,64 @@
 use super::*;
 
+/// Lossless, private 32-byte position namespace. Both identifier kinds are
+/// UUIDv7, so their fixed version nibble can carry the kind without growing
+/// every actor slot. This is never a wire, database or canonical identity key.
+/// Channel bytes retain version 7; Instance bytes use the internal tag 15 and
+/// restore version 7 before constructing the typed scope. No Instance becomes
+/// a ChannelId. The explicit local Slot budget remains 176 bytes.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) struct PositionScope {
+    world: WorldId,
+    tagged_local: [u8; 16],
+}
+
+impl PositionScope {
+    pub(super) const fn channel(world: WorldId, channel: ChannelId) -> Self {
+        Self {
+            world,
+            tagged_local: *channel.as_bytes(),
+        }
+    }
+
+    pub(super) fn new(scope: RuntimeScopeRefV1) -> Result<Self, CarrierError> {
+        match scope {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => Ok(Self::channel(world_id, channel_id)),
+            RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id,
+            } => {
+                RuntimeScopeRefV1::instance(world_id, instance_id)
+                    .map_err(|_| CarrierError::WrongScope)?;
+                let mut tagged_local = instance_id;
+                tagged_local[6] |= 0x80;
+                Ok(Self {
+                    world: world_id,
+                    tagged_local,
+                })
+            }
+        }
+    }
+
+    pub(super) fn runtime_scope(self) -> Result<RuntimeScopeRefV1, CarrierError> {
+        match self.tagged_local[6] >> 4 {
+            7 => Ok(RuntimeScopeRefV1::channel(
+                self.world,
+                ChannelId::decode(&self.tagged_local).map_err(|_| CarrierError::WrongScope)?,
+            )),
+            15 => {
+                let mut instance = self.tagged_local;
+                instance[6] &= 0x7f;
+                RuntimeScopeRefV1::instance(self.world, instance)
+                    .map_err(|_| CarrierError::WrongScope)
+            }
+            _ => Err(CarrierError::WrongScope),
+        }
+    }
+}
+
 impl MovementPositionSnapshot {
     pub const fn facing(self) -> Option<MovementFacing> {
         self.0.version.facing
@@ -22,7 +81,7 @@ impl MovementPositionSnapshot {
     }
 
     pub const fn world_id(self) -> WorldId {
-        self.0.version.context.world_id
+        self.0.actor_ref.runtime_scope.world_id()
     }
 }
 
@@ -115,8 +174,7 @@ impl PreProductionPositionContext {
         content_generation_marker: u64,
     ) -> Self {
         Self {
-            world_id,
-            channel_id,
+            scope: PositionScope::channel(world_id, channel_id),
             scope_generation,
             coordinate_frame_marker,
             map_revision_marker,
@@ -469,8 +527,10 @@ impl ChannelRuntimeV1 {
             ])
         };
         PreProductionPositionContext {
-            world_id: self.binding.world_id,
-            channel_id: self.binding.channel_id,
+            scope: positions::PositionScope::channel(
+                self.binding.world_id,
+                self.binding.channel_id,
+            ),
             scope_generation: self.binding.scope_generation,
             coordinate_frame_marker: prefix(&self.content.frame_binding_digest()),
             map_revision_marker: prefix(&self.content.map_revision_digest()),
@@ -621,8 +681,7 @@ impl ChannelActorCarrier {
         &self,
         context: PreProductionPositionContext,
     ) -> Result<(), CarrierError> {
-        if context.world_id != self.world_id
-            || context.channel_id != self.channel_id
+        if context.scope != PositionScope::new(self.runtime_scope)?
             || context.scope_generation != self.scope_generation
             || context.coordinate_frame_marker == 0
             || context.map_revision_marker == 0

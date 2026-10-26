@@ -33,6 +33,10 @@ macro_rules! test_support_pub {
 mod actor_memos;
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
+mod boss_activity_scope_tests;
+
+#[cfg(test)]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
@@ -231,8 +235,7 @@ pub use spawn_realization::SpawnSourceId;
 /// fn forge(runtime: &ChannelRuntimeV1) -> PreProductionContinuityGrant {
 ///     let binding = runtime.binding();
 ///     PreProductionContinuityGrant {
-///         world_id: binding.world_id(),
-///         channel_id: binding.channel_id(),
+///         runtime_scope: oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
 ///         scope_generation: binding.scope_generation(),
 ///     }
 /// }
@@ -257,8 +260,7 @@ pub use spawn_realization::SpawnSourceId;
 /// ```
 #[derive(Debug)]
 pub struct PreProductionContinuityGrant {
-    world_id: WorldId,
-    channel_id: ChannelId,
+    runtime_scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
 }
 
@@ -269,8 +271,7 @@ pub struct PreProductionContinuityGrant {
 /// that carrier therefore cannot make the generation claimable again.
 #[derive(Debug)]
 pub struct NamespaceContinuityGuard {
-    world_id: WorldId,
-    channel_id: ChannelId,
+    runtime_scope: RuntimeScopeRefV1,
     current_generation: ScopeOwnershipGeneration,
     current_generation_claimed: bool,
     active: bool,
@@ -672,18 +673,41 @@ pub const MAX_OWNER_COMMIT_BINDING_BYTES: usize = 4_096;
 pub struct ActorState(pub u64);
 
 /// The binding a position is valid under. In production the Channel's fixed
-/// Content pin (#935) holds the full binding once; each slot keeps only this
-/// compact per-runtime reference to it (the measured 192-byte slot footprint
-/// is unchanged): the frame-binding and map-revision digest prefixes and the
+/// Content pin (#935) holds the full binding once; each slot keeps the exact
+/// runtime scope, frame-binding and map-revision digest prefixes and the
 /// activation sequence. Test fixtures use synthetic values.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PreProductionPositionContext {
-    pub world_id: WorldId,
-    pub channel_id: ChannelId,
+    scope: positions::PositionScope,
     pub(crate) scope_generation: ScopeOwnershipGeneration,
     pub coordinate_frame_marker: u64,
     pub map_revision_marker: u64,
     pub content_generation_marker: u64,
+}
+
+// Relocation and spell-owner receipt bindings include the position snapshot's
+// Debug bytes. Keep the original Channel representation for existing bindings.
+impl std::fmt::Debug for PreProductionPositionContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = f.debug_struct("PreProductionPositionContext");
+        match self.scope.runtime_scope().map_err(|_| std::fmt::Error)? {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => {
+                out.field("world_id", &world_id)
+                    .field("channel_id", &channel_id);
+            }
+            scope @ RuntimeScopeRefV1::Instance { .. } => {
+                out.field("runtime_scope", &scope);
+            }
+        }
+        out.field("scope_generation", &self.scope_generation)
+            .field("coordinate_frame_marker", &self.coordinate_frame_marker)
+            .field("map_revision_marker", &self.map_revision_marker)
+            .field("content_generation_marker", &self.content_generation_marker)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -827,8 +851,7 @@ pub struct PlayerControlFacts {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChannelActorCarrier {
-    world_id: WorldId,
-    channel_id: ChannelId,
+    runtime_scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
     pub slots: Box<[Slot]>,
     free_head: Option<u32>,
@@ -1113,8 +1136,7 @@ impl ChannelRuntimeV1 {
         let scope_generation = ScopeOwnershipGeneration::new(ownership_generation)
             .map_err(|_| CarrierError::InvalidAssignmentBinding)?;
         let grant = PreProductionContinuityGrant {
-            world_id,
-            channel_id,
+            runtime_scope: RuntimeScopeRefV1::channel(world_id, channel_id),
             scope_generation,
         };
         let mut continuity = NamespaceContinuityGuard::from_pre_production_grant(grant);
@@ -1525,6 +1547,7 @@ impl ChannelActorCarrier {
         // Reject replay before touching allocation while retaining the claim
         // commit until every fallible construction step has succeeded.
         continuity.ensure_current_generation_unclaimed()?;
+        positions::PositionScope::new(continuity.runtime_scope)?;
         let slots = allocate_slots(explicit_capacity)?;
         let mut occupied = Vec::new();
         occupied
@@ -1535,8 +1558,7 @@ impl ChannelActorCarrier {
         continuity.claim_current_generation()?;
 
         Ok(Self {
-            world_id: continuity.world_id,
-            channel_id: continuity.channel_id,
+            runtime_scope: continuity.runtime_scope,
             scope_generation: continuity.current_generation,
             slots: slots.into_boxed_slice(),
             free_head: Some(0),
@@ -1637,9 +1659,8 @@ impl ChannelActorCarrier {
             .and_then(|value| u32::try_from(value).ok())
             .map(ActorLocalId)
             .ok_or(CarrierError::CapacityArithmeticOverflow)?;
-        let actor_ref = ActorRef::from_owner_parts(
-            self.world_id,
-            self.channel_id,
+        let actor_ref = ActorRef::from_scoped_owner_parts(
+            self.runtime_scope,
             self.scope_generation,
             actor_local_id,
             ActorLocalGeneration(next_generation),
@@ -1910,16 +1931,22 @@ impl ChannelActorCarrier {
         Ok((actor, index))
     }
 
+    fn channel_id(&self) -> Result<ChannelId, CarrierError> {
+        match self.runtime_scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => Ok(channel_id),
+            RuntimeScopeRefV1::Instance { .. } => Err(CarrierError::WrongScope),
+        }
+    }
+
     fn validate_ref(
         &self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
     ) -> Result<usize, CarrierError> {
         self.validate_current_continuity(continuity)?;
-        if actor_ref.runtime_scope
-            != RuntimeScopeRefV1::channel(continuity.world_id, continuity.channel_id)
+        if actor_ref.runtime_scope != continuity.runtime_scope
             || ExactActorRef(actor_ref).scope_generation() != continuity.current_generation
-            || actor_ref.runtime_scope != RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
+            || actor_ref.runtime_scope != self.runtime_scope
             || ExactActorRef(actor_ref).scope_generation() != self.scope_generation
         {
             return Err(CarrierError::WrongScope);
@@ -1941,8 +1968,7 @@ impl ChannelActorCarrier {
         continuity: &NamespaceContinuityGuard,
     ) -> Result<(), CarrierError> {
         if !continuity.active
-            || continuity.world_id != self.world_id
-            || continuity.channel_id != self.channel_id
+            || continuity.runtime_scope != self.runtime_scope
             || continuity.current_generation != self.scope_generation
         {
             return Err(CarrierError::WrongScope);

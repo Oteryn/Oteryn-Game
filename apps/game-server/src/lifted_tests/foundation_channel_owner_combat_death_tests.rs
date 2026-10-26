@@ -61,7 +61,7 @@ fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
 fn position_context(owner: &NamespaceContinuityGuard) -> PreProductionPositionContext {
     PreProductionPositionContext::for_test(
         owner.world_id(),
-        owner.channel_id(),
+        owner.channel_id().expect("Channel fixture"),
         owner.current_generation(),
         31,
         32,
@@ -670,7 +670,7 @@ fn d1_fixture(seed: u64) -> CombatDeathFixture {
     let scope = grant(seed, 1);
     CombatDeathFixture::new(
         scope.world_id(),
-        scope.channel_id(),
+        scope.channel_id().expect("Channel fixture"),
         scope.scope_generation(),
     )
     .expect("fixture creature")

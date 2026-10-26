@@ -125,7 +125,7 @@ fn missing_vacant_recycled_and_cross_scope_refs_fail_closed() {
                 wrong.runtime_scope =
                     oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
                         oteryn_gameplay_foundation::foundation::ExactActorRef(wrong).world_id(),
-                        grant(40, 1).channel_id(),
+                        grant(40, 1).channel_id().expect("Channel fixture"),
                     )
             }
             _ => wrong.set_scope_generation(ScopeOwnershipGeneration::new(2).expect("generation")),
