@@ -380,6 +380,9 @@ pub enum FirstEntryOutcome {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AdmissionRefusal {
+    /// PREMCHAN: authenticated destination entry requires current Premium. Uses the existing
+    /// silent rejection path; no new public error code is allocated.
+    PremiumRequired,
     /// The material or current owner facts do not admit this attempt.
     Rejected,
     /// The owning authority could not decide; nothing was admitted.

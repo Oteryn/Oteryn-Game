@@ -4,6 +4,13 @@ use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     mechanic_composed_methods!();
+    fn channel_list(&self) -> Option<Vec<u8>> {
+        Some(oteryn_protocol_oteryn::channel_list::encode_channel_list(
+            self.world_id.as_bytes(),
+            self.channel_id.as_bytes(),
+            self.premium_only,
+        ))
+    }
     async fn party_command(
         &self,
         admitted: connection::AdmittedSession,
