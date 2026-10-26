@@ -25,7 +25,7 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 
-const SPELL_CASTER_XP: i64 = 98_800;
+const SPELL_CASTER_XP: i64 = 156_200;
 
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {
     x: 33502,
@@ -573,8 +573,9 @@ fn scenario() -> TestResult {
                         session,
                         crate::spell::cast::CharacterCastFacts {
                             vocation: crate::spell::Vocation::Sorcerer,
-                            level: 20,
+                            level: 23,
                             max_health: 100_000,
+                            max_mana: 1_000,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
                         (0, 0),
@@ -756,6 +757,7 @@ fn scenario() -> TestResult {
             // Cast before the AI turn moves these newly admitted source actors.
             let kill_command_id =
                 outgoing_spell_checks(&mut owner, actor, session, target, &harness).await?;
+            outgoing_condition_checks(&mut owner, actor, session, target).await?;
             combat_checks(&mut owner, actor, session, target).await?;
             let mut runtime = owner.runtime.lock().await;
             let health = runtime
@@ -1408,17 +1410,42 @@ async fn outgoing_spell_checks(
     }
     let original_book = owner.spells;
     owner.spells = native.spell_book();
-    let index = (1..=owner.spells.source_len())
-        .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
-        .find(|i| {
-            owner
-                .spells
-                .indexed(*i)
-                .is_some_and(|s| s.key == "candidate:spell/energy_strike")
-        })
-        .ok_or("energy strike")?;
     let mut next_id = 200_000;
-    for should_dodge in [true, false] {
+    for (key, mana_cost, native_cast, should_dodge) in [
+        ("candidate:spell/energy_strike", 20, false, true),
+        ("candidate:spell/energy_strike", 20, false, false),
+        ("candidate:spell/energy_beam", 40, true, true),
+        ("candidate:spell/energy_beam", 40, true, false),
+    ] {
+        let index = (1..=owner.spells.source_len())
+            .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
+            .find(|i| owner.spells.indexed(*i).is_some_and(|s| s.key == key))
+            .ok_or("outgoing combat spell")?;
+        let original_position = if native_cast {
+            let mut runtime = owner.runtime.lock().await;
+            let target_position = runtime
+                .read_actor_position(target)
+                .map_err(debug)?
+                .position();
+            let mut movement = runtime.borrow_movement_position();
+            let before = movement.read(actor).map_err(debug)?;
+            let original = before.position();
+            let moved = movement
+                .commit_cardinal(
+                    before,
+                    MovementLocalPosition {
+                        x: target_position.x - 1,
+                        ..target_position
+                    },
+                )
+                .map_err(debug)?;
+            movement
+                .commit_turn(moved, crate::foundation::MovementFacing::East)
+                .map_err(debug)?;
+            Some(original)
+        } else {
+            None
+        };
         owner.clock_origin -= Duration::from_secs(5);
         let (command_id, position, before) = {
             let runtime = owner.runtime.lock().await;
@@ -1445,13 +1472,15 @@ async fn outgoing_spell_checks(
         next_id = command_id + 1;
         let intent = SpellCastIntent {
             spell: index,
-            target: SpellTarget::Position(
-                oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+            target: if native_cast {
+                SpellTarget::None
+            } else {
+                SpellTarget::Position(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
                     x: position.x,
                     y: position.y,
                     floor: position.floor,
-                },
-            ),
+                })
+            },
             aim_at_target: false,
         };
         let mana_before = owner
@@ -1460,8 +1489,23 @@ async fn outgoing_spell_checks(
             .ok_or("spell mana")?
             .1
             .mana;
-        let outcome = owner
-            .cast_spell_dispatch(actor, session, command_id, intent)
+        if native_cast {
+            let unavailable = owner
+                .cast_spell_dispatch(actor, session, command_id, intent)
+                .await
+                .ok_or("native missing stance refusal")?;
+            assert_eq!(unavailable.disposition, SpellCastDisposition::Rejected);
+            assert_eq!(
+                owner
+                    .observe_actor_vitals(actor, session)
+                    .await
+                    .ok_or("native refusal mana")?
+                    .1
+                    .mana,
+                mana_before
+            );
+        }
+        let outcome = outgoing_cast(owner, actor, session, command_id, intent, native_cast)
             .await
             .ok_or("spell completed")?;
         assert_eq!(
@@ -1492,11 +1536,10 @@ async fn outgoing_spell_checks(
             .mana;
         assert_eq!(
             mana_before - mana_after,
-            20,
+            mana_cost,
             "dodge still pays the source cost"
         );
-        let replay = owner
-            .cast_spell_dispatch(actor, session, command_id, intent)
+        let replay = outgoing_cast(owner, actor, session, command_id, intent, native_cast)
             .await
             .ok_or("spell replay completed")?;
         assert_eq!(replay.disposition, SpellCastDisposition::Cast);
@@ -1519,12 +1562,17 @@ async fn outgoing_spell_checks(
                 .mana,
             mana_after
         );
-        let cooling = owner
-            .cast_spell_dispatch(actor, session, next_id, intent)
+        let cooling = outgoing_cast(owner, actor, session, next_id, intent, native_cast)
             .await
             .ok_or("cooldown completed")?;
         assert_eq!(cooling.disposition, SpellCastDisposition::CoolingDown);
         next_id += 1;
+        if let Some(original) = original_position {
+            let mut runtime = owner.runtime.lock().await;
+            let mut movement = runtime.borrow_movement_position();
+            let before = movement.read(actor).map_err(debug)?;
+            movement.commit_cardinal(before, original).map_err(debug)?;
+        }
     }
     // A source wand uses the same swing owner as fists, with the real
     // equipment reader and mana payment before the hazard health parser.
@@ -1657,6 +1705,240 @@ async fn outgoing_spell_checks(
     }
     owner.spells = original_book;
     Ok(next_id)
+}
+
+// Only the elemental-stance input is supplied by this explicit test producer.
+// Production's missing stance remains unavailable; the profile, all durable cast
+// facts, current World level, native dispatcher and physical owner remain real.
+struct HazardNativeStance;
+impl crate::gameplay_transport::spell_access_facts::owner_registration::Registered
+    for HazardNativeStance
+{
+}
+impl crate::gameplay_transport::spell_access_facts::CurrentSpellAccessOwner for HazardNativeStance {
+    fn read_current(
+        &self,
+        binding: &crate::spell::owned_cast_facts::CastFactsBinding,
+        now: u64,
+    ) -> Result<
+        crate::spell::owned_cast_facts::AccessProjections,
+        crate::gameplay_transport::spell_access_facts::AccessFactsError,
+    > {
+        Ok(crate::spell::owned_cast_facts::AccessProjections {
+            elemental_stance: Some(crate::spell::owned_cast_facts::CurrentProjection {
+                binding: binding.clone(),
+                authority_revision: 1,
+                valid_until_micros: now + 1_000_000,
+                value: crate::spell::native_combat::ElementalStance::None,
+            }),
+            ..Default::default()
+        })
+    }
+}
+
+async fn outgoing_cast(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    command: u64,
+    intent: crate::gameplay_transport::actor_spell::SpellCastIntent,
+    native: bool,
+) -> Option<crate::gameplay_transport::actor_spell::SpellCastOutcome> {
+    if !native {
+        return owner
+            .cast_spell_dispatch(actor, session, command, intent)
+            .await;
+    }
+    match owner
+        .cast_native_combat(actor, session, command, &intent, &HazardNativeStance)
+        .await
+    {
+        crate::gameplay_transport::actor_spell::NativeCastDispatch::Outcome(outcome) => {
+            Some(outcome)
+        }
+        _ => None,
+    }
+}
+
+// The canonical Creature store is seeded with a typed player DOT, then the real
+// admitted-session scheduler acquires the live source/World/tile owners and consumes it.
+async fn outgoing_condition_checks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    target: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use crate::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionLineage, ConditionSourceKind, TickFacts,
+    };
+    use crate::foundation::{ConditionValues, DotElement};
+    use crate::gameplay_transport::hazard::combat;
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    for (agony, should_dodge, moved_outside, historical) in [
+        (false, true, false, false),
+        (false, false, false, false),
+        (true, true, false, false),
+        (true, false, false, false),
+        (false, true, true, false),
+        (false, true, false, true),
+    ] {
+        let (before_health, due) = {
+            let mut runtime = owner.runtime.lock().await;
+            let before = runtime.companion_snapshot(target).map_err(debug)?;
+            let root =
+                GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+            let lease = runtime
+                .bound_attacker_lease(actor, session)
+                .map_err(debug)?;
+            let lineage = ConditionLineage {
+                source_character: *lease.character_id().as_bytes(),
+                source_session: if historical {
+                    [0x72; 16]
+                } else {
+                    *session.as_bytes()
+                },
+                source_lease_generation: lease.generation(),
+                source_actor_placement: actor.placement_identity(),
+                source_scope_generation: actor.scope_generation().get(),
+                source_content_digest: runtime.content_pin().server_artifact_digest(),
+                source_catalog_digest: runtime.content_pin().server_artifact_digest(),
+                source_creation_command: 800_000,
+            };
+            let definition = ConditionDefinition::new(
+                "test.hazard.outgoing.condition",
+                1,
+                if agony {
+                    ConditionValues::Agony {
+                        total_min: 100,
+                        total_max: 100,
+                        per_tick: 100,
+                        interval_ms: 1000,
+                        delayed: true,
+                    }
+                } else {
+                    ConditionValues::DamageOverTime {
+                        element: DotElement::Energy,
+                        total_min: 100,
+                        total_max: 100,
+                        per_tick: 100,
+                        interval_ms: 1000,
+                        delayed: true,
+                    }
+                },
+            )
+            .ok_or("hazard condition definition")?;
+            let earliest = owner.owner_now().get() + 1_000_000;
+            let (next, due) = (earliest..earliest + 100_000)
+                .find_map(|due| {
+                    let facts = ApplicationFacts {
+                        now: due - 1_000_000,
+                        base_speed: 100,
+                        mana_shield_capacity: 0,
+                        target_reentry_protected: false,
+                        source_reentry_protected: false,
+                        target_is_player: false,
+                        decision_root: &root,
+                        occurrence: DecisionOccurrenceId::from_bytes([0x71; 16]),
+                    };
+                    let mut next = before.state.clone();
+                    next.conditions
+                        .apply_with_lineage(
+                            &definition,
+                            Some(actor),
+                            ConditionSourceKind::Player,
+                            &[],
+                            &facts,
+                            &lineage,
+                        )
+                        .ok()?;
+                    let tick = next
+                        .conditions
+                        .clone()
+                        .take_due(due, TickFacts::default())
+                        .pop()?;
+                    let roll = combat::condition_dodge_roll(&runtime, actor, target, &tick)?;
+                    (combat::dodges(1, roll) == should_dodge).then_some((next, due))
+                })
+                .ok_or("bounded condition dodge occurrence")?;
+            runtime
+                .compare_companion_state(&before, next)
+                .map_err(debug)?;
+            (before.health, due)
+        };
+        let advance = due.saturating_sub(owner.owner_now().get()) + 10_000;
+        owner.clock_origin -= Duration::from_micros(advance);
+        // Without the current World level this lower owner must leave HP and cursor intact.
+        if !historical {
+            let mut runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let before = runtime.companion_snapshot(target).map_err(debug)?;
+            assert!(
+                states
+                    .tick_source_creature_conditions(
+                        &mut runtime,
+                        target,
+                        TickFacts::default(),
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                            owner.owner_now().get()
+                        ),
+                    )
+                    .is_err()
+            );
+            assert_eq!(runtime.companion_snapshot(target).map_err(debug)?, before);
+        }
+        let original_position = if moved_outside {
+            let mut runtime = owner.runtime.lock().await;
+            let mut movement = runtime.borrow_movement_position();
+            let before = movement.read(actor).map_err(debug)?;
+            let original = before.position();
+            movement
+                .commit_cardinal(
+                    before,
+                    MovementLocalPosition {
+                        x: original.x - 1,
+                        ..original
+                    },
+                )
+                .map_err(debug)?;
+            Some(original)
+        } else {
+            None
+        };
+        owner.drain_monster_melee().await;
+        let after = {
+            let runtime = owner.runtime.lock().await;
+            let after = runtime.companion_snapshot(target).map_err(debug)?;
+            assert!(
+                after.state.conditions.instances().is_empty(),
+                "real scheduler consumes DOT"
+            );
+            if should_dodge && !moved_outside && !historical {
+                assert_eq!(after.health, before_health, "forced condition dodge");
+            } else {
+                assert!(after.health < before_health, "forced condition non-dodge");
+            }
+            after.health
+        };
+        owner.drain_monster_melee().await;
+        assert_eq!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .companion_snapshot(target)
+                .map_err(debug)?
+                .health,
+            after,
+            "condition retry deals no duplicate damage"
+        );
+        if let Some(original) = original_position {
+            let mut runtime = owner.runtime.lock().await;
+            let mut movement = runtime.borrow_movement_position();
+            let before = movement.read(actor).map_err(debug)?;
+            movement.commit_cardinal(before, original).map_err(debug)?;
+        }
+    }
+    Ok(())
 }
 
 // Force the real swing owner through both sides of the hazard draw. The bounded

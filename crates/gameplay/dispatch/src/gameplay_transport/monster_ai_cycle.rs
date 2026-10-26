@@ -91,6 +91,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if swing_pass && monsters.is_empty() {
             return;
         }
+        // DOT owns its canonical cursor independently of targeting and swing readiness.
+        // Reuse the rotating bounded window; retries consume no second tick.
+        if swing_pass && !monsters.is_empty() {
+            let (cursor, count) = swing_window(monsters.len(), states.creature_condition_cursor);
+            for offset in 0..count {
+                let (target, _, _) = monsters[(cursor + offset) % monsters.len()];
+                let _ = self
+                    .tick_creature_periodic(&permit, &mut runtime, &states, *target, semantic_now)
+                    .await;
+            }
+            states.creature_condition_cursor = (cursor + count) % monsters.len();
+        }
         let digest = content
             .source_digest()
             .iter()

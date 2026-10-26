@@ -139,6 +139,7 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
     pub(in crate::gameplay_transport) monster_ai_sequence: u64,
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
+    pub(in crate::gameplay_transport) creature_condition_cursor: usize,
     pub(in crate::gameplay_transport) pvp_locks: Vec<(
         ExactActorRef,
         GameSessionId,
@@ -283,6 +284,7 @@ impl Default for ChannelSpellStates {
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),
             monster_ai_cursor: Default::default(),
+            creature_condition_cursor: Default::default(),
             pvp_locks: Vec::new(),
             deaths: Vec::new(),
             equipment_reflection_kills: Vec::new(),
@@ -1757,7 +1759,24 @@ impl ChannelSpellStates {
         crate::foundation::CreaturePeriodicReceipt,
         oteryn_gameplay_domain::domain::carrier_values::CarrierError,
     > {
-        let mut lookup = |r: &ChannelRuntimeV1, source: ExactActorRef, at: u64| {
+        self.tick_creature_conditions_with_hazard(runtime, target, facts, now, &[])
+    }
+
+    pub(in crate::gameplay_transport) fn tick_creature_conditions_with_hazard(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        facts: crate::foundation::TickFacts,
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+        levels: &[(ExactActorRef, GameSessionId, u8)],
+    ) -> Result<
+        crate::foundation::CreaturePeriodicReceipt,
+        oteryn_gameplay_domain::domain::carrier_values::CarrierError,
+    > {
+        let mut lookup = |r: &ChannelRuntimeV1,
+                          source: ExactActorRef,
+                          tick: &crate::foundation::condition::ConditionTick<ExactActorRef>,
+                          at: u64| {
             if !r.borrow_exact_actor_lookup().contains(source) {
                 return Ok(None);
             }
@@ -1773,6 +1792,15 @@ impl ChannelSpellStates {
                     oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
                 );
             };
+            if let Some(lineage) = &tick.provenance.lineage {
+                let lease = r.bound_attacker_lease(source, *session)?;
+                if lineage.source_session != *session.as_bytes()
+                    || lineage.source_character != *lease.character_id().as_bytes()
+                    || lineage.source_lease_generation != lease.generation()
+                {
+                    return Ok(None);
+                }
+            }
             let current = r.player_control_facts(source, *session)?;
             if current.control_loss.is_some() || self.is_dead(source) || state.vitals().health == 0
             {
@@ -1797,7 +1825,23 @@ impl ChannelSpellStates {
                 }) => damage_dealt_percent,
                 _ => 100,
             };
-            Ok(Some(percent))
+            if super::hazard::combat::eligible(r, target) {
+                let level = if super::hazard::combat::in_area(r, source) {
+                    levels.iter().find(|(actor, current, _)| *actor == source && current == session)
+                        .map(|(_, _, level)| *level)
+                        .ok_or(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict)?
+                } else {
+                    0
+                };
+                let roll = super::hazard::combat::condition_dodge_roll(r, source, target, tick)
+                    .ok_or(
+                        oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict,
+                    )?;
+                if super::hazard::combat::dodges(level, roll) {
+                    return Ok(Some((percent, true)));
+                }
+            }
+            Ok(Some((percent, false)))
         };
         runtime.apply_creature_periodic_turn_with_sources(target, now.get(), facts, &mut lookup)
     }

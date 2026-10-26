@@ -364,3 +364,34 @@ fn current_nonattackable_phase_does_not_trigger_pre_immunity_healing() {
         "phaseattackability precedes healingMap; damageimmunity differs"
     );
 }
+
+#[test]
+fn hazard_condition_dodge_keeps_pre_parser_healing_and_consumes_only_the_due_tick() {
+    let (mut runtime, _, source, target, _) = fixture();
+    let receipt = runtime
+        .apply_creature_periodic_turn_with_sources(
+            target,
+            1_000_000,
+            crate::foundation::TickFacts::default(),
+            &mut |_, current, tick, _| {
+                assert_eq!(current, source);
+                assert_eq!(tick.due, 1_000_000);
+                Ok(Some((50, true)))
+            },
+        )
+        .expect("atomic source-qualified condition owner");
+    assert_eq!((receipt.health_before, receipt.health_after), (5, 15));
+    assert_eq!(receipt.ticks.len(), 1);
+    let after = runtime.companion_snapshot(target).expect("consumed cursor");
+    assert_eq!(after.state.conditions.instances()[0].remaining_total(), 20);
+    let retry = runtime
+        .apply_creature_periodic_turn_with_sources(
+            target,
+            1_000_000,
+            crate::foundation::TickFacts::default(),
+            &mut |_, _, _, _| panic!("consumed tick must not consult the source twice"),
+        )
+        .expect("same-time replay");
+    assert!(retry.ticks.is_empty());
+    assert_eq!(retry.health_after, 15);
+}

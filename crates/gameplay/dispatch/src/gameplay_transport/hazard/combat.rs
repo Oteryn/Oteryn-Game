@@ -437,6 +437,45 @@ pub(in crate::gameplay_transport) fn spell_dodge_roll(
     .ok()
 }
 
+/// A canonical condition occurrence survives scheduler delay and replay. Definition,
+/// application lineage, exact target, due time and sequence separate simultaneous DOTs.
+pub(in crate::gameplay_transport) fn condition_dodge_roll(
+    runtime: &ChannelRuntimeV1,
+    source: ExactActorRef,
+    target: ExactActorRef,
+    tick: &crate::foundation::condition::ConditionTick<ExactActorRef>,
+) -> Option<u64> {
+    use sha2::{Digest, Sha256};
+    let mut hash = Sha256::new()
+        .chain_update(source.placement_identity())
+        .chain_update(target.placement_identity())
+        .chain_update(tick.due.to_be_bytes())
+        .chain_update(tick.sequence.to_be_bytes())
+        .chain_update(tick.provenance.definition_revision.to_be_bytes())
+        .chain_update(
+            u64::try_from(tick.provenance.definition_key.len())
+                .ok()?
+                .to_be_bytes(),
+        )
+        .chain_update(tick.provenance.definition_key.as_bytes());
+    if let Some(lineage) = &tick.provenance.lineage {
+        hash.update([1]);
+        hash.update(lineage.source_session);
+        hash.update(lineage.source_creation_command.to_be_bytes());
+        hash.update(lineage.source_lease_generation.to_be_bytes());
+    } else {
+        hash.update([0]);
+    }
+    let bytes: [u8; 32] = hash.finalize().into();
+    deterministic_decision_u64(
+        &GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest()),
+        DecisionOccurrenceId::from_bytes(bytes[..16].try_into().ok()?),
+        "hazard.condition.dodge",
+        0,
+    )
+    .ok()
+}
+
 fn draw_identity(
     runtime: &ChannelRuntimeV1,
     source: [u8; 16],

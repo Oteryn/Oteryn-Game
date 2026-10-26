@@ -19,7 +19,14 @@ fn standing_element(
     read: &StandingTileRead,
     source: &NativeGameplayState,
 ) -> Option<Option<DotElement>> {
-    for item in read.items() {
+    dynamic_element(read.items(), source)
+}
+
+fn dynamic_element(
+    items: &[crate::durability::native_world_items::DurableTileItem],
+    source: &NativeGameplayState,
+) -> Option<Option<DotElement>> {
+    for item in items {
         let policy = source.item_policy(
             &item.definition.production_key,
             &item.definition.revision_ref,
@@ -324,6 +331,126 @@ impl ChannelSpellStates {
     }
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Consume the existing creature store while current World source levels and
+    /// the actual standing tile remain locked. An unavailable source leaves it pending.
+    pub(in crate::gameplay_transport) async fn tick_creature_periodic(
+        &self,
+        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        runtime: &mut ChannelRuntimeV1,
+        states: &ChannelSpellStates,
+        target: ExactActorRef,
+        now: oteryn_simulation_determinism::SemanticTimeMicros,
+    ) -> Option<crate::foundation::CreaturePeriodicReceipt> {
+        use crate::durability::{DurabilityError, spell_item_transaction as item_tx};
+        use crate::gameplay_transport::hazard::combat;
+        let snapshot = runtime.companion_snapshot(target).ok()?;
+        if snapshot.state.conditions.instances().is_empty() {
+            return None;
+        }
+        let room = self.rooms.gate_monster_ai()?;
+        let native = self.active_generation?.native_gameplay()?;
+        let pass = self.root.try_issue_semantic_pass().ok()?;
+        let mut context = (self, runtime, states, permit);
+        pass.run_with_context(&mut context, move |holder, deadline, ctx| {
+            Box::pin(async move {
+                let (owner, runtime, states, permit) = ctx;
+                let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
+                let binding = runtime.binding();
+                let scope = item_tx::assert_spell_item_scope_in_transaction(
+                    &mut tx,
+                    permit,
+                    owner.root,
+                    owner.character,
+                    owner.holder,
+                    RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                    binding.scope_generation().get(),
+                )
+                .await
+                .map_err(|_| DurabilityError::Unavailable)?;
+                let position = runtime
+                    .read_actor_position(target)
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .position();
+                let tile = room
+                    .movement_cells()
+                    .spell_tiles()
+                    .lookup(
+                        room.movement_cells().scope(),
+                        crate::content::LogicalCell {
+                            x: position.x,
+                            y: position.y,
+                            z: i32::from(position.floor),
+                        },
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                let address = SpellGroundTarget::for_native_tile_read(room, runtime, position)
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                let items =
+                    item_tx::read_creature_scope_tile_in_transaction(&mut tx, &scope, &address)
+                        .await
+                        .map_err(|_| DurabilityError::Unavailable)?;
+                let standing_on_field = combine_elements(
+                    dynamic_element(&items.items, native),
+                    static_element(tile, native),
+                )
+                .ok_or(DurabilityError::Unavailable)?;
+                let facts = TickFacts {
+                    in_protection_zone: tile.flags().protection_zone,
+                    standing_on_field,
+                };
+                let mut conditions = snapshot.state.conditions.clone();
+                let ticks = conditions.take_due(now.get(), facts);
+                let mut levels = Vec::new();
+                if combat::eligible(runtime, target) {
+                    for tick in &ticks {
+                        let Some(source) = tick.provenance.source else {
+                            continue;
+                        };
+                        if levels.iter().any(|(actor, _, _)| *actor == source) {
+                            continue;
+                        }
+                        let Some((_, session, _)) =
+                            states.actors.iter().find(|(actor, _, _)| *actor == source)
+                        else {
+                            continue;
+                        };
+                        // Absent or retired sources retain the condition's ordinary damage;
+                        // only a current player may supply a hazard dodge.
+                        if !runtime
+                            .player_control_facts(source, *session)
+                            .is_ok_and(|facts| facts.control_loss.is_none())
+                        {
+                            continue;
+                        }
+                        let level = if combat::in_area(runtime, source) {
+                            combat::effective_level(
+                                &mut tx, owner.root, &scope, runtime, source, *session,
+                            )
+                            .await
+                            .map_err(|_| DurabilityError::Unavailable)?
+                        } else {
+                            0
+                        };
+                        levels.push((source, *session, level));
+                    }
+                }
+                let receipt = states
+                    .tick_creature_conditions_with_hazard(
+                        runtime,
+                        target,
+                        facts,
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+                        &levels,
+                    )
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                tx.rollback().await?;
+                Ok(receipt)
+            })
+        })
+        .await
+        .ok()
+    }
+
     pub(in crate::gameplay_transport) async fn tick_spell_periodic(
         &self,
         actor: ExactActorRef,

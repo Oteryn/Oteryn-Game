@@ -1,8 +1,15 @@
 //! Actual condition-store ticks use an owner-input origin, never a player command.
 //! The world owner supplies independently qualified standing/PZ facts in this
 //! uninterrupted turn. No detached tick or caller damage number is accepted.
-type CurrentPlayerPeriodicSource<'a> =
-    dyn FnMut(&ChannelRuntimeV1, ExactActorRef, u64) -> Result<Option<u32>, CarrierError> + 'a;
+// A current Player contributes (damage-dealt percent, hazard dodge). The dodge
+// belongs to the health parser after pre-parser healing, independently of attributes.
+type CurrentPlayerPeriodicSource<'a> = dyn FnMut(
+        &ChannelRuntimeV1,
+        ExactActorRef,
+        &ConditionTick<ExactActorRef>,
+        u64,
+    ) -> Result<Option<(u32, bool)>, CarrierError>
+    + 'a;
 
 use super::runtime_actor_companion::{CompanionSnapshot, CompanionState};
 use super::*;
@@ -96,6 +103,7 @@ impl ChannelRuntimeV1 {
                 } => {
                     let mut healing = 0;
                     let mut dealt_percent = 100;
+                    let mut hazard_dodged = false;
                     let mut attributed = tick.clone();
                     if let Some(source) = tick.provenance.source {
                         if let Some(lineage) = &tick.provenance.lineage
@@ -146,17 +154,20 @@ impl ChannelRuntimeV1 {
                                     (Some(_), Some(_)) => return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict),
                                     (a, b) => a.or(b),
                                 };
-                                Some(match chosen.map(|a| a.definition().values()) {
-                                    Some(ConditionValues::Attributes {
-                                        damage_dealt_percent,
-                                        ..
-                                    }) => damage_dealt_percent,
-                                    _ => 100,
-                                })
+                                Some((
+                                    match chosen.map(|a| a.definition().values()) {
+                                        Some(ConditionValues::Attributes {
+                                            damage_dealt_percent,
+                                            ..
+                                        }) => damage_dealt_percent,
+                                        _ => 100,
+                                    },
+                                    false,
+                                ))
                             }
                             Err(_) => {
                                 if let Some(ref mut lookup) = player_source {
-                                    lookup(self, source, now_us)?
+                                    lookup(self, source, tick, now_us)?
                                 } else if !self.borrow_exact_actor_lookup().contains(source) {
                                     None
                                 } else {
@@ -164,7 +175,8 @@ impl ChannelRuntimeV1 {
                                 }
                             }
                         };
-                        if let Some(percent) = source_percent {
+                        if let Some((percent, dodged)) = source_percent {
+                            hazard_dodged = dodged;
                             let TickKind::Damage { element, .. } = tick.kind else {
                                 return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
                             };
@@ -226,6 +238,7 @@ impl ChannelRuntimeV1 {
                         now_us,
                         Some(received),
                     )?;
+                    let damage = if hazard_dodged { 0 } else { damage };
                     had_damage |= damage > 0;
                     if damage > 0 {
                         after.conditions.remove_type(
@@ -257,7 +270,31 @@ impl ChannelRuntimeV1 {
                     amount,
                     refused: false,
                 } => {
-                    let damage = if before.state.policy.flags.attackable {
+                    let mut hazard_dodged = false;
+                    if let Some(source) = tick.provenance.source {
+                        if let Some(lineage) = &tick.provenance.lineage
+                            && (lineage.source_content_digest
+                                != self.content_pin().server_artifact_digest()
+                                || lineage.source_actor_placement != source.placement_identity()
+                                || lineage.source_scope_generation
+                                    != source.scope_generation().get())
+                        {
+                            return Err(CarrierError::PlanConflict);
+                        }
+                        // Agony bypasses attributes, but the health parser still reads
+                        // a live player's hazard dodge. Creature/retired sources do not.
+                        if self.companion_snapshot_including_dead(source).is_err() {
+                            if let Some(ref mut lookup) = player_source {
+                                hazard_dodged = lookup(self, source, tick, now_us)?
+                                    .is_some_and(|(_, dodged)| dodged);
+                            } else if self.borrow_exact_actor_lookup().contains(source) {
+                                return Err(CarrierError::PlanConflict);
+                            }
+                        }
+                    } else if tick.provenance.lineage.is_some() {
+                        return Err(CarrierError::PlanConflict);
+                    }
+                    let damage = if before.state.policy.flags.attackable && !hazard_dodged {
                         i64::from(amount)
                     } else {
                         0
