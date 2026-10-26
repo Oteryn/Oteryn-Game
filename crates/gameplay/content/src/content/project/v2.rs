@@ -1060,6 +1060,9 @@ pub enum ProjectV2AugmentTarget {
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2AugmentBinding {
     pub key: String,
+    /// Source-qualified public inspection text; absent is unknown, not a guessed label.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inspection: Option<String>,
     pub target: ProjectV2AugmentTarget,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub effect: Option<ProjectV2DefinitionRef>,
@@ -1709,6 +1712,15 @@ fn validate_v2_augment(
     limits: ProjectEvidenceLimits,
 ) -> Result<(), ProjectError> {
     ProductionKey::new(&augment.key)?;
+    if augment
+        .inspection
+        .as_ref()
+        .is_some_and(|text| text.trim().is_empty() || text.len() > 1024 || text.contains('\0'))
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 augment inspection text is invalid",
+        ));
+    }
     match &augment.target {
         ProjectV2AugmentTarget::Ability { ability } => {
             if ability.family != ProjectV2Family::Ability {

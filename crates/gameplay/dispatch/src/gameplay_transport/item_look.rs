@@ -294,15 +294,14 @@ pub(super) async fn look_item(
         Err(refusal) => ItemLookResult::Refused(refusal),
     }
 }
-async fn observe_look_item(
+pub(super) async fn observe_item(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
     session: GameSessionId,
     fence: Option<CurrentCharacterItemFence>,
     views: &SessionItemView,
     target: ItemHandle,
-) -> Result<ItemLookResult, ItemLookRefusal> {
-    use super::item_ref_admission::definition_ref;
+) -> Result<(TypedDefinitionRef, u32, i32), ItemLookRefusal> {
     let unavailable = ItemLookRefusal::NotAvailable;
     let key = views.resolve(target).ok_or(unavailable)?;
     let pin = content_generation(&*admission.runtime.lock().await);
@@ -405,6 +404,22 @@ async fn observe_look_item(
             },
         );
     }
+    Ok((definition, count, distance))
+}
+async fn observe_look_item(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    fence: Option<CurrentCharacterItemFence>,
+    views: &SessionItemView,
+    target: ItemHandle,
+) -> Result<ItemLookResult, ItemLookRefusal> {
+    use super::item_ref_admission::definition_ref;
+    let unavailable = ItemLookRefusal::NotAvailable;
+    let key = views.resolve(target).ok_or(unavailable)?;
+    let (definition, count, distance) =
+        observe_item(admission, actor, session, fence, views, target).await?;
+    let runtime = admission.runtime.lock().await;
     let index = pinned_index(&runtime, admission.active_generation).ok_or(unavailable)?;
     let observed = ObservedLookItem {
         item: ViewItem {

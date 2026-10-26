@@ -25,6 +25,7 @@ pub struct ChannelSessionStates {
     pub fence_holders: FenceHolders,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
     pub input_gate: input_gate::InputGate,
+    pub(super) inspection_permissions: super::inspection::Permissions,
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
     /// sequence generator (CHAR-POSITION-0 §3.2).
     pub last_positions: last_position::LastPositions,
@@ -86,6 +87,7 @@ impl ChannelSessionStates {
         self.chat.forget(session);
         self.command_ingress.forget(session);
         self.player_trades.forget(session);
+        self.inspection_permissions.forget(session);
         self.npc_conversations.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
             sessions.remove(&session);
