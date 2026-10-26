@@ -75,6 +75,33 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
         hunting: false,
         corruptor: false,
     };
+    let crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } = channel.runtime_scope
+    else {
+        return Err("Channel fixture required".into());
+    };
+    let mut same_uuid = channel;
+    same_uuid.runtime_scope =
+        RuntimeScopeRefV1::instance(channel.runtime_scope.world_id(), *channel_id.as_bytes())
+            .map_err(fixture::debug)?;
+    // Neither readiness nor identical UUID bytes confer tutorial placement
+    // authority. Check the consumer's own scope gate, not a failed session
+    // lookup: it must return InvalidInput before reaching the shared fence.
+    for foreign in [instance, same_uuid] {
+        for change in [None, Some((0, progress))] {
+            assert!(matches!(
+                h.root
+                    .character_tutorial_progress(&authority, &h.node, foreign, change)
+                    .await,
+                Err(CharacterProgressionError::InvalidInput)
+            ));
+            assert_eq!(
+                h.root
+                    .character_tutorial_progress(&authority, &h.node, channel, None)
+                    .await?,
+                TutorialProgressOutcome::Read(None)
+            );
+        }
+    }
     let pending = h
         .root
         .character_tutorial_progress(&authority, &h.node, channel, Some((0, progress)))
@@ -83,6 +110,35 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
         return Err("missing islet obligation".into());
     };
     assert!(pending.pending_islet);
+    for foreign in [instance, same_uuid] {
+        // Read, stale-version conflict, equal-state replay and a real CAS
+        // change all need the same scope gate; no outcome can bypass it.
+        for change in [
+            None,
+            Some((0, progress)),
+            Some((pending.version, progress)),
+            Some((
+                pending.version,
+                TutorialProgress {
+                    hunting: true,
+                    ..progress
+                },
+            )),
+        ] {
+            assert!(matches!(
+                h.root
+                    .character_tutorial_progress(&authority, &h.node, foreign, change)
+                    .await,
+                Err(CharacterProgressionError::InvalidInput)
+            ));
+            assert_eq!(
+                h.root
+                    .character_tutorial_progress(&authority, &h.node, channel, None)
+                    .await?,
+                TutorialProgressOutcome::Read(Some(pending))
+            );
+        }
+    }
     let islet = FinalLastPosition {
         write_sequence: 2,
         record: LastPositionRecord {
@@ -218,7 +274,7 @@ fn boss_activity_channel_consumers_postgres() -> TestResult {
     };
     fixture::runtime()?.block_on(async move {
         let h = fixture::Harness::create(admin, "boss_channel_consumers", true).await?;
-        eprintln!("Canonical PostgreSQL 18.6; Channel tutorial placement/travel Instance refusal qualification");
+        eprintln!("Canonical PostgreSQL 18.6; Channel tutorial progress/placement/travel Instance refusal qualification");
         let result = qualify(&h).await;
         h.cleanup().await?;
         result

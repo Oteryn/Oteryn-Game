@@ -232,3 +232,14 @@ successful Instance consumers and handoff/recovery remain open.
 The cooldown real-dispatch PostgreSQL scenario checks the admitted Channel path
 and directly checks refusal of a typed Instance actor at its composed command
 boundary; that refusal is not successful Instance admission evidence.
+
+The tutorial progress API also requires a Channel scope before acquiring its
+semantic pass. Its CAS can create the pending Channel islet-placement obligation,
+so Instance reads, initialization, conflict replies, equal-state replays and
+updates all refuse with `InvalidInput`. The existing shared participant and
+CharacterRevision checks still follow the Channel scope check. The
+`boss_activity_channel_consumers_postgres` case checks the allocated/ready
+Instance and an Instance with the Channel's UUID bytes, before and after the
+Channel creates its pending obligation. Matching Channel reads verify that no
+refusal creates or changes that obligation. This is a consumer scope guard,
+not positive activity session or handoff qualification.
