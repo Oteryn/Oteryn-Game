@@ -56,6 +56,7 @@ pub mod market;
 pub mod npc_service;
 pub mod npc_shop;
 pub mod party;
+pub mod party_skull;
 pub mod player_report;
 pub mod player_trade;
 pub mod presentation;

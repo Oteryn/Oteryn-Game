@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[3]
 sys.path.insert(0,str(ROOT/'tools/content-schema/item-authoring'))
 import engine_items
+from item_spell_augments import pinned_item_spell_augments
 from build_spell_item_identities import binding_index, source_xml, bind_profiles, CANARY_PIN, BINDINGS
 from canary_generic_item_identity import candidate
 from build_source_world import policies, bool_xml
@@ -115,7 +116,7 @@ def profile(i,node,obj,physical,bindings,field):
  modifier_tokens=('skill','magic','critical','leech','health','mana','reflect','absorb','suppress')
  sem['skill_modifiers']=copy.deepcopy(U) if any(any(t in k for t in modifier_tokens) for k in a) else K({'modifiers':K([])})
  return {'authoring':{'item':{'family':'Item','key':f'candidate:item/{i}','revision':'spell-p2-r21'}},'semantics':sem,
-   'attributes':{'speed_bonus':int(a.get('speed','0')),'blocks_movement':physical['block_solid'],'blocks_projectile':physical['block_projectile'],
+   'attributes':{'spell_augments':pinned_item_spell_augments().get(i,[]),'speed_bonus':int(a.get('speed','0')),'blocks_movement':physical['block_solid'],'blocks_projectile':physical['block_projectile'],
        'immovable_block_solid':physical['block_solid'] and not movable,'has_height':physical['has_height'],'field_replaceable':bool_xml(a['replaceable']) if 'replaceable' in a else True if typ=='magicfield' else None,'field_condition':field,'rune_consumption':'item_count_one' if typ=='rune' else None},
    'admission':{'materializable':True,'stack_class':'StackCapable' if stack else 'NonStackable','legal_destinations':['CharacterInventory','Ground'] if movable and pickup else ['Ground']}}
 

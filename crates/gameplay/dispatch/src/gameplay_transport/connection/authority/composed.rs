@@ -41,6 +41,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             self.premium_only,
         ))
     }
+    async fn observe_party_icons(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>> {
+        self.observe_party_skull(admitted).await
+    }
+
     async fn party_command(
         &self,
         admitted: connection::AdmittedSession,

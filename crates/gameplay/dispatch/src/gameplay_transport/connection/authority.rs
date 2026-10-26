@@ -659,6 +659,14 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// Current observer-relative icons. Unavailable facts produce no update.
+    fn observe_party_icons(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>> {
+        std::future::ready(None)
+    }
+
     /// PARTY-1: basic session-fenced membership commands and own-state query.
     fn party_command(
         &self,

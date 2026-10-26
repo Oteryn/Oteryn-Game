@@ -63,6 +63,7 @@ pub type EntityLights = BTreeMap<[u8; ENTITY_IDENTITY_BYTES], EntityLight>;
 pub struct EntityFields {
     pub item_handles: bool,
     pub light: bool,
+    pub party_icons: bool,
 }
 
 impl EntityFields {
@@ -70,6 +71,8 @@ impl EntityFields {
         Self {
             item_handles: selected_capabilities.contains(&CAPABILITY_ITEM_VIEW_MOVE_V1),
             light: selected_capabilities.contains(&CAPABILITY_WORLD_LIGHT_V1),
+            party_icons: selected_capabilities
+                .contains(&crate::party_skull::CAPABILITY_PARTY_SKULL_V1),
         }
     }
 
@@ -77,6 +80,7 @@ impl EntityFields {
         Self {
             item_handles,
             light: false,
+            party_icons: false,
         }
     }
 }
@@ -708,6 +712,18 @@ fn decode_delta(
         if decode_header_field(key, payload, &mut cursor, &mut header)? {
             continue;
         }
+        if key == 0x32 && fields.party_icons {
+            if entries != 0 || cursor == payload.len() {
+                return Err(WorldSpatialError::Malformed);
+            }
+            crate::party_skull::decode_party_icons(read_bytes(payload, &mut cursor)?)
+                .map_err(|_| WorldSpatialError::Malformed)?;
+            // An icons-only delta cannot mix spatial changes or repeated icon bundles.
+            if cursor != payload.len() {
+                return Err(WorldSpatialError::Malformed);
+            }
+            continue;
+        }
         if !matches!(key, 0x1a | 0x22 | 0x2a) {
             return Err(WorldSpatialError::Malformed);
         }
@@ -1029,6 +1045,7 @@ mod tests {
         let fields = EntityFields {
             item_handles: true,
             light: true,
+            party_icons: false,
         };
         let mut entities = vec![own()];
         entities.extend((1..256).map(|n| actor(EntityKind::Creature, n)));
@@ -1446,6 +1463,7 @@ mod tests {
     const LIT: EntityFields = EntityFields {
         item_handles: false,
         light: true,
+        party_icons: false,
     };
     const BRIGHTEST: EntityLight = EntityLight {
         level: u8::MAX,
