@@ -251,6 +251,9 @@ pub struct BootConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
+    /// Optional message shown once after login in this configured World (NOLOGOUT-RL-01).
+    #[serde(default)]
+    pub server_motd: String,
     #[serde(default)]
     pub gameplay_idle: crate::gameplay_transport::GameplayIdlePolicy,
     pub staff: Option<crate::durability::staff::StaffConfig>,
@@ -409,6 +412,9 @@ impl NodeConfig {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
+        if self.server_motd.len() > oteryn_protocol_oteryn::zones_nologout::MAX_SERVER_MOTD_BYTES {
+            return reject("server_motd");
+        }
         if self.gameplay_idle.warning_after_ms == 0
             || self.gameplay_idle.warning_after_ms >= self.gameplay_idle.removal_after_ms
         {
@@ -886,6 +892,29 @@ s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
             config.platform.runtime_status.map(|s| s.assignment_epoch),
             Some(1)
         );
+    }
+
+    #[test]
+    fn nologout_motd_config_bounds() {
+        assert_eq!(
+            NodeConfig::parse(NODE.as_bytes())
+                .expect("default")
+                .server_motd,
+            ""
+        );
+        for text in ["a".repeat(255), "é".repeat(127), String::new()] {
+            let document = format!("server_motd = {text:?}\n{NODE}");
+            assert_eq!(
+                NodeConfig::parse(document.as_bytes())
+                    .expect("bounded")
+                    .server_motd,
+                text
+            );
+        }
+        for text in ["a".repeat(256), "é".repeat(128)] {
+            let document = format!("server_motd = {text:?}\n{NODE}");
+            assert!(NodeConfig::parse(document.as_bytes()).is_err());
+        }
     }
 
     #[test]

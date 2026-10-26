@@ -174,6 +174,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.server_save.current()
     }
 
+    fn server_motd(&self) -> &str {
+        self.server_motd
+    }
+
     fn take_tutorial_notice(
         &self,
         session: GameSessionId,
@@ -479,6 +483,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_backpack_item(actor, command, item).await
     }
 
+    async fn tame_mount(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        visible: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.tame_mount_impl(actor, command, intent, source, visible)
+            .await
+    }
+
     async fn use_pick(
         &self,
         actor: ExactActorRef,
@@ -652,6 +668,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         modes: oteryn_protocol_oteryn::attack::FightModes,
     ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
         self.set_fight_modes(actor, game_session_id, modes).await
+    }
+
+    async fn expert_fight_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        self.set_expert_fight_modes(actor, session, command_id, modes)
+            .await
+    }
+
+    async fn observe_expert_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes> {
+        self.observe_expert_fight_modes(actor, session).await
     }
 
     async fn observe_combat_state(

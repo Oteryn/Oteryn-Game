@@ -23,6 +23,8 @@ use oteryn_protocol_oteryn::{CommandStatus, actor_spell, attack, decode_command_
 use std::time::Duration;
 #[path = "pvp_live/bundle_fixture.rs"]
 mod bundle_fixture;
+#[path = "pvp_live/expert_cases.rs"]
+mod expert_cases;
 use tokio::io::{AsyncWriteExt, DuplexStream};
 
 #[test]
@@ -46,6 +48,36 @@ fn pvp_live_no_pvp_tile_refuses_player_harm() -> TestResult {
 #[test]
 fn pvp_live_bundle_melee_spell_death_replay_and_reload() -> TestResult {
     super::item_look::large_stack(|| scenario(6))
+}
+
+#[test]
+fn pvp_expert_wire_modes_reach_melee_and_spell_checker() -> TestResult {
+    super::item_look::large_stack(|| scenario(7))
+}
+#[test]
+fn pvp_expert_hardcore_locks_red_fist() -> TestResult {
+    super::item_look::large_stack(|| scenario(8))
+}
+#[test]
+fn pvp_expert_unselected_capability_refuses_command_and_sends_no_domain() -> TestResult {
+    super::item_look::large_stack(|| scenario(9))
+}
+#[test]
+fn pvp_expert_black_skull_switching_and_session_fences() -> TestResult {
+    super::item_look::large_stack(|| scenario(10))
+}
+#[test]
+fn pvp_expert_wire_modes_reach_distance_checker() -> TestResult {
+    super::item_look::large_stack(|| scenario(11))
+}
+#[test]
+fn pvp_expert_optional_world_ignores_expert_choice() -> TestResult {
+    super::item_look::large_stack(|| scenario(12))
+}
+
+#[test]
+fn pvp_expert_white_hand_reads_party_and_guild_aggressors() -> TestResult {
+    super::item_look::large_stack(|| scenario(13))
 }
 
 async fn command(
@@ -157,7 +189,7 @@ async fn melee_fault(
     Ok(())
 }
 
-fn scenario(mode: i16) -> TestResult {
+pub(super) fn scenario(mode: i16) -> TestResult {
     // One mechanic uses one database bootstrap at a time on the owner's shared cluster.
     static CASES: std::sync::Mutex<()> = std::sync::Mutex::new(());
     let _case = CASES
@@ -221,7 +253,30 @@ fn scenario(mode: i16) -> TestResult {
             room.map_revision_digest(),
             (2, if mode == 4 { 0 } else { 11 }, floor),
         );
-        let mut deps = Dependencies::with_content(cp, room.clone(), native.spell_book().clone())?;
+        let mut deps =
+            Dependencies::with_content(cp.clone(), room.clone(), native.spell_book().clone())?;
+        if mode == 13 {
+            let mut runtime = crate::foundation::ChannelRuntimeV1::from_committed_assignment(
+                world,
+                deps.admitted.channel_id,
+                crate::foundation::NodeId::decode(&id(1)).map_err(debug)?,
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                3,
+                cp,
+            )
+            .map_err(debug)?;
+            let reservation = runtime
+                .reserve_fresh_session(deps.admitted.game_session_id)
+                .map_err(debug)?;
+            assert_eq!(
+                runtime.commit_fresh_session(reservation).map_err(debug)?,
+                deps.actor
+            );
+            deps.runtime = tokio::sync::Mutex::new(runtime);
+        }
         deps.combat_room = Some(room);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
@@ -332,7 +387,7 @@ fn scenario(mode: i16) -> TestResult {
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')").bind(id(42).as_slice()).execute(&h.pool).await?;
-        sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'pvp-live-fixture')").bind(id(42).as_slice()).bind(if mode==1 {1_i16}else{2_i16}).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'pvp-live-fixture')").bind(id(42).as_slice()).bind(if mode==1 || mode==12 {1_i16}else if mode==8 {3_i16}else{2_i16}).execute(&h.pool).await?;
         let current =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(session)
@@ -340,9 +395,15 @@ fn scenario(mode: i16) -> TestResult {
                 .0;
         admitted.item_fence = item_fence_of(current);
         admitted.first_entry = FirstEntryOutcome::Positioned;
-        admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[6, 17, 21])
-                .ok_or("capabilities")?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+            owner.offered_capabilities(),
+            if mode == 9 {
+                &[6, 17, 21][..]
+            } else {
+                &[6, 17, 21, 87][..]
+            },
+        )
+        .ok_or("capabilities")?;
         let entity = {
             let runtime = deps.runtime.lock().await;
             let p = runtime
@@ -360,13 +421,64 @@ fn scenario(mode: i16) -> TestResult {
         let (mut server, mut client) = tokio::io::duplex(1 << 20);
         let serving = async { serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await };
         let driving = async {
+            let mut snapshot_body = Vec::new();
             loop {
                 let f = super::item_look::read_frame(&mut client).await?;
-                if decode_wire_envelope(&f).map_err(debug)?.message_type()
-                    == MessageType::SnapshotCommit
-                {
+                let env = decode_wire_envelope(&f).map_err(debug)?;
+                if env.message_type() == MessageType::SnapshotChunk {
+                    let (_, bytes) =
+                        oteryn_protocol_oteryn::decode_snapshot_chunk_framing(env.payload())
+                            .map_err(debug)?;
+                    snapshot_body.extend_from_slice(bytes);
+                }
+                if env.message_type() == MessageType::SnapshotCommit {
                     break;
                 }
+            }
+            if mode >= 7 {
+                let domains =
+                    oteryn_protocol_oteryn::decode_snapshot_body(&snapshot_body).map_err(debug)?;
+                let expert = domains.iter().find(|d| d.domain_id == 52);
+                assert_eq!(expert.is_some(), mode != 9);
+                if let Some(domain) = expert {
+                    let state = oteryn_protocol_oteryn::pvp_expert::decode_expert_fight_modes(
+                        domain.payload,
+                    )
+                    .map_err(debug)?;
+                    let combat = domains
+                        .iter()
+                        .find(|d| d.domain_id == 10)
+                        .ok_or("combat snapshot")?;
+                    let combat =
+                        attack::decode_actor_combat_state(combat.payload).map_err(debug)?;
+                    assert_eq!(
+                        combat.modes, state.modes,
+                        "domain 10 and 52 share one mode tuple"
+                    );
+                    assert_eq!(
+                        state.expert,
+                        if mode == 8 {
+                            oteryn_protocol_oteryn::pvp_expert::ExpertMode::RedFist
+                        } else {
+                            oteryn_protocol_oteryn::pvp_expert::ExpertMode::Dove
+                        }
+                    );
+                }
+            }
+            if mode >= 7 {
+                expert_cases::drive(
+                    &mut client,
+                    &owner,
+                    &h.pool,
+                    actor,
+                    target,
+                    session,
+                    entity,
+                    mode,
+                )
+                .await?;
+                client.shutdown().await?;
+                return Ok::<_, Box<dyn std::error::Error>>(());
             }
             let target_command = if mode != 2 && mode != 6 {
                 let result = command(
@@ -412,8 +524,13 @@ fn scenario(mode: i16) -> TestResult {
             let result = command(
                 &mut client,
                 2,
-                attack::COMMAND_TYPE_FIGHT_MODES_INTENT,
-                &attack::encode_fight_modes_intent(&modes),
+                oteryn_protocol_oteryn::pvp_expert::COMMAND_TYPE_EXPERT_FIGHT_MODES_INTENT,
+                &oteryn_protocol_oteryn::pvp_expert::encode_expert_fight_modes(
+                    &oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+                        modes,
+                        expert: oteryn_protocol_oteryn::pvp_expert::ExpertMode::RedFist,
+                    },
+                ),
             )
             .await?;
             assert_eq!(
@@ -609,7 +726,10 @@ fn scenario(mode: i16) -> TestResult {
         let receipt_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm")
             .fetch_one(&h.pool)
             .await?;
-        if mode != 2 && mode != 6 {
+        if mode == 7 || mode == 11 || mode == 13 {
+            assert!(receipt_count > 0);
+            assert!(health(&owner, target).await? < original_health);
+        } else if mode != 2 && mode != 6 {
             assert_eq!(receipt_count, 0);
             assert_eq!(health(&owner, target).await?, original_health);
         } else {

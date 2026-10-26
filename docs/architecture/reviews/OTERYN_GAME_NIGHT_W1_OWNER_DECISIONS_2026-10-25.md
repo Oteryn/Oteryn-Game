@@ -4,7 +4,8 @@ The owner answered the 18 open questions from the NIGHT-W1 light-mechanics parit
 means Tibia Global behaviour. Where it could not be observed directly, it is read from Canary at the
 pinned revision `47dfd51f45280a59a1d3e50ba7edd573d7234446` or from TibiaWiki. This record holds the
 decisions and their follow-ups. The contracts named in each row are amended only by the PR that
-implements that row. Decision 19 records the subsequent death-skill correction.
+implements that row. Decision 19 records the subsequent death-skill correction. Decisions 20-23
+(2026-10-26) unblock the summer-update, Radiant and hazard lanes.
 
 | # | Question | Decision | Follow-up |
 |---|---|---|---|
@@ -27,3 +28,7 @@ implements that row. Decision 19 records the subsequent death-skill correction.
 | 17 | Rat corpse id in D113 | Correct it: D113's `i00005801` is the D3-7 alias of `oteryn:item.tibia.i5964`, the dead rat. 5801 is the Jewelled Backpack in Canary | D113 note in the D3 decision (this PR) |
 | 18 | Who wires parameter spells (exiva etc.) to the session | Yes: the same dispatch owner as ordinary spell casting | PARAM-CAST-WIRE-1: heavy (Hello capability and owner caller) |
 | 19 | Skill and magic level loss on death | Differs from Global: never lost (restores D58 / baseline difference 2; supersedes SKILLS-0 §3.6) | DEATH-NO-SKILL-LOSS-1: preserve every skill/ML level and progress accumulator; XP loss unchanged |
+| 20 | Corpse capacity of the summer-update creatures (donor corpses hold 30, the accepted D3-7 admission ceiling is 16 with a rat-only exception) | As global: 30. The corpse/reward admission ceiling (`creature_reward.rs`) admits the Global container capacity for these corpses instead of 16 | SUMMER lane: amend the D3-7 corpse admission contract in the implementing PR; real-router kills, loot, decay and replay tests |
+| 21 | Ground `donor:crystalserver@00ce02a5:item/44576` (9 held summer-map cells) with no exact donor item | (a) Admit it as an appearance-only ground through the existing identity/Terrain owners, from official appearance evidence. Never alias it to another numeric Item | SUMMER lane: admit the ground, regenerate pins (never hand-edit), qualify the 398 points |
+| 22 | Values Global does not publish (Radiant attacks and loot, Mimar / Moonspawn Juggernaut HP and encounter, hazard coefficients above level 12) | (a) Use the pinned Crystal or Canary value as provisional, marked "not verified against Global" in the parity table. First try to verify each value on the web (tibia.com, TibiaWiki, TibiaData) or from YouTube gameplay footage, and cite the source. Correct the value when Global evidence appears. Never invent a value that no source has | Every lane using such a value: a parity-table column with the source and a "provisional" flag |
+| 23 | Boss room entry, cooldown and rewards | One shared boss-encounter mechanic for every boss, as in Global (one per-character boss cooldown list, as shown in the Bosstiary), not per-boss code. Each boss adds only data | BOSS-ENCOUNTER-1 (MONSTER-META-1 / BOSS-1 plan): shared entry, cooldown, kill credit and reward owner; hazard, Mimar and Soul War bosses consume it |

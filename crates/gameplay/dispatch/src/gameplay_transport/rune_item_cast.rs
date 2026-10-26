@@ -210,6 +210,7 @@ mod tests {
             revision: 8,
             combat_mode: None,
             items: vec![crate::durability::character_equipment::EquippedItem {
+                tier: 0,
                 slot: 5,
                 item_instance_id: source.item_instance_id,
                 definition: source.definition.definition.clone(),
