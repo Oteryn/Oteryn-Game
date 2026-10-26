@@ -24,6 +24,60 @@ pub const EXPERIENCE: i64 = 1_850;
 /// Task points of one Beginner kill task (Canary and Crystal agree on 25).
 pub const TASK_POINTS: i64 = 25;
 const POINTS_MAX: i64 = 1_000_000_000;
+pub const BOUNTY_SELECTED: &str = "oteryn:taskboard/weekly/bounty/selected";
+pub const BOUNTY_KILLS: &str = "oteryn:taskboard/weekly/bounty/kills";
+pub const BOUNTY_POINTS: &str = "oteryn:taskboard/weekly/bounty/points";
+pub const REROLL_TOKENS: &str = "oteryn:taskboard/weekly/bounty/reroll-tokens";
+pub const BOUNTY_DIFFICULTY: &str = "oteryn:taskboard/weekly/bounty/next-difficulty";
+pub const REROLL_TOKEN_CAP: i64 = 10;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BountyOffer {
+    pub race: &'static str,
+    pub required: i64,
+    pub points: i64,
+    pub experience: i64,
+    pub variant_multiplier: i64,
+}
+
+/// The three qualified Beginner offers. The silver and gold slots apply Global's x2/x4 reward
+/// variants; completing any offer also awards one reroll token.
+pub const BOUNTY_OFFERS: [BountyOffer; 3] = [
+    BountyOffer {
+        race: "oteryn:creature.rat",
+        required: 50,
+        points: 3,
+        experience: EXPERIENCE,
+        variant_multiplier: 1,
+    },
+    BountyOffer {
+        race: "oteryn:creature.cave_rat",
+        required: 75,
+        points: 6,
+        experience: EXPERIENCE * 2,
+        variant_multiplier: 2,
+    },
+    BountyOffer {
+        race: "oteryn:creature.rotworm",
+        required: 100,
+        points: 12,
+        experience: EXPERIENCE * 4,
+        variant_multiplier: 4,
+    },
+];
+
+#[must_use]
+pub fn bounty_select_transition(number: u8) -> String {
+    format!("{QUEST}/bounty/select-{number}")
+}
+#[must_use]
+pub fn bounty_kill_transition(number: u8) -> String {
+    format!("{QUEST}/bounty/kill-{number}")
+}
+#[must_use]
+pub fn bounty_claim_transition(number: u8) -> String {
+    format!("{QUEST}/bounty/claim-{number}")
+}
 
 /// One kill task: the Bestiary race key (the Creature identity key) and the required kills.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -121,6 +175,11 @@ pub fn tracks() -> Vec<QuestTrack> {
         track(SELECTED, i64::try_from(TASKS.len()).unwrap_or(i64::MAX)),
         track(KILLS, required),
         track(POINTS, POINTS_MAX),
+        track(BOUNTY_SELECTED, BOUNTY_OFFERS.len() as i64),
+        track(BOUNTY_KILLS, 600),
+        track(BOUNTY_POINTS, POINTS_MAX),
+        track(REROLL_TOKENS, REROLL_TOKEN_CAP),
+        track(BOUNTY_DIFFICULTY, 4),
     ];
     tracks.extend(numbers().map(|(number, _)| track(claimed_at_track(number), i64::MAX)));
     tracks
@@ -130,7 +189,7 @@ pub fn tracks() -> Vec<QuestTrack> {
 pub fn transitions() -> Vec<QuestTransition> {
     use QuestComparison as C;
     use QuestEffectKind as K;
-    numbers()
+    let mut result: Vec<_> = numbers()
         .flat_map(|(number, task)| {
             let active = i64::from(number);
             [
@@ -167,7 +226,39 @@ pub fn transitions() -> Vec<QuestTransition> {
                 ),
             ]
         })
-        .collect()
+        .collect();
+    for (index, offer) in (1_u8..).zip(BOUNTY_OFFERS) {
+        let selected = i64::from(index);
+        result.extend([
+            transition(
+                bounty_select_transition(index),
+                vec![
+                    effect(BOUNTY_SELECTED, C::Eq(0), K::Set(selected)),
+                    effect(BOUNTY_KILLS, C::Any, K::Set(0)),
+                ],
+                None,
+            ),
+            transition(
+                bounty_kill_transition(index),
+                vec![
+                    effect(BOUNTY_SELECTED, C::Eq(selected), K::Add(0)),
+                    effect(BOUNTY_KILLS, C::Lt(offer.required), K::Add(1)),
+                ],
+                None,
+            ),
+            transition(
+                bounty_claim_transition(index),
+                vec![
+                    effect(BOUNTY_SELECTED, C::Eq(selected), K::Set(0)),
+                    effect(BOUNTY_KILLS, C::Ge(offer.required), K::Set(0)),
+                    effect(BOUNTY_POINTS, C::Any, K::Add(offer.points)),
+                    effect(REROLL_TOKENS, C::Lt(REROLL_TOKEN_CAP), K::Add(1)),
+                ],
+                Some(offer.experience),
+            ),
+        ]);
+    }
+    result
 }
 
 /// The boot catalogue with the Task Board quest added.
@@ -184,6 +275,10 @@ pub struct TaskBoardState {
     pub points: i64,
     /// Per task, the database time of its last claim; 0 when never claimed.
     pub claimed_at: [i64; TASKS.len()],
+    pub bounty_selected: u8,
+    pub bounty_kills: i64,
+    pub bounty_points: i64,
+    pub reroll_tokens: i64,
 }
 
 #[must_use]
@@ -198,7 +293,19 @@ pub fn state(tracks: &BTreeMap<String, i64>) -> TaskBoardState {
         kills: value(KILLS),
         points: value(POINTS),
         claimed_at,
+        bounty_selected: u8::try_from(value(BOUNTY_SELECTED)).unwrap_or(0),
+        bounty_kills: value(BOUNTY_KILLS),
+        bounty_points: value(BOUNTY_POINTS),
+        reroll_tokens: value(REROLL_TOKENS),
     }
+}
+
+#[must_use]
+pub fn bounty_kill_credit(tracks: &BTreeMap<String, i64>, race: &str) -> Option<String> {
+    let state = state(tracks);
+    let offer = BOUNTY_OFFERS.get(usize::from(state.bounty_selected).checked_sub(1)?)?;
+    (offer.race == race && state.bounty_kills < offer.required)
+        .then(|| bounty_kill_transition(state.bounty_selected))
 }
 
 /// The kill transition a kill of `race` requests: only for the active task of that race that

@@ -146,6 +146,30 @@ fn only_the_active_task_of_the_killed_race_is_credited() {
 }
 
 #[test]
+fn bounty_offer_is_selected_credited_and_claimed_once() {
+    let catalogue = catalogue();
+    let mut stored = BTreeMap::new();
+    let offer = BOUNTY_OFFERS[1];
+    apply(&catalogue, &mut stored, &bounty_select_transition(2), NOW).expect("select bounty");
+    assert_eq!(state(&stored).bounty_selected, 2);
+    assert_eq!(bounty_kill_credit(&stored, TASKS[0].race), None);
+    for _ in 0..offer.required {
+        let key = bounty_kill_credit(&stored, offer.race).expect("active bounty credits");
+        apply(&catalogue, &mut stored, &key, NOW).expect("kill");
+    }
+    assert_eq!(bounty_kill_credit(&stored, offer.race), None);
+    apply(&catalogue, &mut stored, &bounty_claim_transition(2), NOW).expect("claim");
+    let board = state(&stored);
+    assert_eq!(board.bounty_selected, 0);
+    assert_eq!(board.bounty_points, offer.points);
+    assert_eq!(board.reroll_tokens, 1);
+    assert_eq!(
+        apply(&catalogue, &mut stored, &bounty_claim_transition(2), NOW),
+        Err(QuestRefusal::StageMismatch)
+    );
+}
+
+#[test]
 fn with_quest_refuses_a_quest_already_present_and_keeps_other_hashes() {
     let catalogue = catalogue();
     assert!(matches!(

@@ -472,6 +472,30 @@ fn scenario() -> TestResult {
             RAT_XP + task_board::EXPERIENCE
         );
 
+        // The production router also owns bounty selection and claiming. Real death settlement
+        // credits its active offer through the same fenced quest authority.
+        let bounty = task_board::BOUNTY_OFFERS[0];
+        assert!(!board(&owner, &mut admitted, 3, 1).await?.refused);
+        let bounty_fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|()| "bounty fence read")?
+            .ok_or("live bounty session")?;
+        for kill in 0..bounty.required {
+            owner
+                .credit_task_board_kill(
+                    bounty_fence,
+                    bounty.race,
+                    death_occurrence(u8::try_from(kill + 80)?),
+                )
+                .await;
+        }
+        assert!(!board(&owner, &mut admitted, 4, 1).await?.refused);
+        assert_eq!(
+            experience(&harness).await?,
+            RAT_XP + task_board::EXPERIENCE + bounty.experience
+        );
+
         drop(owner);
         drop(authority);
         drop(seal);

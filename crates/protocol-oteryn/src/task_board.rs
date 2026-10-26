@@ -16,7 +16,7 @@ const MAX_RACE_BYTES: usize = 128;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TaskBoardRequest {
-    /// 0 query, 1 select `task`, 2 claim `task`.
+    /// 0 query, 1 select weekly, 2 claim weekly, 3 select bounty, 4 claim bounty.
     pub action: u8,
     /// The 1-based task number; 0 for a query.
     pub task: u8,
@@ -55,10 +55,12 @@ fn valid_race(race: &str) -> bool {
 pub fn encode_task_board_request(r: &TaskBoardRequest) -> Result<Vec<u8>, Error> {
     let task_ok = if r.action == 0 {
         r.task == 0
+    } else if r.action >= 3 {
+        (1..=3).contains(&usize::from(r.task))
     } else {
         (1..=MAX_TASKS).contains(&usize::from(r.task))
     };
-    if r.action > 2 || !task_ok {
+    if r.action > 4 || !task_ok {
         return Err(Error::Malformed);
     }
     let mut out = Vec::new();

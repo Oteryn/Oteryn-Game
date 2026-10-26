@@ -74,6 +74,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             0 => None,
             1 => Some(task_board::select_transition(request.task)),
             2 => Some(task_board::claim_transition(request.task)),
+            3 => Some(task_board::bounty_select_transition(request.task)),
+            4 => Some(task_board::bounty_claim_transition(request.task)),
             _ => return TaskBoardReply::Rejected,
         };
         let mut refused = false;
@@ -163,24 +165,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         occurrence: [u8; 16],
     ) {
         let session = fence.game_session_id;
-        let Some(transition_key) = self
-            .task_board_tracks(session)
-            .and_then(|tracks| task_board::kill_credit(&tracks, race))
-        else {
+        let Some(tracks) = self.task_board_tracks(session) else {
             return;
         };
+        let transition_keys = [
+            task_board::kill_credit(&tracks, race),
+            task_board::bounty_kill_credit(&tracks, race),
+        ];
         let Ok(occurrence) = ExperienceRewardOccurrence::from_bytes(occurrence) else {
             return;
         };
-        match self
-            .commit_task_board(fence, transition_key, QuestCause::CreatureDeath(occurrence))
-            .await
-        {
-            Some(QuestTransitionOutcome::Committed(_)) => {
-                self.refresh_quest_session(session, false).await;
+        for transition_key in transition_keys.into_iter().flatten() {
+            match self
+                .commit_task_board(fence, transition_key, QuestCause::CreatureDeath(occurrence))
+                .await
+            {
+                Some(QuestTransitionOutcome::Committed(_)) => {
+                    self.refresh_quest_session(session, false).await;
+                }
+                Some(_) => {}
+                None => self.schedule_quest_refresh(session),
             }
-            Some(_) => {}
-            None => self.schedule_quest_refresh(session),
         }
     }
 }
