@@ -67,13 +67,10 @@ pub struct BountyOffer {
     pub difficulty: BountyDifficulty,
 }
 
-/// The three qualified Beginner offers. The silver and gold slots apply Global's x2/x4 reward
-/// variants; completing any offer also awards one reroll token.
-// Keep this runtime catalogue deliberately narrower than the reference-data catalogue.  The
-// retained source audit marks the higher-tier creature/XP combinations as conflicting and blocks
-// their native admission (`docs/reference/content-prep/prey-content-1/task-reward-source-check.json`).
-// In particular, do not turn donor defaults into live Global behaviour here.
-pub const BOUNTY_OFFERS: [BountyOffer; 3] = [
+/// Pinned Canary/Crystal fallback catalogue (owner decision 22). It is intentionally marked as
+/// not verified against Global; the three grades are the normal, silver and gold x1/x2/x4 slots.
+pub const BOUNTY_SOURCE_QUALIFICATION: &str = "Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446 / Crystal 201189f871d23597b82caf88fd611454a2ddefb8; not verified against Global";
+pub const BOUNTY_OFFERS: [BountyOffer; 12] = [
     BountyOffer {
         race: "oteryn:creature.rat",
         required: 50,
@@ -97,6 +94,78 @@ pub const BOUNTY_OFFERS: [BountyOffer; 3] = [
         experience: EXPERIENCE * 4,
         variant_multiplier: 4,
         difficulty: BountyDifficulty::Beginner,
+    },
+    BountyOffer {
+        race: "oteryn:creature.troll",
+        required: 100,
+        points: 7,
+        experience: 7_500,
+        variant_multiplier: 1,
+        difficulty: BountyDifficulty::Adept,
+    },
+    BountyOffer {
+        race: "oteryn:creature.cyclops",
+        required: 150,
+        points: 14,
+        experience: 15_000,
+        variant_multiplier: 2,
+        difficulty: BountyDifficulty::Adept,
+    },
+    BountyOffer {
+        race: "oteryn:creature.minotaur",
+        required: 200,
+        points: 28,
+        experience: 30_000,
+        variant_multiplier: 4,
+        difficulty: BountyDifficulty::Adept,
+    },
+    BountyOffer {
+        race: "oteryn:creature.dragon",
+        required: 200,
+        points: 16,
+        experience: 40_000,
+        variant_multiplier: 1,
+        difficulty: BountyDifficulty::Expert,
+    },
+    BountyOffer {
+        race: "oteryn:creature.hero",
+        required: 300,
+        points: 32,
+        experience: 80_000,
+        variant_multiplier: 2,
+        difficulty: BountyDifficulty::Expert,
+    },
+    BountyOffer {
+        race: "oteryn:creature.hydra",
+        required: 400,
+        points: 64,
+        experience: 160_000,
+        variant_multiplier: 4,
+        difficulty: BountyDifficulty::Expert,
+    },
+    BountyOffer {
+        race: "oteryn:creature.demon",
+        required: 300,
+        points: 27,
+        experience: 150_000,
+        variant_multiplier: 1,
+        difficulty: BountyDifficulty::Master,
+    },
+    BountyOffer {
+        race: "oteryn:creature.grim_reaper",
+        required: 450,
+        points: 54,
+        experience: 300_000,
+        variant_multiplier: 2,
+        difficulty: BountyDifficulty::Master,
+    },
+    BountyOffer {
+        race: "oteryn:creature.destroyer",
+        required: 600,
+        points: 108,
+        experience: 600_000,
+        variant_multiplier: 4,
+        difficulty: BountyDifficulty::Master,
     },
 ];
 
@@ -433,6 +502,123 @@ pub fn kill_credit(tracks: &BTreeMap<String, i64>, race: &str) -> Option<String>
     let state = state(tracks);
     let task = task(state.selected)?;
     (task.race == race && state.kills < task.required).then(|| kill_transition(state.selected))
+}
+
+pub const WEEK_SECONDS: i64 = 604_800;
+pub const FIRST_MONDAY_UNIX: i64 = 345_600;
+pub const WEEKLY_INITIAL_KILL_SLOTS: usize = 6;
+pub const WEEKLY_INITIAL_DELIVERY_SLOTS: usize = 6;
+pub const WEEKLY_EXPANDED_SLOTS: usize = 3;
+pub const SOULSEAL_ITEM_KEY: &str = "oteryn:item.soulseal";
+pub const BOUNTY_TALISMAN_ITEM_KEY: &str = "oteryn:item.bounty_talisman";
+
+/// Stable Monday 00:00 UTC epoch. Database settlement stores this value with the generated seed.
+#[must_use]
+pub fn monday_epoch(unix_seconds: i64) -> i64 {
+    (unix_seconds - FIRST_MONDAY_UNIX).div_euclid(WEEK_SECONDS)
+}
+
+/// SplitMix64 selection used after the seed has been durably generated. The persisted seed makes
+/// reconnects and retries reproduce the exact 6+6 (or expanded 9+9) offer set.
+#[must_use]
+pub fn weekly_selection(seed: u64, pool_len: usize, expanded: bool) -> Vec<usize> {
+    let wanted =
+        (WEEKLY_INITIAL_KILL_SLOTS + usize::from(expanded) * WEEKLY_EXPANDED_SLOTS).min(pool_len);
+    let mut candidates: Vec<_> = (0..pool_len).collect();
+    let mut state = seed;
+    for index in 0..wanted {
+        state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+        let mut mixed = state;
+        mixed = (mixed ^ (mixed >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        mixed = (mixed ^ (mixed >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+        mixed ^= mixed >> 31;
+        let swap = index + (mixed as usize % (pool_len - index));
+        candidates.swap(index, swap);
+    }
+    candidates.truncate(wanted);
+    candidates
+}
+
+#[must_use]
+pub const fn weekly_reward_multiplier(completed: u8) -> i64 {
+    match completed {
+        0..=3 => 1,
+        4..=7 => 2,
+        8..=11 => 3,
+        12..=15 => 5,
+        _ => 8,
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WeeklySettlement {
+    pub consumed: u32,
+    pub hunting_task_points: i64,
+    pub soulseals: u8,
+}
+
+/// Computes the indivisible delivery mutation. Its SQL consumer locks inventory/stash lines,
+/// removes exactly `required`, and writes the epoch receipt and both balances in one transaction.
+#[must_use]
+pub fn delivery_settlement(
+    inventory: u32,
+    stash: u32,
+    required: u32,
+    completed_before: u8,
+) -> Option<WeeklySettlement> {
+    (inventory.checked_add(stash)? >= required).then(|| WeeklySettlement {
+        consumed: required,
+        hunting_task_points: 75 * weekly_reward_multiplier(completed_before.saturating_add(1)),
+        soulseals: 1,
+    })
+}
+
+#[must_use]
+pub fn kill_settlement(completed_before: u8) -> WeeklySettlement {
+    WeeklySettlement {
+        consumed: 0,
+        hunting_task_points: 25 * weekly_reward_multiplier(completed_before.saturating_add(1)),
+        soulseals: 1,
+    }
+}
+
+/// All four talisman consumers share this equipped-item predicate (owner decision 23).
+#[must_use]
+pub fn equipped_bounty_talisman(item_key: &str, equipped: bool) -> bool {
+    equipped && item_key == BOUNTY_TALISMAN_ITEM_KEY
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TalismanBenefits {
+    pub damage_bps: u16,
+    pub leech_bps: u16,
+    pub loot_bps: u16,
+    pub bestiary_bps: u16,
+}
+
+#[must_use]
+pub fn equipped_talisman_benefits(item_key: &str, equipped: bool, level: u8) -> TalismanBenefits {
+    if !equipped_bounty_talisman(item_key, equipped) {
+        return TalismanBenefits {
+            damage_bps: 0,
+            leech_bps: 0,
+            loot_bps: 0,
+            bestiary_bps: 0,
+        };
+    }
+    let (damage_bps, leech_bps, loot_bps, bestiary_bps) = talisman_benefits(level);
+    TalismanBenefits {
+        damage_bps,
+        leech_bps,
+        loot_bps,
+        bestiary_bps,
+    }
+}
+
+/// Hunting Task Shop's atomic balance predicate; the store performs debit and grant together.
+#[must_use]
+pub const fn hunting_task_shop_permitted(points: i64, price: i64) -> bool {
+    price > 0 && points >= price
 }
 
 #[cfg(test)]

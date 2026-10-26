@@ -248,3 +248,80 @@ fn with_quest_refuses_a_quest_already_present_and_keeps_other_hashes() {
         catalogue.definition_hash(QUEST)
     );
 }
+
+#[test]
+fn every_pinned_difficulty_has_three_runtime_offers() {
+    assert!(BOUNTY_SOURCE_QUALIFICATION.contains("not verified against Global"));
+    for difficulty in [
+        BountyDifficulty::Beginner,
+        BountyDifficulty::Adept,
+        BountyDifficulty::Expert,
+        BountyDifficulty::Master,
+    ] {
+        let offers: Vec<_> = super::offers(difficulty).collect();
+        assert_eq!(offers.len(), 3);
+        assert_eq!(
+            offers
+                .iter()
+                .map(|(_, offer)| offer.variant_multiplier)
+                .collect::<Vec<_>>(),
+            [1, 2, 4]
+        );
+    }
+}
+
+#[test]
+fn monday_epochs_and_seeded_weekly_generation_are_stable() {
+    assert_eq!(monday_epoch(FIRST_MONDAY_UNIX - 1), -1);
+    assert_eq!(monday_epoch(FIRST_MONDAY_UNIX), 0);
+    assert_eq!(monday_epoch(FIRST_MONDAY_UNIX + WEEK_SECONDS), 1);
+    let first = weekly_selection(47, 30, false);
+    assert_eq!(first.len(), 6);
+    assert_eq!(first, weekly_selection(47, 30, false));
+    assert_eq!(weekly_selection(47, 30, true).len(), 9);
+    let unique: std::collections::BTreeSet<_> =
+        weekly_selection(47, 30, true).into_iter().collect();
+    assert_eq!(unique.len(), 9);
+}
+
+#[test]
+fn weekly_deliveries_and_shop_apply_the_global_thresholds() {
+    assert_eq!(
+        [3, 4, 8, 12, 16].map(weekly_reward_multiplier),
+        [1, 2, 3, 5, 8]
+    );
+    assert_eq!(delivery_settlement(2, 3, 6, 3), None);
+    assert_eq!(
+        delivery_settlement(2, 4, 6, 3),
+        Some(WeeklySettlement {
+            consumed: 6,
+            hunting_task_points: 150,
+            soulseals: 1
+        })
+    );
+    assert_eq!(kill_settlement(15).hunting_task_points, 200);
+    assert!(hunting_task_shop_permitted(35_000, 35_000));
+    assert!(!hunting_task_shop_permitted(34_999, 35_000));
+}
+
+#[test]
+fn one_equipment_predicate_gates_all_talisman_consumers() {
+    assert_eq!(
+        equipped_talisman_benefits("other", true, 10),
+        TalismanBenefits {
+            damage_bps: 0,
+            leech_bps: 0,
+            loot_bps: 0,
+            bestiary_bps: 0
+        }
+    );
+    assert_eq!(
+        equipped_talisman_benefits(BOUNTY_TALISMAN_ITEM_KEY, true, 10),
+        TalismanBenefits {
+            damage_bps: 5_000,
+            leech_bps: 5_000,
+            loot_bps: 5_000,
+            bestiary_bps: 10_000
+        }
+    );
+}
