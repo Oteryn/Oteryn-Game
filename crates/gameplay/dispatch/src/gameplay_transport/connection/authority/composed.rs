@@ -4,6 +4,36 @@ use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     mechanic_composed_methods!();
+    async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1)
+        {
+            return true;
+        }
+        let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
+            return false;
+        };
+        self.root
+            .note_house_transfer_input(self.holder, fence, controller.transport)
+            .await
+            .is_ok()
+    }
+    async fn house_scope_ack(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        self.project_house_transfer(admitted).await
+    }
+    async fn house_transfer(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        body: &[u8],
+    ) -> super::super::super::house_transfer::TransferResult {
+        self.transfer_house(admitted, command, body).await
+    }
     fn channel_list(&self) -> Option<Vec<u8>> {
         Some(oteryn_protocol_oteryn::channel_list::encode_channel_list(
             self.world_id.as_bytes(),
@@ -172,6 +202,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         &self,
     ) -> Option<crate::gameplay_transport::server_save_countdown::DueServerSaveCountdown> {
         self.states.server_save.current()
+    }
+
+    fn server_motd(&self) -> &str {
+        self.server_motd
     }
 
     fn take_tutorial_notice(
@@ -479,6 +513,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_backpack_item(actor, command, item).await
     }
 
+    async fn tame_mount(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        visible: bool,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.tame_mount_impl(actor, command, intent, source, visible)
+            .await
+    }
+
     async fn use_pick(
         &self,
         actor: ExactActorRef,
@@ -652,6 +698,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         modes: oteryn_protocol_oteryn::attack::FightModes,
     ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
         self.set_fight_modes(actor, game_session_id, modes).await
+    }
+
+    async fn expert_fight_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        self.set_expert_fight_modes(actor, session, command_id, modes)
+            .await
+    }
+
+    async fn observe_expert_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes> {
+        self.observe_expert_fight_modes(actor, session).await
     }
 
     async fn observe_combat_state(

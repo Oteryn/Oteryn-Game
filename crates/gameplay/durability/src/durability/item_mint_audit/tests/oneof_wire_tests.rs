@@ -204,6 +204,14 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 ..Default::default()
             })),
         ),
+        (
+            8,
+            "NpcTravel",
+            FeeBurnCauseV1::NpcTravel(OneItemNpcPurchaseV1 {
+                service_key: "travel".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
     ]
 }
 
@@ -230,6 +238,7 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("NpcRepair", "2a070a028107308101"),
         ("MarketFee", "32080a02810712020809"),
         ("Imbuement", "3a070a028107208101"),
+        ("NpcTravel", "420c0a0674726176656c12028107"),
         ("EventId", "0a028107"),
         ("Command", "12070a028107108101"),
         ("OperationId", "1a028107"),

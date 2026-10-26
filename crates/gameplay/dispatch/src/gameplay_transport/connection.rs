@@ -17,6 +17,8 @@ mod newhaven_travel_transport;
 mod server_save_countdown_transport;
 #[path = "tutorial_notices_transport.rs"]
 mod tutorial_notices_transport;
+#[path = "zones_nologout_transport.rs"]
+mod zones_nologout_transport;
 use crate::durability::item_transfer::{
     CommittedItemTransfer, CurrentCharacterItemFence, ItemTransferError, ItemTransferOutcome,
 };
@@ -216,6 +218,9 @@ pub struct AdmittedSession {
 /// with, on a strictly newer connection generation (FND-04B §16).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SessionContinuity {
+    /// Domain 57 revision and once-per-login MOTD receipt; both survive reconnect/transfer.
+    pub server_message_revision: u64,
+    pub server_motd_sent: bool,
     pub connection_generation: u64,
     pub next_command_id: u64,
     pub server_sequence: u64,
@@ -280,6 +285,8 @@ impl SessionContinuity {
     /// baseline spatial revision 1, and no overlay observed yet (0, the door's own initial
     /// revision).
     pub const FRESH: Self = Self {
+        server_message_revision: 0,
+        server_motd_sent: false,
         connection_generation: ADMITTED_GENERATION,
         next_command_id: 1,
         server_sequence: 0,
@@ -690,6 +697,39 @@ where
             write_frame(stream, &accepted)
                 .await
                 .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+            if let Some((command, payload)) = authority
+                .house_scope_ack(resumed)
+                .await
+                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?
+            {
+                let ack = encode_command_result(
+                    continuity.connection_generation,
+                    continuity
+                        .server_sequence
+                        .checked_add(1)
+                        .ok_or(ConnectionEnd::AdmittedThenDisconnected(resumed))?,
+                    command,
+                    CommandStatus::Accepted,
+                    &payload,
+                )
+                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+                write_frame(stream, &ack)
+                    .await
+                    .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+                let mut resumed = resumed;
+                resumed.continuity.server_sequence += 1;
+                return Ok(resumed);
+            }
+            if resumed.game_session_id != resume.game_session_id
+                || resumed.item_fence.is_some_and(|f| {
+                    matches!(
+                        f.runtime_scope,
+                        crate::foundation::RuntimeScopeRefV1::Instance { .. }
+                    )
+                })
+            {
+                return Err(ConnectionEnd::AdmittedThenDisconnected(resumed));
+            }
             return Ok(resumed);
         }
         _ => Err(FoundationProtocolError::MalformedEnvelope),

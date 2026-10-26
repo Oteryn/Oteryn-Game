@@ -348,7 +348,17 @@ pub(super) async fn transfer_claims_in_transaction(
                 if *presence == Some((character, source)) =>
             {
                 *presence = Some((character, destination));
-                security.provenance.publication_revision = revision;
+                let floor = account_floor(tx, account)
+                    .await?
+                    .ok_or(DurabilityError::Unavailable)?;
+                let current_security = security_observation(account, &floor, revision)?;
+                if !security.allowed
+                    || !current_security.allowed
+                    || current_security.minimum_generation != security.minimum_generation
+                {
+                    return Err(DurabilityError::Unavailable);
+                }
+                *security = current_security;
             }
             AdmissionAuthorityGuardStateV1::Character {
                 holder,
@@ -367,11 +377,14 @@ pub(super) async fn transfer_claims_in_transaction(
         current.push(Some(old));
         changes.push(next);
     }
-    let request = AdmissionAuthorityPublicationV1::prepare(&Resolved(changes), now)
-        .map_err(|_| DurabilityError::Unavailable)?;
-    request
-        .validate_locked(&current)
-        .map_err(|_| DurabilityError::Unavailable)?;
+    let request = AdmissionAuthorityPublicationV1::prepare_house_transfer(
+        &Resolved(changes),
+        &current,
+        character,
+        (source, destination),
+        now,
+    )
+    .map_err(|_| DurabilityError::Unavailable)?;
     if !store
         .successor_history_available(tx, request.changes(), &current)
         .await?

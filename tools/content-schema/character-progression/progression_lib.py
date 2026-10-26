@@ -278,7 +278,7 @@ def build_differences():
         {
             "id": "stamina-and-experience-boosts",
             "reference": "Stamina and experience boosts change the experience a kill awards.",
-            "oteryn": "Not modelled: the base experience is awarded unchanged.",
+            "oteryn": "Kill XP applies Prey, then the DAILYFX +50% boost, then stamina. Day 7 activates 10 minutes for Free or 30 minutes for Premium. DAILYFX persists a server wall-clock interval; offline time counts, unlike Canary's hunting-time countdown.",
         },
         {
             "id": "no-skill-or-magic-level-loss-on-death",
@@ -286,6 +286,11 @@ def build_differences():
             "oteryn": "Death never changes skill levels, magic level or their progress, in PvE or PvP, with or without blessings (D58 / baseline difference 2; NIGHT-W1 decision 19 supersedes SKILLS-0 section 3.6).",
         },
     ]
+    records.append({
+        "id": "daily-reward-premium-wildcards",
+        "reference": "canary:data/modules/scripts/daily_reward/daily_reward.lua:120-125 grants Free 1 / Premium 2 on day 3; :146-151 grants 10 / 30 boost minutes; :491-492 activates +50%. crystal:data/modules/scripts/daily_reward/daily_reward.lua:120-125 and :146-151 agree.",
+        "oteryn": "DAILY-EFFECTS-1 owner decision: day-3 Free 1 / Premium 3 wildcards; day-7 Free 10 / Premium 30 minutes at +50%. Account + World wildcard balance retains PREY-0's cap 52 and records uncredited excess. Existing Oteryn item rewards and seven-day schedule remain unchanged.",
+    })
     doc = {"schema": DIFFERENCES_SCHEMA, "records": records}
     doc["revision"] = document_revision("differences", doc)
     return doc

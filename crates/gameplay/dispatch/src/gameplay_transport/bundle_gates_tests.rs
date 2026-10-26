@@ -67,6 +67,10 @@ const INVENTORY: &[Entry] = &[
         calls: &[
             ("gameplay_transport/attack/drain.rs", 1),
             ("gameplay_transport/attack/ranged.rs", 1),
+            (
+                "gameplay_transport/postgres_tests/daily_reward/effects.rs",
+                1,
+            ),
             ("gameplay_transport/postgres_tests/equipped_offence.rs", 1),
             ("gameplay_transport/postgres_tests/hunting_stamina.rs", 3),
         ],

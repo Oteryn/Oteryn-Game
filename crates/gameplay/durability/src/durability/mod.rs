@@ -9,6 +9,7 @@ pub mod creature_source_items;
 pub mod daily_reward;
 pub mod daily_reward_claim;
 pub mod daily_reward_delivery;
+mod daily_reward_effects;
 mod daily_reward_jokers;
 pub mod exercise_training;
 pub mod guild_chat;

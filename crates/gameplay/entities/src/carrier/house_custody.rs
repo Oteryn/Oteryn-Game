@@ -38,9 +38,156 @@ pub struct HouseActorState {
     pub generation: ScopeOwnershipGeneration,
     pub position: LocalPosition,
     pub lease: CharacterLease,
+    pub origin_position: LocalPosition,
 }
 
 impl ChannelRuntimeV1 {
+    /// Reconstruct one committed destination after process-local state was lost.
+    /// The composition must first authenticate recovery and prove current durable
+    /// session, lease, assignment and node authority. No receipt alone is a grant.
+    pub fn restore_transfer_actor(
+        &mut self,
+        source: GameSessionId,
+        session: GameSessionId,
+        lease: CharacterLease,
+        position: LocalPosition,
+        house: Option<HouseActorState>,
+    ) -> Result<ExactActorRef, CarrierError> {
+        self.carrier.validate_current_continuity(&self.continuity)?;
+        if let Some(resident) = self
+            .carrier
+            .house_custody
+            .iter()
+            .find(|r| r.session == session)
+        {
+            let actor = resident.actor;
+            let current = self.house_actor_state(actor, session)?;
+            return if house.as_ref() == Some(&current) {
+                Ok(actor)
+            } else {
+                Err(CarrierError::WrongScope)
+            };
+        }
+        if let Some(resident) = self
+            .carrier
+            .house_custody
+            .iter()
+            .find(|r| r.session == source)
+        {
+            if house.is_some() {
+                return Err(CarrierError::WrongScope);
+            }
+            let actor = resident.actor;
+            let before = self.house_actor_state(actor, source)?;
+            self.commit_house_custody(
+                actor,
+                source,
+                session,
+                lease,
+                &before.house,
+                before.scope,
+                before.generation,
+                position,
+                true,
+            )?;
+            return Ok(actor);
+        }
+        if let Some((actor, _)) = self.positioned_player_for_session(session)? {
+            return if house.is_none() && self.bound_attacker_lease(actor, session)? == lease {
+                Ok(actor)
+            } else {
+                Err(CarrierError::WrongScope)
+            };
+        }
+        if let Some((actor, _)) = self.positioned_player_for_session(source)? {
+            let state = house.as_ref().ok_or(CarrierError::WrongScope)?;
+            let index = actor.actor_local_id() as usize - 1;
+            let authority = self
+                .carrier
+                .attackers
+                .iter_mut()
+                .find(|a| a.index == index && a.generation == actor.actor_local_generation())
+                .ok_or(CarrierError::WrongScope)?;
+            if !authority.authority.lease.is_some_and(|old| {
+                old.character_id() == lease.character_id()
+                    && old.generation().checked_add(1) == Some(lease.generation())
+            }) {
+                return Err(CarrierError::WrongScope);
+            }
+            authority.authority.fence = None;
+            self.commit_house_custody(
+                actor,
+                source,
+                session,
+                lease,
+                &state.house,
+                state.scope,
+                state.generation,
+                position,
+                false,
+            )?;
+            return Ok(actor);
+        }
+        if self.carrier.attackers.iter().any(|a| {
+            a.authority
+                .lease
+                .is_some_and(|l| l.character_id() == lease.character_id())
+        }) {
+            return Err(CarrierError::WrongScope);
+        }
+        if let Some(state) = &house {
+            if state.lease != lease
+                || state.scope.world_id() != self.binding.world_id
+                || !matches!(state.scope, RuntimeScopeRefV1::Instance { .. })
+            {
+                return Err(CarrierError::WrongScope);
+            }
+            if let Some(owner) = self.house_owners.get(&state.house)
+                && (owner.scope != state.scope || owner.generation != state.generation)
+            {
+                return Err(CarrierError::WrongScope);
+            }
+            self.carrier
+                .house_custody
+                .try_reserve(1)
+                .map_err(|_| CarrierError::AllocationFailed)?;
+        }
+        let reservation = self.reserve_fresh_session(session)?;
+        let actor = self.commit_fresh_session(reservation)?;
+        let context = self.pinned_position_context();
+        let origin = house.as_ref().map_or(position, |h| h.origin_position);
+        let snapshot =
+            self.carrier
+                .initialize_position(&self.continuity, actor.0, context, origin)?;
+        self.bind_attacker_lease(actor, session, lease)?;
+        if let Some(state) = house {
+            self.house_owners
+                .entry(state.house.clone())
+                .or_insert_with(|| HouseScopeOwner {
+                    scope: state.scope,
+                    generation: state.generation,
+                    cycle: ScopeRuntimeFence::from_owner_cycle_grant(HouseOwnerGrant(
+                        state.scope,
+                        state.generation,
+                    )),
+                });
+            let index = actor.actor_local_id() as usize - 1;
+            if let Slot::Occupied { position, .. } = &mut self.carrier.slots[index] {
+                *position = None;
+            }
+            self.carrier.house_custody.push(HouseResident {
+                actor,
+                key: state.house,
+                scope: state.scope,
+                generation: state.generation,
+                session,
+                position: state.position,
+                channel_position: snapshot.version,
+            });
+        }
+        Ok(actor)
+    }
+
     /// The actual House owner, not a Channel position or an inventory proof.
     pub fn house_actor_state(
         &self,
@@ -86,6 +233,7 @@ impl ChannelRuntimeV1 {
             generation: resident.generation,
             position: resident.position,
             lease,
+            origin_position: resident.channel_position.position,
         })
     }
 

@@ -18,6 +18,16 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CommandRef, RuntimeScopeRefV1};
 use sqlx::{Postgres, Row, Transaction};
+use std::future::Future;
+
+/// The existing Premium owner resolves current status inside the claim transaction.
+pub trait DailyRewardPremiumGate: Sync {
+    fn current(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        account: [u8; 16],
+    ) -> impl Future<Output = Result<bool, DurabilityError>> + Send;
+}
 
 #[derive(Debug, Clone)]
 pub struct DailyRewardDeliveryPlan {
@@ -78,13 +88,14 @@ impl DurabilityRoot {
 
     /// All value writes share the MAIL-owned transaction when items are present.
     /// The non-item days use the same native recovery/admission/fence boundary.
-    pub async fn commit_daily_reward_claim(
+    pub async fn commit_daily_reward_claim<G: DailyRewardPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         request: DailyRewardClaimRequest,
         mut plan: DailyRewardDeliveryPlan,
+        gate: &G,
     ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
         use DailyRewardClaimError as Error;
         if request.reset_epoch == 0
@@ -145,19 +156,20 @@ impl DurabilityRoot {
                     ..request
                 };
                 return self
-                    .commit_daily_items(authority, node, fence, request, plan)
+                    .commit_daily_items(authority, node, fence, request, plan, gate)
                     .await;
             }
             return self
-                .commit_daily_items(authority, node, fence, request, plan)
+                .commit_daily_items(authority, node, fence, request, plan, gate)
                 .await;
         }
         let recovery = authority
             .record_for(self)
             .map_err(|_| Error::AuthorityRejected)?;
         let node = node.clone();
+        let mut gate = gate;
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut gate, move |holder, deadline, gate| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -165,7 +177,7 @@ impl DurabilityRoot {
                     if !current(&mut tx, &node, fence, request.command).await? {
                         return Ok(Err(Error::AuthorityRejected));
                     }
-                    let outcome = apply(&mut tx, fence, request, &plan).await;
+                    let outcome = apply(&mut tx, fence, request, &plan, *gate).await;
                     if outcome.is_ok() {
                         commit_semantic_transaction(tx, deadline).await?;
                     }
@@ -175,13 +187,14 @@ impl DurabilityRoot {
             .await?
     }
 
-    async fn commit_daily_items(
+    async fn commit_daily_items<G: DailyRewardPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         request: DailyRewardClaimRequest,
         plan: DailyRewardDeliveryPlan,
+        gate: &G,
     ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
         let RuntimeScopeRefV1::Channel {
             world_id,
@@ -214,17 +227,18 @@ impl DurabilityRoot {
             .prepare_reward_claim_inbox_mint(authority, node, fence, &source, mint)
             .await
             .map_err(inbox_error)?;
-        let mut outcome = None;
+        let mut participant = (None, gate);
         let result = self
             .commit_reward_claim_inbox_mint(
                 authority,
                 node,
                 fence,
                 &mut candidate,
-                &mut outcome,
-                move |context, outcome| {
+                &mut participant,
+                move |context, (outcome, gate)| {
                     Box::pin(async move {
-                        let result = apply(context.transaction(), fence, request, &plan).await;
+                        let result =
+                            apply(context.transaction(), fence, request, &plan, *gate).await;
                         let committed = matches!(result, Ok(DailyRewardClaimOutcome::Committed(_)));
                         *outcome = Some(result);
                         if committed {
@@ -236,7 +250,7 @@ impl DurabilityRoot {
                 },
             )
             .await;
-        match (result, outcome) {
+        match (result, participant.0) {
             (Ok(RewardClaimInboxOutcome::Committed { .. }), Some(result)) => result,
             (Err(RewardClaimInboxError::SourceRefused), Some(result)) => result,
             (Err(error), _) => Err(inbox_error(error)),
@@ -308,11 +322,12 @@ async fn current(
     .await
 }
 
-async fn apply(
+async fn apply<G: DailyRewardPremiumGate>(
     tx: &mut Transaction<'_, Postgres>,
     fence: CurrentCharacterItemFence,
     request: DailyRewardClaimRequest,
     plan: &DailyRewardDeliveryPlan,
+    gate: &G,
 ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
     let world = fence.runtime_scope.world_id();
     // A competing claim must not retain the mint performed before this callback.
@@ -334,8 +349,13 @@ async fn apply(
     if state.lane_day != plan.lane_day {
         return Err(DailyRewardClaimError::InvalidRequest);
     }
+    let account: String = sqlx::query_scalar("SELECT account_id::text FROM public.game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    let premium = gate
+        .current(tx, super::item_mint::uuid_text(&account)?)
+        .await?;
     let joker = super::daily_reward_jokers::grant(tx, fence, request).await?;
-    let outcome = write_claim(tx, fence, request, joker.balance).await?;
+    let outcome = write_claim(tx, fence, request, joker.balance, premium).await?;
     let DailyRewardClaimOutcome::Committed(receipt) = &outcome else {
         return Err(DailyRewardClaimError::InvalidRequest);
     };
@@ -344,13 +364,7 @@ async fn apply(
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
     if plan.outputs.is_empty() {
-        let (kind, quantity) = if plan.lane_day == 3 {
-            ("PREY_WILDCARD", 1)
-        } else {
-            ("XP_BOOST", 10)
-        };
-        sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status) VALUES(encode($1,'hex')::uuid,0,$2,$3,'PENDING')")
-            .bind(request.transaction_id.as_slice()).bind(kind).bind(quantity).execute(&mut **tx).await?;
+        super::daily_reward_effects::grant(tx, fence, request, plan.lane_day, premium).await?;
     }
     for (index, ((output, item), charges)) in plan
         .outputs

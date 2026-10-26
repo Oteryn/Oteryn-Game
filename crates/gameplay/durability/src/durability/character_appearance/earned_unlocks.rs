@@ -20,7 +20,7 @@ pub(super) async fn read(
         read_account_appearance_unlocks(connection, account, grant_keys)
             .await?
             .into_iter()
-            .filter(|fact| matches!(fact.source_kind.as_str(), "quest" | "npc"))
+            .filter(|fact| matches!(fact.source_kind.as_str(), "quest" | "npc" | "mount_taming"))
             .map(|fact| (fact.unlock_key, fact.content_revision))
             .collect(),
     )

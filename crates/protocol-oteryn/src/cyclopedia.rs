@@ -4,6 +4,20 @@
 pub const COMMAND_TYPE_CYCLOPEDIA_QUERY: u32 = 72;
 pub const COMMAND_TYPE_CYCLOPEDIA_INTENT: u32 = 73;
 pub const CAPABILITY_CYCLOPEDIA_MAP_V1: u32 = 57;
+pub const COMMAND_TYPE_SUBAREA_QUERY: u32 = 109;
+pub const CAPABILITY_SUBAREA_V1: u32 = 93;
+
+/// SUBAREA-ADMIT-1: presence byte, then region and subarea cipsoft/map_area source ids.
+/// Zero ids mean unknown coverage; never substitute the basic area's id.
+pub fn encode_current_subarea(membership: Option<(u32, u32)>) -> [u8; 9] {
+    let mut bytes = [0; 9];
+    if let Some((region, subarea)) = membership {
+        bytes[0] = 1;
+        bytes[1..5].copy_from_slice(&region.to_le_bytes());
+        bytes[5..9].copy_from_slice(&subarea.to_le_bytes());
+    }
+    bytes
+}
 pub const MAX_REQUEST_BYTES: usize = 9;
 pub const MAX_RESULT_BYTES: usize = 29 + 8 * 5;
 

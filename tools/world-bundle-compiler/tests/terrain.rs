@@ -235,8 +235,8 @@ fn one_entry_of_each_kind_compiles_into_its_terrain_values() -> TestResult {
     let bytes = fixture_bytes()?;
     assert_eq!(bytes, fixture_bytes()?, "two builds are byte-identical");
     let read = bundle::read(&bytes)?;
-    assert_eq!(read.manifest.format, "OTERYN_WORLD_BUNDLE/v4");
-    assert_eq!(read.manifest.min_reader_version, 4);
+    assert_eq!(read.manifest.format, "OTERYN_WORLD_BUNDLE/v5");
+    assert_eq!(read.manifest.min_reader_version, 5);
     let terrain = |key: &str| {
         read.manifest
             .palette
@@ -338,7 +338,7 @@ fn a_terrain_family_entry_needs_terrain_in_the_writer_and_the_reader() -> TestRe
     assert!(matches!(compile(&input, &Silent), Err(Error::Format(_))));
     // The reader refuses it too, in a bundle written elsewhere.
     let bytes = fixture_bytes()?;
-    let mutated = with_manifest(&bytes, 4, |m| {
+    let mutated = with_manifest(&bytes, bundle::VERSION, |m| {
         m["palette"][0]["family"] = "terrain".into();
         m["palette"][0]["terrain"] = Value::Null;
     })?;
@@ -402,7 +402,7 @@ fn index(bytes: &[u8], key: &str) -> Result<usize, Box<dyn StdError>> {
 fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> TestResult {
     let bytes = fixture_bytes()?;
     // The unchanged round trip through the helper still reads (key order aside).
-    bundle::read(&with_manifest(&bytes, 4, |_| {})?)?;
+    bundle::read(&with_manifest(&bytes, bundle::VERSION, |_| {})?)?;
     bundle::read(&bytes)?;
     // A v1 bundle is refused like any unknown version.
     let v1 = with_manifest(&bytes, 1, |m| {
@@ -410,7 +410,7 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
         m["min_reader_version"] = 1.into();
     })?;
     assert!(matches!(bundle::read(&v1), Err(Error::Format(_))));
-    // A v2 or v3 bundle is refused: v4 has no dual reading.
+    // A v2 or v3 bundle is refused: v5 has no dual reading.
     let v2 = with_manifest(&bytes, 2, |m| {
         m["format"] = "OTERYN_WORLD_BUNDLE/v2".into();
         m["min_reader_version"] = 2.into();
@@ -421,11 +421,16 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
         m["min_reader_version"] = 3.into();
     })?;
     assert!(matches!(bundle::read(&v3), Err(Error::Format(_))));
-    // A v4 header over a manifest that claims v1.
-    let claims_v1 = with_manifest(&bytes, 4, |m| {
+    // A current header over a manifest that claims v1.
+    let claims_v1 = with_manifest(&bytes, bundle::VERSION, |m| {
         m["format"] = "OTERYN_WORLD_BUNDLE/v1".into();
     })?;
     assert!(bundle::read(&claims_v1).is_err());
+    let v4 = with_manifest(&bytes, 4, |m| {
+        m["format"] = "OTERYN_WORLD_BUNDLE/v4".into();
+        m["min_reader_version"] = 4.into();
+    })?;
+    assert!(matches!(bundle::read(&v4), Err(Error::Format(_))));
     let (grass, edge, plain, mosaic) = (
         index(&bytes, "item:grass")?,
         index(&bytes, "item:edge")?,
@@ -555,12 +560,12 @@ fn the_reader_accepts_the_fixture_and_rejects_v1_and_malformed_terrain() -> Test
         ),
     ];
     for (what, change) in malformed {
-        let mutated = with_manifest(&bytes, 4, change)?;
+        let mutated = with_manifest(&bytes, bundle::VERSION, change)?;
         assert!(bundle::read(&mutated).is_err(), "{what} was accepted");
     }
     // A non-walkable nonzero speed and a non-walkable zero speed are valid.
     let pit = index(&bytes, "item:pit")?;
-    let valid = with_manifest(&bytes, 4, move |m| {
+    let valid = with_manifest(&bytes, bundle::VERSION, move |m| {
         m["palette"][pit]["terrain"]["ground_speed"] = 120.into();
     })?;
     bundle::read(&valid)?;

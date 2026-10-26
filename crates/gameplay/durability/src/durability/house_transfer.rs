@@ -10,7 +10,9 @@ use super::fresh_admission::{
     CurrentCapabilityCheck, FreshAdmissionStore, commit_session_use, unused_session_revision,
 };
 use super::house_scope_handoff::{
-    HouseCommitOutcome, HouseEntryCommit, HouseId, commit_house_entry_in_transaction,
+    HouseCommitOutcome, HouseEntryCommit, HouseEntryRequest, HouseHandoffDirection, HouseId,
+    HousePrepareOutcome, commit_house_entry_in_transaction, prepare_house_entry_in_transaction,
+    release_house_entry_tile_in_transaction,
 };
 use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation};
@@ -18,6 +20,8 @@ use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{AuthenticatedTransportRefV1, ChannelId, GameSessionId, RuntimeScopeRefV1};
 use oteryn_protocol_oteryn::house_transfer::{HouseTransferAck, encode_house_transfer_ack};
 use sqlx::{Postgres, Row, Transaction};
+mod recovery;
+pub use recovery::HouseTransferRecovery;
 
 /// Native destination facts selected while the source actor is frozen. All
 /// durable bindings are independently checked again in the commit transaction.
@@ -33,17 +37,15 @@ pub struct HouseTransferRequest {
 }
 
 impl DurabilityRoot {
-    /// The existing entry PREPARE must already have succeeded. Exit has its own
-    /// fully fenced direction in 0215 and never relaxes 0074's direction CHECK.
+    /// PREPARE and COMMIT share the source freeze and one transaction. Exit has
+    /// its own direction in 0215 and never relaxes 0074's direction CHECK.
     pub async fn commit_house_transfer(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
-        request: HouseTransferRequest,
+        mut request: HouseTransferRequest,
         capabilities: CurrentCapabilityCheck,
-    ) -> Result<Vec<u8>, DurabilityError> {
-        let payload =
-            encode_house_transfer_ack(&request.ack).map_err(|_| DurabilityError::Unavailable)?;
+    ) -> Result<(HouseTransferAck, Vec<u8>), DurabilityError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -58,12 +60,81 @@ impl DurabilityRoot {
                     if !prove_current_incarnation(&mut tx, &node).await? {
                         return Err(DurabilityError::Unavailable);
                     }
+                    prepare(&mut tx, &node, &mut request).await?;
+                    let payload = encode_house_transfer_ack(&request.ack)
+                        .map_err(|_| DurabilityError::Unavailable)?;
                     apply(&mut tx, &root, &node, &request, &payload, &capabilities).await?;
                     commit_semantic_transaction(tx, deadline).await?;
-                    Ok(payload)
+                    Ok((request.ack, payload))
                 })
             })
             .await
+    }
+}
+
+async fn prepare(
+    tx: &mut Transaction<'_, Postgres>,
+    node: &NodeIncarnationProof,
+    request: &mut HouseTransferRequest,
+) -> Result<(), DurabilityError> {
+    if request.ack.house.is_none() {
+        return Ok(());
+    }
+    let fact = node.fact();
+    let generation: String = sqlx::query_scalar(
+        "SELECT ownership_generation::text FROM game_runtime_scope_assignments \
+         WHERE scope_key=$1 AND state=1 AND holder_node_id=encode($2,'hex')::uuid \
+           AND holder_registration_revision=$3::text::numeric FOR SHARE",
+    )
+    .bind(request.house.scope_key())
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .fetch_one(&mut **tx)
+    .await?;
+    request.ack.scope_generation = generation
+        .parse()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let access = sqlx::query(
+        "SELECT acl_revision::text,guild_revisions FROM game_house_access(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid) LIMIT 1",
+    )
+    .bind(request.house.world_id().as_bytes().as_slice())
+    .bind(request.house.house_key())
+    .bind(request.fence.character_id.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?;
+    let acl: String = access.try_get("acl_revision")?;
+    let prepared_at: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    let reserved_tile = request
+        .ack
+        .position
+        .iter()
+        .flat_map(|v| v.to_be_bytes())
+        .collect();
+    let entry = HouseEntryRequest {
+        direction: HouseHandoffDirection::Entry,
+        handoff_id: request.ack.transfer,
+        character_id: crate::foundation::CharacterId::decode(request.fence.character_id.as_bytes())
+            .map_err(|_| DurabilityError::Unavailable)?,
+        source_game_session_id: request.fence.game_session_id,
+        source_connection_generation: request.fence.connection_generation.get(),
+        source_character_lease_generation: request.fence.character_lease_generation,
+        source_scope: request.fence.runtime_scope,
+        source_scope_ownership_generation: request.fence.scope_ownership_generation.get(),
+        house: request.house.clone(),
+        house_scope_ownership_generation: request.ack.scope_generation,
+        acl_revision: acl
+            .parse()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        guild_revisions: access.try_get("guild_revisions")?,
+        reserved_tile,
+        prepared_at,
+    };
+    match prepare_house_entry_in_transaction(tx, node, &entry).await {
+        Ok(HousePrepareOutcome::Prepared(_) | HousePrepareOutcome::Replayed(_)) => Ok(()),
+        _ => Err(DurabilityError::Unavailable),
     }
 }
 
@@ -156,6 +227,19 @@ async fn apply(
         if terminal.rows_affected() != 1 {
             return Err(DurabilityError::Unavailable);
         }
+        let entry: Vec<u8> = sqlx::query_scalar(
+            "SELECT uuid_send(handoff_id) FROM game_house_scope_handoffs WHERE destination_game_session_id=encode($1,'hex')::uuid AND state=2 FOR UPDATE",
+        ).bind(fence.game_session_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+        release_house_entry_tile_in_transaction(
+            tx,
+            node,
+            entry
+                .try_into()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+            now,
+        )
+        .await
+        .map_err(|_| DurabilityError::Unavailable)?;
         commit_session_use(tx, character, session, ack.transfer, revision).await?;
         sqlx::query("INSERT INTO game_durability_reconnect_sessions(game_session_id,account_id,character_id,world_id,runtime_scope_kind,runtime_scope_world_id,runtime_scope_channel_id,control_loss_epoch,original_grace_deadline,predecessor_generation,character_lease_generation,scope_ownership_generation,current_generation,current_transport_ref,session_state) VALUES(encode($1,'hex')::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($4,'hex')::uuid,encode($5,'hex')::uuid,1,$6,1,$7::text::numeric,$8::text::numeric,1,$9,2)")
             .bind(ack.session.as_slice()).bind(&account).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(request.origin.as_bytes().as_slice())
@@ -177,6 +261,14 @@ async fn apply(
         }
         sqlx::query("UPDATE game_durability_reconnect_sessions SET current_transport_ref=$2,session_state=2 WHERE game_session_id=encode($1,'hex')::uuid")
             .bind(ack.session.as_slice()).bind(request.transport.to_bytes().as_slice()).execute(&mut **tx).await?;
+    }
+    // Retain the original authenticated admission as history, while the current
+    // session, scope, lease and transport are read from the destination row.
+    // `fresh_replay_key` stays absent: this is not another use of the grant.
+    let lineage = sqlx::query("UPDATE game_durability_reconnect_sessions d SET initial_fresh_replay_key=COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) FROM game_durability_reconnect_sessions s WHERE d.game_session_id=encode($1,'hex')::uuid AND s.game_session_id=encode($2,'hex')::uuid AND COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key) IS NOT NULL")
+        .bind(ack.session.as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).execute(&mut **tx).await?;
+    if lineage.rows_affected() != 1 {
+        return Err(DurabilityError::Unavailable);
     }
     super::fresh_admission_composition::transfer_claims_in_transaction(
         tx,

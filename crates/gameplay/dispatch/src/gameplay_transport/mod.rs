@@ -42,6 +42,7 @@ mod corpse_decay;
 mod death_ml_loss_postgres;
 mod depot;
 mod equipment_move;
+mod equipment_reflection;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
 pub mod gameplay_drain;
@@ -49,6 +50,7 @@ mod guild_bank;
 mod guild_chat;
 mod highscores;
 mod house_query;
+mod house_transfer;
 mod hunting_stamina;
 mod input_gate;
 mod item_craft;
@@ -78,6 +80,7 @@ mod monster_profile_cycle;
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
 )]
 mod monster_quest_death;
+mod mount_taming;
 mod newhaven_arrival;
 mod newhaven_travel;
 mod npc_actor;
@@ -96,6 +99,7 @@ mod party_xp_command;
 mod promotion_death;
 mod promotion_login;
 mod pvp_death;
+mod pvp_expert;
 mod pvp_live;
 mod quest_admission;
 mod quest_log_source;
@@ -338,6 +342,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
 
 /// Explicit listener configuration; nothing has a production default.
 pub struct GameplayListenerConfig {
+    pub server_motd: String,
     pub certificates: Vec<rustls::pki_types::CertificateDer<'static>>,
     pub private_key: rustls::pki_types::PrivateKeyDer<'static>,
     /// At most the registered 256.
@@ -467,6 +472,7 @@ impl ConnectionIdentifiers for SecureIdentifiers {
 /// supplies account security and signing trust, and the durable commit
 /// revalidates all of them.
 pub struct ComposedFreshAdmission<'a, 'f, 's> {
+    pub server_motd: &'a str,
     /// The diagnostic writer supplied with the composed gameplay owners.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
     pub root: &'a DurabilityRoot,
