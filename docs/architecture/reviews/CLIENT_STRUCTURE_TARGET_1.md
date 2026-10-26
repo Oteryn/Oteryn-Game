@@ -228,23 +228,28 @@ Do not merge #1942 as one patch and do not port its deletion of newer protocol w
 
 The draft's giant `game_ui.rs`, expanded `play.rs`, and settings/preferences files are extraction sources, not target files. Preserve their tests by relocating them with the owning feature; do not accept their size as a temporary new baseline.
 
-**Explicit hold:** activating authentication or changing Platform device-session authority is out of scope. Device storage/login presentation may be moved behavior-identically, but authority remains with Platform and no draft activation path lands here.
+**Authentication (owner decision 26):** real authentication is not active yet. Platform prepares its login/device-session contract in parallel; the client uses a stub adapter of the same shape and wires the real one at step 7. Platform keeps device-session authority, and no draft activation path from #1942 lands.
 
-## 6. Open owner decisions
+## 6. Owner decisions (accepted 2026-10-26)
 
-| Decision | Recommendation | Consequence if deferred/alternative |
-|---|---|---|
-| Create `client-ui` crate or keep UI below the app? | **Create it.** This makes a mechanically enforceable thin-shell boundary. | Keeping UI in `apps/client` relies on convention and permits hot files to regrow. |
-| Can `client-domain` import protocol types? | **No by default; map in runtime.** Permit only generated stable identifiers after an ADR. | Direct imports make wire evolution leak through reducers and tests. |
-| Registration format: JSON fragments or Rust inventory functions? | **JSON fragments + generated Rust**, matching proven server practice and requiring no dependency. | Rust fragments are type-safe but still need a source mount/list and encourage executable registration logic. |
-| Feature directory naming? | **Zero-padded capability ID plus canonical slug** (`0057-cyclopedia-map-v1`); `local-*` only for non-server UI. | Slug-only names drift from contracts and create ambiguous ownership. |
-| Handler dispatch strategy? | **Generated numeric lookup/match, private and uncommitted.** | Dynamic trait registries add runtime complexity; handwritten matches restore contention. |
-| Settings ownership and unknown keys? | **Feature-owned typed settings; preserve unknown keys round-trip in the envelope.** | A central struct/catalogue conflicts; dropping unknowns prevents forward/backward safe migration. |
-| Default keybinding conflicts across fragments? | **Build-time failure with a small explicit precedence field only for context-specific overlaps.** | Runtime “last wins” makes directory order observable and unsafe. |
-| Size thresholds? | **Adopt 400 warning/600 production hard limit and the ratchet immediately.** | A softer 1,000-line ceiling would allow new hot files before the migration completes. |
-| Commit generated registration output? | **No.** Test deterministic regeneration and per-feature goldens instead. | Committed aggregate output becomes another merge-conflict surface. |
-| How much of #1942 should be preserved verbatim? | **Tests and isolated behavior may be ported; structure and stale protocol deletions may not.** | Merging then restructuring creates a second costly migration and risks reverting current capability work. |
-| When may auth activation resume? | **Only under a separate Platform-owned contract/authority decision after this structural work.** | Combining it with structure expands risk and obscures authority review. |
+The owner accepted this design with the changes below (owner decision 26 in
+`OTERYN_GAME_NIGHT_W1_OWNER_DECISIONS_2026-10-25.md`). Where a row changes an earlier section, this
+table wins.
+
+| Decision | Accepted rule |
+|---|---|
+| Create `client-ui` crate or keep UI below the app? | **Create it.** Thin app shell, enforced by `oteryn-architecture-check`. |
+| Can `client-domain` import protocol types? | **No; map in runtime.** Only generated stable identifiers, after an ADR. |
+| Registration format | **JSON fragments + generated, uncommitted Rust.** |
+| Feature directory naming | **Changed:** the zero-padded server capability/mechanic number plus the canonical slug, with **no version suffix** (`0057-cyclopedia-map`, not `0057-cyclopedia-map-v1`). Protocol versions live in the contract, so a new version never renames or moves a directory. `local-*` only for non-server UI. |
+| Handler dispatch strategy | **Generated numeric lookup/match, private and uncommitted.** |
+| Settings ownership and unknown keys | **Feature-owned typed settings; unknown keys round-trip in the envelope.** |
+| Keybinding conflicts | **Changed:** the build fails only when two *default* keybinding fragments collide (a developer error), with the small explicit precedence field for context-specific overlaps. A conflict the *player* creates by rebinding never blocks saving: the settings page shows it at runtime and lets the player resolve it, as in Global. |
+| Size thresholds | **400 warning / 600 production hard limit and the ratchet, immediately.** |
+| Commit generated registration output? | **No.** Deterministic regeneration and per-feature goldens. |
+| Draft PR #1942 | **Changed:** #1942 is not owned by this work and is never modified. Its tests and working behaviors are ported into small PRs in the §5.1 order; its structure and stale protocol deletions are not. |
+| Authentication | **Changed:** real authentication is not active. Platform prepares the login/device-session contract in parallel with the structural work. Until it lands the client uses a local stub adapter with the same shape, and the real adapter is wired at §5.1 step 7 (login and shell composition), replacing only the adapter. Platform keeps device-session authority. |
+| Mechanic coverage | **New:** every server mechanic must work in the client. An `unsupported` handler fragment (§4.3 rule 4) is only a tracked, temporary state: the architecture check reports the list, and the client is complete only when it is empty and each mechanic has a headless test against the generated descriptors. |
 
 ## Appendix A — complete `main` client-file inventory
 | File | Bytes | Responsibility | Central ownership |
