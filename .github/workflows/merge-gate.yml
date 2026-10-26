@@ -628,9 +628,11 @@ jobs:
     name: Merge gate / Rust changed-crate Clippy and unit tests (${{ matrix.leg }})
     needs: [scope, lanes]
     if: needs.lanes.outputs.rust == 'true'
-    # OTERYN_SELF_HOSTED_RUST=on uses Molehill; turn it off or delete it when the PC is offline.
+    # OTERYN_SELF_HOSTED_RUST=on runs the Clippy leg on Molehill (warm workspace target); turn it
+    # off or delete it when the PC is offline. The three test shards always run hosted from the
+    # rust.yml cache, so one PR no longer builds the same test binaries three times on the PC.
     # Forks and dependabot stay hosted because PR code would run on the owner's machine.
-    runs-on: ${{ (vars.OTERYN_SELF_HOSTED_RUST == 'on' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
+    runs-on: ${{ (vars.OTERYN_SELF_HOSTED_RUST == 'on' && matrix.kind == 'clippy' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
     timeout-minutes: 45
     permissions:
       contents: read

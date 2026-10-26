@@ -1273,6 +1273,7 @@ mod weapon_tests {
 
     fn item(slot: u8, tibia_id: u32) -> EquippedItem {
         EquippedItem {
+            tier: 0,
             slot,
             item_instance_id: [slot; 16],
             definition: TypedDefinitionRef {

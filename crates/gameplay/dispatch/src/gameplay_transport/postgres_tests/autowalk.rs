@@ -47,6 +47,7 @@ pub(super) fn bundle(door: u32, coin: u32) -> TestResult<(Vec<u8>, crate::map::B
         Terrain, TerrainKind,
     };
     let manifest = Manifest {
+        subareas: Default::default(),
         format: writer::FORMAT.into(),
         min_reader_version: writer::VERSION,
         projection_class: "server".into(),

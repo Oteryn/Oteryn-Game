@@ -1,0 +1,17 @@
+{
+  "id": 92,
+  "name": "ZONES_NOLOGOUT_V1",
+  "constant": "zones_nologout::CAPABILITY_ZONES_NOLOGOUT_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [
+    57
+  ],
+  "supersedes": [],
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
+}

@@ -70,6 +70,27 @@ pub const COMBAT01_LOOT_RNG_DRAWS_MAX: usize = 32;
 /// `content::reference_playable::REFERENCE_LOOT_PROBABILITY_PPM_SCALE`.
 const LOOT_PROBABILITY_PPM_SCALE: u32 = 1_000_000;
 
+/// Global's blue and red anniversary surprise bags. Crystal can inject these
+/// into an arbitrary monster's corpse when its server-wide switch is enabled;
+/// Oteryn keeps them attached to the admitted Global event creature tables.
+const GLOBAL_EVENT_SURPRISE_BAGS: [&str; 2] =
+    ["oteryn:item.tibia.i6570", "oteryn:item.tibia.i6571"];
+
+/// Loot owners whose creatures are realized by Global event/raid content.
+/// The raid schedule remains the authority that may realize those creatures;
+/// this list only prevents ordinary creature loot from becoming a second,
+/// all-year event-reward producer.
+const GLOBAL_EVENT_SURPRISE_BAG_TABLES: [&str; 8] = [
+    "oteryn:loot.creature.bones",
+    "oteryn:loot.creature.chayenne",
+    "oteryn:loot.creature.fluffy",
+    "oteryn:loot.creature.hacker",
+    "oteryn:loot.creature.pinata_dragon",
+    "oteryn:loot.creature.primitive",
+    "oteryn:loot.creature.the_mutated_pumpkin",
+    "oteryn:loot.creature.undead_minion",
+];
+
 /// §4.1.1: a definition ref's `family` technical field is charged at its
 /// registered `DUR03-RL-07-TECHNICAL-FIELD-BYTES` maximum (128 B) regardless
 /// of the actual (always short) family text.
@@ -234,6 +255,9 @@ pub fn plan_creature_loot(
     let mut entries = Vec::with_capacity(loot_table.entries.len());
 
     for (index, entry) in loot_table.entries.iter().enumerate() {
+        if is_surprise_bag(entry) && !is_global_event_loot_table(loot_table_ref) {
+            continue;
+        }
         let draw_ordinal = index as u32;
         // Validated by `validate_entry_shape` above for every entry.
         let probability_ppm = match entry.probability_ppm {
@@ -273,6 +297,14 @@ pub fn plan_creature_loot(
         loot_table: loot_table_ref.clone(),
         entries,
     })
+}
+
+fn is_surprise_bag(entry: &LootTableEntry) -> bool {
+    GLOBAL_EVENT_SURPRISE_BAGS.contains(&entry.item.production_key.as_str())
+}
+
+fn is_global_event_loot_table(loot_table_ref: &LootDefinitionRef) -> bool {
+    GLOBAL_EVENT_SURPRISE_BAG_TABLES.contains(&loot_table_ref.production_key.as_str())
 }
 
 fn validate_entry_shape(entry: &LootTableEntry) -> Result<(), LootPlanError> {
@@ -607,6 +639,37 @@ mod tests {
                     .any(|entry| entry.purpose_key == "oteryn:item.chance.always")
             );
         }
+    }
+
+    #[test]
+    fn surprise_bags_are_not_random_all_year_loot() {
+        let ordinary = table_ref("oteryn:loot.creature.rat");
+        let table = one_entry_table(
+            "oteryn:item.tibia.i6570",
+            1,
+            1,
+            Some(LOOT_PROBABILITY_PPM_SCALE),
+        );
+
+        let plan = plan_creature_loot(death_key(7), &ordinary, &table).expect("valid plan");
+
+        assert!(plan.entries.is_empty());
+    }
+
+    #[test]
+    fn surprise_bags_remain_in_global_event_creature_loot() {
+        let event = table_ref("oteryn:loot.creature.pinata_dragon");
+        let table = one_entry_table(
+            "oteryn:item.tibia.i6571",
+            1,
+            1,
+            Some(LOOT_PROBABILITY_PPM_SCALE),
+        );
+
+        let plan = plan_creature_loot(death_key(7), &event, &table).expect("valid plan");
+
+        assert_eq!(plan.entries.len(), 1);
+        assert_eq!(plan.entries[0].purpose_key, "oteryn:item.tibia.i6571");
     }
 
     #[test]

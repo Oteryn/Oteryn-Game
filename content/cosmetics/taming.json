@@ -1,0 +1,833 @@
+[
+  {
+    "item_key": "oteryn:item.tibia.i12260",
+    "creature_key": "oteryn:creature.boar",
+    "mount_key": "oteryn:content.mount.rapid_boar",
+    "grant_key": "oteryn:taming.rapid_boar",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The boar has run away"
+      },
+      {
+        "action": 3,
+        "text": "The boar attacks you."
+      }
+    ],
+    "success_text": "You have tamed the boar.",
+    "achievement_key": "oteryn:achievement/pig_headed",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:7"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12304",
+    "creature_key": "oteryn:creature.undead_cavebear",
+    "mount_key": "oteryn:content.mount.undead_cavebear",
+    "grant_key": "oteryn:taming.undead_cavebear",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The undead bear has run away."
+      }
+    ],
+    "success_text": "You have tamed the skeleton.",
+    "achievement_key": "oteryn:achievement/out_of_the_stone_age",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:45"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12306",
+    "creature_key": "oteryn:creature.midnight_panther",
+    "mount_key": "oteryn:content.mount.midnight_panther",
+    "grant_key": "oteryn:taming.midnight_panther",
+    "chance": 20,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The panther has escaped."
+      },
+      {
+        "action": 2,
+        "text": "The whip broke."
+      }
+    ],
+    "success_text": "You have tamed the panther.",
+    "achievement_key": "oteryn:achievement/starless_night",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:35"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12307",
+    "creature_key": "oteryn:creature.draptor",
+    "mount_key": "oteryn:content.mount.draptor",
+    "grant_key": "oteryn:taming.draptor",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The draptor has run away."
+      },
+      {
+        "action": 3,
+        "text": "The draptor has fled."
+      }
+    ],
+    "success_text": "You have tamed the draptor.",
+    "achievement_key": "oteryn:achievement/scales_and_tail",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:12"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12308",
+    "creature_key": "oteryn:creature.black_sheep",
+    "mount_key": "oteryn:content.mount.black_sheep",
+    "grant_key": "oteryn:taming.black_sheep",
+    "chance": 25,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The black sheep ran away."
+      },
+      {
+        "action": 2,
+        "text": "Oh no! The reins were torn."
+      },
+      {
+        "action": 3,
+        "text": "The black sheep is trying to run away."
+      }
+    ],
+    "success_text": "You have tamed the sheep.",
+    "achievement_key": "oteryn:achievement/little_ball_of_wool",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:6"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12311",
+    "creature_key": "oteryn:creature.terror_bird",
+    "mount_key": "oteryn:content.mount.racing_bird",
+    "grant_key": "oteryn:taming.racing_bird",
+    "chance": 15,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The bird ran away."
+      },
+      {
+        "action": 3,
+        "text": "The terror bird is pecking you."
+      }
+    ],
+    "success_text": "You have tamed the bird.",
+    "achievement_key": "oteryn:achievement/pecking_order",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:44"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12318",
+    "creature_key": "oteryn:creature.crustacea_gigantica",
+    "mount_key": "oteryn:content.mount.titanica",
+    "grant_key": "oteryn:taming.titanica",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The crustacea has run away."
+      },
+      {
+        "action": 2,
+        "text": "The crustacea ate the shrimp."
+      }
+    ],
+    "success_text": "You have tamed the crustacea.",
+    "achievement_key": "oteryn:achievement/fried_shrimp",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:8"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12320",
+    "creature_key": "oteryn:creature.wailing_widow",
+    "mount_key": "oteryn:content.mount.widow_queen",
+    "grant_key": "oteryn:taming.widow_queen",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The widow has run away."
+      },
+      {
+        "action": 2,
+        "text": "The widow has eaten the sweet bait."
+      }
+    ],
+    "success_text": "You have tamed the widow.",
+    "achievement_key": "oteryn:achievement/spin_off",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:46"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12509",
+    "creature_key": "oteryn:creature.sandstone_scorpion",
+    "mount_key": "oteryn:content.mount.scorpion_king",
+    "grant_key": "oteryn:taming.scorpion_king",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The scorpion has vanished."
+      },
+      {
+        "action": 2,
+        "text": "Scorpion broken the sceptre."
+      }
+    ],
+    "success_text": "You have tamed the scorpion.",
+    "achievement_key": "oteryn:achievement/golden_sands",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:40"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12519",
+    "creature_key": "oteryn:creature.slug",
+    "mount_key": "oteryn:content.mount.tiger_slug",
+    "grant_key": "oteryn:taming.tiger_slug",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The slug has run away."
+      },
+      {
+        "action": 3,
+        "text": "The drug had no effect."
+      }
+    ],
+    "success_text": "You have tamed the slug.",
+    "achievement_key": "oteryn:achievement/slugging_around",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:43"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12546",
+    "creature_key": "oteryn:creature.dromedary",
+    "mount_key": "oteryn:content.mount.dromedary",
+    "grant_key": "oteryn:taming.dromedary",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "Dromedary has run away."
+      }
+    ],
+    "success_text": "You have tamed the dromedary.",
+    "achievement_key": "oteryn:achievement/fata_morgana",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:13"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12547",
+    "creature_key": "oteryn:creature.crystal_wolf",
+    "mount_key": "oteryn:content.mount.crystal_wolf",
+    "grant_key": "oteryn:taming.crystal_wolf",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The wolf has run away."
+      }
+    ],
+    "success_text": "You have tamed the wolf.",
+    "achievement_key": "oteryn:achievement/the_right_tone",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:9"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12548",
+    "creature_key": "oteryn:creature.donkey",
+    "mount_key": "oteryn:content.mount.donkey",
+    "grant_key": "oteryn:taming.donkey",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The donkey transformation suddenly wears off."
+      },
+      {
+        "action": 2,
+        "text": "Heeee-haaa-haaa-haaw!"
+      },
+      {
+        "action": 3,
+        "text": "You did not manage to feed the donkey enough apple slices."
+      }
+    ],
+    "success_text": "Heeee-haaaaw!",
+    "achievement_key": "oteryn:achievement/loyal_lad",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:10"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12549",
+    "creature_key": "oteryn:creature.panda",
+    "mount_key": "oteryn:content.mount.tamed_panda",
+    "grant_key": "oteryn:taming.tamed_panda",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 4,
+        "text": "Panda the leaves and ran away."
+      }
+    ],
+    "success_text": "You have tamed the panda.",
+    "achievement_key": "oteryn:achievement/chequered_teddy",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:39"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12550",
+    "creature_key": "oteryn:creature.enraged_white_deer",
+    "mount_key": "oteryn:content.mount.kingly_deer",
+    "grant_key": "oteryn:taming.kingly_deer",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 2,
+        "text": "The cone broke."
+      },
+      {
+        "action": 3,
+        "text": "The deer has fled in fear."
+      }
+    ],
+    "success_text": "You have tamed the white deer.",
+    "achievement_key": "oteryn:achievement/friend_of_elves",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:14"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12802",
+    "creature_key": "oteryn:creature.wild_horse",
+    "mount_key": "oteryn:content.mount.war_horse",
+    "grant_key": "oteryn:taming.war_horse",
+    "chance": 15,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The horse runs away."
+      },
+      {
+        "action": 2,
+        "text": "The horse ate the oats."
+      }
+    ],
+    "success_text": "You have tamed the horse.",
+    "achievement_key": "oteryn:achievement/lucky_horseshoe",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:49"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i14142",
+    "creature_key": "oteryn:creature.manta_ray",
+    "mount_key": "oteryn:content.mount.manta_ray",
+    "grant_key": "oteryn:taming.manta_ray",
+    "chance": 30,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The manta ray fled."
+      },
+      {
+        "action": 3,
+        "text": "The manta ray is trying to escape."
+      }
+    ],
+    "success_text": "You have tamed the manta ray.",
+    "achievement_key": "oteryn:achievement/beneath_the_sea",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:34"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i14143",
+    "creature_key": "oteryn:creature.ladybug",
+    "mount_key": "oteryn:content.mount.lady_bug",
+    "grant_key": "oteryn:taming.lady_bug",
+    "chance": 30,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The ladybug got scared and ran away."
+      },
+      {
+        "action": 3,
+        "text": "The ladybug is trying to nibble."
+      }
+    ],
+    "success_text": "You tame a lady bug.",
+    "achievement_key": "oteryn:achievement/lovely_dots",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:23"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16153",
+    "creature_key": "oteryn:creature.ironblight",
+    "mount_key": "oteryn:content.mount.ironblight",
+    "grant_key": "oteryn:taming.ironblight",
+    "chance": 30,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The ironblight managed to run away."
+      },
+      {
+        "action": 2,
+        "text": "Oh no! The magnet lost its power!"
+      },
+      {
+        "action": 3,
+        "text": "The ironblight is fighting against the magnetic force."
+      }
+    ],
+    "success_text": "You tamed the ironblight.",
+    "achievement_key": "oteryn:achievement/magnetised",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:21"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16154",
+    "creature_key": "oteryn:creature.magma_crawler",
+    "mount_key": "oteryn:content.mount.magma_crawler",
+    "grant_key": "oteryn:taming.magma_crawler",
+    "chance": 30,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The magma crawler refused to drink wine and vanishes into thin air."
+      },
+      {
+        "action": 2,
+        "text": "Argh! The magma crawler pushed you and you spilled the glow wine!"
+      },
+      {
+        "action": 3,
+        "text": "The magma crawler is smelling the glow wine suspiciously."
+      }
+    ],
+    "success_text": "The magma crawler will accompany you as a friend from now on.",
+    "achievement_key": "oteryn:achievement/way_to_hell",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:24"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16155",
+    "creature_key": "oteryn:creature.dragonling",
+    "mount_key": "oteryn:content.mount.dragonling",
+    "grant_key": "oteryn:taming.dragonling",
+    "chance": 30,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The dragonling got scared and ran away."
+      },
+      {
+        "action": 2,
+        "text": "The dragonling is trying to nibble."
+      }
+    ],
+    "success_text": "You tamed a dragonling.",
+    "achievement_key": "oteryn:achievement/dragon_mimicry",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:11"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16244",
+    "creature_key": "oteryn:creature.dragonling",
+    "mount_key": "oteryn:content.mount.dragonling",
+    "grant_key": "oteryn:taming.dragonling",
+    "chance": 100,
+    "break_item": true,
+    "failures": [],
+    "success_text": "The wild dragonling will accompany you as a friend from now on.",
+    "achievement_key": "oteryn:achievement/dragon_mimicry",
+    "source": "canary:data/scripts/actions/items/music_box.lua:2"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16244",
+    "creature_key": "oteryn:creature.draptor",
+    "mount_key": "oteryn:content.mount.draptor",
+    "grant_key": "oteryn:taming.draptor",
+    "chance": 100,
+    "break_item": true,
+    "failures": [],
+    "success_text": "The wild draptor will accompany you as a friend from now on.",
+    "achievement_key": "oteryn:achievement/scales_and_tail",
+    "source": "canary:data/scripts/actions/items/music_box.lua:3"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16244",
+    "creature_key": "oteryn:creature.enraged_white_deer",
+    "mount_key": "oteryn:content.mount.kingly_deer",
+    "grant_key": "oteryn:taming.kingly_deer",
+    "chance": 100,
+    "break_item": true,
+    "failures": [],
+    "success_text": "The wild deer will accompany you as a friend from now on.",
+    "achievement_key": "oteryn:achievement/friend_of_elves",
+    "source": "canary:data/scripts/actions/items/music_box.lua:4"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16244",
+    "creature_key": "oteryn:creature.ironblight",
+    "mount_key": "oteryn:content.mount.ironblight",
+    "grant_key": "oteryn:taming.ironblight",
+    "chance": 100,
+    "break_item": true,
+    "failures": [],
+    "success_text": "The ironblight will accompany you as a friend from now on.",
+    "achievement_key": "oteryn:achievement/magnetised",
+    "source": "canary:data/scripts/actions/items/music_box.lua:5"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16244",
+    "creature_key": "oteryn:creature.magma_crawler",
+    "mount_key": "oteryn:content.mount.magma_crawler",
+    "grant_key": "oteryn:taming.magma_crawler",
+    "chance": 100,
+    "break_item": true,
+    "failures": [],
+    "success_text": "The magma crawler will accompany you as a friend from now on.",
+    "achievement_key": "oteryn:achievement/way_to_hell",
+    "source": "canary:data/scripts/actions/items/music_box.lua:6"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16244",
+    "creature_key": "oteryn:creature.midnight_panther",
+    "mount_key": "oteryn:content.mount.midnight_panther",
+    "grant_key": "oteryn:taming.midnight_panther",
+    "chance": 100,
+    "break_item": true,
+    "failures": [],
+    "success_text": "The wild panther will accompany you as a friend from now on.",
+    "achievement_key": "oteryn:achievement/starless_night",
+    "source": "canary:data/scripts/actions/items/music_box.lua:7"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16244",
+    "creature_key": "oteryn:creature.panda",
+    "mount_key": "oteryn:content.mount.tamed_panda",
+    "grant_key": "oteryn:taming.tamed_panda",
+    "chance": 100,
+    "break_item": true,
+    "failures": [],
+    "success_text": "The panda will accompany you as a friend from now on.",
+    "achievement_key": "oteryn:achievement/chequered_teddy",
+    "source": "canary:data/scripts/actions/items/music_box.lua:10"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16244",
+    "creature_key": "oteryn:creature.wailing_widow",
+    "mount_key": "oteryn:content.mount.widow_queen",
+    "grant_key": "oteryn:taming.widow_queen",
+    "chance": 100,
+    "break_item": true,
+    "failures": [],
+    "success_text": "You have tamed the wailing widow.",
+    "achievement_key": "oteryn:achievement/spin_off",
+    "source": "canary:data/scripts/actions/items/music_box.lua:8"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16244",
+    "creature_key": "oteryn:creature.wild_horse",
+    "mount_key": "oteryn:content.mount.war_horse",
+    "grant_key": "oteryn:taming.war_horse",
+    "chance": 100,
+    "break_item": true,
+    "failures": [],
+    "success_text": "The horse accepts you as its new master.",
+    "achievement_key": "oteryn:achievement/lucky_horseshoe",
+    "source": "canary:data/scripts/actions/items/music_box.lua:9"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i16251",
+    "creature_key": "oteryn:creature.modified_gnarlhound",
+    "mount_key": "oteryn:content.mount.gnarlhound",
+    "grant_key": "oteryn:taming.gnarlhound",
+    "chance": 100,
+    "break_item": false,
+    "failures": [],
+    "success_text": "You now own a modified gnarlhound.",
+    "achievement_key": "oteryn:achievement/mind_the_dog",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:36"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i17858",
+    "creature_key": "oteryn:creature.water_buffalo",
+    "mount_key": "oteryn:content.mount.water_buffalo",
+    "grant_key": "oteryn:taming.water_buffalo",
+    "chance": 30,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The water buffalo got scared and ran away."
+      },
+      {
+        "action": 3,
+        "text": "The water buffalo is trying to nibble."
+      }
+    ],
+    "success_text": "You tamed a water buffalo.",
+    "achievement_key": "oteryn:achievement/swamp_beast",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:48"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i19136",
+    "creature_key": "oteryn:creature.gravedigger",
+    "mount_key": "oteryn:content.mount.the_hellgrip",
+    "grant_key": "oteryn:taming.the_hellgrip",
+    "chance": 40,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The gravedigger got scared and ran away."
+      },
+      {
+        "action": 3,
+        "text": "The gravedigger is trying to nibble."
+      }
+    ],
+    "success_text": "You tamed the hellgrip.",
+    "achievement_key": "oteryn:achievement/blacknailed",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:16"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i20274",
+    "creature_key": "oteryn:creature.shock_head",
+    "mount_key": "oteryn:content.mount.shock_head",
+    "grant_key": "oteryn:taming.shock_head",
+    "chance": 30,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The shock head ran away."
+      },
+      {
+        "action": 3,
+        "text": "The shock head is growling at you."
+      }
+    ],
+    "success_text": "You tamed the shock head.",
+    "achievement_key": "oteryn:achievement/personal_nightmare",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:41"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i21186",
+    "creature_key": "oteryn:creature.walker",
+    "mount_key": "oteryn:content.mount.walker",
+    "grant_key": "oteryn:taming.walker",
+    "chance": 30,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 2,
+        "text": "This walker is incompatible with your control unit."
+      },
+      {
+        "action": 4,
+        "text": "This walker is incompatible with your control unit."
+      }
+    ],
+    "success_text": "You tamed the walker.",
+    "achievement_key": "oteryn:achievement/gear_up",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:47"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i21439",
+    "creature_key": "oteryn:creature.noble_lion",
+    "mount_key": "oteryn:content.mount.noble_lion",
+    "grant_key": "oteryn:taming.noble_lion",
+    "chance": 30,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 2,
+        "text": "The lion got scared and ran away."
+      },
+      {
+        "action": 4,
+        "text": "The lion is trying to nibble."
+      }
+    ],
+    "success_text": "You tamed the lion.",
+    "achievement_key": "oteryn:achievement/lion_king",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:38"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i24960",
+    "creature_key": "oteryn:creature.stone_rhino",
+    "mount_key": "oteryn:content.mount.stone_rhino",
+    "grant_key": "oteryn:taming.stone_rhino",
+    "chance": 30,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The stone rhino ran away."
+      },
+      {
+        "action": 3,
+        "text": "The stone rhino is growling at you."
+      }
+    ],
+    "success_text": "You tamed the stone rhino.",
+    "achievement_key": "oteryn:achievement/rhino_rider",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:42"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i27605",
+    "creature_key": "oteryn:creature.mole",
+    "mount_key": "oteryn:content.mount.mole",
+    "grant_key": "oteryn:taming.mole",
+    "chance": 30,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 2,
+        "text": "The Mole is a bit capricious. Maybe I should leave it alone."
+      },
+      {
+        "action": 4,
+        "text": "The Mole is a bit capricious. Maybe I should leave it alone."
+      }
+    ],
+    "success_text": "You tamed the mole.",
+    "achievement_key": "oteryn:achievement/up_the_molehill",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:37"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i28791",
+    "creature_key": "oteryn:creature.flying_book",
+    "mount_key": "oteryn:content.mount.fleeting_knowledge",
+    "grant_key": "oteryn:taming.fleeting_knowledge",
+    "chance": 20,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 1,
+        "text": "Flying Book has run away."
+      }
+    ],
+    "success_text": "You have converted your library ticket and receive permission to ride a flying book.",
+    "achievement_key": "oteryn:achievement/bibliomaniac",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:15"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i30170",
+    "creature_key": "oteryn:creature.lacewing_moth",
+    "mount_key": "oteryn:content.mount.lacewing_moth",
+    "grant_key": "oteryn:taming.lacewing_moth",
+    "chance": 20,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 2,
+        "text": "The lacewing moth is not interested in your lantern and flies away."
+      },
+      {
+        "action": 4,
+        "text": "The lacewing moth is not interested in your lantern and flies away."
+      }
+    ],
+    "success_text": "You have tamed a lancewing moth.",
+    "achievement_key": "oteryn:achievement/lacewing_catcher",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:22"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i30171",
+    "creature_key": "oteryn:creature.hibernal_moth",
+    "mount_key": "oteryn:content.mount.hibernal_moth",
+    "grant_key": "oteryn:taming.hibernal_moth",
+    "chance": 20,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 2,
+        "text": "The hibernal moth is not interested in your lantern and flies away."
+      },
+      {
+        "action": 4,
+        "text": "The hibernal moth is not interested in your lantern and flies away."
+      }
+    ],
+    "success_text": "You have tamed a hibernal moth.",
+    "achievement_key": "oteryn:achievement/moth_whisperer",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:18"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i31576",
+    "creature_key": "oteryn:creature.gryphon",
+    "mount_key": "oteryn:content.mount.gryphon",
+    "grant_key": "oteryn:taming.gryphon",
+    "chance": 30,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 1,
+        "text": "Gryphon has run away."
+      }
+    ],
+    "success_text": "You have tamed the gryphon.",
+    "achievement_key": "oteryn:achievement/gryphon_rider",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:17",
+    "required_equipment": "oteryn:item.tibia.i31369"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i34258",
+    "creature_key": "oteryn:creature.white_lion",
+    "mount_key": "oteryn:content.mount.white_lion",
+    "grant_key": "oteryn:taming.white_lion",
+    "chance": 50,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The White Lion runs away."
+      },
+      {
+        "action": 2,
+        "text": "The White Lion ate the flower."
+      }
+    ],
+    "success_text": "You have tamed the white lion.",
+    "achievement_key": "oteryn:achievement/well_roared_lion",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:50"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i5907",
+    "creature_key": "oteryn:creature.bear",
+    "mount_key": "oteryn:content.mount.war_bear",
+    "grant_key": "oteryn:taming.war_bear",
+    "chance": 20,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The bear ran away."
+      },
+      {
+        "action": 2,
+        "text": "Oh no! The slingshot broke."
+      },
+      {
+        "action": 3,
+        "text": "The bear is trying to hit you with its claws."
+      }
+    ],
+    "success_text": "You have tamed the war bear.",
+    "achievement_key": "oteryn:achievement/bearbaiting",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:5"
+  }
+]

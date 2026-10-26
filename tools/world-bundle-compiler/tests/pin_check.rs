@@ -45,6 +45,9 @@ impl Scratch {
                 "-z",
                 "--",
                 "content/world",
+                "content/cyclopedia",
+                "content/assets/files",
+                "imports/cipsoft-staticdata/map/subareas",
                 "content/houses",
                 "content/creatures",
                 "content/items",
@@ -200,7 +203,10 @@ fn derive_identity_takes_each_field_from_its_source_and_refuses_bad_sources() {
         manifest["required_features"]
     );
     assert_eq!(identity["required_capabilities"], json!([]));
-    assert_eq!(identity["min_runtime_version"], "1");
+    assert_eq!(
+        identity["min_runtime_version"],
+        bundle::RUNTIME_VERSION.to_string()
+    );
     assert_eq!(
         identity["ruleset_compatibility"],
         dir.json(&format!("content/world/pins/{SLUG}.ruleset.json"))["ruleset_compatibility"]

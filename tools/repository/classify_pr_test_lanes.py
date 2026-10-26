@@ -889,6 +889,9 @@ def server_qualification_required(files, changed_count, complete=True) -> bool:
 WORLD_BUNDLE_INPUT_FILES = frozenset({"Cargo.toml", "Cargo.lock", "rust-toolchain.toml"})
 WORLD_BUNDLE_INPUT_PREFIXES = (
     "content/world/",
+    "content/cyclopedia/",
+    "content/assets/files/",
+    "imports/cipsoft-staticdata/map/subareas/",
     "content/houses/",
     "content/creatures/definitions/",
     "content/items/definitions/",

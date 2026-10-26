@@ -174,15 +174,21 @@ pub fn item_ability_profile(
     })
 }
 
-/// PARITY-EQUIP-MODIFIERS-1: the critical hit and leech skills one Item grants, in Canary's
+/// PARITY-EQUIP-MODIFIERS-1 / EQMOD2: the combat modifiers one Item grants, with percent
+/// values in Canary's
 /// hundredths of a percent (`item_parse.cpp:482-496` writes `abilities.skills[SKILL_*]` with
 /// 10000 = 100%). Not an EQUIP-0 §3.1 ability, so the six-ability view stays as it is.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ItemOffenceModifiers {
     pub critical_chance: i64,
     pub critical_damage: i64,
     pub life_leech: i64,
     pub mana_leech: i64,
+    /// EQMOD2: hundredths of a percent; flat reflection is physical only.
+    pub cleave: i64,
+    pub reflect_percent: i64,
+    pub reflect_flat: i64,
+    pub perfect_shot: BTreeMap<u16, i64>,
 }
 
 /// The offence skills of one Item. A modifier without a Known percent grants nothing, never an
@@ -198,7 +204,28 @@ pub fn item_offence_modifiers(semantics: &ReferenceItemSemantics) -> ItemOffence
     let ReferenceItemField::Known(modifiers) = &group.modifiers else {
         return offence;
     };
+    let mut shot_damage = 0_i64;
+    let mut shot_range = 0;
     for modifier in modifiers {
+        match (&modifier.kind, &modifier.parameter) {
+            (
+                Kind::ReflectDamage,
+                ReferenceItemField::Known(ReferenceModifierParameter::SignedPoints(points)),
+            ) => {
+                offence.reflect_flat = offence.reflect_flat.saturating_add(i64::from(points.0));
+            }
+            (
+                Kind::PerfectShotDamage,
+                ReferenceItemField::Known(ReferenceModifierParameter::SignedPoints(points)),
+            ) => {
+                shot_damage = shot_damage.saturating_add(i64::from(points.0));
+            }
+            (
+                Kind::PerfectShotRange,
+                ReferenceItemField::Known(ReferenceModifierParameter::Cells(cells)),
+            ) => shot_range = cells.0,
+            _ => {}
+        }
         let ReferenceItemField::Known(ReferenceModifierParameter::RationalPercent(percent)) =
             &modifier.parameter
         else {
@@ -208,6 +235,8 @@ pub fn item_offence_modifiers(semantics: &ReferenceItemSemantics) -> ItemOffence
             continue;
         };
         let field = match modifier.kind {
+            Kind::CleavePercent => &mut offence.cleave,
+            Kind::ReflectPercentAll => &mut offence.reflect_percent,
             Kind::CriticalHitChance => &mut offence.critical_chance,
             Kind::CriticalHitDamage => &mut offence.critical_damage,
             Kind::LifeLeechAmount => &mut offence.life_leech,
@@ -215,6 +244,9 @@ pub fn item_offence_modifiers(semantics: &ReferenceItemSemantics) -> ItemOffence
             _ => continue,
         };
         *field = field.saturating_add(points);
+    }
+    if shot_range != 0 && shot_damage != 0 {
+        offence.perfect_shot.insert(shot_range, shot_damage);
     }
     offence
 }
@@ -720,6 +752,7 @@ mod tests {
                 critical_damage: 2500,
                 life_leech: 1800,
                 mana_leech: 150 + 33,
+                ..ItemOffenceModifiers::default()
             }
         );
         let ReferenceItemField::Known(group) = &mut semantics.skill_modifiers else {
