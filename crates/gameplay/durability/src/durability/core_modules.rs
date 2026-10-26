@@ -59,6 +59,7 @@ pub mod guild;
 pub mod guild_audit;
 pub mod guild_bank;
 mod guild_bank_audit;
+pub mod guild_war;
 pub mod highscore_snapshot;
 pub mod house_disposition;
 pub mod house_interior;

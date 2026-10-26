@@ -22,6 +22,7 @@ pub async fn run_guild_world_pass(
     world: WorldId,
     cursor: &mut Option<GuildId>,
 ) -> Result<(), GuildError> {
+    root.finish_due_guild_wars(authority, node, world).await?;
     run_guild_deadline_pass(root, authority, node, world).await?;
     let pending = root
         .pending_guild_disbands_after(authority, node, world, *cursor)
@@ -40,5 +41,22 @@ pub async fn run_guild_world_pass(
         .collect();
     run_guild_disband_pass(root, authority, node, world, requests).await?;
     *cursor = last;
+    Ok(())
+}
+
+#[cfg(test)]
+#[test]
+fn world_pass_wires_active_war_termination_before_other_guild_jobs() -> Result<(), &'static str> {
+    let source = include_str!("guild.rs")
+        .split_once("pub async fn run_guild_world_pass")
+        .ok_or("world pass")?
+        .1;
+    let finish = source
+        .find("root.finish_due_guild_wars")
+        .ok_or("war end step")?;
+    let deadlines = source
+        .find("run_guild_deadline_pass")
+        .ok_or("deadline step")?;
+    assert!(finish < deadlines);
     Ok(())
 }

@@ -28,6 +28,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command_type: u32,
         payload: &[u8],
     ) -> GuildReply {
+        if super::guild_war::owns(command_type) {
+            return self.guild_war_wire(admitted, command_id, payload).await;
+        }
         if super::guild_bank::owns(command_type) {
             return self
                 .guild_bank_wire(admitted, command_id, command_type, payload)
