@@ -174,6 +174,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.server_save.current()
     }
 
+    fn server_motd(&self) -> &str {
+        self.server_motd
+    }
+
     fn take_tutorial_notice(
         &self,
         session: GameSessionId,

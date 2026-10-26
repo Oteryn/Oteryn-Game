@@ -263,6 +263,11 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    /// World-configured login text; empty means no message.
+    fn server_motd(&self) -> &str {
+        ""
+    }
+
     fn take_tutorial_notice(
         &self,
         _session: GameSessionId,

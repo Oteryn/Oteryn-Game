@@ -339,6 +339,7 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
 
 /// Explicit listener configuration; nothing has a production default.
 pub struct GameplayListenerConfig {
+    pub server_motd: String,
     pub certificates: Vec<rustls::pki_types::CertificateDer<'static>>,
     pub private_key: rustls::pki_types::PrivateKeyDer<'static>,
     /// At most the registered 256.
@@ -468,6 +469,7 @@ impl ConnectionIdentifiers for SecureIdentifiers {
 /// supplies account security and signing trust, and the durable commit
 /// revalidates all of them.
 pub struct ComposedFreshAdmission<'a, 'f, 's> {
+    pub server_motd: &'a str,
     /// The diagnostic writer supplied with the composed gameplay owners.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
     pub root: &'a DurabilityRoot,
