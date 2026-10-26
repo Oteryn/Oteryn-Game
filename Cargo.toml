@@ -32,6 +32,7 @@ members = [
     "crates/error-codes",
     "crates/ntp-clock",
     "crates/client-runtime",
+    "crates/client-ui",
     "crates/platform-contracts",
     "crates/platform-client",
     "crates/protocol-oteryn",
