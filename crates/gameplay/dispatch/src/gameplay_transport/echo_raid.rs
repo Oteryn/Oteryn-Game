@@ -27,10 +27,7 @@ pub(super) struct EchoRaidRuntime {
 }
 
 impl EchoRaidRuntime {
-    #[allow(
-        dead_code,
-        reason = "installed by bundle seed composition in the next ECHORAID slice"
-    )]
+    #[allow(dead_code, reason = "candidate installation is owned by bundle boot")]
     pub fn install_candidates(&mut self, candidates: BTreeMap<u16, Vec<EligibleSpawn>>) {
         self.candidates = candidates;
         self.drive(0);
@@ -45,7 +42,7 @@ impl EchoRaidRuntime {
 
     #[allow(
         dead_code,
-        reason = "wired by the creature-death owner in the next ECHORAID slice"
+        reason = "kill-created echo hook is owned by death settlement"
     )]
     pub fn kill_echo(&mut self, creature: &str, tile: Tile, reachable: bool, roll: u16) -> bool {
         // Crystal's documented 0.05% donor chance is retained until Global publishes a rate.
@@ -54,7 +51,7 @@ impl EchoRaidRuntime {
 
     #[allow(
         dead_code,
-        reason = "called by ground-item routing in the next ECHORAID slice"
+        reason = "ground placement admission consumes this predicate"
     )]
     pub fn blocks_item(&self, tile: Tile) -> bool {
         self.coordinator.blocks_item_placement(tile)

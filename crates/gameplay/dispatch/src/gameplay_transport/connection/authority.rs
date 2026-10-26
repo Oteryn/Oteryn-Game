@@ -263,6 +263,10 @@ pub trait FreshAdmissionAuthority {
         None
     }
 
+    /// ECHORAID: advance Channel-owned echo timers and the missing-state watchdog from the
+    /// server cadence. This deliberately is not coupled to movement or any other player action.
+    fn drive_echo_cadence(&self) {}
+
     /// World-configured login text; empty means no message.
     fn server_motd(&self) -> &str {
         ""

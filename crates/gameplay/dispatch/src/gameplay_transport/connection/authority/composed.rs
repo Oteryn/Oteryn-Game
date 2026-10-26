@@ -174,6 +174,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.server_save.current()
     }
 
+    fn drive_echo_cadence(&self) {
+        if let Ok(mut echoes) = self.states.echo_raids.lock() {
+            echoes.drive(self.owner_now().get());
+        }
+    }
+
     fn server_motd(&self) -> &str {
         self.server_motd
     }
