@@ -142,6 +142,8 @@ pub struct LoopContainer {
 /// One live loop drop or map-MINT Ground item with its persisted append ordinal, for the overlay.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoopGroundItem {
+    /// Spell fields use the runtime floor axis; the map projection converts it once.
+    pub field_collision: Option<(bool, bool)>,
     pub stack_ordinal: u64,
     pub item: GroundItemInstance,
 }
@@ -209,9 +211,9 @@ fn ground_error(error: GroundCellAdmissionError) -> LoopError {
             LoopError::Refused(LoopMoveRefusal::NoRoom)
         }
         GroundCellAdmissionError::Limit(GroundCellLimitError::IncompatibleInput)
-        | GroundCellAdmissionError::Source(SpellItemError::FieldCapabilityRefused | SpellItemError::Rejected(_)) => {
-            LoopError::Refused(LoopMoveRefusal::Blocked)
-        }
+        | GroundCellAdmissionError::Source(
+            SpellItemError::FieldCapabilityRefused | SpellItemError::Rejected(_),
+        ) => LoopError::Refused(LoopMoveRefusal::Blocked),
         GroundCellAdmissionError::Source(SpellItemError::Durability(error)) => {
             LoopError::Durability(error)
         }
@@ -643,14 +645,15 @@ async fn plan_loop_destination<C: ItemLoopContent>(
 
     // An explicit split inside its own container creates an entry, without autostacking
     // into a sibling (STACK-0 §4.1, Canary Container::queryDestination).
-    let split_in_place = partial && match &target {
-        Target::Container { parent, .. } => match source {
-            SourceKind::Main => *parent == slot.item_instance_id,
-            SourceKind::Nested { parent: from } => from == *parent,
-            SourceKind::Ground | SourceKind::Depot => false,
-        },
-        Target::Ground(_) | Target::Depot { .. } => false,
-    };
+    let split_in_place = partial
+        && match &target {
+            Target::Container { parent, .. } => match source {
+                SourceKind::Main => *parent == slot.item_instance_id,
+                SourceKind::Nested { parent: from } => from == *parent,
+                SourceKind::Ground | SourceKind::Depot => false,
+            },
+            Target::Ground(_) | Target::Depot { .. } => false,
+        };
     // STACK-1: the newest compatible stack with room receives first; never on the Ground.
     let mut receiver = None;
     if let Target::Container { entries, .. } = &target
@@ -1266,39 +1269,66 @@ impl DurabilityRoot {
         mint: &super::map_item_mint::MapItemMintRequest,
         destination: &LoopDestination,
     ) -> std::result::Result<std::result::Result<(), LoopMoveRefusal>, DurabilityError> {
-        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         let fence = *fence;
         let mut context = (content, mint, destination);
-        self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| {
-            Box::pin(async move {
-                let (content, mint, destination) = *context;
-                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
-                let checked: LoopResult<()> = async {
-                    assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence,
-                        Some(mint.command), content.loop_content_digest()).await?;
-                    let (world, _) = scope_of(&fence).map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
-                    if matches!(destination, LoopDestination::Ground(_))
-                        || mint.item.container_capacity.is_some()
-                        || content.loop_facts(&mint.item.definition).as_ref() != Some(&mint.item)
-                    {
-                        return refuse(LoopMoveRefusal::NotSupported);
+        self.try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let (content, mint, destination) = *context;
+                    let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                    let checked: LoopResult<()> = async {
+                        assert_current_equipment_in_transaction(
+                            &mut tx,
+                            &record,
+                            &node,
+                            &fence,
+                            Some(mint.command),
+                            content.loop_content_digest(),
+                        )
+                        .await?;
+                        let (world, _) = scope_of(&fence)
+                            .map_err(|_| LoopError::Refused(LoopMoveRefusal::Rejected))?;
+                        if matches!(destination, LoopDestination::Ground(_))
+                            || mint.item.container_capacity.is_some()
+                            || content.loop_facts(&mint.item.definition).as_ref()
+                                != Some(&mint.item)
+                        {
+                            return refuse(LoopMoveRefusal::NotSupported);
+                        }
+                        plan_loop_destination(
+                            &mut tx,
+                            content,
+                            LoopPlan {
+                                character: fence.character_id,
+                                world: *world.as_bytes(),
+                                item: None,
+                                definition: &mint.item.definition,
+                                facts: &mint.item,
+                                quantity: mint.quantity,
+                                count: mint.quantity,
+                                partial: false,
+                                source: SourceKind::Ground,
+                                height: 0,
+                                size: 1,
+                                destination,
+                            },
+                        )
+                        .await?;
+                        Ok(())
                     }
-                    plan_loop_destination(&mut tx, content, LoopPlan {
-                        character: fence.character_id, world: *world.as_bytes(), item: None,
-                        definition: &mint.item.definition, facts: &mint.item,
-                        quantity: mint.quantity, count: mint.quantity, partial: false,
-                        source: SourceKind::Ground, height: 0, size: 1, destination,
-                    }).await?;
-                    Ok(())
-                }.await;
-                // Even a successful preflight commits no reservation or custody state.
-                match checked {
-                    Ok(()) => Ok(Ok(())),
-                    Err(error) => loop_error(error).map(Err),
-                }
+                    .await;
+                    // Even a successful preflight commits no reservation or custody state.
+                    match checked {
+                        Ok(()) => Ok(Ok(())),
+                        Err(error) => loop_error(error).map(Err),
+                    }
+                })
             })
-        }).await
+            .await
     }
 
     /// ITEM-LOOP-1: one move, merge, split, drop or pickup of `request` under the current item
@@ -1523,25 +1553,30 @@ impl DurabilityRoot {
                                 i.minted_transaction_id::text, \
                                 g.runtime_scope_ownership_generation::text, g.spatial_position, \
                                 g.corpse_ref, g.map_revision, g.content_revision, \
-                                g.native_room_placement_context, g.stack_ordinal \
+                                g.native_room_placement_context, g.stack_ordinal, \
+                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
+                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
                            FROM game_item_ground_locations g \
                            JOIN game_item_instances i USING (item_instance_id, world_id) \
+                           LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
+                           LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
                           WHERE g.world_id = encode($1,'hex')::uuid \
                             AND g.channel_id = encode($2,'hex')::uuid AND i.lifecycle = 1 \
                             AND (game_item_loop_drop_ref(g.corpse_ref) \
-                                 OR game_item_loop_map_mint_source(i.item_instance_id)) \
+                                 OR game_item_loop_map_mint_source(i.item_instance_id) \
+                                 OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL))) \
                           ORDER BY g.stack_ordinal, i.item_instance_id \
                           LIMIT $3",
                     )
                     .bind(world.as_bytes().as_slice())
                     .bind(channel.as_bytes().as_slice())
-                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + 1)
+                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + 1)
                     .fetch_all(&mut *tx)
                     .await?;
                     // Keep the bounded Ground read fail-closed, including pending map pickups.
                     // A MINT uses the same positive Ground INSERT ordinal as a loop drop;
                     // never substitute the base placement ordinal or invent a missing one.
-                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX)
+                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     if rows.len() > bound {
                         return Err(DurabilityError::InvalidStoredState);
@@ -1554,6 +1589,7 @@ impl DurabilityRoot {
                             .and_then(|ordinal| u64::try_from(ordinal).ok())
                             .ok_or(DurabilityError::InvalidStoredState)?;
                         items.push(LoopGroundItem {
+                            field_collision:row.try_get::<Option<bool>,_>("field_blocks_movement")?.zip(row.try_get("field_blocks_projectile")?),
                             stack_ordinal,
                             item: GroundItemInstance {
                                 item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,

@@ -33,6 +33,7 @@ pub struct PlayerRuntimeState {
 pub struct CreatureCommitState {
     damage: DamageReceipts,
     pub(super) conditions: ActorConditionState,
+    pub(super) field_entry_revision: Option<u64>,
 }
 impl std::ops::Deref for CreatureCommitState {
     type Target = DamageReceipts;

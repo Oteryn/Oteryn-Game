@@ -340,6 +340,51 @@ impl PlayerSpellState {
 }
 
 impl PlayerSpellState {
+    /// Stage only this field's application in the canonical store. The owner
+    /// qualifies and receipts every returned hit before publishing the successor.
+    pub fn stage_player_field_entry(
+        &self,
+        source: String,
+        definition: &native::ConditionDefinition,
+        lineage: &native::ConditionLineage,
+        facts: &native::ApplicationFacts<'_>,
+        element: values::DotElement,
+    ) -> Option<(Self, Vec<native::ConditionTick<String>>)> {
+        if self.health == 0
+            || !facts.target_is_player
+            || !source.starts_with("player:field:")
+            || !self.conditions.accepts_time(facts.now)
+        {
+            return None;
+        }
+        let mut next = self.clone();
+        match next.conditions.apply_with_lineage(
+            definition,
+            Some(source.clone()),
+            native::ConditionSourceKind::Field,
+            &[],
+            facts,
+            lineage,
+        ) {
+            Ok(_) => {}
+            Err(
+                values::ConditionRefusal::Immune
+                | values::ConditionRefusal::ReentryProtected
+                | values::ConditionRefusal::KeptCurrent,
+            ) => return Some((self.clone(), Vec::new())),
+            Err(_) => return None,
+        }
+        let ticks = next.conditions.take_due_source_application(
+            facts.now,
+            native::TickFacts {
+                in_protection_zone: false,
+                standing_on_field: Some(element),
+            },
+            &source,
+        );
+        Some((next, ticks))
+    }
+
     /// Sole canonical Player store: consume only this admitted field's application
     /// tick. Existing overdue combat/regeneration ticks retain their counters.
     pub fn stage_creature_field_contact(
@@ -416,6 +461,107 @@ impl PlayerSpellState {
 mod creature_field_initial_tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
     use super::*;
+    #[test]
+    fn player_field_entry_freezes_lineage_and_leaves_damage_to_the_live_owner() {
+        let state = PlayerSpellState::new(
+            super::super::cast::CharacterCastFacts {
+                vocation: super::super::Vocation::Knight,
+                level: 100,
+                magic_level: 10,
+                max_health: 1000,
+                max_mana: 500,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .expect("qualified fixture");
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([1; 32]);
+        let facts = native::ApplicationFacts {
+            now: 0,
+            base_speed: 100,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: true,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([1; 16]),
+        };
+        let lineage = native::ConditionLineage {
+            source_character: [1; 16],
+            source_session: [2; 16],
+            source_lease_generation: 2,
+            source_actor_placement: [3; 16],
+            source_scope_generation: 1,
+            source_content_digest: [4; 32],
+            source_catalog_digest: [5; 32],
+            source_creation_command: 1,
+        };
+        let definition = native::ConditionDefinition::new(
+            "native.field.2118",
+            1,
+            values::ConditionValues::DamageOverTime {
+                element: values::DotElement::Fire,
+                total_min: 140,
+                total_max: 140,
+                per_tick: 20,
+                interval_ms: 10000,
+                delayed: false,
+            },
+        )
+        .expect("recipe");
+        let (next, ticks) = state
+            .stage_player_field_entry(
+                "player:field:fixture".into(),
+                &definition,
+                &lineage,
+                &facts,
+                values::DotElement::Fire,
+            )
+            .expect("entry");
+        assert_eq!(
+            next.health, state.health,
+            "no HP before the actual PvP owner qualifies and receipts the hit"
+        );
+        assert_eq!(ticks.len(), 1);
+        assert_eq!(
+            ticks[0].provenance.source_kind,
+            native::ConditionSourceKind::Field
+        );
+        assert_eq!(ticks[0].provenance.lineage, Some(lineage.clone()));
+        assert!(matches!(
+            ticks[0].kind,
+            native::TickKind::Damage {
+                amount: 20,
+                refused: false,
+                ..
+            }
+        ));
+        let mut invalid = lineage;
+        invalid.source_lease_generation = 0;
+        assert!(
+            state
+                .stage_player_field_entry(
+                    "player:field:fixture".into(),
+                    &definition,
+                    &invalid,
+                    &facts,
+                    values::DotElement::Fire
+                )
+                .is_none()
+        );
+        assert!(
+            state
+                .stage_player_field_entry(
+                    "creature:field:fixture".into(),
+                    &definition,
+                    &invalid,
+                    &facts,
+                    values::DotElement::Fire
+                )
+                .is_none()
+        );
+    }
     #[test]
     fn field_contact_does_not_consume_another_overdue_owned_dot() {
         let state = PlayerSpellState::new(

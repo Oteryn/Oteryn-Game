@@ -16,6 +16,7 @@ struct Tile {
     admits: bool,
     projectile: bool,
     speed: u16,
+    field: Option<oteryn_gameplay_domain::domain::condition::DotElement>,
 }
 
 pub struct MonsterMap {
@@ -48,6 +49,18 @@ impl MonsterMap {
     }
     pub fn known(&self, at: MovementLocalPosition) -> bool {
         self.tile(at).is_some()
+    }
+    /// CREATURE-AI-0 §5.2: a harmful field costs 180 for a profile that
+    /// avoids its element. It remains traversable when no cheaper route exists.
+    pub fn field_path_cost(&self, at: MovementLocalPosition, walks_on: [bool; 3]) -> Option<u32> {
+        use oteryn_gameplay_domain::domain::condition::DotElement;
+        let avoided = match self.tile(at)?.field {
+            Some(DotElement::Fire) => !walks_on[0],
+            Some(DotElement::Energy) => !walks_on[1],
+            Some(DotElement::Poison) => !walks_on[2],
+            _ => false,
+        };
+        Some(if avoided { 180 } else { 0 })
     }
     fn tile(&self, at: MovementLocalPosition) -> Option<Tile> {
         self.tiles.get(&(at.x, at.y, at.floor)).copied().flatten()
@@ -230,6 +243,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 admits: false,
                 projectile: true,
                 speed: 0,
+                field: None,
             });
         }
         let fact = crate::native_world_read::qualified_creature_source_tile_in_transaction(
@@ -245,14 +259,24 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         let tile = fact.qualified_tile();
         let mut solid = tile.flags().block_solid;
         let mut projectile = tile.flags().block_projectile;
+        let mut field = None;
         for item in &items.items {
             let policy = self.content.item_policy(
                 &item.definition.production_key,
                 &item.definition.revision_ref,
             )?;
             let attributes = &policy.record().attributes;
-            let blocks_movement = attributes.blocks_movement?;
-            let blocks_projectile = attributes.blocks_projectile?;
+            if field.is_none()
+                && let Some(recipe) = &attributes.field_condition
+                && recipe.condition_values().ok()?.is_some()
+            {
+                field = recipe.element().ok()?;
+            }
+            let (blocks_movement, blocks_projectile) =
+                match oteryn_gameplay_items::native_world_items::source_barrier_collision(policy) {
+                    Some(flags) => flags,
+                    None => (attributes.blocks_movement?, attributes.blocks_projectile?),
+                };
             if item.blocks_movement != blocks_movement
                 || item.blocks_projectile != blocks_projectile
             {
@@ -260,6 +284,17 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
             }
             solid |= item.blocks_movement;
             projectile |= item.blocks_projectile;
+        }
+        if field.is_none() {
+            for id in tile.top_source_ids() {
+                let policy = self.content.item_policy_for_source_id(*id)?;
+                if let Some(recipe) = &policy.record().attributes.field_condition {
+                    if recipe.condition_values().ok()?.is_some() {
+                        field = recipe.element().ok()?;
+                    }
+                    break;
+                }
+            }
         }
         Some(Tile {
             admits: tile.ground_present()
@@ -276,6 +311,7 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
                 ),
             projectile,
             speed: speed::qualified_ground_speed(tile.ground_present(), tile.ground_speed()),
+            field,
         })
     }
     pub async fn read_sight(

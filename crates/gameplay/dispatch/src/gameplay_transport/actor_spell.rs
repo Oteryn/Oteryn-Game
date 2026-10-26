@@ -46,6 +46,8 @@ mod field_step_ingress;
 pub(in crate::gameplay_transport) mod native_combat_cast;
 #[path = "parameter_cast.rs"]
 mod parameter_cast;
+#[path = "player_field.rs"]
+pub(in crate::gameplay_transport) mod player_field;
 #[path = "spell_timer_callbacks.rs"]
 mod spell_timer_callbacks;
 #[path = "world_item_cast.rs"]

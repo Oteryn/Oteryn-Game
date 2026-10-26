@@ -146,6 +146,49 @@ pub struct PvpCleanup {
     pub skulls: u64,
 }
 
+/// Shared deadline write after the caller proves its current session and World
+/// in this transaction. Field casts join this write to their Item receipt, so a
+/// refused cast or an exact receipt replay cannot refresh the block.
+pub(super) async fn write_deadline_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world_id: crate::foundation::WorldId,
+    target: &PvpWriteAhead,
+) -> Result<()> {
+    if !target.kinds.any() {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    super::party_pz_fact::lock_in_transaction(tx, target.character_id.as_bytes()).await?;
+    let written = sqlx::query(
+        "INSERT INTO game_character_pvp_state AS s \
+            (character_id, world_id, logout_block_until, pz_block_until, \
+             white_skull_until) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
+             CASE WHEN $3 THEN clock_timestamp() + $6 * interval '1 millisecond' END, \
+             CASE WHEN $4 THEN clock_timestamp() + $6 * interval '1 millisecond' END, \
+             CASE WHEN $5 THEN clock_timestamp() + $6 * interval '1 millisecond' END) \
+         ON CONFLICT (character_id) DO UPDATE SET \
+             logout_block_until = GREATEST(s.logout_block_until, EXCLUDED.logout_block_until), \
+             pz_block_until = GREATEST(s.pz_block_until, EXCLUDED.pz_block_until), \
+             white_skull_until = GREATEST(s.white_skull_until, EXCLUDED.white_skull_until), \
+             revision = s.revision + 1 \
+         WHERE s.world_id = EXCLUDED.world_id",
+    )
+    .bind(target.character_id.as_bytes().as_slice())
+    .bind(world_id.as_bytes().as_slice())
+    .bind(target.kinds.logout_block)
+    .bind(target.kinds.pz_block)
+    .bind(target.kinds.white_skull)
+    .bind((PVP_BLOCK_MS + PVP_WRITE_AHEAD_SLACK_MS) as i64)
+    .execute(&mut **tx)
+    .await
+    .map_err(DurabilityError::from)?
+    .rows_affected();
+    if written != 1 {
+        return Err(CharacterProgressionError::InvalidInput);
+    }
+    Ok(())
+}
+
 impl DurabilityRoot {
     /// §8.1 write-ahead under the session fence of `fence`: the acting Character must be one of
     /// `targets`, which hold at most [`PVP_WRITE_AHEAD_MAX_TARGETS`] distinct Characters of the
@@ -186,38 +229,16 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
-                    if let Err(error) = assert_session_fence(&mut tx, &fence.item_fence(), &node).await? {
+                    if let Err(error) =
+                        assert_session_fence(&mut tx, &fence.item_fence(), &node).await?
+                    {
                         return Ok(Err(error));
                     }
                     for target in &targets {
-                        super::party_pz_fact::lock_in_transaction(&mut tx,target.character_id.as_bytes()).await?;
-                        let written = sqlx::query(
-                            "INSERT INTO game_character_pvp_state AS s \
-                                (character_id, world_id, logout_block_until, pz_block_until, \
-                                 white_skull_until) \
-                             VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, \
-                                 CASE WHEN $3 THEN clock_timestamp() + $6 * interval '1 millisecond' END, \
-                                 CASE WHEN $4 THEN clock_timestamp() + $6 * interval '1 millisecond' END, \
-                                 CASE WHEN $5 THEN clock_timestamp() + $6 * interval '1 millisecond' END) \
-                             ON CONFLICT (character_id) DO UPDATE SET \
-                                 logout_block_until = GREATEST(s.logout_block_until, EXCLUDED.logout_block_until), \
-                                 pz_block_until = GREATEST(s.pz_block_until, EXCLUDED.pz_block_until), \
-                                 white_skull_until = GREATEST(s.white_skull_until, EXCLUDED.white_skull_until), \
-                                 revision = s.revision + 1 \
-                             WHERE s.world_id = EXCLUDED.world_id",
-                        )
-                        .bind(target.character_id.as_bytes().as_slice())
-                        .bind(world_id.as_bytes().as_slice())
-                        .bind(target.kinds.logout_block)
-                        .bind(target.kinds.pz_block)
-                        .bind(target.kinds.white_skull)
-                        .bind((PVP_BLOCK_MS + PVP_WRITE_AHEAD_SLACK_MS) as i64)
-                        .execute(&mut *tx)
-                        .await?
-                        .rows_affected();
-                        if written != 1 {
-                            // The stored row belongs to another World: nothing is written.
-                            return Ok(Err(CharacterProgressionError::InvalidInput));
+                        if let Err(error) =
+                            write_deadline_in_transaction(&mut tx, world_id, target).await
+                        {
+                            return Ok(Err(error));
                         }
                     }
                     commit_semantic_transaction(tx, deadline).await?;

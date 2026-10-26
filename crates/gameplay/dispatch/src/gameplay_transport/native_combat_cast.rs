@@ -200,6 +200,8 @@ pub type NativeMarkerIntent = (
 /// variant holds its install fields by value.
 #[derive(Debug)]
 pub enum UnresolvedSpellCommit {
+    PlayerField(Box<super::player_field::PendingPlayerField>),
+    FieldRemoval(Box<super::super::field_removal::PendingFieldRemoval>),
     Ranged(Box<super::super::attack::ranged::PendingShot>),
     Pvp(Box<super::super::pvp_live::PendingPvpHit>),
     Native(Box<PendingNativeCast>),
@@ -345,6 +347,16 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let marker = match attempt {
+            UnresolvedSpellCommit::PlayerField(pending) => {
+                drop(states);
+                self.resolve_player_field(&mut permit, *pending).await;
+                return permit;
+            }
+            UnresolvedSpellCommit::FieldRemoval(removal) => {
+                drop(states);
+                self.resolve_field_removal(&mut permit, *removal).await;
+                return permit;
+            }
             UnresolvedSpellCommit::Ranged(attempt) => {
                 drop(states);
                 self.resolve_ranged_shot(&mut permit, *attempt).await;
@@ -640,7 +652,7 @@ impl PreparedNativeCombatCast {
             .map_err(|_| Error::InvalidBatch)?;
         states
             .pvp_locks
-            .try_reserve(self.batch.effects.len().saturating_mul(2))
+            .try_reserve(self.batch.effects.len().saturating_mul(2).saturating_add(1))
             .map_err(|_| Error::InvalidBatch)?;
         runtime.reserve_spell_batch(&mut physical)?;
         self.installation = Some(PreparedOwnerInstallation {
@@ -2203,6 +2215,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         reconcile_only: bool,
         lane: Option<&mut SpellLanePermit>,
     ) -> NativeCastDispatch {
+        let _ground_change = super::super::loop_move::GroundChange(Some(&self.states.loop_ground));
         use super::super::spell_access_facts::load_owned_cast_facts_in_transaction;
         use crate::durability::character_progression::CurrentCharacterGameplayFence;
         use crate::durability::fresh_admission::FreshAdmissionStore;
@@ -2625,7 +2638,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 let pvp_current=super::super::pvp_live::record_spell_harm(
                     &mut tx,owner.root,&authority,runtime,states,room,objects,
                     &attempt.prepared.batch,&mut attempt.prepared.installation.as_mut().ok_or(DurabilityError::Unavailable)?.player,
-                    pvp_secure).await.is_ok();
+                    pvp_secure,attempt.request.operations.iter().any(|operation|matches!(operation,
+                        crate::durability::spell_items_abi::SpellItemOperation::MintGround{definition,..}
+                        if definition.field_class!=crate::durability::spell_items_abi::SpellFieldClass::NotField))).await.is_ok();
                 (if pvp_current && original_tiles_current && original_party_current && carried_target_current && field_policy_current && companion_current && direct_current && rune_current {
                     attempt.prepared.validate_new_write(runtime,states,&owned,&attempt.owned,spell,
                         owner.owner_now().get(),reconnect.as_ref())

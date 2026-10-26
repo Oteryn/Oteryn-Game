@@ -30,6 +30,78 @@ pub(super) async fn legal_player(
     target: ExactActorRef,
     secure: bool,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
+    legal_player_at(
+        tx, root, authority, runtime, states, room, objects, actor, target, secure, None,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn legal_player_field(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &crate::durability::DurabilityRoot,
+    authority: &item_tx::SpellItemAuthority,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    objects: &LocalObjectRuntime,
+    actor: ExactActorRef,
+    target: ExactActorRef,
+    destination: crate::foundation::MovementLocalPosition,
+) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
+    // Fields bypass secure mode, but retain current World, protection, relation,
+    // skull, tile, equipment and identity qualification on every application.
+    let policy = crate::durability::spell_field_policy::read_world_field_policy_in_transaction(
+        tx,
+        root,
+        authority.runtime_scope(),
+        authority.scope_generation(),
+    )
+    .await
+    .map_err(|_| SpellCastDisposition::TargetIllegal)?
+    .ok_or(SpellCastDisposition::TargetIllegal)?;
+    let level = policy.bind(tx).protection_level();
+    if states
+        .get(runtime, actor, authority.game_session_id())
+        .is_none_or(|state| state.character_facts().level < level)
+        || states
+            .actors
+            .iter()
+            .find(|(candidate, _, _)| *candidate == target)
+            .is_none_or(|(_, _, state)| state.character_facts().level < level)
+    {
+        return Err(SpellCastDisposition::TargetIllegal);
+    }
+    legal_player_at(
+        tx,
+        root,
+        authority,
+        runtime,
+        states,
+        room,
+        objects,
+        actor,
+        target,
+        false,
+        Some(destination),
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn legal_player_at(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &crate::durability::DurabilityRoot,
+    authority: &item_tx::SpellItemAuthority,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    objects: &LocalObjectRuntime,
+    actor: ExactActorRef,
+    target: ExactActorRef,
+    secure: bool,
+    field_destination: Option<crate::foundation::MovementLocalPosition>,
+) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
     let reject = || SpellCastDisposition::TargetIllegal;
     let source = states
         .get(runtime, actor, authority.game_session_id())
@@ -50,11 +122,13 @@ pub(super) async fn legal_player(
         .read_actor_position(actor)
         .map_err(|_| reject())?
         .position();
-    let to = runtime
-        .read_actor_position(target)
-        .map_err(|_| reject())?
-        .position();
-    if !super::attack::sees(from, to) {
+    let to = field_destination.unwrap_or(
+        runtime
+            .read_actor_position(target)
+            .map_err(|_| reject())?
+            .position(),
+    );
+    if field_destination.is_none() && !super::attack::sees(from, to) {
         return Err(reject());
     }
     let source_tile = crate::spell::world_execution::qualified_combat_tile_in_transaction(
@@ -90,9 +164,10 @@ pub(super) async fn legal_player(
         marked: facts.marked,
     };
     check_pvp_legality(facts.world, &a, &t, &facts.relation).map_err(|_| reject())?;
-    if !storage::unarmoured_pvp_target_in_transaction(tx, &facts)
-        .await
-        .map_err(|_| reject())?
+    if field_destination.is_none()
+        && !storage::unarmoured_pvp_target_in_transaction(tx, &facts)
+            .await
+            .map_err(|_| reject())?
     {
         return Err(reject());
     }
@@ -465,9 +540,16 @@ pub(super) async fn record_spell_harm(
     batch: &OwnerCombatBatch,
     player: &mut PlayerBatchPreflight,
     secure: bool,
+    field_cast: bool,
 ) -> Result<(), SpellCastDisposition> {
     use crate::foundation::runtime_actor_spell_types::PlayerBatchProof;
     let mut pvp_locks = Vec::new();
+    if field_cast {
+        // The Item writer persists this block with the creating receipt. Cache
+        // it in that same retained installation, including after an unknown
+        // COMMIT, so disconnect handling cannot release the caster early.
+        pvp_locks.push((batch.caster, batch.command.game_session_id(), true));
+    }
     for effect in &batch.effects {
         if runtime.contains_live_creature(effect.target)
             || !matches!(

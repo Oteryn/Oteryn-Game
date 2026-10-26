@@ -415,6 +415,7 @@ pub trait FreshAdmissionAuthority {
         _intent: UseIntent,
         _key: Option<ItemKey>,
         _visible: bool,
+        _field_runes: bool,
     ) -> impl Future<Output = Option<UseOutcome>> {
         async { Some(UseOutcome::rejected()) }
     }

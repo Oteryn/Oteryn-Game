@@ -762,6 +762,7 @@ fn lower(
                 .created_item
                 .as_ref()
                 .ok_or(SpellCastDisposition::Rejected)?;
+            let preceding_items = items.len();
             for p in &geometry {
                 if world
                     .tiles
@@ -774,6 +775,9 @@ fn lower(
                         item: item.clone(),
                     });
                 }
+            }
+            if items.len() == preceding_items {
+                return Err(SpellCastDisposition::TargetIllegal);
             }
         }
         if let Some(p) = &profile.presentation {

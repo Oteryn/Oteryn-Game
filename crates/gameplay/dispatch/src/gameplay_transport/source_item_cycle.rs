@@ -222,7 +222,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.binding().world_id(),
             runtime.binding().channel_id(),
         );
-        let _ = self
+        let mut ground_change = super::loop_move::GroundChange(Some(&self.states.loop_ground));
+        let result = self
             .root
             .drain_spell_item_deadlines(
                 &permit,
@@ -232,5 +233,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 runtime.binding().scope_generation().get(),
             )
             .await;
+        if matches!(result, Ok(0)) {
+            ground_change.0 = None;
+        }
     }
 }

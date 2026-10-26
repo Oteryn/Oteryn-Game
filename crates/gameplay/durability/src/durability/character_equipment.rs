@@ -335,6 +335,22 @@ pub async fn read_equipment_in_transaction(
         items,
     })
 }
+/// Current equipment of the field victim, under the field transaction's target fence.
+pub async fn read_field_equipment_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    read: &super::spell_item_transaction::StandingTileRead,
+    root: &DurabilityRoot,
+    recovery: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+) -> Result<EquipmentSnapshot> {
+    read.check_transaction(tx).await.map_err(|_| rejected("field target transaction"))?;
+    let record = recovery.record_for(root).map_err(|_| rejected("field equipment recovery"))?;
+    let authority = assert_current_equipment_in_transaction(
+        tx, &record, node, read.fence(), None, read.content_digest(),
+    ).await?;
+    read_equipment_in_transaction(tx, &authority).await
+}
+
 /// Atomic custody move/explicit combat mode: compares the complete current owner snapshot before
 /// allocating trusted IDs, changing any item or writing the receipt. Caller owns final SQL commit.
 pub async fn apply_equipment_in_transaction(

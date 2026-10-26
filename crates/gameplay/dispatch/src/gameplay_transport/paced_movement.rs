@@ -33,7 +33,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let equipment = self.read_movement_equipment(actor, session).await;
         let now = self.owner_now().get();
         // Lock order (§1.2): the lane before any Channel guard.
-        let Some(permit) = self.spell_lane_permit().await else {
+        let Some(mut permit) = self.spell_lane_permit().await else {
             return (StepOutcome::rejected(), None);
         };
         let mut runtime = self.runtime.lock().await;
@@ -85,9 +85,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
-        // MAP-CUTOVER-1b (§1.2): a bundle World has no field items; a step reads only the bundle
-        // collision index.
-        let outcome = if self.bundle_map().is_some() {
+        // A field-enabled World reads dynamic Ground Items before committing its step.
+        let outcome = if self.bundle_map().is_some()
+            && self
+                .required_capabilities
+                .effective()
+                .binary_search(&30)
+                .is_err()
+        {
             states.step_with_creature_field_contact(
                 &mut runtime,
                 self.movement_cells,
@@ -102,7 +107,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         } else {
             self.step_with_field_ingress(
-                &permit,
+                &mut permit,
                 &mut runtime,
                 &mut states,
                 actor,
