@@ -107,13 +107,13 @@ impl DurabilityRoot {
             let mut entries=Vec::new();
             for slot in [10,6] {
                 let Some(quiver)=actual.items.iter().find(|i|i.slot==slot && content.is_quiver(&i.definition)) else { continue; };
-                let rows=sqlx::query("SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal DESC LIMIT 21 FOR UPDATE OF i")
+                let rows=sqlx::query("SELECT COALESCE((SELECT t.tier FROM game_item_tiers t WHERE t.item_instance_id=i.item_instance_id),0)::smallint AS tier,i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 ORDER BY e.placement_ordinal DESC LIMIT 21 FOR UPDATE OF i")
                     .bind(quiver.item_instance_id.as_slice()).bind(authority.world.as_slice()).fetch_all(&mut *tx).await?;
                 if rows.len()>20 { return Err(DurabilityError::InvalidStoredState); }
                 for row in rows {
                     let definition=super::item_mint::TypedDefinitionRef {family:row.try_get("definition_family")?,production_key:row.try_get("definition_production_key")?,revision_ref:row.try_get("definition_revision_ref")?};
                     if !content.is_ammunition(&definition) { return Err(DurabilityError::InvalidStoredState); }
-                    entries.push(EquippedItem {slot,item_instance_id:uuid(row.try_get("item_instance_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,definition,quantity:u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,state_revision:number(row.try_get("state_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?});
+                    entries.push(EquippedItem {slot,tier:u8::try_from(row.try_get::<i16,_>("tier")?).ok().filter(|tier| *tier <= crate::domain::forge::ItemTier::MAX).ok_or(DurabilityError::InvalidStoredState)?,item_instance_id:uuid(row.try_get("item_instance_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,definition,quantity:u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,state_revision:number(row.try_get("state_revision")?).map_err(|_| DurabilityError::InvalidStoredState)?});
                 }
             }
             super::db::commit_semantic_transaction(tx,deadline).await?;Ok(entries)
