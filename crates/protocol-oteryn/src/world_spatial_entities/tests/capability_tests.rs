@@ -9,6 +9,7 @@ fn delta_lights_cover_entered_and_updated_entries_and_views_gate_on_capability_1
     let both = EntityFields {
         item_handles: true,
         light: true,
+        party_icons: false,
     };
     let bytes =
         encode_world_spatial_entities_delta_with_fields(&change, both, &lights).expect("delta");
@@ -52,7 +53,8 @@ fn delta_lights_cover_entered_and_updated_entries_and_views_gate_on_capability_1
         EntityFields::selected(&with),
         EntityFields {
             item_handles: true,
-            light: true
+            light: true,
+            party_icons: false,
         }
     );
 }

@@ -303,6 +303,7 @@ async fn live<A: FreshAdmissionAuthority>(
         overlay_served,
         notices_selected,
         party_view,
+        party_icons: Vec::new(),
         market_revision: 1,
         item_view,
         visibility,

@@ -88,6 +88,59 @@ pub(super) async fn drive(
     entity: EntityRef,
     scenario: i16,
 ) -> TestResult {
+    if scenario == 14 {
+        // Constraint fixture only; the companion party-skull case joins through real commands.
+        let mut tx = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3)")
+            .bind(id(80).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,1,encode($4,'hex')::uuid),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,2,1,encode($4,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(101).as_slice()).bind(id(80).as_slice()).bind(id(43).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        wait_live(client, Duration::from_millis(10_100)).await?;
+        set(client, 1, modes(ExpertMode::RedFist)).await?;
+        delta(client, modes(ExpertMode::RedFist)).await?;
+        target(client, 2, Some(&entity), Rejected).await?;
+        let before = health(owner, victim).await?;
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_pvp_harm")
+                .fetch_one(pool)
+                .await?,
+            0
+        );
+        // Counterfactual: the same real attack against a non-member is unjustified.
+        let mut tx = pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM game_party_members")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM game_parties")
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        target(client, 3, Some(&entity), Accepted).await?;
+        wait_live(client, Duration::from_secs(3)).await?;
+        target(client, 4, None, Accepted).await?;
+        assert!(health(owner, victim).await? < before);
+        let (harm,ledger):(i64,i64)=sqlx::query_as("SELECT (SELECT sum(damage)::bigint FROM game_character_pvp_harm),(SELECT sum((b->>'damage')::bigint)::bigint FROM game_character_pvp_ledger l CROSS JOIN LATERAL jsonb_array_elements(l.buckets) b)").fetch_one(pool).await?;
+        assert!(harm > 0);
+        assert_eq!(
+            harm, ledger,
+            "the existing ledger counts each actual hit once"
+        );
+        assert!(
+            sqlx::query_scalar::<_, bool>(
+                "SELECT bool_and(unjustified) FROM game_character_pvp_harm"
+            )
+            .fetch_one(pool)
+            .await?
+        );
+        return Ok(());
+    }
     if scenario == 9 {
         let result = command(
             client,

@@ -233,6 +233,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         "NOT_VISIBLE" => PartyDisposition::NotVisible,
                         "LOGOUT_BLOCKED" => PartyDisposition::LogoutBlocked,
                         "NOT_MEMBER" => PartyDisposition::NotMember,
+                        "AGGRESSION_CONFLICT" => PartyDisposition::Rejected,
                         _ => PartyDisposition::Rejected,
                     });
                 }
