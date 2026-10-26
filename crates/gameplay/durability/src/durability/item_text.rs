@@ -1,4 +1,4 @@
-//! MAIL-TEXT-1: native letter/label rewrites in the direct main backpack.
+//! WRITE-1: content-qualified rewrites in the direct main backpack.
 //!
 //! This is a bounded producer with its native storage ACL in migration 0101 and
 //! registered Content/storage modules, awaiting actual transport composition.
@@ -19,7 +19,6 @@ use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_cu
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
-use crate::domain::mail::{MailText, MailTextClass, MailTextRefusal};
 use crate::foundation::{CommandRef, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Row, Transaction};
@@ -188,7 +187,6 @@ pub struct MailTextPolicy {
     definition: TypedDefinitionRef,
     source_digest: [u8; 32],
     max_text_length: u32,
-    class: MailTextClass,
     direct_backpack: MailTextDestination,
 }
 
@@ -201,34 +199,48 @@ impl MailTextPolicy {
     /// Sole producer: NativeGameplayState::mail_text_policy in
     /// durability/mail_text_policy.rs, after exact qualified profile validation.
     /// The writer independently checks this digest against current activation.
-    pub fn from_qualified_content(
+    pub(super) fn from_qualified_content(
         definition: TypedDefinitionRef,
         source_digest: [u8; 32],
         max_text_length: u32,
-        class: MailTextClass,
     ) -> Self {
         Self {
             definition,
             source_digest,
             max_text_length,
-            class,
             direct_backpack: MailTextDestination::CharacterInventory,
         }
     }
 }
 
-fn qualified_text(policy: &MailTextPolicy, request: &ItemTextWriteRequest) -> Result<MailText> {
-    let maximum = match policy.class {
-        MailTextClass::Letter => 1_999,
-        MailTextClass::Label => 79,
+fn qualified_text<'a>(
+    policy: &MailTextPolicy,
+    request: &'a ItemTextWriteRequest,
+) -> Result<&'a str> {
+    let mail_limit_matches = match policy.definition.production_key.as_str() {
+        "oteryn:item.tibia.i3505" => policy.max_text_length == 1_999,
+        "oteryn:item.tibia.i3507" => policy.max_text_length == 79,
+        "oteryn:item.tibia.i3506" => false,
+        _ => true,
     };
-    if policy.definition != request.definition || policy.max_text_length != maximum {
+    if policy.definition != request.definition
+        || !mail_limit_matches
+        || !(1..=4_000).contains(&policy.max_text_length)
+    {
         return Err(ItemTextWriteError::NotWritable);
     }
-    MailText::parse(policy.class, &request.text).map_err(|error| match error {
-        MailTextRefusal::TooLong => ItemTextWriteError::TooLong,
-        MailTextRefusal::ControlCharacter => ItemTextWriteError::Rejected,
-    })
+    let maximum = policy.max_text_length as usize;
+    if request.text.len() > maximum * 4 || request.text.chars().count() > maximum {
+        return Err(ItemTextWriteError::TooLong);
+    }
+    if request
+        .text
+        .chars()
+        .any(|character| character != '\n' && character.is_control())
+    {
+        return Err(ItemTextWriteError::Rejected);
+    }
+    Ok(&request.text)
 }
 
 /// Empty deletion preserves the revision tombstone. An unchanged rewrite does
@@ -308,7 +320,7 @@ impl DurabilityRoot {
         {
             return Err(ItemTextWriteError::InvalidInput);
         }
-        if request.text.len() > 7_996 {
+        if request.text.len() > 16_000 {
             return Err(ItemTextWriteError::TooLong);
         }
         let recovery = recovery
@@ -389,7 +401,7 @@ async fn rewrite(
     if !owned {
         return Err(ItemTextWriteError::NotReachable);
     }
-    persist_rewrite(tx, character, request, &text).await
+    persist_rewrite(tx, character, request, text).await
 }
 
 /// The identical physical key is shared by the writer and historical reader.
@@ -443,7 +455,7 @@ async fn persist_rewrite(
     tx: &mut Transaction<'_, Postgres>,
     character: &[u8; 16],
     request: &ItemTextWriteRequest,
-    text: &MailText,
+    text: &str,
 ) -> Result<ItemTextWriteOutcome> {
     let session = request.command.game_session_id();
     let command = request.command.command_id().get().to_string();
@@ -467,7 +479,7 @@ async fn persist_rewrite(
         .as_ref()
         .map(|row| row.try_get::<String, _>("text"))
         .transpose()?;
-    let (revision, changed) = next_revision(last, previous.as_deref(), text.as_str())?;
+    let (revision, changed) = next_revision(last, previous.as_deref(), text)?;
     // Server time is sampled after all blocking owner/item locks. Never trust a
     // client timestamp, a prepared request time or the transaction-start clock.
     let now: String = sqlx::query_scalar("SELECT clock_timestamp()::text")
@@ -481,7 +493,7 @@ async fn persist_rewrite(
         }
         sqlx::query("INSERT INTO game_item_text_revisions(item_instance_id,last_revision) VALUES(encode($1,'hex')::uuid,$2::text::numeric(20,0)) ON CONFLICT(item_instance_id) DO UPDATE SET last_revision=EXCLUDED.last_revision")
             .bind(request.item_instance_id.as_slice()).bind(revision.to_string()).execute(&mut **tx).await?;
-        if text.as_str().is_empty() {
+        if text.is_empty() {
             sqlx::query(
                 "DELETE FROM game_item_texts WHERE item_instance_id=encode($1,'hex')::uuid",
             )
@@ -490,7 +502,7 @@ async fn persist_rewrite(
             .await?;
         } else {
             sqlx::query("INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at,text_revision) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,$4::text::timestamptz,$5::text::numeric(20,0)) ON CONFLICT(item_instance_id) DO UPDATE SET text=EXCLUDED.text,writer_character_id=EXCLUDED.writer_character_id,written_at=EXCLUDED.written_at,text_revision=EXCLUDED.text_revision")
-                .bind(request.item_instance_id.as_slice()).bind(text.as_str()).bind(character.as_slice()).bind(&now).bind(revision.to_string()).execute(&mut **tx).await?;
+                .bind(request.item_instance_id.as_slice()).bind(text).bind(character.as_slice()).bind(&now).bind(revision.to_string()).execute(&mut **tx).await?;
         }
     }
     sqlx::query("INSERT INTO game_item_text_write_receipts(game_session_id,command_id,character_id,request_binding,text_revision,changed,written_at) VALUES(encode($1,'hex')::uuid,$2::text::numeric(20,0),encode($3,'hex')::uuid,$4,$5::text::numeric(20,0),$6,$7::text::timestamptz)")
@@ -509,6 +521,7 @@ async fn persist_rewrite(
 )]
 pub mod tests {
     use super::*;
+    use crate::domain::mail::{MailText, MailTextClass};
     use crate::foundation::{CommandId, GameSessionId};
     use sqlx::Connection;
 
@@ -534,6 +547,9 @@ pub mod tests {
             text: text.into(),
         })
     }
+
+    #[cfg(test)]
+    mod write_tests;
 
     #[test]
     fn replay_binding_covers_private_text_item_definition_and_character() -> TestResult {
@@ -583,7 +599,11 @@ pub mod tests {
         let version: String = sqlx::query_scalar("SHOW server_version_num")
             .fetch_one(&mut *connection)
             .await?;
-        assert_eq!(version, oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM, "native PostgreSQL 18.6 required");
+        assert_eq!(
+            version,
+            oteryn_gameplay_durability::CANONICAL_POSTGRES_SERVER_VERSION_NUM,
+            "native PostgreSQL 18.6 required"
+        );
         let mut tx = connection.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
@@ -631,7 +651,7 @@ pub mod tests {
             .bind(request.item_instance_id.as_slice()).execute(&mut *tx).await?;
         let text = MailText::parse(MailTextClass::Letter, &request.text)
             .map_err(|_| "invalid fixture text")?;
-        let outcome = persist_rewrite(&mut tx, character, &request, &text).await?;
+        let outcome = persist_rewrite(&mut tx, character, &request, text.as_str()).await?;
         tx.commit().await?;
         Ok(outcome)
     }
@@ -661,7 +681,7 @@ pub mod tests {
             .bind(request.item_instance_id.as_slice()).execute(&mut *tx).await?;
         let text = MailText::parse(MailTextClass::Letter, &request.text)
             .map_err(|_| "invalid fixture text")?;
-        let outcome = persist_rewrite(&mut tx, character, &request, &text).await?;
+        let outcome = persist_rewrite(&mut tx, character, &request, text.as_str()).await?;
         Ok((tx, outcome))
     }
 
@@ -768,7 +788,7 @@ pub mod tests {
         let mut tx = pool.begin().await?;
         let text = MailText::parse(MailTextClass::Letter, "three").map_err(|_| "fixture")?;
         assert!(matches!(
-            persist_rewrite(&mut tx, &character, &request(3, "three")?, &text).await,
+            persist_rewrite(&mut tx, &character, &request(3, "three")?, text.as_str()).await,
             Err(ItemTextWriteError::Exhausted)
         ));
         tx.rollback().await?;
@@ -790,7 +810,7 @@ pub mod tests {
         let character = storage_fixture(&pool).await?;
         let text = MailText::parse(MailTextClass::Letter, "private").map_err(|_| "fixture")?;
         let mut tx = pool.begin().await?;
-        persist_rewrite(&mut tx, &character, &request(1, "private")?, &text).await?;
+        persist_rewrite(&mut tx, &character, &request(1, "private")?, text.as_str()).await?;
         tx.rollback().await?;
         for query in [
             "SELECT count(*) FROM game_item_texts",
