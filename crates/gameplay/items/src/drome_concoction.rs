@@ -10,6 +10,8 @@ pub const DROME_CUBE_ITEM_ID: u32 = 36_827;
 pub const DROME_CUBE_PRICE: u32 = 2_500;
 pub const EFFECT_DURATION_SECONDS: u64 = 60 * 60;
 pub const INDIVIDUAL_COOLDOWN_SECONDS: u64 = 24 * 60 * 60;
+/// Global's maximum hunting stamina (42 hours).
+pub const STAMINA_CAP_MINUTES: u16 = 42 * 60;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(u8)]
@@ -130,6 +132,112 @@ pub struct TimedEffect {
     pub ready_at: u64,
 }
 
+/// Durable, per-character view consumed by the existing reward owners. Timestamps are absolute
+/// Unix seconds: effect time and cooldown time therefore continue while the character is offline
+/// and survive a process restart. Different concoctions coexist; only another activation of the
+/// same concoction replaces its row.
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct ConcoctionEffects(Vec<TimedEffect>);
+
+impl ConcoctionEffects {
+    pub fn from_durable(effects: impl IntoIterator<Item = TimedEffect>) -> Self {
+        let mut value = Self::default();
+        for effect in effects {
+            value.upsert(effect);
+        }
+        value
+    }
+
+    pub fn ready_at(&self, concoction: Concoction) -> Option<u64> {
+        self.0
+            .iter()
+            .find(|effect| effect.concoction == concoction)
+            .map(|effect| effect.ready_at)
+    }
+
+    pub fn activate(
+        &mut self,
+        concoction: Concoction,
+        now: u64,
+    ) -> Result<TimedEffect, ActivationError> {
+        let effect = activate(concoction, now, self.ready_at(concoction))?;
+        self.upsert(effect);
+        Ok(effect)
+    }
+
+    pub fn is_active(&self, concoction: Concoction, now: u64) -> bool {
+        self.0
+            .iter()
+            .any(|effect| effect.concoction == concoction && now < effect.active_until)
+    }
+
+    pub fn active(&self, now: u64) -> impl Iterator<Item = TimedEffect> + '_ {
+        self.0
+            .iter()
+            .copied()
+            .filter(move |effect| now < effect.active_until)
+    }
+
+    fn upsert(&mut self, effect: TimedEffect) {
+        if let Some(old) = self
+            .0
+            .iter_mut()
+            .find(|old| old.concoction == effect.concoction)
+        {
+            *old = effect;
+        } else {
+            self.0.push(effect);
+            self.0.sort_unstable_by_key(|effect| effect.concoction);
+        }
+    }
+}
+
+/// Adds Stamina Extension through the existing stamina owner's units and cap.
+pub fn extend_stamina(current_minutes: u16) -> u16 {
+    current_minutes.saturating_add(60).min(STAMINA_CAP_MINUTES)
+}
+
+/// Strike Enhancement is five percentage points, expressed in Oteryn's permyriad unit.
+pub fn strike_critical_permyriad(base: u16, active: bool) -> u16 {
+    base.saturating_add(if active { 500 } else { 0 })
+}
+
+/// The charm owner calls this only for an offensive charm which permits trigger modifiers.
+pub fn offensive_charm_chance_percent(base: u8, active: bool, permits_upgrade: bool) -> u8 {
+    base.saturating_add(if active && permits_upgrade { 5 } else { 0 })
+}
+
+pub const fn regular_loot_multiplier(active: bool) -> u8 {
+    if active { 2 } else { 1 }
+}
+
+pub const fn bestiary_progress_multiplier(active: bool) -> u8 {
+    if active { 2 } else { 1 }
+}
+
+/// Resilience reduces incoming damage of its element by eight percent.
+pub fn resilient_damage(damage: u64, active: bool) -> u64 {
+    if active {
+        damage.saturating_mul(92) / 100
+    } else {
+        damage
+    }
+}
+
+/// Pierce belongs to monster sensitivity resolution. Player targets and charm damage bypass it.
+pub fn pierce_sensitivity(
+    original_percent: u16,
+    active: bool,
+    target_is_monster: bool,
+    damage_is_charm: bool,
+) -> u16 {
+    if active && target_is_monster && !damage_is_charm {
+        pierced_monster_sensitivity(original_percent, 16)
+    } else {
+        original_percent
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ActivationError {
     Cooldown { ready_at: u64 },
@@ -232,5 +340,36 @@ mod tests {
             assert_eq!(cube_reward(index), Some(ALL_CONCOCTIONS[index as usize]));
         }
         assert_eq!(cube_reward(u64::MAX), None);
+    }
+
+    #[test]
+    fn durable_effects_stack_by_kind_tick_offline_and_reload() -> Result<(), ActivationError> {
+        let mut effects = ConcoctionEffects::default();
+        let fire = effects.activate(Concoction::FireResilience, 1_000)?;
+        effects.activate(Concoction::StrikeEnhancement, 1_001)?;
+        assert_eq!(effects.active(1_002).count(), 2);
+
+        let reloaded = ConcoctionEffects::from_durable(effects.0.clone());
+        assert!(reloaded.is_active(Concoction::FireResilience, fire.active_until - 1));
+        assert!(!reloaded.is_active(Concoction::FireResilience, fire.active_until));
+        assert_eq!(
+            reloaded.ready_at(Concoction::FireResilience),
+            Some(fire.ready_at)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn owner_adapters_apply_caps_exceptions_and_units() {
+        assert_eq!(extend_stamina(2_500), STAMINA_CAP_MINUTES);
+        assert_eq!(strike_critical_permyriad(250, true), 750);
+        assert_eq!(offensive_charm_chance_percent(10, true, false), 10);
+        assert_eq!(offensive_charm_chance_percent(10, true, true), 15);
+        assert_eq!(regular_loot_multiplier(true), 2);
+        assert_eq!(bestiary_progress_multiplier(true), 2);
+        assert_eq!(resilient_damage(100, true), 92);
+        assert_eq!(pierce_sensitivity(80, true, true, false), 96);
+        assert_eq!(pierce_sensitivity(80, true, false, false), 80);
+        assert_eq!(pierce_sensitivity(80, true, true, true), 80);
     }
 }
