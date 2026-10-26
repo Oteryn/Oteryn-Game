@@ -122,6 +122,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(visible.creatures.iter().map(|e| (VisibleKind::Creature, e)))
             .chain(visible.npcs.iter().map(|e| (VisibleKind::Npc, e)))
             .map(|(kind, e)| super::super::world_spatial::ChannelEntity {
+                health_percent: 100,
                 direction: match runtime
                     .read_actor_position(e.actor)
                     .ok()

@@ -7,6 +7,7 @@ mod wire;
 pub use crate::charm_wire::CyclopediaWireError as AppearanceError;
 pub use crate::world_spatial_entities::EntityRef;
 
+pub const CAPABILITY_FORGE_CREATURE_V1: u32 = 104;
 pub const CAPABILITY_APPEARANCE_V1: u32 = 25;
 pub const COMMAND_TYPE_APPEARANCE_CHANGE: u32 = 25;
 pub const STATE_DOMAIN_APPEARANCE: u32 = 21;
@@ -81,6 +82,8 @@ pub struct Binding {
     pub owner_time_us: u64,
     pub look: Look,
     pub selection_revision: Option<u64>,
+    /// Omitted for sessions without capability 104; 1..5 influenced, 15 fiendish.
+    pub forge_stacks: Option<u8>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Mappings {

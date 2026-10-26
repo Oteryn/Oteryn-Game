@@ -38,6 +38,31 @@ pub(super) enum Case {
     OneHit,
     PzContention,
     Eqmod2,
+    ForgeReplay,
+    ForgeFree,
+    ForgeIdle,
+    ForgeAllFree,
+    ForgeNoShared,
+    ForgeStale,
+    ForgeRollback,
+    ForgeFar,
+    ForgeForeign,
+}
+impl Case {
+    fn forge(self) -> bool {
+        matches!(
+            self,
+            Self::ForgeReplay
+                | Self::ForgeFree
+                | Self::ForgeIdle
+                | Self::ForgeAllFree
+                | Self::ForgeNoShared
+                | Self::ForgeStale
+                | Self::ForgeRollback
+                | Self::ForgeFar
+                | Self::ForgeForeign
+        )
+    }
 }
 #[test]
 fn party_xp_real_dispatch_equal_split() -> TestResult {
@@ -134,7 +159,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     let second =
         crate::world_party_runtime_postgres_cases::committed_fresh_player(h, 61, 63, 71, now)
             .await?;
-    let third = if matches!(case, Case::Foreign) {
+    let third = if matches!(case, Case::Foreign | Case::ForgeForeign) {
         Some(
             crate::world_party_runtime_postgres_cases::committed_fresh_player(h, 62, 64, 72, now)
                 .await?,
@@ -509,6 +534,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         matches!(owner.states.chat.next(players[0].1),Some(oteryn_protocol_oteryn::chat::ChatLine::Private{speaker_name,text})
         if speaker_name=="Game" && text.starts_with("Party spell"))
     );
+    if case.forge() {
+        super::forge_creature::prepare(&owner, h, &players, case).await?;
+    }
     if matches!(case, Case::Shared) {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
@@ -556,10 +584,21 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .await
             .map_err(debug)?;
     }
-    if matches!(case, Case::Foreign) {
+    if matches!(case, Case::Foreign | Case::ForgeForeign) {
         let (actor, session) = players[2];
         {
             let runtime = owner.runtime.lock().await;
+            if matches!(case, Case::ForgeForeign) {
+                assert!(owner.states.attack.lock().await.set_modes(
+                    &runtime,
+                    actor,
+                    session,
+                    oteryn_protocol_oteryn::attack::FightModes {
+                        fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
+                        ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
+                    }
+                ));
+            }
             assert_eq!(
                 owner.states.attack.lock().await.set_target(
                     &runtime,
@@ -675,11 +714,16 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         }
     }
     for (index, (actor, session)) in players.iter().copied().enumerate() {
-        if index == 2 || (index == 1 && matches!(case, Case::Inactive | Case::OneHit)) {
+        if index == 2
+            || (index == 1 && matches!(case, Case::Inactive | Case::OneHit | Case::ForgeIdle))
+        {
             continue;
         }
         let runtime = owner.runtime.lock().await;
-        if matches!(case, Case::Inactive) {
+        if matches!(
+            case,
+            Case::Inactive | Case::ForgeIdle | Case::ForgeFar | Case::ForgeForeign
+        ) {
             // This is a level-one solo fist attacker (the build seed is not a level).
             // Balanced-mode chip damage depended on the old content-seeded draws to
             // kill within 64 passes. Use the real offensive mode for this XP fixture.
@@ -711,6 +755,28 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             owner.refresh_attack_weapon(*actor, *session).await;
         }
         owner.drain_auto_attacks().await;
+        if matches!(case, Case::ForgeFar) && pass == 0 {
+            let (actor, session) = players[1];
+            let mut runtime = owner.runtime.lock().await;
+            let mut snapshot = runtime.read_actor_position(actor).map_err(debug)?;
+            for _ in 0..31 {
+                let mut next = snapshot.position();
+                next.x += 1;
+                snapshot = runtime
+                    .borrow_movement_position()
+                    .commit_cardinal(snapshot, next)
+                    .map_err(debug)?;
+            }
+            owner.states.attack.lock().await.set_target(
+                &runtime,
+                Some(&room),
+                actor,
+                session,
+                owner.owner_now(),
+                None,
+                31,
+            );
+        }
         if players.iter().any(|(_, session)| {
             owner
                 .states
@@ -823,7 +889,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             assert!(pass + 1 < REAL_SWING_PASSES, "second real kill");
         }
     }
-    if matches!(case, Case::Stale) {
+    if matches!(case, Case::Stale | Case::ForgeStale) {
         sqlx::query("UPDATE game_durability_admission_character_guards SET lease_generation=lease_generation+1 WHERE character_id=encode($1,'hex')::uuid")
             .bind(second_id.as_bytes().as_slice()).execute(&h.pool).await?;
         let principal = {
@@ -841,6 +907,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         let counts:(i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_xp_receipts),(SELECT count(*) FROM game_party_kill_xp_receipts)")
             .fetch_one(&h.pool).await?;
         assert_eq!(counts, (0, 0));
+        if case.forge() {
+            super::forge_creature::assert_no_gain(h).await?;
+        }
         eprintln!("PARTY-XP-1 POSTGRES_ASSERTIONS_COMPLETED stale_lease_rejected");
         return Ok(());
     }
@@ -867,7 +936,8 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         tx.rollback().await?;
         h.root.maintain_ready_once().await?;
     }
-    if matches!(case, Case::Replay) {
+    let mut forge_replay = None;
+    if matches!(case, Case::Replay) || (case.forge() && !matches!(case, Case::ForgeRollback)) {
         let taken = {
             let attack = owner.states.attack.lock().await;
             let session = players
@@ -882,12 +952,16 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         };
         let permit = owner.spell_lane_permit().await.ok_or("lane")?;
         let entry = taken.entry().ok_or("entry")?;
+        if case.forge() {
+            forge_replay = Some(entry.clone());
+        }
         let first = owner
             .settle_party_experience(&permit, entry)
             .await
             .map_err(debug)?;
         drop(first);
         drop(permit);
+        let retained_dust = super::forge_creature::ledger(h).await?;
         let (a, b) = join_two(
             async {
                 let permit=owner.spell_lane_permit().await.ok_or(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)?;
@@ -901,10 +975,15 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .await;
         a.map_err(debug)?;
         b.map_err(debug)?;
+        assert_eq!(
+            super::forge_creature::ledger(h).await?,
+            retained_dust,
+            "replay preserves capped/lost outcomes byte for byte"
+        );
         taken.requeue();
         owner.revision_sequencer = Default::default();
     }
-    if matches!(case, Case::Rollback) {
+    if matches!(case, Case::Rollback | Case::ForgeRollback) {
         let hex = second_id
             .as_bytes()
             .iter()
@@ -933,6 +1012,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         let counts:(i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_xp_receipts),(SELECT count(*) FROM game_party_kill_xp_receipts)")
             .fetch_one(&h.pool).await?;
         assert_eq!(counts, (0, 0));
+        if case.forge() {
+            super::forge_creature::assert_no_gain(h).await?;
+        }
         let stamina: Vec<i32> = sqlx::query_scalar(
             "SELECT stamina_minutes FROM game_character_build_state ORDER BY character_id LIMIT 3",
         )
@@ -975,6 +1057,23 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 DrainOutcome::Drained
             );
         }
+    }
+    if case.forge() {
+        if let Some(entry) = forge_replay {
+            let session = entry.facts.principal.session;
+            let retained = super::forge_creature::ledger(h).await?;
+            assert_eq!(
+                owner.states.attack.lock().await.kills().append(entry),
+                crate::gameplay_transport::kill_reward::AppendOutcome::Queued
+            );
+            owner.revision_sequencer = Default::default();
+            assert_eq!(
+                owner.drain_kill_rewards(session).await,
+                DrainOutcome::Drained
+            );
+            assert_eq!(super::forge_creature::ledger(h).await?, retained);
+        }
+        return super::forge_creature::assert_receipts(h, case).await;
     }
     let rows:Vec<(Vec<u8>,i64)>=sqlx::query_as("SELECT uuid_send(character_id),xp_awarded FROM game_party_kill_xp_members ORDER BY character_id").fetch_all(&h.pool).await?;
     let first_award = rows

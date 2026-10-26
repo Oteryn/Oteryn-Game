@@ -68,6 +68,8 @@ mod equipment_reflection;
 #[cfg(any(test, feature = "test-support"))]
 mod fixtures;
 
+mod forge_creature;
+
 #[path = "carrier/monster_summon_admission.rs"]
 mod monster_summon_admission;
 
@@ -1001,6 +1003,8 @@ pub struct ChannelRuntimeV1 {
     owner_cycle: oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
+    forge_next_tick_micros: u64,
+    forge_fiends: Vec<(ExactActorRef, Option<u64>)>,
     /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
     /// point), written with every schedule write, so a drive reads only the occurrences it runs
     /// (`O(log n)` each) instead of collecting and sorting every due occurrence.
@@ -1112,6 +1116,8 @@ impl ChannelRuntimeV1 {
                     },
                 ),
             spawn_schedule: spawn::RespawnSchedule::default(),
+            forge_next_tick_micros: 0,
+            forge_fiends: Vec::new(),
             spawn_deadlines: BTreeSet::new(),
             spawn_scan_cursor: spawn::SpawnPoint {
                 source: 0,
@@ -1242,6 +1248,9 @@ impl ChannelRuntimeV1 {
                 if activation.remaining_points > 0 {
                     self.spawn_activation = Some(activation);
                 }
+                if progress.remaining == 0 {
+                    self.drive_forge_population(now_micros)?;
+                }
                 Ok(progress)
             }
             Err(error) => {
@@ -1300,6 +1309,7 @@ impl ChannelRuntimeV1 {
         if self.carrier.spawns.is_empty() || self.spawn_activation.is_some() {
             return Ok(report);
         }
+        self.drive_forge_population(now_micros)?;
         let window = now_micros / spawn::OWNER_WINDOW_MICROS;
         if self
             .spawn_drive_window

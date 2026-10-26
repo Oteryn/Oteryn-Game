@@ -76,10 +76,16 @@ impl Binding {
         if let Some(revision) = self.selection_revision {
             uint(&mut out, 9, revision);
         }
+        if let Some(stacks) = self.forge_stacks {
+            if !matches!(stacks, 1..=5 | 15) {
+                return malformed();
+            }
+            uint(&mut out, 10, u64::from(stacks));
+        }
         bound(out, 256)
     }
     pub fn decode(input: &[u8]) -> Result<Self> {
-        let f = Fields::read(input, 256, &[2, 2, 0, 2, 0, 0, 0, 2, 0], &[])?;
+        let f = Fields::read(input, 256, &[2, 2, 0, 2, 0, 0, 0, 2, 0, 0], &[])?;
         let result = Self {
             context: f.context()?,
             appearance_ref: narrow(nonzero(f.u(3)?)?)?,
@@ -89,6 +95,7 @@ impl Binding {
             owner_time_us: f.u(7)?,
             look: Look::decode(f.b(8)?)?,
             selection_revision: f.has(9).then(|| f.u(9)).transpose()?,
+            forge_stacks: f.has(10).then(|| f.u(10).and_then(narrow)).transpose()?,
         };
         result.encode()?;
         Ok(result)

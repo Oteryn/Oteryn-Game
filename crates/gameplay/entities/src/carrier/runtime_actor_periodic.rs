@@ -236,7 +236,7 @@ impl ChannelRuntimeV1 {
                     // real tick caps independently, and lethal never resurrects.
                     health_after = health_after
                         .saturating_add(healing)
-                        .min(before.state.policy.maximum_health);
+                        .min(before.maximum_health);
                     health_after = health_after
                         .checked_sub(damage)
                         .ok_or(
@@ -542,6 +542,7 @@ mod tests {
             definition_revision: "test-1".into(),
             display_name: name.into(),
             maximum_health: 812,
+            forge_difficulty: None,
             base_speed: 220,
             outfit_look_type: 991,
             object_look_type: None,

@@ -105,6 +105,7 @@ fn knight_familiar_runtime(
                     definition_revision: "r20".into(),
                     display_name: "Knight familiar".into(),
                     maximum_health: 812,
+                    forge_difficulty: None,
                     base_speed: 220,
                     outfit_look_type: 991,
                     object_look_type: None,

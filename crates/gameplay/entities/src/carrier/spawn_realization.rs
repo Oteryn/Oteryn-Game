@@ -559,8 +559,9 @@ impl ChannelRuntimeV1 {
         let Ok(key) = std::str::from_utf8(target_identity).map(str::to_owned) else {
             return;
         };
-        if self.companion_policy(&key).is_ok() {
-            let _ = self.install_creature_policy(actor, &key);
+        if self.companion_policy(&key).is_ok() && self.install_creature_policy(actor, &key).is_ok()
+        {
+            let _ = self.classify_influenced_spawn(actor);
         }
     }
     /// Kills a live creature in place, as a lethal hit would, for owner-turn spawn tests.
