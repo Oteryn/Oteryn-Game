@@ -79,6 +79,29 @@ The 0074 house-session CHECK still forbids origin-channel metadata on a non-hous
 Instance. It must be extended together with the committed activity handoff proof,
 not independently to make a test fixture pass.
 
+The session fence now calls a separate crate-private runtime-scope sub-fence.
+That sub-fence resolves the exact assignment key and runtime guard key, locks
+both rows in the caller's existing semantic transaction, and proves the current
+holder's node possession, ownership generation and attested readiness. The
+native `boss_activity_assignment_postgres` case qualifies a successful Instance
+**runtime sub-fence** as well as allocation without readiness, wrong World,
+Instance, scope kind, ownership generation, node, registration revision and
+possession secret, replacement without successor readiness, and revocation.
+Each changed node fact retains the fixture's valid possession secret; the
+separate secret case keeps the original node facts. Channel authority continues
+to pass while the independent activity is fenced. This is not a successful
+Instance session/Character-root fence or an admission receipt.
+
+`boss_activity_channel_consumers_postgres` qualifies explicit Channel-only
+checks at tutorial islet placement, Newhaven departure and bed-regeneration
+settlement. An allocated/ready Instance cannot acknowledge the tutorial's
+pending islet placement, create or replay a Channel travel receipt, or settle
+bed regeneration against the saved Channel projection. The tutorial obligation,
+travel obligation and saved position remain available to the valid Channel
+consumer; Channel placement, departure and receipt replay succeed. Bed coverage
+uses the no-sleeper fixture and does not qualify recovery of a real sleeper in
+an admitted Instance. These checks do not substitute for an activity return.
+
 The same gameplay-fence case also qualifies Channel-only saved-position and
 respawn consumers. An allocated/ready Instance fence cannot read or overwrite
 the saved Channel position, poison another write in a mixed periodic batch, or

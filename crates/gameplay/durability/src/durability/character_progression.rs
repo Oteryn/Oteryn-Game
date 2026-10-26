@@ -454,32 +454,14 @@ pub(super) async fn assert_session_fence(
     };
     let account_text: String = session.try_get("account_id")?;
 
-    let assignment_key = assignment_scope_key(fence.runtime_scope);
-    let mut runtime_key = assignment_key;
-    runtime_key[0] = session_kind as u8;
-    let fact = node.fact();
-    let assignment = sqlx::query(
-        "SELECT 1 FROM game_runtime_scope_assignments \
-         WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
-           AND channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid \
-           AND activity_instance_id IS NOT DISTINCT FROM encode($7,'hex')::uuid \
-           AND house_key IS NULL AND scope_kind = $8 AND state = 1 \
-           AND ownership_generation = $4::text::numeric(20,0) \
-           AND holder_node_id = encode($5,'hex')::uuid \
-           AND holder_registration_revision = $6::text::numeric(20,0) \
-         FOR SHARE",
+    if !assert_runtime_scope_fence(
+        tx,
+        fence.runtime_scope,
+        fence.scope_ownership_generation,
+        node,
     )
-    .bind(assignment_key.as_slice())
-    .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_ref().map(|id| id.as_slice()))
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .bind(fact.node_id().as_bytes().as_slice())
-    .bind(fact.registration_revision().to_string())
-    .bind(instance_id.as_ref().map(|id| id.as_slice()))
-    .bind(i16::from(assignment_key[0]))
-    .fetch_optional(&mut **tx)
-    .await?;
-    if assignment.is_none() || !prove_current_incarnation(tx, node).await? {
+    .await?
+    {
         return Ok(Err(CharacterProgressionError::AuthorityRejected));
     }
 
@@ -488,26 +470,20 @@ pub(super) async fn assert_session_fence(
            FROM game_durability_admission_character_guards c \
            JOIN game_durability_admission_account_guards a \
              ON a.account_id = c.account_id \
-           JOIN game_durability_admission_runtime_guards g \
-             ON g.scope_key = $1 \
-          WHERE c.character_id = encode($2,'hex')::uuid \
-            AND c.account_id = $3::uuid \
-            AND c.world_id = encode($4,'hex')::uuid \
+          WHERE c.character_id = encode($1,'hex')::uuid \
+            AND c.account_id = $2::uuid \
+            AND c.world_id = encode($3,'hex')::uuid \
             AND c.eligible \
-            AND c.lease_generation = $5::text::numeric(20,0) \
-            AND c.holder_game_session_id = encode($6,'hex')::uuid \
+            AND c.lease_generation = $4::text::numeric(20,0) \
+            AND c.holder_game_session_id = encode($5,'hex')::uuid \
             AND a.presence_character_id = c.character_id \
-            AND a.holder_game_session_id = c.holder_game_session_id \
-            AND g.ready \
-            AND g.ownership_generation = $7::text::numeric(20,0))",
+            AND a.holder_game_session_id = c.holder_game_session_id)",
     )
-    .bind(runtime_key.as_slice())
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(&account_text)
     .bind(world_id.as_bytes().as_slice())
     .bind(fence.character_lease_generation.to_string())
     .bind(fence.game_session_id.as_bytes().as_slice())
-    .bind(fence.scope_ownership_generation.get().to_string())
     .fetch_one(&mut **tx)
     .await?;
     if !guards_ok {
@@ -515,6 +491,53 @@ pub(super) async fn assert_session_fence(
     }
 
     Ok(Ok(account_text))
+}
+
+/// Current runtime authority only, shared by the session fence. The caller has
+/// already locked admission relations in its bounded semantic transaction.
+/// This proves neither participant admission nor a Character/session/lease: an
+/// assigned, ready Instance must still pass those independent checks.
+pub(super) async fn assert_runtime_scope_fence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+    node: &NodeIncarnationProof,
+) -> std::result::Result<bool, DurabilityError> {
+    let (runtime_kind, channel_id, instance_id) = match scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => (1_u8, Some(*channel_id.as_bytes()), None),
+        RuntimeScopeRefV1::Instance { instance_id, .. } => (2, None, Some(instance_id)),
+    };
+    // Assignment kind 3 and runtime kind 2 name the same activity. Neither
+    // identity is its origin Channel or the house assignment namespace.
+    let assignment_key = assignment_scope_key(scope);
+    let mut runtime_key = assignment_key;
+    runtime_key[0] = runtime_kind;
+    let fact = node.fact();
+    let assignment = sqlx::query(
+        "SELECT 1 FROM game_runtime_scope_assignments a \
+         JOIN game_durability_admission_runtime_guards g ON g.scope_key = $9 \
+         WHERE a.scope_key = $1 AND a.world_id = encode($2,'hex')::uuid \
+           AND a.channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid \
+           AND a.activity_instance_id IS NOT DISTINCT FROM encode($7,'hex')::uuid \
+           AND a.house_key IS NULL AND a.scope_kind = $8 AND a.state = 1 \
+           AND a.ownership_generation = $4::text::numeric(20,0) \
+           AND a.holder_node_id = encode($5,'hex')::uuid \
+           AND a.holder_registration_revision = $6::text::numeric(20,0) \
+           AND g.ready AND g.ownership_generation = a.ownership_generation \
+         FOR SHARE OF a, g",
+    )
+    .bind(assignment_key.as_slice())
+    .bind(scope.world_id().as_bytes().as_slice())
+    .bind(channel_id.as_ref().map(|id| id.as_slice()))
+    .bind(generation.get().to_string())
+    .bind(fact.node_id().as_bytes().as_slice())
+    .bind(fact.registration_revision().to_string())
+    .bind(instance_id.as_ref().map(|id| id.as_slice()))
+    .bind(i16::from(assignment_key[0]))
+    .bind(runtime_key.as_slice())
+    .fetch_optional(&mut **tx)
+    .await?;
+    Ok(assignment.is_some() && prove_current_incarnation(tx, node).await?)
 }
 
 /// The complete current gameplay fence shared by every Character progression

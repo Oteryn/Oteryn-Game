@@ -16,6 +16,9 @@ use crate::foundation::admission_authority_publication::{
 };
 use crate::foundation::{RuntimeScopeRefV1, WorldId};
 
+#[path = "activity_assignment_tests/channel_consumers.rs"]
+mod channel_consumers;
+
 fn request(tag: u8, command: AssignmentCommand) -> TestResult<AssignmentRequest> {
     Ok(AssignmentRequest {
         operation_key: OperationKey::from_bytes([tag; 32]),
@@ -78,9 +81,50 @@ async fn readiness(
     fixture::ground_native_readiness_enforcement::prepare(change, now)
 }
 
+// Qualify runtime authority separately from participant admission. This calls
+// the production sub-fence inside the same recovery/admission locks and deadline
+// as its session consumer; it creates no live Instance session or actor.
+async fn runtime_fence(
+    h: &fixture::Harness,
+    scope: RuntimeScopeRefV1,
+    generation: u64,
+    node: &NodeIncarnationProof,
+) -> TestResult<bool> {
+    use crate::durability::character_authority::assert_recovery_fence;
+    use crate::durability::character_progression::assert_runtime_scope_fence;
+    use crate::durability::db::{
+        begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
+    };
+    let seal = h.recovery.seal_current().map_err(fixture::debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(fixture::debug)?;
+    let recovery = authority.record_for(&h.root).map_err(fixture::debug)?;
+    let generation =
+        crate::foundation::ScopeOwnershipGeneration::new(generation).map_err(fixture::debug)?;
+    let node = node.clone();
+    Ok(h.root
+        .try_issue_semantic_pass()?
+        .run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &recovery).await?;
+                lock_admission_relations(&mut tx).await?;
+                let current = assert_runtime_scope_fence(&mut tx, scope, generation, &node).await?;
+                commit_semantic_transaction(tx, deadline).await?;
+                Ok(current)
+            })
+        })
+        .await?)
+}
+
 async fn qualify(h: &fixture::Harness) -> TestResult {
     let world = WorldId::decode(&fixture::id(fixture::WORLD)).map_err(|e| format!("{e:?}"))?;
     let scope = RuntimeScopeRefV1::instance(world, id(88)).map_err(|e| format!("{e:?}"))?;
+    assert!(runtime_fence(h, fixture::scope()?, 1, &h.node).await?);
+    assert!(!runtime_fence(h, scope, 1, &h.node).await?);
     let assign = request(
         80,
         AssignmentCommand::Assign {
@@ -122,6 +166,8 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
     assert_eq!(first.assignment.scope, scope);
     assert_eq!(first.assignment.ownership_generation, 1);
     assert_eq!(first.assignment.source_revision, 2); // fixture Channel used revision 1
+    // Allocation without attested readiness is not current gameplay authority.
+    assert!(!runtime_fence(h, scope, 1, &h.node).await?);
     assert_eq!(committed(h.writer.submit(&assign).await)?, first);
     assert_eq!(
         h.writer
@@ -170,6 +216,43 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
             .map_err(|e| format!("{e:?}"))?,
         GuardPublicationDisposition::Applied
     );
+    // Positive Instance runtime fence: exact assignment tag 3 resolves the
+    // attested runtime tag 2. The participant session fence still refuses it.
+    assert!(runtime_fence(h, scope, 1, &h.node).await?);
+    assert!(!runtime_fence(h, scope, 1, &false_proof).await?);
+    assert!(!runtime_fence(h, scope, 2, &h.node).await?);
+    for other in [
+        wrong_world,
+        RuntimeScopeRefV1::instance(world, id(89)).map_err(fixture::debug)?,
+        // An Instance cannot borrow the existing Channel's assignment/guard,
+        // even when its UUID bytes equal that Channel's UUID bytes.
+        RuntimeScopeRefV1::instance(world, id(fixture::CHANNEL)).map_err(fixture::debug)?,
+    ] {
+        assert!(!runtime_fence(h, other, 1, &h.node).await?);
+        assert!(runtime_fence(h, scope, 1, &h.node).await?);
+    }
+    // Alter one registration fact at a time, retaining the valid possession
+    // secret. The separate false_proof case changes only possession.
+    for fact in [
+        crate::durability::runtime_scope_assignment::NodeRegistrationFact::new(
+            h.node.fact().node_id(),
+            h.node.fact().registration_revision() + 1,
+        ),
+        crate::durability::runtime_scope_assignment::NodeRegistrationFact::new(
+            crate::foundation::NodeId::decode(&id(89)).map_err(fixture::debug)?,
+            h.node.fact().registration_revision(),
+        ),
+    ] {
+        let other_registration = NodeIncarnationProof::new(
+            fact,
+            crate::durability::runtime_scope_assignment::BootstrapSecret::from_bytes(
+                h.node.sql_possession_secret().try_into()?,
+            ),
+        );
+        assert!(!runtime_fence(h, scope, 1, &other_registration).await?);
+        assert!(runtime_fence(h, scope, 1, &h.node).await?);
+    }
+    assert!(runtime_fence(h, fixture::scope()?, 1, &h.node).await?);
     let replace = request(
         82,
         AssignmentCommand::Replace {
@@ -215,6 +298,9 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
     let guard: (String, bool) = sqlx::query_as("SELECT ownership_generation::text,ready FROM game_durability_admission_runtime_guards WHERE scope_key=$1")
         .bind([&[2][..], world.as_bytes(), &id(88)].concat()).fetch_one(&h.pool).await?;
     assert_eq!(guard, ("2".into(), false));
+    assert!(!runtime_fence(h, scope, 1, &h.node).await?);
+    assert!(!runtime_fence(h, scope, 2, &h.node).await?);
+    assert!(runtime_fence(h, fixture::scope()?, 1, &h.node).await?);
     assert_eq!(
         h.root
             .publish_runtime_readiness(&h.node, &readiness(h, scope, 3, 1).await?)
@@ -229,6 +315,8 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
             .map_err(|e| format!("{e:?}"))?,
         GuardPublicationDisposition::Applied
     );
+    assert!(!runtime_fence(h, scope, 1, &h.node).await?);
+    assert!(runtime_fence(h, scope, 2, &h.node).await?);
     let predecessor = h
         .root
         .read_runtime_scope_predecessor(scope)
@@ -240,6 +328,10 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
     assert_eq!(third.assignment.state, AssignmentState::Revoked);
     assert_eq!(third.assignment.ownership_generation, 3);
     assert_eq!(third.fenced_publication_revision, Some(4));
+    for generation in 1..=3 {
+        assert!(!runtime_fence(h, scope, generation, &h.node).await?);
+    }
+    assert!(runtime_fence(h, fixture::scope()?, 1, &h.node).await?);
     assert_eq!(committed(h.writer.submit(&revoke).await)?, third);
     assert!(matches!(
         h.root
@@ -916,7 +1008,7 @@ fn boss_activity_assignment_postgres() -> TestResult {
     };
     fixture::runtime()?.block_on(async move {
         let h = fixture::Harness::create(admin, "boss_activity", false).await?;
-        eprintln!("Canonical PostgreSQL 18.6; activity kind 3 native assignment/receipt/readiness qualification");
+        eprintln!("Canonical PostgreSQL 18.6; activity kind 3 assignment/receipt/readiness and positive typed runtime fence qualification");
         let result = qualify(&h).await;
         h.cleanup().await?;
         result

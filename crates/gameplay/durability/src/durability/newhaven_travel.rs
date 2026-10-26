@@ -28,7 +28,10 @@ impl DurabilityRoot {
         arrival: PendingArrival,
         route: NewhavenRoute,
     ) -> Result<Option<PendingArrival>, CharacterProgressionError> {
-        if command.game_session_id() != fence.game_session_id
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) || command.game_session_id() != fence.game_session_id
             || arrival.world_id != fence.runtime_scope.world_id()
             || (
                 arrival.destination.x,
