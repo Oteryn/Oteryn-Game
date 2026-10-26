@@ -18,9 +18,22 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
+#[derive(Debug, Clone, Copy)]
+pub(super) struct DailyRewardSession {
+    pub(super) actor: ExactActorRef,
+    generation: u64,
+    pub(super) streak: u32,
+    pub(super) premium: bool,
+    pub(super) resting_since_us: Option<u64>,
+    pub(super) health_periods: u64,
+    pub(super) mana_periods: u64,
+    pub(super) stamina_periods: u64,
+    pub(super) soul_periods: u64,
+}
+
 #[derive(Default)]
 pub(super) struct DailyRewardSessions(
-    std::sync::Mutex<BTreeMap<GameSessionId, (ExactActorRef, u64)>>,
+    pub(super) std::sync::Mutex<BTreeMap<GameSessionId, DailyRewardSession>>,
 );
 
 /// No-capability clients retain the existing empty rejection payload.
@@ -85,6 +98,32 @@ pub(super) fn result(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) fn install_daily_resting(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        generation: u64,
+        streak: u32,
+        premium: bool,
+    ) {
+        if let Ok(mut sessions) = self.states.daily_rewards.0.lock() {
+            sessions.insert(
+                session,
+                DailyRewardSession {
+                    actor,
+                    generation,
+                    streak,
+                    premium,
+                    resting_since_us: None,
+                    health_periods: 0,
+                    mana_periods: 0,
+                    stamina_periods: 0,
+                    soul_periods: 0,
+                },
+            );
+        }
+    }
+
     pub(super) fn daily_content(&self) -> Option<(&NativeGameplayState, DailyRewardContent)> {
         let native = self.active_generation?.native_gameplay()?;
         Some((native, DailyRewardContent::load(native)?))
@@ -202,12 +241,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if reachable {
             let runtime = self.runtime.lock().await;
             let mut sessions = self.states.daily_rewards.0.lock().ok()?;
-            sessions.retain(|session, (actor, _)| {
-                runtime.player_control_facts(*actor, *session).is_ok()
+            sessions.retain(|session, state| {
+                runtime.player_control_facts(state.actor, *session).is_ok()
             });
             sessions.insert(
                 command.game_session_id,
-                (actor, fence.connection_generation.get()),
+                DailyRewardSession {
+                    actor,
+                    generation: fence.connection_generation.get(),
+                    streak: 0,
+                    premium: false,
+                    resting_since_us: None,
+                    health_periods: 0,
+                    mana_periods: 0,
+                    stamina_periods: 0,
+                    soul_periods: 0,
+                },
             );
         }
         Some(UseOutcome {
@@ -243,7 +292,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .ok()?
             .get(&command.game_session_id)
-            .map(|(_, generation)| *generation)
+            .map(|state| state.generation)
             == Some(fence.connection_generation.get());
         let view = match self
             .root
@@ -253,13 +302,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(view) => view,
             Err(_) => return refusal(5),
         };
+        let premium = self
+            .session_premium_gate(command.game_session_id)
+            .await
+            .premium_current();
+        if let Ok(mut sessions) = self.states.daily_rewards.0.lock()
+            && let Some(state) = sessions.get_mut(&command.game_session_id)
+            && state.actor == actor
+            && state.generation == fence.connection_generation.get()
+        {
+            state.streak = view.streak;
+            state.premium = premium;
+        }
         let Some(claim) = claim else {
+            let resting_bonus_bits = oteryn_gameplay_progression::daily_resting::benefits(
+                view.streak,
+                premium,
+            )
+            .bits();
             return wire::DailyRewardWall {
                 lane_day: view.lane_day,
                 streak: view.streak,
                 jokers: view.jokers,
                 claimed: view.receipt.is_some(),
                 claim_enabled: opened && reachable && view.receipt.is_none(),
+                resting_bonus_bits,
             }
             .encode()
             .ok();
@@ -334,12 +401,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(DailyRewardClaimOutcome::Committed(receipt)) => wire::DailyRewardResult {
-                disposition: 1,
-                transaction_id: Some(receipt.transaction_id),
+            Ok(DailyRewardClaimOutcome::Committed(receipt)) => {
+                if let Ok(mut sessions) = self.states.daily_rewards.0.lock()
+                    && let Some(state) = sessions.get_mut(&command.game_session_id)
+                {
+                    state.streak = receipt.streak_after;
+                }
+                wire::DailyRewardResult {
+                    disposition: 1,
+                    transaction_id: Some(receipt.transaction_id),
+                }
+                .encode()
+                .ok()
             }
-            .encode()
-            .ok(),
             Ok(DailyRewardClaimOutcome::AlreadyClaimed(_)) => refusal(2),
             Err(DailyRewardClaimError::BindingMismatch) => refusal(6),
             Err(DailyRewardClaimError::InvalidRequest) => refusal(3),

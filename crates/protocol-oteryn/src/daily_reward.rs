@@ -112,12 +112,18 @@ pub struct DailyRewardWall {
     pub jokers: u8,
     pub claimed: bool,
     pub claim_enabled: bool,
+    /// Bit set of the streak benefits currently eligible in a resting area.
+    pub resting_bonus_bits: u8,
 }
 
 impl DailyRewardWall {
     /// Free rewards until PREM-3; each position has one bounded part.
     pub fn encode(self) -> WireResult<Vec<u8>> {
-        if !(1..=7).contains(&self.lane_day) || self.streak > 100_000 || self.jokers > 3 {
+        if !(1..=7).contains(&self.lane_day)
+            || self.streak > 100_000
+            || self.jokers > 3
+            || self.resting_bonus_bits > 63
+        {
             return Err(CyclopediaWireError::Malformed);
         }
         let mut bytes = Vec::new();
@@ -139,6 +145,7 @@ impl DailyRewardWall {
             push_varint_field(&mut part, 2, quantity);
             push_message_field(&mut bytes, 6, &part);
         }
+        push_varint_field(&mut bytes, 7, u64::from(self.resting_bonus_bits));
         Ok(bytes)
     }
 }

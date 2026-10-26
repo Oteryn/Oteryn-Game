@@ -47,6 +47,7 @@ fn daily_reward_wall_and_result_follow_the_reserved_proto_and_bounds() -> WireRe
         jokers: 3,
         claimed: true,
         claim_enabled: false,
+        resting_bonus_bits: 63,
     }
     .encode()?;
     assert!(wall.len() <= MAX_DAILY_REWARD_VIEW_BYTES);

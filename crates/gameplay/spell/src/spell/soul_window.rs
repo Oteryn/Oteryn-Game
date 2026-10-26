@@ -32,6 +32,15 @@ pub enum SoulWindowChange {
 }
 
 impl PlayerSpellState {
+    /// Credits the Daily Reward day-seven resting benefit through the canonical soul pool.
+    pub fn credit_daily_resting_soul(&mut self) {
+        let before = self.soul;
+        self.gain_soul();
+        if self.soul != before {
+            self.revision = self.revision.saturating_add(1);
+        }
+    }
+
     fn soul_gain_us(&self, promoted: bool) -> u64 {
         let seconds = if promoted && self.premium_current {
             PROMOTED_SOUL_GAIN_SECONDS

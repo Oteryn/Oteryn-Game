@@ -90,6 +90,22 @@ impl ChannelSpellStates {
             .find(|s| s.actor == actor && s.session == session)
             .map(|s| s.minutes)
     }
+    pub(super) fn restore_stamina_minute(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let Some(state) = self
+            .hunting_stamina
+            .iter_mut()
+            .find(|state| state.actor == actor && state.session == session)
+        else {
+            return false;
+        };
+        let before = state.minutes;
+        state.minutes = state.minutes.saturating_add(1).min(2_520);
+        state.minutes != before
+    }
     pub(super) fn stamina_to_flush(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.hunting_stamina.iter().any(|s| {
             s.actor == actor

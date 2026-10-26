@@ -341,15 +341,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .get_mut(&runtime, actor, session)?
             .expire_owner_premium(now.get())
             .ok()?;
-        let state = states.get(&runtime, actor, session)?;
-        if !crate::spell::actor_conditions::has_periodic_damage(state) {
-            return states.tick_in_environment(
-                &mut runtime,
-                self.movement_cells,
+        let in_resting_area =
+            qualified_protection_zone(&mut runtime, self.movement_cells, actor) == Some(true);
+        let mut resting_publish = None;
+        if let Ok(mut daily) = self.states.daily_rewards.0.lock()
+            && let Some(daily) = daily.get_mut(&session)
+            && daily.actor == actor
+        {
+            resting_publish = apply_daily_resting_tick(
+                daily,
+                &runtime,
+                &mut states,
                 actor,
                 session,
-                now,
+                now.get(),
+                in_resting_area,
             );
+        }
+        if !crate::spell::actor_conditions::has_periodic_damage(
+            states.get(&runtime, actor, session)?,
+        ) {
+            return states
+                .tick_in_environment(&mut runtime, self.movement_cells, actor, session, now)
+                .or(resting_publish);
         }
         // COND-1c: a bundle World has no fixture qualified room; its periodic player damage
         // reads the same bundle view as combat (BUNDLE-COMBAT-ENABLE-1).
@@ -417,6 +431,81 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &read,
         )
     }
+}
+
+fn apply_daily_resting_tick(
+    daily: &mut crate::gameplay_transport::daily_reward::DailyRewardSession,
+    runtime: &ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    now_us: u64,
+    in_resting_area: bool,
+) -> Option<(u64, ActorVitals)> {
+    let before = states.get(runtime, actor, session)?.vitals();
+    let premium = states
+        .get(runtime, actor, session)
+        .is_some_and(|player| player.hunting_premium_current(now_us));
+    daily.premium = premium;
+    let benefit = oteryn_gameplay_progression::daily_resting::benefits(daily.streak, premium);
+    if !in_resting_area || benefit.bits() == 0 {
+        daily.resting_since_us = None;
+        daily.health_periods = 0;
+        daily.mana_periods = 0;
+        daily.stamina_periods = 0;
+        daily.soul_periods = 0;
+        return None;
+    }
+    let since = *daily.resting_since_us.get_or_insert(now_us);
+    let elapsed_ms = now_us.saturating_sub(since) / 1_000;
+    let Some(player) = states.get(runtime, actor, session) else {
+        return None;
+    };
+    let rate = oteryn_gameplay_progression::regeneration::rate(
+        oteryn_gameplay_progression::regeneration::effective(
+            player.character_facts().vocation,
+            premium,
+        ),
+    );
+    let health_periods = elapsed_ms / u64::from(rate.health_period_ms);
+    if benefit.health && health_periods > daily.health_periods {
+        let multiplier = if benefit.double_health { 2 } else { 1 };
+        let amount = (health_periods - daily.health_periods)
+            .saturating_mul(u64::from(rate.health_amount))
+            .saturating_mul(multiplier);
+        let _ = states.apply_health_gain(runtime, actor, session, amount);
+        daily.health_periods = health_periods;
+    }
+    let mana_periods = elapsed_ms / u64::from(rate.mana_period_ms);
+    if benefit.mana && mana_periods > daily.mana_periods {
+        let multiplier = if benefit.double_mana { 2 } else { 1 };
+        let amount = (mana_periods - daily.mana_periods)
+            .saturating_mul(u64::from(rate.mana_amount))
+            .saturating_mul(multiplier);
+        let _ = states.apply_mana_gain(runtime, actor, session, amount);
+        daily.mana_periods = mana_periods;
+    }
+    if benefit.stamina
+        && let Some(minutes) = states.live_stamina(actor, session)
+    {
+        let interval = u64::from(
+            oteryn_gameplay_progression::daily_resting::stamina_interval_seconds(minutes),
+        ) * 1_000_000;
+        let periods = now_us.saturating_sub(since) / interval;
+        for _ in daily.stamina_periods..periods {
+            let _ = states.restore_stamina_minute(actor, session);
+        }
+        daily.stamina_periods = periods;
+    }
+    if benefit.soul {
+        let periods = now_us.saturating_sub(since) / 60_000_000;
+        for _ in daily.soul_periods..periods {
+            let _ = states.apply_soul_gain(runtime, actor, session);
+        }
+        daily.soul_periods = periods;
+    }
+    let state = states.get(runtime, actor, session)?;
+    (state.vitals() != before).then(|| (state.revision(), state.vitals()))
 }
 
 #[cfg(test)]

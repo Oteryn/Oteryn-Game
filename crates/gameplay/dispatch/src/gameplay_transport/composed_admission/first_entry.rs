@@ -86,6 +86,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(minutes) => minutes,
             Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
         };
+        let daily_streak = match self
+            .root
+            .read_daily_reward_streak(
+                self.character,
+                *character_id.as_bytes(),
+                *current.current_runtime_scope().world_id().as_bytes(),
+            )
+            .await
+        {
+            Ok(streak) => streak,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+        };
         let stance = match self
             .root
             .read_character_stance(self.character, character_id)
@@ -324,6 +336,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor,
             game_session_id,
             stamina,
+        );
+        self.install_daily_resting(
+            actor,
+            game_session_id,
+            current.current_connection_generation().get(),
+            daily_streak,
+            false,
         );
         drop(runtime);
         drop(permit);

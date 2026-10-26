@@ -50,6 +50,28 @@ pub struct DailyRewardView {
 }
 
 impl DurabilityRoot {
+    /// Loads the one existing DAILY-1 streak ledger for admission/reconnect projection.
+    pub async fn read_daily_reward_streak(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character: [u8; 16],
+        world: [u8; 16],
+    ) -> Result<u32, DurabilityError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    let state = load_state(&mut tx, &character, &world).await?;
+                    Ok(state.streak)
+                })
+            })
+            .await
+    }
+
     /// A current-session read; neither a caller epoch nor a local clock opens a window.
     pub async fn read_daily_reward_view(
         &self,

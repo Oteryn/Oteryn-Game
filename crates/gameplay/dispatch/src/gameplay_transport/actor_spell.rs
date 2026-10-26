@@ -764,6 +764,22 @@ impl ChannelSpellStates {
             .then_some((gained, revision))
     }
 
+    pub(super) fn apply_soul_gain(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Option<(u32, u64)> {
+        if self.is_dead(actor) {
+            return None;
+        }
+        let state = self.get_mut(runtime, actor, game_session_id)?;
+        let before = state.vitals().soul;
+        state.credit_daily_resting_soul();
+        let after = state.vitals().soul;
+        Some((after.saturating_sub(before), state.revision()))
+    }
+
     /// True while no spell commit is pending for the committed player and no durable spell holds
     /// the actor reserved: nothing then stages a successor of its spell state.
     pub(in crate::gameplay_transport) fn spell_idle(

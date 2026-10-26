@@ -29,4 +29,6 @@ message DailyRewardWallV1 {
   bool claimed = 4;
   bool claim_enabled = 5;
   repeated DailyRewardPartV1 rewards = 6; // exactly 7, Free column until PREM-3
+  // HP, mana, stamina, double HP, double mana, soul; eligibility, not map presence.
+  uint32 resting_bonus_bits = 7; // 0..63
 }
