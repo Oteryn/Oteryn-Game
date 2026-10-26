@@ -108,6 +108,15 @@ impl Dependencies {
         room: crate::content::QualifiedNativeEntryRoom,
         spells: crate::spell::SpellBook,
     ) -> TestResult<Self> {
+        Self::with_content_and_capacity(pin, room, spells, 2)
+    }
+
+    fn with_content_and_capacity(
+        pin: ChannelContentPin,
+        room: crate::content::QualifiedNativeEntryRoom,
+        spells: crate::spell::SpellBook,
+        actor_capacity: usize,
+    ) -> TestResult<Self> {
         use rustls::pki_types::{CertificateDer, PrivateKeyDer};
         let expected = fence(1)?;
         let world = expected.runtime_scope.world_id();
@@ -121,7 +130,7 @@ impl Dependencies {
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            actor_capacity,
             pin,
         )
         .map_err(debug)?;
