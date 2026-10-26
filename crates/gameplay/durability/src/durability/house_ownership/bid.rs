@@ -14,6 +14,11 @@ pub struct HouseBidRequest {
     pub command: CommandRef,
     pub house_key: String,
     pub maximum: u64,
+    /// Active server catalogue pin; never supplied by the client.
+    pub content_digest: [u8; 32],
+    pub kind: &'static str,
+    /// Qualified catalogue rent used only to activate a previously unseen Hall.
+    pub catalogue_rent: u64,
 }
 
 /// Backend participant, not a protocol handler or a qualified catalogue producer.
@@ -60,12 +65,20 @@ pub(super) async fn bid_in_transaction(
         .bind(request.command.command_id().get().to_string()).fetch_optional(&mut **tx).await? {
         return if row.try_get::<Vec<u8>,_>("request_binding")?==binding {Ok(HouseOwnershipOutcome::Replayed)}else{Err(HouseOwnershipError::RequestConflict)};
     }
-    if !premium_allowed {
-        return Err(HouseOwnershipError::NotPremium);
-    }
     assert_item_only_fence(tx, fence, node)
         .await?
         .map_err(|_| HouseOwnershipError::AuthorityRejected)?;
+    let kind: Option<String> = sqlx::query_scalar("SELECT kind FROM game_house_properties WHERE world_id=encode($1,'hex')::uuid AND house_key=$2")
+        .bind(world.as_bytes().as_slice()).bind(&request.house_key).fetch_optional(&mut **tx).await?;
+    if kind.as_deref().is_some_and(|kind| kind != request.kind) || (kind.is_none() && request.kind != "guildhall") {
+        return Err(HouseOwnershipError::CatalogueUnavailable);
+    }
+    if request.kind == "guildhall" {
+        return super::guildhall::bid(tx, node, fence, request, binding).await;
+    }
+    if !premium_allowed {
+        return Err(HouseOwnershipError::NotPremium);
+    }
     let account: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(account_id) FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     let account: [u8; 16] = account
@@ -90,7 +103,7 @@ pub(super) async fn bid_in_transaction(
     let now = clock(tx).await?;
     let end = bid_deadline(now, Some(auction.try_get("end_us")?))?;
     account_lock(tx, &account, world.as_bytes()).await?;
-    let competing: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_bids WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND state=1 AND auction_id<>encode($3,'hex')::uuid)")
+    let competing: bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_bids WHERE account_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND state=1 AND guild_id IS NULL AND auction_id<>encode($3,'hex')::uuid)")
         .bind(account.as_slice()).bind(world.as_bytes().as_slice()).bind(auction_id.as_slice()).fetch_one(&mut **tx).await?;
     if competing {
         return Err(HouseOwnershipError::BidConflict);

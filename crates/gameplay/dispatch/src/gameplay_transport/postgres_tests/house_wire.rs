@@ -89,7 +89,9 @@ async fn resend(
     )
     .map_err(debug)?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    client.write_all(&(frame.len() as u32).to_be_bytes()).await?;
+    client
+        .write_all(&(frame.len() as u32).to_be_bytes())
+        .await?;
     client.write_all(&frame).await?;
     client.shutdown().await?;
     let end = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
@@ -250,7 +252,9 @@ fn scenario() -> TestResult {
             wire::encode_house_result(wire::HouseDisposition::Conflict, 0)
         );
         assert_eq!(
-            send(&owner, &mut admitted, 56, &acl(false, 2, &[])).await?.1,
+            send(&owner, &mut admitted, 56, &acl(false, 2, &[]))
+                .await?
+                .1,
             wire::encode_house_result(wire::HouseDisposition::Ok, 3)
         );
         assert_eq!(
@@ -313,7 +317,9 @@ fn scenario() -> TestResult {
         let fresh = deps.owner(&h, &authority);
         let mut conflict = initial;
         assert_eq!(
-            send(&fresh, &mut conflict, 56, &acl(false, 1, &[])).await?.1,
+            send(&fresh, &mut conflict, 56, &acl(false, 1, &[]))
+                .await?
+                .1,
             wire::encode_house_result(wire::HouseDisposition::Conflict, 0)
         );
         drop(fresh);
@@ -327,7 +333,9 @@ fn scenario() -> TestResult {
         let cancel_command = admitted.continuity.next_command_id;
         assert_eq!(cancel_command, 9);
         assert_eq!(
-            send(&restarted, &mut admitted, 56, &intent(3, &[])).await?.1,
+            send(&restarted, &mut admitted, 56, &intent(3, &[]))
+                .await?
+                .1,
             wire::encode_house_result(wire::HouseDisposition::Ok, 2)
         );
         let persisted: Option<i64> = sqlx::query_scalar(
@@ -424,7 +432,9 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(revision, "5");
         assert_eq!(
-            send(&restarted, &mut admitted, 56, &intent(3, &[])).await?.1,
+            send(&restarted, &mut admitted, 56, &intent(3, &[]))
+                .await?
+                .1,
             wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
         );
         // A later global revision never changes an already committed command's result:
@@ -444,6 +454,9 @@ fn scenario() -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(count, 6);
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[6, 40, 49, 99])
+                .ok_or("Guildhall classification capability")?;
         let guildhall_page = send(
             &restarted,
             &mut admitted,
@@ -452,7 +465,11 @@ fn scenario() -> TestResult {
         )
         .await?
         .1;
-        assert!(guildhall_page.windows(GUILDHALL.len()).any(|w| w == GUILDHALL.as_bytes()));
+        assert!(
+            guildhall_page
+                .windows(GUILDHALL.len())
+                .any(|w| w == GUILDHALL.as_bytes())
+        );
         // Field 11 carries the qualified Guildhall class (enum value 3).
         assert!(guildhall_page.windows(2).any(|field| field == [88, 3]));
         drop(replayed);

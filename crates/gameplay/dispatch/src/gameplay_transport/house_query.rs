@@ -15,6 +15,7 @@ struct Catalogue {
 struct Record {
     identity: Identity,
     kind: CatalogueKind,
+    rent_gold: u64,
     town: Town,
     provenance: Provenance,
 }
@@ -26,7 +27,7 @@ pub(super) enum CatalogueKind {
     Guildhall,
 }
 impl CatalogueKind {
-    fn database(self) -> &'static str {
+    pub(super) fn database(self) -> &'static str {
         match self {
             Self::PrivateHouse => "private_house",
             Self::Shop => "shop",
@@ -63,6 +64,12 @@ pub(super) fn source_house_kind(key: &str) -> Option<CatalogueKind> {
         .find(|house| house.identity.key == key)
         .map(|house| house.kind)
 }
+pub(super) fn source_house_rent(key: &str) -> Option<u64> {
+    catalogue()?
+        .iter()
+        .find(|house| house.identity.key == key)
+        .map(|house| house.rent_gold)
+}
 fn catalogue() -> Option<&'static Vec<Record>> {
     static CATALOGUE: OnceLock<Option<Vec<Record>>> = OnceLock::new();
     CATALOGUE
@@ -87,11 +94,14 @@ pub(super) async fn dispatch(
     actor: ExactActorRef,
     command: UseCommand,
     body: &[u8],
+    include_kind: bool,
 ) -> Option<Vec<u8>> {
     let Ok(query) = wire::decode_house_query(body) else {
         return Some(wire::encode_house_result(D::Rejected, 0));
     };
-    authority.house_query(actor, command, query).await
+    authority
+        .house_query(actor, command, query, include_kind)
+        .await
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn query_houses(
@@ -99,6 +109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         command: UseCommand,
         query: wire::HouseQuery,
+        include_kind: bool,
     ) -> Option<Vec<u8>> {
         let refuse = || Some(wire::encode_house_result(D::Rejected, 0));
         let Some(fence) = command.item_fence else {
@@ -173,7 +184,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         })
                     })
                     .collect::<Option<Vec<_>>>()?;
-                wire::encode_house_page(&rows, next.as_deref()).ok()
+                wire::encode_house_page(&rows, next.as_deref(), include_kind).ok()
             }
             Err(error) => super::house_intent::reply(Err(error)),
         }

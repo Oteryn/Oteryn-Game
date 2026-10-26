@@ -78,6 +78,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(error) => failure(error),
             };
         }
+        if command_type == oteryn_protocol_oteryn::house::COMMAND_TYPE_GUILDHALL_LEADERSHIP {
+            return self.guildhall_leadership(admitted, command_id, payload).await;
+        }
         if command_type != wire::COMMAND_TYPE_GUILD_INTENT {
             return GuildReply::Rejected;
         }

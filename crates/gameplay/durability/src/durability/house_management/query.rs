@@ -102,9 +102,9 @@ fn summary(
     })
 }
 const PAGE_SQL: &str = r#"
-SELECT p.house_key,p.state,p.rent_gold,p.revision::text,p.acl_revision::text,
+SELECT p.house_key,p.kind,p.state,p.rent_gold,p.revision::text,p.acl_revision::text,
  (SELECT CASE count(*) WHEN 0 THEN 0 WHEN 1 THEN 0 ELSE least(max(maximum),min(maximum)+1) END FROM (SELECT maximum FROM game_house_bids b WHERE b.auction_id=a.auction_id AND b.state=1 ORDER BY maximum DESC,reached_order LIMIT 2) bids) AS price,(extract(epoch FROM a.ends_at)*1000)::bigint AS ends,
- (SELECT maximum FROM game_house_bids b WHERE b.auction_id=a.auction_id AND b.character_id=encode($4,'hex')::uuid AND b.state=1 LIMIT 1) AS own_maximum,p.owner_character_id=encode($4,'hex')::uuid AS owned,CASE WHEN p.owner_character_id=encode($4,'hex')::uuid AND n.ownership_revision=p.ownership_generation THEN n.due_at_unix_ms END AS due
+ (SELECT maximum FROM game_house_bids b WHERE b.auction_id=a.auction_id AND (b.guild_id IS NULL AND b.character_id=encode($4,'hex')::uuid OR b.guild_id=(SELECT guild_id FROM game_guild_members WHERE character_id=encode($4,'hex')::uuid AND rank_level=1)) AND b.state=1 LIMIT 1) AS own_maximum,game_house_effective_owner(p.world_id,p.house_key)=encode($4,'hex')::uuid AS owned,CASE WHEN game_house_effective_owner(p.world_id,p.house_key)=encode($4,'hex')::uuid AND n.ownership_revision=p.ownership_generation THEN n.due_at_unix_ms END AS due
  FROM game_house_properties p
  LEFT JOIN game_house_move_out_notices n USING(world_id,house_key)
  LEFT JOIN game_house_auctions a ON a.world_id=p.world_id AND a.house_key=p.house_key AND NOT a.settled

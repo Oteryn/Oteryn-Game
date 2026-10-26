@@ -4,6 +4,7 @@
 
 mod bid;
 pub(super) mod eligibility;
+mod guildhall;
 mod premium;
 mod settlement;
 pub(super) mod value;
@@ -24,6 +25,7 @@ pub enum HouseOwnershipError {
     AuctionClosed,
     AuctionFull,
     Ineligible,
+    Guildhall(oteryn_gameplay_housing::guildhall::GuildhallRefusal),
     BidConflict,
     RequestConflict,
     ConcurrentChange,

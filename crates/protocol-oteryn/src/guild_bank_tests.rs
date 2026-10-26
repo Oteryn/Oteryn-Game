@@ -142,3 +142,24 @@ fn guild_bank_claim_query_and_reply_bounds() {
     reply.claims[0].amount = 0;
     assert!(encode_guild_bank_reply(&reply).is_err());
 }
+
+#[test]
+fn guildhall_ledger_kinds_roundtrip_with_conserved_deltas() {
+    for (kind, before, after) in [(4, 80_u64, 20_u64), (5, 20, 50), (6, 50, 40), (6, 40, 50)] {
+        let entry = GuildBankEntry {
+            ordinal: 1,
+            kind,
+            amount: before.abs_diff(after),
+            before,
+            after,
+            actor: id(),
+        };
+        let encoded = entry_bytes(&entry).unwrap();
+        assert_eq!(decode_entry(&encoded), Ok(entry.clone()));
+        let invalid = GuildBankEntry {
+            amount: entry.amount + 1,
+            ..entry
+        };
+        assert!(entry_bytes(&invalid).is_err());
+    }
+}

@@ -5,14 +5,58 @@ use crate::charm_wire::{
 };
 
 pub const CAPABILITY_HOUSE_V1: u32 = 49;
+pub const CAPABILITY_GUILDHALL_V1: u32 = 99;
 pub const COMMAND_TYPE_HOUSE_INTENT: u32 = 56;
 pub const COMMAND_TYPE_HOUSE_QUERY: u32 = 57;
+pub const COMMAND_TYPE_GUILDHALL_LEADERSHIP: u32 = 115;
 pub const MAX_INTENT_BYTES: usize = 4168;
 pub const MAX_QUERY_BYTES: usize = 1056;
 pub const MAX_RESULT_BYTES: usize = 32768;
 pub const MAX_MEMBERS: usize = 200;
 pub const PAGE_SIZE: usize = 20;
 type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GuildhallLeadershipIntent {
+    pub guild: [u8; 16],
+    pub successor: [u8; 16],
+    pub expected_revision: u64,
+}
+
+pub fn encode_guildhall_leadership(intent: GuildhallLeadershipIntent) -> Result<Vec<u8>> {
+    uuid(&intent.guild)?;
+    uuid(&intent.successor)?;
+    if intent.expected_revision == 0 {
+        return Err(Error::Malformed);
+    }
+    let mut out = Vec::new();
+    bytes(&mut out, 1, &intent.guild);
+    bytes(&mut out, 2, &intent.successor);
+    scalar(&mut out, 3, intent.expected_revision);
+    Ok(out)
+}
+
+pub fn decode_guildhall_leadership(body: &[u8]) -> Result<GuildhallLeadershipIntent> {
+    if body.len() > 64 {
+        return Err(Error::LimitExceeded);
+    }
+    let (mut guild, mut successor, mut revision, mut cursor) = (None, None, None, 0);
+    while cursor < body.len() {
+        match read_varint(body, &mut cursor)? {
+            10 => set_once(&mut guild, uuid(read_bytes(body, &mut cursor)?)?)?,
+            18 => set_once(&mut successor, uuid(read_bytes(body, &mut cursor)?)?)?,
+            24 => set_once(&mut revision, read_varint(body, &mut cursor)?)?,
+            _ => return Err(Error::Malformed),
+        }
+    }
+    let intent = GuildhallLeadershipIntent {
+        guild: guild.ok_or(Error::Malformed)?,
+        successor: successor.ok_or(Error::Malformed)?,
+        expected_revision: revision.ok_or(Error::Malformed)?,
+    };
+    encode_guildhall_leadership(intent)?;
+    Ok(intent)
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HouseIntent {
@@ -71,6 +115,14 @@ pub enum HouseDisposition {
     Ok = 1,
     Rejected = 2,
     Conflict = 3,
+    NotGuildLeader = 4,
+    GuildInactive = 5,
+    GuildAlreadyHasHall = 6,
+    GuildAlreadyBidding = 7,
+    InsufficientFunds = 8,
+    BalanceLimit = 9,
+    StaleLeader = 10,
+    NoChange = 11,
 }
 
 fn text(value: &[u8]) -> Result<String> {
@@ -270,7 +322,11 @@ pub fn encode_house_result(disposition: HouseDisposition, revision: u64) -> Vec<
     scalar(&mut out, 2, revision);
     out
 }
-pub fn encode_house_page(rows: &[HouseSummary], cursor: Option<&str>) -> Result<Vec<u8>> {
+pub fn encode_house_page(
+    rows: &[HouseSummary],
+    cursor: Option<&str>,
+    include_kind: bool,
+) -> Result<Vec<u8>> {
     if rows.len() > PAGE_SIZE {
         return Err(Error::LimitExceeded);
     }
@@ -282,7 +338,9 @@ pub fn encode_house_page(rows: &[HouseSummary], cursor: Option<&str>) -> Result<
         }
         let mut b = Vec::new();
         bytes(&mut b, 1, row.house.as_bytes());
-        scalar(&mut b, 11, row.kind as u64);
+        if include_kind {
+            scalar(&mut b, 11, row.kind as u64);
+        }
         scalar(&mut b, 2, row.state.into());
         scalar(&mut b, 3, row.rent);
         scalar(&mut b, 4, row.revision);

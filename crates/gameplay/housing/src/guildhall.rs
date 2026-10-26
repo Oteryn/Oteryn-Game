@@ -61,59 +61,6 @@ pub struct FundingChange {
     pub leader_balance_after: u64,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Payment {
-    pub guild: u64,
-    pub leader: u64,
-    pub guild_balance_after: u64,
-    pub leader_balance_after: u64,
-}
-
-/// A transfer price or rent debit. This is deliberately the same Guild-first
-/// ordering as escrow reservation and never mints a fallback currency source.
-pub fn plan_payment(
-    amount: u64,
-    guild_balance: u64,
-    leader_balance: u64,
-) -> Result<Payment, GuildhallRefusal> {
-    if guild_balance > GUILD_BALANCE_MAX || leader_balance > ACCOUNT_BALANCE_MAX {
-        return Err(GuildhallRefusal::BalanceLimit);
-    }
-    let guild = amount.min(guild_balance);
-    let leader = amount - guild;
-    if leader > leader_balance {
-        return Err(GuildhallRefusal::InsufficientFunds);
-    }
-    Ok(Payment {
-        guild,
-        leader,
-        guild_balance_after: guild_balance - guild,
-        leader_balance_after: leader_balance - leader,
-    })
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ReleaseCause {
-    RentFailure,
-    GuildDisband,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RentDecision {
-    Paid(Payment),
-    Evict(ReleaseCause),
-}
-
-pub fn collect_rent(rent: u64, guild: u64, leader: u64) -> RentDecision {
-    match plan_payment(rent, guild, leader) {
-        Ok(payment) => RentDecision::Paid(payment),
-        Err(GuildhallRefusal::InsufficientFunds) => RentDecision::Evict(ReleaseCause::RentFailure),
-        // Invalid retained values fail closed. The durable owner treats this as
-        // an error rather than silently releasing custody.
-        Err(_) => RentDecision::Evict(ReleaseCause::RentFailure),
-    }
-}
-
 impl Escrow {
     pub fn total(self) -> Result<u64, GuildhallRefusal> {
         self.guild
@@ -193,26 +140,81 @@ impl Escrow {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum HouseAccess {
-    None,
-    Guest,
-    Subowner,
-}
-
-/// Global rank projection onto the existing House lists. Membership is read at
-/// access time, so resign/kick removes access without copying stale ACL rows.
-pub fn rank_access(rank: Option<u8>) -> HouseAccess {
-    match rank {
-        Some(1 | 2) => HouseAccess::Subowner,
-        Some(_) => HouseAccess::Guest,
-        None => HouseAccess::None,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Draft payment/access models remain test-only; live rent and membership
+    // are resolved by the native House/Guild transaction under current locks.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    struct Payment {
+        guild: u64,
+        leader: u64,
+        guild_balance_after: u64,
+        leader_balance_after: u64,
+    }
+
+    /// A transfer price or rent debit. This is deliberately the same Guild-first
+    /// ordering as escrow reservation and never mints a fallback currency source.
+    fn plan_payment(
+        amount: u64,
+        guild_balance: u64,
+        leader_balance: u64,
+    ) -> Result<Payment, GuildhallRefusal> {
+        if guild_balance > GUILD_BALANCE_MAX || leader_balance > ACCOUNT_BALANCE_MAX {
+            return Err(GuildhallRefusal::BalanceLimit);
+        }
+        let guild = amount.min(guild_balance);
+        let leader = amount - guild;
+        if leader > leader_balance {
+            return Err(GuildhallRefusal::InsufficientFunds);
+        }
+        Ok(Payment {
+            guild,
+            leader,
+            guild_balance_after: guild_balance - guild,
+            leader_balance_after: leader_balance - leader,
+        })
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum ReleaseCause {
+        RentFailure,
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum RentDecision {
+        Paid(Payment),
+        Evict(ReleaseCause),
+    }
+
+    fn collect_rent(rent: u64, guild: u64, leader: u64) -> RentDecision {
+        match plan_payment(rent, guild, leader) {
+            Ok(payment) => RentDecision::Paid(payment),
+            Err(GuildhallRefusal::InsufficientFunds) => {
+                RentDecision::Evict(ReleaseCause::RentFailure)
+            }
+            // Invalid retained values fail closed. The durable owner treats this as
+            // an error rather than silently releasing custody.
+            Err(_) => RentDecision::Evict(ReleaseCause::RentFailure),
+        }
+    }
+
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    enum HouseAccess {
+        None,
+        Guest,
+        Subowner,
+    }
+
+    /// Global rank projection onto the existing House lists. Membership is read at
+    /// access time, so resign/kick removes access without copying stale ACL rows.
+    fn rank_access(rank: Option<u8>) -> HouseAccess {
+        match rank {
+            Some(1 | 2) => HouseAccess::Subowner,
+            Some(_) => HouseAccess::Guest,
+            None => HouseAccess::None,
+        }
+    }
 
     #[test]
     fn only_active_leader_with_global_allowance_qualifies() {
