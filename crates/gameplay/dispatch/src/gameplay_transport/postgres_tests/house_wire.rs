@@ -1,4 +1,9 @@
 //! Real command bytes -> production connection/composed owner -> runtime-role PostgreSQL -> result.
+#[path = "house_wire/bid.rs"]
+mod bid;
+#[path = "house_wire/runtime_gate.rs"]
+mod runtime_gate;
+
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session, reset};
 use crate::foundation::{MessageType, decode_wire_envelope};
@@ -442,5 +447,3 @@ fn scenario() -> TestResult {
         h.cleanup().await
     })
 }
-#[path = "house_wire/bid.rs"]
-mod bid;
