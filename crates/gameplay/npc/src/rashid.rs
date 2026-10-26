@@ -100,6 +100,196 @@ pub enum MissionProof {
     SundayRecognition,
 }
 
+/// Items whose ownership is changed by the Travelling Trader callbacks.  These are semantic
+/// identities rather than client ids: the item owner resolves them against the admitted bundle.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum MissionItem {
+    DeerTrophy,
+    HeavyPackage,
+    ScarabCheese,
+    FineVase,
+    CrimsonSword,
+    GoldfishBowl,
+    IronOre,
+}
+
+/// Provenance retained with an item created or transformed by a prerequisite NPC callback.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ItemProvenance {
+    pub purchased_at_unix_ms: Option<i64>,
+    pub paid_gold: u16,
+    pub forbidden_transport: bool,
+    pub broken: bool,
+    pub ores_spent: u8,
+}
+
+impl ItemProvenance {
+    const PLAIN: Self = Self {
+        purchased_at_unix_ms: None,
+        paid_gold: 0,
+        forbidden_transport: false,
+        broken: false,
+        ores_spent: 0,
+    };
+}
+
+/// Durable values changed by a mission. The admitted character owner persists this value in the
+/// same transaction as its quest transition; [`execute_mission`] deliberately uses copy/commit so
+/// a refused callback cannot leave a partial item or money mutation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MissionLedger {
+    pub completed: u8,
+    pub gold: u64,
+    pub items: std::collections::BTreeMap<MissionItem, ItemProvenance>,
+    pub recognised_trader_achievement: bool,
+}
+
+/// A prerequisite NPC operation admitted by the item/money owner.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Prerequisite {
+    BuyScarabCheese { now_unix_ms: i64 },
+    BuyFineVase,
+    BreakFineVase,
+    UseForbiddenCheeseTransport,
+    ForgeCrimsonSword,
+}
+
+/// Apply a prerequisite callback atomically. Prices and input quantities are part of the native
+/// callback, not facts supplied by the client.
+pub fn apply_prerequisite(ledger: &mut MissionLedger, operation: Prerequisite) -> bool {
+    let mut next = ledger.clone();
+    let accepted = match operation {
+        Prerequisite::BuyScarabCheese { now_unix_ms } if next.gold >= 100 => {
+            next.gold -= 100;
+            next.items.insert(
+                MissionItem::ScarabCheese,
+                ItemProvenance {
+                    purchased_at_unix_ms: Some(now_unix_ms),
+                    paid_gold: 100,
+                    ..ItemProvenance::PLAIN
+                },
+            );
+            true
+        }
+        Prerequisite::BuyFineVase if next.gold >= 1_000 => {
+            next.gold -= 1_000;
+            next.items.insert(
+                MissionItem::FineVase,
+                ItemProvenance {
+                    paid_gold: 1_000,
+                    ..ItemProvenance::PLAIN
+                },
+            );
+            true
+        }
+        Prerequisite::BreakFineVase => {
+            next.items
+                .get_mut(&MissionItem::FineVase)
+                .is_some_and(|item| {
+                    item.broken = true;
+                    true
+                })
+        }
+        Prerequisite::UseForbiddenCheeseTransport => next
+            .items
+            .get_mut(&MissionItem::ScarabCheese)
+            .is_some_and(|item| {
+                item.forbidden_transport = true;
+                true
+            }),
+        Prerequisite::ForgeCrimsonSword
+            if next.gold >= 400 && next.items.remove(&MissionItem::IronOre).is_some() =>
+        {
+            next.gold -= 400;
+            next.items.insert(
+                MissionItem::CrimsonSword,
+                ItemProvenance {
+                    paid_gold: 400,
+                    ores_spent: 3,
+                    ..ItemProvenance::PLAIN
+                },
+            );
+            true
+        }
+        _ => false,
+    };
+    if accepted {
+        *ledger = next;
+    }
+    accepted
+}
+
+/// Admit and commit one weekday hand-in. `now_unix_ms` is owner time and is used to verify the
+/// cheese purchase timestamp. Every removal, grant, achievement and quest cursor change becomes
+/// visible together.
+pub fn execute_mission(ledger: &mut MissionLedger, day: u8, now_unix_ms: i64) -> bool {
+    let mut next = ledger.clone();
+    let proof = match next.completed {
+        0 if next.items.contains_key(&MissionItem::DeerTrophy) => MissionProof::DeerTrophy,
+        1 if next.items.contains_key(&MissionItem::HeavyPackage) => MissionProof::HeavyPackage,
+        2 => match next.items.get(&MissionItem::ScarabCheese) {
+            Some(item) => MissionProof::ScarabCheese {
+                age_seconds: item
+                    .purchased_at_unix_ms
+                    .and_then(|at| now_unix_ms.checked_sub(at))
+                    .and_then(|age| u16::try_from(age / 1_000).ok())
+                    .unwrap_or(u16::MAX),
+                forbidden_transport: item.forbidden_transport,
+            },
+            None => return false,
+        },
+        3 => match next.items.get(&MissionItem::FineVase) {
+            Some(item) => MissionProof::FineVase {
+                broken: item.broken,
+                paid_gold: item.paid_gold,
+            },
+            None => return false,
+        },
+        4 => match next.items.get(&MissionItem::CrimsonSword) {
+            Some(item) => MissionProof::CrimsonSword {
+                paid_gold: item.paid_gold,
+                ores_spent: item.ores_spent,
+            },
+            None => return false,
+        },
+        5 if next.items.contains_key(&MissionItem::GoldfishBowl) => MissionProof::GoldfishBowl,
+        6 => MissionProof::SundayRecognition,
+        _ => return false,
+    };
+    if !accepts_mission(day, next.completed, proof) {
+        return false;
+    }
+    let consumed = [
+        MissionItem::DeerTrophy,
+        MissionItem::HeavyPackage,
+        MissionItem::ScarabCheese,
+        MissionItem::FineVase,
+        MissionItem::CrimsonSword,
+        MissionItem::GoldfishBowl,
+    ];
+    if let Some(consumed) = consumed.get(usize::from(next.completed)) {
+        next.items.remove(consumed);
+    }
+    match next.completed {
+        0 => {
+            next.items
+                .insert(MissionItem::HeavyPackage, ItemProvenance::PLAIN);
+        }
+        1 => {}
+        2 => {}
+        3 => {}
+        4 => {
+            next.items
+                .insert(MissionItem::GoldfishBowl, ItemProvenance::PLAIN);
+        }
+        6 => next.recognised_trader_achievement = true,
+        _ => {}
+    }
+    next.completed += 1;
+    *ledger = next;
+    true
+}
+
 /// Mission order and exact Global acceptance constraints. The caller remains responsible for
 /// atomically consuming the named item and committing the corresponding quest transition.
 #[must_use]
@@ -245,6 +435,78 @@ mod tests {
         assert!(!trade_unlocked(Some(0)));
         assert!(trade_unlocked(Some(1)));
         assert!(!trade_unlocked(Some(2)));
+    }
+
+    #[test]
+    fn admitted_callbacks_and_all_seven_hand_ins_are_atomic() {
+        let mut ledger = MissionLedger {
+            completed: 0,
+            gold: 2_000,
+            items: [(MissionItem::DeerTrophy, ItemProvenance::PLAIN)]
+                .into_iter()
+                .collect(),
+            recognised_trader_achievement: false,
+        };
+        assert!(execute_mission(&mut ledger, 0, 1_000));
+        assert!(execute_mission(&mut ledger, 1, 2_000));
+        assert!(apply_prerequisite(
+            &mut ledger,
+            Prerequisite::BuyScarabCheese {
+                now_unix_ms: 10_000
+            }
+        ));
+        let before_late = ledger.clone();
+        assert!(!execute_mission(&mut ledger, 2, 1_811_000));
+        assert_eq!(ledger, before_late, "a refusal changes no durable value");
+        assert!(execute_mission(&mut ledger, 2, 1_810_000));
+        assert!(apply_prerequisite(&mut ledger, Prerequisite::BuyFineVase));
+        assert!(execute_mission(&mut ledger, 3, 1_820_000));
+        ledger
+            .items
+            .insert(MissionItem::IronOre, ItemProvenance::PLAIN);
+        assert!(apply_prerequisite(
+            &mut ledger,
+            Prerequisite::ForgeCrimsonSword
+        ));
+        assert!(execute_mission(&mut ledger, 4, 1_830_000));
+        assert!(execute_mission(&mut ledger, 5, 1_840_000));
+        assert!(execute_mission(&mut ledger, 6, 1_850_000));
+        assert_eq!(ledger.completed, 7);
+        assert!(ledger.recognised_trader_achievement);
+        assert_eq!(ledger.gold, 500);
+        assert!(ledger.items.is_empty());
+    }
+
+    #[test]
+    fn breakage_and_transport_provenance_refuse_without_partial_commit() {
+        let base = MissionLedger {
+            completed: 2,
+            gold: 2_000,
+            items: Default::default(),
+            recognised_trader_achievement: false,
+        };
+        let mut transported = base.clone();
+        assert!(apply_prerequisite(
+            &mut transported,
+            Prerequisite::BuyScarabCheese { now_unix_ms: 0 }
+        ));
+        assert!(apply_prerequisite(
+            &mut transported,
+            Prerequisite::UseForbiddenCheeseTransport
+        ));
+        let snapshot = transported.clone();
+        assert!(!execute_mission(&mut transported, 2, 1_000));
+        assert_eq!(transported, snapshot);
+
+        let mut broken = MissionLedger {
+            completed: 3,
+            ..base
+        };
+        assert!(apply_prerequisite(&mut broken, Prerequisite::BuyFineVase));
+        assert!(apply_prerequisite(&mut broken, Prerequisite::BreakFineVase));
+        let snapshot = broken.clone();
+        assert!(!execute_mission(&mut broken, 3, 1_000));
+        assert_eq!(broken, snapshot);
     }
 
     #[test]
