@@ -56,6 +56,10 @@ where
             Err(error) => return Err(close(stream, session.admitted, error).await),
         },
     };
+    let mut input_permit = authority.enter_input().await;
+    if input_permit.is_some() && !authority.house_transfer_input(session.admitted).await {
+        return Err(ServeEnd::Disconnected);
+    }
     match session.commands.begin(
         command.command_id,
         session.generation,
@@ -104,7 +108,16 @@ where
     // like an unregistered one, before any decode or authority call.
     // OPS-SAVE-2: the permit is held while the command runs, not while its result is
     // written, so the shutdown snapshot waits for the effect only.
-    let mut input_permit = authority.enter_input().await;
+    if input_permit.is_some()
+        && command.command_type
+            == oteryn_protocol_oteryn::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type)
+    {
+        return super::house_transfer::execute(stream, authority, session, command, input_permit)
+            .await;
+    }
     if input_permit.is_none() && session.reconcile_original_bank {
         // No current input grant: do not run money work, and do not falsely terminate an
         // accepted original command whose retained Bank status has not been classified.

@@ -1,0 +1,23 @@
+{
+  "id": "QUICKLOOT1-RL-1281",
+  "owner_contract": "../architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md",
+  "resource": "Nearby corpses considered by one manual quick-loot command",
+  "unit": "corpses per command",
+  "hard_maximum": 30,
+  "configurable_range": {
+    "minimum": 30,
+    "maximum": 30
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "The durable owner limits its same-floor adjacent-cell query and remaining item query before allocation; the shared planner and execution adapter bound work before committing custody. Remaining items stay in their corpses.",
+  "client_visible": true,
+  "boundary_tests": [
+    "nearby_is_bounded_and_exclusive_rights_are_kept: 32 candidate corpses consider only the first 30",
+    "quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences: production router commits exact accepted results and preserves refused custody"
+  ],
+  "consumers": [
+    "crates/gameplay/items/src/quick_loot.rs",
+    "crates/gameplay/durability/src/durability/item_quick_loot.rs"
+  ],
+  "notes": "QUICKLOOT-1. One terminal batch receipt and current session-generation fence cover every accepted child move."
+}

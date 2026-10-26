@@ -757,6 +757,10 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_house_disposition_delivery_proven",
                 "game_house_disposition_native_removal_proven",
                 "game_item_location_exclusive",
+                // QUICKLOOT-1: read-only Gold Pouch custody proofs. The pouch stays
+                // in Inbox; only nested coin entries change, never Inbox rows.
+                "game_item_loop_line_admit",
+                "game_item_loop_owner",
                 "game_item_transfer_consistency_guard",
                 // MARKET-1: read-only final-custody proof of the Inbox output;
                 // delivery goes through game_character_inbox_deliver.
