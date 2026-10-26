@@ -1,11 +1,11 @@
-//! WRITE-1: content-qualified rewrites in the direct main backpack.
+//! WRITE-1: content-qualified rewrites in the held container tree and equipment.
 //!
 //! This is a bounded producer with its native storage ACL in migration 0101 and
 //! registered Content/storage modules, awaiting actual transport composition.
-//! It admits neither write-once definitions nor other custody locations.
-//! The compositor must also refuse an
-//! item offered in player trade (WRITE-0 §5.1). D1369 defers that shared guard
-//! until SESSION-INGRESS-1 after A2; do not activate this writer before integration.
+//! It admits neither write-once definitions nor external custody locations.
+//! The compositor must also apply the Channel trade owner's physical exclusion
+//! under its mutation lane (WRITE-0 §5.1). Do not activate this writer before
+//! that guard and the actual transport composition are integrated.
 //! No player text, writer name or text-derived diagnostic enters value audit.
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
@@ -187,12 +187,6 @@ pub struct MailTextPolicy {
     definition: TypedDefinitionRef,
     source_digest: [u8; 32],
     max_text_length: u32,
-    direct_backpack: MailTextDestination,
-}
-
-/// This increment admits only the direct main-backpack custody query below.
-enum MailTextDestination {
-    CharacterInventory,
 }
 
 impl MailTextPolicy {
@@ -208,7 +202,6 @@ impl MailTextPolicy {
             definition,
             source_digest,
             max_text_length,
-            direct_backpack: MailTextDestination::CharacterInventory,
         }
     }
 }
@@ -306,7 +299,7 @@ impl DurabilityRoot {
 
     /// Commit a bounded rewrite; exact terminal replay never reacquires item
     /// authority. Every new write independently proves the live content digest,
-    /// recovery, node, session, admission, root and current direct custody.
+    /// recovery, node, session, admission, root and current held custody.
     pub async fn commit_item_text_rewrite(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
@@ -385,23 +378,91 @@ async fn rewrite(
         return Err(ItemTextWriteError::AuthorityRejected);
     }
     let text = qualified_text(policy, request)?;
-    // Lock first, then read custody in a separate snapshot after any wait. A
-    // joined locking SELECT could retain an old snapshot of the location row.
-    let locked = sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")
-        .bind(request.item_instance_id.as_slice()).fetch_optional(&mut **tx).await?;
-    if locked.is_none() {
+    lock_carried_text_item(tx, fence, request).await?;
+    persist_rewrite(tx, character, request, text).await
+}
+
+/// Read just the requested ancestry, with one excess depth as an overflow sentinel.
+/// This is expected custody data until all items are locked and the path is reread.
+async fn carried_text_path(
+    tx: &mut Transaction<'_, Postgres>,
+    item: &[u8; 16],
+) -> Result<Vec<String>> {
+    Ok(sqlx::query_scalar(
+        "WITH RECURSIVE path(item, depth) AS ( \
+           SELECT encode($1,'hex')::uuid, 0 \
+           UNION ALL \
+           SELECT e.parent_item_instance_id, p.depth + 1 FROM path p JOIN ( \
+             SELECT item_instance_id, parent_item_instance_id FROM game_item_container_entries \
+             UNION ALL \
+             SELECT item_instance_id, parent_item_instance_id FROM game_item_nested_entries \
+           ) e ON e.item_instance_id = p.item WHERE p.depth <= $2 \
+         ) SELECT item::text FROM path ORDER BY depth LIMIT 10",
+    )
+    .bind(item.as_slice())
+    .bind(super::item_loop_move::ITEM_LOOP_DEPTH_MAX)
+    .fetch_all(&mut **tx)
+    .await?)
+}
+
+/// The current Character root is already locked. Match the existing carried-use
+/// lock order: every ancestor ItemInstance in UUID order, then a fresh custody
+/// read after waiting. A foreign, detached, cyclic or overdeep path fails closed.
+/// Open external containers, Ground and houses need their own location fences.
+async fn lock_carried_text_item(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &CurrentCharacterItemFence,
+    request: &ItemTextWriteRequest,
+) -> Result<()> {
+    let (world, _) = scope_of(fence).map_err(|_| ItemTextWriteError::AuthorityRejected)?;
+    let path = carried_text_path(tx, &request.item_instance_id).await?;
+    if path.is_empty() || path.len() > super::item_loop_move::ITEM_LOOP_DEPTH_MAX as usize + 1 {
         return Err(ItemTextWriteError::NotReachable);
     }
-    let owned: bool = match policy.direct_backpack {
-        MailTextDestination::CharacterInventory => sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id,world_id) JOIN game_item_container_slots s ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id AND s.world_id=e.world_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND e.character_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND i.definition_family=$4 AND i.definition_production_key=$5 AND i.definition_revision_ref=$6)")
-        .bind(request.item_instance_id.as_slice()).bind(world.as_bytes().as_slice()).bind(character.as_slice())
-        .bind(&request.definition.family).bind(&request.definition.production_key).bind(&request.definition.revision_ref)
-        .fetch_one(&mut **tx).await?,
-    };
+    let mut items = path.clone();
+    items.sort_unstable();
+    items.dedup();
+    if items.len() != path.len() {
+        return Err(ItemTextWriteError::NotReachable);
+    }
+    let locked: Vec<String> = sqlx::query_scalar(
+        "SELECT item_instance_id::text FROM game_item_instances \
+          WHERE item_instance_id IN (SELECT value::uuid FROM jsonb_array_elements_text($1::jsonb)) \
+            AND world_id=encode($2,'hex')::uuid AND lifecycle=1 AND quantity=1 \
+          ORDER BY item_instance_id FOR UPDATE",
+    )
+    .bind(sqlx::types::Json(&items))
+    .bind(world.as_bytes().as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    if locked != items || carried_text_path(tx, &request.item_instance_id).await? != path {
+        return Err(ItemTextWriteError::NotReachable);
+    }
+    let owned: bool = sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_item_instances i \
+          WHERE i.item_instance_id=encode($1,'hex')::uuid \
+            AND i.definition_family=$2 AND i.definition_production_key=$3 AND i.definition_revision_ref=$4 \
+            AND (EXISTS (SELECT 1 FROM game_item_container_slots s \
+                   WHERE s.item_instance_id=$5::uuid AND s.character_id=encode($6,'hex')::uuid \
+                     AND s.world_id=encode($7,'hex')::uuid) \
+              OR ($8 AND EXISTS (SELECT 1 FROM game_character_equipment_slots e \
+                   WHERE e.item_instance_id=i.item_instance_id AND e.character_id=encode($6,'hex')::uuid \
+                     AND e.world_id=encode($7,'hex')::uuid))))",
+    )
+    .bind(request.item_instance_id.as_slice())
+    .bind(&request.definition.family)
+    .bind(&request.definition.production_key)
+    .bind(&request.definition.revision_ref)
+    .bind(path.last())
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(world.as_bytes().as_slice())
+    .bind(path.len() == 1)
+    .fetch_one(&mut **tx)
+    .await?;
     if !owned {
         return Err(ItemTextWriteError::NotReachable);
     }
-    persist_rewrite(tx, character, request, text).await
+    Ok(())
 }
 
 /// The identical physical key is shared by the writer and historical reader.
@@ -548,6 +609,8 @@ pub mod tests {
         })
     }
 
+    #[cfg(test)]
+    mod carried_tests;
     #[cfg(test)]
     mod write_tests;
 
