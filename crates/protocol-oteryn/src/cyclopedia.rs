@@ -24,6 +24,8 @@ pub const MAX_RESULT_BYTES: usize = 29 + 8 * 5;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MapIntent {
     pub operation: u8,
+    /// Native client `cipsoft/map_area` subarea id. Queries infer it from the actor tile.
+    pub area: Option<u32>,
     pub amount: u32,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,6 +35,7 @@ pub fn decode_request(kind: u32, bytes: &[u8]) -> Result<MapIntent, MapWireError
     if kind == COMMAND_TYPE_CYCLOPEDIA_QUERY && bytes.is_empty() {
         return Ok(MapIntent {
             operation: 0,
+            area: None,
             amount: 0,
         });
     }
@@ -41,7 +44,7 @@ pub fn decode_request(kind: u32, bytes: &[u8]) -> Result<MapIntent, MapWireError
     }
     let area = u32::from_le_bytes(bytes[1..5].try_into().map_err(|_| MapWireError)?);
     let amount = u32::from_le_bytes(bytes[5..9].try_into().map_err(|_| MapWireError)?);
-    if area != 1
+    if area == 0
         || !(1..=4).contains(&bytes[0])
         || (bytes[0] != 4 && amount != 0)
         || (bytes[0] == 4 && !(1..=10_000_000).contains(&amount))
@@ -50,6 +53,7 @@ pub fn decode_request(kind: u32, bytes: &[u8]) -> Result<MapIntent, MapWireError
     }
     Ok(MapIntent {
         operation: bytes[0],
+        area: Some(area),
         amount,
     })
 }
@@ -158,10 +162,10 @@ mod tests {
             vec![1; 10000],
             vec![4, 1, 0, 0, 0, 0, 0, 0, 0],
             vec![1, 1, 0, 0, 0, 1, 0, 0, 0],
-            vec![4, 2, 0, 0, 0, 1, 0, 0, 0],
         ] {
             assert!(decode_request(73, &invalid).is_err());
         }
+        assert!(decode_request(73, &[4, 2, 0, 0, 0, 1, 0, 0, 0]).is_ok());
         let mut r = MapResult {
             code: 0,
             revision: 1,

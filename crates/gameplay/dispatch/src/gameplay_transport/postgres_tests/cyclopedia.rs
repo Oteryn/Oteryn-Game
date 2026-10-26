@@ -13,7 +13,7 @@ pub(super) mod support;
 
 fn request(operation: u8, amount: u32) -> Vec<u8> {
     let mut b = vec![operation];
-    b.extend_from_slice(&1u32.to_le_bytes());
+    b.extend_from_slice(&109u32.to_le_bytes());
     b.extend_from_slice(&amount.to_le_bytes());
     b
 }
@@ -171,7 +171,7 @@ fn scenario() -> TestResult {
                 .await?;
         let progress: crate::domain::cyclopedia::MapProgress = serde_json::from_str(&progress)?;
         let first_points = progress.exploration.ok_or("durable exploration")?.points;
-        assert_eq!(first_points.len(), 8);
+        assert_eq!(first_points.len(), 7);
         // Simulate process state replacement and a lost ACK. The Channel keeps the GameSession's
         // command stream (SESSION-INGRESS-1), which replays the retained result; the same
         // command still reaches PostgreSQL through the native receipt.

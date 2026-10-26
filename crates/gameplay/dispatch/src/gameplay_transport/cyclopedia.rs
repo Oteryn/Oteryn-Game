@@ -53,8 +53,8 @@ impl CyclopediaPremiumGate for Premium<'_> {
     }
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) fn cyclopedia_content(&self) -> Option<content::AdmittedArea> {
-        content::admit(self)
+    pub(super) fn cyclopedia_content(&self, at: Point) -> Option<content::AdmittedArea> {
+        content::admit(self, at)
     }
     pub(super) async fn cyclopedia_wire(
         &self,
@@ -70,11 +70,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GuildReply::Rejected;
         }
-        let (Some(actor), Some(fence), Some(area)) = (
-            admitted.runtime_actor,
-            admitted.item_fence,
-            self.cyclopedia_content(),
-        ) else {
+        let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
             return GuildReply::Rejected;
         };
         let Ok(intent) = wire::decode_request(kind, payload) else {
@@ -150,6 +146,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             y: position.at.y,
             floor: position.at.floor,
         };
+        let Some(area) = self.cyclopedia_content(at) else {
+            return GuildReply::Rejected;
+        };
+        if intent.area.is_some_and(|requested| requested != area.subarea) {
+            return GuildReply::Rejected;
+        }
         let action = match intent.operation {
             0 => MapAction::Query,
             1 => MapAction::Start,
@@ -225,7 +227,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             occurrence: derive(b"cyclopedia:occurrence"),
             bundle: area.digest,
             epoch: self.reset_epoch,
-            pool: area.pool,
+            pool: area.pool.clone(),
+            region: area.region,
+            subarea: area.subarea,
             at,
             fee,
             transaction: derive(b"cyclopedia:fee"),
@@ -284,7 +288,8 @@ pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
         fn cyclopedia_available(&self) -> bool {
-            self.cyclopedia_content().is_some()
+            self.bundle_map()
+                .is_some_and(|map| !map.overlay.base().subareas.masks.is_empty())
         }
         async fn cyclopedia_command(
             &self,

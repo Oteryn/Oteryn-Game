@@ -1,13 +1,16 @@
-//! Oteryn default, not Reference-qualified: authored square around the bundle entry.
-//! Only its reachable served tiles are members. No source mask is treated as native geometry.
+//! Discovery geometry admitted from the pinned client 15.30 subarea masks.
 use super::*;
 use std::collections::{BTreeSet, VecDeque};
 pub(in crate::gameplay_transport) struct AdmittedArea {
     pub digest: [u8; 32],
+    pub region: u32,
+    pub subarea: u32,
     pub pool: Vec<Point>,
-    pub tiles: BTreeSet<Point>,
 }
-pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<AdmittedArea> {
+pub(super) fn admit(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    start: Point,
+) -> Option<AdmittedArea> {
     let area = BasicArea::embedded()?;
     let native = owner.active_generation?.native_gameplay()?;
     let index = native.item_index()?;
@@ -21,12 +24,11 @@ pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Admitt
     }
 
     let map = owner.bundle_map()?;
-    let entry = map.entry_start;
-    let start = Point {
-        x: i32::from(entry.x),
-        y: i32::from(entry.y),
-        floor: i16::from(entry.floor),
-    };
+    let (region, subarea) = u16::try_from(start.x)
+        .ok()
+        .zip(u16::try_from(start.y).ok())
+        .zip(i8::try_from(start.floor).ok())
+        .and_then(|((x, y), floor)| map.overlay.base().subareas.resolve(x, y, floor))?;
     let walkable = |p: Point| {
         let (Ok(x), Ok(y), Ok(floor)) = (
             u16::try_from(p.x),
@@ -55,6 +57,12 @@ pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Admitt
             .index()
             .lookup(owner.movement_cells.scope(), cell)
             == Ok(CollisionClass::Walkable)
+            && u16::try_from(p.x)
+                .ok()
+                .zip(u16::try_from(p.y).ok())
+                .zip(i8::try_from(p.floor).ok())
+                .and_then(|((x, y), floor)| map.overlay.base().subareas.resolve(x, y, floor))
+                == Some((region, subarea))
     };
     if !walkable(start) {
         return None;
@@ -62,21 +70,19 @@ pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Admitt
     let mut seen = BTreeSet::from([start]);
     let mut queue = VecDeque::from([start]);
     while let Some(point) = queue.pop_front() {
+        if seen.iter().filter(|p| !p.in_window(start)).count() >= area.pool_limit {
+            break;
+        }
         for (dx, dy) in [(-1, 0), (0, -1), (0, 1), (1, 0)] {
             let next = Point {
                 x: point.x.checked_add(dx)?,
                 y: point.y.checked_add(dy)?,
                 floor: point.floor,
             };
-            if next.x.abs_diff(start.x) > area.radius as u32
-                || next.y.abs_diff(start.y) > area.radius as u32
-                || seen.contains(&next)
+            if seen.contains(&next)
                 || !walkable(next)
             {
                 continue;
-            }
-            if seen.len() >= 4225 {
-                return None;
             }
             seen.insert(next);
             queue.push_back(next);
@@ -94,7 +100,8 @@ pub(super) fn admit(owner: &ComposedFreshAdmission<'_, '_, '_>) -> Option<Admitt
     // Pin exactly the admitted bundle. A changed geometry fails closed when state exists.
     Some(AdmittedArea {
         digest: map.overlay.base().digest(),
+        region,
+        subarea,
         pool,
-        tiles: seen,
     })
 }

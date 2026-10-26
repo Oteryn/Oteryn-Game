@@ -5,8 +5,8 @@ pub(super) async fn load(
     fence: &CurrentCharacterGameplayFence,
     request: &MapRequest,
 ) -> Result<MapProgress, DurabilityError> {
-    let row=sqlx::query("SELECT bundle_digest,catalogue_digest,progress::text FROM game_character_cyclopedia WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
-        .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+    let row=sqlx::query("SELECT bundle_digest,catalogue_digest,progress::text FROM game_character_cyclopedia WHERE character_id=encode($1,'hex')::uuid AND subarea=$2 FOR UPDATE")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(i64::from(request.subarea)).fetch_optional(&mut ***tx).await?;
     match row {
         None => Ok(MapProgress::default()),
         Some(row) => {
@@ -90,8 +90,8 @@ pub(super) async fn save(
     if advanced {
         let progress =
             serde_json::to_string(progress).map_err(|_| DurabilityError::InvalidStoredState)?;
-        sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,progress,occurrence,catalogue_digest) VALUES(encode($1,'hex')::uuid,$2,$3::text::jsonb,encode($4,'hex')::uuid,$5) ON CONFLICT(character_id) DO UPDATE SET progress=EXCLUDED.progress,occurrence=EXCLUDED.occurrence")
-            .bind(character).bind(request.bundle.as_slice()).bind(progress).bind(request.occurrence.as_slice()).bind(BasicArea::content_digest().as_slice()).execute(&mut ***tx).await?;
+        sqlx::query("INSERT INTO game_character_cyclopedia(character_id,region,subarea,bundle_digest,progress,occurrence,catalogue_digest) VALUES(encode($1,'hex')::uuid,$2,$3,$4,$5::text::jsonb,encode($6,'hex')::uuid,$7) ON CONFLICT(character_id,subarea) DO UPDATE SET progress=EXCLUDED.progress,occurrence=EXCLUDED.occurrence")
+            .bind(character).bind(i64::from(request.region)).bind(i64::from(request.subarea)).bind(request.bundle.as_slice()).bind(progress).bind(request.occurrence.as_slice()).bind(BasicArea::content_digest().as_slice()).execute(&mut ***tx).await?;
         sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid").bind(character).execute(&mut ***tx).await?;
         sqlx::query("UPDATE game_character_progression_state SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid").bind(character).execute(&mut ***tx).await?;
     }

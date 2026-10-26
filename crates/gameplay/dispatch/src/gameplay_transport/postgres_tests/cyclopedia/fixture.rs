@@ -111,6 +111,45 @@ pub(super) fn world(
         ("oteryn:item.tibia.i3031", gold.get() - 1),
     );
     let mut parsed = bundle::read(&bytes)?;
+    let hash = "a".repeat(64);
+    parsed.manifest.subareas = oteryn_world_bundle::subarea::Table {
+        client_version: "15.30".into(),
+        candidate_sha256: hash.clone(),
+        areas: vec![
+            oteryn_world_bundle::subarea::Area {
+                id: 23,
+                key: "oteryn:content.area.region.hrodmir".into(),
+                name: "Hrodmir".into(),
+                parent: None,
+                source_record_sha256: hash.clone(),
+            },
+            oteryn_world_bundle::subarea::Area {
+                id: 109,
+                key: "oteryn:content.area.subregion.nibelor".into(),
+                name: "Nibelor".into(),
+                parent: Some(23),
+                source_record_sha256: hash.clone(),
+            },
+        ],
+        masks: vec![oteryn_world_bundle::subarea::Mask {
+            subarea: 109,
+            asset: format!("content/assets/files/subarea-0109-{hash}.bmp.lzma"),
+            compressed_sha256: hash.clone(),
+            bmp_sha256: hash.clone(),
+            source_record_sha256: hash,
+            source_tiles: 64,
+            admitted_tiles: 64,
+        }],
+        runs: (0..2)
+            .map(|y| oteryn_world_bundle::subarea::Run {
+                floor: -7,
+                y,
+                begin: 0,
+                end: 32,
+                subarea: 109,
+            })
+            .collect(),
+    };
     let mut tiles = Vec::new();
     for y in 0..2 {
         for x in 0..32 {

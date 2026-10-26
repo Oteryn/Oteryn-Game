@@ -30,6 +30,8 @@ pub struct MapRequest {
     pub bundle: [u8; 32],
     pub epoch: u64,
     pub pool: Vec<Point>,
+    pub region: u32,
+    pub subarea: u32,
     pub at: Point,
     pub fee: Option<FeeChangeFacts>,
     pub transaction: [u8; 16],
@@ -61,7 +63,7 @@ impl DurabilityRoot {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             assert_recovery_fence(&mut tx, &recovery).await?;
             lock_admission_relations(&mut tx).await?;
-            if request.command.game_session_id() != fence.game_session_id || request.pool.len() > 128 || request.pool.len() < 8 || request.now <= 0 {
+            if request.command.game_session_id() != fence.game_session_id || request.pool.len() > 128 || request.pool.len() < 7 || request.region == 0 || request.subarea == 0 || request.now <= 0 {
                 return Ok(Err(CharacterProgressionError::InvalidInput));
             }
             // Current authority is checked even on replay; a retained receipt grants no custody.
@@ -125,7 +127,7 @@ impl DurabilityRoot {
             let advanced=changed || donation>0;
             let revision=root.revision.checked_add(u64::from(advanced)).ok_or(DurabilityError::InvalidStoredState)?;
             let bytes=projection(0,revision,&progress,pool_after,improved,&request)?;
-            if request.action != MapAction::Query {
+            if advanced || matches!(request.action, MapAction::Donate(_)) {
                 storage::save(&mut tx,&fence,&request,&progress,advanced,donation,pool,pool_after,&bytes).await?;
             }
             tx.commit(deadline).await?;

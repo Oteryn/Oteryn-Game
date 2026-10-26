@@ -2,8 +2,8 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-// Oteryn defaults, not Reference-qualified: one authored area/subarea, eight
-// positions, exact-tile finding, no speed contribution, donation before random draw.
+// Discovery rule parameters. Native area identity and geometry come from the admitted
+// World bundle; donor geometry is never used as map authority.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BasicArea {
@@ -76,10 +76,11 @@ impl BasicArea {
             && value.subarea == 1
             && value.radius == 32
             && value.pool_limit == 128
-            && value.generated_count == 8
+            && value.generated_count == 7
             && value.found_radius == 0
-            && value.revision == "oteryn-cyclopedia-basic-v1"
-            && value.qualification == "Oteryn default, not Reference-qualified"
+            && value.revision == "oteryn-discovery-global-2026-v1"
+            && value.qualification
+                == "Global Summer 2026: automatic activation and seven POIs; native geometry from the pinned world bundle"
             && !value.name.is_empty())
         .then_some(value)
     }
@@ -108,7 +109,40 @@ impl BasicArea {
             return Err(MapRefusal::Invalid);
         }
         match action {
-            MapAction::Query | MapAction::Donate(_) => Ok(false),
+            MapAction::Donate(_) => Ok(false),
+            // Summer 2026 automatically activates subareas. A query is the first
+            // authenticated observation available to this owner, so it creates the
+            // character-private seven-POI exploration without a Premium gate.
+            MapAction::Query if state.discovered || state.exploration.is_some() => Ok(false),
+            MapAction::Query => {
+                let mut candidates: Vec<_> = pool
+                    .iter()
+                    .copied()
+                    .filter(|p| !p.in_window(at))
+                    .map(|p| {
+                        let mut hash = Sha256::new();
+                        hash.update(b"cyclopedia_poi:global-seven-v1");
+                        hash.update(occurrence);
+                        hash.update(p.x.to_be_bytes());
+                        hash.update(p.y.to_be_bytes());
+                        hash.update(p.floor.to_be_bytes());
+                        (<[u8; 32]>::from(hash.finalize()), p)
+                    })
+                    .collect();
+                candidates.sort_unstable();
+                if candidates.len() < self.generated_count {
+                    return Err(MapRefusal::InsufficientPool);
+                }
+                state.exploration = Some(Exploration {
+                    points: candidates
+                        .into_iter()
+                        .take(self.generated_count)
+                        .map(|(_, p)| p)
+                        .collect(),
+                    found: 0,
+                });
+                Ok(true)
+            }
             MapAction::Start | MapAction::Shuffle => {
                 if !premium {
                     return Err(MapRefusal::PremiumRequired);
@@ -196,6 +230,12 @@ mod tests {
             floor: -7,
         };
         let mut state = MapProgress::default();
+        assert_eq!(
+            area.apply(&mut state, MapAction::Query, &pool, start, false, &[1; 16]),
+            Ok(true)
+        );
+        assert_eq!(state.exploration.as_ref().map(|e| e.points.len()), Some(7));
+        state = MapProgress::default();
         assert_eq!(
             area.apply(&mut state, MapAction::Start, &pool, start, false, &[1; 16]),
             Err(MapRefusal::PremiumRequired)

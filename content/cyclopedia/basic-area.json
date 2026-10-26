@@ -1,11 +1,11 @@
 {
-  "revision": "oteryn-cyclopedia-basic-v1",
-  "qualification": "Oteryn default, not Reference-qualified",
+  "revision": "oteryn-discovery-global-2026-v1",
+  "qualification": "Global Summer 2026: automatic activation and seven POIs; native geometry from the pinned world bundle",
   "area": 1,
   "subarea": 1,
   "name": "Entry environs",
   "radius": 32,
   "pool_limit": 128,
-  "generated_count": 8,
+  "generated_count": 7,
   "found_radius": 0
 }

@@ -4,9 +4,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn initialize_cyclopedia_respawn(
         &self,
     ) -> Result<(), ()> {
-        let Some(area) = self.cyclopedia_content() else {
+        let map = self.bundle_map().ok_or(())?;
+        if map.overlay.base().subareas.masks.is_empty() {
             return Ok(());
-        };
+        }
+        let bundle = map.overlay.base().digest();
+        let tiles: std::collections::BTreeSet<_> = map
+            .overlay
+            .base()
+            .subareas
+            .runs
+            .iter()
+            .flat_map(|run| {
+                (run.begin..run.end).map(move |x| Point {
+                    x: i32::from(x),
+                    y: i32::from(run.y),
+                    floor: i16::from(run.floor),
+                })
+            })
+            .collect();
         let Some(native) = self
             .active_generation
             .and_then(crate::content::ActiveGeneration::native_gameplay)
@@ -26,7 +42,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 crate::durability::character_cyclopedia::CyclopediaWorldBinding {
                     scope: RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
                     generation: binding.scope_generation().get(),
-                    bundle: area.digest,
+                    bundle,
                     epoch: self.reset_epoch,
                 },
             )
@@ -58,7 +74,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .apply_cyclopedia_respawn(|cell, key| {
                 improved
                     && normal.contains(key)
-                    && area.tiles.contains(&Point {
+                    && tiles.contains(&Point {
                         x: cell.x,
                         y: cell.y,
                         floor: -cell.floor,
