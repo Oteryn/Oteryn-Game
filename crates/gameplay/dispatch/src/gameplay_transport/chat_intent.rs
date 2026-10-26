@@ -139,6 +139,10 @@ impl ChatRuntime {
         }
     }
 
+    pub(super) fn push_quest_feedback(&self, session: GameSessionId, text: &str) {
+        self.push_party_spell_feedback(session, text);
+    }
+
     /// Installs the World relay once; a second install is ignored.
     pub fn install_relay(&self, relay: Arc<ChatRelay>) {
         let _ = self.relay.set(relay);

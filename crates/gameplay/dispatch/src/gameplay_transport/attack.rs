@@ -100,6 +100,8 @@ pub struct CombatContinuity {
     pub sent: Option<ActorCombatState>,
     pub target_intents: IntentWindow,
     pub mode_intents: IntentWindow,
+    pub(super) expert_revision: u64,
+    pub(super) expert_sent: Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes>,
 }
 
 impl CombatContinuity {
@@ -108,6 +110,8 @@ impl CombatContinuity {
         sent: None,
         target_intents: IntentWindow::EMPTY,
         mode_intents: IntentWindow::EMPTY,
+        expert_revision: 0,
+        expert_sent: None,
     };
 
     /// The domain 10 snapshot above every revision this session has seen; recorded only by
@@ -190,6 +194,7 @@ struct ActorAttack {
     session: GameSessionId,
     state: AttackState<ExactActorRef, CommandRef>,
     modes: FightModes,
+    expert_mode: oteryn_protocol_oteryn::pvp_expert::ExpertMode,
     /// The wire reference of the held target, as the client named it.
     target_ref: Option<EntityRef>,
     /// When the held target was set; a `pacified` applied since then clears it.
@@ -566,6 +571,7 @@ impl ChannelAttackStates {
                     session,
                     state: AttackState::default(),
                     modes: FightModes::DEFAULT,
+                    expert_mode: oteryn_protocol_oteryn::pvp_expert::ExpertMode::Dove,
                     target_ref: None,
                     target_set_at: SemanticTimeMicros::from_micros(0),
                     next_ordinal: 0,
@@ -679,6 +685,41 @@ impl ChannelAttackStates {
             }
             None => false,
         }
+    }
+
+    pub(super) fn expert_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+        self.index(actor, session)
+            .map_or_else(Default::default, |i| {
+                let entry = &self.entries[i];
+                oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+                    modes: entry.modes,
+                    expert: entry.expert_mode,
+                }
+            })
+    }
+
+    pub(super) fn set_expert_modes(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    ) -> bool {
+        if !self.set_modes(runtime, actor, session, modes.modes) {
+            return false;
+        }
+        let Some(entry) = self.entry(runtime, actor, session) else {
+            return false;
+        };
+        if entry.expert_mode != modes.expert {
+            entry.chase.reset();
+        }
+        entry.expert_mode = modes.expert;
+        true
     }
 
     /// The `ACTOR_COMBAT_STATE` of `actor` at `now`; the defaults when it holds no entry.
@@ -1212,7 +1253,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if equipment.content_digest != digest || content.source_digest() != digest {
             return;
         }
-        let Some(ranged) = ranged::loadout(content, &equipment) else {
+        let weights = super::item_ref_admission::NativeItemWeights(content);
+        let quiver_entries = if equipment.items.iter().any(|item| {
+            matches!(item.slot, 6 | 10)
+                && crate::durability::item_loop_move::ItemLoopContent::is_quiver(
+                    &weights,
+                    &item.definition,
+                )
+        }) {
+            let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                self.root.clone(),
+            )
+            .current_session_at(session)
+            .await;
+            let Some(fence) = current
+                .ok()
+                .and_then(|current| super::item_fence_of(current.0))
+            else {
+                return;
+            };
+            let Some(entries) = self
+                .root
+                .read_quiver_ammunition(
+                    self.character,
+                    self.holder,
+                    &fence,
+                    equipment.clone(),
+                    &super::item_ref_admission::NativeItemWeights(content),
+                )
+                .await
+                .ok()
+            else {
+                return;
+            };
+            entries
+        } else {
+            Vec::new()
+        };
+        let Some(ranged) = ranged::loadout(content, &equipment, &quiver_entries) else {
             return;
         };
         let Some(weapon) = swing_weapon(content, &equipment.items) else {

@@ -1,0 +1,20 @@
+{
+  "id": "QUESTCB2-RL-EFFECTS",
+  "owner_contract": "../architecture/reviews/OTERYN_GAME_QUEST_STATE0_QUEST_PROGRESS_STORE_DECISION_2026-09-30.md",
+  "resource": "Entries per callback storage, passage or offering batch",
+  "unit": "entries",
+  "hard_maximum": 8,
+  "configurable_range": {
+    "minimum": 8,
+    "maximum": 8
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Refuse invalid content before enabling callbacks; no partial effects.",
+  "client_visible": false,
+  "boundary_tests": [
+    "quest_world_callbacks_reject_ambiguous_and_unbounded_authoring"
+  ],
+  "consumers": [
+    "crates/gameplay/quests/src/quest/world_callbacks.rs"
+  ]
+}

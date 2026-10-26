@@ -14,9 +14,11 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_character_quest_experience(", "durability/character_revision_sequencer.rs"),
     (".commit_character_quest_transition(", "durability/character_revision_sequencer.rs"),
     (".commit_character_wheel(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_world_callback(", "durability/character_revision_sequencer.rs"),
     (".commit_charm_command(", "durability/character_revision_sequencer.rs"),
     (".commit_cyclopedia(", "durability/character_revision_sequencer/cyclopedia.rs"),
     (".commit_npc_purchase(", "durability/character_revision_sequencer/npc_purchase.rs"),
+    (".commit_npc_travel(", "durability/character_revision_sequencer/npc_travel.rs"),
     (".reset_character_wheel(", "durability/character_revision_sequencer.rs"),
 ];
 
@@ -28,6 +30,7 @@ const FEE_WRITERS: &[&str] = &[
     "durability/item_imbuement.rs",
     "durability/item_timed_runtime/repair.rs",
     "durability/npc_purchase.rs",
+    "durability/npc_travel/paid.rs",
 ];
 
 /// The non-test part of a source file: from the first `#[cfg(test)]` that, after any other

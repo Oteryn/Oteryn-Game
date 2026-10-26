@@ -42,7 +42,7 @@ pub(super) struct SelectedSwing {
 pub(super) struct PvpSwing {
     pub(super) actor: ExactActorRef,
     pub(super) session: GameSessionId,
-    pub(super) secure: bool,
+    pub(super) modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     pub(super) extension: bool,
     pub(super) target: ExactActorRef,
     pub(super) lineage: CommandRef,
@@ -134,7 +134,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         entry.actor,
                         selected.target,
                         selected.swing.lineage,
-                        entry.modes.secure,
+                        oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+                            modes: entry.modes,
+                            expert: entry.expert_mode,
+                        },
                     )
                     .await
                 else {
@@ -264,7 +267,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             entry.actor,
                             target,
                             swing.lineage,
-                            entry.modes.secure,
+                            oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+                                modes: entry.modes,
+                                expert: entry.expert_mode,
+                            },
                         )
                         .await
                     } else {
@@ -283,7 +289,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pvp_hits.push(PvpSwing {
                         actor: entry.actor,
                         session: entry.session,
-                        secure: entry.modes.secure,
+                        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes {
+                            modes: entry.modes,
+                            expert: entry.expert_mode,
+                        },
                         extension,
                         target,
                         lineage: swing.lineage,
@@ -775,7 +784,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 objects,
                 batch,
                 hit.ordinal,
-                hit.secure,
+                hit.modes,
                 hit.black,
             )
             .await

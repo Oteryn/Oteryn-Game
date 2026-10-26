@@ -24,6 +24,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("LOOP-TRAIN-1", 23),
     // The pick 3456, shiny stone 10310 and small diamond 3028.
     ("MINING-1", 3),
+    // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
+    // All have speed_bonus=0.
+    ("QUICKLOOT-1", 9),
+    // Skull 3114 (tools/content-migration/quest_callback_profiles.py), from Canary
+    // 47dfd51f items.xml and exact Crystal ff7ede59 bindings. speed_bonus=0.
+    ("QUESTCB2", 1),
     // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
     // None of them is equipment.

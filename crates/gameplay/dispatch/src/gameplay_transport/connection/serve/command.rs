@@ -56,6 +56,12 @@ where
             Err(error) => return Err(close(stream, session.admitted, error).await),
         },
     };
+    let mut input_permit = authority
+        .enter_input(session.admitted.game_session_id)
+        .await;
+    if input_permit.is_some() && !authority.house_transfer_input(session.admitted).await {
+        return Err(ServeEnd::Disconnected);
+    }
     match session.commands.begin(
         command.command_id,
         session.generation,
@@ -104,7 +110,16 @@ where
     // like an unregistered one, before any decode or authority call.
     // OPS-SAVE-2: the permit is held while the command runs, not while its result is
     // written, so the shutdown snapshot waits for the effect only.
-    let mut input_permit = authority.enter_input().await;
+    if input_permit.is_some()
+        && command.command_type
+            == oteryn_protocol_oteryn::house_transfer::COMMAND_TYPE_HOUSE_TRANSFER
+        && session
+            .selected_capabilities
+            .command_selected(command.command_type)
+    {
+        return super::house_transfer::execute(stream, authority, session, command, input_permit)
+            .await;
+    }
     if input_permit.is_none() && session.reconcile_original_bank {
         // No current input grant: do not run money work, and do not falsely terminate an
         // accepted original command whose retained Bank status has not been classified.
@@ -208,7 +223,9 @@ where
             target,
         ))
         .await?;
-        input_permit = authority.enter_input().await;
+        input_permit = authority
+            .enter_input(session.admitted.game_session_id)
+            .await;
         match walked {
             autowalk::WalkOutcome::Arrived if input_permit.is_some() => {
                 // The walk already published its steps. Only relocation by the retried USE
@@ -241,6 +258,15 @@ where
             &mut session.buffered,
         )
         .await;
+    }
+    // The STEP itself is already committed even if its follow-up callback is uncertain.
+    // USE has no terminal effect result until the callback receipt is reconciled.
+    if command.command_type == oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT
+        && authority
+            .quest_callback_unresolved(session.admitted.game_session_id)
+            .await
+    {
+        return Err(ServeEnd::Disconnected);
     }
     dispatch = bank_inventory(authority, session, dispatch).await?;
     drop(input_permit);
