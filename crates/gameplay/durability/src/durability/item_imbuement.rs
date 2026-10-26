@@ -73,6 +73,34 @@ pub enum ImbuementWriteError {
     Unavailable(DurabilityError),
 }
 
+/// A filled-scroll or etcher mutation. The source is consumed by the same receipt-triggered
+/// transaction which applies or clears the target; the writer re-resolves both custody rows.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ImbuementItemWrite {
+    ApplyScroll {
+        slot: u8,
+        category: u8,
+        imbuement_key: String,
+        imbuement_revision: String,
+        tier: u8,
+    },
+    Etch { slots: Vec<u8> },
+}
+
+#[derive(Debug, Clone)]
+pub struct ImbuementItemCommand {
+    pub transaction_id: [u8; 16],
+    pub event_id: [u8; 16],
+    pub command_id: u64,
+    pub binding: [u8; 32],
+    pub content_digest: [u8; 32],
+    pub source: [u8; 16],
+    pub source_production_key: String,
+    pub target: [u8; 16],
+    pub write: ImbuementItemWrite,
+    pub occurred_at_unix_ms: i64,
+}
+
 impl From<DurabilityError> for ImbuementWriteError {
     fn from(error: DurabilityError) -> Self {
         Self::Unavailable(error)
@@ -516,6 +544,180 @@ impl DurabilityRoot {
                         Ok(refusal) => Ok(Ok(refusal)),
                         Err(ImbuementWriteError::Unavailable(error)) => Err(error),
                         Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+}
+
+async fn imbuement_item_replay(
+    connection: &mut sqlx::PgConnection,
+    session: GameSessionId,
+    command_id: u64,
+    binding: [u8; 32],
+) -> Result<Option<ImbuementResult>> {
+    let stored: Option<Vec<u8>> = sqlx::query_scalar(
+        "SELECT request_binding FROM game_item_imbuement_item_records \
+          WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric",
+    )
+    .bind(session.as_bytes().as_slice())
+    .bind(command_id.to_string())
+    .fetch_optional(connection)
+    .await?;
+    Ok(stored.map(|stored| {
+        if stored == binding {
+            ImbuementResult::Ok
+        } else {
+            ImbuementResult::RevisionChanged
+        }
+    }))
+}
+
+impl DurabilityRoot {
+    /// Reconcile a USE-with retry before resolving either session-local item handle.
+    pub async fn read_imbuement_item_command(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        session: GameSessionId,
+        command_id: u64,
+        binding: [u8; 32],
+    ) -> Result<Option<ImbuementResult>> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ImbuementWriteError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    match imbuement_item_replay(&mut tx, session, command_id, binding).await {
+                        Ok(value) => {
+                            tx.commit(deadline).await?;
+                            Ok(Ok(value))
+                        }
+                        Err(ImbuementWriteError::Unavailable(error)) => Err(error),
+                        Err(error) => Ok(Err(error)),
+                    }
+                })
+            })
+            .await?
+    }
+
+    /// One fenced durable outcome for source consumption and target mutation.
+    pub async fn commit_imbuement_item_command(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: ImbuementItemCommand,
+    ) -> Result<ImbuementResult> {
+        if check_uuid_v7(&command.transaction_id).is_err()
+            || check_uuid_v7(&command.event_id).is_err()
+            || check_uuid_v7(&command.source).is_err()
+            || check_uuid_v7(&command.target).is_err()
+            || command.transaction_id == command.event_id
+            || command.source == command.target
+            || command.command_id == 0
+            || command.occurred_at_unix_ms <= 0
+        {
+            return Err(ImbuementWriteError::InvalidInput);
+        }
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| ImbuementWriteError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_type2_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex')||$2,229))")
+                        .bind(fence.game_session_id.as_bytes().as_slice())
+                        .bind(command.command_id.to_string())
+                        .execute(&mut **tx)
+                        .await?;
+                    match imbuement_item_replay(
+                        &mut tx,
+                        fence.game_session_id,
+                        command.command_id,
+                        command.binding,
+                    )
+                    .await
+                    {
+                        Ok(Some(result)) => {
+                            tx.commit(deadline).await?;
+                            return Ok(Ok(result));
+                        }
+                        Ok(None) => {}
+                        Err(ImbuementWriteError::Unavailable(error)) => return Err(error),
+                        Err(error) => return Ok(Err(error)),
+                    }
+                    if assert_gameplay_fence(&mut tx, &fence, &node).await?.is_err()
+                        || super::character_equipment::assert_current_equipment_in_transaction(
+                            &mut tx,
+                            &recovery,
+                            &node,
+                            &fence.item_fence(),
+                            None,
+                            command.content_digest,
+                        )
+                        .await
+                        .is_err()
+                    {
+                        return Ok(Err(ImbuementWriteError::AuthorityRejected));
+                    }
+                    let character = fence.character_id.as_bytes().as_slice();
+                    let bag: Option<String> = sqlx::query_scalar(
+                        "SELECT i.item_instance_id::text FROM game_item_container_slots s \
+                         JOIN game_item_instances i USING(item_instance_id) \
+                         WHERE s.character_id=encode($1,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF i",
+                    )
+                    .bind(character)
+                    .fetch_optional(&mut **tx)
+                    .await?;
+                    let Some(bag) = bag else { return Ok(Ok(ImbuementResult::RevisionChanged)); };
+                    let bag = uuid_text(&bag)?;
+                    let ordinals = sqlx::query(
+                        "SELECT (SELECT placement_ordinal::text FROM game_item_container_entries \
+                           WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid \
+                             AND character_id=encode($4,'hex')::uuid) source_ordinal, \
+                                (SELECT placement_ordinal::text FROM game_item_container_entries \
+                           WHERE item_instance_id=encode($2,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid \
+                             AND character_id=encode($4,'hex')::uuid) target_ordinal",
+                    )
+                    .bind(command.source.as_slice())
+                    .bind(command.target.as_slice())
+                    .bind(bag.as_slice())
+                    .bind(character)
+                    .fetch_one(&mut **tx)
+                    .await?;
+                    let (Some(source_ordinal), Some(target_ordinal)) = (
+                        ordinals.try_get::<Option<String>, _>(0)?,
+                        ordinals.try_get::<Option<String>, _>(1)?,
+                    ) else { return Ok(Ok(ImbuementResult::RevisionChanged)); };
+                    let (action, slot, category, key, revision, tier, slots) = match command.write {
+                        ImbuementItemWrite::ApplyScroll { slot, category, imbuement_key, imbuement_revision, tier } =>
+                            (1_i16, Some(i16::from(slot)), Some(i16::from(category)), Some(imbuement_key), Some(imbuement_revision), Some(i16::from(tier)), Vec::new()),
+                        ImbuementItemWrite::Etch { slots } =>
+                            (2_i16, None, None, None, None, None, slots.into_iter().map(i16::from).collect()),
+                    };
+                    let inserted = sqlx::query(
+                        "INSERT INTO game_item_imbuement_item_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,request_binding,action,source_item_instance_id,source_production_key,target_item_instance_id,parent_item_instance_id,source_ordinal,target_ordinal,slot,category,imbuement_key,imbuement_revision,tier,cleared_slots,occurred_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,$10,encode($11,'hex')::uuid,encode($12,'hex')::uuid,$13::text::numeric,$14::text::numeric,$15,$16,$17,$18,$19,$20,$21)",
+                    )
+                    .bind(command.transaction_id.as_slice()).bind(command.event_id.as_slice())
+                    .bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id.to_string())
+                    .bind(character).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                    .bind(command.binding.as_slice()).bind(action).bind(command.source.as_slice())
+                    .bind(command.source_production_key).bind(command.target.as_slice()).bind(bag.as_slice())
+                    .bind(source_ordinal).bind(target_ordinal).bind(slot).bind(category).bind(key)
+                    .bind(revision).bind(tier).bind(slots).bind(command.occurred_at_unix_ms)
+                    .execute(&mut **tx).await;
+                    match inserted {
+                        Ok(_) => { tx.commit(deadline).await?; Ok(Ok(ImbuementResult::Ok)) }
+                        Err(error) if error.as_database_error().is_some_and(|e| e.code().as_deref()==Some("23514")) => Ok(Ok(ImbuementResult::RevisionChanged)),
+                        Err(error) => Err(error.into()),
                     }
                 })
             })

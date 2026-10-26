@@ -20,6 +20,7 @@ const SHRINE: &str = "oteryn:item.tibia.i25060";
 const CRYSTAL: &str = "oteryn:item.tibia.i3043";
 /// Strike tier 1 consumes 20 protective charms (Canary `imbuements.xml`).
 const CHARM: &str = "oteryn:item.tibia.i11444";
+const ETCHER: &str = "oteryn:item.tibia.i51443";
 
 #[test]
 fn imbuement_wire_dispatch_reads_the_carried_item_and_fails_closed_without_writes() -> TestResult {
@@ -75,6 +76,7 @@ fn scenario(shrine: bool) -> TestResult {
         let beside = if shrine { SHRINE } else { coin };
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
         let sword_ref = reference(SWORD).ok_or("sword")?;
+        let etcher_ref = reference(ETCHER).ok_or("etcher")?;
         let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
             (beside, reference(beside).ok_or("beside")?.get() - 1),
@@ -179,7 +181,7 @@ fn scenario(shrine: bool) -> TestResult {
         if shrine {
             super::item_look::seed_main_backpack(
                 &harness,
-                &[(SWORD, 1), (CHARM, 25), (CRYSTAL, 3)],
+                &[(SWORD, 1), (CHARM, 25), (CRYSTAL, 3), (ETCHER, 1)],
             )
             .await?;
         } else {
@@ -192,11 +194,11 @@ fn scenario(shrine: bool) -> TestResult {
         admitted.item_fence = Some(fence);
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             owner.offered_capabilities(),
-            &[4, 6, 12, 14, 18, CAPABILITY_IMBUE_V1],
+            &[4, 6, 11, 12, 14, 15, 18, CAPABILITY_IMBUE_V1],
         )
         .ok_or("imbuement capability selectable")?;
         if shrine {
-            at_the_shrine(&harness, &owner, sword_ref, admitted).await?;
+            at_the_shrine(&harness, &owner, sword_ref, etcher_ref, admitted).await?;
         } else {
             out_of_reach(&harness, &owner, sword_ref, admitted).await?;
         }
@@ -268,6 +270,7 @@ async fn at_the_shrine(
     harness: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     sword_ref: NonZeroU32,
+    etcher_ref: NonZeroU32,
     admitted: AdmittedSession,
 ) -> TestResult {
     let mut next = admitted;
@@ -361,7 +364,95 @@ async fn at_the_shrine(
     .fetch_all(&harness.pool)
     .await?;
     assert_eq!(cause_kinds, [7, 7], "apply and clear both use Imbuement cause 7");
+    // The production USE-with router resolves both inventory handles. The receipt trigger
+    // consumes the one etcher and clears every remaining row as one transaction.
+    let session = next.game_session_id;
+    let (_end, status, disposition) =
+        exchange_item_use(owner, sword_ref, etcher_ref, next, 9).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(disposition, oteryn_protocol_oteryn::world_object::UseDisposition::Committed);
+    assert!(snapshot(harness).await?.0.is_empty());
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_imbuement_item_records")
+            .fetch_one(&harness.pool).await?,
+        1
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1")
+            .bind(ETCHER).fetch_one(&harness.pool).await?,
+        0
+    );
+    // The durable receipt remains authoritative after source retirement.
+    let binding: Vec<u8> = sqlx::query_scalar(
+        "SELECT request_binding FROM game_item_imbuement_item_records WHERE command_id=9",
+    ).fetch_one(&harness.pool).await?;
+    assert_eq!(owner.root.read_imbuement_item_command(
+        owner.character, session, 9, binding.try_into().map_err(|_| "binding")?
+    ).await.map_err(debug)?, Some(ImbuementResult::Ok));
     Ok(())
+}
+
+async fn exchange_item_use(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    target_ref: NonZeroU32,
+    source_ref: NonZeroU32,
+    admitted: AdmittedSession,
+    command_id: u64,
+) -> TestResult<(AdmittedSession, CommandStatus, oteryn_protocol_oteryn::world_object::UseDisposition)> {
+    use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseIntent, UseTarget};
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let client_task = async {
+        let (mut source, mut target) = (None, None);
+        loop {
+            let raw = super::item_look::read_frame(&mut client).await?;
+            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+            if envelope.message_type() == crate::foundation::MessageType::SnapshotChunk {
+                let (_, domains) = oteryn_protocol_oteryn::decode_snapshot_chunk(envelope.payload())?;
+                for domain in domains {
+                    if domain.domain_id == STATE_DOMAIN_CHARACTER_INVENTORY {
+                        let inventory = decode_character_inventory_with_equip_drop(domain.payload, true).map_err(debug)?;
+                        source = inventory.entries.iter().find(|e| e.item_definition_ref == source_ref).map(|e| e.handle);
+                        target = inventory.entries.iter().find(|e| e.item_definition_ref == target_ref).map(|e| e.handle);
+                    }
+                }
+            }
+            if envelope.message_type() == crate::foundation::MessageType::SnapshotCommit { break; }
+        }
+        let payload = oteryn_protocol_oteryn::world_object::encode_item_use_intent(&UseIntent {
+            target: UseTarget::Item(source.ok_or("source")?),
+            use_with: None,
+            use_with_map_item: Some(MapUseTarget::Item(target.ok_or("target")?)),
+            use_with_position: None,
+        }).map_err(debug)?;
+        send(&mut client, command_id, oteryn_protocol_oteryn::world_object::COMMAND_TYPE_USE_INTENT, &payload).await?;
+        client.shutdown().await?;
+        loop {
+            let raw = super::item_look::read_frame(&mut client).await?;
+            let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+            if envelope.message_type() == crate::foundation::MessageType::CommandResult {
+                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                if result.command_id == command_id {
+                    let use_result = oteryn_protocol_oteryn::world_object::decode_use_result(result.payload).map_err(debug)?;
+                    return Ok::<_, Box<dyn std::error::Error>>((result.status, use_result));
+                }
+            }
+        }
+    };
+    use std::future::Future;
+    use std::task::Poll;
+    let mut serving = std::pin::pin!(serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS));
+    let mut client_task = std::pin::pin!(client_task);
+    let (mut end, mut result) = (None, None);
+    tokio::time::timeout(std::time::Duration::from_secs(30), std::future::poll_fn(|cx| {
+        if end.is_none() && let Poll::Ready(value) = serving.as_mut().poll(cx) { end = Some(value); }
+        if result.is_none() && let Poll::Ready(value) = client_task.as_mut().poll(cx) { result = Some(value); }
+        if end.is_some() && result.is_some() { Poll::Ready(()) } else { Poll::Pending }
+    })).await?;
+    let end = end.ok_or("server did not finish")?;
+    let result = result.ok_or("client did not finish")?;
+    let ConnectionEnd::AdmittedThenDisconnected(admitted) = end else { return Err("server ended before admission".into()); };
+    let (status, disposition) = result?;
+    Ok((admitted, status, disposition))
 }
 
 /// One accepted command and its result, on the session the previous command left.

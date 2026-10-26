@@ -14,10 +14,11 @@ use crate::content::{ReferenceItemField, ReferenceItemImbuement};
 use crate::durability::imbuement::StoredImbuement;
 use crate::durability::item_fee_burn::FeeChangeFacts;
 use crate::durability::item_imbuement::{
-    ImbuementCommand, ImbuementMaterialNeed, ImbuementWrite, ImbuementWriteError,
+    ImbuementCommand, ImbuementItemCommand, ImbuementItemWrite, ImbuementMaterialNeed,
+    ImbuementWrite, ImbuementWriteError,
 };
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::foundation::{CommandId, RuntimeScopeRefV1};
+use crate::foundation::{CommandId, ExactActorRef, RuntimeScopeRefV1};
 use crate::map::view;
 use oteryn_gameplay_items::imbuement::{
     IMBUEMENT_CATALOGUE_REVISION, IMBUEMENT_CLEAR_GOLD, IMBUEMENT_ETCHER_ITEM_ID,
@@ -27,6 +28,8 @@ use oteryn_protocol_oteryn::imbuement as wire;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use sha2::{Digest, Sha256};
 use wire::{ImbuementAction, ImbuementResult};
+use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, encode_item_use_intent};
+use super::connection::{UseCommand, UseOutcome};
 
 /// The Canary imbuing shrines, sorted (`data/items/items.xml`, `script="imbuement_shrine"`).
 pub(super) const SHRINE_KEYS: [&str; 10] = [
@@ -114,10 +117,6 @@ pub(super) enum Decision {
 /// In particular, `Etch` describes all rows in one outcome; callers must never loop single-slot
 /// shrine clears because that can consume the device after a partial clear.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "qualified before durable USE-with is connected")
-)]
 pub enum ImbuementItemDecision {
     NotAnImbuementItem,
     Refused(ImbuementResult),
@@ -128,10 +127,6 @@ pub enum ImbuementItemDecision {
 /// Global etcher/filled-scroll rules which do not depend on shrine, quest or Premium access.
 /// Scrolls select the first empty slot, while normal compatibility and category-conflict gates
 /// remain in force. Consumption belongs to the same durable transaction as the returned change.
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "qualified before durable USE-with is connected")
-)]
 pub fn decide_imbuement_item_use(
     source_item_id: u32,
     allowance: Option<&Allowance>,
@@ -268,6 +263,144 @@ fn shrine_in_reach(at: &super::bundle_map_position::BundleMapPosition<'_>, index
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Production USE-with adapter. `None` means this is not an imbuement source and lets the
+    /// next existing item-on-item owner inspect it. A retained receipt is reconciled first.
+    pub(super) async fn use_imbuement_item_impl(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: UseIntent,
+        source: Option<ItemKey>,
+        target: Option<ItemKey>,
+    ) -> Option<UseOutcome> {
+        let outcome = |disposition| UseOutcome {
+            disposition,
+            ..UseOutcome::rejected()
+        };
+        let fence = command.item_fence?;
+        let encoded = encode_item_use_intent(&intent).ok()?;
+        let binding: [u8; 32] = Sha256::digest(encoded).into();
+        match self
+            .root
+            .read_imbuement_item_command(
+                self.character,
+                command.game_session_id,
+                command.command_id,
+                binding,
+            )
+            .await
+        {
+            Ok(Some(ImbuementResult::Ok)) => return Some(outcome(UseDisposition::Committed)),
+            Ok(Some(_)) => return Some(outcome(UseDisposition::StaleState)),
+            Ok(None) => {}
+            Err(_) => return Some(outcome(UseDisposition::Rejected)),
+        }
+        let (Some(ItemKey::Instance(source)), Some(ItemKey::Instance(target))) = (source, target)
+        else {
+            return None;
+        };
+        let source_facts = self
+            .root
+            .read_imbuement_target(self.character, fence.character_id, source)
+            .await
+            .ok()??;
+        let source_id = source_facts
+            .definition
+            .production_key
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u32>().ok())?;
+        if source_id != IMBUEMENT_ETCHER_ITEM_ID && imbuement_scroll(source_id).is_none() {
+            return None;
+        }
+        let target_facts = match self
+            .root
+            .read_imbuement_target(self.character, fence.character_id, target)
+            .await
+        {
+            Ok(Some(value)) => value,
+            _ => return Some(outcome(UseDisposition::StaleState)),
+        };
+        let native = match self.active_generation.and_then(|g| g.native_gameplay()) {
+            Some(native) => native,
+            None => return Some(outcome(UseDisposition::Rejected)),
+        };
+        let allowance = native
+            .item_policy(
+                &target_facts.definition.production_key,
+                &target_facts.definition.revision_ref,
+            )
+            .and_then(|policy| {
+                let record = policy.record();
+                (record.admission.materializable
+                    && record.production_definition.family == target_facts.definition.family)
+                    .then(|| allowance(&record.semantics.imbuement))
+                    .flatten()
+            });
+        let write = match decide_imbuement_item_use(
+            source_id,
+            allowance.as_ref(),
+            &target_facts.applied,
+        ) {
+            ImbuementItemDecision::NotAnImbuementItem => return None,
+            ImbuementItemDecision::Refused(_) => {
+                return Some(outcome(UseDisposition::NothingToUse));
+            }
+            ImbuementItemDecision::Etch { slots } => ImbuementItemWrite::Etch { slots },
+            ImbuementItemDecision::ApplyScroll { slot, family, tier } => {
+                let Some(recipe) = imbuement_recipe(family, tier) else {
+                    return Some(outcome(UseDisposition::NothingToUse));
+                };
+                ImbuementItemWrite::ApplyScroll {
+                    slot,
+                    category: family - 1,
+                    imbuement_key: recipe.key.into(),
+                    imbuement_revision: IMBUEMENT_CATALOGUE_REVISION.into(),
+                    tier,
+                }
+            }
+        };
+        {
+            let runtime = self.runtime.lock().await;
+            if !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+            {
+                return Some(outcome(UseDisposition::Rejected));
+            }
+        }
+        let Ok(Some(current)) = self.current_quest_fence(command.game_session_id).await else {
+            return Some(outcome(UseDisposition::Rejected));
+        };
+        if current.item_fence() != fence {
+            return Some(outcome(UseDisposition::Rejected));
+        }
+        let derived = |tag: &[u8]| {
+            super::npc_trade_command::derived(tag, command.game_session_id, command.command_id)
+        };
+        let durable = ImbuementItemCommand {
+            transaction_id: derived(b"oteryn:imbuement-item-transaction:v1"),
+            event_id: derived(b"oteryn:imbuement-item-event:v1"),
+            command_id: command.command_id,
+            binding,
+            content_digest: native.source_digest(),
+            source,
+            source_production_key: source_facts.definition.production_key,
+            target,
+            write,
+            occurred_at_unix_ms: super::npc_trade_command::unix_ms_now(),
+        };
+        Some(outcome(match self
+            .root
+            .commit_imbuement_item_command(self.character, self.holder, current, durable)
+            .await
+        {
+            Ok(ImbuementResult::Ok) => UseDisposition::Committed,
+            Ok(ImbuementResult::SlotOccupied) => UseDisposition::Occupied,
+            Ok(_) => UseDisposition::StaleState,
+            Err(_) => UseDisposition::Rejected,
+        }))
+    }
+
     pub(super) async fn imbuement_wire(
         &self,
         admitted: AdmittedSession,

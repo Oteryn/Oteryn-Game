@@ -491,6 +491,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_imbuement_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_imbuement_item_impl(actor, command, intent, source, target)
+            .await
+    }
+
     async fn use_item_completion(
         &self,
         actor: ExactActorRef,
