@@ -655,6 +655,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
             }),
         }],
         draft_areas: vec![],
+        subareas: Default::default(),
         skipped_provisional_keys: vec![],
         dropped_teleports: vec![],
         spawns: Default::default(),

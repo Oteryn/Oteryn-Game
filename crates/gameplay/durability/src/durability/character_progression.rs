@@ -9,7 +9,9 @@ use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
 use super::item_transfer::CurrentCharacterItemFence;
-use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
+use super::runtime_scope_assignment::{
+    NodeIncarnationProof, assignment_scope_key, prove_current_incarnation,
+};
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::progression::{
     FiniteProgressionPolicy, ProgressionCalculationError, ProgressionRevisionContext,
@@ -410,22 +412,27 @@ pub(super) async fn assert_session_fence(
     fence: &CurrentCharacterItemFence,
     node: &NodeIncarnationProof,
 ) -> std::result::Result<std::result::Result<String, CharacterProgressionError>, DurabilityError> {
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = fence.runtime_scope
-    else {
-        return Ok(Err(CharacterProgressionError::AuthorityRejected));
+    let world_id = fence.runtime_scope.world_id();
+    // Runtime guard kind 2 means Instance; assignment kind 2 means House.
+    // An activity must resolve through kind 3, never through its origin Channel
+    // or the house assignment key. Session admission still requires its own
+    // committed handoff proof in the database.
+    let (session_kind, channel_id, instance_id) = match fence.runtime_scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            (1_i16, Some(*channel_id.as_bytes()), None)
+        }
+        RuntimeScopeRefV1::Instance { instance_id, .. } => (2, None, Some(instance_id)),
     };
     let session = sqlx::query(
         "SELECT account_id::text FROM game_durability_reconnect_sessions \
          WHERE game_session_id = encode($1,'hex')::uuid \
            AND character_id = encode($2,'hex')::uuid \
            AND world_id = encode($3,'hex')::uuid \
-           AND runtime_scope_kind = 1 \
+           AND runtime_scope_kind = $8 \
            AND runtime_scope_world_id = encode($3,'hex')::uuid \
-           AND runtime_scope_channel_id = encode($4,'hex')::uuid \
-           AND runtime_scope_instance_id IS NULL \
+           AND runtime_scope_channel_id IS NOT DISTINCT FROM encode($4,'hex')::uuid \
+           AND runtime_scope_instance_id IS NOT DISTINCT FROM encode($9,'hex')::uuid \
+           AND runtime_scope_house_key IS NULL \
            AND current_generation = $5::text::numeric(20,0) \
            AND character_lease_generation = $6::text::numeric(20,0) \
            AND scope_ownership_generation = $7::text::numeric(20,0) \
@@ -434,10 +441,12 @@ pub(super) async fn assert_session_fence(
     .bind(fence.game_session_id.as_bytes().as_slice())
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
+    .bind(channel_id.as_ref().map(|id| id.as_slice()))
     .bind(fence.connection_generation.get().to_string())
     .bind(fence.character_lease_generation.to_string())
     .bind(fence.scope_ownership_generation.get().to_string())
+    .bind(session_kind)
+    .bind(instance_id.as_ref().map(|id| id.as_slice()))
     .fetch_optional(&mut **tx)
     .await?;
     let Some(session) = session else {
@@ -445,23 +454,29 @@ pub(super) async fn assert_session_fence(
     };
     let account_text: String = session.try_get("account_id")?;
 
-    let key = scope_key(world_id, channel_id);
+    let assignment_key = assignment_scope_key(fence.runtime_scope);
+    let mut runtime_key = assignment_key;
+    runtime_key[0] = session_kind as u8;
     let fact = node.fact();
     let assignment = sqlx::query(
         "SELECT 1 FROM game_runtime_scope_assignments \
          WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
-           AND channel_id = encode($3,'hex')::uuid AND state = 1 \
+           AND channel_id IS NOT DISTINCT FROM encode($3,'hex')::uuid \
+           AND activity_instance_id IS NOT DISTINCT FROM encode($7,'hex')::uuid \
+           AND house_key IS NULL AND scope_kind = $8 AND state = 1 \
            AND ownership_generation = $4::text::numeric(20,0) \
            AND holder_node_id = encode($5,'hex')::uuid \
            AND holder_registration_revision = $6::text::numeric(20,0) \
          FOR SHARE",
     )
-    .bind(key.as_slice())
+    .bind(assignment_key.as_slice())
     .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
+    .bind(channel_id.as_ref().map(|id| id.as_slice()))
     .bind(fence.scope_ownership_generation.get().to_string())
     .bind(fact.node_id().as_bytes().as_slice())
     .bind(fact.registration_revision().to_string())
+    .bind(instance_id.as_ref().map(|id| id.as_slice()))
+    .bind(i16::from(assignment_key[0]))
     .fetch_optional(&mut **tx)
     .await?;
     if assignment.is_none() || !prove_current_incarnation(tx, node).await? {
@@ -486,7 +501,7 @@ pub(super) async fn assert_session_fence(
             AND g.ready \
             AND g.ownership_generation = $7::text::numeric(20,0))",
     )
-    .bind(key.as_slice())
+    .bind(runtime_key.as_slice())
     .bind(fence.character_id.as_bytes().as_slice())
     .bind(&account_text)
     .bind(world_id.as_bytes().as_slice())
@@ -568,9 +583,7 @@ async fn assert_fenced_root(
         Ok(account_text) => account_text,
         Err(error) => return Ok(Err(error)),
     };
-    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
-        return Ok(Err(CharacterProgressionError::AuthorityRejected));
-    };
+    let world_id = fence.runtime_scope.world_id();
 
     let root = sqlx::query(if no_key_update {
         "SELECT account_id::text, world_id::text, character_revision::text, \

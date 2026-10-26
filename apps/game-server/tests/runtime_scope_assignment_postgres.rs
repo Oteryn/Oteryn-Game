@@ -744,7 +744,7 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
                 (1, 5)
             );
 
-            // Instance scope is unsupported for assign/replace/revoke/read.
+            // Activity instances require their own exact grants; Channel grants never suffice.
             let instance = RuntimeScopeRefV1::instance(
                 WorldId::decode(&v7(200)).map_err(|e| format!("{e:?}"))?,
                 v7(99),
@@ -767,13 +767,15 @@ fn channel_assignment_uses_exact_cas_replay_and_writer_owned_revisions() -> Test
             ] {
                 assert!(matches!(
                     writer.submit(&request(9, command)?).await,
-                    Err(AssignmentError::Unsupported)
+                    Ok(AssignmentOutcome::Rejected(AssignmentRejection::NotGranted))
                 ));
             }
-            assert!(matches!(
-                root.read_runtime_scope_assignment(instance).await,
-                Err(AssignmentError::Unsupported)
-            ));
+            assert_eq!(
+                root.read_runtime_scope_assignment(instance)
+                    .await
+                    .map_err(|e| format!("{e:?}"))?,
+                None
+            );
             assert_eq!(high_water(&pool).await?.0, "5");
 
             // Stored authority cannot regress, reuse a generation or be deleted.

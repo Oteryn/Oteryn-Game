@@ -1,0 +1,78 @@
+//! Bounded, current-session-fenced read of the shared cooldown owner.
+use super::super::character_authority::ReconciledCharacterAuthority;
+use super::super::character_progression::assert_session_fence;
+use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
+use super::super::item_transfer::CurrentCharacterItemFence;
+use super::*;
+use oteryn_protocol_oteryn::boss_encounter::{
+    BossCooldownEntry, COOLDOWN_PAGE_SIZE, decode_cooldown_query, encode_cooldown_list,
+};
+
+impl super::super::DurabilityRoot {
+    /// Read only this admitted Character's page under current recovery, session, lease,
+    /// assignment and node proofs. The semantic-pass deadline bounds every database wait.
+    pub async fn read_boss_cooldown_list(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        query: &[u8],
+    ) -> std::result::Result<Option<Vec<u8>>, DurabilityError> {
+        let Ok(after) = decode_cooldown_query(query) else {
+            return Ok(None);
+        };
+        let after = after.to_owned();
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_admission_relations(&mut tx).await?;
+                    if assert_session_fence(&mut tx, &fence, &node).await?.is_err() {
+                        return Ok(None);
+                    }
+                    // C collation is also the primary-key collation, matching Rust key ordering.
+                    // One extra row establishes continuation without a count or an unbounded scan.
+                    let rows: Vec<(String, i64)> = sqlx::query_as(
+                        "SELECT boss_key,available_at FROM game_character_boss_cooldowns \
+                 WHERE character_id=encode($1,'hex')::uuid AND boss_key > $2 COLLATE \"C\" \
+                 ORDER BY boss_key LIMIT 65",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(after)
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    let now: i64 = sqlx::query_scalar(
+                        "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+                    )
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    let more = rows.len() > COOLDOWN_PAGE_SIZE;
+                    let entries = rows
+                        .into_iter()
+                        .take(COOLDOWN_PAGE_SIZE)
+                        .map(|(boss_key, at)| {
+                            Ok(BossCooldownEntry {
+                                boss_key,
+                                available_at_unix_ms: u64::try_from(at)
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                            })
+                        })
+                        .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
+                    let payload = encode_cooldown_list(
+                        u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?,
+                        &entries,
+                        more,
+                    )
+                    .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Some(payload))
+                })
+            })
+            .await
+    }
+}

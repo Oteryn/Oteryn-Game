@@ -1,5 +1,5 @@
 //! GameNode process-incarnation registration (`GAME-NODE-REGISTRATION-BOOTSTRAP-AUTH-V1`)
-//! and the Channel-only runtime-scope assignment writer (`OPS-SCOPE-ASSIGNMENT-FENCING-V1`)
+//! and the Channel/activity runtime-scope assignment writer (`OPS-SCOPE-ASSIGNMENT-FENCING-V1`)
 //! bounded by the registered `NASG-*` rows of `NATIVE-SOURCE-RESOURCE-ENVELOPE-V1`.
 //!
 //! A `NodeId` is never a credential. Registration consumes one launch-scoped
@@ -63,6 +63,7 @@ const COMMAND_VERSION: u8 = 1;
 const STATE_ASSIGNED: i16 = 1;
 const STATE_REVOKED: i16 = 2;
 const SCOPE_KIND_CHANNEL: i16 = 1;
+const SCOPE_KIND_ACTIVITY: i16 = 3;
 const CHANNEL_SCOPE_TAG: u8 = 1;
 const _: () = assert!(MAX_COMMAND_BYTES + RECEIPT_RETAINED_BYTES <= MAX_INFLIGHT_BYTES);
 const _: () = assert!(MAX_PENDING_COMMANDS * MAX_COMMAND_BYTES <= MAX_PENDING_BYTES);
@@ -441,7 +442,7 @@ async fn lock_current_registration(
 
 #[derive(Debug)]
 pub enum AssignmentError {
-    /// Instance scopes are not allocated in the first slice.
+    /// The requested writer binding or scope is not supported.
     Unsupported,
     /// Input violates the closed typed/NASG bounds; nothing was retained.
     InvalidInput,
@@ -572,7 +573,11 @@ pub struct AssignmentRequest {
 impl AssignmentRequest {
     /// Canonical closed encoding retained in the slot and receipt (`NASG-COMMAND-BYTES`).
     pub fn encode(&self) -> Result<Vec<u8>, AssignmentError> {
-        let (world_id, channel_id) = channel_scope(self.command.scope())?;
+        if let RuntimeScopeRefV1::Instance { world_id, instance_id } = self.command.scope() {
+            RuntimeScopeRefV1::instance(world_id, instance_id)
+                .map_err(|_| AssignmentError::InvalidInput)?;
+        }
+        let key = assignment_scope_key(self.command.scope());
         if !valid_token(&self.actor.0, MAX_IDENTITY_BYTES) {
             return Err(AssignmentError::InvalidInput);
         }
@@ -588,7 +593,7 @@ impl AssignmentRequest {
             u8::try_from(self.actor.0.len()).map_err(|_| AssignmentError::InvalidInput)?;
         encoded.push(actor_len);
         encoded.extend_from_slice(self.actor.0.as_bytes());
-        encoded.extend_from_slice(&scope_key(world_id, channel_id));
+        encoded.extend_from_slice(&key);
         match self.command {
             AssignmentCommand::Replace { predecessor, .. }
             | AssignmentCommand::Revoke { predecessor, .. } => {
@@ -628,7 +633,7 @@ pub enum AssignmentState {
     Revoked,
 }
 
-/// Authoritative committed assignment for one Channel scope.
+/// Authoritative committed assignment for one Channel or activity scope.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuntimeScopeAssignment {
     pub scope: RuntimeScopeRefV1,
@@ -673,7 +678,7 @@ pub enum AssignmentRejection {
     /// The authenticated session role is not the recorded actor, or holds no
     /// exact-scope control grant for this operation (OPS-NODE-BOOT-01 D2).
     NotGranted,
-    /// The house instance id is held by a live session that does not name the house.
+    /// The instance identity collides with an existing scope or live session.
     ScopeInUse,
 }
 
@@ -698,8 +703,7 @@ impl DurabilityRoot {
         &self,
         scope: RuntimeScopeRefV1,
     ) -> Result<Option<RuntimeScopeAssignment>, AssignmentError> {
-        let (world_id, channel_id) = channel_scope(scope)?;
-        let key = scope_key(world_id, channel_id);
+        let key = assignment_scope_key(scope);
         Ok(self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -727,8 +731,7 @@ impl DurabilityRoot {
         &self,
         scope: RuntimeScopeRefV1,
     ) -> Result<Option<AssignmentPredecessor>, AssignmentError> {
-        let (world_id, channel_id) = channel_scope(scope)?;
-        let key = scope_key(world_id, channel_id);
+        let key = assignment_scope_key(scope);
         let root = self.clone();
         Ok(self
             .try_issue_semantic_pass()?
@@ -757,7 +760,7 @@ impl DurabilityRoot {
 }
 
 impl DurabilityRoot {
-    /// Runtime readiness publication for an assigned Channel scope. The caller
+    /// Runtime readiness publication for an assigned Channel or activity scope. The caller
     /// proves it is the exact current holder incarnation; the proof, the guard
     /// CAS and the readiness trigger's fence commit in one transaction. A
     /// replaced process holding only public NodeId/generation facts is refused.
@@ -772,8 +775,7 @@ impl DurabilityRoot {
         let AdmissionAuthorityGuardKeyV1::Runtime(scope) = change.key else {
             return Err(AssignmentError::InvalidInput);
         };
-        let (world_id, channel_id) = channel_scope(scope)?;
-        let key = scope_key(world_id, channel_id);
+        let key = assignment_scope_key(scope);
         let encoded = encode_guard(change, MAX_ADMISSION_GUARD_BYTES)?;
         let proof = proof.clone();
         let publication = publication.clone();
@@ -1059,7 +1061,7 @@ impl RuntimeScopeAssignmentWriter {
                     let high_water = writer_high_water(&mut tx, true).await?;
                     require_history_matches_high_water(&mut tx, high_water).await?;
                     let outcome = match load_receipt(&mut tx, &key).await? {
-                        Some(StoredReceipt::Channel(receipt, stored)) if stored == command => {
+                        Some(StoredReceipt::Supported(receipt, stored)) if stored == command => {
                             ReconcileOutcome::Committed(receipt)
                         }
                         Some(_) => ReconcileOutcome::Conflict,
@@ -1212,9 +1214,13 @@ async fn authoritative_transition(
     scope: RuntimeScopeRefV1,
     target: Option<NodeRegistrationFact>,
 ) -> Result<AssignmentOutcome, DurabilityError> {
-    let (world_id, channel_id) =
-        channel_scope(scope).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let scope_key = scope_key(world_id, channel_id);
+    let scope_key = assignment_scope_key(scope);
+    let (world_id, channel_id, instance_id, scope_kind) = match scope {
+        RuntimeScopeRefV1::Channel { world_id, channel_id } =>
+            (world_id, Some(*channel_id.as_bytes()), None, SCOPE_KIND_CHANNEL),
+        RuntimeScopeRefV1::Instance { world_id, instance_id } =>
+            (world_id, None, Some(instance_id), SCOPE_KIND_ACTIVITY),
+    };
     lock_admission_relations(tx).await?;
     match lock_slot(tx, registration).await? {
         Some((slot_key, slot_command))
@@ -1225,7 +1231,7 @@ async fn authoritative_transition(
     if let Some(stored) = load_receipt(tx, &key).await? {
         clear_slot(tx, registration).await?;
         return Ok(match stored {
-            StoredReceipt::Channel(receipt, stored_command) if stored_command == command => {
+            StoredReceipt::Supported(receipt, stored_command) if stored_command == command => {
                 AssignmentOutcome::Committed(receipt)
             }
             _ => AssignmentOutcome::Rejected(AssignmentRejection::OperationConflict),
@@ -1239,14 +1245,18 @@ async fn authoritative_transition(
         AssignmentCommand::Revoke { .. } => 3,
     };
     let granted: bool = sqlx::query_scalar(
-        "SELECT $1 = session_user AND EXISTS (SELECT 1 FROM game_control_scope_grants \
+        "SELECT $1 = session_user AND (EXISTS (SELECT 1 FROM game_control_scope_grants \
          WHERE control_role = session_user AND world_id = encode($2, 'hex')::uuid \
-           AND channel_id = encode($3, 'hex')::uuid AND operation = $4)",
+           AND channel_id = encode($3::bytea, 'hex')::uuid AND operation = $4) \
+         OR EXISTS (SELECT 1 FROM game_control_activity_scope_grants \
+         WHERE control_role = session_user AND world_id = encode($2, 'hex')::uuid \
+           AND instance_id = encode($5::bytea, 'hex')::uuid AND operation = $4))",
     )
     .bind(actor.0.as_str())
     .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
+    .bind(channel_id.as_ref().map(|id| id.as_slice()))
     .bind(operation)
+    .bind(instance_id.as_ref().map(|id| id.as_slice()))
     .fetch_one(&mut **tx)
     .await?;
     if !granted {
@@ -1284,6 +1294,15 @@ async fn authoritative_transition(
         }
     };
     let mut rejection = rejection;
+    if rejection.is_none() && current.is_none() && let Some(instance_id) = instance_id {
+        let available: bool = sqlx::query_scalar(
+            "SELECT game_activity_scope_available(encode($1,'hex')::uuid, encode($2,'hex')::uuid)",
+        ).bind(world_id.as_bytes().as_slice()).bind(instance_id.as_slice())
+            .fetch_one(&mut **tx).await?;
+        if !available {
+            rejection = Some(AssignmentRejection::ScopeInUse);
+        }
+    }
     if let (None, Some(target)) = (rejection, target)
         && !lock_current_registration(tx, target).await?
     {
@@ -1342,9 +1361,9 @@ async fn authoritative_transition(
     sqlx::query(
         "INSERT INTO game_runtime_scope_assignments \
          (scope_key, world_id, channel_id, ownership_generation, state, holder_node_id, \
-          holder_registration_revision, source_revision, decision_identity, operation_key, decided_at) \
-         VALUES ($1, encode($2, 'hex')::uuid, encode($3, 'hex')::uuid, $4::text::numeric(20,0), $5, \
-                 encode($6::bytea, 'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), $9, $10, $11) \
+          holder_registration_revision, source_revision, decision_identity, operation_key, decided_at, scope_kind, activity_instance_id) \
+         VALUES ($1, encode($2, 'hex')::uuid, encode($3::bytea, 'hex')::uuid, $4::text::numeric(20,0), $5, \
+                 encode($6::bytea, 'hex')::uuid, $7::text::numeric(20,0), $8::text::numeric(20,0), $9, $10, $11, $12, encode($13::bytea, 'hex')::uuid) \
          ON CONFLICT (scope_key) DO UPDATE SET ownership_generation = EXCLUDED.ownership_generation, \
              state = EXCLUDED.state, holder_node_id = EXCLUDED.holder_node_id, \
              holder_registration_revision = EXCLUDED.holder_registration_revision, \
@@ -1353,7 +1372,7 @@ async fn authoritative_transition(
     )
     .bind(scope_key.as_slice())
     .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
+    .bind(channel_id.as_ref().map(|id| id.as_slice()))
     .bind(ownership_generation.to_string())
     .bind(stored_state)
     .bind(holder_node.as_deref())
@@ -1362,6 +1381,8 @@ async fn authoritative_transition(
     .bind(&assignment.decision_identity)
     .bind(key.0.as_slice())
     .bind(decided_at)
+    .bind(scope_kind)
+    .bind(instance_id.as_ref().map(|id| id.as_slice()))
     .execute(&mut **tx)
     .await?;
     // Every decision on a guarded scope fences the guard at the next
@@ -1537,28 +1558,27 @@ pub(super) async fn load_assignment(
     lock: bool,
 ) -> Result<Option<RuntimeScopeAssignment>, DurabilityError> {
     let sql = if lock {
-        "SELECT uuid_send(world_id), uuid_send(channel_id), ownership_generation::text, state, \
+        "SELECT uuid_send(world_id), uuid_send(coalesce(channel_id, activity_instance_id)), ownership_generation::text, state, \
                 uuid_send(holder_node_id), holder_registration_revision::text, source_revision::text, \
-                decision_identity, decided_at \
+                decision_identity, decided_at, scope_kind \
          FROM game_runtime_scope_assignments WHERE scope_key = $1 FOR UPDATE"
     } else {
-        "SELECT uuid_send(world_id), uuid_send(channel_id), ownership_generation::text, state, \
+        "SELECT uuid_send(world_id), uuid_send(coalesce(channel_id, activity_instance_id)), ownership_generation::text, state, \
                 uuid_send(holder_node_id), holder_registration_revision::text, source_revision::text, \
-                decision_identity, decided_at \
+                decision_identity, decided_at, scope_kind \
          FROM game_runtime_scope_assignments WHERE scope_key = $1"
     };
     let row = sqlx::query(sql)
         .bind(scope_key)
         .fetch_optional(&mut **tx)
         .await?;
-    row.map(|row| decode_assignment(&row, 0)).transpose()
+    row.map(|row| decode_assignment(&row, 0, row.try_get("scope_kind").map_err(stored)?)).transpose()
 }
 
-/// A stored receipt for an operation key. A key the house writer used holds a
-/// house receipt (NULL `channel_id`); it is never decoded as a Channel
-/// assignment and only conflicts with a Channel command.
+/// Channel/activity receipts share this writer. House receipts remain owned by
+/// the house writer and always conflict with a command submitted here.
 enum StoredReceipt {
-    Channel(AssignmentReceipt, Vec<u8>),
+    Supported(AssignmentReceipt, Vec<u8>),
     OtherScope,
 }
 
@@ -1567,7 +1587,7 @@ async fn load_receipt(
     key: &OperationKey,
 ) -> Result<Option<StoredReceipt>, DurabilityError> {
     let row = sqlx::query(
-        "SELECT uuid_send(a.world_id), uuid_send(a.channel_id), r.ownership_generation::text, r.state, \
+        "SELECT uuid_send(a.world_id), uuid_send(coalesce(a.channel_id, a.activity_instance_id)), r.ownership_generation::text, r.state, \
                 uuid_send(r.holder_node_id), r.holder_registration_revision::text, r.source_revision::text, \
                 r.decision_identity, r.decided_at, r.command, r.fenced_publication_revision::text, \
                 a.scope_kind \
@@ -1582,13 +1602,13 @@ async fn load_receipt(
         return Ok(None);
     };
     let scope_kind: i16 = row.try_get(11).map_err(stored)?;
-    if scope_kind != SCOPE_KIND_CHANNEL {
+    if !matches!(scope_kind, SCOPE_KIND_CHANNEL | SCOPE_KIND_ACTIVITY) {
         return Ok(Some(StoredReceipt::OtherScope));
     }
-    let assignment = decode_assignment(&row, 0)?;
+    let assignment = decode_assignment(&row, 0, scope_kind)?;
     let command: Vec<u8> = row.try_get(9).map_err(stored)?;
     let fenced: Option<String> = row.try_get(10).map_err(stored)?;
-    Ok(Some(StoredReceipt::Channel(
+    Ok(Some(StoredReceipt::Supported(
         AssignmentReceipt {
             operation_key: *key,
             assignment,
@@ -1601,6 +1621,7 @@ async fn load_receipt(
 fn decode_assignment(
     row: &PgRow,
     offset: usize,
+    scope_kind: i16,
 ) -> Result<RuntimeScopeAssignment, DurabilityError> {
     let world: Vec<u8> = row.try_get(offset).map_err(stored)?;
     let channel: Vec<u8> = row.try_get(offset + 1).map_err(stored)?;
@@ -1612,8 +1633,14 @@ fn decode_assignment(
     let decision_identity: String = row.try_get(offset + 7).map_err(stored)?;
     let decided_at: i64 = row.try_get(offset + 8).map_err(stored)?;
     let world_id = WorldId::decode(&world).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let channel_id =
-        ChannelId::decode(&channel).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let scope = match scope_kind {
+        SCOPE_KIND_CHANNEL => RuntimeScopeRefV1::channel(world_id,
+            ChannelId::decode(&channel).map_err(|_| DurabilityError::InvalidStoredState)?),
+        SCOPE_KIND_ACTIVITY => RuntimeScopeRefV1::instance(world_id,
+            channel.try_into().map_err(|_| DurabilityError::InvalidStoredState)?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        _ => return Err(DurabilityError::InvalidStoredState),
+    };
     let holder = match (holder_node, holder_revision) {
         (Some(node), Some(revision)) => Some(NodeRegistrationFact::new(
             NodeId::decode(&node).map_err(|_| DurabilityError::InvalidStoredState)?,
@@ -1637,7 +1664,7 @@ fn decode_assignment(
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(RuntimeScopeAssignment {
-        scope: RuntimeScopeRefV1::channel(world_id, channel_id),
+        scope,
         ownership_generation,
         state,
         holder,
@@ -1703,6 +1730,21 @@ fn lock_queue(queue: &Mutex<QueueState>) -> MutexGuard<'_, QueueState> {
     queue
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
+}
+
+// Assignment keys and session/runtime guard keys have independent tag spaces:
+// assignment kind 2 is HouseId, while runtime kind 2 is InstanceId.
+pub(super) fn assignment_scope_key(scope: RuntimeScopeRefV1) -> [u8; 33] {
+    match scope {
+        RuntimeScopeRefV1::Channel { world_id, channel_id } => scope_key(world_id, channel_id),
+        RuntimeScopeRefV1::Instance { world_id, instance_id } => {
+            let mut key = [0; 33];
+            key[0] = SCOPE_KIND_ACTIVITY as u8;
+            key[1..17].copy_from_slice(world_id.as_bytes());
+            key[17..].copy_from_slice(&instance_id);
+            key
+        }
+    }
 }
 
 pub(super) fn channel_scope(

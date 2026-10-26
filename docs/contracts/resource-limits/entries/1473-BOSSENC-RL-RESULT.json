@@ -1,0 +1,19 @@
+{
+  "id": "BOSSENC-RL-RESULT",
+  "owner_contract": "protocol-oteryn/v1/boss_encounter_v1.proto",
+  "resource": "Boss cooldown result",
+  "unit": "bytes",
+  "hard_maximum": 34400,
+  "configurable_range": {
+    "minimum": 34400,
+    "maximum": 34400
+  },
+  "failure_category": "INVALID_INPUT",
+  "allocation_impact": "Bounded before copying client input or encoding a result; SQL reads at most 65 rows to establish continuation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "boss_cooldown_codec_bounds",
+    "boss_cooldown_list_postgres_real_dispatch"
+  ],
+  "notes": "Transport/storage safety bound, not a claimed Global gameplay value."
+}
