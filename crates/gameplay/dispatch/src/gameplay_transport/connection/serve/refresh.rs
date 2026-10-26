@@ -177,6 +177,7 @@ where
     A: FreshAdmissionAuthority,
 {
     // ATTACK-1b: due swings run; a changed domain 10 state sends a delta.
+    pvp_expert::refresh(stream, authority, session).await?;
     let Some(state) = authority
         .tick_combat(session.actor, session.admitted.game_session_id)
         .await

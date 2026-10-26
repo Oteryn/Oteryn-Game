@@ -884,6 +884,24 @@ pub trait FreshAdmissionAuthority {
         async { AttackIntentDisposition::Rejected }
     }
 
+    fn expert_fight_modes(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _command_id: u64,
+        _modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    ) -> impl Future<Output = AttackIntentDisposition> {
+        async { AttackIntentDisposition::Rejected }
+    }
+
+    fn observe_expert_modes(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes>> {
+        async { None }
+    }
+
     /// ATTACK-1b: the admitted actor's `ACTOR_COMBAT_STATE` (domain 10) for the snapshot, or
     /// `None` while it has none, which ends a session that selected capability 17.
     fn observe_combat_state(

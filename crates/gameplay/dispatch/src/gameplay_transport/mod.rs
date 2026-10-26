@@ -96,6 +96,7 @@ mod party_xp_command;
 mod promotion_death;
 mod promotion_login;
 mod pvp_death;
+mod pvp_expert;
 mod pvp_live;
 mod quest_admission;
 mod quest_log_source;

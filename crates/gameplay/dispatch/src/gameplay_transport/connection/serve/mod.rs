@@ -7,6 +7,7 @@ mod command;
 mod inbound;
 mod player_trade;
 mod poll;
+mod pvp_expert;
 mod refresh;
 mod setup;
 mod snapshot;

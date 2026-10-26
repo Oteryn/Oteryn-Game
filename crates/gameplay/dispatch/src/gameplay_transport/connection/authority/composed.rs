@@ -636,6 +636,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.set_fight_modes(actor, game_session_id, modes).await
     }
 
+    async fn expert_fight_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        self.set_expert_fight_modes(actor, session, command_id, modes)
+            .await
+    }
+
+    async fn observe_expert_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes> {
+        self.observe_expert_fight_modes(actor, session).await
+    }
+
     async fn observe_combat_state(
         &self,
         actor: ExactActorRef,

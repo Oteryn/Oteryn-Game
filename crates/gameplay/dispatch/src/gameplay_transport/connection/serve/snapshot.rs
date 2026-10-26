@@ -401,6 +401,30 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
             payload: window,
         });
     }
+    // Normalize expert/world modes before observing domain 10 so both snapshots carry
+    // the same authoritative fight tuple (in particular Hardcore's secure=false).
+    if admitted
+        .continuity
+        .selected_capabilities
+        .domain_selected(oteryn_protocol_oteryn::pvp_expert::STATE_DOMAIN_EXPERT_FIGHT_MODES)
+    {
+        let state = authority
+            .observe_expert_modes(actor, admitted.game_session_id)
+            .await
+            .ok_or(ServeEnd::Disconnected)?;
+        let combat = &mut admitted.continuity.combat;
+        combat.expert_revision = combat
+            .expert_revision
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        combat.expert_sent = Some(state);
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::pvp_expert::STATE_DOMAIN_EXPERT_FIGHT_MODES,
+            revision: combat.expert_revision,
+            snapshot_type: 1,
+            payload: oteryn_protocol_oteryn::pvp_expert::encode_expert_fight_modes(&state),
+        });
+    }
     // ATTACK-1b: with capability 17, domain 10 above every revision the session has seen. The
     // target was cleared by the reconnect or transfer; the in-fight deadline survives it.
     let combat_snapshot = if admitted

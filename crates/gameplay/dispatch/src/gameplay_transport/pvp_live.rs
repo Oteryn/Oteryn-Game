@@ -12,7 +12,7 @@ use crate::durability::{DurabilityError, pvp_live as storage, spell_item_transac
 use crate::foundation::{ChannelRuntimeV1, CommandRef, ExactActorRef, StagedSpellBatch};
 use crate::spell::combat_batch::OwnerCombatBatch;
 use crate::world_runtime::LocalObjectRuntime;
-use oteryn_gameplay_combat_rules::pvp::{ExpertMode, PvpActor, PvpTarget, check_pvp_legality};
+use oteryn_gameplay_combat_rules::pvp::{PvpActor, PvpTarget, check_pvp_legality};
 use oteryn_protocol_oteryn::actor_spell::SpellCastDisposition;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, Transaction};
@@ -28,7 +28,7 @@ pub(super) async fn legal_player(
     objects: &LocalObjectRuntime,
     actor: ExactActorRef,
     target: ExactActorRef,
-    secure: bool,
+    modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
 ) -> Result<storage::LivePvpFacts, SpellCastDisposition> {
     let reject = || SpellCastDisposition::TargetIllegal;
     let source = states
@@ -78,10 +78,9 @@ pub(super) async fn legal_player(
         on_no_pvp_tile: source_tile.no_pvp_zone(),
         post_login_immune: facts.post_login_immune,
         black_skull: facts.actor_black,
-        secure_mode: secure,
-        // ATTACK_V1 predates expert mode. Its secure toggle permits ordinary aggression;
-        // the four-mode extension remains a separate wire feature.
-        expert_mode: ExpertMode::RedFist,
+        secure_mode: modes.modes.secure,
+        // A newly committed black skull removes Red Fist even before its next state refresh.
+        expert_mode: super::pvp_expert::effective_mode(modes.expert, facts.actor_black),
     };
     let t = PvpTarget {
         level: state.character_facts().level,
@@ -139,13 +138,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(room) = room else {
             return false;
         };
-        let modes = self
-            .states
-            .attack
-            .lock()
-            .await
-            .combat_state(actor, session, self.owner_now())
-            .modes;
+        let modes = self.states.attack.lock().await.expert_modes(actor, session);
         let Ok(id) = crate::foundation::CommandId::new(command_id) else {
             return false;
         };
@@ -159,7 +152,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             actor,
             player.actor,
             CommandRef::new(session, id),
-            modes.secure,
+            modes,
         )
         .await
         .is_some()
@@ -177,7 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         target: ExactActorRef,
         command: CommandRef,
-        secure: bool,
+        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     ) -> Option<bool> {
         let Ok(Some(fence)) = self.current_quest_fence(command.game_session_id()).await else {
             return None;
@@ -204,7 +197,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| DurabilityError::Unavailable)?;
                 let result = legal_player(
                     &mut tx, owner.root, &authority, runtime, states, room, objects, actor, target,
-                    secure,
+                    modes,
                 )
                 .await
                 .ok()
@@ -228,7 +221,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         objects: &LocalObjectRuntime,
         batch: OwnerCombatBatch,
         ordinal: u16,
-        secure: bool,
+        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
         expected_black: bool,
     ) -> bool {
         let Some(effect) = batch.effects.first() else {
@@ -305,7 +298,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         objects,
                         hit.batch.caster,
                         target,
-                        secure,
+                        modes,
                     )
                     .await
                     .map_err(|_| DurabilityError::Unavailable)?;
@@ -464,7 +457,7 @@ pub(super) async fn record_spell_harm(
     objects: &LocalObjectRuntime,
     batch: &OwnerCombatBatch,
     player: &mut PlayerBatchPreflight,
-    secure: bool,
+    modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
 ) -> Result<(), SpellCastDisposition> {
     use crate::foundation::runtime_actor_spell_types::PlayerBatchProof;
     let mut pvp_locks = Vec::new();
@@ -487,7 +480,7 @@ pub(super) async fn record_spell_harm(
             objects,
             batch.caster,
             effect.target,
-            secure,
+            modes,
         )
         .await?;
         let capture: serde_json::Value =

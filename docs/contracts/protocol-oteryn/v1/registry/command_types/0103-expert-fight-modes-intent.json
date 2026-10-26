@@ -1,0 +1,10 @@
+{
+  "id": 103,
+  "name": "EXPERT_FIGHT_MODES_INTENT",
+  "owner_decision": "PVP-EXPERT-1 owner task; PVP-0 section 6.6",
+  "capability": 87,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/pvp_expert_v1.proto#ExpertFightModesV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/attack_v1.proto#AttackIntentResultV1",
+  "max_payload_bytes": 8,
+  "max_result_payload_bytes": 2
+}

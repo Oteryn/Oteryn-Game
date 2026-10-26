@@ -164,7 +164,7 @@ pub(super) async fn prepare(
     rune: Option<&oteryn_protocol_oteryn::actor_spell_item_v2::ItemSpellCastIntent>,
     legacy: Option<&super::super::super::rune_use_bridge::LegacyRuneUse>,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
-    pvp_secure: bool,
+    pvp_modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     prepare_inner(
@@ -188,7 +188,7 @@ pub(super) async fn prepare(
         legacy,
         None,
         attack_target,
-        pvp_secure,
+        pvp_modes,
         draw,
     )
     .await
@@ -269,7 +269,7 @@ pub(super) async fn prepare_named(
         None,
         Some((named_target, parameter)),
         None,
-        true,
+        oteryn_protocol_oteryn::pvp_expert::ExpertFightModes::default(),
         draw,
     )
     .await

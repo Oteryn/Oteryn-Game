@@ -16,6 +16,31 @@ fn refused() -> SpellItemError {
     SpellItemError::Rejected("current PvP facts unavailable")
 }
 
+/// Current World contract and skull for an expert fight-mode intent, under its session fence.
+pub async fn read_expert_pvp_context_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    authority: &SpellItemAuthority,
+) -> Result<(WorldPvpType, bool)> {
+    check_transaction(tx, authority).await?;
+    let policy = read_world_field_policy_in_transaction(
+        tx,
+        root,
+        authority.runtime_scope(),
+        authority.scope_generation(),
+    )
+    .await?
+    .ok_or_else(refused)?;
+    let world = match policy.bind(tx).mode() {
+        FieldWorldType::NoPvp => WorldPvpType::Optional,
+        FieldWorldType::Pvp => WorldPvpType::Open,
+        FieldWorldType::PvpEnforced => WorldPvpType::Hardcore,
+    };
+    let black = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid AND skull=2 AND skull_until>clock_timestamp())")
+        .bind(authority.character_id_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    Ok((world, black))
+}
+
 /// Data sampled under current session, lease, scope, World policy and physical owner guards.
 /// This is not a reusable authority token; each harm must re-read it in its own transaction.
 #[derive(Debug)]
@@ -107,6 +132,31 @@ pub async fn read_live_pvp_in_transaction(
         .bind(attacker.as_slice()).bind(target_id.as_slice()).fetch_one(&mut **tx).await?;
     let retaliation:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_pvp_aggression WHERE attacker=encode($2,'hex')::uuid AND target=encode($1,'hex')::uuid AND until_at>clock_timestamp() AND scope_generation=$3::text::numeric AND attacker_placement=$4 AND target_placement=$5)")
         .bind(attacker.as_slice()).bind(target_id.as_slice()).bind(authority.scope_generation().to_string()).bind(target.placement_identity().as_slice()).bind(actor.placement_identity().as_slice()).fetch_one(&mut **tx).await?;
+    // A protected ally must still occupy its current placement in this Channel. Membership
+    // comes from the same durable party/guild rows as rule 5, never a client-supplied id.
+    let placements: Vec<Vec<u8>> = runtime
+        .visible_entities()
+        .players
+        .iter()
+        .map(|p| p.actor.placement_identity().to_vec())
+        .collect();
+    let group_aggressor: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_pvp_aggression ag \
+         WHERE ag.attacker=encode($2,'hex')::uuid AND ag.until_at>clock_timestamp() \
+         AND ag.scope_generation=$3::text::numeric AND ag.attacker_placement=$4 \
+         AND ag.target_placement=ANY($5::bytea[]) AND (\
+         EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) \
+         WHERE a.character_id=encode($1,'hex')::uuid AND b.character_id=ag.target) OR \
+         EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b USING(guild_id) \
+         WHERE a.character_id=encode($1,'hex')::uuid AND b.character_id=ag.target)))",
+    )
+    .bind(attacker.as_slice())
+    .bind(target_id.as_slice())
+    .bind(authority.scope_generation().to_string())
+    .bind(target.placement_identity().as_slice())
+    .bind(&placements)
+    .fetch_one(&mut **tx)
+    .await?;
     let row=sqlx::query("SELECT COALESCE((SELECT skull=2 AND skull_until>clock_timestamp() FROM game_character_pvp_state WHERE character_id=encode($1,'hex')::uuid),false) AS actor_black, COALESCE((SELECT skull=2 AND skull_until>clock_timestamp() FROM game_character_pvp_state WHERE character_id=encode($2,'hex')::uuid),false) AS target_black, COALESCE((SELECT (skull>0 AND skull_until>clock_timestamp()) OR white_skull_until>clock_timestamp() FROM game_character_pvp_state WHERE character_id=encode($2,'hex')::uuid),false) OR EXISTS(SELECT 1 FROM game_character_revenge_marks WHERE victim_character_id=encode($1,'hex')::uuid AND killer_character_id=encode($2,'hex')::uuid AND avenged_at IS NULL AND expires_at>clock_timestamp()) AS marked, (SELECT authorization_decided_at>floor(extract(epoch FROM clock_timestamp()))::bigint-10 FROM game_durability_fresh_admission_receipts r JOIN game_durability_reconnect_sessions s ON COALESCE(s.fresh_replay_key,s.initial_fresh_replay_key)=r.replay_key WHERE s.game_session_id=encode($3,'hex')::uuid) AS immune")
         .bind(attacker.as_slice()).bind(target_id.as_slice()).bind(authority.game_session_id().as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     Ok(LivePvpFacts {
@@ -116,7 +166,7 @@ pub async fn read_live_pvp_in_transaction(
             same_party_or_guild: Some(group),
             friendly_fire: false,
             target_aggressor_of_actor: retaliation,
-            target_aggressor_of_actor_group: false,
+            target_aggressor_of_actor_group: group_aggressor,
         },
         actor_black: row.try_get("actor_black")?,
         target_black: row.try_get("target_black")?,

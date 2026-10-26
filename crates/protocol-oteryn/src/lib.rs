@@ -53,6 +53,7 @@ pub mod party;
 pub mod player_report;
 pub mod player_trade;
 pub mod presentation;
+pub mod pvp_expert;
 pub mod quest_log;
 pub mod refusal_detail;
 mod registered_capabilities;

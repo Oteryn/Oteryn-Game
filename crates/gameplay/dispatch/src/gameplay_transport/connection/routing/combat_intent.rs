@@ -7,6 +7,28 @@ use super::super::{
 use super::Dispatch;
 use oteryn_protocol_oteryn::ClientCommandView;
 
+pub(in super::super) async fn route_expert_modes<A: FreshAdmissionAuthority>(
+    authority: &A,
+    actor: ExactActorRef,
+    admitted: &mut AdmittedSession,
+    command: ClientCommandView<'_>,
+) -> Dispatch {
+    // Both fight-mode commands share ATTACK0-RL-02; alternating them cannot bypass the rate.
+    let admitted_rate = admitted
+        .continuity
+        .combat
+        .mode_intents
+        .admit(tokio::time::Instant::now());
+    match oteryn_protocol_oteryn::pvp_expert::decode_expert_fight_modes(command.payload) {
+        Ok(modes) if admitted_rate => Dispatch::Attack(
+            authority
+                .expert_fight_modes(actor, admitted.game_session_id, command.command_id, modes)
+                .await,
+        ),
+        _ => Dispatch::Unregistered,
+    }
+}
+
 pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,

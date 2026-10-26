@@ -1,0 +1,13 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+
+// Capability 87, command 103, domain 52. All fields must be present on the wire.
+// Fields 1-3 retain ATTACK_V1 numeric meanings; expert mode is Dove=0,
+// WhiteHand=1, YellowHand=2, RedFist=3. Unknown enums/fields and duplicates refuse.
+// Both fight-mode commands share the existing 25 intents/second/session budget.
+message ExpertFightModesV1 {
+  optional uint32 fight_mode = 1;
+  optional uint32 chase = 2;
+  optional bool secure = 3;
+  optional uint32 expert_mode = 4;
+}
