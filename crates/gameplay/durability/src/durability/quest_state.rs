@@ -361,9 +361,10 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: QuestTransitionRequest,
         catalogue: Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
         context: super::quest_world_callback::QuestWorldContext,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner(authority, node, fence, request, catalogue, Some(context))
+        self.commit_quest_inner(authority, node, fence, request, catalogue, Some((permit, context)))
             .await
     }
 
@@ -375,7 +376,10 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         request: QuestTransitionRequest,
         catalogue: Arc<QuestStateCatalogue>,
-        context: Option<super::quest_world_callback::QuestWorldContext>,
+        mut context: Option<(
+            &super::spell_owner_commit::SpellLanePermit,
+            super::quest_world_callback::QuestWorldContext,
+        )>,
     ) -> Result<QuestTransitionOutcome> {
         let callback = if context.is_some() {
             Some(
@@ -413,7 +417,7 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
         let mut binding = request_binding(fence.character_id, &request);
-        if let Some(context) = &context {
+        if let Some((_, context)) = &context {
             let bytes = serde_json::to_vec(&(context, &callback))
                 .map_err(|_| CharacterProgressionError::InvalidInput)?;
             let digest = Sha256::new()
@@ -427,7 +431,7 @@ impl DurabilityRoot {
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
         self.try_issue_semantic_pass()?
-            .run(move |holder, deadline| {
+            .run_with_context(&mut context, move |holder, deadline, context| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -665,8 +669,8 @@ impl DurabilityRoot {
                         }
                     };
 
-                    if let (Some(callback), Some(context)) = (&callback, &context)
-                        && !super::quest_world_callback::consume(&mut tx, fence, &request, callback, context).await?
+                    if let (Some(callback), Some((permit, context))) = (&callback, &context)
+                        && !super::quest_world_callback::consume(&mut tx, permit, fence, &request, callback, context).await?
                     { return Ok(Ok(QuestTransitionOutcome::Refused(QuestRefusal::StageMismatch))); }
                     let committed_revision = root
                         .revision

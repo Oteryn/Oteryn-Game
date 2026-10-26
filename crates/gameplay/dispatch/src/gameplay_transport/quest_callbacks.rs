@@ -9,6 +9,7 @@ use crate::durability::{
     character_revision_sequencer::RevisionSlot,
     quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
     quest_world_callback::QuestWorldContext,
+    spell_owner_commit::SpellLanePermit,
 };
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
@@ -127,7 +128,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.is_empty() {
             return true;
         }
-        let Some(_permit) = self.spell_lane_permit().await else {
+        let Some(permit) = self.spell_lane_permit().await else {
             return false;
         };
         for pending in pending {
@@ -144,7 +145,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
             let disposition = match slot.commit_world_callback(self.root, self.character, self.holder, fence,
                 QuestTransitionRequest { transition_key: pending.callback, cause: pending.cause },
-                std::sync::Arc::clone(catalogue), context).await {
+                std::sync::Arc::clone(catalogue), &permit, context).await {
                 Ok(QuestTransitionOutcome::Committed(_) | QuestTransitionOutcome::AlreadyCommitted(_)) => UseDisposition::Committed,
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => return false,
                 Ok(_) | Err(_) => UseDisposition::Rejected,
@@ -200,7 +201,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if pending.is_empty() {
             return true;
         }
-        let Some(_permit) = self.spell_lane_permit().await else {
+        let Some(permit) = self.spell_lane_permit().await else {
             return false;
         };
         for pending in pending {
@@ -225,6 +226,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             let result = self
                 .execute_quest_callback(
+                    &permit,
                     &mut runtime,
                     &mut states,
                     pending.actor,
@@ -283,7 +285,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         };
         let result = tokio::time::timeout(std::time::Duration::from_secs(10), async {
-            let Some(_permit) = self.spell_lane_permit().await else {
+            let Some(permit) = self.spell_lane_permit().await else {
                 return UseDisposition::Rejected;
             };
             let fence = if callback.storage.is_empty() {
@@ -324,6 +326,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return UseDisposition::Rejected;
             };
             self.execute_quest_callback(
+                &permit,
                 &mut runtime,
                 &mut states,
                 actor,
@@ -350,6 +353,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// acquiring the quest revision slot, then compare the movement snapshot on re-entry.
     pub(super) async fn step_quest_callback(
         &self,
+        permit: &SpellLanePermit,
         actor: ExactActorRef,
         session: GameSessionId,
         origin: MovementPositionSnapshot,
@@ -406,6 +410,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let revision = map.facts.object_revision(*key);
             let result = self
                 .execute_quest_callback(
+                    permit,
                     &mut runtime,
                     &mut states,
                     actor,
@@ -506,6 +511,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     async fn execute_quest_callback(
         &self,
+        permit: &SpellLanePermit,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -692,6 +698,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         cause,
                     },
                     std::sync::Arc::clone(catalogue),
+                    permit,
                     context,
                 )
                 .await
