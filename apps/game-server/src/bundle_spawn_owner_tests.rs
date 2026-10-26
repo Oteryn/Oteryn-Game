@@ -67,6 +67,7 @@ fn a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn() {
             y: 11,
             points: vec![Point {
                 creature: 0,
+                alternatives: Vec::new(),
                 x: 1,
                 y: 11,
                 direction: Direction::South,

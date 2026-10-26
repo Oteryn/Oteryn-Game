@@ -34,6 +34,8 @@ struct SpawnPointDefinition {
     creature_target_identity: String,
     /// Always positive.
     creature_initial_health: i64,
+    /// Candidate one onward. Candidate zero is the two fields above.
+    alternatives: Vec<(String, i64)>,
     /// CREATURE-AI-0 §6.3: the point's creature profile `blocked_by_nearby_players`. It is per
     /// point because a source may mix blockable and non-blockable creatures (Codex P2 on
     /// #2002). The uniform fixture source is not blockable; only a test definition sets it.
@@ -75,6 +77,7 @@ impl SpawnDefinition {
                             respawn_delay_micros,
                             creature_target_identity: creature_target_identity.clone(),
                             creature_initial_health,
+                            alternatives: Vec::new(),
                             blockable: false,
                         },
                     )
@@ -140,7 +143,7 @@ impl SpawnDefinition {
         let points = points
             .into_iter()
             .map(
-                |(cell, respawn_delay_ms, creature, initial_health, blockable)| {
+                |(cell, respawn_delay_ms, creature, initial_health, blockable, alternatives)| {
                     Ok((
                         cell,
                         SpawnPointDefinition {
@@ -148,6 +151,10 @@ impl SpawnDefinition {
                             respawn_delay_micros: activation_micros(respawn_delay_ms)?,
                             creature_target_identity: creature,
                             creature_initial_health: activation_health(initial_health)?,
+                            alternatives: alternatives
+                                .into_iter()
+                                .map(|(key, health)| Ok((key, activation_health(health)?)))
+                                .collect::<Result<Vec<_>, CarrierError>>()?,
                             blockable,
                         },
                     ))
@@ -229,7 +236,7 @@ pub type ActivationSpawnFacts = (Vec<(i32, i32, i16)>, u64, u64, String, u64);
 /// placement cell, respawn delay (ms), creature key, authored initial health and its creature
 /// profile's `blocked_by_nearby_players` (CREATURE-AI-0 §6.3; Codex P2 on #2002), which is per
 /// point because one source may mix blockable and non-blockable creatures.
-pub type ActivationSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
+pub type ActivationSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool, Vec<(String, u64)>);
 
 /// SPAWN-1b (Codex P1 on #1981): one activated spawn source whose points may differ in
 /// creature, respawn delay and initial health: its points in authored (point-ordinal) order and
@@ -258,6 +265,8 @@ pub(super) struct SpawnCellState {
     /// Bumped each time an occurrence chain ends `Skipped` and a fresh one starts (§4.3
     /// "terminal disposition"): keeps every occurrence identity for this cell unique.
     pub(super) successor: u32,
+    /// Candidate used by the next successful admission (uniform round-robin, deterministic).
+    pub(super) next_candidate: u8,
 }
 
 /// One realized spawn source and its per-cell state, for this carrier's ownership
@@ -899,6 +908,7 @@ impl ChannelActorCarrier {
                 live: Some(ExactActorRef(actor)),
                 attempt: 0,
                 successor: 0,
+                next_candidate: if point.alternatives.is_empty() { 0 } else { 1 },
             });
         }
         self.spawns.insert(
@@ -969,12 +979,14 @@ impl ChannelActorCarrier {
         let spawned = realization.definition.point(ordinal)?;
         let health = spawned.creature_initial_health;
         let identity = spawned.creature_target_identity.clone();
+        let has_alternatives = !spawned.alternatives.is_empty();
         let actor = self.admit_creature(continuity, ActorState(0), &identity, health)?;
         // Reserved exactly at point 0: the push never reallocates.
         self.spawns[index].cells.push(SpawnCellState {
             live: Some(ExactActorRef(actor)),
             attempt: 0,
             successor: 0,
+            next_candidate: if has_alternatives { 1 } else { 0 },
         });
         self.initialize_position(continuity, actor, position_context, cell)?;
         Ok(())
@@ -1111,8 +1123,20 @@ impl ChannelActorCarrier {
         }
 
         let point = self.spawns[spawn_index].definition.point(cell_index)?;
-        let target_identity = point.creature_target_identity.clone();
-        let initial_health = point.creature_initial_health;
+        let candidate = usize::from(self.spawns[spawn_index].cells[cell_index].next_candidate);
+        let (target_identity, initial_health) = if candidate == 0 {
+            (
+                point.creature_target_identity.clone(),
+                point.creature_initial_health,
+            )
+        } else {
+            point
+                .alternatives
+                .get(candidate - 1)
+                .cloned()
+                .ok_or(CarrierError::InvalidSpawnDefinition)?
+        };
+        let candidate_count = point.alternatives.len() + 1;
         let slots_before = self.slots.clone();
         let free_head_before = self.free_head;
         let occupied_before = self.occupied.clone();
@@ -1143,6 +1167,7 @@ impl ChannelActorCarrier {
         let state = &mut self.spawns[spawn_index].cells[cell_index];
         state.live = Some(ExactActorRef(actor));
         state.attempt = 0;
+        state.next_candidate = ((candidate + 1) % candidate_count) as u8;
         Ok(RespawnResolution::Admitted(ExactActorRef(actor)))
     }
     /// SPAWN-CEILINGS-1 (Codex 4242270322): the respawn drive's admission at point
@@ -1179,11 +1204,25 @@ impl ChannelActorCarrier {
             .ok_or(CarrierError::UnknownSpawnCell)?
             .live;
         let point = realization.definition.point(cell_index)?;
-        let initial_health = point.creature_initial_health;
+        let candidate = usize::from(realization.cells[cell_index].next_candidate);
+        let (identity, initial_health) = if candidate == 0 {
+            (
+                &point.creature_target_identity,
+                point.creature_initial_health,
+            )
+        } else {
+            let alternative = point
+                .alternatives
+                .get(candidate - 1)
+                .ok_or(CarrierError::InvalidSpawnDefinition)?;
+            (&alternative.0, alternative.1)
+        };
+        let identity = identity.clone();
+        let candidate_count = point.alternatives.len() + 1;
         if initial_health <= 0 {
             return Err(CarrierError::InvalidCreatureHealth);
         }
-        let target_identity = creature_target_binding(&point.creature_target_identity)?;
+        let target_identity = creature_target_binding(&identity)?;
         if let Some(dead_actor) = dead_actor {
             // Best effort: an already-removed actor (e.g. a repeated call) is not an error here.
             let _ = self.remove(continuity, dead_actor.0);
@@ -1208,6 +1247,7 @@ impl ChannelActorCarrier {
         let state = &mut self.spawns[spawn_index].cells[cell_index];
         state.live = Some(ExactActorRef(actor));
         state.attempt = 0;
+        state.next_candidate = ((candidate + 1) % candidate_count) as u8;
         Ok(ExactActorRef(actor))
     }
 }

@@ -15,6 +15,9 @@ pub const MAX_POINTS: usize = 131_072;
 pub const MAX_SOURCES: usize = 65_536;
 /// `CREATUREAI0-RL-03`: points per spawn source.
 pub const MAX_POINTS_PER_SOURCE: usize = 64;
+/// SPAWNGLOBAL: candidates carried by one varying spawn point. Selection is uniform because
+/// Global weights are not established; the bound keeps validation and runtime work finite.
+pub const MAX_CREATURES_PER_POINT: usize = 16;
 /// `CREATUREAI0-RL-13`: respawn delay, in milliseconds.
 pub const MIN_RESPAWN_MS: u32 = 1_000;
 pub const MAX_RESPAWN_MS: u32 = 86_400_000;
@@ -82,10 +85,12 @@ pub struct Creature {
     pub period: Period,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Point {
     /// Index into the creature table.
     pub creature: u32,
+    /// Additional predefined candidates. The primary `creature` is candidate zero.
+    pub alternatives: Vec<u32>,
     pub x: u16,
     pub y: u16,
     pub direction: Direction,
@@ -170,9 +175,21 @@ pub fn validate(table: &Table, world: &Extent) -> Result<(), Error> {
             "spawn source floor outside the World",
         )?;
         for point in &source.points {
+            limit(
+                point.alternatives.len() < MAX_CREATURES_PER_POINT,
+                "spawn candidates per point over SPAWNGLOBAL bound",
+            )?;
             check(
                 (point.creature as usize) < table.creatures.len(),
                 "spawn creature index out of range",
+            )?;
+            check(
+                point
+                    .alternatives
+                    .iter()
+                    .all(|candidate| (*candidate as usize) < table.creatures.len())
+                    && !point.alternatives.contains(&point.creature),
+                "spawn alternative creature is invalid or duplicated",
             )?;
             check(
                 world.contains(point.x, point.y, source.floor),
@@ -212,6 +229,10 @@ pub fn encode(table: &Table) -> Vec<u8> {
         put(&mut out, source.points.len() as u64);
         for point in &source.points {
             put(&mut out, point.creature.into());
+            put(&mut out, point.alternatives.len() as u64);
+            for candidate in &point.alternatives {
+                put(&mut out, (*candidate).into());
+            }
             put(&mut out, zigzag(i32::from(point.x) - i32::from(source.x)));
             put(&mut out, zigzag(i32::from(point.y) - i32::from(source.y)));
             out.push(point.direction.byte());
@@ -253,6 +274,14 @@ pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
         let mut list = Vec::with_capacity(n);
         for _ in 0..n {
             let creature = r.bounded(u64::from(u32::MAX), "spawn creature index")? as u32;
+            let alternatives_count =
+                count(&mut r, MAX_CREATURES_PER_POINT - 1, "spawn candidate count")?;
+            let mut alternatives = Vec::with_capacity(alternatives_count);
+            for _ in 0..alternatives_count {
+                alternatives.push(
+                    r.bounded(u64::from(u32::MAX), "spawn alternative creature index")? as u32,
+                );
+            }
             let at = |centre: u16, delta: u64| -> Result<u16, Error> {
                 u16::try_from(i64::from(centre) + unzigzag(delta))
                     .map_err(|_| Error::Format("spawn point outside the u16 plane".into()))
@@ -263,6 +292,7 @@ pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
             let respawn_ms = r.bounded(u64::from(u32::MAX), "respawn delay")? as u32;
             list.push(Point {
                 creature,
+                alternatives,
                 x: px,
                 y: py,
                 direction,

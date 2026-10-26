@@ -100,6 +100,7 @@ fn single_spawn_source_respects_the_channel_point_ceiling() {
                 live: None,
                 attempt: 0,
                 successor: 0,
+                next_candidate: 0,
             };
             points
         ],

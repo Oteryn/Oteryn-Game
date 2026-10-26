@@ -214,6 +214,7 @@ fn families() -> Families {
         centre: (12, 1, 7),
         points: vec![SpawnPoint {
             creature: "oteryn:creature.rat".into(),
+            alternatives: Vec::new(),
             cell: (12, 1, 7),
             direction: Direction::South,
             respawn_ms: 60_000,

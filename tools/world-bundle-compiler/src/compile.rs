@@ -390,6 +390,16 @@ pub fn realize_spawns(
         }
         let mut points = Vec::with_capacity(source.points.len());
         for point in &source.points {
+            if point.alternatives.len() >= spawn::MAX_CREATURES_PER_POINT
+                || point
+                    .alternatives
+                    .iter()
+                    .any(|candidate| candidate == &point.creature)
+            {
+                return Err(Error::Limit(
+                    "spawn candidates per point are invalid".into(),
+                ));
+            }
             let (x, y, z) = point.cell;
             let reason = match families.creatures.get(&point.creature) {
                 None => Some(SpawnReason::UnboundCreature),
@@ -418,6 +428,20 @@ pub fn realize_spawns(
                     };
                     if reason.is_none() {
                         creatures.insert(point.creature.as_str(), creature);
+                        for candidate in &point.alternatives {
+                            let candidate_facts =
+                                families.creatures.get(candidate).ok_or_else(|| {
+                                    Error::Format(format!(
+                                        "unbound varying spawn creature `{candidate}`"
+                                    ))
+                                })?;
+                            if candidate_facts.boss || candidate_facts.encounter_bound {
+                                return Err(Error::Format(format!(
+                                    "ineligible varying spawn creature `{candidate}`"
+                                )));
+                            }
+                            creatures.insert(candidate.as_str(), candidate_facts);
+                        }
                     }
                     reason
                 }
@@ -464,6 +488,11 @@ pub fn realize_spawns(
             }
             list.push(spawn::Point {
                 creature: index[point.creature.as_str()],
+                alternatives: point
+                    .alternatives
+                    .iter()
+                    .map(|key| index[key.as_str()])
+                    .collect(),
                 x: point.cell.0,
                 y: point.cell.1,
                 direction: point.direction,

@@ -3046,6 +3046,7 @@ mod tests {
         const POINTS: usize = 82_673;
         let point = |creature, x, respawn_ms| Point {
             creature,
+            alternatives: Vec::new(),
             x,
             y: 5,
             direction: Direction::South,

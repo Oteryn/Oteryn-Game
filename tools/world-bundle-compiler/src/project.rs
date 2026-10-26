@@ -89,6 +89,7 @@ pub struct NpcPlacement {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpawnPoint {
     pub creature: String,
+    pub alternatives: Vec<String>,
     pub cell: LegacyPosition,
     pub direction: Direction,
     pub respawn_ms: u32,
@@ -288,7 +289,10 @@ struct Cell {
 #[serde(deny_unknown_fields)]
 struct PointRecord {
     cell: Cell,
+    #[serde(default)]
     creature: String,
+    #[serde(default)]
+    creatures: Vec<String>,
     direction: String,
     respawn_ms: u32,
 }
@@ -365,8 +369,27 @@ impl Families {
                     return limit("respawn delay outside CREATUREAI0-RL-13");
                 }
                 let direction = direction(&point.direction)?;
+                let (creature, alternatives) = if point.creatures.is_empty() {
+                    (point.creature, Vec::new())
+                } else {
+                    if !point.creature.is_empty() {
+                        return Err(format(format!(
+                            "spawn source {} point sets both creature and creatures",
+                            record.identity.key
+                        )));
+                    }
+                    let mut candidates = point.creatures.into_iter();
+                    let creature = candidates.next().ok_or_else(|| {
+                        format(format!(
+                            "spawn source {} has no creature",
+                            record.identity.key
+                        ))
+                    })?;
+                    (creature, candidates.collect())
+                };
                 points.push(SpawnPoint {
-                    creature: point.creature,
+                    creature,
+                    alternatives,
                     cell: (point.cell.x, point.cell.y, point.cell.floor),
                     direction,
                     respawn_ms: point.respawn_ms,

@@ -124,6 +124,7 @@ fn creature(period: &str, boss: bool, encounter_bound: bool) -> CreatureFacts {
 fn point(creature: &str, x: u16) -> SpawnPoint {
     SpawnPoint {
         creature: format!("oteryn:creature.{creature}"),
+        alternatives: Vec::new(),
         cell: (x, 1, 7),
         direction: Direction::South,
         respawn_ms: 60_000,
@@ -297,6 +298,7 @@ fn table(sources: usize, points: usize) -> spawn::Table {
                 points: (0..points)
                     .map(|j| spawn::Point {
                         creature: 0,
+                        alternatives: Vec::new(),
                         x: 10 + (j % 8) as u16,
                         y: 10,
                         direction: Direction::North,

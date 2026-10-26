@@ -11,9 +11,9 @@ fn spawn1b_mixed_point_source_is_one_runtime_source_with_per_point_facts() {
     let mut runtime = runtime(8);
     let source: ActivationSpawnSourceFacts = (
         vec![
-            ((2, 0, 7), 60_000, RAT.to_string(), 20, false),
-            ((3, 0, 7), 30_000, BAT.to_string(), 35, false),
-            ((4, 0, 7), 30_000, RAT.to_string(), 20, false),
+            ((2, 0, 7), 60_000, RAT.to_string(), 20, false, Vec::new()),
+            ((3, 0, 7), 30_000, BAT.to_string(), 35, false, Vec::new()),
+            ((4, 0, 7), 30_000, RAT.to_string(), 20, false, Vec::new()),
         ],
         5_000,
     );
@@ -100,8 +100,8 @@ fn spawn1b_mixed_source_blocks_only_its_blockable_points() {
     };
     let source: ActivationSpawnSourceFacts = (
         vec![
-            ((2, 0, 7), 60_000, RAT.to_string(), 20, true),
-            ((3, 0, 7), 60_000, BAT.to_string(), 35, false),
+            ((2, 0, 7), 60_000, RAT.to_string(), 20, true, Vec::new()),
+            ((3, 0, 7), 60_000, BAT.to_string(), 35, false, Vec::new()),
         ],
         5_000,
     );
@@ -177,6 +177,7 @@ fn spawn1b_mixed_point_source_keeps_the_per_source_checks() {
                     key.to_string(),
                     health,
                     false,
+                    Vec::new(),
                 )
             })
             .collect::<Vec<_>>()
@@ -194,6 +195,7 @@ fn spawn1b_mixed_point_source_keeps_the_per_source_checks() {
                 "oteryn:creature/rat".to_string(),
                 20,
                 false,
+                Vec::new(),
             )],
             5_000,
         ),
@@ -234,6 +236,7 @@ fn spawn1b_bundle_scale_sources_stay_under_the_source_ceiling() {
             "oteryn:creature/rat".to_string(),
             20,
             false,
+            Vec::new(),
         )];
         if two {
             points.push((
@@ -242,6 +245,7 @@ fn spawn1b_bundle_scale_sources_stay_under_the_source_ceiling() {
                 "oteryn:creature/bat".to_string(),
                 35,
                 false,
+                Vec::new(),
             ));
         }
         (points, 5_000)

@@ -350,7 +350,7 @@ pub(super) use crate::content::bundle_spell_tiles::tile_pos;
 pub type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
 
 /// SPAWN-1b: one point of a [`BundleSpawnFacts`] (the carrier's `ActivationSpawnPointFacts`).
-pub type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
+pub type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool, Vec<(String, u64)>);
 
 /// CREATURE-AI-0 §6.3: the occupancy retry interval of a bundle spawn (the D116 value).
 pub const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
@@ -383,12 +383,27 @@ pub fn table_activation_spawns(
                 Some(known) => known,
                 None => *resolved.insert(profile(&creature.key)?),
             };
+            let mut alternatives = Vec::with_capacity(point.alternatives.len());
+            for alternative in &point.alternatives {
+                let alternative_index = usize::try_from(*alternative).ok()?;
+                let alternative_creature = table.creatures.get(alternative_index)?;
+                if alternative_creature.period != Period::All {
+                    continue;
+                }
+                let alternative_resolved = profiles.get_mut(alternative_index)?;
+                let (alternative_health, _) = match *alternative_resolved {
+                    Some(known) => known,
+                    None => *alternative_resolved.insert(profile(&alternative_creature.key)?),
+                };
+                alternatives.push((alternative_creature.key.clone(), alternative_health));
+            }
             points.push((
                 (i32::from(point.x), i32::from(point.y), z),
                 u64::from(point.respawn_ms),
                 creature.key.clone(),
                 health,
                 blockable,
+                alternatives,
             ));
         }
         if !points.is_empty() {
@@ -614,6 +629,7 @@ pub mod tests {
         use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
         let point = |creature, x, respawn_ms| Point {
             creature,
+            alternatives: Vec::new(),
             x,
             y: 5,
             direction: Direction::South,
@@ -669,6 +685,7 @@ pub mod tests {
                 "oteryn:creature.rat".to_string(),
                 20,
                 false,
+                Vec::new(),
             )
         };
         let wolf = |x, z, respawn_ms| {
@@ -678,6 +695,7 @@ pub mod tests {
                 "oteryn:creature.wolf".to_string(),
                 35,
                 true,
+                Vec::new(),
             )
         };
         assert_eq!(
@@ -716,6 +734,7 @@ pub mod tests {
         use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
         let point = |creature, x| Point {
             creature,
+            alternatives: Vec::new(),
             x,
             y: 5,
             direction: Direction::South,
