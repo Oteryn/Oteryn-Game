@@ -15,7 +15,7 @@ mod sql_cancellation;
 mod summon_transaction;
 
 #[test]
-fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell() -> TestResult {
+fn current_owner_spawn_home_walkback_and_global_leash_use_actual_source_cell() -> TestResult {
     run_case(async |harness| {
         prepare_current_session(harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -75,8 +75,9 @@ fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell() -> TestR
                 .due(rat),
             None
         );
-        // Inject a valid exact-actor displacement beyond the leash radius. The real current
-        // Map/Item pass must resolve the authored home rather than the admission cell.
+        // Inject a valid exact-actor displacement beyond the Global 50-tile leash radius.
+        // The real current Map/Item pass despawns the ordinary home-spawn monster; the existing
+        // spawn owner will observe that vacancy and schedule its normal respawn.
         {
             let mut runtime = deps.runtime.lock().await;
             let before = runtime.read_actor_position(rat).map_err(debug)?;
@@ -95,62 +96,7 @@ fn current_owner_spawn_home_walkback_and_leash_use_actual_source_cell() -> TestR
             .wake(cell(-47), |_| Some(cell(-47)), owner.owner_now().get());
         owner.clock_origin -= std::time::Duration::from_secs(1);
         owner.drain_monster_melee().await;
-        assert_eq!(
-            deps.runtime
-                .lock()
-                .await
-                .read_actor_position(rat)
-                .map_err(debug)?
-                .position(),
-            cell(4)
-        );
-        // Occupied home refuses without moving its occupant or the leashed creature.
-        {
-            let mut runtime = deps.runtime.lock().await;
-            let before = runtime.read_actor_position(rat).map_err(debug)?;
-            runtime
-                .borrow_movement_position()
-                .commit_creature_relocation(rat, before, cell(-47))
-                .map_err(debug)?;
-            for at in [
-                MovementLocalPosition {
-                    x: 3,
-                    y: 11,
-                    floor: -7,
-                },
-                MovementLocalPosition {
-                    x: 4,
-                    y: 11,
-                    floor: -7,
-                },
-                cell(4),
-            ] {
-                let before = runtime.read_actor_position(deps.actor).map_err(debug)?;
-                runtime
-                    .borrow_movement_position()
-                    .commit_cardinal(before, at)
-                    .map_err(debug)?;
-            }
-        }
-        owner
-            .states
-            .spell_states
-            .lock()
-            .await
-            .monster_melee
-            .creature_ai
-            .wake(cell(-47), |_| Some(cell(-47)), owner.owner_now().get());
-        owner.clock_origin -= std::time::Duration::from_secs(1);
-        owner.drain_monster_melee().await;
-        assert_eq!(
-            deps.runtime
-                .lock()
-                .await
-                .read_actor_position(rat)
-                .map_err(debug)?
-                .position(),
-            cell(-47)
-        );
+        assert!(deps.runtime.lock().await.read_actor_position(rat).is_err());
         Ok(())
     })
 }

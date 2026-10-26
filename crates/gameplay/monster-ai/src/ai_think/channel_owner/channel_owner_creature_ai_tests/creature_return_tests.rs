@@ -38,7 +38,7 @@ fn walk_back_reaches_spawn_and_idles_while_a_failed_route_waits_for_wake() {
 }
 
 #[test]
-fn leash_relocates_once_or_idles_in_place_if_the_spawn_is_occupied() {
+fn leash_despawns_beyond_fifty_tiles_even_if_the_spawn_is_occupied() {
     for occupied in [false, true] {
         let mut channel = Channel::new();
         let creature = channel.admit(at(50, 100), 0);
@@ -53,20 +53,12 @@ fn leash_relocates_once_or_idles_in_place_if_the_spawn_is_occupied() {
             .expect("entry")
             .state
             .spawn = Some(spawn);
-        let before = channel
+        channel
             .runtime
             .read_actor_position(creature)
             .expect("before");
         channel.thinks(0, true);
-        let after = channel
-            .runtime
-            .read_actor_position(creature)
-            .expect("after");
-        assert_eq!(
-            after.position(),
-            if occupied { before.position() } else { spawn }
-        );
-        assert_eq!(after.revision(), before.revision() + u64::from(!occupied));
+        assert!(channel.runtime.read_actor_position(creature).is_err());
         assert_eq!(channel.table.due(creature), None);
         assert!(
             channel

@@ -37,12 +37,12 @@ impl CreatureAiTable {
                     || (i64::from(at.y) - i64::from(spawn.y)).abs() > 50
                     || (i32::from(at.floor) - i32::from(spawn.floor)).abs() > 2)
             {
-                let _ = match current_map {
-                    Some(map) => map.relocate(runtime, actor, spawn),
-                    None => crate::movement::relocate::relocate_creature(
-                        runtime, actor, cells, blocking, spawn,
-                    ),
-                };
+                // Global's ordinary home-spawn leash removes a monster once it has been
+                // lured beyond the 50-tile box.  Do not teleport it home: removal lets the
+                // existing spawn owner observe the vacant point and start its normal,
+                // player-blockable respawn occurrence. Raid/quest actors have no home spawn
+                // in this table and therefore do not enter this branch.
+                let _ = runtime.remove_encounter_actor(actor);
                 entry.due_us = None;
                 entry.state.target = None;
                 entry.motion.stop();
