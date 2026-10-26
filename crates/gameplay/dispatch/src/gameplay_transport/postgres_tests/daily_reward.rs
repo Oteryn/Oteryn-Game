@@ -67,7 +67,7 @@ async fn replay_claim(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     initial: AdmittedSession,
     claim: &[u8],
-) -> TestResult<Vec<u8>> {
+) -> TestResult<(Vec<u8>, AdmittedSession)> {
     let mut fresh = initial;
     let (end, output) = serve(
         owner,
@@ -78,7 +78,7 @@ async fn replay_claim(
     let values = results(&output)?;
     assert_eq!(values.len(), 4, "{end}; {values:?}");
     assert_eq!(values[3].0, 4);
-    Ok(values[3].2.clone())
+    Ok((values[3].2.clone(), fresh))
 }
 fn pick(key: &str, quantity: u8) -> TestResult<Vec<u8>> {
     let mut bytes = vec![
@@ -164,8 +164,10 @@ fn daily_reward_premium_effects_real_dispatch_claim_kill_and_expiry() -> TestRes
 }
 fn scenario(premium: bool) -> TestResult {
     run(async |admin| {
+        // Let real progression admission initialize the XP row from the active content;
+        // the harness's synthetic level-50 row has unrelated policy revisions.
         let mut harness =
-            Harness::create_with_admission_seed(admin, "daily_dispatch", true, false).await?;
+            Harness::create_with_admission_seed(admin, "daily_dispatch", false, false).await?;
         prepare_current_session(&harness).await?;
         let database: String = sqlx::query_scalar("SELECT current_database()")
             .fetch_one(&harness.pool)
@@ -328,7 +330,7 @@ fn scenario(premium: bool) -> TestResult {
         let mut rebuilt = dependencies.owner(&harness, &authority);
         rebuilt.active_generation = generation.active();
         dependencies.initialize(&rebuilt).await;
-        assert_eq!(replay_claim(&rebuilt, initial, &potion).await?, [8, 2]);
+        assert_eq!(replay_claim(&rebuilt, initial, &potion).await?.0, [8, 2]);
         drop(rebuilt);
         // No selected capability: no DAILY payload and no additional durable row.
         let selected = admitted.continuity.selected_capabilities;
@@ -434,7 +436,7 @@ fn scenario(premium: bool) -> TestResult {
         let mut rebuilt = dependencies.owner(&harness, &authority);
         rebuilt.active_generation = generation.active();
         dependencies.initialize(&rebuilt).await;
-        assert_eq!(replay_claim(&rebuilt, initial, &potion).await?, [8, 2]);
+        assert_eq!(replay_claim(&rebuilt, initial, &potion).await?.0, [8, 2]);
         drop(rebuilt);
         let count: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_claims")
@@ -514,10 +516,8 @@ fn scenario(premium: bool) -> TestResult {
         let mut restarted = dependencies.owner(&harness, &authority);
         restarted.active_generation = generation.active();
         dependencies.initialize(&restarted).await;
-        assert_eq!(
-            replay_claim(&restarted, initial, &potion).await?.get(1),
-            Some(&2)
-        );
+        let (replayed, mut resumed) = replay_claim(&restarted, initial, &potion).await?;
+        assert_eq!(replayed.get(1), Some(&2));
         let count: i64 =
             sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_claims")
                 .fetch_one(&harness.pool)
@@ -525,15 +525,16 @@ fn scenario(premium: bool) -> TestResult {
         assert_eq!(count, 9);
         // Claim-time status is resolved again: this reconstructed owner has no
         // current Premium source, even if the earlier grant was Premium.
-        let mut resumed = initial;
-        resumed.continuity.next_command_id = 5;
-        let (_, output) = serve(
+        // Carry the replay connection's complete continuity, including the server
+        // sequence retained by SessionCommands, into this same-session continuation.
+        let (end, output) = serve(
             &restarted,
             &mut resumed,
             &[(2, &shrine), (32, &[]), (32, &[])],
         )
         .await?;
         let values = results(&output)?;
+        assert_eq!(values.len(), 3, "resumed DAILY: {end}; {values:?}");
         assert_eq!(values[1].2.get(1), Some(&1));
         assert_eq!(values[2].2, [8, 2]);
         let latest: (i16, bool) = sqlx::query_as("SELECT p.balance,c.premium FROM game_account_prey_wildcards p JOIN game_character_daily_reward_claims c ON c.transaction_id=p.last_claim_id").fetch_one(&harness.pool).await?;

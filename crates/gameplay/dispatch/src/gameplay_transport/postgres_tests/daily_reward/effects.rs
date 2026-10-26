@@ -44,10 +44,13 @@ pub(super) async fn kills_before_and_at_expiry(
             sqlx::raw_sql("CREATE OR REPLACE FUNCTION game_daily_effect_now() RETURNS timestamptz LANGUAGE sql VOLATILE AS $$ SELECT max(effect_expires_at) FROM public.game_character_daily_reward_lines WHERE kind='XP_BOOST' $$")
                 .execute(&h.pool).await?;
         }
-        let mut deps = Dependencies::with_content(
+        // One player plus two expiry-pass creatures must leave half the carrier free
+        // for player admission. Five slots is the smallest capacity that fits both.
+        let mut deps = Dependencies::with_content_and_capacity(
             channel_pin.clone(),
             room.clone(),
             crate::spell::cast::v1_spell_book().map_err(debug)?,
+            5,
         )?;
         deps.combat_room = Some(room.clone());
         {
@@ -86,7 +89,10 @@ pub(super) async fn kills_before_and_at_expiry(
                     u64::try_from(policy.maximum_health)?,
                 ));
             }
-            runtime.realize_activation_spawns(sources).map_err(debug)?;
+            let realized = runtime.realize_activation_spawns(sources).map_err(|error| {
+                format!("daily effects expired={expired} spawn activation: {error:?}")
+            })?;
+            assert_eq!(realized, if expired { 2 } else { 1 });
         }
         let mut owner = deps.owner(h, authority);
         owner.active_generation = Some(active);
@@ -96,6 +102,10 @@ pub(super) async fn kills_before_and_at_expiry(
         deps.initialize(&owner).await;
         let mut admitted = deps.admitted;
         owner.admit_progression_session(&mut admitted).await;
+        assert!(
+            owner.progression_binding(admitted.game_session_id).is_some(),
+            "daily XP kills require the real admission progression binding"
+        );
         let actor = deps.actor;
         let session = admitted.game_session_id;
         let rat = {
