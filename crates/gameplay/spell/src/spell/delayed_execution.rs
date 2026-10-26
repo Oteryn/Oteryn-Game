@@ -1322,6 +1322,14 @@ impl SpellTimerOwner {
                 report.dropped.push(occurrence);
                 continue;
             };
+            // Ordinary chain phases resolve against the numerical owners left by
+            // the preceding receipt. The composed callback prepares one phase per
+            // turn; keep its unresolved successor ready for the next owner turn.
+            if !report.receipts.is_empty()
+                && matches!(&pending.payload, TimerPayload::OrdinaryCombat(saved) if saved.resolved.is_none())
+            {
+                break;
+            }
             if pending.payload.requires_world_owner() {
                 report.blocked = Some((occurrence, Error::WorldItemCompositorUnavailable));
                 break;

@@ -25,7 +25,8 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 
-const SPELL_CASTER_XP: i64 = 156_200;
+// Level 55 admits the native Lightning chain without changing its requirements.
+const SPELL_CASTER_XP: i64 = 2_485_800;
 
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {
     x: 33502,
@@ -573,7 +574,7 @@ fn scenario() -> TestResult {
                         session,
                         crate::spell::cast::CharacterCastFacts {
                             vocation: crate::spell::Vocation::Sorcerer,
-                            level: 23,
+                            level: 55,
                             max_health: 100_000,
                             max_mana: 1_000,
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
@@ -1588,6 +1589,7 @@ async fn outgoing_spell_checks(
             movement.commit_cardinal(before, original).map_err(debug)?;
         }
     }
+    next_id = outgoing_chain_checks(owner, actor, session, target, next_id).await?;
     // A source wand uses the same swing owner as fists, with the real
     // equipment reader and mana payment before the hazard health parser.
     {
@@ -1716,6 +1718,295 @@ async fn outgoing_spell_checks(
         );
     }
     owner.spells = original_book;
+    Ok(next_id)
+}
+
+// Explicit test Premium admission; the due callback uses the normal refreshed access
+// reader and does not re-admit an already paid spell. No production grant is installed.
+struct HazardChainPremium;
+impl crate::gameplay_transport::spell_access_facts::owner_registration::Registered
+    for HazardChainPremium
+{
+}
+impl crate::gameplay_transport::spell_access_facts::CurrentSpellAccessOwner for HazardChainPremium {
+    fn read_current(
+        &self,
+        binding: &crate::spell::owned_cast_facts::CastFactsBinding,
+        now: u64,
+    ) -> Result<
+        crate::spell::owned_cast_facts::AccessProjections,
+        crate::gameplay_transport::spell_access_facts::AccessFactsError,
+    > {
+        Ok(crate::spell::owned_cast_facts::AccessProjections {
+            premium: Some(crate::spell::owned_cast_facts::CurrentProjection {
+                binding: binding.clone(),
+                authority_revision: 1,
+                valid_until_micros: now + 1_000_000,
+                value: true,
+            }),
+            ..Default::default()
+        })
+    }
+}
+
+async fn outgoing_chain_checks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    target: crate::foundation::ExactActorRef,
+    mut next_id: u64,
+) -> TestResult<u64> {
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::actor_spell::{
+        NativeCastDispatch, SpellCastDisposition, SpellCastIntent, SpellTarget,
+    };
+    use crate::gameplay_transport::hazard::combat;
+    let index = (1..=owner.spells.source_len())
+        .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
+        .find(|i| {
+            owner
+                .spells
+                .indexed(*i)
+                .is_some_and(|s| s.key == "candidate:spell/lightning")
+        })
+        .ok_or("native Lightning")?;
+    let (position, recipients) = {
+        let runtime = owner.runtime.lock().await;
+        let recipients = runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .map(|c| {
+                Ok((
+                    c.actor,
+                    runtime
+                        .creature_combat_facts(c.actor, 0)
+                        .map_err(debug)?
+                        .health,
+                ))
+            })
+            .collect::<TestResult<Vec<_>>>()?;
+        (
+            runtime
+                .read_actor_position(target)
+                .map_err(debug)?
+                .position(),
+            recipients,
+        )
+    };
+    let first_bounce = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .find(|c| c.position == OPEN_BOSS)
+            .ok_or("Lightning first bounce")?
+            .actor
+    };
+    let intent = SpellCastIntent {
+        spell: index,
+        target: SpellTarget::Position(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+            x: position.x,
+            y: position.y,
+            floor: position.floor,
+        }),
+        aim_at_target: false,
+    };
+    for should_dodge in [true, false] {
+        owner.clock_origin -= Duration::from_secs(10);
+        let command_id = {
+            let mut runtime = owner.runtime.lock().await;
+            for (recipient, _) in &recipients {
+                runtime
+                    .set_test_creature_health(*recipient, 10_000)
+                    .map_err(debug)?;
+            }
+            (next_id..next_id + 100_000)
+                .find(|id| {
+                    let command = CommandRef::new(session, CommandId::new(*id).expect("nonzero"));
+                    combat::spell_dodge_roll(&runtime, actor, first_bounce, command, 1)
+                        .is_some_and(|roll| combat::dodges(1, roll) == should_dodge)
+                })
+                .ok_or("bounded delayed dodge occurrence")?
+        };
+        next_id = command_id + 1;
+        let mana_before = owner
+            .observe_actor_vitals(actor, session)
+            .await
+            .ok_or("chain mana")?
+            .1
+            .mana;
+        let NativeCastDispatch::Outcome(outcome) = owner
+            .cast_native_combat(actor, session, command_id, &intent, &HazardChainPremium)
+            .await
+        else {
+            return Err("Lightning dispatch did not complete".into());
+        };
+        assert_eq!(outcome.disposition, SpellCastDisposition::Cast);
+        let mana_after = owner
+            .observe_actor_vitals(actor, session)
+            .await
+            .ok_or("paid chain mana")?
+            .1
+            .mana;
+        assert_eq!(mana_before - mana_after, 60);
+        let saved = owner
+            .states
+            .spell_states
+            .lock()
+            .await
+            .spell_timers
+            .as_ref()
+            .ok_or("chain timer lane")?
+            .due_ordinary_payloads(
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
+                    owner.owner_now().get() + 1_000_000,
+                ),
+            );
+        assert_eq!(saved.len(), 3, "primary and two source-selected bounces");
+        assert!(saved.iter().all(|s| s.binding.command.command_id().get() == command_id && s.resolved.is_none()));
+        let bounce = saved
+            .iter()
+            .find(|s| s.step == 1)
+            .ok_or("first delayed phase")?;
+        assert_eq!(bounce.target, first_bounce);
+        assert_eq!(bounce.sub_ordinal, 1);
+        assert_eq!(bounce.delay_ms, 50);
+        {
+            let runtime = owner.runtime.lock().await;
+            for (recipient, _) in &recipients {
+                assert_eq!(
+                    runtime
+                        .creature_combat_facts(*recipient, 0)
+                        .map_err(debug)?
+                        .health,
+                    10_000,
+                    "cast schedules damage instead of applying a bounce early"
+                );
+            }
+        }
+        owner.clock_origin -= Duration::from_secs(1);
+        let mut seen = Vec::new();
+        for _ in 0..saved.len() {
+            let report = owner.drain_native_ai_timers().await.map_err(debug)?;
+            assert!(
+                report.blocked.is_none(),
+                "due blocked: {:?}",
+                report.blocked
+            );
+            assert!(report.dropped.is_empty());
+            for receipt in report.receipts {
+                assert!(receipt.batch.applied);
+                assert!(!seen.contains(&receipt.occurrence));
+                let source = saved
+                    .iter()
+                    .find(|s| s.phase == receipt.occurrence.phase)
+                    .ok_or("due source phase")?;
+                assert_eq!(receipt.occurrence.command, source.binding.command);
+                let runtime = owner.runtime.lock().await;
+                let dodge = combat::dodges(
+                    1,
+                    combat::spell_dodge_roll(
+                        &runtime,
+                        actor,
+                        source.target,
+                        source.binding.command,
+                        source.sub_ordinal,
+                    )
+                    .ok_or("due dodge")?,
+                );
+                let after = runtime
+                    .creature_combat_facts(source.target, 0)
+                    .map_err(debug)?
+                    .health;
+                let [effect] = receipt.batch.effects.as_slice() else {
+                    return Err("one retained effect per chain phase".into());
+                };
+                assert_eq!(effect.target, source.target);
+                assert_eq!(effect.sub_ordinal, source.sub_ordinal);
+                if source.step == 1 {
+                    assert_eq!(dodge, should_dodge);
+                }
+                if dodge {
+                    assert_eq!(effect.health, None, "zero damage has no health mutation");
+                    assert_eq!(after, 10_000, "delayed dodge retains a zero-damage receipt");
+                } else {
+                    let health = effect.health.ok_or("chain health receipt")?;
+                    assert!(health.applied);
+                    assert_eq!(health.health_before, 10_000);
+                    assert_eq!(health.health_after, after);
+                    assert!(
+                        after < 10_000,
+                        "non-dodged due phase applies positive damage"
+                    );
+                }
+                seen.push(receipt.occurrence);
+            }
+        }
+        assert_eq!(seen.len(), saved.len(), "each phase fires exactly once");
+        let after = {
+            let runtime = owner.runtime.lock().await;
+            recipients
+                .iter()
+                .map(|(a, _)| {
+                    runtime
+                        .creature_combat_facts(*a, 0)
+                        .map(|f| f.health)
+                        .map_err(debug)
+                })
+                .collect::<TestResult<Vec<_>>>()?
+        };
+        let NativeCastDispatch::Outcome(replay) = owner
+            .cast_native_combat(actor, session, command_id, &intent, &HazardChainPremium)
+            .await
+        else {
+            return Err("Lightning replay did not complete".into());
+        };
+        assert_eq!(replay.disposition, SpellCastDisposition::Cast);
+        let retry = owner.drain_native_ai_timers().await.map_err(debug)?;
+        assert!(retry.receipts.is_empty());
+        assert!(retry.blocked.is_none());
+        let runtime = owner.runtime.lock().await;
+        for ((recipient, _), expected) in recipients.iter().zip(after) {
+            assert_eq!(
+                runtime
+                    .creature_combat_facts(*recipient, 0)
+                    .map_err(debug)?
+                    .health,
+                expected,
+                "cast replay and timer retry apply no late damage"
+            );
+        }
+        drop(runtime);
+        assert_eq!(
+            owner
+                .observe_actor_vitals(actor, session)
+                .await
+                .ok_or("chain replay mana")?
+                .1
+                .mana,
+            mana_after
+        );
+        assert_eq!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .spell_timers
+                .as_ref()
+                .ok_or("drained chain lane")?
+                .pending_len(),
+            0
+        );
+    }
+    let mut runtime = owner.runtime.lock().await;
+    for (recipient, health) in recipients {
+        runtime
+            .set_test_creature_health(recipient, health)
+            .map_err(debug)?;
+    }
     Ok(next_id)
 }
 
