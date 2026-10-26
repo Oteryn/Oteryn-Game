@@ -1,6 +1,15 @@
 use super::*;
 
 #[test]
+fn utility_categories_run_online_and_combat_categories_pause() {
+    assert!(consumes_elapsed(8, false));
+    assert!(consumes_elapsed(9, false));
+    assert!(consumes_elapsed(0, true));
+    assert!(!consumes_elapsed(0, false));
+    assert!(!consumes_elapsed(19, false));
+}
+
+#[test]
 fn imbuement_reference_parity() {
     // One row per task-card parity row; sources live beside the constants.
     enum Rule {

@@ -15,6 +15,7 @@ use std::collections::HashMap;
 
 #[derive(Default)]
 pub(super) struct TimedRuntime {
+    pub(super) imbuements: tokio::sync::Mutex<HashMap<GameSessionId, u64>>,
     pub(super) sessions: tokio::sync::Mutex<HashMap<GameSessionId, SessionClock>>,
     pub(super) next_tick_ms: std::sync::atomic::AtomicU64,
 }

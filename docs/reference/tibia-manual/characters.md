@@ -121,7 +121,7 @@
 - [server] Free-account / non-quest-complete players can still apply intricate/powerful imbuements via a scroll consumable, usable by anyone; only "worthy" Premium characters can produce/buy blank scrolls (from NPC Albinius); scrolls are also lootable.
 - [server] Blank scroll → imbuement scroll conversion: done at a shrine via "Imbue Scroll" option, consuming gold + ingredients for chosen imbuement.
 - [server] Imbuement scrolls apply directly from inventory onto the target item.
-- [server] Imbuement duration: 20 hours of "active hunting equipped" time (countdown only decreases while the imbued item is equipped and the character is hunting, not real-time).
+- [server] Imbuement duration: 20 hours of eligible use. Combat imbuements count down while equipped and in combat; speed and capacity imbuements count down whenever equipped and online, including outside combat. Unequipped and offline time pauses. Protection-zone presence alone does not replace the combat-state test.
 - [server] Imbuement can be cleared early for a fee via shrine or an "etcher" device (also sold by Albinius to worthy characters).
 
 **b) Fusion and Tier Transfer**

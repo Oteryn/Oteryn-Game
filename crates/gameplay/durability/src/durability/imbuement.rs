@@ -3,8 +3,7 @@
 //! The installed migration is the single schema definition; no private parallel
 //! table or alternate item owner. Shrine Apply/Clear writes through
 //! [`super::item_imbuement`] with the shared item-only fee owner (migration 0196);
-//! checkpoint/expiry stay unwritten until they have real runtime callers with
-//! admitted elapsed provenance and native audit support.
+//! checkpoint/expiry are written by the current Channel owner's fenced clock.
 //! A retained zero row is occupied state, never permission for bare deletion.
 
 /// Installed by the normal GAME_MIGRATOR; this module does not execute DDL.
@@ -16,6 +15,8 @@ use super::item_transfer::load_slot;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
 use sqlx::Row;
+use super::character_progression::{CurrentCharacterGameplayFence, assert_gameplay_fence};
+use super::runtime_scope_assignment::NodeIncarnationProof;
 
 /// One stored imbuement slot; `category` is the stored 0-19 category.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,6 +39,37 @@ fn stored<T: TryFrom<i64>>(value: i64) -> Result<T, DurabilityError> {
 }
 
 impl DurabilityRoot {
+    /// Debit eligible equipped imbuements and atomically remove exhausted slots. The database
+    /// record is the idempotency receipt, so an ambiguous retry cannot debit twice.
+    pub async fn checkpoint_imbuements(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        transaction_id: [u8; 16],
+        elapsed_ms: u64,
+        in_combat: bool,
+        occurred_at_unix_ms: i64,
+    ) -> Result<(), DurabilityError> {
+        if elapsed_ms == 0 || elapsed_ms > 604_800_000 || occurred_at_unix_ms <= 0 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = super::db::begin_type2_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &record).await?;
+            if assert_gameplay_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Err(DurabilityError::Unavailable);
+            }
+            sqlx::query("INSERT INTO game_item_imbuement_checkpoints(transaction_id,game_session_id,character_id,world_id,elapsed_ms,in_combat,occurred_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7) ON CONFLICT(transaction_id) DO NOTHING")
+                .bind(transaction_id.as_slice()).bind(fence.game_session_id.as_bytes().as_slice())
+                .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice())
+                .bind(i64::try_from(elapsed_ms).map_err(|_| DurabilityError::InvalidStoredState)?)
+                .bind(in_combat).bind(occurred_at_unix_ms).execute(&mut **tx).await?;
+            tx.commit(deadline).await
+        })).await
+    }
     /// `item` with its imbuement rows when it is a live direct entry of `character_id`'s
     /// main backpack (IMBUE-FORGE0 §3); `None` otherwise. Read-only.
     pub async fn read_imbuement_target(

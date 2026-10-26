@@ -11,6 +11,14 @@ pub const IMBUEMENT_DURATION_MS: u64 = 72_000_000;
 pub const IMBUEMENT_SLOTS_MAX: u8 = 3;
 /// Accepted accounting rule IMBUE-FORGE0 §4.3/R1.
 pub const IMBUEMENT_CHECKPOINT_INTERVAL_MS: u64 = 60_000;
+
+/// Capacity (Featherweight) and speed (Swiftness) are utility imbuements. Global consumes
+/// their budget whenever the item is worn and the character is online; every other category
+/// consumes only while the wearer is in combat. Protection-zone presence is deliberately not
+/// an input: Global's fight state, rather than a donor-specific PZ shortcut, is authoritative.
+pub fn consumes_elapsed(category: u8, in_combat: bool) -> bool {
+    matches!(category, 8 | 9) || in_combat
+}
 // Reference: https://github.com/opentibiabr/canary/blob/04b83b51/data/XML/imbuements.xml
 pub const IMBUEMENT_CLEAR_GOLD: u64 = 15_000;
 
