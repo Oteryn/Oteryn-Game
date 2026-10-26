@@ -11,6 +11,9 @@ pub async fn serve_gameplay(
     drain: Option<&gameplay_drain::GameplayDrain>,
 ) -> Result<(), GameplayServeError> {
     let ordinary = gameplay_drain::GameplayDrain::default();
+    if config.server_motd.len() > oteryn_protocol_oteryn::zones_nologout::MAX_SERVER_MOTD_BYTES {
+        return Err(GameplayServeError::InvalidLimits);
+    }
     let drain = drain.unwrap_or(&ordinary);
     let limits = ListenerLimits::new(
         config.max_connections,
@@ -21,6 +24,7 @@ pub async fn serve_gameplay(
     let tls = tcp_tls::tls_config(config.certificates, config.private_key)
         .map_err(GameplayServeError::InvalidTls)?;
     let authority = ComposedFreshAdmission {
+        server_motd: &config.server_motd,
         reset_epoch: drain.epoch(),
         emit: owners.emit,
         root: owners.root,
