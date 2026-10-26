@@ -11,21 +11,37 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         actor: crate::foundation::ExactActorRef,
         session: GameSessionId,
     ) -> bool {
-        if !self
+        let has_timed_items = self
             .states
             .timed_items
             .sessions
             .lock()
             .await
             .get(&session)
-            .is_some_and(|clock| !clock.items.is_empty())
-        {
+            .is_some_and(|clock| !clock.items.is_empty());
+        let has_imbuement_clock = self
+            .states
+            .timed_items
+            .imbuements
+            .lock()
+            .await
+            .contains_key(&session);
+        if !has_timed_items && !has_imbuement_clock {
             return true;
         }
         let Some(_permit) = self.spell_lane_permit().await else {
             return false;
         };
-        self.checkpoint_timed_equipment(actor, session, true).await
+        let settled = self.checkpoint_timed_equipment(actor, session, true).await;
+        if settled {
+            self.states
+                .timed_items
+                .imbuements
+                .lock()
+                .await
+                .remove(&session);
+        }
+        settled
     }
 
     pub(super) async fn tick_timed_items(&self) {
@@ -54,6 +70,12 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         self.states
             .timed_items
             .sessions
+            .lock()
+            .await
+            .retain(|session, _| present.contains(session));
+        self.states
+            .timed_items
+            .imbuements
             .lock()
             .await
             .retain(|session, _| present.contains(session));
@@ -114,6 +136,12 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => return false,
         };
+        if !self
+            .checkpoint_imbuement_equipment(actor, session, fence)
+            .await
+        {
+            return false;
+        }
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);
         let Some(mut active_mana_shield) =
             super::equipment_move::equipment_effects_owner::equipped_mana_shield(
