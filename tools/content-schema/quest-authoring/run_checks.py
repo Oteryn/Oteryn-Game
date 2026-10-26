@@ -114,6 +114,9 @@ def main():
         parser.error('required Quest check inputs missing: ' + ', '.join(missing))
     commands = [
         ['verify_quest_schema.py'],
+        ['soul_war_reconstruction.py', '--check'],
+        ['../encounter-authoring/soul_war_crystal_reconstruction.py', '--check'],
+        ['../encounter-authoring/test_soul_war_crystal_reconstruction.py'],
         ['../reward-claim-authoring/test_reward_claim_variant_authoring.py'],
         ['../reward-claim-authoring/test_variant_stack_serialization.py'],
         ['../reward-claim-authoring/reward_claim_authoring.py', 'content', '--check'],
@@ -144,6 +147,8 @@ def main():
         ['quest_state_lowering.py', '--check'],
         ['source_lowered_binding_plan.py', '--check'],
         ['quest_completion_import.py', '--check'],
+        ['quest_native_binding_preflight.py', '--check'],
+        ['quest_reward_only_binding_candidates.py', '--check'],
         DONOR_SOURCE_CHECK,
         ['bundle_authoring.py', '--check'],
         ['quest_tree_authoring.py', 'content', '--check', '--source-packet', str(packet)],

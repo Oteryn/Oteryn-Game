@@ -19,14 +19,14 @@ class QuestTalkNpcCandidatesTest(unittest.TestCase):
     def test_population_is_exact_and_fail_closed(self):
         self.assertEqual(
             {
-                "talk_stages": 250,
+                "talk_stages": 251,
                 "statuses": {
                     "AMBIGUOUS_MULTIPLE_NPCS": 36,
                     "EXACT_NPC_NO_DIALOGUE": 23,
-                    "EXACT_NPC_WITH_DIALOGUE": 174,
+                    "EXACT_NPC_WITH_DIALOGUE": 175,
                     "NO_EXACT_NPC": 17,
                 },
-                "dialogue_candidates": 174,
+                "dialogue_candidates": 175,
                 "native_dispatch_bindings": 0,
                 "selected_dialogue_branches": 0,
             },

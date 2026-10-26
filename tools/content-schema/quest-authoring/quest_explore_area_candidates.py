@@ -202,10 +202,10 @@ def expected(root: Path):
             "EXACT_SINGLE_AREA_ONLY_TARGET": 10,
             "EXACT_SINGLE_AREA_WITH_OTHER_TARGETS": 10,
             "AMBIGUOUS_MULTIPLE_AREAS": 36,
-            "NO_EXACT_AREA": 192,
+            "NO_EXACT_AREA": 191,
         }
     )
-    if len(records) != 248 or counts != expected_counts:
+    if len(records) != 247 or counts != expected_counts:
         raise ValueError(
             f"explore Area candidate population changed: {len(records)} {dict(counts)}"
         )
