@@ -635,6 +635,7 @@ async fn case(h: &Harness, guest: bool, boundary: Option<&str>) -> TestResult {
     let (status, bytes) = exchange(&owner, &mut inside, 13, &request).await?;
     assert_eq!(status, CommandStatus::Accepted);
     assert_eq!(bytes, wire::encode_result(0, 6, changed).map_err(debug)?);
+    let configuration_request = request.clone();
     let (status, bytes) = exchange(&owner, &mut inside, 14, &request).await?;
     assert_eq!(status, CommandStatus::Rejected);
     assert_eq!(&bytes[..2], &1637_u16.to_be_bytes());
@@ -761,8 +762,34 @@ async fn case(h: &Harness, guest: bool, boundary: Option<&str>) -> TestResult {
         audits, 7,
         "custody changes must not author display revisions"
     );
+    // A lost response can be retried after another command and a custody cycle.
+    // Bypass the connection cache so the fresh root must read the permanent receipt.
+    // The old reply belongs to revision 6; replay must not restore that old state.
+    let (status, bytes) = direct_exchange(&owner, &inside, 13, &configuration_request).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(bytes, wire::encode_result(0, 6, changed).map_err(debug)?);
+    let mut conflicting_replay = configuration_request.clone();
+    conflicting_replay.display.colours[0] = 1;
+    let (status, bytes) = direct_exchange(&owner, &inside, 13, &conflicting_replay).await?;
+    assert_eq!(status, CommandStatus::Rejected);
+    assert_eq!(
+        bytes,
+        wire::encode_result(1637, 0, Display::default()).map_err(debug)?
+    );
     request.action = 0;
     request.expected_revision = 0;
+    let (status, bytes) = exchange(&owner, &mut inside, 19, &request).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_window(
+        &bytes,
+        7,
+        Display {
+            direction: 3,
+            ..changed
+        },
+        content.palette(),
+        &[u16::try_from(mount)?],
+    )?;
     if guest {
         // Revoke precisely the invitation fact after a successful guest mutation.
         let mut tx = h.pool.begin().await?;
@@ -772,10 +799,34 @@ async fn case(h: &Harness, guest: bool, boundary: Option<&str>) -> TestResult {
         sqlx::query("DELETE FROM game_house_acl_entries WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND character_id=encode($3,'hex')::uuid")
             .bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
-        let (status, bytes) = exchange(&owner, &mut inside, 19, &request).await?;
+        for action in 0..=2 {
+            request.action = action;
+            request.expected_revision = if action == 0 { 0 } else { 7 };
+            request.display = if action == 1 {
+                changed
+            } else {
+                Display::default()
+            };
+            let (status, bytes) =
+                exchange(&owner, &mut inside, 20 + u64::from(action), &request).await?;
+            assert_eq!(status, CommandStatus::Rejected, "revoked action {action}");
+            assert_eq!(
+                bytes,
+                wire::encode_result(1632, 0, Display::default()).map_err(debug)?,
+                "revoked action {action}"
+            );
+        }
+        // A persisted successful receipt cannot bypass the current House ACL.
+        let (status, bytes) = direct_exchange(&owner, &inside, 13, &configuration_request).await?;
         assert_eq!(status, CommandStatus::Rejected);
-        assert_eq!(&bytes[..2], &1632_u16.to_be_bytes());
+        assert_eq!(
+            bytes,
+            wire::encode_result(1632, 0, Display::default()).map_err(debug)?
+        );
     }
+    let audits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_podium_records WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(item.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(audits, 7, "replay and refusals must not append audits");
     Ok(())
 }
 

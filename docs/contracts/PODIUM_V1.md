@@ -41,6 +41,13 @@ root. The window reloads every display field at the original display revision;
 the next rotation advances only that revision and direction. Custody changes add
 no display audit records. This qualifies the Item extension's custody independence,
 not playable content admission, physical pickupability or wrap/unwrap behaviour.
+After replacement and a later rotation, replay through the fresh runtime-role
+root returns the original configuration receipt without restoring its older
+display. A conflicting payload on that command is refused with 1637; a subsequent
+framed window retains the newer revision and all fields. Revoking a guest's ACL
+refuses window, configure and rotate, as well as a durable replay that bypasses
+the connection cache. These paths add no display audit records. Root reopening
+in this qualification is in-process; whole-process restart remains unqualified.
 
 ## Wire and activation boundary
 
