@@ -24,6 +24,7 @@ pub mod bed;
 pub mod bestiary;
 pub mod capability_tables;
 pub mod channel_list;
+pub mod character_info;
 pub mod charm;
 pub mod charm_progression;
 mod charm_wire;

@@ -1,0 +1,15 @@
+{
+  "id": 97,
+  "name": "CHARACTER_INFO_V1",
+  "constant": "character_info::CAPABILITY_CHARACTER_INFO_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [113],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}

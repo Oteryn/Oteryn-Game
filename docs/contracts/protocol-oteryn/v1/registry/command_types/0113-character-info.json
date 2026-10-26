@@ -1,0 +1,10 @@
+{
+  "id": 113,
+  "name": "CHARACTER_INFO",
+  "owner_decision": "CHARINFO CHARACTER-INFO-1 2026-10-26",
+  "capability": 97,
+  "payload_schema": "character-info-v1.md#request",
+  "result_schema": "character-info-v1.md#result",
+  "max_payload_bytes": 8,
+  "max_result_payload_bytes": 32768
+}

@@ -1,0 +1,11 @@
+{
+  "id": 97,
+  "name": "CHARACTER_INFO_V1",
+  "owner_decision": "CHARINFO CHARACTER-INFO-1 2026-10-26",
+  "owner": "native character progression, death/PvP, item custody, appearance, achievement and Cyclopedia owners; durable character title owner",
+  "requires": [],
+  "command_types": [113],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Server-only producer contract; offered after the production dispatch composition is enabled."
+}
