@@ -491,7 +491,8 @@ pub struct PreparedNativeCombatCast {
     )>,
     training: PreparedPlayerTraining,
     timers: Option<ValidatedTimerInstall>,
-    magnitude: Option<PreparedMagnitudeOwner>,
+    // Keep the expanded numerical owner out of every cast/reconciliation future frame.
+    magnitude: Option<Box<PreparedMagnitudeOwner>>,
     facts_binding: crate::spell::owned_cast_facts::CastFactsBinding,
     creatures: Vec<crate::foundation::CompanionSnapshot>,
     players: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,

@@ -248,7 +248,7 @@ pub async fn prepare_from_owners(
         roster,
         training,
         timers,
-        magnitude,
+        magnitude: magnitude.map(Box::new),
         facts_binding: b.clone(),
         creatures,
         players: player_predecessors,

@@ -217,7 +217,7 @@ pub(super) async fn prepare_inner(
         roster,
         training,
         timers,
-        magnitude: output.magnitude,
+        magnitude: output.magnitude.map(Box::new),
         facts_binding: b.clone(),
         creatures,
         players,
