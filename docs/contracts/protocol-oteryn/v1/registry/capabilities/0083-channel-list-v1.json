@@ -1,0 +1,12 @@
+{
+  "id": 83,
+  "name": "CHANNEL_LIST_V1",
+  "owner_decision": "PREMIUM-CHANNEL-1 owner decision (PREMCHAN)",
+  "owner": "Game Channel configuration / current Channel owner",
+  "command_types": [],
+  "state_domains": [
+    48
+  ],
+  "offered": true,
+  "offer_gate": "Only a selected capability 83 receives the served-channel list snapshot. Eligibility is checked independently of capability support."
+}
