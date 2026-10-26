@@ -338,6 +338,18 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    /// MOUNTTAME: replay is resolved before current item and creature visibility.
+    fn tame_mount(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _visible: bool,
+    ) -> impl Future<Output = Result<Option<UseOutcome>, ()>> {
+        async { Ok(None) }
+    }
+
     /// MINING-1: original USE is retained for replay before either handle is resolved.
     fn use_pick(
         &self,

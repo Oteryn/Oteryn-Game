@@ -38,6 +38,36 @@ pub enum EncounterSpawnError {
 }
 
 impl ChannelRuntimeV1 {
+    /// Preflight a masterless taming subject under the installed current physical owner.
+    /// The caller holds the Channel exclusively through its durable attempt and removal.
+    pub fn check_mount_taming_subject(
+        &self,
+        actor: ExactActorRef,
+        key: &str,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if !self.matches_live_creature_identity(actor, key.as_bytes())
+            || self.native_summon_master(actor).is_some()
+            || self
+                .companion_snapshot(actor)
+                .is_ok_and(|s| s.state.master.is_some())
+            || self.carrier.native_summons.has_children(actor)
+        {
+            return Err(CarrierError::CreatureTargetMismatch);
+        }
+        self.assert_actor_spell_unreserved(actor)
+    }
+
+    /// Administrative removal through the existing carrier: no death, corpse, loot or XP.
+    pub fn remove_mount_taming_subject(
+        &mut self,
+        actor: ExactActorRef,
+        key: &str,
+    ) -> Result<(), CarrierError> {
+        self.check_mount_taming_subject(actor, key)?;
+        self.carrier.remove(&self.continuity, actor.0).map(|_| ())
+    }
+
     /// Immediate masterless source spawn, through the same physical admission/position/policy
     /// owner as native creatures. No static respawn source, master, intrinsic link or reward override.
     /// Current map proof is independently resolved under this same exclusive owner turn.

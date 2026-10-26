@@ -117,7 +117,8 @@ impl FencedGrantingCharacter {
         Self::in_transaction(tx, character_id).await
     }
 
-    async fn in_transaction(
+    // Also called by item_use::mount_taming immediately after the complete item fence.
+    pub(super) async fn in_transaction(
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         character_id: CharacterId,
     ) -> std::result::Result<Self, DurabilityError> {
