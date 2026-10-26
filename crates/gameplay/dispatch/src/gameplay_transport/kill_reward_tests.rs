@@ -101,7 +101,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
 
 fn pending_with_ordinary_surprise_bag() -> PendingKillSettlement {
     let mut pending = pending(2, 50, 3, 0);
-    let row = Arc::make_mut(&mut pending.row);
+    let row = Arc::make_mut(pending.row.as_mut().expect("fixture creature row"));
     row.loot_table_ref =
         LootDefinitionRef::new("Loot", "oteryn:loot.creature.rat", "definition-r1");
     row.loot_table.entries.push(LootTableEntry {
