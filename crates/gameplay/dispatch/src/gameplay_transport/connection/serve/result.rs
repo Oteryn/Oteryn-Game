@@ -238,6 +238,9 @@ pub(super) fn encode(
             // The page is written once; move it out instead of copying up to 32 KiB.
             (CommandStatus::Accepted, std::mem::take(payload))
         }
+        Dispatch::CharacterInfo(
+            crate::gameplay_transport::character_info::CharacterInfoReply::Payload(payload),
+        ) => (CommandStatus::Accepted, std::mem::take(payload)),
         Dispatch::Timed(payload, _) => (
             if crate::gameplay_transport::timed_item_wire::accepted(payload) {
                 CommandStatus::Accepted
@@ -266,11 +269,18 @@ pub(super) fn encode(
         Dispatch::Achievements(
             AccountAchievementsReply::Terminal(_) | AccountAchievementsReply::Rejected,
         )
+        | Dispatch::CharacterInfo(
+            crate::gameplay_transport::character_info::CharacterInfoReply::Rejected
+            | crate::gameplay_transport::character_info::CharacterInfoReply::Terminal(_),
+        )
         | Dispatch::Highscores(HighscoresReply::Terminal(_) | HighscoresReply::Rejected)
         | Dispatch::Unregistered => (CommandStatus::Rejected, Vec::new()),
     };
     let result = if let Dispatch::Achievements(AccountAchievementsReply::Terminal(error))
-    | Dispatch::Highscores(HighscoresReply::Terminal(error)) = &dispatch
+    | Dispatch::Highscores(HighscoresReply::Terminal(error))
+    | Dispatch::CharacterInfo(
+        crate::gameplay_transport::character_info::CharacterInfoReply::Terminal(error),
+    ) = &dispatch
     {
         // Display contract §3.3, §4.3 and HIGHSCORES0 §6: fail closed with the registered
         // operation-terminal error and nothing else.

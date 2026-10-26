@@ -326,6 +326,7 @@ where
         | Dispatch::ContainerView(_, None)
         | Dispatch::Look(..)
         | Dispatch::Achievements(_)
+        | Dispatch::CharacterInfo(_)
         | Dispatch::Highscores(_)
         | Dispatch::Guild(_)
         | Dispatch::Reply(..)

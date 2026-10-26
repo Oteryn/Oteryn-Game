@@ -6,6 +6,6 @@
   "requires": [],
   "command_types": [113],
   "state_domains": [],
-  "offered": false,
-  "offer_gate": "Server-only producer contract; offered after the production dispatch composition is enabled."
+  "offered": true,
+  "offer_gate": "Production command 113 router; the admitted authority applies controlled-actor and Friends visibility."
 }

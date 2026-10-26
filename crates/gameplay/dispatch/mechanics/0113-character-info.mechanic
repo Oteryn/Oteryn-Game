@@ -1,0 +1,6 @@
+name=character_info
+commands=113
+transport=pub character_info
+authority=character_info
+[route]
+routing::character_info::route(authority, &session.admitted, command).await

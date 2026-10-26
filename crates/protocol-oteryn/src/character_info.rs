@@ -8,6 +8,49 @@ pub const COMMAND_TYPE_CHARACTER_INFO: u32 = 113;
 pub const MAX_PAGE_SIZE: u8 = 50;
 pub const HISTORY_WINDOW_MS: i64 = 30 * 24 * 60 * 60 * 1_000;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CharacterInfoOperation {
+    QuerySelf(PageRequest),
+    QueryVisible {
+        character: [u8; 16],
+        page: PageRequest,
+    },
+    Unlock(CharacterTitle),
+    Select(Option<CharacterTitle>),
+    LookVisible {
+        character: [u8; 16],
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HistoryEntry {
+    pub occurred_at_unix_ms: i64,
+    pub counterpart: Option<[u8; 16]>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CharacterInfoPage {
+    pub summary: CharacterSummary,
+    pub deaths: Vec<HistoryEntry>,
+    pub pvp_kills: Vec<HistoryEntry>,
+    pub earned_titles: Vec<CharacterTitle>,
+    pub selected_title: Option<CharacterTitle>,
+    pub next_offset: Option<u16>,
+}
+
+impl CharacterInfoPage {
+    pub fn bounded(self, request: PageRequest, now_unix_ms: i64) -> Option<Self> {
+        let oldest = now_unix_ms.saturating_sub(HISTORY_WINDOW_MS);
+        let valid =
+            |entry: &HistoryEntry| (oldest..=now_unix_ms).contains(&entry.occurred_at_unix_ms);
+        (self.deaths.len() <= usize::from(request.limit)
+            && self.pvp_kills.len() <= usize::from(request.limit)
+            && self.deaths.iter().all(valid)
+            && self.pvp_kills.iter().all(valid))
+        .then_some(self)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u16)]
 pub enum CharacterTitle {
@@ -160,5 +203,38 @@ mod tests {
         assert!(PageRequest::new(0, MAX_PAGE_SIZE).is_some());
         assert!(PageRequest::new(0, 0).is_none());
         assert!(PageRequest::new(0, MAX_PAGE_SIZE + 1).is_none());
+    }
+
+    #[test]
+    fn aggregate_rejects_out_of_window_native_results() {
+        let request = PageRequest {
+            offset: 0,
+            limit: 1,
+        };
+        let mut page = CharacterInfoPage {
+            summary: CharacterSummary {
+                level: 1,
+                experience: 0,
+                achievement_points: 0,
+                appearance_count: 0,
+                items: ItemSummary {
+                    inventory: 0,
+                    depot: 0,
+                    stash: 0,
+                    inboxes: 0,
+                },
+            },
+            deaths: vec![HistoryEntry {
+                occurred_at_unix_ms: 99,
+                counterpart: None,
+            }],
+            pvp_kills: vec![],
+            earned_titles: vec![],
+            selected_title: None,
+            next_offset: None,
+        };
+        assert!(page.clone().bounded(request, 100).is_some());
+        page.deaths[0].occurred_at_unix_ms = 100 - HISTORY_WINDOW_MS - 1;
+        assert!(page.bounded(request, 100).is_none());
     }
 }

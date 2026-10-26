@@ -18,6 +18,7 @@ pub(super) enum Dispatch {
     Use(UseOutcome),
     Spell(SpellCastOutcome),
     Achievements(AccountAchievementsReply),
+    CharacterInfo(crate::gameplay_transport::character_info::CharacterInfoReply),
     /// RANK-1 (HS-WIRE-1): command 14, a read of the session's World snapshots.
     Highscores(HighscoresReply),
     Guild(Vec<u8>),
