@@ -123,6 +123,10 @@ mod tests {
             ..eligible
         }));
         assert!(!super::eligible_dust_recipient(ForgeRecipientFacts {
+            delta_y: 31,
+            ..eligible
+        }));
+        assert!(!super::eligible_dust_recipient(ForgeRecipientFacts {
             floor_delta: 2,
             ..eligible
         }));
@@ -134,5 +138,8 @@ mod tests {
         assert_eq!(super::slivers(2, 0), 1);
         assert_eq!(super::slivers(4, 2), 4);
         assert_eq!(super::slivers(6, 3), 6);
+        // The deterministic roll is reduced within the difficulty band; hostile input cannot
+        // escape the admitted Global quantity range.
+        assert_eq!(super::slivers(6, u8::MAX), 6);
     }
 }
