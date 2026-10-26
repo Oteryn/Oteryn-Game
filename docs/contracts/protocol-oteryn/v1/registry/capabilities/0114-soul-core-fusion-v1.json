@@ -1,0 +1,15 @@
+{
+  "id": 114,
+  "name": "SOUL_CORE_FUSION_V1",
+  "owner_decision": "SOULPIT, WORLD-SYSTEMS-1 owner allocation",
+  "owner": "Existing item craft transaction owner; two carried species cores fuse, and Prism/Exalted tools transform a species core, with retained outcomes",
+  "requires": [
+    4,
+    11,
+    15
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "SOULPIT: only bundle Worlds whose active native generation can materialize every candidate species-core outcome offer this capability. Boot and session admission use the same closure check. Selected capability 114 extends command 2 USE: a source item handle plus use_with_map_item Item handle identifies two main-backpack species cores or a Soul Prism/Exalted Core and its target species core. Transformations use the same atomic receipt and offer gate. Requires capabilities 4, 11 and 15; no new frame or domain. Non-selected sessions retain existing USE routing."
+}

@@ -1,7 +1,7 @@
 //! Canonical type-2 cooking proof, operation tag 15.
 use super::super::item_mint_audit::{
-    self as mint, CausationRefV1, CausationV1, EnvelopeCommandRefV1, EventEnvelopeV1, OneItemOperationV1, OneItemTransactionV1, TransactionEventRefV1,
-    Type2EventTuple,
+    self as mint, CausationRefV1, CausationV1, EnvelopeCommandRefV1, EventEnvelopeV1,
+    OneItemOperationV1, OneItemTransactionV1, TransactionEventRefV1, Type2EventTuple,
 };
 use super::*;
 use prost::Message;
@@ -20,6 +20,8 @@ pub(super) fn encode(
     recipe: &str,
     content_digest: [u8; 32],
     before: &Value,
+    source_units: i64,
+    secondary: Option<&Value>,
     outputs: &[Value],
     transaction: &str,
     event: &str,
@@ -29,6 +31,7 @@ pub(super) fn encode(
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     let proof = serde_json::to_vec(&json!({"recipe": recipe, "intent": request.intent,
         "character": fence.character_id.as_bytes(), "before": before, "outputs": outputs,
+        "source_units": source_units, "secondary": secondary,
         "station": request.station.as_ref().map(|s| json!({"family": s.family, "key": s.production_key, "revision": s.revision_ref})),
         "scope_generation": fence.scope_ownership_generation.get(),
         "content_digest": content_digest,

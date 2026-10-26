@@ -62,6 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut request = ItemCraftRequest {
             command: CommandRef::new(command.game_session_id, id),
             source: [0; 16],
+            target: None,
             station: None,
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).ok()?,
         };
@@ -87,6 +88,47 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return disposition(UseDisposition::StaleState);
         };
         request.source = source;
+        if let Some(ItemKey::Instance(target)) = target {
+            request.target = Some(target);
+            {
+                let runtime = self.runtime.lock().await;
+                let states = self.states.spell_states.lock().await;
+                if !runtime
+                    .player_control_facts(actor, command.game_session_id)
+                    .is_ok_and(|facts| facts.control_loss.is_none())
+                    || states.is_dead(actor)
+                    || !states.spell_idle(&runtime, actor, command.game_session_id)
+                {
+                    return disposition(UseDisposition::Rejected);
+                }
+            }
+            if !self
+                .states
+                .player_trades
+                .physical(command.game_session_id, Some(source))
+                || !self
+                    .states
+                    .player_trades
+                    .physical(command.game_session_id, Some(target))
+            {
+                return disposition(UseDisposition::Rejected);
+            }
+            return disposition(
+                self.root
+                    .craft_item(
+                        &_permit,
+                        self.character,
+                        self.holder,
+                        fence,
+                        request,
+                        native,
+                        &NativeItemWeights(native),
+                        false,
+                    )
+                    .await
+                    .ok()??,
+            );
+        }
         request.station = Some({
             let mut runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;

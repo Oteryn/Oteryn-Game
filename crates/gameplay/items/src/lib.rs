@@ -16,6 +16,7 @@ pub mod mail;
 pub mod mining;
 pub mod pickup;
 pub mod reward_bag;
+pub mod soul_core;
 pub mod stacking;
 pub mod starter_grant;
 

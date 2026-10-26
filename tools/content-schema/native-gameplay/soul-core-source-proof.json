@@ -1,0 +1,145 @@
+{
+  "schema": "OTERYN_SOUL_CORE_SOURCE_FACTS/v1",
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/items.xml",
+      "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/appearances.dat",
+      "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+    },
+    {
+      "repository": "Crystal (owner-supplied reference)",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data/items/items.xml",
+      "sha256": "8a4a526c6e45b5a282679334eb1e1e25a5b72af13aa92c8a0d409755ebdbc509"
+    }
+  ],
+  "producer": "tools/content-schema/native-gameplay/build_soul_core_profiles.py",
+  "core_count": 680,
+  "special_items": [
+    37110,
+    49163,
+    49164
+  ],
+  "excluded_unqualified_ids": [
+    47899
+  ],
+  "name_differences": [
+    {
+      "id": 47783,
+      "canary": "feversleep soul core",
+      "crystal": "terrorsleep soul core",
+      "selected": "canary"
+    }
+  ],
+  "weight_differences": [
+    {
+      "id": 51641,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51642,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51643,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51644,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51645,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51646,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51647,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51648,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51649,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51650,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51651,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51652,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51653,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51654,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    },
+    {
+      "id": 51721,
+      "canary": "100",
+      "crystal": "1000",
+      "selected": "crystal"
+    }
+  ],
+  "weight_sources": [
+    "https://tibia.fandom.com/wiki/Ink_Splash_Soul_Core"
+  ],
+  "scope": "680 admitted species-core identities and physical Item facts, with pinned name/weight precedence. No arena or mastery activation.",
+  "excluded_identity_evidence": [
+    {
+      "id": 47899,
+      "name": "Falcon Knight Soul Core",
+      "global_url": "https://tibia.fandom.com/wiki/Item_IDs",
+      "reason": "Present in Canary and Global Wiki but absent in pinned Crystal XML and current canonical Item binding index. Requires owning Item identity admission rather than fabricating an alias."
+    }
+  ]
+}

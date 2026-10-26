@@ -11,6 +11,8 @@ pub struct CompanionMaster {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompanionState {
+    /// Live Forge classification, owned by the current actor incarnation.
+    pub fiendish_until_us: Option<u64>,
     pub policy: Arc<CompiledCreaturePolicy>,
     pub master: Option<CompanionMaster>,
     pub creation_speed_delta: i32,
@@ -62,6 +64,82 @@ pub struct PreparedCreatureProfileTransformation {
     target_identity: Arc<[u8]>,
 }
 impl ChannelRuntimeV1 {
+    /// Refresh the bounded live Forge population under the actual Channel owner. The caller
+    /// resolves eligibility from the active Creature profiles and current map, never a client.
+    /// Canary 47dfd51 config: four Fiendish creatures, one hour lifetime, 270s replacement.
+    /// These reference values have not been verified against Global.
+    pub fn refresh_fiendish_creatures(
+        &mut self,
+        now_us: u64,
+        eligible: impl Fn(&CompanionSnapshot) -> bool,
+    ) -> Result<(), CarrierError> {
+        use sha2::{Digest, Sha256};
+        self.owner_fence()?;
+        if now_us < self.fiendish_refresh_at_us {
+            return Ok(());
+        }
+        let next = now_us
+            .checked_add(270_000_000)
+            .ok_or(CarrierError::PlanConflict)?;
+        let until = now_us
+            .checked_add(3_600_000_000)
+            .ok_or(CarrierError::PlanConflict)?;
+        let mut candidates = Vec::new();
+        let mut live = 0_usize;
+        for (actor, _, session) in self.positioned_actor_census()? {
+            if session.is_some() {
+                continue;
+            }
+            let Ok(snapshot) = self.companion_snapshot(actor) else {
+                continue;
+            };
+            // Existing marks still consume a population slot when map eligibility changes.
+            if snapshot
+                .state
+                .fiendish_until_us
+                .is_some_and(|until| now_us < until)
+            {
+                live += 1;
+                continue;
+            }
+            if self.actor_spell_reserved(actor)
+                || snapshot.state.master.is_some()
+                || self.native_summon_master(actor).is_some()
+                || self
+                    .encounter_hooks()
+                    .is_some_and(|hooks| hooks.contains(actor))
+                || !eligible(&snapshot)
+            {
+                continue;
+            }
+            let mut hash = Sha256::new();
+            hash.update(b"oteryn:soulpit.fiendish:v1\0");
+            hash.update(self.content_pin().server_artifact_digest());
+            hash.update(actor.placement_identity());
+            hash.update(now_us.to_be_bytes());
+            candidates.push((hash.finalize().to_vec(), actor));
+        }
+        candidates.sort_by(|a, b| a.0.cmp(&b.0));
+        // All validation precedes the writes. Every actor comes from this owner's census;
+        // the exclusive borrow prevents a generation change between selection and install.
+        let indices = candidates
+            .into_iter()
+            .take(4_usize.saturating_sub(live))
+            .map(|(_, actor)| self.carrier.validate_ref(&self.continuity, actor.0))
+            .collect::<Result<Vec<_>, _>>()?;
+        for index in indices {
+            if let Slot::CreatureOccupied {
+                companion: Some(state),
+                ..
+            } = &mut self.carrier.slots[index]
+            {
+                state.fiendish_until_us = Some(until);
+            }
+        }
+        self.fiendish_refresh_at_us = next;
+        Ok(())
+    }
+
     fn creature_transform_content_binding(&self) -> (WorldId, u64, [[u8; 32]; 4], LocalPosition) {
         let p = self.content_pin();
         (
@@ -321,6 +399,7 @@ impl ChannelRuntimeV1 {
             ),
         );
         let state = CompanionState {
+            fiendish_until_us: None,
             outfit_look_type: look.unwrap_or(policy.outfit_look_type),
             object_look_type: policy.object_look_type,
             policy: policy.clone(),
@@ -662,6 +741,7 @@ impl ChannelRuntimeV1 {
             );
         }
         let state = CompanionState {
+            fiendish_until_us: None,
             creation_speed_delta: 0,
             conditions: ConditionStore::default(),
             outfit_look_type: policy.outfit_look_type,
@@ -966,6 +1046,7 @@ impl ChannelRuntimeV1 {
             );
         }
         let state = Box::new(CompanionState {
+            fiendish_until_us: None,
             master: Some(CompanionMaster {
                 actor: owner,
                 session,
@@ -1233,6 +1314,12 @@ mod tests {
     fn owner_with_policies(
         records: Vec<CompiledCreaturePolicy>,
     ) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
+        owner_with_policies_and_capacity(records, 4)
+    }
+    fn owner_with_policies_and_capacity(
+        records: Vec<CompiledCreaturePolicy>,
+        capacity: usize,
+    ) -> (ChannelRuntimeV1, ExactActorRef, GameSessionId) {
         let world = oteryn_gameplay_foundation::foundation::WorldId::decode(&id(1)).unwrap();
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
             world,
@@ -1242,7 +1329,7 @@ mod tests {
             1,
             1,
             "runtime-scope-assignment:1",
-            4,
+            capacity,
             oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
         )
         .unwrap();
@@ -1258,6 +1345,57 @@ mod tests {
             .unwrap();
         (runtime, actor, session)
     }
+    #[test]
+    fn soulpit_existing_fiendish_marks_keep_their_slots_when_map_eligibility_changes() {
+        let (mut runtime, _, _) = owner_with_policies_and_capacity(vec![policy("rat")], 16);
+        runtime
+            .realize_activation_spawns(vec![(
+                (1..=5).map(|x| (x, 0, 0)).collect(),
+                60_000,
+                5_000,
+                "creature:rat".into(),
+                812,
+            )])
+            .unwrap();
+        runtime.refresh_fiendish_creatures(0, |_| true).unwrap();
+        let creatures: Vec<_> = runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .map(|c| c.actor)
+            .collect();
+        assert_eq!(creatures.len(), 5);
+        let marked: Vec<_> = creatures
+            .iter()
+            .filter(|a| {
+                runtime
+                    .companion_snapshot(**a)
+                    .unwrap()
+                    .state
+                    .fiendish_until_us
+                    .is_some()
+            })
+            .copied()
+            .collect();
+        assert_eq!(marked.len(), 4);
+        // An already marked creature steps onto a cell excluded from future selection.
+        runtime
+            .refresh_fiendish_creatures(270_000_000, |s| s.actor != marked[0])
+            .unwrap();
+        assert_eq!(
+            creatures
+                .iter()
+                .filter(|a| runtime
+                    .companion_snapshot(**a)
+                    .unwrap()
+                    .state
+                    .fiendish_until_us
+                    .is_some())
+                .count(),
+            4
+        );
+    }
+
     #[test]
     fn physical_profile_transform_preserves_hp_actor_history_and_returns_with_fresh_epoch() {
         let mut first = policy("guardian");

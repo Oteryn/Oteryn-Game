@@ -475,15 +475,18 @@ fn invalid_weather_documents_leave_capability_26_unoffered_and_a_required_26_ref
         assert!(!session.selected().contains(WEATHER));
         assert!(session.selected().contains(6));
     }
-    // The default sets are the bound sets: the shipped data loads in this build.
-    assert_eq!(
-        offered_for_scope_with(true, None, true),
+    // Weather is bound by default, but a generation without core profiles cannot offer fusion.
+    let without_cores: Vec<_> =
         super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
-    );
-    assert_eq!(
-        offered_for_scope(true, None),
-        super::super::capabilities::BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES
-    );
+            .iter()
+            .copied()
+            .filter(|capability| {
+                capability.id
+                    != oteryn_protocol_oteryn::world_object::CAPABILITY_SOUL_CORE_FUSION_V1
+            })
+            .collect();
+    assert_eq!(offered_for_scope_with(true, None, true), without_cores);
+    assert_eq!(offered_for_scope(true, None), without_cores);
     assert_eq!(
         offered_for_scope_with(false, None, true),
         PRODUCTION_OFFERED_CAPABILITIES

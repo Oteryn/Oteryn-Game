@@ -80,6 +80,23 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     Some({
         match decoded {
             Ok(intent) if intent.use_with_map_item.is_some() => {
+                // SOULPIT: explicitly negotiated carried-item fusion, including a receipt
+                // replay whose consumed handles no longer resolve. Ordinary tools retain
+                // their existing owner when the craft catalogue does not recognize them.
+                if admitted.continuity.selected_capabilities.contains(oteryn_protocol_oteryn::world_object::CAPABILITY_SOUL_CORE_FUSION_V1)
+                    && matches!(intent.use_with_map_item, Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Item(_)))
+                {
+                    let outcome = tokio::time::timeout(std::time::Duration::from_secs(10),
+                        transport::item_craft::dispatch(authority, actor, UseCommand {
+                            game_session_id: admitted.game_session_id,
+                            command_id: command.command_id,
+                            item_fence: admitted.item_fence,
+                        }, intent.clone(), item_view.as_ref()),
+                    ).await.ok()??;
+                    if !matches!(outcome.disposition, oteryn_protocol_oteryn::world_object::UseDisposition::NothingToUse | oteryn_protocol_oteryn::world_object::UseDisposition::StaleState) {
+                        return Some(Dispatch::Use(outcome));
+                    }
+                }
                 match transport::mining::dispatch_map_use(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,
                     command_id: command.command_id,

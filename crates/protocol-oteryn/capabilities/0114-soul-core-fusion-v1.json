@@ -1,0 +1,19 @@
+{
+  "id": 114,
+  "name": "SOUL_CORE_FUSION_V1",
+  "constant": "world_object::CAPABILITY_SOUL_CORE_FUSION_V1",
+  "requires": [
+    4,
+    11,
+    15
+  ],
+  "acceptance_requires": true,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

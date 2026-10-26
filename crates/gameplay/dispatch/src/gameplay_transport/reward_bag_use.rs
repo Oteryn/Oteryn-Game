@@ -56,6 +56,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let request = ItemCraftRequest {
             command: CommandRef::new(command.game_session_id, command_id),
             source: id,
+            target: None,
             station: None,
             intent: [INTENT_TAG, id.as_slice()].concat(),
         };

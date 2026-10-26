@@ -28,6 +28,8 @@ use crate::world_spatial_entities::{ENTITY_IDENTITY_BYTES, EntityRef};
 /// §0.1). It owns no command type or domain: it extends command type 2 with fields 4 and 5 and the
 /// dispositions 7 to 10. Not offered before ITEM-USE-1.
 pub const CAPABILITY_ITEM_USE_V1: u32 = 15;
+/// SOULPIT: negotiated two-core fusion using the existing USE item-target encoding.
+pub const CAPABILITY_SOUL_CORE_FUSION_V1: u32 = 114;
 /// The registry `requires` of capability 15.
 pub const CAPABILITY_ITEM_USE_V1_REQUIRES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1

@@ -1,0 +1,116 @@
+{
+  "schema": "OTERYN_SOULPIT_ACQUISITION_SOURCE_FACTS/v1",
+  "checked_on": "2026-10-26",
+  "global_numeric_probabilities_qualified": false,
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/lib/others/soulpit.lua",
+      "sha256": "e50776ded6898e5994dc5efd72da7c0ff3dcc94f62257667f2c9ac9d537d8fe4"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/soulpit/ondroploot_soul_core.lua",
+      "sha256": "8495e70453c37c5dea9fa8d6327189485b9924d151816b69a35b7b2894425a8e"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/lib/others/soulpit.lua",
+      "sha256": "e50776ded6898e5994dc5efd72da7c0ff3dcc94f62257667f2c9ac9d537d8fe4"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/scripts/quests/soulpit/ondroploot_soul_core.lua",
+      "sha256": "8495e70453c37c5dea9fa8d6327189485b9924d151816b69a35b7b2894425a8e"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/soulpit/soul_prism.lua",
+      "sha256": "d9663c0b954e34b94e293ff3fa920cf055f4e0ab98d960969b2376246ed3f312"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/soulpit/exalted_core.lua",
+      "sha256": "dd3baee73833e0e5bf701d2829472e2b62451145148d79766278a2835aaedcd2"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/scripts/quests/soulpit/soul_prism.lua",
+      "sha256": "d9663c0b954e34b94e293ff3fa920cf055f4e0ab98d960969b2376246ed3f312"
+    },
+    {
+      "repository": "zimbadev/crystalserver",
+      "revision": "201189f871d23597b82caf88fd611454a2ddefb8",
+      "path": "data-global/scripts/quests/soulpit/exalted_core.lua",
+      "sha256": "dd3baee73833e0e5bf701d2829472e2b62451145148d79766278a2835aaedcd2"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "config.lua.dist",
+      "sha256": "5ad741b00ff26c0200a9d0c3a4f056801647be5a59a45b0ef687c87887a762d3"
+    },
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "src/game/game.cpp",
+      "sha256": "f98a2d73d53fb4368d0b05b25d9b41ae79f427d15666f6b67a2100abf4c8cf03"
+    }
+  ],
+  "reference_implementation_only": {
+    "configured_core_percent": 5,
+    "executed_core_percent": 4,
+    "configured_prism_percent": 4,
+    "executed_prism_percent": 3,
+    "same_monster_branch_percent": 15,
+    "explanation": "Lua math.random(100) draws integers 1 through 100. The drop callbacks compare strictly below their configured thresholds. The same-species branch uses <=15 conditional on a successful core roll. Otherwise they choose a monster in the same Bestiary race, without filtering occurrence rarity. The two pinned implementations are byte-identical, so they do not provide independent corroboration of Global probabilities.",
+    "ominous_prism_percent": 2,
+    "loot_bonus_interaction": "Core/prism rolls are separate from ordinary loot-table probabilities. The resulting guaranteed drops still use the ordinary retained corpse mint path.",
+    "forge_classification": {
+      "limit": 4,
+      "lifetime_seconds": 3600,
+      "replacement_delay_seconds": 270,
+      "implementation_note": "Channel runtime refreshes a bounded population at 270-second intervals. This is not an exact per-death replacement timer; no Global scheduler parity is claimed."
+    }
+  },
+  "official_sources": [
+    {
+      "url": "https://www.tibia.com/news/?id=7895&subtopic=newsarchive",
+      "supports": "Fiendish acquisition, predominantly the killed species and rare additional cores of uncommon, rare or very rare species in the same Bestiary class.",
+      "limitation": "Indexed official description has no numeric probability. Direct retrieval returned HTTP 403. The reference implementation instead selects mutually exclusive same-species or same-race branches."
+    },
+    {
+      "url": "https://www.tibia.com/news/?id=7944&subtopic=newsarchive",
+      "supports": "Prism drops, next-higher-difficulty transformations and random two-core fusion.",
+      "limitation": "No numeric probability or exact fusion distribution."
+    },
+    {
+      "url": "https://docs.tibiadata.com/swagger.json",
+      "sha256": "a6686c3e9c7d58cf309b8175db9082910f5c61d70d941c43e40a8acdc4f42fdf",
+      "limitation": "The inspected creature response schema has loot names, but no numeric soul-core probabilities or fiendish/Soulpit endpoint."
+    }
+  ],
+  "runtime_gap": {
+    "capture_owner": "crates/gameplay/dispatch/src/gameplay_transport/kill_reward.rs:record_creature_kill",
+    "classification_owner": "crates/gameplay/entities/src/carrier/runtime_actor_companion.rs:refresh_fiendish_creatures",
+    "limitations": "Classification population/lifetime/replacement and numeric acquisition probabilities are reference fallback values, not verified against Global. Existing loot-plan and corpse capacity refusals remain enforced."
+  },
+  "decision": "Owner decision 22: adopt pinned Canary/Crystal executed probabilities as fallback, explicitly not verified against Global. Live Channel Forge classification is captured before lethal settlement and retained in the ordinary corpse plan.",
+  "global_observations": [
+    {
+      "url": "https://tibia.fandom.com/wiki/Soul_Core",
+      "supports": "Approximate 15-20% own-species chance; rare additional uncommon/rare/very-rare same-class core. Conflicts with pinned mutually-exclusive branches; approximate numbers are not exact qualification."
+    },
+    {
+      "url": "https://www.tibia.com/news/?id=7944&subtopic=newsarchive",
+      "supports": "Prism next-higher difficulty with highest-difficulty clamp, and fusion produces any Bestiary difficulty."
+    }
+  ]
+}

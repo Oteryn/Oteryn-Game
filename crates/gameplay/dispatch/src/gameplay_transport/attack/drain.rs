@@ -104,6 +104,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &mut runtime,
                 crate::gameplay_transport::kill_reward::KillSink {
                     queue: kills,
+                    native: self.active_generation.and_then(|g| g.native_gameplay()),
                     rewards: self.reward_table(),
                     activity: &activity_cells,
                 },
@@ -543,6 +544,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         &mut runtime,
                         kills,
                         self.reward_table(),
+                        self.active_generation.and_then(|g| g.native_gameplay()),
                         &activity_cells,
                         target,
                         lethal,
@@ -1077,6 +1079,7 @@ fn settle_kill(
     runtime: &mut ChannelRuntimeV1,
     queue: &mut KillSettlementQueue,
     rewards: &crate::content::creature_reward::CreatureRewardTable,
+    native: Option<&crate::content::native_gameplay::NativeGameplayState>,
     activity: &[SharedExperienceActivity],
     target: ExactActorRef,
     lethal: crate::combat::CapturedRewardPrincipal,
@@ -1087,6 +1090,7 @@ fn settle_kill(
         runtime,
         crate::gameplay_transport::kill_reward::KillSink {
             queue,
+            native,
             rewards,
             activity,
         },

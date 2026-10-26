@@ -217,14 +217,16 @@ pub async fn commit_in_transaction<const N: usize>(
             modifiers.stamina_minutes = modifiers.stamina_minutes.min(i32::from(live));
         }
         let raw = member.request.amount.get();
-        let amount = oteryn_gameplay_characters::hunting_experience::hunting_experience(
-            raw,
-            modifiers.prey_percent,
-            modifiers.xp_boost_percent,
-            modifiers.stamina_minutes,
-            member.premium,
-        )
-        .map_err(|_| CharacterProgressionError::InvalidInput)?;
+        let amount =
+            oteryn_gameplay_characters::hunting_experience::hunting_experience_with_animus(
+                raw,
+                modifiers.prey_percent,
+                modifiers.xp_boost_percent,
+                modifiers.stamina_minutes,
+                member.premium,
+                modifiers.animus_basis_points,
+            )
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let mut request = member.request;
         request.amount = oteryn_simulation_determinism::ExactI64::new(amount);
         let xp = if amount > 0 {
@@ -248,12 +250,12 @@ pub async fn commit_in_transaction<const N: usize>(
         } else {
             None
         };
-        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14)")
+        sqlx::query("INSERT INTO game_party_kill_xp_members(death_key,character_id,reward_occurrence_id,shared,party_id,party_revision,raw_share,prey_slot,prey_epoch,prey_grade,prey_percent,stamina_minutes,xp_awarded,xp_boost_percent,animus_basis_points) VALUES($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4,encode($5,'hex')::uuid,$6::text::numeric,$7,$8,$9,$10,$11,$12,$13,$14,$15)")
             .bind(input.death_key.as_slice()).bind(member.fence.character_id.as_bytes().as_slice())
             .bind(xp.as_ref().map(|_|request.occurrence.as_bytes().as_slice()))
             .bind(member.shared).bind(member.party_id.as_ref().map(|id|id.as_slice())).bind(member.party_revision.map(|r|r.to_string()))
             .bind(raw).bind(modifiers.prey_slot).bind(modifiers.prey_epoch).bind(modifiers.prey_grade)
-            .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent)
+            .bind(modifiers.prey_percent).bind(modifiers.stamina_minutes).bind(amount).bind(modifiers.xp_boost_percent).bind(modifiers.animus_basis_points)
             .execute(&mut **tx).await.map_err(DurabilityError::from)?;
         awards.push(PartyKillXpAward {
             character: member.fence.character_id,
@@ -283,5 +285,10 @@ fn hunting_binding(
     binding.extend_from_slice(&modifiers.prey_percent.to_be_bytes());
     binding.extend_from_slice(&modifiers.xp_boost_percent.to_be_bytes());
     binding.extend_from_slice(&modifiers.stamina_minutes.to_be_bytes());
+    // Preserve historical binding bytes for all pre-Animus and unmastered receipts.
+    if modifiers.animus_basis_points != 0 {
+        binding.extend_from_slice(b"oteryn:animus:v1\0");
+        binding.extend_from_slice(&modifiers.animus_basis_points.to_be_bytes());
+    }
     Sha256::digest(binding).into()
 }

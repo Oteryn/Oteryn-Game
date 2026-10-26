@@ -55,7 +55,16 @@ fn scenario() -> TestResult {
     scenario_with_decay(None)
 }
 
+#[test]
+fn soulpit_acquisition_real_dispatch_retains_core_prism_and_replay() -> TestResult {
+    scenario_thread::run("soulpit-acquisition", || scenario_with_soulpit(None, true))
+}
+
 pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
+    scenario_with_soulpit(reconcile, false)
+}
+
+fn scenario_with_soulpit(reconcile: Option<bool>, soulpit: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
@@ -148,6 +157,58 @@ pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
         runtime
             .realize_native_qualification_spawn(channel_pin, "oteryn:creature.rat", OPEN_RAT)
             .map_err(debug)?;
+        if soulpit {
+            let exact = runtime
+                .visible_entities()
+                .creatures
+                .first()
+                .ok_or("rat")?
+                .actor;
+            // Pick a semantic clock fixture for two successful reference rolls, then let the
+            // actual runtime classifier install the mark. No client controls these facts.
+            let mut chosen = None;
+            for now in 0..100_000_u64 {
+                use sha2::{Digest, Sha256};
+                let until = now + 3_600_000_000;
+                let digest = Sha256::new()
+                    .chain_update(b"oteryn:soulpit.acquisition:v1\0")
+                    .chain_update(exact.placement_identity())
+                    .chain_update(until.to_be_bytes())
+                    .finalize();
+                let mut draws = [0; 4];
+                for (draw, bytes) in draws.iter_mut().zip(digest.as_chunks::<8>().0) {
+                    let mut word = [0; 8];
+                    word.copy_from_slice(bytes);
+                    *draw = u64::from_be_bytes(word);
+                }
+                let drops = oteryn_gameplay_items::soul_core::soulpit_acquisition(
+                    native,
+                    "oteryn:creature.rat",
+                    "definition-r1",
+                    draws,
+                );
+                if drops.as_ref().is_some_and(|d| {
+                    d.len() == 2 && d[0].production_key == "oteryn:item.tibia.i47398"
+                }) {
+                    chosen = Some(now);
+                    break;
+                }
+            }
+            runtime
+                .refresh_fiendish_creatures(
+                    chosen.ok_or("bounded clock fixture finds core and prism")?,
+                    |_| true,
+                )
+                .map_err(debug)?;
+            assert!(
+                runtime
+                    .companion_snapshot(exact)
+                    .map_err(debug)?
+                    .state
+                    .fiendish_until_us
+                    .is_some()
+            );
+        }
         let rat = {
             let creature = runtime
                 .visible_entities()
@@ -326,6 +387,49 @@ pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
         assert_eq!(xp_receipts(&harness).await?, 0);
         assert_eq!(corpse_receipts(&harness).await?, 0);
 
+        if soulpit {
+            // Rebuild a lost queue entry from the retained lethal projection after the live
+            // mark expires. Its original death time, classification and outcome must survive.
+            let (facts, exact, observed, activity) = {
+                let attack = owner.states.attack.lock().await;
+                let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
+                    attack.kills().take(session, 2)
+                else {
+                    return Err("captured soulpit kill".into());
+                };
+                let entry = taken.entry().ok_or("captured entry")?;
+                let saved = (
+                    entry.facts,
+                    entry.target,
+                    entry.activity_observed_at,
+                    entry.activity_at_death.clone().unwrap_or_default(),
+                );
+                taken.finish();
+                saved
+            };
+            let mut runtime = owner.runtime.lock().await;
+            let until = runtime
+                .companion_snapshot_including_dead(exact)
+                .map_err(debug)?
+                .state
+                .fiendish_until_us
+                .ok_or("fiendish expiry")?;
+            let attack = owner.states.attack.lock().await;
+            crate::gameplay_transport::kill_reward::record_creature_kill(
+                &mut runtime,
+                crate::gameplay_transport::kill_reward::KillSink {
+                    native: Some(native),
+                    activity: &activity,
+                    queue: attack.kills(),
+                    rewards: native.reward_table(),
+                },
+                exact,
+                facts.principal,
+                until / 1000 + 1,
+                observed,
+            );
+            assert!(attack.kills().has_session(session));
+        }
         let mut drains = 0;
         while owner.drain_kill_rewards(session).await != DrainOutcome::Drained {
             drains += 1;
@@ -360,6 +464,23 @@ pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
         .await?;
         assert!(children >= 1, "the corpse carries the rat's loot");
 
+        if soulpit {
+            let drops: Vec<String> = sqlx::query_scalar("SELECT i.definition_production_key FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key IN ('oteryn:item.tibia.i47398','oteryn:item.tibia.i49164') ORDER BY i.definition_production_key")
+                .fetch_all(&harness.pool).await?;
+            assert_eq!(
+                drops,
+                ["oteryn:item.tibia.i47398", "oteryn:item.tibia.i49164"]
+            );
+            assert_eq!(
+                owner.drain_kill_rewards(session).await,
+                DrainOutcome::Drained
+            );
+            let retained: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) WHERE i.definition_production_key IN ('oteryn:item.tibia.i47398','oteryn:item.tibia.i49164')")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(retained, 2);
+            assert_eq!(xp_receipts(&harness).await?, 1);
+            assert_eq!(corpse_receipts(&harness).await?, 1);
+        }
         let decay = match reconcile {
             Some(reconcile) => {
                 super::corpse_decay::qualify(&mut owner, &harness, children, reconcile)

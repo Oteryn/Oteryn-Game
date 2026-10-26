@@ -48,6 +48,63 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await
                 .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                let forge: std::collections::HashSet<_> = native
+                    .creature_profiles()
+                    .records
+                    .iter()
+                    .filter_map(|record| {
+                        let crate::content::ProjectV2AuthoringProfileData::Creature(profile) =
+                            &record.profile.data
+                        else {
+                            return None;
+                        };
+                        let details = profile.details.as_ref()?;
+                        (details.system_eligibility.forge
+                            && !details.system_eligibility.reward_boss
+                            && profile.bestiary.is_some()
+                            && native
+                                .reward_table()
+                                .row(&record.profile.target.key)
+                                .is_ok_and(|row| !row.loot_table.entries.is_empty()))
+                        .then_some((
+                            record.profile.target.key.as_str(),
+                            record.profile.target.revision.as_str(),
+                        ))
+                    })
+                    .collect();
+                runtime
+                    .refresh_fiendish_creatures(now, |snapshot| {
+                        use crate::content::native_cell_lookup::NativeMovementCollisionIndex;
+                        if !forge.contains(&(
+                            snapshot.state.policy.definition_key.as_str(),
+                            snapshot.state.policy.definition_revision.as_str(),
+                        )) {
+                            return false;
+                        }
+                        let cell = crate::content::LogicalCell {
+                            x: snapshot.position.x,
+                            y: snapshot.position.y,
+                            z: i32::from(snapshot.position.floor),
+                        };
+                        let cells = room.movement_cells();
+                        match cells.index() {
+                            NativeMovementCollisionIndex::Bundle(index) => {
+                                use crate::map::boot::BundleCollisionIndexExt;
+                                crate::content::bundle_spell_tiles::tile_pos(cell)
+                                    .and_then(|pos| {
+                                        index.map().overlay.base().tile(pos.x, pos.y, pos.floor)
+                                    })
+                                    .is_some_and(|tile| !tile.no_logout())
+                            }
+                            NativeMovementCollisionIndex::Source(world) => world
+                                .immutable_tile(cells.scope(), cell)
+                                .ok()
+                                .and_then(|tile| tile.source_step().map(|step| !step.no_logout))
+                                .unwrap_or(false),
+                            NativeMovementCollisionIndex::Entry(_) => false,
+                        }
+                    })
+                    .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
                 let objects = owner.door.lock().await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);

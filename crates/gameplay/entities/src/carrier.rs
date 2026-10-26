@@ -998,6 +998,7 @@ pub struct ChannelRuntimeV1 {
     carrier: ChannelActorCarrier,
     content: ChannelContentPin,
     companion_policies: Option<Arc<runtime_actor_companion::CompiledCreaturePolicies>>,
+    fiendish_refresh_at_us: u64,
     owner_cycle: oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
@@ -1111,6 +1112,7 @@ impl ChannelRuntimeV1 {
                         scope_generation,
                     },
                 ),
+            fiendish_refresh_at_us: 0,
             spawn_schedule: spawn::RespawnSchedule::default(),
             spawn_deadlines: BTreeSet::new(),
             spawn_scan_cursor: spawn::SpawnPoint {

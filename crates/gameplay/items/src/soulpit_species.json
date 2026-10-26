@@ -1,0 +1,5330 @@
+[
+  {
+    "creature": "oteryn:creature.abyssal_calamary",
+    "revision": "definition-r1",
+    "core": 47810,
+    "class": "Aquatic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.acid_blob",
+    "revision": "definition-r1",
+    "core": 47626,
+    "class": "Slime",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.acolyte_of_darkness",
+    "revision": "definition-r1",
+    "core": 47653,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.acolyte_of_the_cult",
+    "revision": "definition-r1",
+    "core": 47522,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.adept_of_the_cult",
+    "revision": "definition-r1",
+    "core": 47523,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.adult_goanna",
+    "revision": "definition-r1",
+    "core": 47942,
+    "class": "Reptile",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.adventurer",
+    "revision": "definition-r1",
+    "core": 47754,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.afflicted_strider",
+    "revision": "definition-r1",
+    "core": 47997,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.agrestic_chicken",
+    "revision": "definition-r1",
+    "core": 47981,
+    "class": "Bird",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.amazon",
+    "revision": "definition-r1",
+    "core": 47452,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ancient_scarab",
+    "revision": "definition-r1",
+    "core": 47454,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.angry_sugar_fairy",
+    "revision": "definition-r1",
+    "core": 49089,
+    "class": "Fey",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.animated_feather",
+    "revision": "definition-r1",
+    "core": 47911,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.animated_snowman",
+    "revision": "definition-r1",
+    "core": 49031,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.arachnophobica",
+    "revision": "definition-r1",
+    "core": 47923,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.arctic_faun",
+    "revision": "definition-r1",
+    "core": 49021,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.armadile",
+    "revision": "definition-r1",
+    "core": 48985,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.askarak_demon",
+    "revision": "definition-r1",
+    "core": 47710,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.askarak_lord",
+    "revision": "definition-r1",
+    "core": 48956,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.askarak_prince",
+    "revision": "definition-r1",
+    "core": 48957,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.assassin",
+    "revision": "definition-r1",
+    "core": 47501,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.azure_frog",
+    "revision": "definition-r1",
+    "core": 47535,
+    "class": "Amphibic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.badger",
+    "revision": "definition-r1",
+    "core": 47467,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.baleful_bunny",
+    "revision": "definition-r1",
+    "core": 49030,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.bandit",
+    "revision": "definition-r1",
+    "core": 47500,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bane_bringer",
+    "revision": "definition-r1",
+    "core": 47690,
+    "class": "Plant",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.bane_of_light",
+    "revision": "definition-r1",
+    "core": 47655,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.banshee",
+    "revision": "definition-r1",
+    "core": 47453,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.barbarian_bloodwalker",
+    "revision": "definition-r1",
+    "core": 47566,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.barbarian_brutetamer",
+    "revision": "definition-r1",
+    "core": 47574,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.barbarian_headsplitter",
+    "revision": "definition-r1",
+    "core": 47575,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.barbarian_skullhunter",
+    "revision": "definition-r1",
+    "core": 47565,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.barkless_devotee",
+    "revision": "definition-r1",
+    "core": 47866,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.barkless_fanatic",
+    "revision": "definition-r1",
+    "core": 47867,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bashmu",
+    "revision": "definition-r1",
+    "core": 48002,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bat",
+    "revision": "definition-r1",
+    "core": 47484,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bear",
+    "revision": "definition-r1",
+    "core": 47394,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.behemoth",
+    "revision": "definition-r1",
+    "core": 47431,
+    "class": "Giant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.berserker_chicken",
+    "revision": "definition-r1",
+    "core": 48938,
+    "class": "Bird",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.betrayed_wraith",
+    "revision": "definition-r1",
+    "core": 47544,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.biting_book",
+    "revision": "definition-r1",
+    "core": 47902,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.black_sheep",
+    "revision": "definition-r1",
+    "core": 48929,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.black_sphinx_acolyte",
+    "revision": "definition-r1",
+    "core": 47935,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.blemished_spawn",
+    "revision": "definition-r1",
+    "core": 47996,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.blightwalker",
+    "revision": "definition-r1",
+    "core": 47556,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bloated_man_maggot",
+    "revision": "definition-r1",
+    "core": 48079,
+    "class": "Vermin",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.blood_beast",
+    "revision": "definition-r1",
+    "core": 47788,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.blood_crab",
+    "revision": "definition-r1",
+    "core": 47530,
+    "class": "Aquatic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.blood_hand",
+    "revision": "definition-r1",
+    "core": 47765,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.blood_priest",
+    "revision": "definition-r1",
+    "core": 47761,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.blue_butterfly",
+    "revision": "definition-r1",
+    "core": 47503,
+    "class": "Vermin",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.blue_djinn",
+    "revision": "definition-r1",
+    "core": 47455,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bluebeak",
+    "revision": "definition-r1",
+    "core": 51650,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.boar",
+    "revision": "definition-r1",
+    "core": 47698,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.boar_man",
+    "revision": "definition-r1",
+    "core": 48056,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bog_frog",
+    "revision": "definition-r1",
+    "core": 47715,
+    "class": "Amphibic",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bog_raider",
+    "revision": "definition-r1",
+    "core": 47603,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bonebeast",
+    "revision": "definition-r1",
+    "core": 47463,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bonelord",
+    "revision": "definition-r1",
+    "core": 47395,
+    "class": "Magical",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bony_sea_devil",
+    "revision": "definition-r1",
+    "core": 47952,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.boogy",
+    "revision": "definition-r1",
+    "core": 47862,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.brachiodemon",
+    "revision": "definition-r1",
+    "core": 47956,
+    "class": "Demon",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.brain_squid",
+    "revision": "definition-r1",
+    "core": 47901,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.braindeath",
+    "revision": "definition-r1",
+    "core": 47564,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bramble_wyrmling",
+    "revision": "definition-r1",
+    "core": 51648,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.branchy_crawler",
+    "revision": "definition-r1",
+    "core": 47957,
+    "class": "Plant",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.breach_brood",
+    "revision": "definition-r1",
+    "core": 47840,
+    "class": "Extra Dimensional",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.brimstone_bug",
+    "revision": "definition-r1",
+    "core": 47688,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.brinebrute_inferniarch",
+    "revision": "definition-r1",
+    "core": 50105,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.broken_shaper",
+    "revision": "definition-r1",
+    "core": 47851,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.broodrider_inferniarch",
+    "revision": "definition-r1",
+    "core": 50107,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.brown_horse",
+    "revision": "definition-r1",
+    "core": 48962,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.bug",
+    "revision": "definition-r1",
+    "core": 47422,
+    "class": "Vermin",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bulltaur_alchemist",
+    "revision": "definition-r1",
+    "core": 48093,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bulltaur_brute",
+    "revision": "definition-r1",
+    "core": 48092,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.bulltaur_forgepriest",
+    "revision": "definition-r1",
+    "core": 48094,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.burning_book",
+    "revision": "definition-r1",
+    "core": 47904,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.burning_gladiator",
+    "revision": "definition-r1",
+    "core": 47933,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.burster_spectre",
+    "revision": "definition-r1",
+    "core": 47921,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.butterfly",
+    "revision": "definition-r1",
+    "core": 47503,
+    "class": "Vermin",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.calamary",
+    "revision": "definition-r1",
+    "core": 48969,
+    "class": "Aquatic",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.candy_floss_elemental",
+    "revision": "definition-r1",
+    "core": 49074,
+    "class": "Elemental",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.candy_horror",
+    "revision": "definition-r1",
+    "core": 49076,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.capricious_phantom",
+    "revision": "definition-r1",
+    "core": 47958,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.carniphila",
+    "revision": "definition-r1",
+    "core": 47482,
+    "class": "Plant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.carnivostrich",
+    "revision": "definition-r1",
+    "core": 48058,
+    "class": "Bird",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.carrion_worm",
+    "revision": "definition-r1",
+    "core": 47520,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cat",
+    "revision": "definition-r1",
+    "core": 47587,
+    "class": "Mammal",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cave_chimera",
+    "revision": "definition-r1",
+    "core": 47999,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cave_devourer",
+    "revision": "definition-r1",
+    "core": 47880,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cave_parrot",
+    "revision": "definition-r1",
+    "core": 47848,
+    "class": "Bird",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cave_rat",
+    "revision": "definition-r1",
+    "core": 47432,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.centipede",
+    "revision": "definition-r1",
+    "core": 47486,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.chakoya_toolshaper",
+    "revision": "definition-r1",
+    "core": 47570,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.chakoya_tribewarden",
+    "revision": "definition-r1",
+    "core": 47563,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.chakoya_windcaller",
+    "revision": "definition-r1",
+    "core": 47571,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.chasm_spawn",
+    "revision": "definition-r1",
+    "core": 47882,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.chicken",
+    "revision": "definition-r1",
+    "core": 47473,
+    "class": "Bird",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.chocolate_blob",
+    "revision": "definition-r1",
+    "core": 49087,
+    "class": "Slime",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.choking_fear",
+    "revision": "definition-r1",
+    "core": 47778,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cinder_wyrmling",
+    "revision": "definition-r1",
+    "core": 51647,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.clay_guardian",
+    "revision": "definition-r1",
+    "core": 47707,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cliff_strider",
+    "revision": "definition-r1",
+    "core": 48989,
+    "class": "Elemental",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.cloak_of_terror",
+    "revision": "definition-r1",
+    "core": 47954,
+    "class": "Plant",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.clomp",
+    "revision": "definition-r1",
+    "core": 47829,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cobra",
+    "revision": "definition-r1",
+    "core": 47456,
+    "class": "Reptile",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cobra_assassin",
+    "revision": "definition-r1",
+    "core": 47930,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cobra_scout",
+    "revision": "definition-r1",
+    "core": 47931,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cobra_vizier",
+    "revision": "definition-r1",
+    "core": 47946,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.converter",
+    "revision": "definition-r1",
+    "core": 48069,
+    "class": "Elemental",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.coral_frog",
+    "revision": "definition-r1",
+    "core": 47536,
+    "class": "Amphibic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.corym_charlatan",
+    "revision": "definition-r1",
+    "core": 47750,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.corym_skirmisher",
+    "revision": "definition-r1",
+    "core": 47751,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.corym_vanguard",
+    "revision": "definition-r1",
+    "core": 47752,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.courage_leech",
+    "revision": "definition-r1",
+    "core": 47964,
+    "class": "Extra Dimensional",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crab",
+    "revision": "definition-r1",
+    "core": 47474,
+    "class": "Aquatic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crape_man",
+    "revision": "definition-r1",
+    "core": 48054,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crawler",
+    "revision": "definition-r1",
+    "core": 47727,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crazed_beggar",
+    "revision": "definition-r1",
+    "core": 47637,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crazed_summer_rearguard",
+    "revision": "definition-r1",
+    "core": 47927,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crazed_summer_vanguard",
+    "revision": "definition-r1",
+    "core": 47926,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crazed_winter_rearguard",
+    "revision": "definition-r1",
+    "core": 47925,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crazed_winter_vanguard",
+    "revision": "definition-r1",
+    "core": 47924,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cream_blob",
+    "revision": "definition-r1",
+    "core": 49095,
+    "class": "Fey",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crimson_frog",
+    "revision": "definition-r1",
+    "core": 47537,
+    "class": "Amphibic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crocodile",
+    "revision": "definition-r1",
+    "core": 47481,
+    "class": "Reptile",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crusader",
+    "revision": "definition-r1",
+    "core": 51653,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crustacea_gigantica",
+    "revision": "definition-r1",
+    "core": 47702,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.crypt_defiler",
+    "revision": "definition-r1",
+    "core": 48981,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.crypt_shambler",
+    "revision": "definition-r1",
+    "core": 47462,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crypt_warden",
+    "revision": "definition-r1",
+    "core": 47936,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crypt_warrior",
+    "revision": "definition-r1",
+    "core": 47984,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crystal_spider",
+    "revision": "definition-r1",
+    "core": 47572,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.crystal_wolf",
+    "revision": "definition-r1",
+    "core": 47717,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.crystalcrusher",
+    "revision": "definition-r1",
+    "core": 47734,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cult_believer",
+    "revision": "definition-r1",
+    "core": 47874,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cult_enforcer",
+    "revision": "definition-r1",
+    "core": 47875,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cult_scholar",
+    "revision": "definition-r1",
+    "core": 49019,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.cunning_werepanther",
+    "revision": "definition-r1",
+    "core": 48087,
+    "class": "Lycanthrope",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cursed_ape",
+    "revision": "definition-r1",
+    "core": 48063,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cursed_book",
+    "revision": "definition-r1",
+    "core": 49023,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.cursed_prospector",
+    "revision": "definition-r1",
+    "core": 47950,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cyclops",
+    "revision": "definition-r1",
+    "core": 47399,
+    "class": "Giant",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cyclops_drone",
+    "revision": "definition-r1",
+    "core": 47590,
+    "class": "Giant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.cyclops_smith",
+    "revision": "definition-r1",
+    "core": 47589,
+    "class": "Giant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.damaged_crystal_golem",
+    "revision": "definition-r1",
+    "core": 48982,
+    "class": "Construct",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.damaged_worker_golem",
+    "revision": "definition-r1",
+    "core": 47636,
+    "class": "Construct",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dark_apprentice",
+    "revision": "definition-r1",
+    "core": 47579,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dark_carnisylvan",
+    "revision": "definition-r1",
+    "core": 48006,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dark_faun",
+    "revision": "definition-r1",
+    "core": 47868,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dark_magician",
+    "revision": "definition-r1",
+    "core": 47578,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dark_monk",
+    "revision": "definition-r1",
+    "core": 47502,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dark_torturer",
+    "revision": "definition-r1",
+    "core": 47545,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.darklight_construct",
+    "revision": "definition-r1",
+    "core": 48068,
+    "class": "Magical",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.darklight_emitter",
+    "revision": "definition-r1",
+    "core": 48072,
+    "class": "Magical",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.darklight_matter",
+    "revision": "definition-r1",
+    "core": 48070,
+    "class": "Slime",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.darklight_source",
+    "revision": "definition-r1",
+    "core": 48085,
+    "class": "Magical",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.darklight_striker",
+    "revision": "definition-r1",
+    "core": 48086,
+    "class": "Magical",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dawnfire_asura",
+    "revision": "definition-r1",
+    "core": 47816,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.death_blob",
+    "revision": "definition-r1",
+    "core": 47627,
+    "class": "Slime",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.death_priest",
+    "revision": "definition-r1",
+    "core": 48948,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.deathling_scout",
+    "revision": "definition-r1",
+    "core": 47908,
+    "class": "Aquatic",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.deathling_spellsinger",
+    "revision": "definition-r1",
+    "core": 47915,
+    "class": "Aquatic",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.deepling_brawler",
+    "revision": "definition-r1",
+    "core": 48976,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.deepling_elite",
+    "revision": "definition-r1",
+    "core": 48979,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.deepling_guard",
+    "revision": "definition-r1",
+    "core": 47723,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.deepling_master_librarian",
+    "revision": "definition-r1",
+    "core": 48977,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.deepling_scout",
+    "revision": "definition-r1",
+    "core": 47714,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.deepling_spellsinger",
+    "revision": "definition-r1",
+    "core": 47724,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.deepling_tyrant",
+    "revision": "definition-r1",
+    "core": 48978,
+    "class": "Aquatic",
+    "difficulty": "hard",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.deepling_warrior",
+    "revision": "definition-r1",
+    "core": 47722,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.deepling_worker",
+    "revision": "definition-r1",
+    "core": 47732,
+    "class": "Aquatic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.deepsea_blood_crab",
+    "revision": "definition-r1",
+    "core": 47594,
+    "class": "Aquatic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.deepworm",
+    "revision": "definition-r1",
+    "core": 47878,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.deer",
+    "revision": "definition-r1",
+    "core": 47408,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.defiler",
+    "revision": "definition-r1",
+    "core": 47549,
+    "class": "Slime",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.demon",
+    "revision": "definition-r1",
+    "core": 47412,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.demon_outcast",
+    "revision": "definition-r1",
+    "core": 47781,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.demon_parrot",
+    "revision": "definition-r1",
+    "core": 48939,
+    "class": "Bird",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.demon_skeleton",
+    "revision": "definition-r1",
+    "core": 47414,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.destroyer",
+    "revision": "definition-r1",
+    "core": 47547,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.devourer",
+    "revision": "definition-r1",
+    "core": 47799,
+    "class": "Slime",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.diabolic_imp",
+    "revision": "definition-r1",
+    "core": 47548,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.diamond_servant",
+    "revision": "definition-r1",
+    "core": 47706,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.diamond_servant_replica",
+    "revision": "definition-r1",
+    "core": 49008,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.dire_penguin",
+    "revision": "definition-r1",
+    "core": 47577,
+    "class": "Bird",
+    "difficulty": "easy",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.diremaw",
+    "revision": "definition-r1",
+    "core": 47879,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.distorted_phantom",
+    "revision": "definition-r1",
+    "core": 47973,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dog",
+    "revision": "definition-r1",
+    "core": 47409,
+    "class": "Mammal",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.doom_deer",
+    "revision": "definition-r1",
+    "core": 48936,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.dragolisk",
+    "revision": "definition-r1",
+    "core": 48095,
+    "class": "Dragon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dragon",
+    "revision": "definition-r1",
+    "core": 47411,
+    "class": "Dragon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dragon_hatchling",
+    "revision": "definition-r1",
+    "core": 47585,
+    "class": "Dragon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dragon_lord",
+    "revision": "definition-r1",
+    "core": 47416,
+    "class": "Dragon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dragon_lord_hatchling",
+    "revision": "definition-r1",
+    "core": 47586,
+    "class": "Dragon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dragonling",
+    "revision": "definition-r1",
+    "core": 48991,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.draken_abomination",
+    "revision": "definition-r1",
+    "core": 47687,
+    "class": "Dragon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.draken_elite",
+    "revision": "definition-r1",
+    "core": 47686,
+    "class": "Dragon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.draken_spellweaver",
+    "revision": "definition-r1",
+    "core": 47671,
+    "class": "Dragon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.draken_warmaster",
+    "revision": "definition-r1",
+    "core": 47670,
+    "class": "Dragon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.draptor",
+    "revision": "definition-r1",
+    "core": 47700,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.dread_intruder",
+    "revision": "definition-r1",
+    "core": 47842,
+    "class": "Extra Dimensional",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.drillworm",
+    "revision": "definition-r1",
+    "core": 47739,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dromedary",
+    "revision": "definition-r1",
+    "core": 47713,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.druid_s_apparition",
+    "revision": "definition-r1",
+    "core": 47966,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dryad",
+    "revision": "definition-r1",
+    "core": 47583,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.duskbringer",
+    "revision": "definition-r1",
+    "core": 47656,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.dwarf",
+    "revision": "definition-r1",
+    "core": 47445,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dwarf_geomancer",
+    "revision": "definition-r1",
+    "core": 47442,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dwarf_guard",
+    "revision": "definition-r1",
+    "core": 47446,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dwarf_henchman",
+    "revision": "definition-r1",
+    "core": 47582,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dwarf_soldier",
+    "revision": "definition-r1",
+    "core": 47447,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dworc_fleshhunter",
+    "revision": "definition-r1",
+    "core": 47492,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dworc_shadowstalker",
+    "revision": "definition-r1",
+    "core": 51644,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dworc_venomsniper",
+    "revision": "definition-r1",
+    "core": 47493,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.dworc_voodoomaster",
+    "revision": "definition-r1",
+    "core": 47491,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.earth_elemental",
+    "revision": "definition-r1",
+    "core": 47602,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.efreet",
+    "revision": "definition-r1",
+    "core": 47465,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.elder_bonelord",
+    "revision": "definition-r1",
+    "core": 47470,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.elder_mummy",
+    "revision": "definition-r1",
+    "core": 48949,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.elder_wyrm",
+    "revision": "definition-r1",
+    "core": 47763,
+    "class": "Dragon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.elephant",
+    "revision": "definition-r1",
+    "core": 47488,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.elf",
+    "revision": "definition-r1",
+    "core": 47438,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.elf_arcanist",
+    "revision": "definition-r1",
+    "core": 47439,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.elf_overseer",
+    "revision": "definition-r1",
+    "core": 47718,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.elf_scout",
+    "revision": "definition-r1",
+    "core": 47440,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.emerald_damselfly",
+    "revision": "definition-r1",
+    "core": 47747,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.emerald_tortoise",
+    "revision": "definition-r1",
+    "core": 48043,
+    "class": "Reptile",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.energetic_book",
+    "revision": "definition-r1",
+    "core": 47906,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.energuardian_of_tales",
+    "revision": "definition-r1",
+    "core": 47907,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.energy_elemental",
+    "revision": "definition-r1",
+    "core": 47601,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.enfeebled_silencer",
+    "revision": "definition-r1",
+    "core": 47864,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.enlightened_of_the_cult",
+    "revision": "definition-r1",
+    "core": 47521,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.enraged_crystal_golem",
+    "revision": "definition-r1",
+    "core": 47738,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.enslaved_dwarf",
+    "revision": "definition-r1",
+    "core": 47742,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.eternal_guardian",
+    "revision": "definition-r1",
+    "core": 47668,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.evil_prospector",
+    "revision": "definition-r1",
+    "core": 47951,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.evil_sheep",
+    "revision": "definition-r1",
+    "core": 47645,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.evil_sheep_lord",
+    "revision": "definition-r1",
+    "core": 48933,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.execowtioner",
+    "revision": "definition-r1",
+    "core": 47793,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.exotic_bat",
+    "revision": "definition-r1",
+    "core": 47990,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.exotic_cave_spider",
+    "revision": "definition-r1",
+    "core": 47985,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.eyeless_devourer",
+    "revision": "definition-r1",
+    "core": 47995,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.falcon_paladin",
+    "revision": "definition-r1",
+    "core": 47900,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.faun",
+    "revision": "definition-r1",
+    "core": 47858,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.feral_sphinx",
+    "revision": "definition-r1",
+    "core": 47938,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.feral_werecrocodile",
+    "revision": "definition-r1",
+    "core": 48076,
+    "class": "Lycanthrope",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.feverish_citizen",
+    "revision": "definition-r1",
+    "core": 48951,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.feversleep",
+    "revision": "definition-r1",
+    "core": 47783,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.filth_toad",
+    "revision": "definition-r1",
+    "core": 48959,
+    "class": "Amphibic",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.fire_devil",
+    "revision": "definition-r1",
+    "core": 47417,
+    "class": "Demon",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.fire_elemental",
+    "revision": "definition-r1",
+    "core": 47425,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.firestarter",
+    "revision": "definition-r1",
+    "core": 48960,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.fish",
+    "revision": "definition-r1",
+    "core": 47726,
+    "class": "Aquatic",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.flamingo",
+    "revision": "definition-r1",
+    "core": 47489,
+    "class": "Bird",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.flimsy_lost_soul",
+    "revision": "definition-r1",
+    "core": 47947,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.floating_savant",
+    "revision": "definition-r1",
+    "core": 47896,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.flying_book",
+    "revision": "definition-r1",
+    "core": 49022,
+    "class": "Inkborn",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.foam_stalker",
+    "revision": "definition-r1",
+    "core": 48035,
+    "class": "Elemental",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.forest_fury",
+    "revision": "definition-r1",
+    "core": 47770,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.fox",
+    "revision": "definition-r1",
+    "core": 47883,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.frazzlemaw",
+    "revision": "definition-r1",
+    "core": 47784,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.freakish_lost_soul",
+    "revision": "definition-r1",
+    "core": 47949,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.frost_dragon",
+    "revision": "definition-r1",
+    "core": 47561,
+    "class": "Dragon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.frost_dragon_hatchling",
+    "revision": "definition-r1",
+    "core": 47593,
+    "class": "Dragon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.frost_flower_asura",
+    "revision": "definition-r1",
+    "core": 47890,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.frost_giant",
+    "revision": "definition-r1",
+    "core": 47567,
+    "class": "Giant",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.frost_giantess",
+    "revision": "definition-r1",
+    "core": 47576,
+    "class": "Giant",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.frost_troll",
+    "revision": "definition-r1",
+    "core": 47429,
+    "class": "Humanoid",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.fruit_drop",
+    "revision": "definition-r1",
+    "core": 49092,
+    "class": "Fey",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.furious_troll",
+    "revision": "definition-r1",
+    "core": 47643,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.fury",
+    "revision": "definition-r1",
+    "core": 47551,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gang_member",
+    "revision": "definition-r1",
+    "core": 47638,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gargoyle",
+    "revision": "definition-r1",
+    "core": 47460,
+    "class": "Magical",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gazer",
+    "revision": "definition-r1",
+    "core": 47471,
+    "class": "Magical",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gazer_spectre",
+    "revision": "definition-r1",
+    "core": 47920,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ghastly_dragon",
+    "revision": "definition-r1",
+    "core": 47683,
+    "class": "Dragon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ghost",
+    "revision": "definition-r1",
+    "core": 47424,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ghost_wolf",
+    "revision": "definition-r1",
+    "core": 49006,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.ghoul",
+    "revision": "definition-r1",
+    "core": 47396,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ghoulish_hyaena",
+    "revision": "definition-r1",
+    "core": 48943,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.giant_spider",
+    "revision": "definition-r1",
+    "core": 47415,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gingerbread_man",
+    "revision": "definition-r1",
+    "core": 49086,
+    "class": "Construct",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.girtablilu_warrior",
+    "revision": "definition-r1",
+    "core": 48001,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gladiator",
+    "revision": "definition-r1",
+    "core": 47639,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gloom_maw",
+    "revision": "definition-r1",
+    "core": 51646,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gloom_wolf",
+    "revision": "definition-r1",
+    "core": 49005,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.glooth_anemone",
+    "revision": "definition-r1",
+    "core": 47790,
+    "class": "Plant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.glooth_bandit",
+    "revision": "definition-r1",
+    "core": 47813,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.glooth_blob",
+    "revision": "definition-r1",
+    "core": 47797,
+    "class": "Slime",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.glooth_brigand",
+    "revision": "definition-r1",
+    "core": 47814,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.glooth_golem",
+    "revision": "definition-r1",
+    "core": 47786,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gnarlhound",
+    "revision": "definition-r1",
+    "core": 47678,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.goblin",
+    "revision": "definition-r1",
+    "core": 47437,
+    "class": "Humanoid",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.goblin_assassin",
+    "revision": "definition-r1",
+    "core": 47606,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.goblin_leader",
+    "revision": "definition-r1",
+    "core": 47581,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.goblin_scavenger",
+    "revision": "definition-r1",
+    "core": 47607,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.goggle_cake",
+    "revision": "definition-r1",
+    "core": 49075,
+    "class": "Construct",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.golden_servant",
+    "revision": "definition-r1",
+    "core": 47705,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.golden_servant_replica",
+    "revision": "definition-r1",
+    "core": 49009,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.goldhanded_cultist",
+    "revision": "definition-r1",
+    "core": 49014,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.goldhanded_cultist_bride",
+    "revision": "definition-r1",
+    "core": 49015,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.gore_horn",
+    "revision": "definition-r1",
+    "core": 48041,
+    "class": "Mammal",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gorerilla",
+    "revision": "definition-r1",
+    "core": 48051,
+    "class": "Mammal",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gorger_inferniarch",
+    "revision": "definition-r1",
+    "core": 50108,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.gozzler",
+    "revision": "definition-r1",
+    "core": 47635,
+    "class": "Demon",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.grave_guard",
+    "revision": "definition-r1",
+    "core": 48945,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.grave_robber",
+    "revision": "definition-r1",
+    "core": 48980,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.gravedigger",
+    "revision": "definition-r1",
+    "core": 47766,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.green_djinn",
+    "revision": "definition-r1",
+    "core": 47427,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.green_frog",
+    "revision": "definition-r1",
+    "core": 47534,
+    "class": "Amphibic",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.grey_horse",
+    "revision": "definition-r1",
+    "core": 48963,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.grim_reaper",
+    "revision": "definition-r1",
+    "core": 47608,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.grimeleech",
+    "revision": "definition-r1",
+    "core": 47830,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.grynch_clan_goblin",
+    "revision": "definition-r1",
+    "core": 47592,
+    "class": "Humanoid",
+    "difficulty": "trivial",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.gryphon",
+    "revision": "definition-r1",
+    "core": 49032,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.guardian_of_tales",
+    "revision": "definition-r1",
+    "core": 49024,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.guzzlemaw",
+    "revision": "definition-r1",
+    "core": 47776,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hand_of_cursed_fate",
+    "revision": "definition-r1",
+    "core": 47541,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.harpy",
+    "revision": "definition-r1",
+    "core": 48057,
+    "class": "Bird",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.haunted_dragon",
+    "revision": "definition-r1",
+    "core": 49010,
+    "class": "Dragon",
+    "difficulty": "hard",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.haunted_treeling",
+    "revision": "definition-r1",
+    "core": 47624,
+    "class": "Plant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hawk_hopper",
+    "revision": "definition-r1",
+    "core": 51651,
+    "class": "Inkborn",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.headpecker",
+    "revision": "definition-r1",
+    "core": 48049,
+    "class": "Bird",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.headwalker",
+    "revision": "definition-r1",
+    "core": 51649,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hellfire_fighter",
+    "revision": "definition-r1",
+    "core": 47554,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hellflayer",
+    "revision": "definition-r1",
+    "core": 47832,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hellhound",
+    "revision": "definition-r1",
+    "core": 47553,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hellhunter_inferniarch",
+    "revision": "definition-r1",
+    "core": 50104,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hellspawn",
+    "revision": "definition-r1",
+    "core": 47632,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.herald_of_gloom",
+    "revision": "definition-r1",
+    "core": 47661,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.hero",
+    "revision": "definition-r1",
+    "core": 47449,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hibernal_moth",
+    "revision": "definition-r1",
+    "core": 49027,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.hideous_fungus",
+    "revision": "definition-r1",
+    "core": 47744,
+    "class": "Plant",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.high_voltage_elemental",
+    "revision": "definition-r1",
+    "core": 47812,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hive_overseer",
+    "revision": "definition-r1",
+    "core": 48975,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.honey_elemental",
+    "revision": "definition-r1",
+    "core": 49088,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.honour_guard",
+    "revision": "definition-r1",
+    "core": 48950,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.horse",
+    "revision": "definition-r1",
+    "core": 48961,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.hot_dog",
+    "revision": "definition-r1",
+    "core": 48934,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.hulking_carnisylvan",
+    "revision": "definition-r1",
+    "core": 48004,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hulking_prehemoth",
+    "revision": "definition-r1",
+    "core": 48046,
+    "class": "Giant",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.humongous_fungus",
+    "revision": "definition-r1",
+    "core": 47740,
+    "class": "Plant",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hunter",
+    "revision": "definition-r1",
+    "core": 47390,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.husky",
+    "revision": "definition-r1",
+    "core": 48931,
+    "class": "Mammal",
+    "difficulty": "harmless",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.hyaena",
+    "revision": "definition-r1",
+    "core": 47459,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.hydra",
+    "revision": "definition-r1",
+    "core": 47483,
+    "class": "Dragon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ice_dragon",
+    "revision": "definition-r1",
+    "core": 49011,
+    "class": "Dragon",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.ice_golem",
+    "revision": "definition-r1",
+    "core": 47568,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ice_witch",
+    "revision": "definition-r1",
+    "core": 47573,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.icecold_book",
+    "revision": "definition-r1",
+    "core": 47905,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.iks_ahpututu",
+    "revision": "definition-r1",
+    "core": 48064,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.iks_aucar",
+    "revision": "definition-r1",
+    "core": 48061,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.iks_chuka",
+    "revision": "definition-r1",
+    "core": 48062,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.iks_churrascan",
+    "revision": "definition-r1",
+    "core": 49039,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.iks_pututu",
+    "revision": "definition-r1",
+    "core": 48060,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.iks_yapunac",
+    "revision": "definition-r1",
+    "core": 48091,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.infected_weeper",
+    "revision": "definition-r1",
+    "core": 48992,
+    "class": "Construct",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.infernal_demon",
+    "revision": "definition-r1",
+    "core": 47961,
+    "class": "Demon",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.infernal_frog",
+    "revision": "definition-r1",
+    "core": 48940,
+    "class": "Amphibic",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.infernal_phantom",
+    "revision": "definition-r1",
+    "core": 47959,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.infernalist",
+    "revision": "definition-r1",
+    "core": 47641,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ink_blob",
+    "revision": "definition-r1",
+    "core": 47903,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ink_splash",
+    "revision": "definition-r1",
+    "core": 51721,
+    "class": "Inkborn",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.insane_siren",
+    "revision": "definition-r1",
+    "core": 47929,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.insect_swarm",
+    "revision": "definition-r1",
+    "core": 47673,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.insectoid_scout",
+    "revision": "definition-r1",
+    "core": 48958,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.insectoid_worker",
+    "revision": "definition-r1",
+    "core": 47733,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.instable_breach_brood",
+    "revision": "definition-r1",
+    "core": 47845,
+    "class": "Extra Dimensional",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.instable_sparkion",
+    "revision": "definition-r1",
+    "core": 47844,
+    "class": "Extra Dimensional",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.iron_servant",
+    "revision": "definition-r1",
+    "core": 47704,
+    "class": "Construct",
+    "difficulty": "easy",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.iron_servant_replica",
+    "revision": "definition-r1",
+    "core": 47853,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ironblight",
+    "revision": "definition-r1",
+    "core": 48990,
+    "class": "Elemental",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.island_troll",
+    "revision": "definition-r1",
+    "core": 47539,
+    "class": "Humanoid",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.jellyfish",
+    "revision": "definition-r1",
+    "core": 48970,
+    "class": "Aquatic",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.juggernaut",
+    "revision": "definition-r1",
+    "core": 47555,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.jungle_moa",
+    "revision": "definition-r1",
+    "core": 48033,
+    "class": "Bird",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.juvenile_bashmu",
+    "revision": "definition-r1",
+    "core": 48003,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.killer_caiman",
+    "revision": "definition-r1",
+    "core": 47677,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.killer_rabbit",
+    "revision": "definition-r1",
+    "core": 48937,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.knight_s_apparition",
+    "revision": "definition-r1",
+    "core": 47967,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.knowledge_elemental",
+    "revision": "definition-r1",
+    "core": 49025,
+    "class": "Elemental",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.kollos",
+    "revision": "definition-r1",
+    "core": 48973,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.kongra",
+    "revision": "definition-r1",
+    "core": 47478,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lacewing_moth",
+    "revision": "definition-r1",
+    "core": 49026,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.ladybug",
+    "revision": "definition-r1",
+    "core": 48967,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.lamassu",
+    "revision": "definition-r1",
+    "core": 47937,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lancer_beetle",
+    "revision": "definition-r1",
+    "core": 47681,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.larva",
+    "revision": "definition-r1",
+    "core": 47457,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lava_golem",
+    "revision": "definition-r1",
+    "core": 48988,
+    "class": "Construct",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.lava_lurker",
+    "revision": "definition-r1",
+    "core": 47886,
+    "class": "Elemental",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lavafungus",
+    "revision": "definition-r1",
+    "core": 47998,
+    "class": "Plant",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lavaworm",
+    "revision": "definition-r1",
+    "core": 47991,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.leaf_golem",
+    "revision": "definition-r1",
+    "core": 47769,
+    "class": "Plant",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lich",
+    "revision": "definition-r1",
+    "core": 47461,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.liodile",
+    "revision": "definition-r1",
+    "core": 48055,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lion",
+    "revision": "definition-r1",
+    "core": 47418,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lion_hydra",
+    "revision": "definition-r1",
+    "core": 51654,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.little_corym_charlatan",
+    "revision": "definition-r1",
+    "core": 48994,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.lizard_chosen",
+    "revision": "definition-r1",
+    "core": 47672,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lizard_dragon_priest",
+    "revision": "definition-r1",
+    "core": 47674,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lizard_high_guard",
+    "revision": "definition-r1",
+    "core": 47676,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lizard_legionnaire",
+    "revision": "definition-r1",
+    "core": 47675,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lizard_magistratus",
+    "revision": "definition-r1",
+    "core": 47684,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lizard_noble",
+    "revision": "definition-r1",
+    "core": 47685,
+    "class": "Reptile",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lizard_sentinel",
+    "revision": "definition-r1",
+    "core": 47476,
+    "class": "Reptile",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lizard_snakecharmer",
+    "revision": "definition-r1",
+    "core": 47477,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lizard_templar",
+    "revision": "definition-r1",
+    "core": 47475,
+    "class": "Reptile",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lizard_zaogun",
+    "revision": "definition-r1",
+    "core": 47669,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lost_basher",
+    "revision": "definition-r1",
+    "core": 47756,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lost_berserker",
+    "revision": "definition-r1",
+    "core": 47743,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lost_exile",
+    "revision": "definition-r1",
+    "core": 47877,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lost_husher",
+    "revision": "definition-r1",
+    "core": 47755,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lost_soul",
+    "revision": "definition-r1",
+    "core": 47543,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lost_thrower",
+    "revision": "definition-r1",
+    "core": 47757,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.lumbering_carnivor",
+    "revision": "definition-r1",
+    "core": 47916,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mad_scientist",
+    "revision": "definition-r1",
+    "core": 47640,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.magma_crawler",
+    "revision": "definition-r1",
+    "core": 47741,
+    "class": "Construct",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.makara",
+    "revision": "definition-r1",
+    "core": 48038,
+    "class": "Amphibic",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mammoth",
+    "revision": "definition-r1",
+    "core": 47529,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.manta_ray",
+    "revision": "definition-r1",
+    "core": 48968,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.manticore",
+    "revision": "definition-r1",
+    "core": 47940,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mantosaurus",
+    "revision": "definition-r1",
+    "core": 48048,
+    "class": "Reptile",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.many_faces",
+    "revision": "definition-r1",
+    "core": 47953,
+    "class": "Demon",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.marid",
+    "revision": "definition-r1",
+    "core": 47466,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.marsh_stalker",
+    "revision": "definition-r1",
+    "core": 47749,
+    "class": "Bird",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.massive_earth_elemental",
+    "revision": "definition-r1",
+    "core": 47600,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.massive_energy_elemental",
+    "revision": "definition-r1",
+    "core": 48932,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.massive_fire_elemental",
+    "revision": "definition-r1",
+    "core": 47559,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.massive_water_elemental",
+    "revision": "definition-r1",
+    "core": 47540,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mean_lost_soul",
+    "revision": "definition-r1",
+    "core": 47948,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.meandering_mushroom",
+    "revision": "definition-r1",
+    "core": 48066,
+    "class": "Slime",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.medusa",
+    "revision": "definition-r1",
+    "core": 47646,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mega_dragon",
+    "revision": "definition-r1",
+    "core": 48097,
+    "class": "Dragon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.menacing_carnivor",
+    "revision": "definition-r1",
+    "core": 47918,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mercurial_menace",
+    "revision": "definition-r1",
+    "core": 48053,
+    "class": "Reptile",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mercury_blob",
+    "revision": "definition-r1",
+    "core": 47628,
+    "class": "Slime",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.merlkin",
+    "revision": "definition-r1",
+    "core": 47479,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.metal_gargoyle",
+    "revision": "definition-r1",
+    "core": 47787,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.midnight_asura",
+    "revision": "definition-r1",
+    "core": 47817,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.midnight_panther",
+    "revision": "definition-r1",
+    "core": 47703,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.midnight_spawn",
+    "revision": "definition-r1",
+    "core": 47659,
+    "class": "Slime",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.minotaur",
+    "revision": "definition-r1",
+    "core": 47402,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.minotaur_amazon",
+    "revision": "definition-r1",
+    "core": 47792,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.minotaur_archer",
+    "revision": "definition-r1",
+    "core": 47401,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.minotaur_cult_follower",
+    "revision": "definition-r1",
+    "core": 47871,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.minotaur_cult_prophet",
+    "revision": "definition-r1",
+    "core": 47872,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.minotaur_cult_zealot",
+    "revision": "definition-r1",
+    "core": 47873,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.minotaur_guard",
+    "revision": "definition-r1",
+    "core": 47406,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.minotaur_hunter",
+    "revision": "definition-r1",
+    "core": 47795,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.minotaur_invader",
+    "revision": "definition-r1",
+    "core": 49002,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.minotaur_mage",
+    "revision": "definition-r1",
+    "core": 47400,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.misguided_bully",
+    "revision": "definition-r1",
+    "core": 47855,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.misguided_thief",
+    "revision": "definition-r1",
+    "core": 47856,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mitmah_scout",
+    "revision": "definition-r1",
+    "core": 48098,
+    "class": "Extra Dimensional",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mitmah_seer",
+    "revision": "definition-r1",
+    "core": 48099,
+    "class": "Extra Dimensional",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.modified_gnarlhound",
+    "revision": "definition-r1",
+    "core": 48983,
+    "class": "Mammal",
+    "difficulty": "harmless",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.mole",
+    "revision": "definition-r1",
+    "core": 49020,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.monk",
+    "revision": "definition-r1",
+    "core": 47433,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.monk_s_apparition",
+    "revision": "definition-r1",
+    "core": 50330,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mooh_tah_warrior",
+    "revision": "definition-r1",
+    "core": 47794,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.moohtant",
+    "revision": "definition-r1",
+    "core": 47791,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mould_phantom",
+    "revision": "definition-r1",
+    "core": 47965,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mummy",
+    "revision": "definition-r1",
+    "core": 47441,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mushroom_sniffer",
+    "revision": "definition-r1",
+    "core": 47735,
+    "class": "Mammal",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mutated_bat",
+    "revision": "definition-r1",
+    "core": 47622,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mutated_human",
+    "revision": "definition-r1",
+    "core": 47634,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mutated_rat",
+    "revision": "definition-r1",
+    "core": 47619,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mutated_tiger",
+    "revision": "definition-r1",
+    "core": 47629,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.mycobiontic_beetle",
+    "revision": "definition-r1",
+    "core": 48065,
+    "class": "Vermin",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.naga_archer",
+    "revision": "definition-r1",
+    "core": 48036,
+    "class": "Reptile",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.naga_warrior",
+    "revision": "definition-r1",
+    "core": 48037,
+    "class": "Reptile",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.necromancer",
+    "revision": "definition-r1",
+    "core": 47388,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.nibblemaw",
+    "revision": "definition-r1",
+    "core": 49073,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.nightfiend",
+    "revision": "definition-r1",
+    "core": 47764,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.nighthunter",
+    "revision": "definition-r1",
+    "core": 48045,
+    "class": "Mammal",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.nightmare",
+    "revision": "definition-r1",
+    "core": 47557,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.nightmare_scion",
+    "revision": "definition-r1",
+    "core": 47631,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.nightstalker",
+    "revision": "definition-r1",
+    "core": 47633,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.noble_lion",
+    "revision": "definition-r1",
+    "core": 49003,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.nomad",
+    "revision": "definition-r1",
+    "core": 47558,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.nomad_blue",
+    "revision": "definition-r1",
+    "core": 48965,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.nomad_female",
+    "revision": "definition-r1",
+    "core": 48966,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.norcferatu_heartless",
+    "revision": "definition-r1",
+    "core": 51641,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.norcferatu_nightweaver",
+    "revision": "definition-r1",
+    "core": 51643,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.northern_pike",
+    "revision": "definition-r1",
+    "core": 48971,
+    "class": "Aquatic",
+    "difficulty": "harmless",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.novice_of_the_cult",
+    "revision": "definition-r1",
+    "core": 47524,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.noxious_ripptor",
+    "revision": "definition-r1",
+    "core": 48050,
+    "class": "Reptile",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.nymph",
+    "revision": "definition-r1",
+    "core": 47865,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ogre_brute",
+    "revision": "definition-r1",
+    "core": 47826,
+    "class": "Giant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ogre_rowdy",
+    "revision": "definition-r1",
+    "core": 47944,
+    "class": "Giant",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ogre_ruffian",
+    "revision": "definition-r1",
+    "core": 47943,
+    "class": "Giant",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ogre_sage",
+    "revision": "definition-r1",
+    "core": 47945,
+    "class": "Giant",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ogre_savage",
+    "revision": "definition-r1",
+    "core": 47827,
+    "class": "Giant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ogre_shaman",
+    "revision": "definition-r1",
+    "core": 47828,
+    "class": "Giant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.omnivora",
+    "revision": "definition-r1",
+    "core": 47819,
+    "class": "Plant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.oozing_carcass",
+    "revision": "definition-r1",
+    "core": 48067,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.oozing_corpus",
+    "revision": "definition-r1",
+    "core": 48071,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc",
+    "revision": "definition-r1",
+    "core": 47384,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_berserker",
+    "revision": "definition-r1",
+    "core": 47387,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_cult_fanatic",
+    "revision": "definition-r1",
+    "core": 49018,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.orc_cult_inquisitor",
+    "revision": "definition-r1",
+    "core": 47869,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_cult_minion",
+    "revision": "definition-r1",
+    "core": 47870,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_cult_priest",
+    "revision": "definition-r1",
+    "core": 49017,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.orc_cultist",
+    "revision": "definition-r1",
+    "core": 49016,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.orc_leader",
+    "revision": "definition-r1",
+    "core": 47435,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_marauder",
+    "revision": "definition-r1",
+    "core": 47667,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_rider",
+    "revision": "definition-r1",
+    "core": 47383,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_shaman",
+    "revision": "definition-r1",
+    "core": 47385,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_spearman",
+    "revision": "definition-r1",
+    "core": 47426,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_warlord",
+    "revision": "definition-r1",
+    "core": 47381,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orc_warrior",
+    "revision": "definition-r1",
+    "core": 47386,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orchid_frog",
+    "revision": "definition-r1",
+    "core": 47538,
+    "class": "Amphibic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orclops_bloodbreaker",
+    "revision": "definition-r1",
+    "core": 51645,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orclops_doomhauler",
+    "revision": "definition-r1",
+    "core": 47849,
+    "class": "Giant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orclops_ravager",
+    "revision": "definition-r1",
+    "core": 47850,
+    "class": "Giant",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.orewalker",
+    "revision": "definition-r1",
+    "core": 48987,
+    "class": "Construct",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.paladin_s_apparition",
+    "revision": "definition-r1",
+    "core": 47968,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.panda",
+    "revision": "definition-r1",
+    "core": 47485,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.parder",
+    "revision": "definition-r1",
+    "core": 48032,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.parrot",
+    "revision": "definition-r1",
+    "core": 47494,
+    "class": "Bird",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.penguin",
+    "revision": "definition-r1",
+    "core": 47562,
+    "class": "Bird",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.percht",
+    "revision": "definition-r1",
+    "core": 49028,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.phantasm",
+    "revision": "definition-r1",
+    "core": 47552,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pig",
+    "revision": "definition-r1",
+    "core": 47436,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pigeon",
+    "revision": "definition-r1",
+    "core": 48993,
+    "class": "Bird",
+    "difficulty": "harmless",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.pirat_bombardier",
+    "revision": "definition-r1",
+    "core": 47988,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pirat_cutthroat",
+    "revision": "definition-r1",
+    "core": 47986,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pirat_mate",
+    "revision": "definition-r1",
+    "core": 47989,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pirat_scoundrel",
+    "revision": "definition-r1",
+    "core": 47987,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pirate_buccaneer",
+    "revision": "definition-r1",
+    "core": 47518,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pirate_corsair",
+    "revision": "definition-r1",
+    "core": 47519,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pirate_cutthroat",
+    "revision": "definition-r1",
+    "core": 47517,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pirate_ghost",
+    "revision": "definition-r1",
+    "core": 47526,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pirate_marauder",
+    "revision": "definition-r1",
+    "core": 47516,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pirate_skeleton",
+    "revision": "definition-r1",
+    "core": 47525,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pixie",
+    "revision": "definition-r1",
+    "core": 47861,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.plaguesmith",
+    "revision": "definition-r1",
+    "core": 47560,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.poacher",
+    "revision": "definition-r1",
+    "core": 47580,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.poison_spider",
+    "revision": "definition-r1",
+    "core": 47413,
+    "class": "Vermin",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.poisonous_carnisylvan",
+    "revision": "definition-r1",
+    "core": 48005,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.polar_bear",
+    "revision": "definition-r1",
+    "core": 47419,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.pooka",
+    "revision": "definition-r1",
+    "core": 47859,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.priestess",
+    "revision": "definition-r1",
+    "core": 47434,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.priestess_of_the_wild_sun",
+    "revision": "definition-r1",
+    "core": 47934,
+    "class": "Human",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.purple_butterfly",
+    "revision": "definition-r1",
+    "core": 47490,
+    "class": "Vermin",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.putrid_mummy",
+    "revision": "definition-r1",
+    "core": 47857,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_constrictor",
+    "revision": "definition-r1",
+    "core": 47508,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_constrictor_scout",
+    "revision": "definition-r1",
+    "core": 47509,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_hydromancer",
+    "revision": "definition-r1",
+    "core": 47512,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_hydromancer_scout",
+    "revision": "definition-r1",
+    "core": 47513,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_looter",
+    "revision": "definition-r1",
+    "core": 49082,
+    "class": "Aquatic",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_mantassin",
+    "revision": "definition-r1",
+    "core": 47510,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_mantassin_scout",
+    "revision": "definition-r1",
+    "core": 47511,
+    "class": "Aquatic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_pincher",
+    "revision": "definition-r1",
+    "core": 47514,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_pincher_scout",
+    "revision": "definition-r1",
+    "core": 47515,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_plunderer",
+    "revision": "definition-r1",
+    "core": 49081,
+    "class": "Aquatic",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_predator",
+    "revision": "definition-r1",
+    "core": 47506,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_predator_scout",
+    "revision": "definition-r1",
+    "core": 47507,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.quara_raider",
+    "revision": "definition-r1",
+    "core": 49080,
+    "class": "Aquatic",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rabbit",
+    "revision": "definition-r1",
+    "core": 47450,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rage_squid",
+    "revision": "definition-r1",
+    "core": 47909,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.raging_fire",
+    "revision": "definition-r1",
+    "core": 47815,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.rat",
+    "revision": "definition-r1",
+    "core": 47398,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ravenous_lava_lurker",
+    "revision": "definition-r1",
+    "core": 47888,
+    "class": "Elemental",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.reality_reaver",
+    "revision": "definition-r1",
+    "core": 47838,
+    "class": "Extra Dimensional",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.red_butterfly",
+    "revision": "definition-r1",
+    "core": 47504,
+    "class": "Vermin",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.redeemed_soul",
+    "revision": "definition-r1",
+    "core": 49004,
+    "class": "Magical",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.renegade_knight",
+    "revision": "definition-r1",
+    "core": 47824,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.renegade_quara_constrictor",
+    "revision": "definition-r1",
+    "core": 48997,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.renegade_quara_hydromancer",
+    "revision": "definition-r1",
+    "core": 48998,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.renegade_quara_mantassin",
+    "revision": "definition-r1",
+    "core": 48999,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.renegade_quara_pincher",
+    "revision": "definition-r1",
+    "core": 49000,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.renegade_quara_predator",
+    "revision": "definition-r1",
+    "core": 49001,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.retching_horror",
+    "revision": "definition-r1",
+    "core": 47780,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rhindeer",
+    "revision": "definition-r1",
+    "core": 48059,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.ripper_spectre",
+    "revision": "definition-r1",
+    "core": 47919,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.roaring_lion",
+    "revision": "definition-r1",
+    "core": 47771,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rootthing_amber_shaper",
+    "revision": "definition-r1",
+    "core": 49078,
+    "class": "Plant",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rootthing_bug_tracker",
+    "revision": "definition-r1",
+    "core": 49077,
+    "class": "Plant",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rootthing_nutshell",
+    "revision": "definition-r1",
+    "core": 49079,
+    "class": "Plant",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rorc",
+    "revision": "definition-r1",
+    "core": 47768,
+    "class": "Magical",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rot_elemental",
+    "revision": "definition-r1",
+    "core": 47798,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rotten_golem",
+    "revision": "definition-r1",
+    "core": 47962,
+    "class": "Construct",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rotten_man_maggot",
+    "revision": "definition-r1",
+    "core": 48080,
+    "class": "Vermin",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rotworm",
+    "revision": "definition-r1",
+    "core": 47403,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.rustheap_golem",
+    "revision": "definition-r1",
+    "core": 47789,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sabretooth",
+    "revision": "definition-r1",
+    "core": 48042,
+    "class": "Mammal",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sacred_spider",
+    "revision": "definition-r1",
+    "core": 48947,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.salamander",
+    "revision": "definition-r1",
+    "core": 47748,
+    "class": "Amphibic",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sandcrawler",
+    "revision": "definition-r1",
+    "core": 47682,
+    "class": "Vermin",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sandstone_scorpion",
+    "revision": "definition-r1",
+    "core": 48944,
+    "class": "Construct",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.scarab",
+    "revision": "definition-r1",
+    "core": 47458,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.schiach",
+    "revision": "definition-r1",
+    "core": 49029,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.scorpion",
+    "revision": "definition-r1",
+    "core": 47420,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sea_serpent",
+    "revision": "definition-r1",
+    "core": 47595,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.seacrest_serpent",
+    "revision": "definition-r1",
+    "core": 48996,
+    "class": "Reptile",
+    "difficulty": "hard",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.seagull",
+    "revision": "definition-r1",
+    "core": 47532,
+    "class": "Bird",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.serpent_spawn",
+    "revision": "definition-r1",
+    "core": 47497,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.shaburak_demon",
+    "revision": "definition-r1",
+    "core": 47709,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.shaburak_lord",
+    "revision": "definition-r1",
+    "core": 48954,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.shaburak_prince",
+    "revision": "definition-r1",
+    "core": 48955,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.shadow_hound",
+    "revision": "definition-r1",
+    "core": 47657,
+    "class": "Demon",
+    "difficulty": "medium",
+    "occurrence": "very_rare"
+  },
+  {
+    "creature": "oteryn:creature.shadow_pupil",
+    "revision": "definition-r1",
+    "core": 47760,
+    "class": "Human",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.shaper_matriarch",
+    "revision": "definition-r1",
+    "core": 47854,
+    "class": "Humanoid",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.shark",
+    "revision": "definition-r1",
+    "core": 47725,
+    "class": "Aquatic",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sheep",
+    "revision": "definition-r1",
+    "core": 47392,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.shell_drake",
+    "revision": "definition-r1",
+    "core": 51652,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.shock_head",
+    "revision": "definition-r1",
+    "core": 47774,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.shrieking_cry_stal",
+    "revision": "definition-r1",
+    "core": 48052,
+    "class": "Construct",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sibang",
+    "revision": "definition-r1",
+    "core": 47480,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sight_of_surrender",
+    "revision": "definition-r1",
+    "core": 47775,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.silencer",
+    "revision": "definition-r1",
+    "core": 47777,
+    "class": "Magical",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.silver_rabbit",
+    "revision": "definition-r1",
+    "core": 47569,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sineater_inferniarch",
+    "revision": "definition-r1",
+    "core": 50106,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.skeleton",
+    "revision": "definition-r1",
+    "core": 47410,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.skeleton_elite_warrior",
+    "revision": "definition-r1",
+    "core": 47913,
+    "class": "Undead",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.skeleton_warrior",
+    "revision": "definition-r1",
+    "core": 47598,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.skunk",
+    "revision": "definition-r1",
+    "core": 47468,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.slime",
+    "revision": "definition-r1",
+    "core": 47397,
+    "class": "Slime",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.slug",
+    "revision": "definition-r1",
+    "core": 47712,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.smuggler",
+    "revision": "definition-r1",
+    "core": 47499,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.snake",
+    "revision": "definition-r1",
+    "core": 47405,
+    "class": "Reptile",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.son_of_verminor",
+    "revision": "definition-r1",
+    "core": 47533,
+    "class": "Slime",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sopping_carcass",
+    "revision": "definition-r1",
+    "core": 48083,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sopping_corpus",
+    "revision": "definition-r1",
+    "core": 48084,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sorcerer_s_apparition",
+    "revision": "definition-r1",
+    "core": 47969,
+    "class": "Undead",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.soul_broken_harbinger",
+    "revision": "definition-r1",
+    "core": 47928,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.souleater",
+    "revision": "definition-r1",
+    "core": 47689,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sparkion",
+    "revision": "definition-r1",
+    "core": 47839,
+    "class": "Extra Dimensional",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.spectre",
+    "revision": "definition-r1",
+    "core": 47546,
+    "class": "Undead",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.spellreaper_inferniarch",
+    "revision": "definition-r1",
+    "core": 50103,
+    "class": "Demon",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sphinx",
+    "revision": "definition-r1",
+    "core": 47939,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.spider",
+    "revision": "definition-r1",
+    "core": 47407,
+    "class": "Vermin",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.spidris",
+    "revision": "definition-r1",
+    "core": 48972,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.spidris_elite",
+    "revision": "definition-r1",
+    "core": 48974,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.spiky_carnivor",
+    "revision": "definition-r1",
+    "core": 47917,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.spit_nettle",
+    "revision": "definition-r1",
+    "core": 47498,
+    "class": "Plant",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.spitter",
+    "revision": "definition-r1",
+    "core": 47730,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.squid_warden",
+    "revision": "definition-r1",
+    "core": 47910,
+    "class": "Inkborn",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.squidgy_slime",
+    "revision": "definition-r1",
+    "core": 48930,
+    "class": "Slime",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.squirrel",
+    "revision": "definition-r1",
+    "core": 47584,
+    "class": "Mammal",
+    "difficulty": "trivial",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.stabilizing_dread_intruder",
+    "revision": "definition-r1",
+    "core": 47847,
+    "class": "Extra Dimensional",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.stabilizing_reality_reaver",
+    "revision": "definition-r1",
+    "core": 47846,
+    "class": "Extra Dimensional",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.stalker",
+    "revision": "definition-r1",
+    "core": 47448,
+    "class": "Human",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.stalking_stalk",
+    "revision": "definition-r1",
+    "core": 48047,
+    "class": "Plant",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.stampor",
+    "revision": "definition-r1",
+    "core": 47699,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.starving_wolf",
+    "revision": "definition-r1",
+    "core": 48953,
+    "class": "Mammal",
+    "difficulty": "easy",
+    "occurrence": "rare"
+  },
+  {
+    "creature": "oteryn:creature.stone_devourer",
+    "revision": "definition-r1",
+    "core": 48984,
+    "class": "Construct",
+    "difficulty": "hard",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.stone_golem",
+    "revision": "definition-r1",
+    "core": 47443,
+    "class": "Construct",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.stone_rhino",
+    "revision": "definition-r1",
+    "core": 49012,
+    "class": "Mammal",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.stonerefiner",
+    "revision": "definition-r1",
+    "core": 47876,
+    "class": "Reptile",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.streaked_devourer",
+    "revision": "definition-r1",
+    "core": 47994,
+    "class": "Vermin",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sugar_cube",
+    "revision": "definition-r1",
+    "core": 49085,
+    "class": "Fey",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sugar_cube_worker",
+    "revision": "definition-r1",
+    "core": 49094,
+    "class": "Fey",
+    "difficulty": "harmless",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sulphider",
+    "revision": "definition-r1",
+    "core": 48039,
+    "class": "Vermin",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.sulphur_spouter",
+    "revision": "definition-r1",
+    "core": 48040,
+    "class": "Elemental",
+    "difficulty": "challenging",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.swamp_troll",
+    "revision": "definition-r1",
+    "core": 47451,
+    "class": "Humanoid",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.swampling",
+    "revision": "definition-r1",
+    "core": 47753,
+    "class": "Plant",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.swan_maiden",
+    "revision": "definition-r1",
+    "core": 49013,
+    "class": "Fey",
+    "difficulty": "medium",
+    "occurrence": "uncommon"
+  },
+  {
+    "creature": "oteryn:creature.swarmer",
+    "revision": "definition-r1",
+    "core": 47729,
+    "class": "Vermin",
+    "difficulty": "medium",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.tainted_soul",
+    "revision": "definition-r1",
+    "core": 47818,
+    "class": "Magical",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.tarantula",
+    "revision": "definition-r1",
+    "core": 47496,
+    "class": "Vermin",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.tarnished_spirit",
+    "revision": "definition-r1",
+    "core": 47767,
+    "class": "Undead",
+    "difficulty": "easy",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.terrorsleep",
+    "revision": "definition-r1",
+    "core": 47783,
+    "class": "Magical",
+    "difficulty": "hard",
+    "occurrence": "common"
+  },
+  {
+    "creature": "oteryn:creature.varg",
+    "revision": "definition-r1",
+    "core": 51642,
+    "class": "Humanoid",
+    "difficulty": "hard",
+    "occurrence": "common"
+  }
+]

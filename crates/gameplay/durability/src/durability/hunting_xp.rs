@@ -9,6 +9,7 @@ pub struct HuntingXpModifiers {
     pub prey_epoch: Option<i64>,
     pub prey_grade: Option<i16>,
     pub prey_percent: i16,
+    pub animus_basis_points: i16,
     pub xp_boost_percent: i16,
     pub stamina_minutes: i32,
 }
@@ -30,6 +31,11 @@ pub(super) async fn read_in_transaction(
         prey_epoch: None,
         prey_grade: None,
         prey_percent: 0,
+        // The Character root is already locked by the existing XP writer. The primary key
+        // bounds species lookup to one row and the count read to the 200-mastery XP cap.
+        animus_basis_points: sqlx::query_scalar(
+            "SELECT CASE WHEN EXISTS(SELECT 1 FROM game_character_animus_masteries WHERE character_id=encode($1,'hex')::uuid AND creature_key=$2) THEN (200 + (SELECT count(*) / 10 * 10 FROM (SELECT 1 FROM game_character_animus_masteries WHERE character_id=encode($1,'hex')::uuid LIMIT 200) bounded))::smallint ELSE 0::smallint END"
+        ).bind(fence.character_id.as_bytes().as_slice()).bind(creature).fetch_one(&mut **tx).await?,
         xp_boost_percent: sqlx::query_scalar("SELECT CASE WHEN l.effect_started_at<=public.game_daily_effect_now() AND l.effect_expires_at>public.game_daily_effect_now() THEN 50::smallint ELSE 0::smallint END FROM public.game_character_daily_reward_claims c JOIN public.game_character_daily_reward_lines l ON l.claim_id=c.transaction_id WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid AND c.lane_day=7 AND l.kind='XP_BOOST' AND l.status='DELIVERED' ORDER BY c.reset_epoch DESC LIMIT 1")
             .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?.unwrap_or(0),
         stamina_minutes: stamina.unwrap_or(2520),

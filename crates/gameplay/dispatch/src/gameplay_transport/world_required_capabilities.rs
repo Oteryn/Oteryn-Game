@@ -132,26 +132,58 @@ pub fn offered_for_scope_with(
     } else {
         super::item_ref_admission::offered_capabilities(active)
     };
+    let base = if active
+        .and_then(crate::content::ActiveGeneration::native_gameplay)
+        .is_some_and(oteryn_gameplay_items::soul_core::soul_core_fusion_available)
+    {
+        base
+    } else {
+        without_capability(
+            base,
+            oteryn_protocol_oteryn::world_object::CAPABILITY_SOUL_CORE_FUSION_V1,
+        )
+    };
     if weather_bound {
         base
     } else {
-        without_weather(base)
+        without_capability(
+            base,
+            oteryn_protocol_oteryn::world_weather::CAPABILITY_WORLD_WEATHER_V1,
+        )
     }
 }
 
-/// `base` without capability 26 as a `'static` slice, built once per distinct base set.
-fn without_weather(base: &'static [OfferedCapability]) -> &'static [OfferedCapability] {
-    type Cached = (&'static [OfferedCapability], &'static [OfferedCapability]);
+/// `base` without one unsupported capability, built once per distinct base set and ID.
+fn without_capability(
+    base: &'static [OfferedCapability],
+    unsupported: u32,
+) -> &'static [OfferedCapability] {
+    if !base.iter().any(|capability| capability.id == unsupported) {
+        return base;
+    }
+    type Cached = (
+        &'static [OfferedCapability],
+        u32,
+        &'static [OfferedCapability],
+    );
     static CACHE: std::sync::Mutex<Vec<Cached>> = std::sync::Mutex::new(Vec::new());
     let mut cache = CACHE
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if let Some((_, set)) = cache.iter().find(|(key, _)| *key == base) {
+    if let Some((_, _, set)) = cache
+        .iter()
+        .find(|(key, id, _)| *key == base && *id == unsupported)
+    {
         return set;
     }
-    let set: &'static [OfferedCapability] =
-        Box::leak(super::capabilities::with_weather_offer(base, false).into_boxed_slice());
-    cache.push((base, set));
+    let set: &'static [OfferedCapability] = Box::leak(
+        base.iter()
+            .copied()
+            .filter(|capability| capability.id != unsupported)
+            .collect::<Vec<_>>()
+            .into_boxed_slice(),
+    );
+    cache.push((base, unsupported, set));
     set
 }
 

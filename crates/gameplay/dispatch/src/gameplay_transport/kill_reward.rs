@@ -533,6 +533,7 @@ impl Drop for TakenKillSettlement {
 /// Where a lethal arm appends: the Channel's queue and the active generation's reward rows.
 #[derive(Clone, Copy)]
 pub struct KillSink<'a> {
+    pub native: Option<&'a crate::content::native_gameplay::NativeGameplayState>,
     pub activity: &'a [oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity],
     pub queue: &'a KillSettlementQueue,
     pub rewards: &'a CreatureRewardTable,
@@ -563,6 +564,24 @@ fn refuse(reason: &str, creature: &str) {
     ));
 }
 
+// The immutable live classification and exact actor incarnation define the draw, so callback
+// retries cannot reroll by observing a later clock. A new spawn always gets a new identity.
+fn soulpit_draws(target: ExactActorRef, fiendish_until_us: u64) -> [u64; 4] {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:soulpit.acquisition:v1\0")
+        .chain_update(target.placement_identity())
+        .chain_update(fiendish_until_us.to_be_bytes())
+        .finalize();
+    let mut draws = [0; 4];
+    for (draw, bytes) in draws.iter_mut().zip(digest.as_chunks::<8>().0) {
+        let mut word = [0; 8];
+        word.copy_from_slice(bytes);
+        *draw = u64::from_be_bytes(word);
+    }
+    draws
+}
+
 /// Project `target`'s committed death and append its settle (§1.1–§1.3). `lethal` is the
 /// attacker whose committed hit was lethal; it is the principal only when no contributor was
 /// tracked. Runs under the runtime lock and never awaits.
@@ -574,9 +593,10 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
-    let creature = runtime
-        .companion_snapshot_including_dead(target)
-        .map(|snapshot| snapshot.state.policy.definition_key.clone());
+    let snapshot = runtime.companion_snapshot_including_dead(target);
+    let creature = snapshot
+        .as_ref()
+        .map(|s| s.state.policy.definition_key.clone());
     let pin = runtime.content_pin();
     let hex = |bytes: [u8; 32]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
     let ground = DeathGroundContext {
@@ -646,6 +666,38 @@ pub fn record_creature_kill(
             return;
         }
     };
+    let mut row = row;
+    if let (Ok(snapshot), Some(native)) = (&snapshot, sink.native)
+        && snapshot
+            .state
+            .fiendish_until_us
+            .is_some_and(|until| facts.death_at_ms.saturating_mul(1000) < until)
+    {
+        let draws = soulpit_draws(target, snapshot.state.fiendish_until_us.unwrap_or(0));
+        if let Some(drops) = oteryn_gameplay_items::soul_core::soulpit_acquisition(
+            native,
+            &creature,
+            &snapshot.state.policy.definition_revision,
+            draws,
+        ) {
+            let changed = Arc::make_mut(&mut row);
+            for drop in drops {
+                changed
+                    .loot_table
+                    .entries
+                    .push(crate::domain::loot_data::LootTableEntry {
+                        item: crate::domain::loot_data::LootDefinitionRef::new(
+                            drop.family,
+                            drop.production_key,
+                            drop.revision_ref,
+                        ),
+                        min_count: 1,
+                        max_count: 1,
+                        probability_ppm: Some(1_000_000),
+                    });
+            }
+        }
+    }
     let entry = PendingKillSettlement {
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
@@ -1037,6 +1089,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     ) {
         let activity = attack.shared_experience_cells();
         let sink = KillSink {
+            native: self.active_generation.and_then(|g| g.native_gameplay()),
             activity: &activity,
             queue: attack.kills(),
             rewards: self.reward_table(),

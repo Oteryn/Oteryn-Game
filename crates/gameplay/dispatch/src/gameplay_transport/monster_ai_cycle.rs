@@ -396,6 +396,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &mut runtime,
                 super::kill_reward::KillSink {
                     queue: attack.kills(),
+                    native: self.active_generation.and_then(|g| g.native_gameplay()),
                     rewards: self.reward_table(),
                     activity: &activity,
                 },

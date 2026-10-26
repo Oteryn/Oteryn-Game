@@ -21,8 +21,9 @@ use tokio::sync::Mutex;
 /// on who hit, who earned and how awards serialize is unchanged.
 const REAL_SWING_PASSES: u32 = 256;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub(super) enum Case {
+    Animus { masteries: u16, shared: bool },
     Stamina,
     Offence,
     Shared,
@@ -39,6 +40,25 @@ pub(super) enum Case {
     PzContention,
     Eqmod2,
 }
+#[test]
+fn soulpit_animus_xp_real_dispatch_shared_species_and_ten_mastery_boundaries() -> TestResult {
+    for masteries in [0, 1, 9, 10, 199, 200, 201] {
+        run(Case::Animus {
+            masteries,
+            shared: true,
+        })?;
+    }
+    Ok(())
+}
+
+#[test]
+fn soulpit_animus_xp_real_dispatch_solo_and_replay() -> TestResult {
+    run(Case::Animus {
+        masteries: 200,
+        shared: false,
+    })
+}
+
 #[test]
 fn party_xp_real_dispatch_equal_split() -> TestResult {
     run(Case::Shared)
@@ -110,7 +130,14 @@ pub(super) fn run(case: Case) -> TestResult {
                         .ok_or("canonical PostgreSQL admin URL required")?;
                     // One tag per case: the tag names the database and the retained
                     // recovery directory, which concurrent cases must not share.
-                    let tag = format!("party_xp_{}", case as u8);
+                    let tag = format!(
+                        "party_xp_{}",
+                        format!("{case:?}")
+                            .chars()
+                            .filter(char::is_ascii_alphanumeric)
+                            .collect::<String>()
+                            .to_ascii_lowercase()
+                    );
                     let h = Harness::create(admin, &tag, false).await?;
                     eprintln!("PARTY-XP-1 POSTGRES_DATABASE_STARTED PostgreSQL=170006");
                     let result = scenario(&h, case).await;
@@ -150,7 +177,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .map_err(debug)?;
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
-    let (controller, pin) = if matches!(case, Case::Eqmod2) {
+    let (controller, pin) = if matches!(case, Case::Animus { .. }) {
+        animus_activation(world)?
+    } else if matches!(case, Case::Eqmod2) {
         super::equipment_mods::activate(world)?
     } else {
         crate::content::native_gameplay::test_support::activated_with_loot_tables(
@@ -201,10 +230,8 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // Explicit qualification placement through the normal activation owner. Policies and
     // health come from the active artifact; distinct sources permit two pending deaths.
     let mut sources = Vec::new();
-    for (key, y) in [
-        ("oteryn:creature.rat", 11),
-        ("oteryn:creature.cave_rat", 12),
-    ] {
+    let primary_creature = "oteryn:creature.rat";
+    for (key, y) in [(primary_creature, 11), ("oteryn:creature.cave_rat", 12)] {
         if y == 12 && !matches!(case, Case::Concurrent | Case::OneHit | Case::Eqmod2) {
             continue;
         }
@@ -524,6 +551,30 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     let first_id = first.current_character_lease().character_id();
     let second_id = second.current_character_lease().character_id();
+    if let Case::Animus { masteries, .. } = case {
+        // Persisted completion facts are seeded by the schema owner. Runtime cannot fabricate
+        // them; BOSSENC-1 must provide the fenced survivor writer before live grants activate.
+        for n in 0..masteries {
+            let key = if n == 0 {
+                primary_creature.to_owned()
+            } else {
+                format!("oteryn:creature.animus_fixture_{n}")
+            };
+            sqlx::query("INSERT INTO game_character_animus_masteries(character_id,creature_key,completion_occurrence_id,completed_character_revision) VALUES(encode($1,'hex')::uuid,$2,game_character_uuid_v7(),1)")
+                .bind(first_id.as_bytes().as_slice()).bind(key).execute(&h.pool).await?;
+        }
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+            .execute(&mut *tx)
+            .await?;
+        let denied = sqlx::query("INSERT INTO game_character_animus_masteries(character_id,creature_key,completion_occurrence_id,completed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:creature.unauthorized',game_character_uuid_v7(),1)")
+            .bind(first_id.as_bytes().as_slice()).execute(&mut *tx).await.expect_err("XP runtime cannot assign mastery");
+        assert_eq!(
+            denied.as_database_error().and_then(|e| e.code()).as_deref(),
+            Some("42501")
+        );
+        tx.rollback().await?;
+    }
     if matches!(case, Case::Modifiers) {
         sqlx::query("INSERT INTO game_character_prey_slots(character_id,slot,state,creature_key,bonus_type,grade,bonus_percent,hunting_s_left,slot_epoch) VALUES(encode($1,'hex')::uuid,1,'ACTIVE','oteryn:creature.rat','XP',10,40,7200,1)")
             .bind(second_id.as_bytes().as_slice()).execute(&h.pool).await?;
@@ -675,11 +726,17 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         }
     }
     for (index, (actor, session)) in players.iter().copied().enumerate() {
-        if index == 2 || (index == 1 && matches!(case, Case::Inactive | Case::OneHit)) {
+        if index == 2
+            || (index == 1
+                && matches!(
+                    case,
+                    Case::Inactive | Case::OneHit | Case::Animus { shared: false, .. }
+                ))
+        {
             continue;
         }
         let runtime = owner.runtime.lock().await;
-        if matches!(case, Case::Inactive) {
+        if matches!(case, Case::Inactive | Case::Animus { shared: false, .. }) {
             // This is a level-one solo fist attacker (the build seed is not a level).
             // Balanced-mode chip damage depended on the old content-seeded draws to
             // kill within 64 passes. Use the real offensive mode for this XP fixture.
@@ -867,7 +924,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         tx.rollback().await?;
         h.root.maintain_ready_once().await?;
     }
-    if matches!(case, Case::Replay) {
+    if matches!(case, Case::Replay | Case::Animus { .. }) {
         let taken = {
             let attack = owner.states.attack.lock().await;
             let session = players
@@ -987,7 +1044,22 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .filter(|r| r.0 == second_id.as_bytes())
         .map(|r| r.1)
         .sum::<i64>();
-    if matches!(case, Case::Inactive) {
+    if let Case::Animus { masteries, shared } = case {
+        let raw: i64 = sqlx::query_scalar("SELECT raw_share FROM game_party_kill_xp_members WHERE character_id=encode($1,'hex')::uuid")
+            .bind(first_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        let basis = if masteries == 0 {
+            0
+        } else {
+            200 + (masteries.min(200) / 10) * 10
+        };
+        assert_eq!(first_award, raw * (10_000 + i64::from(basis)) / 10_000);
+        if masteries > 0 {
+            assert!(first_award > raw, "mastery changes the real dispatch award");
+        }
+        if !shared {
+            assert_eq!(second_award, 0);
+        }
+    } else if matches!(case, Case::Inactive) {
         assert_eq!((first_award, second_award), (5, 0));
     } else if matches!(case, Case::Concurrent) {
         assert_eq!((first_award, second_award), (11, 11));
@@ -1041,7 +1113,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             4
         } else if matches!(case, Case::Foreign) {
             3
-        } else if matches!(case, Case::Inactive | Case::Exhausted) {
+        } else if matches!(
+            case,
+            Case::Inactive | Case::Exhausted | Case::Animus { shared: false, .. }
+        ) {
             1
         } else {
             2
@@ -1057,6 +1132,28 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 .await?;
         assert_eq!(remaining, 7200);
     }
+    if let Case::Animus { masteries, shared } = case {
+        let (raw, basis, award): (i64,i16,i64) = sqlx::query_as("SELECT raw_share,animus_basis_points,xp_awarded FROM game_party_kill_xp_members WHERE character_id=encode($1,'hex')::uuid")
+            .bind(first_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        let expected = if masteries == 0 {
+            0
+        } else {
+            200 + (masteries.min(200) / 10) * 10
+        };
+        assert_eq!(basis, i16::try_from(expected)?);
+        assert_eq!(award, raw * (10_000 + i64::from(expected)) / 10_000);
+        if shared {
+            let basis: i16 = sqlx::query_scalar("SELECT animus_basis_points FROM game_party_kill_xp_members WHERE character_id=encode($1,'hex')::uuid")
+                .bind(second_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(
+                basis, 0,
+                "an ally's mastery never grants another Character a bonus"
+            );
+        }
+        let retained: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_animus_masteries WHERE character_id=encode($1,'hex')::uuid")
+            .bind(first_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(retained, i64::from(masteries));
+    }
     eprintln!("PARTY-XP-1 POSTGRES_ASSERTIONS_COMPLETED receipts={xp}");
     Ok(())
 }
@@ -1064,3 +1161,70 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
 #[path = "party_xp/support.rs"]
 mod support;
 use support::{initialize_build, join_two};
+
+// The real Content qualifier/activation owner issues a test generation with a 105-XP Rat.
+// Geometry, combat, loot and dispatch are unchanged; no reward row or award is patched at runtime.
+fn animus_activation(
+    world: WorldId,
+) -> TestResult<(
+    crate::content::ContentActivationController,
+    crate::content::NativeEntryContentPin,
+)> {
+    use crate::content::native_gameplay::{
+        CreatureProfilesDocument, NativeGameplayInput, PinnedGameplayBytes,
+    };
+    use crate::content::{
+        ContentActivationController, NativeEntryActivationIssuance, NodeBootQuiescence,
+    };
+    use sha2::{Digest, Sha256};
+    let manifest = std::path::Path::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../content/spells.manifest.json"
+    ));
+    let mut input = NativeGameplayInput::from_manifest(manifest).map_err(debug)?;
+    let pinned = |bytes: Vec<u8>| PinnedGameplayBytes {
+        sha256: Sha256::digest(&bytes)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect(),
+        bytes,
+    };
+    input.source_world = Some(pinned(
+        include_bytes!(
+            "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+        )
+        .to_vec(),
+    ));
+    let mut creatures: CreatureProfilesDocument =
+        serde_json::from_slice(&input.creature_profiles.bytes)?;
+    let rat = creatures
+        .records
+        .iter_mut()
+        .find(|r| r.profile.target.key == "oteryn:creature.rat")
+        .ok_or("rat profile")?;
+    let crate::content::ProjectV2AuthoringProfileData::Creature(profile) = &mut rat.profile.data
+    else {
+        return Err("rat Creature profile".into());
+    };
+    profile.experience = Some(105);
+    input.creature_profiles = pinned(serde_json::to_vec(&creatures)?);
+    let room =
+        crate::content::qualify_selected_native_gameplay_room(world, &input).map_err(debug)?;
+    let issuance = NativeEntryActivationIssuance {
+        world_id: world,
+        activation_sequence: 1,
+        server_artifact_digest: room.compiled().server_digest(),
+        client_artifact_digest: room.compiled().client_digest(),
+        frame_binding_digest: room.frame_binding().digest(),
+    };
+    let mut controller = ContentActivationController::new();
+    let pin = crate::content::activate_native_entry_room_with_gameplay(
+        &mut controller,
+        &NodeBootQuiescence::before_channel_runtime(),
+        world,
+        &issuance,
+        &input,
+    )
+    .map_err(debug)?;
+    Ok((controller, pin))
+}
