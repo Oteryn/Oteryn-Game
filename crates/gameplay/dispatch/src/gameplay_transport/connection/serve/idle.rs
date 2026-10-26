@@ -50,7 +50,10 @@ where
     if session.admitted.continuity.gameplay_idle.elapsed(now)
         >= Duration::from_millis(policy.removal_after_ms)
     {
-        let Some(_input) = authority.enter_input().await else {
+        let Some(_input) = authority
+            .enter_input(session.admitted.game_session_id)
+            .await
+        else {
             return Ok(());
         };
         match authority.logout(session.admitted).await {
