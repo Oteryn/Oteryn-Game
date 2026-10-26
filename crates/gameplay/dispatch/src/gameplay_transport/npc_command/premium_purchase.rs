@@ -293,6 +293,9 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     actor: ExactActorRef,
     command: UseCommand,
 ) -> Option<NpcTalkOutcome> {
+    if let Some(outcome) = admission.resume_paid_travel(actor, command).await {
+        return Some(outcome);
+    }
     if let Some(outcome) = resume_premium_talk(admission, actor, command).await {
         return Some(outcome);
     }
