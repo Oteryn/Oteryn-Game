@@ -207,6 +207,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i266",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Liquids"
         }
       },
       "semantics": {
@@ -356,6 +359,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i285",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Rubbish"
         }
       },
       "semantics": {
@@ -7448,6 +7454,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2012",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -7560,6 +7569,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2013",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -7672,6 +7684,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2014",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -7784,6 +7799,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2015",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -7896,6 +7914,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2016",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -8008,6 +8029,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2017",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -8120,6 +8144,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2021",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -8232,6 +8259,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2022",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -8344,6 +8374,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2023",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -8456,6 +8489,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2024",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -11749,6 +11785,9 @@
           "family": "Item",
           "key": "candidate:item/2338",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Tables"
         }
       },
       "semantics": {
@@ -11891,6 +11930,9 @@
           "family": "Item",
           "key": "candidate:item/2358",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -12100,6 +12142,9 @@
           "family": "Item",
           "key": "candidate:item/2359",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -12309,6 +12354,9 @@
           "family": "Item",
           "key": "candidate:item/2360",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -12518,6 +12566,9 @@
           "family": "Item",
           "key": "candidate:item/2361",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -12727,6 +12778,9 @@
           "family": "Item",
           "key": "candidate:item/2429",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Closets"
         }
       },
       "semantics": {
@@ -12875,6 +12929,9 @@
           "family": "Item",
           "key": "candidate:item/2430",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Closets"
         }
       },
       "semantics": {
@@ -13023,6 +13080,9 @@
           "family": "Item",
           "key": "candidate:item/2433",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -13171,6 +13231,9 @@
           "family": "Item",
           "key": "candidate:item/2441",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -13319,6 +13382,9 @@
           "family": "Item",
           "key": "candidate:item/2454",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Decorations"
         }
       },
       "semantics": {
@@ -13460,6 +13526,9 @@
           "family": "Item",
           "key": "candidate:item/2471",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Containers"
         }
       },
       "semantics": {
@@ -13609,6 +13678,9 @@
           "family": "Item",
           "key": "candidate:item/2472",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Containers"
         }
       },
       "semantics": {
@@ -13758,6 +13830,9 @@
           "family": "Item",
           "key": "candidate:item/2480",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Containers"
         }
       },
       "semantics": {
@@ -14475,6 +14550,9 @@
           "family": "Item",
           "key": "candidate:item/2535",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -14616,6 +14694,9 @@
           "family": "Item",
           "key": "candidate:item/2537",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -14757,6 +14838,9 @@
           "family": "Item",
           "key": "candidate:item/2539",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -14898,6 +14982,9 @@
           "family": "Item",
           "key": "candidate:item/2541",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Furniture"
         }
       },
       "semantics": {
@@ -15039,6 +15126,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2597",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Wall Hangings"
         }
       },
       "semantics": {
@@ -15151,6 +15241,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2598",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Wall Hangings"
         }
       },
       "semantics": {
@@ -15266,6 +15359,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2602",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Wall Hangings"
         }
       },
       "semantics": {
@@ -15378,6 +15474,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i2605",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Wall Hangings"
         }
       },
       "semantics": {
@@ -15493,6 +15592,9 @@
           "family": "Item",
           "key": "candidate:item/2854",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Containers"
         }
       },
       "semantics": {
@@ -15694,6 +15796,9 @@
           "family": "Item",
           "key": "candidate:item/2983",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Plants and Herbs"
         }
       },
       "semantics": {
@@ -15836,6 +15941,9 @@
           "family": "Item",
           "key": "candidate:item/2985",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Plants and Herbs"
         }
       },
       "semantics": {
@@ -15978,6 +16086,9 @@
           "family": "Item",
           "key": "candidate:item/2988",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Plants and Herbs"
         }
       },
       "semantics": {
@@ -16120,6 +16231,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3028",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -16257,6 +16371,9 @@
           "family": "Item",
           "key": "candidate:item/3031",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -16400,6 +16517,9 @@
           "family": "Item",
           "key": "candidate:item/3035",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -16543,6 +16663,9 @@
           "family": "Item",
           "key": "candidate:item/3043",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -16686,6 +16809,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3051",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -16929,6 +17055,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3081",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Amulets and Necklaces"
         }
       },
       "semantics": {
@@ -17136,6 +17265,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3088",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Rings"
         }
       },
       "semantics": {
@@ -17404,6 +17536,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3114",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Rubbish"
         }
       },
       "semantics": {
@@ -17574,6 +17709,9 @@
           "family": "Item",
           "key": "candidate:item/3147",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Magical Items"
         }
       },
       "semantics": {
@@ -17718,6 +17856,9 @@
           "family": "Item",
           "key": "candidate:item/3148",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Support Runes"
         }
       },
       "semantics": {
@@ -17868,6 +18009,9 @@
           "family": "Item",
           "key": "candidate:item/3149",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -18018,6 +18162,9 @@
           "family": "Item",
           "key": "candidate:item/3152",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Healing Runes"
         }
       },
       "semantics": {
@@ -18168,6 +18315,9 @@
           "family": "Item",
           "key": "candidate:item/3153",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Healing Runes"
         }
       },
       "semantics": {
@@ -18318,6 +18468,9 @@
           "family": "Item",
           "key": "candidate:item/3155",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -18468,6 +18621,9 @@
           "family": "Item",
           "key": "candidate:item/3156",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Support Runes"
         }
       },
       "semantics": {
@@ -18618,6 +18774,9 @@
           "family": "Item",
           "key": "candidate:item/3158",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -18768,6 +18927,9 @@
           "family": "Item",
           "key": "candidate:item/3160",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Healing Runes"
         }
       },
       "semantics": {
@@ -18918,6 +19080,9 @@
           "family": "Item",
           "key": "candidate:item/3161",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -19068,6 +19233,9 @@
           "family": "Item",
           "key": "candidate:item/3164",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -19218,6 +19386,9 @@
           "family": "Item",
           "key": "candidate:item/3165",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -19368,6 +19539,9 @@
           "family": "Item",
           "key": "candidate:item/3166",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -19518,6 +19692,9 @@
           "family": "Item",
           "key": "candidate:item/3172",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -19668,6 +19845,9 @@
           "family": "Item",
           "key": "candidate:item/3173",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -19818,6 +19998,9 @@
           "family": "Item",
           "key": "candidate:item/3174",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -19968,6 +20151,9 @@
           "family": "Item",
           "key": "candidate:item/3175",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -20118,6 +20304,9 @@
           "family": "Item",
           "key": "candidate:item/3176",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -20268,6 +20457,9 @@
           "family": "Item",
           "key": "candidate:item/3177",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Support Runes"
         }
       },
       "semantics": {
@@ -20418,6 +20610,9 @@
           "family": "Item",
           "key": "candidate:item/3178",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Support Runes"
         }
       },
       "semantics": {
@@ -20568,6 +20763,9 @@
           "family": "Item",
           "key": "candidate:item/3179",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -20718,6 +20916,9 @@
           "family": "Item",
           "key": "candidate:item/3180",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Support Runes"
         }
       },
       "semantics": {
@@ -20868,6 +21069,9 @@
           "family": "Item",
           "key": "candidate:item/3182",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -21018,6 +21222,9 @@
           "family": "Item",
           "key": "candidate:item/3188",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -21168,6 +21375,9 @@
           "family": "Item",
           "key": "candidate:item/3189",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -21318,6 +21528,9 @@
           "family": "Item",
           "key": "candidate:item/3190",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -21468,6 +21681,9 @@
           "family": "Item",
           "key": "candidate:item/3191",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -21618,6 +21834,9 @@
           "family": "Item",
           "key": "candidate:item/3192",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -21768,6 +21987,9 @@
           "family": "Item",
           "key": "candidate:item/3195",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -21918,6 +22140,9 @@
           "family": "Item",
           "key": "candidate:item/3197",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Support Runes"
         }
       },
       "semantics": {
@@ -22068,6 +22293,9 @@
           "family": "Item",
           "key": "candidate:item/3198",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -22218,6 +22446,9 @@
           "family": "Item",
           "key": "candidate:item/3200",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -22368,6 +22599,9 @@
           "family": "Item",
           "key": "candidate:item/3202",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -22518,6 +22752,9 @@
           "family": "Item",
           "key": "candidate:item/3203",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Support Runes"
         }
       },
       "semantics": {
@@ -22668,6 +22905,9 @@
           "family": "Item",
           "key": "candidate:item/3264",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Sword Weapons"
         }
       },
       "semantics": {
@@ -22922,6 +23162,9 @@
           "kind": "THROWING",
           "max_hit_chance": 76,
           "range_cells": 3
+        },
+        "taxonomy": {
+          "primary": "Armas de Arremesso"
         }
       },
       "semantics": {
@@ -23146,6 +23389,9 @@
           "kind": "THROWING",
           "max_hit_chance": 76,
           "range_cells": 4
+        },
+        "taxonomy": {
+          "primary": "Armas de Arremesso"
         }
       },
       "semantics": {
@@ -23361,6 +23607,9 @@
           "family": "Item",
           "key": "candidate:item/3289",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Fist Fighting Weapons"
         }
       },
       "semantics": {
@@ -23538,6 +23787,9 @@
           "family": "Item",
           "key": "candidate:item/3321",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Clavas"
         }
       },
       "semantics": {
@@ -23779,6 +24031,9 @@
           "kind": "DISTANCE",
           "max_hit_chance": 90,
           "range_cells": 5
+        },
+        "taxonomy": {
+          "primary": "Distance Weapons"
         }
       },
       "semantics": {
@@ -24000,6 +24255,9 @@
           "kind": "DISTANCE",
           "max_hit_chance": 90,
           "range_cells": 6
+        },
+        "taxonomy": {
+          "primary": "Distance Weapons"
         }
       },
       "semantics": {
@@ -24178,6 +24436,9 @@
           "family": "Item",
           "key": "candidate:item/3412",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Shields"
         }
       },
       "semantics": {
@@ -24397,6 +24658,9 @@
           "kind": "AMMUNITION",
           "max_hit_chance": 87,
           "hit_chance": 86
+        },
+        "taxonomy": {
+          "primary": "Ammunition"
         }
       },
       "semantics": {
@@ -24622,6 +24886,9 @@
           "kind": "AMMUNITION",
           "max_hit_chance": 91,
           "hit_chance": 90
+        },
+        "taxonomy": {
+          "primary": "Ammunition"
         }
       },
       "semantics": {
@@ -24847,6 +25114,9 @@
           "kind": "AMMUNITION",
           "max_hit_chance": 91,
           "hit_chance": 90
+        },
+        "taxonomy": {
+          "primary": "Ammunition"
         }
       },
       "semantics": {
@@ -25039,6 +25309,9 @@
           "kind": "AMMUNITION",
           "max_hit_chance": 100,
           "hit_chance": 100
+        },
+        "taxonomy": {
+          "primary": "Ammunition"
         }
       },
       "semantics": {
@@ -25231,6 +25504,9 @@
           "kind": "AMMUNITION",
           "max_hit_chance": 91,
           "hit_chance": 90
+        },
+        "taxonomy": {
+          "primary": "Ammunition"
         }
       },
       "semantics": {
@@ -25447,6 +25723,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3456",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Tools"
         }
       },
       "semantics": {
@@ -25583,6 +25862,9 @@
           "family": "Item",
           "key": "candidate:item/3464",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Kitchen Tools"
         }
       },
       "semantics": {
@@ -25725,6 +26007,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i3549",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Boots"
         }
       },
       "semantics": {
@@ -25975,6 +26260,9 @@
           "family": "Item",
           "key": "candidate:item/3577",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -26127,6 +26415,9 @@
           "family": "Item",
           "key": "candidate:item/3582",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -26270,6 +26561,9 @@
           "family": "Item",
           "key": "candidate:item/3585",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -26413,6 +26707,9 @@
           "family": "Item",
           "key": "candidate:item/3592",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -26556,6 +26853,9 @@
           "family": "Item",
           "key": "candidate:item/3600",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -26699,6 +26999,9 @@
           "family": "Item",
           "key": "candidate:item/3601",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -26842,6 +27145,9 @@
           "family": "Item",
           "key": "candidate:item/3603",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -26985,6 +27291,9 @@
           "family": "Item",
           "key": "candidate:item/3604",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -27128,6 +27437,9 @@
           "family": "Item",
           "key": "candidate:item/3605",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Plants and Herbs"
         }
       },
       "semantics": {
@@ -27271,6 +27583,9 @@
           "family": "Item",
           "key": "candidate:item/3607",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -27414,6 +27729,9 @@
           "family": "Item",
           "key": "candidate:item/3655",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Flowers"
         }
       },
       "semantics": {
@@ -27557,6 +27875,9 @@
           "family": "Item",
           "key": "candidate:item/3892",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Flowers"
         }
       },
       "semantics": {
@@ -27698,6 +28019,9 @@
           "family": "Item",
           "key": "candidate:item/3893",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Flowers"
         }
       },
       "semantics": {
@@ -40189,6 +40513,9 @@
           "family": "Item",
           "key": "candidate:item/6276",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -40332,6 +40659,9 @@
           "family": "Item",
           "key": "candidate:item/6277",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -40475,6 +40805,9 @@
           "family": "Item",
           "key": "candidate:item/6373",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -40616,6 +40949,9 @@
           "family": "Item",
           "key": "candidate:item/6374",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -40757,6 +41093,9 @@
           "family": "Item",
           "key": "candidate:item/6375",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -40898,6 +41237,9 @@
           "family": "Item",
           "key": "candidate:item/6376",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -41039,6 +41381,9 @@
           "family": "Item",
           "key": "candidate:item/6377",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -41180,6 +41525,9 @@
           "family": "Item",
           "key": "candidate:item/6378",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -41321,6 +41669,9 @@
           "family": "Item",
           "key": "candidate:item/6379",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -41462,6 +41813,9 @@
           "family": "Item",
           "key": "candidate:item/6380",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -41603,6 +41957,9 @@
           "family": "Item",
           "key": "candidate:item/6381",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -41744,6 +42101,9 @@
           "family": "Item",
           "key": "candidate:item/6382",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -41885,6 +42245,9 @@
           "family": "Item",
           "key": "candidate:item/6385",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Rocks"
         }
       },
       "semantics": {
@@ -42026,6 +42389,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i6529",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Boots"
         }
       },
       "semantics": {
@@ -42274,6 +42640,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i6530",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Rubbish"
         }
       },
       "semantics": {
@@ -46145,6 +46514,9 @@
           "kind": "AMMUNITION",
           "max_hit_chance": 87,
           "hit_chance": 86
+        },
+        "taxonomy": {
+          "primary": "Ammunition"
         }
       },
       "semantics": {
@@ -46370,6 +46742,9 @@
           "kind": "AMMUNITION",
           "max_hit_chance": 100,
           "hit_chance": 99
+        },
+        "taxonomy": {
+          "primary": "Ammunition"
         }
       },
       "semantics": {
@@ -46595,6 +46970,9 @@
           "kind": "AMMUNITION",
           "max_hit_chance": 94,
           "hit_chance": 92
+        },
+        "taxonomy": {
+          "primary": "Ammunition"
         }
       },
       "semantics": {
@@ -46820,6 +47198,9 @@
           "kind": "THROWING",
           "max_hit_chance": 76,
           "range_cells": 4
+        },
+        "taxonomy": {
+          "primary": "Armas de Arremesso"
         }
       },
       "semantics": {
@@ -47048,6 +47429,9 @@
           "kind": "THROWING",
           "max_hit_chance": 80,
           "range_cells": 4
+        },
+        "taxonomy": {
+          "primary": "Armas de Arremesso"
         }
       },
       "semantics": {
@@ -47272,6 +47656,9 @@
           "kind": "THROWING",
           "max_hit_chance": 96,
           "range_cells": 4
+        },
+        "taxonomy": {
+          "primary": "Armas de Arremesso"
         }
       },
       "semantics": {
@@ -47496,6 +47883,9 @@
           "kind": "THROWING",
           "max_hit_chance": 80,
           "range_cells": 3
+        },
+        "taxonomy": {
+          "primary": "Armas de Arremesso"
         }
       },
       "semantics": {
@@ -49699,6 +50089,9 @@
           "family": "Item",
           "key": "candidate:item/8018",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -49842,6 +50235,9 @@
           "family": "Item",
           "key": "candidate:item/8019",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Food"
         }
       },
       "semantics": {
@@ -49985,6 +50381,9 @@
           "family": "Item",
           "key": "candidate:item/8194",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -50128,6 +50527,9 @@
           "family": "Item",
           "key": "candidate:item/8196",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -50271,6 +50673,9 @@
           "family": "Item",
           "key": "candidate:item/8198",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -50413,6 +50818,9 @@
           "family": "Item",
           "key": "candidate:item/8199",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
         }
       },
       "semantics": {
@@ -56580,6 +56988,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i10310",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Creature Products"
         }
       },
       "semantics": {
@@ -58208,6 +58619,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i12782",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -58320,6 +58734,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i12783",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Signs"
         }
       },
       "semantics": {
@@ -59426,6 +59843,9 @@
           "family": "Item",
           "key": "candidate:item/17512",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -63693,6 +64113,9 @@
           "family": "Item",
           "key": "candidate:item/21351",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -63843,6 +64266,9 @@
           "family": "Item",
           "key": "candidate:item/21352",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Attack Runes"
         }
       },
       "semantics": {
@@ -64186,6 +64612,9 @@
           "kind": "AMMUNITION",
           "max_hit_chance": 40,
           "hit_chance": 90
+        },
+        "taxonomy": {
+          "primary": "Ammunition"
         }
       },
       "semantics": {
@@ -64968,6 +65397,134 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "oteryn:item.tibia.i23721",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Source primarytype absent"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "gold pouch"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 150
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 20
+            }
+          }
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i23721",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "23721",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i23721",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/24541",
           "revision": "spell-p2-r21"
         }
@@ -65538,6 +66095,9 @@
           "family": "Item",
           "key": "candidate:item/25759",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Armas de Arremesso"
         }
       },
       "semantics": {
@@ -65760,6 +66320,9 @@
           "kind": "WAND",
           "mana_per_shot": 15,
           "range_cells": 4
+        },
+        "taxonomy": {
+          "primary": "Wands"
         }
       },
       "semantics": {
@@ -65983,6 +66546,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i28552",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -66113,6 +66679,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i28553",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -66243,6 +66812,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i28554",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -66373,6 +66945,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i28555",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -66503,6 +67078,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i28556",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -66633,6 +67211,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i28557",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -67615,6 +68196,9 @@
           "family": "Item",
           "key": "candidate:item/30975",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Plants and Herbs"
         }
       },
       "semantics": {
@@ -68894,6 +69478,9 @@
           "family": "Item",
           "key": "candidate:item/31686",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Plants and Herbs"
         }
       },
       "semantics": {
@@ -70173,6 +70760,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35279",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -70303,6 +70893,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35280",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -70433,6 +71026,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35281",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -70563,6 +71159,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35282",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -70693,6 +71292,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35283",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -70823,6 +71425,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35284",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -70953,6 +71558,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35285",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -71083,6 +71691,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35286",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -71213,6 +71824,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35287",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -71343,6 +71957,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35288",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -71473,6 +72090,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35289",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -71603,6 +72223,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i35290",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -71722,6 +72345,1107 @@
         "target": {
           "family": "Item",
           "key": "oteryn:item.tibia.i35290",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35524",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quivers"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "jungle quiver"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1800
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "SHIELD"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 150
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                },
+                {
+                  "pattern_id": 2,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "EXTRA"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 150
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "NOT_APPLICABLE"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 8
+            }
+          }
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i35524",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "35524",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35524",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35562",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quivers"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "quiver"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1700
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "SHIELD"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN",
+                      "NONE"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                },
+                {
+                  "pattern_id": 2,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "EXTRA"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN",
+                      "NONE"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "NOT_APPLICABLE"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 6
+            }
+          }
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i35562",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "35562",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35562",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35848",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quivers"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "blue quiver"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1700
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "SHIELD"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN",
+                      "NONE"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                },
+                {
+                  "pattern_id": 2,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "EXTRA"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN",
+                      "NONE"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "NOT_APPLICABLE"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 6
+            }
+          }
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i35848",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "35848",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35848",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35849",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quivers"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "red quiver"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1700
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "SHIELD"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN",
+                      "NONE"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                },
+                {
+                  "pattern_id": 2,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "EXTRA"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN",
+                      "NONE"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 0
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "NOT_APPLICABLE"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 6
+            }
+          }
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i35849",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "35849",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i35849",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i36666",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quivers"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "eldritch quiver"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 2200
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "SHIELD"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 250
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                },
+                {
+                  "pattern_id": 2,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "EXTRA"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 250
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "NOT_APPLICABLE"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "kind": "PERFECT_SHOT_DAMAGE",
+                  "target_domain": {
+                    "state": "UNKNOWN"
+                  },
+                  "evaluation_phase": {
+                    "state": "UNKNOWN"
+                  },
+                  "priority": {
+                    "state": "UNKNOWN"
+                  },
+                  "parameter": {
+                    "state": "KNOWN",
+                    "value": {
+                      "kind": "SIGNED_POINTS",
+                      "value": 20
+                    }
+                  }
+                },
+                {
+                  "kind": "PERFECT_SHOT_RANGE",
+                  "target_domain": {
+                    "state": "UNKNOWN"
+                  },
+                  "evaluation_phase": {
+                    "state": "UNKNOWN"
+                  },
+                  "priority": {
+                    "state": "UNKNOWN"
+                  },
+                  "parameter": {
+                    "state": "KNOWN",
+                    "value": {
+                      "kind": "CELLS",
+                      "value": 4
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 8
+            }
+          }
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i36666",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "36666",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i36666",
           "revision": "definition-r1"
         }
       },
@@ -71866,6 +73590,510 @@
         "family": "Item",
         "production_key": "oteryn:item.tibia.i37001",
         "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i39150",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quivers"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "alicorn quiver"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 2000
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "SHIELD"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 400
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                },
+                {
+                  "pattern_id": 2,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "EXTRA"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 400
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "NOT_APPLICABLE"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "kind": "MAGIC_LEVEL_POINTS",
+                  "target_domain": {
+                    "state": "UNKNOWN"
+                  },
+                  "evaluation_phase": {
+                    "state": "UNKNOWN"
+                  },
+                  "priority": {
+                    "state": "UNKNOWN"
+                  },
+                  "parameter": {
+                    "state": "KNOWN",
+                    "value": {
+                      "kind": "SIGNED_POINTS",
+                      "value": 1
+                    }
+                  }
+                },
+                {
+                  "kind": "PERFECT_SHOT_DAMAGE",
+                  "target_domain": {
+                    "state": "UNKNOWN"
+                  },
+                  "evaluation_phase": {
+                    "state": "UNKNOWN"
+                  },
+                  "priority": {
+                    "state": "UNKNOWN"
+                  },
+                  "parameter": {
+                    "state": "KNOWN",
+                    "value": {
+                      "kind": "SIGNED_POINTS",
+                      "value": 20
+                    }
+                  }
+                },
+                {
+                  "kind": "PERFECT_SHOT_RANGE",
+                  "target_domain": {
+                    "state": "UNKNOWN"
+                  },
+                  "evaluation_phase": {
+                    "state": "UNKNOWN"
+                  },
+                  "priority": {
+                    "state": "UNKNOWN"
+                  },
+                  "parameter": {
+                    "state": "KNOWN",
+                    "value": {
+                      "kind": "CELLS",
+                      "value": 3
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 12
+            }
+          }
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i39150",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "39150",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i39150",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i39160",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quivers"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "naga quiver"
+            },
+            "description": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1900
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "SHIELD"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 250
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                },
+                {
+                  "pattern_id": 2,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "EXTRA"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 250
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "NOT_APPLICABLE"
+        },
+        "protection": {
+          "state": "KNOWN",
+          "value": {
+            "armor": {
+              "state": "UNKNOWN"
+            },
+            "resistances": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "kind": "ICE",
+                  "percent": {
+                    "state": "KNOWN",
+                    "value": {
+                      "numerator": 2,
+                      "denominator": 1
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 8
+            }
+          }
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i39160",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "39160",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i39160",
+          "revision": "definition-r1"
+        }
       },
       "production_binding_qualification": null
     },
@@ -72301,6 +74529,9 @@
           "family": "Item",
           "key": "candidate:item/43864",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Sword Weapons"
         }
       },
       "semantics": {
@@ -72506,6 +74737,9 @@
           "family": "Item",
           "key": "candidate:item/43865",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Sword Weapons"
         }
       },
       "semantics": {
@@ -72711,6 +74945,9 @@
           "family": "Item",
           "key": "candidate:item/43866",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Club Weapons"
         }
       },
       "semantics": {
@@ -72916,6 +75153,9 @@
           "family": "Item",
           "key": "candidate:item/43867",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Club Weapons"
         }
       },
       "semantics": {
@@ -73121,6 +75361,9 @@
           "family": "Item",
           "key": "candidate:item/43868",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Axe Weapons"
         }
       },
       "semantics": {
@@ -73326,6 +75569,9 @@
           "family": "Item",
           "key": "candidate:item/43869",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Axe Weapons"
         }
       },
       "semantics": {
@@ -73531,6 +75777,9 @@
           "family": "Item",
           "key": "candidate:item/43870",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Sword Weapons"
         }
       },
       "semantics": {
@@ -73701,6 +75950,9 @@
           "family": "Item",
           "key": "candidate:item/43871",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Sword Weapons"
         }
       },
       "semantics": {
@@ -73871,6 +76123,9 @@
           "family": "Item",
           "key": "candidate:item/43872",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Club Weapons"
         }
       },
       "semantics": {
@@ -74041,6 +76296,9 @@
           "family": "Item",
           "key": "candidate:item/43873",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Club Weapons"
         }
       },
       "semantics": {
@@ -74211,6 +76469,9 @@
           "family": "Item",
           "key": "candidate:item/43874",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Axe Weapons"
         }
       },
       "semantics": {
@@ -74381,6 +76642,9 @@
           "family": "Item",
           "key": "candidate:item/43875",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Axe Weapons"
         }
       },
       "semantics": {
@@ -74551,6 +76815,9 @@
           "family": "Item",
           "key": "candidate:item/43876",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Legs"
         }
       },
       "semantics": {
@@ -74794,6 +77061,9 @@
           "max_hit_chance": 90,
           "range_cells": 6,
           "attack": 9
+        },
+        "taxonomy": {
+          "primary": "Distance Weapons"
         }
       },
       "semantics": {
@@ -74978,6 +77248,9 @@
           "max_hit_chance": 90,
           "range_cells": 6,
           "attack": 9
+        },
+        "taxonomy": {
+          "primary": "Distance Weapons"
         }
       },
       "semantics": {
@@ -75162,6 +77435,9 @@
           "max_hit_chance": 90,
           "range_cells": 6,
           "attack": 10
+        },
+        "taxonomy": {
+          "primary": "Distance Weapons"
         }
       },
       "semantics": {
@@ -75346,6 +77622,9 @@
           "max_hit_chance": 90,
           "range_cells": 6,
           "attack": 10
+        },
+        "taxonomy": {
+          "primary": "Distance Weapons"
         }
       },
       "semantics": {
@@ -75522,6 +77801,9 @@
           "family": "Item",
           "key": "candidate:item/43881",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Legs"
         }
       },
       "semantics": {
@@ -75746,6 +78028,9 @@
           "kind": "WAND",
           "mana_per_shot": 21,
           "range_cells": 6
+        },
+        "taxonomy": {
+          "primary": "Wands"
         }
       },
       "semantics": {
@@ -75960,6 +78245,9 @@
           "kind": "WAND",
           "mana_per_shot": 21,
           "range_cells": 6
+        },
+        "taxonomy": {
+          "primary": "Wands"
         }
       },
       "semantics": {
@@ -76166,6 +78454,9 @@
           "family": "Item",
           "key": "candidate:item/43884",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Boots"
         }
       },
       "semantics": {
@@ -76409,6 +78700,9 @@
           "kind": "ROD",
           "mana_per_shot": 20,
           "range_cells": 6
+        },
+        "taxonomy": {
+          "primary": "Rods"
         }
       },
       "semantics": {
@@ -76623,6 +78917,9 @@
           "kind": "ROD",
           "mana_per_shot": 20,
           "range_cells": 6
+        },
+        "taxonomy": {
+          "primary": "Rods"
         }
       },
       "semantics": {
@@ -76829,6 +79126,9 @@
           "family": "Item",
           "key": "candidate:item/43887",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Boots"
         }
       },
       "semantics": {
@@ -77064,6 +79364,9 @@
           "family": "Item",
           "key": "candidate:item/43895",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
         }
       },
       "semantics": {
@@ -77632,6 +79935,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i44065",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -77762,6 +80068,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i44066",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -77892,6 +80201,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i44067",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -78297,6 +80609,236 @@
         "family": "Item",
         "production_key": "oteryn:item.tibia.i44917",
         "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i45644",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quivers"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "candy-coated quiver"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "This quiver may run out of arrows, but it will never run out of treats."
+            }
+          }
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 1800
+            },
+            "movable": {
+              "state": "UNKNOWN"
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "SHIELD"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 200
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                },
+                {
+                  "pattern_id": 2,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "EXTRA"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "PALADIN"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 200
+                  },
+                  "compatibility_rule": {
+                    "state": "UNKNOWN"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "NOT_APPLICABLE"
+        },
+        "protection": {
+          "state": "KNOWN",
+          "value": {
+            "armor": {
+              "state": "UNKNOWN"
+            },
+            "resistances": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "kind": "FIRE",
+                  "percent": {
+                    "state": "KNOWN",
+                    "value": {
+                      "numerator": 2,
+                      "denominator": 1
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "KNOWN",
+          "value": {
+            "capacity": {
+              "state": "KNOWN",
+              "value": 8
+            }
+          }
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i45644",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "45644",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i45644",
+          "revision": "definition-r1"
+        }
       },
       "production_binding_qualification": null
     },
@@ -79726,6 +82268,9 @@
           "family": "Item",
           "key": "candidate:item/50146",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Legs"
         }
       },
       "semantics": {
@@ -79897,6 +82442,9 @@
           "family": "Item",
           "key": "candidate:item/50157",
           "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Fist Fighting Weapons"
         }
       },
       "semantics": {
@@ -80102,6 +82650,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i50294",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
@@ -80232,6 +82783,9 @@
           "family": "Item",
           "key": "oteryn:item.tibia.i50295",
           "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Exercise Weapons"
         }
       },
       "semantics": {
