@@ -586,7 +586,7 @@ message OneItemNpcTradeV1 {
   bytes channel_id = 5;
   uint64 runtime_scope_ownership_generation = 6; // non-zero
   bytes backpack_item_instance_id = 7;           // parent of every line's entry
-  uint32 quantity = 8;                           // 1..100 units of the item
+  uint32 quantity = 8;                           // 1..100 units of the item (sell_all: 1..2,000)
   uint64 unit_price = 9;                         // 0..total bound (0: NPC-0 §5.3/§5.4)
   uint64 total_gold_units = 10; // unit_price x quantity; BUY <= 20,000,000 + 999,999,999,999
                                 // (BANK-FEE-0 §5), SELL <= 1,009,999
@@ -597,6 +597,11 @@ message OneItemNpcTradeV1 {
   // (DUR03-RL-03-NPC-TRADE-BUY). BUY only, and only under the
   // (2, DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V2) tuple; absent otherwise.
   optional OneItemFeeBankDebitV1 bank_debit = 14;
+  // NPC-TRADE-SELLALL-1: a SELL of every carried stack of the offer item.
+  // The item BURN entries (1..20) are whole, of one definition revision and in
+  // descending placement_ordinal (display) order; their units sum to quantity;
+  // the cause names the first. SELL only; lines 1..23.
+  bool sell_all = 15;
 }
 
 // Closed ItemUseCause (decision ITEM-USE-0 §4.2): the variant and the using

@@ -308,6 +308,7 @@ fn buy_with_change_then_partial_and_whole_sell_replay_and_conflicts() -> TestRes
                 side: NpcTradeSide::Buy,
                 quantity: 5,
                 unit_price: 47,
+                sell_all: false,
             })
         );
         assert_eq!(
@@ -646,5 +647,144 @@ fn the_database_refuses_an_unproven_trade() -> TestResult {
         drop(authority);
         drop(seal);
         harness.cleanup().await
+    })
+}
+
+#[test]
+fn sell_all_sells_every_stack_once_replays_and_then_finds_nothing() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "npcsellall").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = equip(&harness, &authority).await?;
+        let gold = give(&harness, &authority, Coin::Gold.production_key(), 10, 201).await?;
+        let first = give(&harness, &authority, SWORD, 100, 202).await?;
+        let second = give(&harness, &authority, SWORD, 7, 203).await?;
+        let commit_all = async |seed: u8| -> Result<NpcTradeOutcome, NpcTradeError> {
+            harness
+                .root
+                .commit_npc_sell_all(
+                    &authority,
+                    &harness.node,
+                    fence().map_err(|_| NpcTradeError::InvalidInput)?,
+                    trade(seed, NpcTradeSide::Sell, 1, 4)
+                        .map_err(|_| NpcTradeError::InvalidInput)?,
+                )
+                .await
+        };
+        let revision = character_revision(&harness).await?;
+
+        // A full stack does not merge, so both sword stacks (107 units) burn whole, highest ordinal
+        // first; 428 gold is minted as 4 platinum and 28 gold after the highest ordinal. The gold
+        // stack stays.
+        let sold = match commit_all(10).await.map_err(debug)? {
+            NpcTradeOutcome::Committed(sold) => sold,
+            other => return Err(format!("expected a fresh commit, got {other:?}").into()),
+        };
+        let expected = vec![
+            (NpcTradeLineKind::ItemBurn, second, 3, None, 7, 0),
+            (NpcTradeLineKind::ItemBurn, first, 2, None, 100, 0),
+            (
+                NpcTradeLineKind::CoinMint,
+                id(14),
+                4,
+                Some(Coin::Platinum),
+                0,
+                4,
+            ),
+            (NpcTradeLineKind::CoinMint, id(15), 5, Some(Coin::Gold), 0, 28),
+        ];
+        assert_eq!(shape(&sold), expected);
+        assert_eq!(
+            (
+                sold.total_gold_units,
+                sold.burned_gold_units,
+                sold.minted_gold_units
+            ),
+            (428, 0, 428)
+        );
+        for item in [first, second] {
+            assert_eq!(harness.item_state(item).await?, (0, 2));
+        }
+        assert_eq!(
+            entries(&harness, backpack)
+                .await?
+                .iter()
+                .map(|(item, ordinal, _, quantity)| (*item, *ordinal, *quantity))
+                .collect::<Vec<_>>(),
+            vec![(id(15), 5, 28), (id(14), 4, 4), (gold, 1, 10)]
+        );
+        // The receipt names the sell-all and its units; the stored payload carries all lines.
+        let character_id = fence()?.character_id;
+        assert_eq!(
+            harness
+                .root
+                .read_npc_trade(&authority, character_id, command(10)?, id(10))
+                .await
+                .map_err(debug)?,
+            Some(NpcTradeReceipt {
+                npc_key: "fixture:npc.trader".into(),
+                catalogue_revision: 1,
+                offer_index: 0,
+                side: NpcTradeSide::Sell,
+                quantity: 107,
+                unit_price: 4,
+                sell_all: true,
+            })
+        );
+        let envelope: Vec<u8> = sqlx::query_scalar(
+            "SELECT envelope FROM game_item_audit_outbox WHERE event_id = encode($1,'hex')::uuid",
+        )
+        .bind(id(12).as_slice())
+        .fetch_one(&harness.pool)
+        .await?;
+        let (_, payload) = decode_npc_trade_envelope(&envelope).map_err(debug)?;
+        assert_eq!(payload.lines.len(), 4);
+        assert_eq!(character_revision(&harness).await?, revision);
+
+        // The retry returns the first outcome and writes nothing; command 8 under the same
+        // occurrence conflicts.
+        let before = footprint(&harness).await?;
+        match commit_all(10).await.map_err(debug)? {
+            NpcTradeOutcome::AlreadyCommitted(replayed) => {
+                assert_eq!(shape(&replayed), expected);
+                assert_eq!(replayed.total_gold_units, 428);
+            }
+            other => return Err(format!("expected the first outcome, got {other:?}").into()),
+        }
+        let plain = commit(&harness, &authority, trade(10, NpcTradeSide::Sell, 1, 4)?).await;
+        assert!(
+            matches!(plain, Err(NpcTradeError::ConflictingOccurrence)),
+            "{plain:?}"
+        );
+        // Another sell-all finds nothing to sell; a BUY or a quantity is not a sell-all.
+        match commit_all(30).await {
+            Err(NpcTradeError::ItemNotFound) => {}
+            other => return Err(format!("expected ItemNotFound, got {other:?}").into()),
+        }
+        for (side, quantity) in [(NpcTradeSide::Buy, 1), (NpcTradeSide::Sell, 2)] {
+            match harness
+                .root
+                .commit_npc_sell_all(
+                    &authority,
+                    &harness.node,
+                    fence()?,
+                    trade(40, side, quantity, 4)?,
+                )
+                .await
+            {
+                Err(NpcTradeError::InvalidInput) => {}
+                other => return Err(format!("expected InvalidInput, got {other:?}").into()),
+            }
+        }
+        assert_eq!(footprint(&harness).await?, before);
+        Ok(())
     })
 }

@@ -31,6 +31,7 @@ fn receipt() -> NpcTradeReceipt {
         side: npc_trade::NpcTradeSide::Buy,
         quantity: 3,
         unit_price: 40,
+        sell_all: false,
     }
 }
 
@@ -81,7 +82,17 @@ fn identities_are_uuid_v7_fixed_per_command_and_distinct_per_tag() {
 
 #[test]
 fn replay_answers_only_the_intent_it_committed() {
-    assert!(answers(&receipt(), &intent()));
+    assert!(answers(&receipt(), &intent(), false));
+    // NPC-TRADE-SELLALL-1: a trade answers only its own kind; a sell-all's stored quantity is the
+    // units it sold, never the intent's.
+    assert!(!answers(&receipt(), &intent(), true));
+    let sold = NpcTradeReceipt {
+        sell_all: true,
+        quantity: 37,
+        ..receipt()
+    };
+    assert!(answers(&sold, &intent(), true));
+    assert!(!answers(&sold, &intent(), false));
     let changed = [
         NpcTradeIntent {
             catalogue_revision: 10,
@@ -105,7 +116,10 @@ fn replay_answers_only_the_intent_it_committed() {
         },
     ];
     for intent in changed {
-        assert!(!answers(&receipt(), &intent), "{intent:?}");
+        assert!(!answers(&receipt(), &intent, false), "{intent:?}");
+        if intent.quantity == 3 {
+            assert!(!answers(&sold, &intent, true), "{intent:?}");
+        }
     }
 }
 
@@ -114,8 +128,9 @@ fn only_a_storage_failure_leaves_the_outcome_unknown() {
     assert!(matches!(
         step_of(Err(NpcTradeError::Unavailable(
             DurabilityError::Unavailable
-        ))),
-        NpcTradeStep::Unknown
+        )))
+        .map_err(|step| *step),
+        Err(NpcTradeStep::Unknown)
     ));
     for refusal in [
         NpcTradeError::InvalidInput,
@@ -128,10 +143,51 @@ fn only_a_storage_failure_leaves_the_outcome_unknown() {
         NpcTradeError::ConflictingOccurrence,
         NpcTradeError::ConflictingCandidate,
     ] {
-        let NpcTradeStep::Refused(refusal) = step_of(Err(refusal)) else {
+        let Err(NpcTradeStep::Refused(refusal)) = step_of(Err(refusal)).map_err(|step| *step)
+        else {
             panic!("a refusal wrote nothing");
         };
         assert_eq!(refusal.disposition, NpcIntentDisposition::Rejected);
         assert!(refusal.update.conversation.is_none() && refusal.update.window.is_none());
+    }
+}
+
+#[test]
+fn a_committed_sell_all_reports_the_units_its_item_burns_sold() {
+    let line = |kind, quantity_before, quantity_after| npc_trade::NpcTradeLine {
+        kind,
+        item_instance_id: [1; 16],
+        placement_ordinal: 1,
+        coin: None,
+        quantity_before,
+        quantity_after,
+    };
+    let committed = npc_trade::CommittedNpcTrade {
+        transaction_id: [2; 16],
+        event_id: [3; 16],
+        character_id: crate::domain::CharacterId::from_bytes(uuid_v7_shaped(&[4; 32]))
+            .expect("UUIDv7 Character"),
+        side: npc_trade::NpcTradeSide::Sell,
+        total_gold_units: 1_110,
+        burned_gold_units: 0,
+        minted_gold_units: 1_110,
+        lines: vec![
+            line(npc_trade::NpcTradeLineKind::ItemBurn, 100, 0),
+            line(npc_trade::NpcTradeLineKind::ItemBurn, 11, 0),
+            line(npc_trade::NpcTradeLineKind::CoinMint, 0, 11),
+            line(npc_trade::NpcTradeLineKind::CoinMint, 0, 10),
+        ],
+    };
+    for outcome in [
+        npc_trade::NpcTradeOutcome::Committed(committed.clone()),
+        npc_trade::NpcTradeOutcome::AlreadyCommitted(committed),
+    ] {
+        assert_eq!(
+            step_of(Ok(outcome)).ok(),
+            Some(SoldUnits {
+                units: 111,
+                gold: 1_110
+            })
+        );
     }
 }

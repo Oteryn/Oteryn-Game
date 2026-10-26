@@ -1,0 +1,252 @@
+{
+  "identity": {
+    "key": "crystal:encounter/goshnars_malice_crystal",
+    "revision": "crystal-00ce02a5"
+  },
+  "display_name": "Soul War: Goshnar's Malice (Crystal reconstruction)",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "goshnars_malice",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_malice",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "soul_cage",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/soul_cage",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Crystal x 33699-33718, y 31590-31607, z 14.",
+      "location": {
+        "boxes": [
+          {
+            "x": [
+              33699,
+              33718
+            ],
+            "y": [
+              31590,
+              31607
+            ],
+            "floor": 14
+          }
+        ]
+      }
+    },
+    {
+      "key": "soul_cage_spawn",
+      "kind": "point",
+      "description": "Crystal (33709, 31596, 14).",
+      "location": {
+        "x": 33709,
+        "y": 31596,
+        "floor": 14
+      }
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [
+      {
+        "name": "cage_timeout_pending",
+        "initial": false
+      }
+    ],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "malice_reflects_physical_and_death",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "goshnars_malice",
+        "source": "player"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "reflect_damage",
+          "role": "goshnars_malice",
+          "percent": 100,
+          "damage_types": [
+            "physical",
+            "death"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "soul_cage_reflects_player_damage",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "soul_cage",
+        "source": "player"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "reflect_damage",
+          "role": "soul_cage",
+          "percent": 10,
+          "damage_types": []
+        }
+      ]
+    },
+    {
+      "key": "first_soul_cage",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "delay_ms": 23000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/soul_cage",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "soul_cage",
+          "count": 1,
+          "at": {
+            "anchor": "soul_cage_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "destroyed_soul_cage_returns",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "soul_cage"
+      },
+      "delay_ms": 23000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/soul_cage",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "soul_cage",
+          "count": 1,
+          "at": {
+            "anchor": "soul_cage_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "surviving_soul_cage_buffs_malice",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "soul_cage"
+      },
+      "delay_ms": 40000,
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "soul_cage",
+          "anchor": "arena",
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "soul_cage"
+        },
+        {
+          "kind": "flag",
+          "flag": "cage_timeout_pending",
+          "value": true
+        },
+        {
+          "kind": "attribute",
+          "role": "goshnars_malice",
+          "attribute": "defense",
+          "operation": "add",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "key": "timed_out_soul_cage_returns",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "soul_cage"
+      },
+      "delay_ms": 63000,
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "cage_timeout_pending",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "cage_timeout_pending",
+          "value": false
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/soul_cage",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "soul_cage",
+          "count": 1,
+          "at": {
+            "anchor": "soul_cage_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "boss_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "goshnars_malice"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "boss_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "boss_defeated"
+  ]
+}

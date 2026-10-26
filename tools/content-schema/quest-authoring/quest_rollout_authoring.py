@@ -15,7 +15,7 @@ FLAGS = ('imported', 'partial', 'needs_source', 'needs_runtime')
 
 
 def read(path):
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding='utf-8'))
 
 
 def build(catalogue, bundle, definitions, source_specs, approximations=None):
@@ -203,11 +203,11 @@ def main():
     content = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':')) + '\n'
     output = here / OUTPUT
     if args.check:
-        if not output.is_file() or output.read_text() != content:
+        if not output.is_file() or output.read_text(encoding='utf-8') != content:
             raise SystemExit('Rollout backlog missing or stale; regenerate in AUTHORING')
     else:
         output.parent.mkdir(exist_ok=True)
-        output.write_text(content)
+        output.write_bytes(content.encode('utf-8'))
     print(json.dumps(payload['summary'], sort_keys=True))
 
 

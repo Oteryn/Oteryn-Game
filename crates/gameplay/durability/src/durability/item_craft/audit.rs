@@ -29,7 +29,7 @@ pub(super) fn encode(
     let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     let proof = serde_json::to_vec(&json!({"recipe": recipe, "intent": request.intent,
         "character": fence.character_id.as_bytes(), "before": before, "outputs": outputs,
-        "station": {"family": request.station.family, "key": request.station.production_key, "revision": request.station.revision_ref},
+        "station": request.station.as_ref().map(|s| json!({"family": s.family, "key": s.production_key, "revision": s.revision_ref})),
         "scope_generation": fence.scope_ownership_generation.get(),
         "content_digest": content_digest,
         "lease_generation": fence.character_lease_generation})).map_err(|_| DurabilityError::InvalidStoredState)?;

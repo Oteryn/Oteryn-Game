@@ -196,12 +196,23 @@ def validate(registry: Registry, root: Path = ROOT) -> list[str]:
     return errors
 
 
-def split(registry: Registry, aggregate_text: str):
-    """(base text, {key: [(file name, text)]}) for an aggregate: the inverse of `assemble`."""
+def split(registry: Registry, aggregate_text: str, root: Path = ROOT):
+    """Inverse of `assemble`, retaining ordinal file names from the tree at `root`.
+
+    Ordinals are not in the aggregate. Preserve them by entry id; entries absent from
+    the tree get ordinals after its last prefix (dense numbering for an initial split).
+    """
     data = json.loads(aggregate_text)
     lines = aggregate_text.split("\n")
     fragments: dict[str, list[tuple[str, str]]] = {}
     for key in registry.collections:
+        names = {}
+        next_ordinal = 1
+        if registry.order == "ordinal":
+            for name in _listdir(root, collection_dir(registry, key)):
+                prefix, _ = _sort_key(name)
+                names[name.split("-", 1)[1][:-5]] = name
+                next_ordinal = max(next_ordinal, prefix + 1)
         start = lines.index(f'  "{key}": [')
         end = next(i for i in range(start + 1, len(lines)) if lines[i] in ("  ]", "  ],"))
         bodies: list[list[str]] = []
@@ -214,14 +225,17 @@ def split(registry: Registry, aggregate_text: str):
         if len(bodies) != len(data[key]):
             raise ValueError(f"{key}: {len(bodies)} bodies for {len(data[key])} entries")
         items = []
-        for ordinal, (entry, body) in enumerate(zip(data[key], bodies), start=1):
+        for entry, body in zip(data[key], bodies):
             if body[-1].endswith(","):
                 body[-1] = body[-1][:-1]
             if registry.order == "id":
                 slug = entry["name"].lower().replace("_", "-")
                 name = f"{entry['id']:04d}-{slug}.json"
             else:
-                name = f"{ordinal:04d}-{entry['id']}.json"
+                name = names.get(entry["id"])
+                if name is None:
+                    name = f"{next_ordinal:04d}-{entry['id']}.json"
+                    next_ordinal += 1
             items.append((name, "\n".join(body) + "\n"))
         fragments[key] = items
         lines[start : end + 1] = [f'  "{key}": []{lines[end][3:]}']

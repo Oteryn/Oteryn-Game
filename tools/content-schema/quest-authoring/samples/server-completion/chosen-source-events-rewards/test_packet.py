@@ -19,9 +19,9 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
         self.assertEqual(PIN, self.packet["epoch"])
         self.assertEqual(WORLD_SHA, self.packet["input_refs"]["qualified_world_sha256"])
         self.assertEqual(236, self.packet["counts"]["quests"])
-        self.assertEqual(1475, self.packet["counts"]["stages"])
-        self.assertEqual(1225, self.packet["counts"]["non_dialogue_stages"])
-        self.assertEqual(508, self.packet["counts"]["reward_intents"])
+        self.assertEqual(1471, self.packet["counts"]["stages"])
+        self.assertEqual(1220, self.packet["counts"]["non_dialogue_stages"])
+        self.assertEqual(509, self.packet["counts"]["reward_intents"])
         self.assertEqual(617, self.packet["counts"]["exact_stage_target_refs"])
         self.assertEqual(372, self.packet["counts"]["exact_reward_refs"])
         self.assertEqual(25, self.packet["counts"]["encounter_outcome_seams"])
@@ -104,7 +104,7 @@ class ChosenSourceEventsRewardsTest(unittest.TestCase):
         distribution = collections.Counter(
             len(stage["terminal_intent"]["raw_targets"]) for stage in completion
         )
-        self.assertEqual({0: 9, 1: 203, 2: 21, 3: 3}, dict(distribution))
+        self.assertEqual({0: 9, 1: 202, 2: 22, 3: 3}, dict(distribution))
         self.assertEqual(
             227,
             sum(bool(stage["terminal_intent"]["raw_targets"]) for stage in completion),
