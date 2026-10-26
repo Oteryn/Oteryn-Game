@@ -4,6 +4,36 @@ use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     mechanic_composed_methods!();
+    async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1)
+        {
+            return true;
+        }
+        let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
+            return false;
+        };
+        self.root
+            .note_house_transfer_input(self.holder, fence, controller.transport)
+            .await
+            .is_ok()
+    }
+    async fn house_scope_ack(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        self.project_house_transfer(admitted).await
+    }
+    async fn house_transfer(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        body: &[u8],
+    ) -> super::super::super::house_transfer::TransferResult {
+        self.transfer_house(admitted, command, body).await
+    }
     fn channel_list(&self) -> Option<Vec<u8>> {
         Some(oteryn_protocol_oteryn::channel_list::encode_channel_list(
             self.world_id.as_bytes(),
@@ -504,6 +534,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         target: Option<item_view::ItemKey>,
     ) -> Option<UseOutcome> {
         self.use_pick_impl(actor, command, intent, source, target)
+            .await
+    }
+
+    async fn use_imbuement_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_imbuement_item_impl(actor, command, intent, source, target)
             .await
     }
 
