@@ -467,12 +467,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     |runtime: &mut ChannelRuntimeV1, _states: &mut ChannelSpellStates, level| {
                         if crate::gameplay_transport::hazard::combat::dodges(
                             level,
-                            crate::gameplay_transport::hazard::combat::draw(
+                            crate::gameplay_transport::hazard::combat::swing_dodge_roll(
                                 runtime,
                                 entry.actor,
                                 target,
-                                now.get(),
-                                "hazard.dodge",
+                                swing.lineage,
+                                ordinal,
                             )?,
                         ) {
                             return None;

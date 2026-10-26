@@ -748,6 +748,7 @@ fn scenario() -> TestResult {
                 &runtime, target
             ));
             drop(runtime);
+            outgoing_swing_checks(&mut owner, actor, session).await?;
             combat_checks(&mut owner, actor, session, target).await?;
             let mut runtime = owner.runtime.lock().await;
             let health = runtime
@@ -1308,6 +1309,197 @@ fn critical_time(
                 .is_some_and(|(_, critical)| critical)
         })
         .ok_or_else(|| "qualified critical occurrence in bounded source stream".into())
+}
+
+// Force the real swing owner through both sides of the hazard draw. The bounded
+// occurrence search selects positive post-defence damage, so an unchanged HP value
+// cannot pass merely because the rat blocked an ordinary zero hit.
+async fn outgoing_swing_checks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+) -> TestResult {
+    use crate::combat_attack::{AttackConstants, FightMode, player_fist_formula};
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::hazard::combat;
+    use oteryn_gameplay_combat_rules::resolution;
+    use oteryn_protocol_oteryn::attack::{AttackIntentDisposition, FightModes};
+    use oteryn_simulation_determinism::GameplayDecisionRoot;
+
+    let constants = AttackConstants::checked_in().ok_or("attack constants")?;
+    {
+        let permit = owner.spell_lane_permit().await.ok_or("swing level lane")?;
+        let mut runtime = owner.runtime.lock().await;
+        let mut states = owner.states.spell_states.lock().await;
+        assert_eq!(
+            owner
+                .with_hazard_level(
+                    &permit,
+                    &mut runtime,
+                    &mut states,
+                    actor,
+                    session,
+                    |_, _, level| level
+                )
+                .await,
+            Some(1)
+        );
+    }
+    let (target, reference, bounds, policy, root) = {
+        let runtime = owner.runtime.lock().await;
+        let visible = runtime.visible_entities();
+        let rat = visible
+            .creatures
+            .iter()
+            .find(|c| {
+                runtime
+                    .companion_snapshot(c.actor)
+                    .is_ok_and(|s| s.state.policy.definition_key == "canary:creature/rat")
+            })
+            .ok_or("hazard swing rat")?;
+        let snapshot = runtime.companion_snapshot(rat.actor).map_err(debug)?;
+        assert!(combat::eligible(&runtime, rat.actor));
+        let states = owner.states.spell_states.lock().await;
+        let player = states.get(&runtime, actor, session).ok_or("swing player")?;
+        let facts = player.character_facts();
+        let skills = player
+            .swing_skills(0, owner.owner_now().get())
+            .ok_or("swing skills")?
+            .unwrap_or(crate::spell::cast::SwingSkills {
+                attack: constants.starting_skill,
+                shielding: constants.starting_skill,
+            });
+        let bounds = player_fist_formula(constants)
+            .bounds(&crate::spell::formula::FormulaInputs {
+                level: facts.level,
+                magic_level: facts.magic_level,
+                base_power: None,
+                attack_skill: skills.attack,
+                attack_value: constants.fist.attack,
+                attack_factor: constants.fight_mode(FightMode::Offensive).attack_factor,
+                shielding_skill: skills.shielding,
+                shield_defense: None,
+            })
+            .map_err(debug)?;
+        (
+            rat.actor,
+            EntityRef {
+                identity: rat.actor.placement_identity(),
+                generation: rat.generation,
+            },
+            bounds,
+            snapshot.state.policy.clone(),
+            GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest()),
+        )
+    };
+    let defense = policy.defense.ok_or("rat defense")?;
+    let armor = policy.armor.ok_or("rat armor")?;
+    for should_dodge in [true, false] {
+        owner.clock_origin -= Duration::from_secs(3);
+        let (command_id, expected) = {
+            let runtime = owner.runtime.lock().await;
+            (2000..100_000)
+                .find_map(|id| {
+                    let lineage = CommandRef::new(session, CommandId::new(id).ok()?);
+                    let roll = combat::swing_dodge_roll(&runtime, actor, target, lineage, 0)?;
+                    if combat::dodges(1, roll) != should_dodge {
+                        return None;
+                    }
+                    let raw = resolution::swing_draw(
+                        &root,
+                        actor.placement_identity(),
+                        (*session.as_bytes(), id),
+                        0,
+                        b"damage-draw",
+                        "attack.damage",
+                        bounds.0,
+                        bounds.1,
+                    )?;
+                    let damage = resolution::creature_mitigated(
+                        &root,
+                        constants,
+                        actor.placement_identity(),
+                        (*session.as_bytes(), id),
+                        0,
+                        raw,
+                        true,
+                        defense,
+                        armor,
+                    )?;
+                    let damage = resolution::creature_physical_response(&policy, damage)?;
+                    (damage > 0).then_some((id, damage))
+                })
+                .ok_or("bounded positive hazard swing occurrence")?
+        };
+        let before = {
+            let runtime = owner.runtime.lock().await;
+            let mut attack = owner.states.attack.lock().await;
+            assert!(attack.set_modes(
+                &runtime,
+                actor,
+                session,
+                FightModes {
+                    fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
+                    ..FightModes::DEFAULT
+                }
+            ));
+            assert_eq!(
+                attack.set_target(
+                    &runtime,
+                    owner.rooms.gate_auto_attack(),
+                    actor,
+                    session,
+                    owner.owner_now(),
+                    Some(reference),
+                    command_id
+                ),
+                AttackIntentDisposition::Ok
+            );
+            runtime
+                .creature_combat_facts(target, owner.owner_now().get() / 1000)
+                .map_err(debug)?
+                .health
+        };
+        owner.refresh_attack_weapon(actor, session).await;
+        let swing_started = owner.owner_now();
+        owner.drain_auto_attacks().await;
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .hazard_level
+                .is_none()
+        );
+        let after = runtime
+            .creature_combat_facts(target, owner.owner_now().get() / 1000)
+            .map_err(debug)?
+            .health;
+        assert_eq!(
+            before - after,
+            if should_dodge { 0 } else { expected },
+            "forced hazard dodge={should_dodge}"
+        );
+        let attack = owner.states.attack.lock().await;
+        assert!(
+            attack.combat_state(actor, session, swing_started).in_fight,
+            "the real swing must run even when dodged"
+        );
+        let due = attack
+            .party_attack_state(actor, session)
+            .and_then(|s| s.next_due(constants.attack_interval_micros()))
+            .ok_or("swing timer advanced")?;
+        assert!(due > swing_started);
+    }
+    owner
+        .states
+        .attack
+        .lock()
+        .await
+        .clear_target(actor, session);
+    Ok(())
 }
 
 async fn combat_checks(

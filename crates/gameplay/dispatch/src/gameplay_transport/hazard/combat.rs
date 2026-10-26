@@ -351,6 +351,33 @@ pub(in crate::gameplay_transport) fn draw(
     draw_identity(runtime, source.placement_identity(), target, now, purpose)
 }
 
+/// A swing keeps its draw across owner scheduling delays. The exact target also
+/// separates the primary hit from each cleave recipient of the same swing.
+pub(in crate::gameplay_transport) fn swing_dodge_roll(
+    runtime: &ChannelRuntimeV1,
+    source: ExactActorRef,
+    target: ExactActorRef,
+    lineage: CommandRef,
+    ordinal: u16,
+) -> Option<u64> {
+    let occurrence = oteryn_gameplay_combat_rules::resolution::swing_occurrence(
+        source.placement_identity(),
+        (
+            *lineage.game_session_id().as_bytes(),
+            lineage.command_id().get(),
+        ),
+        ordinal,
+        &target.placement_identity(),
+    );
+    deterministic_decision_u64(
+        &GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest()),
+        occurrence,
+        "hazard.dodge",
+        0,
+    )
+    .ok()
+}
+
 fn draw_identity(
     runtime: &ChannelRuntimeV1,
     source: [u8; 16],
