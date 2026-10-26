@@ -42,6 +42,7 @@ pub mod character_quick_loot;
 pub mod character_revision_sequencer;
 pub mod character_stance;
 pub mod character_stash;
+pub mod character_title;
 pub mod character_tutorial;
 pub mod character_wheel;
 pub mod charm_state;
