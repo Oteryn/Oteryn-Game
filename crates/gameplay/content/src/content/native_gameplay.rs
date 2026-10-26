@@ -3134,11 +3134,7 @@ fn projected_equipment_claims(
                     ReferenceBaseVocation::Monk => EquipmentBaseVocation::Monk,
                     ReferenceBaseVocation::Paladin => EquipmentBaseVocation::Paladin,
                     ReferenceBaseVocation::Sorcerer => EquipmentBaseVocation::Sorcerer,
-                    // The equipment ABI admits the five base vocations only; an artifact v5
-                    // `None` requirement fails closed until its equip semantics are accepted.
-                    ReferenceBaseVocation::None => {
-                        return Err(rejected("equipment vocation none"));
-                    }
+                    ReferenceBaseVocation::None => EquipmentBaseVocation::None,
                 })
             })
             .collect::<Result<_, _>>()?,

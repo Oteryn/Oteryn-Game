@@ -8,6 +8,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 /// Global's maximum number of nearby corpses considered by one manual Loot All command.
 pub const MAX_NEARBY_CORPSES: usize = 30;
+/// Per Character and per list; the active list applies only to Loot All.
+pub const MAX_FILTER_ITEMS: usize = 2_048;
 /// Top-damage/party exclusivity after death.
 pub const EXCLUSIVE_LOOT_MILLIS: u64 = 10_000;
 /// QUICKLOOT1-RL-1280: maximum item moves attempted by one command.
@@ -42,6 +44,7 @@ pub struct LootItem<K> {
     pub key: K,
     pub category: LootCategory,
     pub is_coin: bool,
+    pub allowed_by_filter: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,6 +77,7 @@ pub enum SkipReason {
     NotOwner,
     NotSelected,
     RecipientRejectsItem,
+    Filtered,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -110,10 +114,16 @@ pub struct ManualLootExecution<K> {
 /// mutates item truth. A caller opens one transaction, calls this function, then commits once.
 /// Refusing one item does not prevent later items from being attempted, matching Global's
 /// accepted/skipped result lists.
-pub fn execute_bounded_plan<K: Copy>(
+pub async fn execute_bounded_plan<K: Copy, C, E>(
     plan: &ManualLootPlan<K>,
-    mut transfer: impl FnMut(PlannedTransfer<K>) -> TransferCommit,
-) -> ManualLootExecution<K> {
+    context: &mut C,
+    mut transfer: impl for<'a> FnMut(
+        &'a mut C,
+        PlannedTransfer<K>,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<TransferCommit, E>> + Send + 'a>,
+    >,
+) -> Result<ManualLootExecution<K>, E> {
     let mut result = ManualLootExecution {
         accepted: Vec::with_capacity(plan.accepted.len()),
         skipped: Vec::new(),
@@ -124,12 +134,12 @@ pub fn execute_bounded_plan<K: Copy>(
         .copied()
         .take(MAX_TRANSFERS_PER_COMMAND)
     {
-        match transfer(move_) {
+        match transfer(context, move_).await? {
             TransferCommit::Committed => result.accepted.push(move_),
             TransferCommit::Refused => result.skipped.push(move_),
         }
     }
-    result
+    Ok(result)
 }
 
 /// Builds the stable transfer order for a manual command. This is intentionally only admission:
@@ -177,6 +187,14 @@ pub fn plan_manual_loot<K: Copy + Ord>(
             continue;
         }
         for item in &corpse.items {
+            if mode == ManualLootMode::AllNearby && !item.allowed_by_filter {
+                skipped.push(Skipped {
+                    corpse: corpse.key,
+                    item: Some(item.key),
+                    reason: SkipReason::Filtered,
+                });
+                continue;
+            }
             let recipient = if premium {
                 settings
                     .category_targets
@@ -267,6 +285,7 @@ mod tests {
                     key,
                     category: LootCategory::Other,
                     is_coin: false,
+                    allowed_by_filter: true,
                 }],
             })
             .collect::<Vec<_>>();
@@ -294,11 +313,13 @@ mod tests {
                     key: 2,
                     category: LootCategory::Gold,
                     is_coin: true,
+                    allowed_by_filter: true,
                 },
                 LootItem {
                     key: 3,
                     category: LootCategory::Gold,
                     is_coin: false,
+                    allowed_by_filter: true,
                 },
             ],
         };
@@ -327,7 +348,7 @@ mod tests {
     }
 
     #[test]
-    fn bounded_execution_reports_each_owner_refusal_and_keeps_order() {
+    fn bounded_execution_reports_each_owner_refusal_and_keeps_order() -> Result<(), &'static str> {
         let moves = (0..=MAX_TRANSFERS_PER_COMMAND)
             .map(|item| PlannedTransfer {
                 corpse: 1,
@@ -340,19 +361,32 @@ mod tests {
             skipped: Vec::new(),
         };
         let mut calls = 0;
-        let result = execute_bounded_plan(&plan, |move_| {
-            calls += 1;
-            if move_.item % 2 == 0 {
-                TransferCommit::Committed
-            } else {
-                TransferCommit::Refused
-            }
-        });
+        let result = {
+            let execution = execute_bounded_plan(&plan, &mut calls, |calls, move_| {
+                Box::pin(async move {
+                    *calls += 1;
+                    Ok::<_, std::convert::Infallible>(if move_.item % 2 == 0 {
+                        TransferCommit::Committed
+                    } else {
+                        TransferCommit::Refused
+                    })
+                })
+            });
+            let mut execution = std::pin::pin!(execution);
+            let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+            let std::task::Poll::Ready(Ok(result)) =
+                std::future::Future::poll(execution.as_mut(), &mut context)
+            else {
+                return Err("ready owner callback");
+            };
+            result
+        };
         assert_eq!(calls, MAX_TRANSFERS_PER_COMMAND);
         assert_eq!(result.accepted.first().map(|entry| entry.item), Some(0));
         assert_eq!(result.skipped.first().map(|entry| entry.item), Some(1));
         assert_eq!(result.accepted.len(), MAX_TRANSFERS_PER_COMMAND / 2);
         assert_eq!(result.skipped.len(), MAX_TRANSFERS_PER_COMMAND / 2);
+        Ok(())
     }
 
     #[test]
@@ -398,5 +432,38 @@ mod tests {
             }),
             None
         );
+    }
+    #[test]
+    fn manual_click_bypasses_lists_that_filter_loot_all() {
+        let corpse = Corpse {
+            key: 1,
+            distance: 0,
+            age_millis: 0,
+            top_damage_or_party: true,
+            items: vec![LootItem {
+                key: 2,
+                category: LootCategory::Gold,
+                is_coin: true,
+                allowed_by_filter: false,
+            }],
+        };
+        let all = plan_manual_loot(
+            ManualLootMode::AllNearby,
+            None,
+            false,
+            &settings(),
+            std::slice::from_ref(&corpse),
+        );
+        assert!(all.accepted.is_empty());
+        assert_eq!(all.skipped[0].reason, SkipReason::Filtered);
+        let click = plan_manual_loot(
+            ManualLootMode::Click,
+            Some(1),
+            false,
+            &settings(),
+            &[corpse],
+        );
+        assert_eq!(click.accepted.len(), 1);
+        assert!(click.skipped.is_empty());
     }
 }
