@@ -1,9 +1,10 @@
-//! WRITE-1: content-qualified rewrites in held, depot and loop-drop custody.
+//! WRITE-1: content-qualified rewrites in held, depot and proven Ground custody.
 //!
 //! This is a bounded producer with its native storage ACL in migration 0101 and
 //! registered Content/storage modules, awaiting actual transport composition.
 //! It admits neither write-once definitions nor house custody locations.
-//! Ground admission is limited to direct loop drops, with owner-observed reach data.
+//! Ground admission is limited to direct loop drops and unchanged map-MINT items,
+//! with owner-observed reach data and the item-loop owner's source proof.
 //! The compositor must also apply the Channel trade owner's physical exclusion
 //! under its mutation lane (WRITE-0 §5.1). Do not activate this writer before
 //! that guard and the actual transport composition are integrated.
@@ -311,7 +312,8 @@ impl DurabilityRoot {
     /// view must not prevent an exact terminal replay or COMMIT reconciliation.
     /// `ground` is likewise current owner-observed placement DATA, after checking
     /// one-tile same-floor reach under the retained lane. Storage independently
-    /// locks and checks exact current loop-drop custody; this tuple grants no reach.
+    /// locks and checks exact current loop-drop or receipt-proven map-MINT custody;
+    /// this tuple grants no reach.
     /// Other Ground sources and external container trees remain unavailable.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_item_text_rewrite(
@@ -444,7 +446,7 @@ async fn carried_text_path(
 /// read after waiting. A foreign, detached, cyclic or overdeep path fails closed.
 /// Depot transfers use the same Character root/item lock order. Only a direct
 /// box entry is admitted: the depot writer does not yet host nested containers.
-/// A direct loop drop retains the shared Ground owner lock and the current
+/// A direct loop drop or unchanged map-MINT retains the Ground owner lock and current
 /// scope assignment lock acquired by the Character fence. Houses remain closed.
 async fn lock_carried_text_item(
     tx: &mut Transaction<'_, Postgres>,
@@ -545,6 +547,9 @@ async fn lock_carried_text_item(
 /// enforced on every location mutation by game_item_ground_owner_lock. The runtime
 /// has no UPDATE privilege on Ground rows, so a direct FOR SHARE would be refused.
 /// Read custody in a separate statement after this lock too. No census or move.
+/// Reuse the item-loop owner's map-MINT proof (0130): the exact original receipt,
+/// definition, quantity, instance state and Ground placement must still agree.
+/// Text changes neither the ItemInstance state revision nor that provenance.
 async fn lock_ground_text_item(
     tx: &mut Transaction<'_, Postgres>,
     fence: &CurrentCharacterItemFence,
@@ -569,7 +574,9 @@ async fn lock_ground_text_item(
             AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid \
             AND g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
             AND g.spatial_position=$5 AND g.map_revision=$6 AND g.content_revision=$7 \
-            AND g.native_room_placement_context=$8 AND game_item_loop_drop_ref(g.corpse_ref) \
+            AND g.native_room_placement_context=$8 \
+            AND (game_item_loop_drop_ref(g.corpse_ref) \
+                 OR game_item_loop_map_mint_source(g.item_instance_id)) \
             AND i.definition_family=$9 AND i.definition_production_key=$10 AND i.definition_revision_ref=$11 \
           FOR SHARE OF i",
     )
