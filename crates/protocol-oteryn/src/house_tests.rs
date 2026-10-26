@@ -122,6 +122,7 @@ fn house_results_page_limit_and_typed_refusal() {
     );
     let row = HouseSummary {
         house: "h".into(),
+        kind: HouseKind::Guildhall,
         state: 3,
         rent: 0,
         revision: 1,
@@ -132,6 +133,39 @@ fn house_results_page_limit_and_typed_refusal() {
         ends_ms: None,
         own_maximum: None,
     };
-    assert!(encode_house_page(&vec![row.clone(); PAGE_SIZE], None).is_ok());
-    assert!(encode_house_page(&vec![row; PAGE_SIZE + 1], None).is_err());
+    let encoded = encode_house_page(std::slice::from_ref(&row), None, true);
+    assert!(encoded.is_ok());
+    let encoded = encoded.unwrap_or_default();
+    assert!(encoded.windows(2).any(|field| field == [88, 3]));
+    let legacy = encode_house_page(std::slice::from_ref(&row), None, false).unwrap_or_default();
+    assert!(!legacy.is_empty());
+    assert!(!legacy.windows(2).any(|field| field == [88, 3]));
+    assert!(encode_house_page(&vec![row.clone(); PAGE_SIZE], None, true).is_ok());
+    assert!(encode_house_page(&vec![row; PAGE_SIZE + 1], None, true).is_err());
+}
+
+#[test]
+fn guildhall_leadership_codec_is_bounded_and_strict() {
+    let intent = GuildhallLeadershipIntent {
+        guild: id(1),
+        successor: id(2),
+        expected_revision: 1,
+    };
+    let encoded = encode_guildhall_leadership(intent).unwrap_or_default();
+    assert!(!encoded.is_empty());
+    assert_eq!(decode_guildhall_leadership(&encoded), Ok(intent));
+    for n in 0..encoded.len() {
+        assert!(decode_guildhall_leadership(&encoded[..n]).is_err());
+    }
+    let mut duplicate = encoded.clone();
+    duplicate.extend_from_slice(&encoded);
+    assert!(decode_guildhall_leadership(&duplicate).is_err());
+    assert!(decode_guildhall_leadership(&[0; 65]).is_err());
+    assert!(
+        encode_guildhall_leadership(GuildhallLeadershipIntent {
+            expected_revision: 0,
+            ..intent
+        })
+        .is_err()
+    );
 }

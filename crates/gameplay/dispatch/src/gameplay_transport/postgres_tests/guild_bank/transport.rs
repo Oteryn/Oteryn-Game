@@ -5,7 +5,7 @@ use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
 use oteryn_protocol_oteryn::{ClientCommandValue, decode_command_result, encode_client_command};
 use tokio::io::AsyncWriteExt;
-pub(super) async fn exchange(
+pub(in super::super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,

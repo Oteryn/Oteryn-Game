@@ -56,9 +56,12 @@ fn acl(subowners: bool, revision: u64, members: &[[u8; 16]]) -> Vec<u8> {
     intent(4, &b)
 }
 fn query() -> Vec<u8> {
+    query_for("oteryn:content.area.city.liberty_bay")
+}
+fn query_for(town: &str) -> Vec<u8> {
     let mut b = Vec::new();
     bytes(&mut b, 1, &id(42));
-    bytes(&mut b, 2, b"oteryn:content.area.city.liberty_bay");
+    bytes(&mut b, 2, town.as_bytes());
     b
 }
 /// Sends the session's next fresh CommandId and keeps the ended continuity.
@@ -91,7 +94,9 @@ async fn resend(
     )
     .map_err(debug)?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    client.write_all(&(frame.len() as u32).to_be_bytes()).await?;
+    client
+        .write_all(&(frame.len() as u32).to_be_bytes())
+        .await?;
     client.write_all(&frame).await?;
     client.shutdown().await?;
     let end = serve_admitted(&mut server, before, owner, IDLE_LIVENESS).await;
@@ -192,6 +197,13 @@ fn scenario() -> TestResult {
             .server_artifact_digest();
         sqlx::query("WITH property AS (INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest,owner_character_id,owner_account_id,acquisition_receipt_ref,paid_until) SELECT encode($1,'hex')::uuid,$2,'private_house',3,100,$4,character_id,account_id,game_character_uuid_v7(),statement_timestamp()+interval '30 days' FROM game_character_roots WHERE character_id=encode($3,'hex')::uuid RETURNING *), slot AS (INSERT INTO game_account_housing_slots(account_id,world_id,house_key) SELECT owner_account_id,world_id,house_key FROM property) INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) SELECT world_id,house_key,owner_character_id,ownership_generation,acquisition_receipt_ref FROM property")
             .bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).bind(digest.as_slice()).execute(&h.pool).await?;
+        const GUILDHALL: &str = "oteryn:content.house.bamboo_fortress";
+        let mut classification = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest) VALUES(encode($1,'hex')::uuid,$2,'guildhall',1,100,$3)")
+            .bind(id(42).as_slice()).bind(GUILDHALL).bind(digest.as_slice()).execute(&mut *classification).await?;
+        sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES(encode($1,'hex')::uuid,$2,NULL,1,encode($3,'hex')::uuid)")
+            .bind(id(42).as_slice()).bind(GUILDHALL).bind(id(88).as_slice()).execute(&mut *classification).await?;
+        classification.commit().await?;
         let (current, _) =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
                 .current_session_at(deps.admitted.game_session_id)
@@ -245,7 +257,9 @@ fn scenario() -> TestResult {
             wire::encode_house_result(wire::HouseDisposition::Conflict, 0)
         );
         assert_eq!(
-            send(&owner, &mut admitted, 56, &acl(false, 2, &[])).await?.1,
+            send(&owner, &mut admitted, 56, &acl(false, 2, &[]))
+                .await?
+                .1,
             wire::encode_house_result(wire::HouseDisposition::Ok, 3)
         );
         assert_eq!(
@@ -308,7 +322,9 @@ fn scenario() -> TestResult {
         let fresh = deps.owner(&h, &authority);
         let mut conflict = initial;
         assert_eq!(
-            send(&fresh, &mut conflict, 56, &acl(false, 1, &[])).await?.1,
+            send(&fresh, &mut conflict, 56, &acl(false, 1, &[]))
+                .await?
+                .1,
             wire::encode_house_result(wire::HouseDisposition::Conflict, 0)
         );
         drop(fresh);
@@ -322,7 +338,9 @@ fn scenario() -> TestResult {
         let cancel_command = admitted.continuity.next_command_id;
         assert_eq!(cancel_command, 9);
         assert_eq!(
-            send(&restarted, &mut admitted, 56, &intent(3, &[])).await?.1,
+            send(&restarted, &mut admitted, 56, &intent(3, &[]))
+                .await?
+                .1,
             wire::encode_house_result(wire::HouseDisposition::Ok, 2)
         );
         let persisted: Option<i64> = sqlx::query_scalar(
@@ -419,7 +437,9 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(revision, "5");
         assert_eq!(
-            send(&restarted, &mut admitted, 56, &intent(3, &[])).await?.1,
+            send(&restarted, &mut admitted, 56, &intent(3, &[]))
+                .await?
+                .1,
             wire::encode_house_result(wire::HouseDisposition::Rejected, 0)
         );
         // A later global revision never changes an already committed command's result:
@@ -439,6 +459,24 @@ fn scenario() -> TestResult {
             .fetch_one(&h.pool)
             .await?;
         assert_eq!(count, 6);
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &[6, 40, 49, 99])
+                .ok_or("Guildhall classification capability")?;
+        let guildhall_page = send(
+            &restarted,
+            &mut admitted,
+            57,
+            &query_for("oteryn:content.area.city.port_hope"),
+        )
+        .await?
+        .1;
+        assert!(
+            guildhall_page
+                .windows(GUILDHALL.len())
+                .any(|w| w == GUILDHALL.as_bytes())
+        );
+        // Field 11 carries the qualified Guildhall class (enum value 3).
+        assert!(guildhall_page.windows(2).any(|field| field == [88, 3]));
         drop(replayed);
         drop(restarted);
         drop(owner);
