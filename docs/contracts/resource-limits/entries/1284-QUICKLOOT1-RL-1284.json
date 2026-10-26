@@ -1,0 +1,23 @@
+{
+  "id": "QUICKLOOT1-RL-1284",
+  "owner_contract": "../architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md",
+  "resource": "Accepted or skipped quick-loot definition list of one Character",
+  "unit": "Item definitions per list",
+  "hard_maximum": 2048,
+  "configurable_range": {
+    "minimum": 2048,
+    "maximum": 2048
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Each of two lists holds at most 2048 normalized Item production keys. Reload reads at most 4097 rows and fails closed on excess. Adds serialize under the existing Character root lock.",
+  "client_visible": true,
+  "boundary_tests": [
+    "quick_loot_postgres_dispatch_assignment_transfer_replay_and_fences: filter add/remove/select/clear survive repeated serve_admitted connections and Click bypasses Loot All filtering",
+    "The owner refuses an addition to a full list; its bounded reload rejects over-limit stored lists."
+  ],
+  "consumers": [
+    "crates/gameplay/items/src/quick_loot.rs",
+    "crates/gameplay/durability/src/durability/item_quick_loot.rs"
+  ],
+  "notes": "QUICKLOOT-1. One terminal batch receipt and current session-generation fence cover every accepted child move."
+}

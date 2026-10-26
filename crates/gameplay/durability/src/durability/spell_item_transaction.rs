@@ -189,7 +189,10 @@ impl DurabilityRoot {
     /// caster-cost receipt and optional Character training/companion source.
     /// The outer Channel compositor must retain its physical preflight/owner
     /// lock and install only after this returns a genuine COMMIT capability.
-    #[allow(clippy::too_many_arguments, reason = "explicit provenance accompanies the existing authority and commit window")]
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "explicit provenance accompanies the existing authority and commit window"
+    )]
     pub async fn commit_world_item_spell<T: Send + 'static>(
         &self,
         window: &mut super::spell_owner_commit::SpellCommitWindow<'_, T>,
@@ -415,10 +418,7 @@ pub struct PreparedCompanionAcquisition {
     master_scope_matches: bool,
 }
 impl PreparedCompanionAcquisition {
-    pub fn from_spawn(
-        transaction: [u8; 16],
-        spawn: &impl CompanionAcquisitionSource,
-    ) -> Self {
+    pub fn from_spawn(transaction: [u8; 16], spawn: &impl CompanionAcquisitionSource) -> Self {
         Self {
             binding: companion_binding(transaction, spawn),
             master_scope_matches: spawn.actor().world_id() == spawn.master_actor().world_id()
@@ -1548,7 +1548,10 @@ fn encode_intent(
     cost: &[u8],
 ) -> Result<Vec<u8>> {
     if request.command != authority.command
-        || !matches!((request.spell.family.as_str(), request.swing_ordinal), ("Spell", None) | ("Item", Some(_)))
+        || !matches!(
+            (request.spell.family.as_str(), request.swing_ordinal),
+            ("Spell", None) | ("Item", Some(_))
+        )
         || request.spell.production_key.is_empty()
         || request.spell.revision_ref.is_empty()
         || request.catalog_digest == [0; 32]
@@ -1559,15 +1562,22 @@ fn encode_intent(
         return Err(SpellItemError::Rejected("spell item request shape"));
     }
     if request.swing_ordinal.is_some() {
-        let valid_source = request.operations.len() == 1 && matches!(&request.operations[0],
+        let valid_source = request.operations.len() == 1
+            && matches!(&request.operations[0],
             SpellItemOperation::ConsumeInventory(source)
-                if matches!(source.custody, InventoryCustody::Equipment { slot: 5 | 6 | 10, .. })
+                if matches!(source.custody, InventoryCustody::Equipment { slot: 5 | 6 | 10, .. } | InventoryCustody::Container { .. })
                 && source.quantity_after.checked_add(1) == Some(source.quantity_before));
-        if !valid_source || request.caster_origin.is_none() || request.companion.is_some()
-            || request.direct_companion.is_some() || request.cost.mana_before != request.cost.mana_after
+        if !valid_source
+            || request.caster_origin.is_none()
+            || request.companion.is_some()
+            || request.direct_companion.is_some()
+            || request.cost.mana_before != request.cost.mana_after
             || request.cost.soul_before != request.cost.soul_after
-            || request.cost.cooldowns_before != request.cost.cooldowns_after {
-            return Err(SpellItemError::Rejected("ranged shot requires one equipped unit and no spell cost"));
+            || request.cost.cooldowns_before != request.cost.cooldowns_after
+        {
+            return Err(SpellItemError::Rejected(
+                "ranged shot requires one carried projectile and no spell cost",
+            ));
         }
     }
     if let Some(origin) = &request.caster_origin
@@ -1782,7 +1792,9 @@ fn encode_intent(
         operations.push(value);
     }
     let mut intent = serde_json::json!({"version":1,"world":authority.world,"channel":authority.channel,"character":authority.character,"session":authority.command.game_session_id().as_bytes(),"command":authority.command.command_id().get(),"ownership_generation":authority.ownership_generation,"spell":reference(&request.spell),"catalog_digest":request.catalog_digest.as_slice(),"transaction":request.transaction_id,"event":request.event_id,"cost":cost,"operations":operations,"companion":request.companion.as_ref().map(|p|p.binding.json()),"caster_origin":request.caster_origin.as_ref().map(|o|serde_json::json!({"placement":o.actor.placement_identity(),"lease":o.character_lease_generation}))});
-    if let Some(ordinal) = request.swing_ordinal { intent["swing_ordinal"] = serde_json::json!(ordinal); }
+    if let Some(ordinal) = request.swing_ordinal {
+        intent["swing_ordinal"] = serde_json::json!(ordinal);
+    }
     if let Some(direct) = &request.direct_companion {
         intent
             .as_object_mut()
@@ -2600,6 +2612,10 @@ async fn apply_consumption_operation(
             sqlx::query("DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)")
                 .bind(id.as_slice()).bind(parent.ok_or(SpellItemError::Rejected("missing corpse parent"))?.as_slice())
                 .bind(parent_ordinal.ok_or(SpellItemError::Rejected("missing corpse ordinal"))?.to_string()).execute(&mut **tx).await?
+        } else if kind == 5 && sqlx::query_scalar::<_,bool>("SELECT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid)").bind(id.as_slice()).fetch_one(&mut **tx).await? {
+            sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)")
+                .bind(id.as_slice()).bind(parent.ok_or(SpellItemError::Rejected("missing quiver parent"))?.as_slice())
+                .bind(parent_ordinal.ok_or(SpellItemError::Rejected("missing quiver ordinal"))?.to_string()).execute(&mut **tx).await?
         } else {
             sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)")
                 .bind(id.as_slice()).bind(parent.ok_or(SpellItemError::Rejected("missing container parent"))?.as_slice())
@@ -2806,7 +2822,7 @@ pub async fn prepare_inventory_consumption_in_transaction(
             "unqualified carried consumption definition",
         ));
     }
-    let row=sqlx::query("SELECT i.item_instance_id::text,i.quantity,i.state_revision::text,e.parent_item_instance_id::text AS parent,e.placement_ordinal::text AS ordinal,s.slot,es.revision::text AS equipment_revision FROM game_item_instances i LEFT JOIN game_item_container_entries e ON e.item_instance_id=i.item_instance_id LEFT JOIN game_item_container_slots bag ON bag.item_instance_id=e.parent_item_instance_id LEFT JOIN game_character_equipment_slots s ON s.item_instance_id=i.item_instance_id LEFT JOIN game_character_equipment_state es ON es.character_id=s.character_id WHERE i.world_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.definition_family=$2 AND i.definition_production_key=$3 AND i.definition_revision_ref=$4 AND i.quantity>=$5 AND ($6::bytea IS NULL OR i.item_instance_id=encode($6,'hex')::uuid) AND ((e.character_id=encode($7,'hex')::uuid AND bag.character_id=e.character_id) OR (s.character_id=encode($7,'hex')::uuid AND s.world_id=i.world_id)) ORDER BY s.slot ASC NULLS LAST,e.placement_ordinal DESC LIMIT 1 FOR UPDATE OF i")
+    let row=sqlx::query("SELECT i.item_instance_id::text,i.quantity,i.state_revision::text,e.parent_item_instance_id::text AS parent,e.placement_ordinal::text AS ordinal,s.slot,es.revision::text AS equipment_revision FROM game_item_instances i LEFT JOIN LATERAL (SELECT e.item_instance_id,e.parent_item_instance_id,e.placement_ordinal,e.character_id FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id UNION ALL SELECT n.item_instance_id,n.parent_item_instance_id,n.placement_ordinal,q.character_id FROM game_item_nested_entries n JOIN game_character_equipment_slots q ON q.item_instance_id=n.parent_item_instance_id WHERE n.item_instance_id=i.item_instance_id AND q.slot IN(6,10)) e ON true LEFT JOIN game_item_container_slots bag ON bag.item_instance_id=e.parent_item_instance_id LEFT JOIN game_character_equipment_slots s ON s.item_instance_id=i.item_instance_id LEFT JOIN game_character_equipment_state es ON es.character_id=s.character_id WHERE i.world_id=encode($1,'hex')::uuid AND i.lifecycle=1 AND i.definition_family=$2 AND i.definition_production_key=$3 AND i.definition_revision_ref=$4 AND i.quantity>=$5 AND ($6::bytea IS NULL OR i.item_instance_id=encode($6,'hex')::uuid) AND ((e.character_id=encode($7,'hex')::uuid AND (bag.character_id=e.character_id OR game_quiver_entry($7::bytea,e.parent_item_instance_id,i.item_instance_id,e.placement_ordinal,i.world_id))) OR (s.character_id=encode($7,'hex')::uuid AND s.world_id=i.world_id)) ORDER BY s.slot ASC NULLS LAST,e.placement_ordinal DESC LIMIT 1 FOR UPDATE OF i")
         .bind(authority.world.as_slice()).bind(&qualified.definition.family).bind(&qualified.definition.production_key)
         .bind(&qualified.definition.revision_ref).bind(i64::from(quantity)).bind(exact_instance.as_ref().map(|v|v.as_slice()))
         .bind(authority.character.as_slice()).fetch_optional(&mut **tx).await?
