@@ -373,7 +373,7 @@ async fn case(h: &Harness, guest: bool, boundary: Option<&str>) -> TestResult {
                 parent: backpack,
                 ordinal: 1,
             },
-            position,
+            position: position.clone(),
         },
         expected_acl_revision: 1,
         expected_guild_revisions: None,
@@ -384,16 +384,17 @@ async fn case(h: &Harness, guest: bool, boundary: Option<&str>) -> TestResult {
     };
     let frozen = h
         .root
-        .freeze_house_item(&authority, &h.node, fence, place)
+        .freeze_house_item(&authority, &h.node, fence, place.clone())
         .await
         .map_err(debug)?;
-    assert!(matches!(
-        h.root
-            .commit_house_item(&authority, &h.node, fence, &frozen)
-            .await
-            .map_err(debug)?,
-        HouseItemOutcome::Committed(_)
-    ));
+    let HouseItemOutcome::Committed(placement) = h
+        .root
+        .commit_house_item(&authority, &h.node, fence, &frozen)
+        .await
+        .map_err(debug)?
+    else {
+        return Err("initial placement was not committed".into());
+    };
     let writer_root = runtime_root(h).await?;
     let writer_authority = writer_root
         .open_character_authority(&seal)
@@ -661,6 +662,107 @@ async fn case(h: &Harness, guest: bool, boundary: Option<&str>) -> TestResult {
     )?;
     let audits:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_podium_records WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(audits, 6);
+    // Item presentation must survive a real House -> inventory -> House cycle.
+    // Use the runtime role and native custody writer, retaining all of its fences.
+    use crate::durability::house_interior::HouseBackpackFacts;
+    let take = HouseItemRequest {
+        command: CommandRef::new(inside.game_session_id, CommandId::new(151).map_err(debug)?),
+        action: HouseItemAction::Take {
+            placement: placement.transaction_id,
+            provenance_revision: 1,
+        },
+        backpack: Some(HouseBackpackFacts {
+            definition: crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: "oteryn:item.tibia.i2854".into(),
+                revision_ref: "definition-r1".into(),
+            },
+            capacity: 20,
+        }),
+        ..place.clone()
+    };
+    let frozen = reopened
+        .freeze_house_item(&recovered_authority, &h.node, fence, take)
+        .await
+        .map_err(debug)?;
+    assert!(matches!(
+        reopened
+            .commit_house_item(&recovered_authority, &h.node, fence, &frozen)
+            .await
+            .map_err(debug)?,
+        HouseItemOutcome::Committed(_)
+    ));
+    let (status, bytes) = exchange(&owner, &mut inside, 16, &request).await?;
+    assert_eq!(status, CommandStatus::Rejected);
+    assert_eq!(
+        bytes,
+        wire::encode_result(1634, 0, Display::default()).map_err(debug)?
+    );
+    let ordinal: String = sqlx::query_scalar("SELECT placement_ordinal::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid")
+        .bind(item.as_slice()).bind(backpack.as_slice()).fetch_one(&h.pool).await?;
+    let replace = HouseItemRequest {
+        command: CommandRef::new(inside.game_session_id, CommandId::new(152).map_err(debug)?),
+        action: HouseItemAction::Place {
+            source: HouseCharacterSource::Inventory {
+                parent: backpack,
+                ordinal: ordinal.parse()?,
+            },
+            position,
+        },
+        ..place
+    };
+    let frozen = reopened
+        .freeze_house_item(&recovered_authority, &h.node, fence, replace)
+        .await
+        .map_err(debug)?;
+    assert!(matches!(
+        reopened
+            .commit_house_item(&recovered_authority, &h.node, fence, &frozen)
+            .await
+            .map_err(debug)?,
+        HouseItemOutcome::Committed(_)
+    ));
+    // Reopen again after custody changed; reload cannot rely on the old placement.
+    let after_custody = runtime_root(h).await?;
+    let after_custody_authority = after_custody
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    owner.root = &after_custody;
+    owner.character = &after_custody_authority;
+    let (status, bytes) = exchange(&owner, &mut inside, 17, &request).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_window(
+        &bytes,
+        6,
+        changed,
+        content.palette(),
+        &[u16::try_from(mount)?],
+    )?;
+    request.action = 2;
+    request.expected_revision = 6;
+    let (status, bytes) = exchange(&owner, &mut inside, 18, &request).await?;
+    assert_eq!(status, CommandStatus::Accepted);
+    assert_eq!(
+        bytes,
+        wire::encode_result(
+            0,
+            7,
+            Display {
+                direction: 3,
+                ..changed
+            }
+        )
+        .map_err(debug)?
+    );
+    let audits: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_podium_records WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(item.as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(
+        audits, 7,
+        "custody changes must not author display revisions"
+    );
+    request.action = 0;
+    request.expected_revision = 0;
     if guest {
         // Revoke precisely the invitation fact after a successful guest mutation.
         let mut tx = h.pool.begin().await?;
@@ -670,7 +772,7 @@ async fn case(h: &Harness, guest: bool, boundary: Option<&str>) -> TestResult {
         sqlx::query("DELETE FROM game_house_acl_entries WHERE world_id=encode($1,'hex')::uuid AND house_key=$2 AND character_id=encode($3,'hex')::uuid")
             .bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
-        let (status, bytes) = exchange(&owner, &mut inside, 16, &request).await?;
+        let (status, bytes) = exchange(&owner, &mut inside, 19, &request).await?;
         assert_eq!(status, CommandStatus::Rejected);
         assert_eq!(&bytes[..2], &1632_u16.to_be_bytes());
     }

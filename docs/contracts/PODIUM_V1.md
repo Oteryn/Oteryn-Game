@@ -26,11 +26,21 @@ under the locked Character root; hidden selections are checked too. Rotation
 retains every other field and wraps north/east/south/west. A refusal writes nothing.
 
 Renown definitions are `oteryn:item.tibia.i35973` and `i35974`.
-Vigour (`i38707`) is a boss display in the pinned references, not verified against
-Global; owner decision 22 permits this provisional reference fallback. It remains
+Vigour (`i38707`) requires Bosstiary Expertise for the displayed boss, as confirmed
+by the [official Bosstiary announcement](https://www.tibia.com/news/?id=6733&subtopic=newsarchive).
+Boss appearance details in the pinned references remain not verified against
+Global; owner decision 22 permits this provisional reference fallback. Vigour remains
 refused: there is no qualified Bosstiary expertise/read owner or boss-display
 catalogue in this implementation. Ordinary Bestiary kill progress is not Bosstiary authority.
 Vigour must not accept a Renown outfit/mount request as a substitute.
+
+The filtered real-dispatch qualification also takes a configured historical Renown
+Item into inventory through the native House writer, refuses a window while it is
+carried, replaces it through the same writer and reopens the runtime-role durability
+root. The window reloads every display field at the original display revision;
+the next rotation advances only that revision and direction. Custody changes add
+no display audit records. This qualifies the Item extension's custody independence,
+not playable content admission, physical pickupability or wrap/unwrap behaviour.
 
 ## Wire and activation boundary
 
