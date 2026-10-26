@@ -861,6 +861,7 @@ fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
                     )),
                 };
                 let catalogue = owner.quest_catalogue.clone().ok_or("catalogue")?;
+                let permit = owner.spell_lane_permit().await.ok_or("lane")?;
                 let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
                 assert!(matches!(
                     slot.commit_world_callback(
@@ -870,6 +871,7 @@ fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
                         fence,
                         request.clone(),
                         catalogue.clone(),
+                        &permit,
                         context.clone()
                     )
                     .await
@@ -890,9 +892,10 @@ fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
                     ..request
                 };
                 assert!(matches!(slot.commit_world_callback(owner.root, owner.character, owner.holder,
-                    stale, fresh_request, catalogue, context).await,
+                    stale, fresh_request, catalogue, &permit, context).await,
                     Err(crate::durability::character_progression::CharacterProgressionError::AuthorityRejected)));
                 drop(slot);
+                drop(permit);
                 let (proofs, receipts, remaining): (i64, i64, i64) = sqlx::query_as(
                     "SELECT (SELECT count(*) FROM game_quest_callback_consumptions), \
                      (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1), \
