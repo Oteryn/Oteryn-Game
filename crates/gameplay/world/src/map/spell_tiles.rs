@@ -625,16 +625,13 @@ pub mod tests {
             assert_eq!(tile.flags().protection_zone, protection, "x {x}");
             assert_eq!(tile.no_pvp_zone(), Some(no_pvp), "x {x}");
             assert_eq!(tile.pvp_zone(), Some(pvp), "x {x}");
-            assert_eq!(
-                world
-                    .overlay()
-                    .base()
-                    .tile(x, 0, -7)
-                    .expect("base zone tile")
-                    .no_logout(),
-                flags & 8 != 0,
-                "x {x}"
-            );
+            let base_tile = world
+                .overlay()
+                .base()
+                .tile(x, 0, -7)
+                .expect("base zone tile");
+            assert_eq!(base_tile.protection_zone(), protection, "x {x}");
+            assert_eq!(base_tile.no_logout(), flags & 8 != 0, "x {x}");
         }
     }
 

@@ -14,7 +14,10 @@ The engineering fixture, which declares no OTBM zones, keeps its existing behavi
 Existing NoPvP/PvP qualification keeps protection-zone > NoPvP > PvP precedence.
 Existing PvP policy remains authoritative: a PvP tile grants no arena rules or PvP-world
 override. Outside protection zones the existing live PvP and PvE fight locks refuse
-logout; a qualified protection zone permits it after the NOLOGOUT check.
+logout; a qualified protection zone permits it after the NOLOGOUT check. Logout reads
+both flags from immutable map evidence: a bundle's independently pinned map revision
+qualifies its zones even when the entry generation differs or mutable items make the
+spell-tile projection unavailable.
 
 Capability 92 `ZONES_NOLOGOUT_V1` adds domain 57 `SERVER_MESSAGES` and no command.
 Existing command 23 and `LogoutResultV1` retain their encoding: a NOLOGOUT refusal is

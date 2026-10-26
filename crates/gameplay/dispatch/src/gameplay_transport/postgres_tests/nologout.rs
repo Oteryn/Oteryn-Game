@@ -49,6 +49,14 @@ fn scenario() -> TestResult {
             });
         data.sectors[0].tiles[0].flags = 8 | 1; // NOLOGOUT also applies inside PZ.
         data.sectors[0].tiles[1].flags = 1; // PZ permits logout during a fight.
+        // Movable items must not hide the protection zone either.
+        data.sectors[0].tiles[1]
+            .items
+            .push(oteryn_world_bundle::sector::Item {
+                palette: 4,
+                depth: 0,
+                attrs: Default::default(),
+            });
         let bytes = oteryn_world_bundle::writer::write(&data.manifest, &data.sectors, &data.spawns)
             .map_err(debug)?;
         pins.digest = oteryn_world_bundle::bundle::read(&bytes)
@@ -94,7 +102,7 @@ fn scenario() -> TestResult {
             ChannelContentPin::from_activation(
                 deps.admitted.world_id,
                 1,
-                cells.scope().generation_digest,
+                [0x52; 32],
                 [2; 32],
                 world.frame_binding_digest(deps.admitted.world_id),
                 world.map_revision_digest(),
@@ -103,16 +111,19 @@ fn scenario() -> TestResult {
             deps.room,
             deps.spells,
         )?;
-        // A loose coin makes spell semantics unknown without hiding the zone flags.
-        assert!(
-            cells
-                .spell_tiles()
-                .lookup(
-                    cells.scope(),
-                    crate::content::LogicalCell { x: 1, y: 0, z: 7 }
-                )
-                .is_err()
+        assert_ne!(
+            cells.scope().generation_digest,
+            deps.runtime.lock().await.content_pin().server_artifact_digest()
         );
+        // A loose coin makes spell semantics unknown without hiding the zone flags.
+        for x in [1, 2] {
+            assert!(
+                cells
+                    .spell_tiles()
+                    .lookup(cells.scope(), crate::content::LogicalCell { x, y: 0, z: 7 })
+                    .is_err()
+            );
+        }
         let mut owner = deps.owner(&h, &authority);
         owner.movement_cells = &cells;
         owner.server_motd = "Welcome to Oteryn!";
