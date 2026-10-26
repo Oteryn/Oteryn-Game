@@ -4,6 +4,33 @@ use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     mechanic_composed_methods!();
+<<<<<<< ours
+||||||| base
+    fn channel_list(&self) -> Option<Vec<u8>> {
+        Some(oteryn_protocol_oteryn::channel_list::encode_channel_list(
+            self.world_id.as_bytes(),
+            self.channel_id.as_bytes(),
+            self.premium_only,
+        ))
+    }
+=======
+    async fn prepare_bed_sleep(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        _intent: oteryn_protocol_oteryn::bed::BedSleepIntent,
+        target: item_view::ItemKey,
+    ) -> Option<crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>> {
+        self.production_bed_sleep_owner(actor, command, target)
+    }
+    fn channel_list(&self) -> Option<Vec<u8>> {
+        Some(oteryn_protocol_oteryn::channel_list::encode_channel_list(
+            self.world_id.as_bytes(),
+            self.channel_id.as_bytes(),
+            self.premium_only,
+        ))
+    }
+>>>>>>> incoming
     async fn party_command(
         &self,
         admitted: connection::AdmittedSession,

@@ -102,7 +102,7 @@ async fn commit_authorized(
         root: &h.root,
         recovery,
         node: &h.node,
-        presence: &presence,
+        presence: crate::durability::bed_sleep::ResolvedHousePresence::from_proof(&presence),
         request,
     }
     .commit()

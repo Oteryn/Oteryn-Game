@@ -3,7 +3,7 @@
 // the durable dispatch connection, not active-bundle/reservation qualification.
 use super::bed_sleep_fixture::{FixturePresence, fixture, presence, request};
 use crate::bestiary_postgres_harness::{Harness, TestResult, debug, runtime};
-use crate::durability::bed_sleep::{BedSleepOwner, BedSleepRequest};
+use crate::durability::bed_sleep::{BedSleepOwner};
 use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::foundation::ExactActorRef;
 use crate::gameplay_transport::connection::{
@@ -18,9 +18,8 @@ use oteryn_protocol_oteryn::world_object::UseDisposition;
 struct HouseOwner<'a, 'f, 's> {
     harness: &'a Harness,
     recovery: &'a ReconciledCharacterAuthority<'f, 's>,
-    request: BedSleepRequest,
-    target: ItemKey,
     presence: FixturePresence,
+    preparations: crate::gameplay_transport::bed_sleep::BedSleepPreparations,
 }
 
 impl FreshAdmissionAuthority for HouseOwner<'_, '_, '_> {
@@ -33,17 +32,17 @@ impl FreshAdmissionAuthority for HouseOwner<'_, '_, '_> {
 
     async fn prepare_bed_sleep(
         &self,
-        _: ExactActorRef,
-        _: UseCommand,
+        actor: ExactActorRef,
+        command: UseCommand,
         _: BedSleepIntent,
         target: ItemKey,
     ) -> Option<BedSleepOwner<'_, '_, '_>> {
-        (target == self.target).then(|| BedSleepOwner {
+        self.preparations.take(actor, command, target).map(|prepared| BedSleepOwner {
             root: &self.harness.root,
             recovery: self.recovery,
             node: &self.harness.node,
-            presence: &self.presence,
-            request: self.request.clone(),
+            presence: crate::durability::bed_sleep::ResolvedHousePresence::from_proof(&self.presence),
+            request: prepared.request,
         })
     }
 }
@@ -61,7 +60,7 @@ fn bed_sleep_successful_real_dispatch_commits_the_native_owner() -> TestResult {
         let target = ItemKey::MapBase {
             bundle_digest: [7; 32], placement_key: 123, reset_epoch: 1,
         };
-        let owner = HouseOwner { harness: &h, recovery: &recovery, request: request.clone(), target, presence: presence()? };
+        let owner = HouseOwner { harness: &h, recovery: &recovery, presence: presence()?, preparations: Default::default() };
         let actor = ExactActorRef::transport_fixture(
             request.house.world_id(),
             crate::foundation::ChannelId::decode(&crate::bestiary_postgres_harness::id(43)).map_err(debug)?,
@@ -73,6 +72,7 @@ fn bed_sleep_successful_real_dispatch_commits_the_native_owner() -> TestResult {
         let command = UseCommand { game_session_id: request.fence.game_session_id,
             command_id: request.command_id, item_fence: Some(request.fence) };
         let intent = BedSleepIntent { target: handle, skill: request.skill };
+        assert!(owner.preparations.install(crate::gameplay_transport::bed_sleep::PreparedBedSleep { actor, target, request: request.clone() }));
         // Bind the server-prepared intent to the sequenced command before any write.
         let wrong = UseCommand { command_id: 2, ..command };
         assert_eq!(crate::gameplay_transport::bed_sleep::dispatch(&owner, actor, wrong, Ok(intent), Some(&view)).await.map_err(debug)?.disposition,

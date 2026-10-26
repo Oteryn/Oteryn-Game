@@ -16,6 +16,8 @@ pub struct ChannelSessionStates {
     /// The Channel owner's attack targets, fight modes and in-fight deadlines (ATTACK-1b).
     /// Always locked after `runtime` and `spell_states`, never before.
     pub attack: Mutex<attack::ChannelAttackStates>,
+    /// BED-SLEEP-OWNER-1: one-shot House-runtime preparations consumed by production dispatch.
+    pub(super) bed_sleep: super::bed_sleep::BedSleepPreparations,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
     pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
@@ -82,6 +84,7 @@ impl ChannelSessionStates {
     pub(super) fn forget_session(&self, session: GameSessionId) {
         self.fence_holders.forget(session);
         self.appearance_commands.forget(session);
+        self.bed_sleep.forget(session);
         self.chat.forget(session);
         self.command_ingress.forget(session);
         self.player_trades.forget(session);

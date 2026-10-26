@@ -43,8 +43,27 @@ pub struct BedSleepOwner<'a, 'f, 's> {
     pub root: &'a DurabilityRoot,
     pub recovery: &'a ReconciledCharacterAuthority<'f, 's>,
     pub node: &'a NodeIncarnationProof,
-    pub presence: &'a (dyn HousePresenceProof + Sync),
+    pub presence: ResolvedHousePresence,
     pub request: BedSleepRequest,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResolvedHousePresence {
+    pub world: crate::foundation::WorldId,
+    pub house_key: String,
+    pub actor_session: crate::foundation::GameSessionId,
+    pub scope_generation: u64,
+}
+
+impl ResolvedHousePresence {
+    pub fn from_proof(proof: &dyn HousePresenceProof) -> Self {
+        Self {
+            world: proof.world(),
+            house_key: proof.house_key().to_owned(),
+            actor_session: proof.actor_session(),
+            scope_generation: proof.scope_generation(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,10 +88,10 @@ impl BedSleepOwner<'_, '_, '_> {
         }) || request.command_id == 0
             || !(1..=6).contains(&request.skill)
             || request.fence.runtime_scope != request.house.runtime_scope()?
-            || self.presence.world() != request.house.world_id()
-            || self.presence.house_key() != request.house.house_key()
-            || self.presence.actor_session() != request.fence.game_session_id
-            || self.presence.scope_generation() != request.fence.scope_ownership_generation.get()
+            || self.presence.world != request.house.world_id()
+            || self.presence.house_key != request.house.house_key()
+            || self.presence.actor_session != request.fence.game_session_id
+            || self.presence.scope_generation != request.fence.scope_ownership_generation.get()
         {
             return Ok(BedSleepOutcome::Denied);
         }

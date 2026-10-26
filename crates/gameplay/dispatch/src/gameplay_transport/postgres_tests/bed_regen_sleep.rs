@@ -39,7 +39,7 @@ impl FreshAdmissionAuthority for SleepOwner<'_, '_, '_> {
             root: &self.harness.root,
             recovery: self.recovery,
             node: &self.harness.node,
-            presence: &self.presence,
+            presence: crate::durability::bed_sleep::ResolvedHousePresence::from_proof(&self.presence),
             request: self.request.clone(),
         })
     }

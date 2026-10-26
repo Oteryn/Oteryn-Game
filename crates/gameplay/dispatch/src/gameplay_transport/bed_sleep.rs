@@ -7,6 +7,78 @@ use crate::foundation::ExactActorRef;
 use oteryn_protocol_oteryn::bed::BedSleepIntent;
 use oteryn_protocol_oteryn::world_interaction::WorldInteractionWireError;
 use oteryn_protocol_oteryn::world_object::UseDisposition;
+use std::collections::HashMap;
+use std::sync::Mutex;
+
+#[derive(Clone)]
+pub struct PreparedBedSleep {
+    pub actor: ExactActorRef,
+    pub target: ItemKey,
+    pub request: crate::durability::bed_sleep::BedSleepRequest,
+}
+
+#[derive(Default)]
+pub struct BedSleepPreparations(Mutex<HashMap<crate::foundation::GameSessionId, PreparedBedSleep>>);
+
+impl BedSleepPreparations {
+    pub fn install(&self, prepared: PreparedBedSleep) -> bool {
+        self.0.lock().is_ok_and(|mut entries| {
+            entries
+                .insert(prepared.request.fence.game_session_id, prepared)
+                .is_none()
+        })
+    }
+
+    pub(super) fn take(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        target: ItemKey,
+    ) -> Option<PreparedBedSleep> {
+        let mut entries = self.0.lock().ok()?;
+        let prepared = entries.get(&command.game_session_id)?;
+        if prepared.actor != actor
+            || prepared.target != target
+            || prepared.request.command_id != command.command_id
+        {
+            return None;
+        }
+        entries.remove(&command.game_session_id)
+    }
+
+    pub(super) fn forget(&self, session: crate::foundation::GameSessionId) {
+        if let Ok(mut entries) = self.0.lock() {
+            entries.remove(&session);
+        }
+    }
+}
+
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    pub fn prepare_production_bed_sleep(&self, prepared: PreparedBedSleep) -> bool {
+        self.states.bed_sleep.install(prepared)
+    }
+
+    pub(super) fn production_bed_sleep_owner(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        target: ItemKey,
+    ) -> Option<crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>> {
+        let request = self.states.bed_sleep.take(actor, command, target)?.request;
+        Some(crate::durability::bed_sleep::BedSleepOwner {
+            root: self.root,
+            recovery: self.character,
+            node: self.holder,
+            presence: crate::durability::bed_sleep::ResolvedHousePresence {
+                world: request.house.world_id(),
+                house_key: request.house.house_key().to_owned(),
+                actor_session: request.fence.game_session_id,
+                scope_generation: request.fence.scope_ownership_generation.get(),
+            },
+            request,
+        })
+    }
+}
 
 pub(super) async fn sleep_with_owner(
     authority: &(impl FreshAdmissionAuthority + ?Sized),
