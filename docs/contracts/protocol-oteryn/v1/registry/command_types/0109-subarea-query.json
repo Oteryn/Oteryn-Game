@@ -1,0 +1,10 @@
+{
+  "id": 109,
+  "name": "SUBAREA_QUERY",
+  "owner_decision": "SUBAREA-ADMIT-1",
+  "capability": 93,
+  "payload_schema": "subarea-v1.md#request",
+  "result_schema": "subarea-v1.md#result",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 9
+}

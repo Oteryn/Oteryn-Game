@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v4`: the byte layout and the fail-closed reader. The writer lives in
+//! `OTERYN_WORLD_BUNDLE/v5`: the byte layout and the fail-closed reader. The writer lives in
 //! the compiler and applies the same `validate_*` functions.
 //!
 //! Layout (little endian), specified in `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`:
@@ -14,13 +14,13 @@ use crate::Error;
 use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
 use crate::{npc, spawn};
 
-pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v4";
-pub const VERSION: u16 = 4;
+pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v5";
+pub const VERSION: u16 = 5;
 pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
 /// from the previous value lacks; it never goes down (decision ARCH-WORLD-CONTENT-SERVE-1 §1.2).
-pub const RUNTIME_VERSION: u32 = 1;
+pub const RUNTIME_VERSION: u32 = 2;
 /// The sorted, unique capabilities the node implements. A PR adds a value only with the runtime
 /// code that implements it. Empty today.
 pub const SUPPORTED_CAPABILITIES: &[&str] = &[];
@@ -219,6 +219,8 @@ fn runtime_supported(value: &str) -> bool {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
+    /// Typed client-mask admission, covered by the bundle digest (format v5).
+    pub subareas: crate::subarea::Table,
     pub format: String,
     pub min_reader_version: u16,
     pub projection_class: String,
@@ -366,6 +368,7 @@ pub fn digest_of(body: &[u8]) -> [u8; 32] {
 
 /// The manifest rules the writer and the reader both apply.
 pub fn validate_manifest(m: &Manifest) -> Result<(), Error> {
+    m.subareas.validate(&m.world)?;
     check(
         m.format == FORMAT && m.min_reader_version == VERSION,
         "unsupported bundle format",
@@ -612,7 +615,7 @@ pub fn visit_budgeted(
     )?;
     check(
         &data[..4] == MAGIC && le16(data, 4) == VERSION,
-        "not an OTERYN_WORLD_BUNDLE/v4",
+        "not an OTERYN_WORLD_BUNDLE/v5",
     )?;
     check(le16(data, 6) == 0, "reserved header bytes are not zero")?;
     let (body, trailer) = data.split_at(data.len() - DIGEST);

@@ -9,7 +9,7 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::guild_intent::GuildReply;
 use oteryn_protocol_oteryn::CommandStatus;
 #[path = "cyclopedia/fixture.rs"]
-mod support;
+pub(super) mod support;
 
 fn request(operation: u8, amount: u32) -> Vec<u8> {
     let mut b = vec![operation];

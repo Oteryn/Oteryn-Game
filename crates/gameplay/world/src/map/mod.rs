@@ -81,6 +81,8 @@ const SECTOR_TILES: usize = (SECTOR_SIZE as usize) * (SECTOR_SIZE as usize);
 /// ground item (§1.3).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct BaseTile {
+    no_logout: bool,
+    protection_zone: bool,
     first_entry: u32,
     entries: u16,
     /// The ground item's stored ground speed, also for a non-walkable ground; 0 without one.
@@ -135,6 +137,7 @@ pub use crate::content::world_reward_claims::UniqueEntry;
 /// ground item, walkable flag and ground speed. It holds no overlay and is never mutated.
 #[derive(Debug)]
 pub struct WorldBase {
+    pub subareas: oteryn_world_bundle::subarea::Table,
     digest: [u8; 32],
     content_revision: String,
     /// Ascending sector keys ([`sector_key`]), one per entry of `sectors`.
@@ -172,6 +175,16 @@ pub struct TileView<'a> {
 }
 
 impl<'a> TileView<'a> {
+    /// Retained OTBM NOLOGOUT, independent of mutable items and spell qualification.
+    pub fn no_logout(&self) -> bool {
+        self.tile.no_logout
+    }
+
+    /// Retained OTBM protection zone, independent of mutable items and spell qualification.
+    pub fn protection_zone(&self) -> bool {
+        self.tile.protection_zone
+    }
+
     fn range(&self) -> std::ops::Range<usize> {
         let first = self.tile.first_entry as usize;
         first..first + usize::from(self.tile.entries)
@@ -406,6 +419,7 @@ pub fn load_with_spawns(
     let spawns = visited.spawns;
     Ok((
         WorldBase {
+            subareas: visited.manifest.subareas,
             digest: visited.digest,
             content_revision: visited.manifest.identity.content_revision,
             keys: builder.keys,
@@ -532,6 +546,8 @@ impl Builder {
                     .ok_or_else(|| malformed("too many top-level entries"))?;
             }
             self.tiles.push(BaseTile {
+                no_logout: tile.flags & 8 != 0,
+                protection_zone: tile.flags & 1 != 0,
                 first_entry,
                 entries,
                 ground_speed,

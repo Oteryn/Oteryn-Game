@@ -50,6 +50,22 @@ pub(in crate::gameplay_transport) struct PlayerBiteVitals<'a> {
 }
 
 impl CreatureBiteVitals for PlayerBiteVitals<'_> {
+    fn reflect_equipment_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        magnitude: u32,
+        stream: &[u8],
+        now: OwnerTime,
+    ) -> bool {
+        self.states.reflect_equipment(
+            runtime, source, target, session, element, magnitude, stream, now,
+        )
+    }
+
     fn apply_creature_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,

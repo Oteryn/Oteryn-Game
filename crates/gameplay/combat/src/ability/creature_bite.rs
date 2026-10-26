@@ -169,6 +169,23 @@ pub enum BiteRejection {
 /// The Channel owner's vitals of its present player actors (SPELL-D2). The vitals owner
 /// implements it; a bite reaches the player's health only through this one method.
 pub trait CreatureBiteVitals {
+    /// EQMOD2: the incoming source calls once after blocking and before HP/mana shield.
+    /// The source stream's clock is strictly increasing; extension hits never enter here.
+    #[allow(clippy::too_many_arguments)]
+    fn reflect_equipment_damage(
+        &mut self,
+        _runtime: &mut ChannelRuntimeV1,
+        _source: ExactActorRef,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _element: Option<&str>,
+        _magnitude: u32,
+        _stream: &[u8],
+        _now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        true
+    }
+
     /// Lower the committed, living player's health by one creature hit in one vitals write; a
     /// hit to 0 records the player's death with a newly minted occurrence in the same write.
     /// `None` changes nothing.
@@ -351,6 +368,18 @@ fn resolve_and_apply(
         armored,
         vitals.target_physical_protection(runtime, intent.target, intent.target_session),
     );
+    if !vitals.reflect_equipment_damage(
+        runtime,
+        intent.issuer,
+        intent.target,
+        intent.target_session,
+        Some("physical"),
+        mitigated,
+        b"bite",
+        now,
+    ) {
+        return Err(BiteRejection::InvalidPlan);
+    }
     let hit = vitals
         .apply_creature_damage(
             runtime,
@@ -382,7 +411,7 @@ fn protected(damage: u32, sum: Option<ReferenceRationalPercent>) -> u32 {
 /// blocks (and training shielding through `vitals`). Nothing reaches the player's health and no
 /// bite cooldown is kept. `false` when the bite does not reach the player.
 pub fn meet_zero_bite(
-    runtime: &ChannelRuntimeV1,
+    runtime: &mut ChannelRuntimeV1,
     vitals: &mut dyn CreatureBiteVitals,
     intent: AiBiteIntent,
     protection: ReentryProtection,
@@ -392,7 +421,16 @@ pub fn meet_zero_bite(
         return false;
     }
     let _ = vitals.target_defence(runtime, intent.target, intent.target_session, now);
-    true
+    vitals.reflect_equipment_damage(
+        runtime,
+        intent.issuer,
+        intent.target,
+        intent.target_session,
+        Some("physical"),
+        0,
+        b"bite",
+        now,
+    )
 }
 
 /// The bite reaches its target: a committed player, adjacent on the same context, unprotected.

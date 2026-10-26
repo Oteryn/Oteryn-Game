@@ -2148,6 +2148,7 @@ fn modifier_parameter_shape(kind: super::ReferenceSkillModifierKind) -> u8 {
     match kind {
         Kind::Invisibility | Kind::ManaShield | Kind::SuppressDrown | Kind::SuppressDrunk => 1,
         Kind::CleavePercent
+        | Kind::ReflectPercentAll
         | Kind::CriticalHitChance
         | Kind::CriticalHitDamage
         | Kind::LifeLeechAmount

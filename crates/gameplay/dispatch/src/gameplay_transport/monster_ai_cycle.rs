@@ -390,6 +390,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !swinging.is_empty() {
             states.monster_ai_cursor = (cursor + count) % swinging.len();
         }
+        let activity = attack.shared_experience_cells();
+        for (target, lethal, at) in states.equipment_reflection_kills.drain(..) {
+            super::kill_reward::record_creature_kill(
+                &mut runtime,
+                super::kill_reward::KillSink {
+                    queue: attack.kills(),
+                    rewards: self.reward_table(),
+                    activity: &activity,
+                },
+                target,
+                lethal,
+                at / 1_000,
+                Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(at)),
+            );
+        }
         drop(attack);
         drop(states);
         drop(runtime);

@@ -430,7 +430,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     charges: 0,
                 })
             }
-            super::logout::LogoutReply::Result(_) => {
+            super::logout::LogoutReply::Result(_) | super::logout::LogoutReply::NoLogout => {
                 if let Some(state) = self
                     .states
                     .training
