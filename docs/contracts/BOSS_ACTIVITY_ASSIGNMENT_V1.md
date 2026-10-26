@@ -143,6 +143,28 @@ refusal is checked at the actual connection boundary. This administrative fixtur
 transition proves rejection of stale Channel authority; it is not a committed
 activity handoff or session provenance implementation.
 
+`boss_activity_full_character_fence_postgres` separately exercises the existing
+CharacterRevision-bearing gameplay fence in its bounded semantic transaction.
+The accepted controls are Channel participants at the current CharacterRevision;
+a different expected revision returns CharacterRevisionMismatch. Wrong Character,
+session, connection generation, lease generation, ownership generation, World,
+Channel and a typed Instance with the Channel's UUID bytes all return
+AuthorityRejected, both with the current and a different expected revision.
+A wrong possession secret also refuses, with matching controls between cases.
+This verifies the full fence's composition without creating an activity session.
+
+The cooldown real-wire scenario additionally withdraws eligibility, changes the
+live lease generation, removes its holder, changes the Character guard's account
+or World, changes account presence to a different Character identity, and releases
+account presence. Each isolated administrative fixture change must refuse both the
+durable reader and a new command 133 on the same live connection. Restoring the
+fixture fact must restore accepted results and the same bounded cooldown page.
+A disconnect or missing CommandResult fails these cases. These fixture changes
+are negative participant-fence evidence, not an admission publisher, activity
+handoff or successful Instance consumer. The activity-session refusal remains
+installed; full accepted Instance qualification still requires the provenance,
+handoff writer and tests together.
+
 Applied migrations and receipts are immutable. Rollback uses a forward migration
 that disables activity allocation while preserving all history and generations.
 Never delete spent cooldowns or allocation receipts to roll back this boundary.

@@ -19,6 +19,9 @@ use crate::foundation::{RuntimeScopeRefV1, WorldId};
 #[path = "activity_assignment_tests/channel_consumers.rs"]
 mod channel_consumers;
 
+#[path = "activity_assignment_tests/character_fence.rs"]
+mod character_fence;
+
 fn request(tag: u8, command: AssignmentCommand) -> TestResult<AssignmentRequest> {
     Ok(AssignmentRequest {
         operation_key: OperationKey::from_bytes([tag; 32]),

@@ -77,9 +77,9 @@ async fn exchange(
 }
 
 // Keep one connection alive across the changes. Its initial valid command
-// reconciles carried commands before the interpretation changes; later commands
-// then exercise the actual cooldown handler rather than setup/reconciliation.
-async fn qualify_interpretation_changes(
+// reconciles carried commands before the participant/interpretation changes;
+// later commands exercise the cooldown handler rather than setup/reconciliation.
+async fn qualify_fence_changes(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     pool: &sqlx::PgPool,
@@ -105,8 +105,99 @@ async fn qualify_interpretation_changes(
         let mut command_id = before.continuity.next_command_id;
         let (status, payload) = query(&mut client, generation, command_id).await?;
         assert_eq!(status, CommandStatus::Accepted);
-        assert_eq!(page(&payload)?.1.len(), 64);
+        let (_, expected_entries, expected_next) = page(&payload)?;
+        assert_eq!(expected_entries.len(), 64);
         command_id += 1;
+        // Administrative fixture mutations isolate each live participant fact.
+        // They grant no session or handoff authority and change no immutable
+        // publication history. Each refusal must produce a CommandResult on
+        // this same connection; a disconnect is a failure, not qualification.
+        for (label, table, changed, restored) in [
+            (
+                "Character eligibility",
+                "game_durability_admission_character_guards",
+                "eligible=false",
+                "eligible=true",
+            ),
+            (
+                "Character lease generation",
+                "game_durability_admission_character_guards",
+                "lease_generation=lease_generation+1",
+                "lease_generation=lease_generation-1",
+            ),
+            (
+                "Character lease holder",
+                "game_durability_admission_character_guards",
+                "holder_game_session_id=NULL",
+                "holder_game_session_id=encode($2,'hex')::uuid",
+            ),
+            (
+                "Character account",
+                "game_durability_admission_character_guards",
+                "account_id=encode($3,'hex')::uuid",
+                "account_id=(SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid)",
+            ),
+            (
+                "Character World",
+                "game_durability_admission_character_guards",
+                "world_id=encode($3,'hex')::uuid",
+                "world_id=(SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid)",
+            ),
+            (
+                "account presence Character",
+                "game_durability_admission_account_guards",
+                "presence_character_id=encode($3,'hex')::uuid",
+                "presence_character_id=encode($1,'hex')::uuid",
+            ),
+            (
+                "account presence release",
+                "game_durability_admission_account_guards",
+                "presence_character_id=NULL,holder_game_session_id=NULL",
+                "presence_character_id=encode($1,'hex')::uuid,holder_game_session_id=encode($2,'hex')::uuid",
+            ),
+        ] {
+            let predicate = if table == "game_durability_admission_character_guards" {
+                "character_id=encode($1,'hex')::uuid"
+            } else {
+                "account_id=(SELECT account_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid)"
+            };
+            for (set, expected) in [
+                (changed, CommandStatus::Rejected),
+                (restored, CommandStatus::Accepted),
+            ] {
+                // All SQL fragments above are fixed test literals. The three
+                // typed UUID parameters have fixed casts even when a particular
+                // case uses only one of them.
+                let updated = sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "UPDATE {table} SET {set} WHERE {predicate} AND encode($2,'hex')::uuid IS NOT NULL AND encode($3,'hex')::uuid IS NOT NULL"
+                )))
+                .bind(fence.character_id.as_bytes().as_slice())
+                .bind(fence.game_session_id.as_bytes().as_slice())
+                .bind(fixture::id(91).as_slice())
+                .execute(pool)
+                .await?;
+                assert_eq!(updated.rows_affected(), 1, "{label}");
+                let durable = owner
+                    .root
+                    .read_boss_cooldown_list(owner.character, owner.holder, fence, &[])
+                    .await?;
+                assert_eq!(
+                    durable.is_some(),
+                    expected == CommandStatus::Accepted,
+                    "{label}"
+                );
+                let (status, payload) = query(&mut client, generation, command_id).await?;
+                assert_eq!(status, expected, "{label}");
+                if expected == CommandStatus::Accepted {
+                    let (_, entries, next) = page(&payload)?;
+                    assert_eq!(entries, expected_entries, "{label}");
+                    assert_eq!(next, expected_next, "{label}");
+                } else {
+                    assert!(payload.is_empty(), "{label}");
+                }
+                command_id += 1;
+            }
+        }
         for index in 0..4 {
             let mut revisions = ["profile-1", "ruleset-1", "content-1", "starter-1"];
             revisions[index] = "boss-incompatible-2";
@@ -151,7 +242,7 @@ async fn qualify_interpretation_changes(
     .await?;
     result?;
     let ConnectionEnd::AdmittedThenDisconnected(current) = ended else {
-        return Err(format!("interpretation connection ended {ended:?}").into());
+        return Err(format!("participant/interpretation connection ended {ended:?}").into());
     };
     *admitted = current;
     Ok(())
@@ -539,7 +630,7 @@ fn scenario() -> TestResult {
                 .await?
                 .is_none()
         );
-        qualify_interpretation_changes(&owner, &mut admitted, &h.pool).await?;
+        qualify_fence_changes(&owner, &mut admitted, &h.pool).await?;
         refuse_live_instance_scope(&owner, admitted, &h.pool).await?;
         // No query changes the Character revision or its cooldown rows.
         let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
