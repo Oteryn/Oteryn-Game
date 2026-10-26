@@ -31,13 +31,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return (StepOutcome::rejected(), None);
         }
         let equipment = self.read_movement_equipment(actor, session).await;
-        let now = self.owner_now().get();
         // Lock order (§1.2): the lane before any Channel guard.
         let Some(mut permit) = self.spell_lane_permit().await else {
             return (StepOutcome::rejected(), None);
         };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        // A periodic condition turn may finish while this step waits for the
+        // lane or Channel locks. Sample time only after acquiring its owners;
+        // field entry must not predate the condition predecessor it observes.
+        let now = self.owner_now().get();
         // USE-AUTOWALK-1: a relocation (even away and back) invalidates the queued step.
         // Compare while holding the same owner lock as the movement commit.
         if follow.is_some_and(|(target, expected)| {

@@ -287,7 +287,12 @@ impl<'a, 'db> CurrentMonsterMap<'a, 'db> {
         }
         if field.is_none() {
             for id in tile.top_source_ids() {
-                let policy = self.content.item_policy_for_source_id(*id)?;
+                // Static terrain/decorations are qualified by the Map owner and
+                // need not have a portable Item profile. Only an admitted field
+                // recipe adds a path cost; collision facts above still apply.
+                let Some(policy) = self.content.item_policy_for_source_id(*id) else {
+                    continue;
+                };
                 if let Some(recipe) = &policy.record().attributes.field_condition {
                     if recipe.condition_values().ok()?.is_some() {
                         field = recipe.element().ok()?;

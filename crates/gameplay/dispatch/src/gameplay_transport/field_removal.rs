@@ -48,6 +48,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return None;
         };
         let fence = command.item_fence?;
+        // Tool classification reads the durable inventory too. Serialize it with
+        // the pick owner so a competing probe cannot consume its semantic pass.
+        let Some(mut permit) = self.spell_lane_permit().await else {
+            return Some(None);
+        };
         let inventory = self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
@@ -96,9 +101,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return refused();
         }
-        let Some(mut permit) = self.spell_lane_permit().await else {
-            return Some(None);
-        };
         let runtime = self.runtime.lock().await;
         let states = self.states.spell_states.lock().await;
         if states.is_dead(actor)
