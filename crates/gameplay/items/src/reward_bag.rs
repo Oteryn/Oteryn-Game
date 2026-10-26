@@ -24,6 +24,37 @@ pub struct Reward {
     pub weight: u64,
 }
 
+/// The one shared boss-encounter reward that makes a Primal Bag reachable.
+///
+/// Gnomadness is completed in an activity instance.  The hazard level changes the
+/// fight, not reward ownership, so it is deliberately absent from this input.  The
+/// encounter owner calls this after its ordinary, fenced completion decision and
+/// feeds the returned definition to the same mint path as every other boss reward.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BossEncounterCompletion<'a> {
+    pub boss: &'a str,
+    pub scope: BossEncounterScope,
+    pub credited: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BossEncounterScope {
+    Channel,
+    ActivityInstance,
+}
+
+/// Resolve a guaranteed bag granted by the shared boss-completion mechanic.
+///
+/// This intentionally refuses channel-scoped and uncredited completions.  Boss rooms
+/// are activity instances; accepting a channel event here would allow a spawn or
+/// hazard callback to mint the reward without completing the encounter.
+pub fn boss_encounter_reward(completion: BossEncounterCompletion<'_>) -> Option<&'static str> {
+    (completion.boss == "oteryn:creature.gnomadness"
+        && completion.scope == BossEncounterScope::ActivityInstance
+        && completion.credited)
+        .then_some("oteryn:item.tibia.i39546")
+}
+
 /// Every bag of the overlay in source order; `None` if the bundled overlay does not parse.
 pub fn reward_bags() -> Option<&'static [RewardBag]> {
     #[derive(serde::Deserialize)]
@@ -164,5 +195,32 @@ mod tests {
         assert_ne!(draw, reward_bag_draw([3; 16], 7, [2; 16]));
         assert_ne!(draw, reward_bag_draw([1; 16], 8, [2; 16]));
         assert_ne!(draw, reward_bag_draw([1; 16], 7, [4; 16]));
+    }
+
+    #[test]
+    fn gnomadness_completion_uses_shared_activity_instance_reward() {
+        let completion = BossEncounterCompletion {
+            boss: "oteryn:creature.gnomadness",
+            scope: BossEncounterScope::ActivityInstance,
+            credited: true,
+        };
+        assert_eq!(
+            boss_encounter_reward(completion),
+            Some("oteryn:item.tibia.i39546")
+        );
+        assert_eq!(
+            boss_encounter_reward(BossEncounterCompletion {
+                scope: BossEncounterScope::Channel,
+                ..completion
+            }),
+            None
+        );
+        assert_eq!(
+            boss_encounter_reward(BossEncounterCompletion {
+                credited: false,
+                ..completion
+            }),
+            None
+        );
     }
 }
