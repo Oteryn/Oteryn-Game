@@ -14,6 +14,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("CRAFT-1", 22),
     // ENERGY-RING-1 admits the inactive 3051 and active 3088 through the timed pipeline.
     ("ENERGY-RING-1", 2),
+    // The sliver 37109 (tools/content-migration/forge_creature_profiles.py), speed_bonus=0.
+    ("FORGECREATURE", 1),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
     // The wooden chairs 2358..=2361 (tools/content-migration/item_transform_profiles.py).
