@@ -1,0 +1,10 @@
+{
+  "id": 102,
+  "name": "HOUSE_TRANSFER",
+  "owner_decision": "HOUSE-TRANSFER-1 (2026-10-26)",
+  "capability": 86,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/house_transfer_v1.proto#HouseTransferIntentV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/house_transfer_v1.proto#HouseTransferAckV1",
+  "max_payload_bytes": 540,
+  "max_result_payload_bytes": 2048
+}

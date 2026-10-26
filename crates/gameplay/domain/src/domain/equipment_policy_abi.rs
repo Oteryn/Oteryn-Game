@@ -14,6 +14,7 @@ pub trait EquipmentPolicyLookup: policy_registration::Registered {
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EquipmentBaseVocation {
+    None,
     Druid,
     Knight,
     Monk,
@@ -55,7 +56,7 @@ impl QualifiedEquipmentPolicy {
                     || value.slots.windows(2).any(|w| w[0] >= w[1])
                     || value.groups.len() > 32
                     || value.groups.iter().any(|g| g.is_empty() || g.len() > 128)
-                    || value.vocations.len() > 5)
+                    || value.vocations.len() > 6)
             {
                 return None;
             }

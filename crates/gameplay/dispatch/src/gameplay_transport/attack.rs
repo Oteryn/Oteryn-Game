@@ -1253,7 +1253,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if equipment.content_digest != digest || content.source_digest() != digest {
             return;
         }
-        let Some(ranged) = ranged::loadout(content, &equipment) else {
+        let weights = super::item_ref_admission::NativeItemWeights(content);
+        let quiver_entries = if equipment.items.iter().any(|item| {
+            matches!(item.slot, 6 | 10)
+                && crate::durability::item_loop_move::ItemLoopContent::is_quiver(
+                    &weights,
+                    &item.definition,
+                )
+        }) {
+            let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                self.root.clone(),
+            )
+            .current_session_at(session)
+            .await;
+            let Some(fence) = current
+                .ok()
+                .and_then(|current| super::item_fence_of(current.0))
+            else {
+                return;
+            };
+            let Some(entries) = self
+                .root
+                .read_quiver_ammunition(
+                    self.character,
+                    self.holder,
+                    &fence,
+                    equipment.clone(),
+                    &super::item_ref_admission::NativeItemWeights(content),
+                )
+                .await
+                .ok()
+            else {
+                return;
+            };
+            entries
+        } else {
+            Vec::new()
+        };
+        let Some(ranged) = ranged::loadout(content, &equipment, &quiver_entries) else {
             return;
         };
         let Some(weapon) = swing_weapon(content, &equipment.items) else {
