@@ -138,45 +138,24 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-CREATE OR REPLACE FUNCTION game_item_corpse_entry_removal_proven() RETURNS trigger
-LANGUAGE plpgsql AS $$
+-- Extend the latest installed body (including the 0148 world-reset arm), retaining
+-- its SECURITY DEFINER and search_path attributes rather than copying an older guard.
+DO $migration$
+DECLARE body TEXT;
 BEGIN
-    -- Preserve the same-transaction reset proof installed by 0148_world_reset.sql.
-    IF game_world_reset_item_proven(OLD.item_instance_id) THEN
-        RETURN NULL;
+    body := pg_get_functiondef('game_item_corpse_entry_removal_proven()'::regprocedure);
+    IF position('game_world_reset_item_proven' IN body) = 0 THEN
+        RAISE EXCEPTION 'quick loot requires the latest corpse removal reset proof';
     END IF;
+    body := regexp_replace(body, '\mBEGIN\M', $arm$BEGIN
     IF EXISTS(SELECT 1 FROM game_item_loop_move_lines l JOIN game_item_loop_move_receipts r USING(transaction_id)
         WHERE l.item_instance_id=OLD.item_instance_id AND l.from_kind=5 AND r.quick_loot_ordinal>0
           AND l.created_xact_id=pg_current_xact_id() AND r.created_xact_id=pg_current_xact_id()) THEN
         RETURN NULL;
     END IF;
-    IF EXISTS(SELECT 1 FROM game_spell_item_lines l JOIN game_spell_item_receipts r USING(transaction_id) JOIN game_item_instances i ON i.item_instance_id=l.item_instance_id
-      WHERE l.operation_kind IN(5,6) AND l.item_instance_id=OLD.item_instance_id AND l.quantity_after=0
-       AND l.source_parent_item_instance_id=OLD.parent_item_instance_id AND l.source_placement_ordinal=OLD.placement_ordinal
-       AND i.last_transaction_id=l.transaction_id AND i.lifecycle=2 AND i.quantity=0 AND i.state_revision=l.state_revision_before+1
-       AND l.operation_kind=6 AND l.source_entry_is_corpse
-       AND l.created_xact_id=pg_current_xact_id() AND r.created_xact_id=pg_current_xact_id()) THEN RETURN NULL; END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM game_item_transfer_receipts r
-          JOIN game_item_instances i ON i.item_instance_id = r.source_item_instance_id
-         WHERE r.source_item_instance_id = OLD.item_instance_id
-           AND i.last_transaction_id = r.transaction_id
-           AND r.created_xact_id = pg_current_xact_id())
-       AND NOT EXISTS (
-        SELECT 1 FROM game_item_decay_retire_receipts d
-          JOIN game_item_instances i ON i.item_instance_id = d.item_instance_id
-         WHERE d.item_instance_id = OLD.item_instance_id
-           AND d.corpse_item_instance_id = OLD.parent_item_instance_id
-           AND d.item_instance_id <> d.corpse_item_instance_id
-           AND i.last_transaction_id = d.transaction_id
-           AND d.created_xact_id = pg_current_xact_id()) THEN
-        RAISE EXCEPTION 'corpse container entry removal must commit with its TRANSFER receipt'
-            USING ERRCODE = '23514';
-    END IF;
-    RETURN NULL;
-END;
-$$;
+$arm$);
+    EXECUTE body;
+END $migration$;
 CREATE OR REPLACE FUNCTION game_item_loop_owner(p_item UUID, OUT owner_character UUID, OUT depth INT)
 LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
 DECLARE
@@ -329,8 +308,7 @@ BEGIN
 END;
 $$;
 DO $$ DECLARE n TEXT; BEGIN
-    FOREACH n IN ARRAY ARRAY['game_item_loop_line_admit','game_item_loop_line_proven',
-        'game_item_corpse_entry_removal_proven'] LOOP
+    FOREACH n IN ARRAY ARRAY['game_item_loop_line_admit','game_item_loop_line_proven'] LOOP
         EXECUTE format('ALTER FUNCTION %I() SET search_path=pg_catalog,%I,pg_temp',n,current_schema());
     END LOOP;
     EXECUTE format('ALTER FUNCTION game_item_loop_owner(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
@@ -338,69 +316,22 @@ END $$;
 REVOKE ALL ON FUNCTION game_item_loop_line_admit(),game_item_loop_line_proven(),
     game_item_corpse_entry_removal_proven() FROM PUBLIC;
 
-CREATE OR REPLACE FUNCTION game_item_location_exclusive(p_item UUID) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE
-    v_lifecycle SMALLINT;
-    v_locations BIGINT;
+-- Preserve the latest location proof, including 0191's Market escrow custody.
+-- Only the Gold Pouch may contain nested coins while its own location stays Inbox.
+DO $migration$
+DECLARE body TEXT; inbox_check TEXT;
 BEGIN
-    SELECT lifecycle INTO v_lifecycle FROM game_item_instances
-     WHERE item_instance_id = p_item FOR NO KEY UPDATE;
-    IF NOT FOUND THEN
-        RETURN;
+    body := pg_get_functiondef('game_item_location_exclusive(uuid)'::regprocedure);
+    inbox_check := 'IF EXISTS (SELECT 1 FROM game_item_character_inbox_locations WHERE item_instance_id = p_item)';
+    IF position(inbox_check IN body) = 0
+       OR position('game_item_market_escrow_locations' IN body) = 0 THEN
+        RAISE EXCEPTION 'quick loot requires the latest Inbox and Market location proof';
     END IF;
-    v_locations :=
-          (SELECT count(*) FROM game_item_ground_locations WHERE item_instance_id = p_item)
-        + (SELECT count(*) FROM game_item_container_slots WHERE item_instance_id = p_item)
-        + (SELECT count(*) FROM game_item_container_entries WHERE item_instance_id = p_item)
-        + (SELECT count(*) FROM game_item_corpse_container_entries WHERE item_instance_id = p_item)
-        + (SELECT count(*) FROM game_item_house_interior_locations WHERE item_instance_id = p_item)
-        + (SELECT count(*) FROM game_character_equipment_slots WHERE item_instance_id = p_item)
-        + (SELECT count(*) FROM game_item_character_inbox_locations WHERE item_instance_id = p_item)
-        + (SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id = p_item)
-        + (SELECT count(*) FROM game_item_character_depot_locations WHERE item_instance_id = p_item);
-    IF v_locations <> (v_lifecycle = 1)::INT THEN
-        RAISE EXCEPTION 'DUR-03 item must have exactly one location while live and none when retired'
-            USING ERRCODE = '23514';
-    END IF;
-    IF v_lifecycle <> 1 AND EXISTS (SELECT 1 FROM game_item_nested_entries
-                                     WHERE parent_item_instance_id = p_item) THEN
-        RAISE EXCEPTION 'a retired item cannot hold nested contents' USING ERRCODE = '23514';
-    END IF;
-    IF EXISTS (SELECT 1 FROM game_item_house_interior_locations WHERE item_instance_id = p_item)
-       AND (EXISTS (SELECT 1 FROM game_item_container_entries
-                     WHERE parent_item_instance_id = p_item)
-            OR EXISTS (SELECT 1 FROM game_item_corpse_container_entries
-                        WHERE parent_item_instance_id = p_item)
-            OR EXISTS (SELECT 1 FROM game_item_nested_entries
-                        WHERE parent_item_instance_id = p_item)) THEN
-        RAISE EXCEPTION 'HouseInterior item cannot have contents' USING ERRCODE = '23514';
-    END IF;
-    IF EXISTS (SELECT 1 FROM game_item_character_inbox_locations WHERE item_instance_id = p_item)
+    body := replace(body, inbox_check, inbox_check || $arm$
        AND NOT EXISTS(SELECT 1 FROM game_item_instances WHERE item_instance_id=p_item
-            AND definition_production_key='oteryn:item.tibia.i23721')
-       AND (EXISTS (SELECT 1 FROM game_item_container_entries
-                     WHERE parent_item_instance_id = p_item)
-            OR EXISTS (SELECT 1 FROM game_item_corpse_container_entries
-                        WHERE parent_item_instance_id = p_item)
-            OR EXISTS (SELECT 1 FROM game_item_nested_entries
-                        WHERE parent_item_instance_id = p_item)) THEN
-        RAISE EXCEPTION 'CharacterInbox item cannot have contents' USING ERRCODE = '23514';
-    END IF;
-    IF EXISTS (SELECT 1 FROM game_item_character_depot_locations WHERE item_instance_id = p_item)
-       AND (EXISTS (SELECT 1 FROM game_item_container_entries
-                     WHERE parent_item_instance_id = p_item)
-            OR EXISTS (SELECT 1 FROM game_item_corpse_container_entries
-                        WHERE parent_item_instance_id = p_item)
-            OR EXISTS (SELECT 1 FROM game_item_nested_entries
-                        WHERE parent_item_instance_id = p_item)) THEN
-        RAISE EXCEPTION 'CharacterDepot item cannot have contents' USING ERRCODE = '23514';
-    END IF;
-END;
-$$;
-DO $$ BEGIN
-    EXECUTE format('ALTER FUNCTION game_item_location_exclusive(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
-END $$;
+            AND definition_production_key='oteryn:item.tibia.i23721')$arm$);
+    EXECUTE body;
+END $migration$;
 
 CREATE FUNCTION game_quiver_entry(p_character BYTEA,p_parent UUID,p_item UUID,p_ordinal NUMERIC,p_world UUID)
 RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
