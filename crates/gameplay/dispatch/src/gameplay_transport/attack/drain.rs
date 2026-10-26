@@ -25,6 +25,7 @@ use oteryn_gameplay_items::equipment_effects::apply_protection;
 use oteryn_gameplay_progression::charm_effects::{
     CharmAttackerFacts, CharmHitSource, CharmHookEvent,
 };
+use sha2::Digest;
 
 #[derive(Debug, Clone)]
 pub(super) struct SelectedSwing {
@@ -42,6 +43,7 @@ pub(super) struct PvpSwing {
     pub(super) actor: ExactActorRef,
     pub(super) session: GameSessionId,
     pub(super) secure: bool,
+    pub(super) extension: bool,
     pub(super) target: ExactActorRef,
     pub(super) lineage: CommandRef,
     pub(super) ordinal: u16,
@@ -97,11 +99,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect();
         let root = GameplayDecisionRoot::from_bytes(digest);
         let mut trained = TrainingDue::new();
+        for (target, lethal, at) in states.equipment_reflection_kills.drain(..) {
+            crate::gameplay_transport::kill_reward::record_creature_kill(
+                &mut runtime,
+                crate::gameplay_transport::kill_reward::KillSink {
+                    queue: kills,
+                    rewards: self.reward_table(),
+                    activity: &activity_cells,
+                },
+                target,
+                lethal,
+                at / 1_000,
+                Some(SemanticTimeMicros::from_micros(at)),
+            );
+        }
         let mut pvp_hits = Vec::new();
         for entry in entries.iter_mut() {
             let state_before = entry.state.clone();
             let ordinal_before = entry.next_ordinal;
-            let Some(selected) =
+            let Some(mut selected) =
                 select_swing(entry, &runtime, &states, room, digest, now, constants)
             else {
                 continue;
@@ -159,178 +175,307 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 trained.push((entry.actor, entry.session));
             }
-            let SelectedSwing {
-                target,
-                character_facts,
-                swing,
-                ordinal,
-                ..
-            } = selected;
-            let Ok(lease) = runtime
-                .borrow_exact_actor_commit()
-                .bound_attacker_lease(entry.actor, swing.lineage)
-            else {
-                entry.clear_target();
-                continue;
-            };
-            let character = *lease.character_id().as_bytes();
-            let Some((damage, revision)) =
-                draw_swing_damage(entry, &runtime, &selected, constants, &root)
-            else {
-                continue;
-            };
-            if damage < 0 {
-                ranged::train_distance(
-                    &mut states,
-                    &runtime,
-                    content,
-                    entry,
-                    None,
-                    now,
-                    &mut trained,
-                );
-                continue;
-            }
             let offence =
                 equipped_offence::attacker_offence(&states, &runtime, entry.actor, entry.session);
-            let Some(damage) = equipped_offence::critical_swing(
-                offence,
-                &root,
-                entry.actor,
-                swing.lineage,
-                ordinal,
-                damage,
-            ) else {
-                continue;
+            let cleaves = if offence.cleave > 0 {
+                equipped_offence::cleave_targets(entry, &selected, &runtime, room, now)
+            } else {
+                Vec::new()
             };
-            if !runtime.contains_live_creature(target) {
-                let Some(black) = pvp_black else {
-                    continue;
+            let primary = selected.target;
+            for (target, extension) in cleaves
+                .into_iter()
+                .map(|target| (target, true))
+                .chain(std::iter::once((primary, false)))
+            {
+                selected.target = target;
+                // Independent tagged draws for each cleave target; the primary draw is unchanged.
+                let root = if extension {
+                    GameplayDecisionRoot::from_bytes(
+                        sha2::Sha256::new()
+                            .chain_update(digest)
+                            .chain_update(selected.target.placement_identity())
+                            .finalize()
+                            .into(),
+                    )
+                } else {
+                    GameplayDecisionRoot::from_bytes(digest)
                 };
-                let Ok(raw) = u32::try_from(damage) else {
-                    entry.clear_target();
-                    continue;
-                };
-                // `Combat::CombatHealthFunc` halves a PvP hit before the target's block meets it;
-                // PVP-DEFENCE-1 resolves the defence after this pass, where the target's block
-                // budget is reachable.
-                pvp_hits.push(PvpSwing {
-                    actor: entry.actor,
-                    session: entry.session,
-                    secure: entry.modes.secure,
+                let SelectedSwing {
                     target,
-                    lineage: swing.lineage,
+                    character_facts,
+                    swing,
                     ordinal,
-                    magnitude: i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(raw, black)),
-                    black,
-                    revision,
-                    weapon: selected.weapon.clone(),
-                    attacker: lease.character_id(),
-                    generation: lease.generation(),
-                });
-                continue;
-            }
-            let Ok(snapshot) = runtime.companion_snapshot(target) else {
-                entry.clear_target();
-                continue;
-            };
-            let race_key = snapshot.state.policy.definition_key.clone();
-            // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
-            // a creature without them takes no hit (fail closed).
-            let (Some(defense), Some(armor)) =
-                (snapshot.state.policy.defense, snapshot.state.policy.armor)
-            else {
-                continue;
-            };
-            // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
-            // before its block (`Creature::blockHit` `isImmune`): no block, no training, no hit.
-            if selected.weapon.ranged.is_none()
-                && creature_physically_immune(&snapshot.state.policy)
-            {
-                continue;
-            }
-            if let Some(ranged) = &selected.weapon.ranged
-                && ranged::immune(ranged, &snapshot.state.policy)
-            {
-                if matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
+                    ..
+                } = selected;
+                let Ok(lease) = runtime
+                    .borrow_exact_actor_commit()
+                    .bound_attacker_lease(entry.actor, swing.lineage)
+                else {
+                    if !extension {
+                        entry.clear_target();
+                    }
+                    continue;
+                };
+                let character = *lease.character_id().as_bytes();
+                let Some((damage, revision)) =
+                    draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence)
+                else {
+                    continue;
+                };
+                if damage < 0 {
                     ranged::train_distance(
                         &mut states,
                         &runtime,
                         content,
                         entry,
-                        Some(oteryn_gameplay_progression::hit_training::HitBlock::Immunity),
+                        None,
                         now,
                         &mut trained,
                     );
+                    continue;
                 }
-                continue;
-            }
-            let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
-            run_charm_hook(
-                self.imported_charms,
-                character,
-                &race_key,
-                &root,
-                swing_occurrence(entry.actor, swing.lineage, ordinal, b"damage-calculation"),
-                CharmHookEvent::AttackDamageCalculation {
-                    source: CharmHitSource::CharacterAttack,
-                },
-            );
-            let ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
-                ranged::creature_damage(
-                    ranged,
-                    &snapshot.state.policy,
-                    damage,
-                    (&root, constants, entry.actor, swing.lineage, ordinal),
-                )
-            } else {
-                None
-            };
-            let index = match blocks.iter().position(|(creature, _)| *creature == target) {
-                Some(index) => index,
-                None => {
-                    if blocks.len() >= runtime.actor_slot_capacity() {
+                let Some(damage) = (if extension {
+                    Some(
+                        i64::try_from(i128::from(damage) * i128::from(offence.cleave) / 10_000)
+                            .unwrap_or(i64::MAX),
+                    )
+                } else {
+                    equipped_offence::critical_swing(
+                        &offence,
+                        &root,
+                        entry.actor,
+                        swing.lineage,
+                        ordinal,
+                        damage,
+                    )
+                }) else {
+                    continue;
+                };
+                if !runtime.contains_live_creature(target) {
+                    let black = if extension {
+                        self.pvp_target_legal(
+                            &pvp_permit,
+                            &runtime,
+                            &states,
+                            room,
+                            &objects,
+                            entry.actor,
+                            target,
+                            swing.lineage,
+                            entry.modes.secure,
+                        )
+                        .await
+                    } else {
+                        pvp_black
+                    };
+                    let Some(black) = black else {
                         continue;
-                    }
-                    // A creature's budget refills from spawn, not from the first hit on it.
-                    blocks.push((target, BlockBudget::settled(&constants.block, swing.at)));
-                    blocks.len() - 1
+                    };
+                    let Ok(raw) = u32::try_from(damage) else {
+                        entry.clear_target();
+                        continue;
+                    };
+                    // `Combat::CombatHealthFunc` halves a PvP hit before the target's block meets it;
+                    // PVP-DEFENCE-1 resolves the defence after this pass, where the target's block
+                    // budget is reachable.
+                    pvp_hits.push(PvpSwing {
+                        actor: entry.actor,
+                        session: entry.session,
+                        secure: entry.modes.secure,
+                        extension,
+                        target,
+                        lineage: swing.lineage,
+                        ordinal,
+                        magnitude: i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(
+                            raw, black,
+                        )),
+                        black,
+                        revision,
+                        weapon: selected.weapon.clone(),
+                        attacker: lease.character_id(),
+                        generation: lease.generation(),
+                    });
+                    continue;
                 }
-            };
-            let blocked = selected.weapon.ranged.is_none()
-                && blocks[index].1.try_block(&constants.block, swing.at);
-            let Some(magnitude) = (if selected.weapon.ranged.is_some() {
-                ranged_magnitude
-            } else {
-                creature_mitigated(
-                    &root,
-                    constants,
-                    entry.actor,
-                    swing.lineage,
-                    ordinal,
-                    damage,
-                    blocked,
-                    defense,
-                    armor,
-                )
-            }) else {
-                continue;
-            };
-            // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
-            // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
-            // Training already counted the swing by its block, so it trains by `magnitude`.
-            let landed = if selected.weapon.ranged.is_some() {
-                magnitude
-            } else if magnitude > 0 {
-                let Some(landed) = creature_physical_response(&snapshot.state.policy, magnitude)
+                let Ok(snapshot) = runtime.companion_snapshot(target) else {
+                    if !extension {
+                        entry.clear_target();
+                    }
+                    continue;
+                };
+                let race_key = snapshot.state.policy.definition_key.clone();
+                // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
+                // a creature without them takes no hit (fail closed).
+                let (Some(defense), Some(armor)) =
+                    (snapshot.state.policy.defense, snapshot.state.policy.armor)
                 else {
                     continue;
                 };
-                landed
-            } else {
-                magnitude
-            };
-            if landed <= 0 {
+                // CREATURE-RESIST-MELEE-1: a creature immune to physical damage meets the swing
+                // before its block (`Creature::blockHit` `isImmune`): no block, no training, no hit.
+                if selected.weapon.ranged.is_none()
+                    && creature_physically_immune(&snapshot.state.policy)
+                {
+                    continue;
+                }
+                if let Some(ranged) = &selected.weapon.ranged
+                    && ranged::immune(ranged, &snapshot.state.policy)
+                {
+                    if matches!(ranged.damage, ranged::RangedDamage::Distance { .. }) {
+                        ranged::train_distance(
+                            &mut states,
+                            &runtime,
+                            content,
+                            entry,
+                            Some(oteryn_gameplay_progression::hit_training::HitBlock::Immunity),
+                            now,
+                            &mut trained,
+                        );
+                    }
+                    continue;
+                }
+                let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
+                if !extension {
+                    run_charm_hook(
+                        self.imported_charms,
+                        character,
+                        &race_key,
+                        &root,
+                        swing_occurrence(
+                            entry.actor,
+                            swing.lineage,
+                            ordinal,
+                            b"damage-calculation",
+                        ),
+                        CharmHookEvent::AttackDamageCalculation {
+                            source: CharmHitSource::CharacterAttack,
+                        },
+                    );
+                }
+                let ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
+                    ranged::creature_damage(
+                        ranged,
+                        &snapshot.state.policy,
+                        damage,
+                        (&root, constants, entry.actor, swing.lineage, ordinal),
+                    )
+                } else {
+                    None
+                };
+                let index = match blocks.iter().position(|(creature, _)| *creature == target) {
+                    Some(index) => index,
+                    None => {
+                        if blocks.len() >= runtime.actor_slot_capacity() {
+                            continue;
+                        }
+                        // A creature's budget refills from spawn, not from the first hit on it.
+                        blocks.push((target, BlockBudget::settled(&constants.block, swing.at)));
+                        blocks.len() - 1
+                    }
+                };
+                let blocked = selected.weapon.ranged.is_none()
+                    && blocks[index].1.try_block(&constants.block, swing.at);
+                let Some(magnitude) = (if selected.weapon.ranged.is_some() {
+                    ranged_magnitude
+                } else {
+                    creature_mitigated(
+                        &root,
+                        constants,
+                        entry.actor,
+                        swing.lineage,
+                        ordinal,
+                        damage,
+                        blocked,
+                        defense,
+                        armor,
+                    )
+                }) else {
+                    continue;
+                };
+                // CREATURE-RESIST-MELEE-1: the creature's mitigation and physical response shape
+                // what passed its defence and armor (`Creature::mitigateDamage`, `Monster::blockHit`).
+                // Training already counted the swing by its block, so it trains by `magnitude`.
+                let landed = if selected.weapon.ranged.is_some() {
+                    magnitude
+                } else if magnitude > 0 {
+                    let Some(landed) =
+                        creature_physical_response(&snapshot.state.policy, magnitude)
+                    else {
+                        continue;
+                    };
+                    landed
+                } else {
+                    magnitude
+                };
+                let landed =
+                    if !extension
+                        && selected.weapon.ranged.as_ref().is_some_and(|r| {
+                            matches!(r.damage, ranged::RangedDamage::Distance { .. })
+                        })
+                    {
+                        let bonus = runtime
+                            .read_actor_position(entry.actor)
+                            .ok()
+                            .zip(runtime.read_actor_position(target).ok())
+                            .map_or(0, |(from, to)| {
+                                let (from, to) = (from.position(), to.position());
+                                offence.perfect_damage(from.x.abs_diff(to.x), from.y.abs_diff(to.y))
+                            });
+                        landed.saturating_add(bonus).max(0)
+                    } else {
+                        landed
+                    };
+                if landed <= 0 {
+                    train_swing(
+                        &mut states,
+                        &runtime,
+                        content,
+                        entry,
+                        &selected.weapon,
+                        magnitude,
+                        now,
+                        &mut trained,
+                    );
+                    continue;
+                }
+                let Some(plan) = swing_plan(
+                    entry.actor,
+                    swing.lineage,
+                    ordinal,
+                    landed,
+                    &digest,
+                    &race_key,
+                    revision,
+                ) else {
+                    continue;
+                };
+                let Ok(resolved) = resolve_exact_actor(
+                    &runtime.borrow_exact_actor_lookup(),
+                    plan.occurrence(),
+                    ExactActorProposal::client(target),
+                ) else {
+                    if !extension {
+                        entry.clear_target();
+                    }
+                    continue;
+                };
+                // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
+                // hit, the death time the kill reward reads (§1.2).
+                let committed = crate::ability::commit::commit_exact_owner_swing_damage(
+                    &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
+                    &resolved,
+                    &plan,
+                    entry.actor,
+                    swing.lineage,
+                    ordinal,
+                );
+                let Ok(result) = committed else {
+                    if !extension {
+                        entry.clear_target();
+                    }
+                    continue;
+                };
                 train_swing(
                     &mut states,
                     &runtime,
@@ -341,109 +486,70 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                     &mut trained,
                 );
-                continue;
-            }
-            let Some(plan) = swing_plan(
-                entry.actor,
-                swing.lineage,
-                ordinal,
-                landed,
-                &digest,
-                &race_key,
-                revision,
-            ) else {
-                continue;
-            };
-            let Ok(resolved) = resolve_exact_actor(
-                &runtime.borrow_exact_actor_lookup(),
-                plan.occurrence(),
-                ExactActorProposal::client(target),
-            ) else {
-                entry.clear_target();
-                continue;
-            };
-            // The owner clock of this turn, in ms, stamps the hit's contributor and, for a lethal
-            // hit, the death time the kill reward reads (§1.2).
-            let committed = crate::ability::commit::commit_exact_owner_swing_damage(
-                &mut runtime.borrow_exact_actor_commit_at(now.get() / 1_000),
-                &resolved,
-                &plan,
-                entry.actor,
-                swing.lineage,
-                ordinal,
-            );
-            let Ok(result) = committed else {
-                entry.clear_target();
-                continue;
-            };
-            train_swing(
-                &mut states,
-                &runtime,
-                content,
-                entry,
-                &selected.weapon,
-                magnitude,
-                now,
-                &mut trained,
-            );
-            equipped_offence::leech_hit(
-                &mut states,
-                &runtime,
-                entry.actor,
-                entry.session,
-                offence,
-                &result,
-            );
-            if result.applied
-                && result.health_after < result.health_before
-                && snapshot.state.master.is_none()
-                && !snapshot.state.policy.is_familiar
-            {
-                states.hunting_activity(&runtime, entry.actor, entry.session, now.get());
-            }
-            record_hit_activity(
-                entry,
-                &runtime,
-                content,
-                target,
-                now,
-                &result,
-                &mut activity_cells,
-            );
-            run_charm_hook(
-                self.imported_charms,
-                character,
-                &race_key,
-                &root,
-                swing_occurrence(entry.actor, swing.lineage, ordinal, b"committed-hit"),
-                CharmHookEvent::committed_hit(
-                    &result,
-                    CharmHitSource::CharacterAttack,
-                    CharmAttackerFacts {
-                        level: character_facts.level,
-                        max_health: u64::from(character_facts.max_health),
-                        max_mana: u64::from(character_facts.max_mana),
-                    },
-                    creature_max_health,
-                ),
-            );
-            if result.health_after <= 0 {
-                let lethal = crate::combat::CapturedRewardPrincipal {
-                    character: lease.character_id(),
-                    lease_generation: lease.generation(),
-                    session: entry.session,
-                    actor: entry.actor,
-                };
-                settle_kill(
+                if !extension {
+                    equipped_offence::leech_hit(
+                        &mut states,
+                        &runtime,
+                        entry.actor,
+                        entry.session,
+                        &offence,
+                        &result,
+                    );
+                }
+                if result.applied
+                    && result.health_after < result.health_before
+                    && snapshot.state.master.is_none()
+                    && !snapshot.state.policy.is_familiar
+                {
+                    states.hunting_activity(&runtime, entry.actor, entry.session, now.get());
+                }
+                record_hit_activity(
                     entry,
-                    &mut runtime,
-                    kills,
-                    self.reward_table(),
-                    &activity_cells,
+                    &runtime,
+                    content,
                     target,
-                    lethal,
                     now,
+                    &result,
+                    &mut activity_cells,
                 );
+                if !extension {
+                    run_charm_hook(
+                        self.imported_charms,
+                        character,
+                        &race_key,
+                        &root,
+                        swing_occurrence(entry.actor, swing.lineage, ordinal, b"committed-hit"),
+                        CharmHookEvent::committed_hit(
+                            &result,
+                            CharmHitSource::CharacterAttack,
+                            CharmAttackerFacts {
+                                level: character_facts.level,
+                                max_health: u64::from(character_facts.max_health),
+                                max_mana: u64::from(character_facts.max_mana),
+                            },
+                            creature_max_health,
+                        ),
+                    );
+                }
+                if result.health_after <= 0 {
+                    let lethal = crate::combat::CapturedRewardPrincipal {
+                        character: lease.character_id(),
+                        lease_generation: lease.generation(),
+                        session: entry.session,
+                        actor: entry.actor,
+                    };
+                    settle_kill(
+                        entry,
+                        &mut runtime,
+                        kills,
+                        self.reward_table(),
+                        &activity_cells,
+                        target,
+                        lethal,
+                        now,
+                        !extension,
+                    );
+                }
             }
         }
         for hit in pvp_hits {
@@ -501,7 +607,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|(actor, _, _)| *actor == hit.target)
             .map(|(_, session, _)| *session)
         else {
-            attack.clear_target_of(hit.actor, hit.session);
+            if !hit.extension {
+                attack.clear_target_of(hit.actor, hit.session);
+            }
             return;
         };
         let ranged_damage = if let Some(ranged) = &hit.weapon.ranged {
@@ -565,6 +673,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => mitigated,
         };
+        let magnitude = if !hit.extension
+            && hit
+                .weapon
+                .ranged
+                .as_ref()
+                .is_some_and(|r| matches!(r.damage, ranged::RangedDamage::Distance { .. }))
+        {
+            let offence =
+                equipped_offence::attacker_offence(states, runtime, hit.actor, hit.session);
+            let bonus = runtime
+                .read_actor_position(hit.actor)
+                .ok()
+                .zip(runtime.read_actor_position(hit.target).ok())
+                .map_or(0, |(from, to)| {
+                    let (from, to) = (from.position(), to.position());
+                    offence.perfect_damage(from.x.abs_diff(to.x), from.y.abs_diff(to.y))
+                });
+            magnitude.saturating_add(bonus).max(0)
+        } else {
+            magnitude
+        };
         if magnitude <= 0 {
             train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
             return;
@@ -616,7 +745,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             train_pvp_swing(states, runtime, content, &hit, magnitude, now, trained);
-        } else {
+        } else if !hit.extension {
             attack.clear_target_of(hit.actor, hit.session);
         }
     }
@@ -826,6 +955,7 @@ fn draw_swing_damage(
     selected: &SelectedSwing,
     constants: &AttackConstants,
     root: &GameplayDecisionRoot,
+    offence: &oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
 ) -> Option<(i64, &'static str)> {
     let SelectedSwing {
         target,
@@ -855,7 +985,10 @@ fn draw_swing_damage(
             0,
             99,
         )?;
-        if !ranged.hit(distance, skills.attack, u64::try_from(roll).ok()?)? {
+        let perfect = matches!(ranged.damage, ranged::RangedDamage::Distance { .. })
+            && (offence.perfect_damage(from.x.abs_diff(to.x), from.x.abs_diff(to.x)) != 0
+                || offence.perfect_damage(from.y.abs_diff(to.y), from.y.abs_diff(to.y)) != 0);
+        if !perfect && !ranged.hit(distance, skills.attack, u64::try_from(roll).ok()?)? {
             return Some((-1, "formula:player-distance"));
         }
         ranged.formula()?
@@ -948,6 +1081,7 @@ fn settle_kill(
     target: ExactActorRef,
     lethal: crate::combat::CapturedRewardPrincipal,
     now: SemanticTimeMicros,
+    clear: bool,
 ) {
     crate::gameplay_transport::kill_reward::record_creature_kill(
         runtime,
@@ -961,7 +1095,9 @@ fn settle_kill(
         now.get() / 1_000,
         Some(now),
     );
-    entry.clear_target();
+    if clear {
+        entry.clear_target();
+    }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {

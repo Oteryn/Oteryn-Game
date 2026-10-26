@@ -1,0 +1,21 @@
+{
+  "id": "EQMOD2-REFLECTION-STREAMS",
+  "owner_contract": "EQUIPMENT_COMBAT_MODIFIERS_V1.md",
+  "resource": "Independent equipment reflection source clocks retained by one creature generation",
+  "unit": "stream keys per creature generation",
+  "hard_maximum": 1024,
+  "configurable_range": {
+    "minimum": 1024,
+    "maximum": 1024
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Hash one bounded source identifier before map admission; reject a new stream at capacity before staging HP. Existing keys continue. Covered reflected receipts reuse the existing 16-receipt retention.",
+  "client_visible": false,
+  "boundary_tests": [
+    "max=1024 and max+1=1025: eqmod2_reflection_stream_boundary_and_stale_session_refuse_before_hp"
+  ],
+  "consumers": [
+    "crates/gameplay/entities/src/carrier/equipment_reflection.rs"
+  ],
+  "notes": "Task EQUIP-MODS-2 allocation RL 1200. New per-generation map is ephemeral; no migration or production trust change."
+}
