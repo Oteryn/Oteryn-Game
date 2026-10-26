@@ -142,7 +142,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         if !tokio::time::timeout(
             std::time::Duration::from_secs(10),
-            self.reconcile_quest_callback_receipts(),
+            self.reconcile_quest_callback_receipts(lost.game_session_id),
         )
         .await
         .unwrap_or(false)

@@ -81,6 +81,9 @@ pub struct ListenerConfig {
 pub struct ScopeConfig {
     pub world_id: String,
     pub channel_id: String,
+    /// PREMCHAN: static eligibility of this Game Channel; existing configurations stay public.
+    #[serde(default)]
+    pub premium_only: bool,
     pub assignment_wait_ms: u64,
     /// Required explicit non-production first-slice actor bound. No fallback exists.
     pub preproduction_actor_capacity: u32,
@@ -816,6 +819,21 @@ installed_at = 1790000000
 authorization_file = "/var/lib/oteryn-ops/launch-node-a.json"
 s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
 "#;
+
+    #[test]
+    fn premchan_static_scope_configuration_defaults_public_and_accepts_premium_only() {
+        let public = NodeConfig::parse(NODE.as_bytes()).expect("public configuration");
+        assert!(!public.scope.premium_only);
+        let premium = NODE.replace("[scope]", "[scope]\npremium_only = true");
+        assert!(
+            NodeConfig::parse(premium.as_bytes())
+                .expect("premium configuration")
+                .scope
+                .premium_only
+        );
+        let invalid = NODE.replace("[scope]", "[scope]\npremium_only = 1");
+        assert!(NodeConfig::parse(invalid.as_bytes()).is_err());
+    }
 
     #[test]
     fn complete_node_configuration_parses() {

@@ -8,6 +8,11 @@ mod composed;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     mechanic_authority_methods!();
+    /// PREMCHAN: the bounded list of Game Channels served by this owner. This node currently
+    /// serves exactly one Channel. No routing or admission authority is granted by the list.
+    fn channel_list(&self) -> Option<Vec<u8>> {
+        None
+    }
     /// The production session owner retains command truth across connection replacement.
     /// Transport-only authorities may omit the resumable command directory.
     fn session_commands(
@@ -30,10 +35,12 @@ pub trait FreshAdmissionAuthority {
         async { Err(AdmissionRefusal::Unavailable) }
     }
 
-    /// OPS-SAVE-2: the permit one player command runs under, or `None` once the node is
-    /// quiescing for its shutdown save: the command then has no effect and gets a rejected
-    /// result. Authorities without a shutdown save never refuse.
-    fn enter_input(&self) -> impl Future<Output = Option<InputPermit<'_>>> {
+    /// OPS-SAVE-2: one admitted session's input permit. Quiescing for shutdown or unresolved
+    /// gameplay work in that session refuses new effects. Injected authorities are ungated.
+    fn enter_input(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<InputPermit<'_>>> {
         async { Some(InputPermit::ungated()) }
     }
 

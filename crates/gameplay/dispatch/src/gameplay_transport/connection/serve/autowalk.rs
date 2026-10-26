@@ -92,7 +92,10 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    let Some(input) = authority.enter_input().await else {
+    let Some(input) = authority
+        .enter_input(session.admitted.game_session_id)
+        .await
+    else {
         return Ok(WalkOutcome::Cancelled);
     };
     let route = tokio::time::timeout(
@@ -135,7 +138,10 @@ where
                 break;
             }
         }
-        let Some(step_input) = authority.enter_input().await else {
+        let Some(step_input) = authority
+            .enter_input(session.admitted.game_session_id)
+            .await
+        else {
             record_actor_step(
                 &mut session.pacer,
                 authority,

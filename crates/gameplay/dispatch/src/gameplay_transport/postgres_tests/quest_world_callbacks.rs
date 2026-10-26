@@ -798,6 +798,42 @@ fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
                         .fetch_one(&h.pool)
                         .await?;
                 assert_eq!(burned, 4);
+                // Another session must not settle or project this disconnected player's
+                // pending callback when its own command stream opens.
+                let mut other = admitted;
+                other.game_session_id =
+                    crate::foundation::GameSessionId::decode(&id(51)).map_err(debug)?;
+                other.continuity =
+                    crate::gameplay_transport::connection::SessionContinuity::FRESH;
+                other.item_fence = None;
+                {
+                    let mut runtime = deps.runtime.lock().await;
+                    let reservation = runtime
+                        .reserve_fresh_session(other.game_session_id)
+                        .map_err(debug)?;
+                    let actor = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                    runtime
+                        .initialize_pinned_test_position(
+                            actor,
+                            local(Position {
+                                x: trigger.x - 2,
+                                ..trigger
+                            }),
+                        )
+                        .map_err(debug)?;
+                    other.runtime_actor = Some(actor);
+                }
+                assert!(wire(&owner, &mut other, 1, 999, Vec::new()).await?.is_empty());
+                assert!(owner.has_pending_quest_callback(admitted.game_session_id));
+                assert_eq!(
+                    deps.runtime
+                        .lock()
+                        .await
+                        .read_actor_position(deps.actor)
+                        .map_err(debug)?
+                        .position(),
+                    origin
+                );
                 // The next real dispatch reconciles the original USE before allowing input.
                 let replay = wire(
                     &owner,

@@ -7,7 +7,7 @@ struct RetainedBankOutcomeFixture {
     closed_gate: bool,
 }
 impl FreshAdmissionAuthority for RetainedBankOutcomeFixture {
-    async fn enter_input(&self) -> Option<InputPermit<'_>> {
+    async fn enter_input(&self, _session: GameSessionId) -> Option<InputPermit<'_>> {
         if self.closed_gate {
             None
         } else {

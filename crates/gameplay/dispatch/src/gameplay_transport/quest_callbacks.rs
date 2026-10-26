@@ -114,10 +114,11 @@ fn step_command(
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Resolve a closed transport's reserved USE before the session stream can reopen.
     /// Historical receipt recovery does not grant player control or install a projection.
-    pub(super) async fn reconcile_quest_callback_receipts(&self) -> bool {
+    pub(super) async fn reconcile_quest_callback_receipts(&self, session: GameSessionId) -> bool {
         let pending = match self.states.quest_callbacks.records.lock() {
             Ok(records) => records
-                .values()
+                .get(&session)
+                .into_iter()
                 .filter(|p| matches!(p.cause, QuestCause::Use(_)) && !p.ingress_settled)
                 .cloned()
                 .collect::<Vec<_>>(),
@@ -188,12 +189,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     /// Before further player input, reconcile an interrupted commit with its original cause.
     /// The Channel's existing input gate closes a connection if a result is still unknown.
-    pub(super) async fn reconcile_quest_callbacks(&self) -> bool {
-        if !self.reconcile_quest_callback_receipts().await {
+    pub(super) async fn reconcile_quest_callbacks(&self, session: GameSessionId) -> bool {
+        if !self.reconcile_quest_callback_receipts(session).await {
             return false;
         }
         let pending = match self.states.quest_callbacks.records.lock() {
-            Ok(p) => p.values().cloned().collect::<Vec<_>>(),
+            Ok(p) => p.get(&session).cloned().into_iter().collect::<Vec<_>>(),
             Err(_) => return false,
         };
         if pending.is_empty() {

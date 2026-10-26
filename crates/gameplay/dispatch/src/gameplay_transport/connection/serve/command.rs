@@ -104,7 +104,9 @@ where
     // like an unregistered one, before any decode or authority call.
     // OPS-SAVE-2: the permit is held while the command runs, not while its result is
     // written, so the shutdown snapshot waits for the effect only.
-    let mut input_permit = authority.enter_input().await;
+    let mut input_permit = authority
+        .enter_input(session.admitted.game_session_id)
+        .await;
     if input_permit.is_none() && session.reconcile_original_bank {
         // No current input grant: do not run money work, and do not falsely terminate an
         // accepted original command whose retained Bank status has not been classified.
@@ -208,7 +210,9 @@ where
             target,
         ))
         .await?;
-        input_permit = authority.enter_input().await;
+        input_permit = authority
+            .enter_input(session.admitted.game_session_id)
+            .await;
         match walked {
             autowalk::WalkOutcome::Arrived if input_permit.is_some() => {
                 // The walk already published its steps. Only relocation by the retried USE

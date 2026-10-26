@@ -4,6 +4,13 @@ use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     mechanic_composed_methods!();
+    fn channel_list(&self) -> Option<Vec<u8>> {
+        Some(oteryn_protocol_oteryn::channel_list::encode_channel_list(
+            self.world_id.as_bytes(),
+            self.channel_id.as_bytes(),
+            self.premium_only,
+        ))
+    }
     async fn party_command(
         &self,
         admitted: connection::AdmittedSession,
@@ -550,7 +557,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
         if !tokio::time::timeout(
             std::time::Duration::from_secs(10),
-            self.reconcile_quest_callbacks(),
+            self.reconcile_quest_callbacks(admitted.game_session_id),
         )
         .await
         .unwrap_or(false)
@@ -697,11 +704,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.lose_control_for_cause(admitted, wait, reset).await
     }
 
-    async fn enter_input(&self) -> Option<input_gate::InputPermit<'_>> {
+    async fn enter_input(&self, session: GameSessionId) -> Option<input_gate::InputPermit<'_>> {
         let permit = self.states.input_gate.enter().await?;
         if !tokio::time::timeout(
             std::time::Duration::from_secs(10),
-            self.reconcile_quest_callbacks(),
+            self.reconcile_quest_callbacks(session),
         )
         .await
         .unwrap_or(false)

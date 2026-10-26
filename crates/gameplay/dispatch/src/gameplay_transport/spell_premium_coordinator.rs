@@ -13,6 +13,8 @@ use super::{
 };
 use crate::domain::premium::{PreDelivery, PremiumGate, PremiumStatus};
 mod promotion_gate;
+
+pub(super) struct DailyRewardPremium<'a>(pub(super) Option<&'a SpellPremiumCoordinator>);
 use crate::durability::premium_activation_latch::{
     EmptyLatchHeld, PreDeliveryBypass, PremiumActivationLatch, PremiumActivationRead, PremiumGateTx,
 };
