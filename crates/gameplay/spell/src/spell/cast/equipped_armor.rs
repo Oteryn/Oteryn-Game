@@ -65,6 +65,20 @@ impl PlayerSpellState {
         self.equipped_ice_protection = protection;
     }
 
+    /// Direct energy protection from the last committed equipment read; fields are separate.
+    #[must_use]
+    pub const fn equipped_energy_protection(&self) -> Option<ReferenceRationalPercent> {
+        self.equipped_energy_protection
+    }
+
+    /// Replace direct energy protection on admission or a committed equipment move.
+    pub fn install_equipped_energy_protection(
+        &mut self,
+        protection: Option<ReferenceRationalPercent>,
+    ) {
+        self.equipped_energy_protection = protection;
+    }
+
     /// Direct fire protection from the last committed equipment read; fields are separate.
     #[must_use]
     pub const fn equipped_fire_protection(&self) -> Option<ReferenceRationalPercent> {

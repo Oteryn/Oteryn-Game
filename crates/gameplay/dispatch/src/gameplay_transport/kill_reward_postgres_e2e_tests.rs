@@ -113,6 +113,20 @@ fn summer_paragon_fire_area_hits_multiple_players_through_the_production_owner()
 }
 
 #[test]
+fn summer_templar_energy_area_hits_multiple_players_through_the_production_owner() -> TestResult {
+    scenario_thread::run("summer-templar-energy-area", || {
+        scenario_with_creature_at_range(None, false, Some("templar"), false, true, true)
+    })
+}
+
+#[test]
+fn summer_templar_holy_target_hits_at_range_through_the_production_owner() -> TestResult {
+    scenario_thread::run("summer-templar-holy-target", || {
+        scenario_with_creature_at_range(None, false, Some("templar"), false, true, false)
+    })
+}
+
+#[test]
 fn summer_radiant_all_six_kills_settle_and_decay_on_postgres() -> TestResult {
     scenario_thread::run("summer-radiant-settlements", || {
         for name in [
@@ -153,7 +167,8 @@ fn scenario_with_creature_at_range(
     ranged_spell: bool,
     elemental_area: bool,
 ) -> TestResult {
-    let holy_target = radiant == Some("paragon") && ranged_spell && !elemental_area;
+    let holy_target =
+        matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
@@ -538,9 +553,15 @@ fn scenario_with_creature_at_range(
                         denominator: 1,
                     },
                 ));
-                if radiant == Some("paragon") {
-                    // Qualify fire and holy independently despite both being scheduled.
-                    state.install_equipped_holy_protection((!holy_target || tag == 50).then_some(
+                if matches!(radiant, Some("paragon" | "templar")) {
+                    // Qualify the circle and holy independently despite both being scheduled.
+                    state.install_equipped_energy_protection(Some(
+                        crate::content::ReferenceRationalPercent {
+                            numerator: 100,
+                            denominator: 1,
+                        },
+                    ));
+                    state.install_equipped_holy_protection(Some(
                         crate::content::ReferenceRationalPercent {
                             numerator: 100,
                             denominator: 1,
@@ -620,6 +641,8 @@ fn scenario_with_creature_at_range(
                         if radiant == Some("paragon") {
                             // Ice protection stays installed and cannot block a fire hit.
                             state.install_equipped_fire_protection(None);
+                        } else if radiant == Some("templar") {
+                            state.install_equipped_energy_protection(None);
                         } else {
                             state.install_equipped_ice_protection(None);
                         }
@@ -705,6 +728,29 @@ fn scenario_with_creature_at_range(
                 owner.drain_monster_melee().await;
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
+                // Source target changes are deterministic in the full content digest. Protect
+                // every candidate for the two gate casts, then observe whichever is selected.
+                let mut holy_players = Vec::new();
+                if holy_target {
+                    let census = runtime.positioned_melee_census().map_err(debug)?;
+                    for tag in [50, 100, 101] {
+                        let session = GameSessionId::decode(&id(tag)).map_err(debug)?;
+                        let target = census
+                            .iter()
+                            .find(|(_, _, current)| *current == Some(session))
+                            .ok_or("holy player")?
+                            .0;
+                        let vitals = states
+                            .get(&runtime, target, session)
+                            .ok_or("holy player state")?
+                            .vitals();
+                        holy_players.push((target, session, vitals));
+                    }
+                }
+                let (actor, session) = holy_players
+                    .iter()
+                    .find(|(_, _, vitals)| vitals.health < initial)
+                    .map_or((actor, session), |(actor, session, _)| (*actor, *session));
                 let state = states
                     .get(&runtime, actor, session)
                     .ok_or("player spell state")?;
@@ -733,13 +779,20 @@ fn scenario_with_creature_at_range(
                         .get_mut(&runtime, actor, session)
                         .ok_or("player spell state")?;
                     if holy_target {
-                        // Keep armor and physical/ice/fire protection. Only holy changes.
-                        state.install_equipped_holy_protection((gated_casts == 0).then_some(
-                            crate::content::ReferenceRationalPercent {
-                                numerator: 100,
-                                denominator: 1,
-                            },
-                        ));
+                        // Keep armor and all other protection. Only holy changes, for every
+                        // current candidate, so retargeting cannot bypass a protected cast.
+                        for (target, session, vitals) in &holy_players {
+                            assert_eq!(vitals.health, initial, "protected holy candidate");
+                            states
+                                .get_mut(&runtime, *target, *session)
+                                .ok_or("holy player state")?
+                                .install_equipped_holy_protection((gated_casts == 0).then_some(
+                                    crate::content::ReferenceRationalPercent {
+                                        numerator: 100,
+                                        denominator: 1,
+                                    },
+                                ));
+                        }
                     } else {
                         state.install_equipped_armor(0);
                         state.install_equipped_physical_protection((gated_casts == 0).then_some(
@@ -769,25 +822,14 @@ fn scenario_with_creature_at_range(
                             assert!(state.equipped_physical_protection().is_some());
                             assert!(state.equipped_ice_protection().is_some());
                             assert!(state.equipped_fire_protection().is_some());
-                            for tag in [100, 101] {
-                                let bystander_session =
-                                    GameSessionId::decode(&id(tag)).map_err(debug)?;
-                                let bystander = runtime
-                                    .positioned_melee_census()
-                                    .map_err(debug)?
-                                    .into_iter()
-                                    .find(|(_, _, session)| *session == Some(bystander_session))
-                                    .ok_or("holy bystander")?
-                                    .0;
-                                assert_eq!(
-                                    states
-                                        .get(&runtime, bystander, bystander_session)
-                                        .ok_or("holy bystander state")?
-                                        .vitals()
-                                        .health,
-                                    500,
-                                    "holy target spell leaves other current players unchanged"
-                                );
+                            assert!(state.equipped_energy_protection().is_some());
+                            for (bystander, _, vitals) in &holy_players {
+                                if *bystander != actor {
+                                    assert_eq!(
+                                        vitals.health, 500,
+                                        "holy target spell leaves other current players unchanged"
+                                    );
+                                }
                             }
                         }
                         assert!(
@@ -819,17 +861,24 @@ fn scenario_with_creature_at_range(
                     drop(runtime);
                     owner.drain_monster_melee().await;
                     let runtime = owner.runtime.lock().await;
+                    let states = owner.states.spell_states.lock().await;
                     assert_eq!(
-                        owner
-                            .states
-                            .spell_states
-                            .lock()
-                            .await
+                        states
                             .get(&runtime, actor, session)
                             .ok_or("player spell state")?
                             .vitals(),
                         after
                     );
+                    for (target, session, before) in &holy_players {
+                        assert_eq!(
+                            states
+                                .get(&runtime, *target, *session)
+                                .ok_or("holy player state")?
+                                .vitals(),
+                            *before,
+                            "repeated dispatch preserves every holy candidate's vitals"
+                        );
+                    }
                     break;
                 }
                 drop(states);

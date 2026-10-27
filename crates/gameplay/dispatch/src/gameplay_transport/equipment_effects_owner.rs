@@ -322,6 +322,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     .get(&crate::content::ReferenceResistanceKind::Ice)
                     .copied(),
             );
+            state.install_equipped_energy_protection(
+                effects
+                    .protections
+                    .get(&crate::content::ReferenceResistanceKind::Energy)
+                    .copied(),
+            );
             state.install_equipped_fire_protection(
                 effects
                     .protections

@@ -117,6 +117,9 @@ pub struct PlayerSpellState {
     /// EQUIP-PROTECTION-1: the summed physical protection of the last committed equipment read.
     pub(super) equipped_physical_protection:
         Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct energy damage (not fields).
+    pub(super) equipped_energy_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
     /// Current committed equipment protection against direct fire damage (not fields).
     pub(super) equipped_fire_protection:
         Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
@@ -185,6 +188,7 @@ impl PlayerSpellState {
                 equipped_defence: None,
                 equipped_physical_protection: None,
                 equipped_ice_protection: None,
+                equipped_energy_protection: None,
                 equipped_fire_protection: None,
                 equipped_holy_protection: None,
                 equipped_offence: Default::default(),

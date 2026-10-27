@@ -1106,7 +1106,7 @@ impl DamageSpellOwner {
         self.execute_inner(runtime, None, stamp, vitals, source, proposal, reader, now)
     }
 
-    /// Execute a source-bound ice or fire circle spell under the runtime's own current fence.
+    /// Execute a source-bound ice, fire or energy circle spell under the runtime's own current fence.
     /// The restricted shape needs no external condition authority or timer installation.
     #[allow(clippy::too_many_arguments)]
     pub fn execute_current_elemental_area(
@@ -1120,7 +1120,7 @@ impl DamageSpellOwner {
         now: SemanticTimeMicros,
     ) -> Result<SpellOutcome, AttackError> {
         if source.list != ScheduleList::Attack
-            || !matches!(source.element.as_deref(), Some("ice" | "fire"))
+            || !matches!(source.element.as_deref(), Some("ice" | "fire" | "energy"))
             || source.needs_target
             || source.needs_direction
             || !matches!(

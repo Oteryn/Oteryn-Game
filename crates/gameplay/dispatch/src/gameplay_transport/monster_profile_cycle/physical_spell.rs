@@ -1,4 +1,4 @@
-//! Native scheduled physical/holy target and qualified Acolyte ice / Paragon fire circle damage.
+//! Native scheduled physical/holy target and qualified Summer ice/fire/energy circle damage.
 //! Timing, chance, damage, replay and lethal consequences stay in their existing owners.
 use super::*;
 use crate::creature_auto_attack::{AttackFacts, ProfileAbilityProposal};
@@ -71,7 +71,7 @@ impl SpellWorldReader for CurrentTarget {
 }
 
 // Runtime, Item transaction and player states stay locked from these independent reads
-// through execution. Only physical targets, Paragon holy targets and qualified ice/fire circles enter.
+// through execution. Only qualified target damage and Summer ice/fire/energy circles enter.
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn execute(
     runtime: &mut ChannelRuntimeV1,
@@ -115,6 +115,7 @@ pub(super) async fn execute(
             ),
             (Some("ice"), "oteryn:creature.radiant_acolyte")
                 | (Some("fire"), "oteryn:creature.radiant_paragon")
+                | (Some("energy"), "oteryn:creature.radiant_templar")
         ) && !source.needs_target
             && matches!(
                 source.area,
@@ -122,7 +123,10 @@ pub(super) async fn execute(
             );
         let target_damage = (source.element.as_deref() == Some("physical")
             || (source.element.as_deref() == Some("holy")
-                && record.profile.target.key == "oteryn:creature.radiant_paragon"))
+                && matches!(
+                    record.profile.target.key.as_str(),
+                    "oteryn:creature.radiant_paragon" | "oteryn:creature.radiant_templar"
+                )))
             && source.area.is_none()
             && source.needs_target;
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack
@@ -283,6 +287,7 @@ pub(super) async fn execute(
                 continue;
             };
             let protection = match source.element.as_deref() {
+                Some("energy") => state.equipped_energy_protection(),
                 Some("ice") => state.equipped_ice_protection(),
                 Some("fire") => state.equipped_fire_protection(),
                 Some("holy") => state.equipped_holy_protection(),

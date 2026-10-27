@@ -164,7 +164,10 @@ fn setup_named(
         },
     )
     .expect("qualified fixture");
-    let (records, profiles) = if matches!(name, "radiant_acolyte" | "radiant_paragon") {
+    let (records, profiles) = if matches!(
+        name,
+        "radiant_acolyte" | "radiant_paragon" | "radiant_templar"
+    ) {
         let document: crate::content::native_gameplay::CreatureProfilesDocument =
             serde_json::from_slice(include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
@@ -2629,4 +2632,24 @@ fn summer_current_paragon_fire_area_uses_runtime_fence_and_replays_without_damag
 #[test]
 fn summer_current_paragon_fire_area_lethal_hit_retains_the_existing_death_receipt() {
     qualify_current_spell_lethal("radiant_paragon", 1);
+}
+
+#[test]
+fn summer_current_templar_energy_area_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_templar", 1);
+}
+
+#[test]
+fn summer_current_templar_energy_area_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_templar", 1);
+}
+
+#[test]
+fn summer_current_templar_holy_target_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_templar", 2);
+}
+
+#[test]
+fn summer_current_templar_holy_target_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_templar", 2);
 }
