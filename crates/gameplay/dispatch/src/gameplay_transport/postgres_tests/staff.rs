@@ -860,7 +860,7 @@ fn scenario() -> TestResult {
         let kick = signing.request(
             11,
             &sha(&signed_next.canonical),
-            97,
+            99,
             now,
             rules::Action::Kick {
                 character_id: hex(&id(41)),

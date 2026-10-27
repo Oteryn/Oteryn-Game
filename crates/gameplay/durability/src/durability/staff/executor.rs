@@ -558,7 +558,7 @@ async fn operation_matches(
             1,
             Some((character, _, _, sanction, lifted)),
         ) => character == *target && sanction == *sanction_id && lifted == Some(starts),
-        (rules::Action::Kick { .. }, 1, None) => sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_staff_kicks WHERE environment=$1 AND operation_id=$2::uuid AND character_id=encode($3,'hex')::uuid AND created_at_ms=$4)")
+        (rules::Action::Kick { .. }, 1, None) => sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_staff_kicks WHERE environment=$1 AND operation_id=$2::uuid AND replace(character_id::text,'-','')=$3 AND created_at_ms=$4)")
             .bind(trust.environment()).bind(&r.operation_id).bind(target).bind(starts).fetch_one(&mut *tx).await?,
         (rules::Action::Inspect { .. }, _, None) | (_, 2, None) => true,
         _ => false,
