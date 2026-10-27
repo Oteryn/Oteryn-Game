@@ -5,14 +5,16 @@ use super::super::character_progression::assert_item_only_fence;
 use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::*;
-use crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1;
+use crate::foundation::admission_authority_publication::{
+    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+};
 use oteryn_protocol_oteryn::boss_encounter::{
     BossCooldownEntry, COOLDOWN_PAGE_SIZE, decode_cooldown_query, encode_cooldown_list,
 };
 
 impl super::super::DurabilityRoot {
     /// Read only this admitted Character's page under retained session identity use,
-    /// current recovery, session, lease,
+    /// retained eligibility/presence publications, current recovery, session, lease,
     /// assignment, node and live Character-root interpretation proofs. This is an item-only
     /// read: unrelated CharacterRevision advances do not invalidate it. The semantic-pass
     /// deadline bounds every database wait.
@@ -38,27 +40,52 @@ impl super::super::DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
+                    let character_id =
+                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
                     // A materialized live session is insufficient after a partial
                     // restore loses issuance history. Prove retained identity use
                     // before the independent participant/root/runtime checks.
                     if !super::super::fresh_admission::committed_session_use(
                         &mut tx,
-                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
-                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        character_id,
                         fence.game_session_id,
                     )
                     .await?
                     {
                         return Ok(None);
                     }
-                    // A ready mirror and assignment history do not prove the
-                    // readiness publisher's retained decision. Reuse its owner
-                    // validator under the same relation locks and deadline.
-                    let runtime_key = AdmissionAuthorityGuardKeyV1::Runtime(fence.runtime_scope);
-                    match guards.load_locked(&mut tx, &runtime_key).await {
-                        Ok(Some(_)) => {}
+                    // Eligibility, lease and presence mirrors also need their
+                    // publishers' retained decisions. Resolve the account through
+                    // the validated Character publication; the participant fence
+                    // below still compares it to the exact session and root.
+                    let character = match guards
+                        .load_locked(
+                            &mut tx,
+                            &AdmissionAuthorityGuardKeyV1::Character(character_id),
+                        )
+                        .await
+                    {
+                        Ok(Some(character)) => character,
                         Ok(None) | Err(DurabilityError::InvalidStoredState) => return Ok(None),
                         Err(error) => return Err(error),
+                    };
+                    let AdmissionAuthorityGuardStateV1::Character { account_id, .. } =
+                        character.state
+                    else {
+                        return Ok(None);
+                    };
+                    // Reuse the owner validator for account presence and runtime
+                    // readiness under the same relation locks and deadline.
+                    for key in [
+                        AdmissionAuthorityGuardKeyV1::Account { account_id },
+                        AdmissionAuthorityGuardKeyV1::Runtime(fence.runtime_scope),
+                    ] {
+                        match guards.load_locked(&mut tx, &key).await {
+                            Ok(Some(_)) => {}
+                            Ok(None) | Err(DurabilityError::InvalidStoredState) => return Ok(None),
+                            Err(error) => return Err(error),
+                        }
                     }
                     if assert_item_only_fence(&mut tx, &fence, &node)
                         .await?

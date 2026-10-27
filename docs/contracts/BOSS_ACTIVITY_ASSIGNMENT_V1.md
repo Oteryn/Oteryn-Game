@@ -232,6 +232,27 @@ this deliberately inconsistent restoration probe; no history or protection is
 rewritten. This qualifies a production prerequisite's refusal, not a readiness
 publisher, successful handoff, Instance admission or restart recovery.
 
+Command 133 also validates its Character and account publications through that
+owner's payload/mirror and retained-history validator. The validated Character
+publication supplies the account key; the existing participant fence still checks
+that account against the exact session and live Character root, along with current
+eligibility, lease and presence. All three guard validations share the same
+admission relation locks, semantic transaction and deadline. Missing or invalid
+publication evidence refuses the page; other database failures remain unavailable.
+This additional proof is composed only at the cooldown reader, not every shared
+participant consumer.
+
+`boss_cooldown_list_postgres_real_dispatch_participant_history_character_ahead`
+and `boss_cooldown_list_postgres_real_dispatch_participant_history_account_ahead`
+each first accept commands on a real Channel connection, then append a newer
+history decision for exactly one participant guard while retaining its projection.
+The next command must return Rejected with no payload, and the direct durable
+reader must also refuse. The session, lease, presence, Character root, readiness
+and valid assignment history remain unchanged. The disposable database retains
+the fault without rewriting history or protections. These tests prove refusal
+of stale source publications, not a provenance writer, successful activity handoff
+or independently current destination ownership.
+
 Command 133's durable cooldown reader uses the item-only Character fence,
 including the live root's account, World and current Game-owned interpretation,
 before reading cooldown rows. It does not require an expected CharacterRevision:

@@ -418,6 +418,7 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
 // consumer. A bare Instance session is representable by FND-04, but neither it
 // nor an activity's allocation/readiness is a participant handoff proof.
 async fn qualify_gameplay_fence(h: &fixture::Harness) -> TestResult {
+    seed_participant_publications(h).await?;
     let seal = h.recovery.seal_current().map_err(fixture::debug)?;
     let authority = h
         .root
@@ -518,6 +519,102 @@ async fn qualify_gameplay_fence(h: &fixture::Harness) -> TestResult {
     );
     qualify_channel_position_consumers(h, &authority, scope).await?;
     qualify_live_respawn_retention(h, &authority, scope).await?;
+    Ok(())
+}
+
+// The shared Bestiary harness seeds only SQL mirrors with placeholder payloads.
+// This reader also needs the exact retained publications for those same facts.
+// Seed them administratively with the owner's encoder/storage adapter, without
+// changing the shared harness or claiming a fresh-admission publisher ran.
+async fn seed_participant_publications(h: &fixture::Harness) -> TestResult {
+    use crate::durability::admission_authority_guards::{
+        AdmissionGuardStore, encode_guard, uuid_text,
+    };
+    use crate::foundation::fnd04_verifier::{
+        Fnd04EvidenceScope, FreshAccountSecurityObservationV1, FreshEvidenceProvenanceV1,
+        FreshEvidencePurposeV1,
+    };
+    use crate::foundation::{CharacterId, GameSessionId};
+
+    let account_id = uuid_text(&id(40));
+    let character = CharacterId::decode(&id(fixture::CHARACTER)).map_err(fixture::debug)?;
+    let session = GameSessionId::decode(&id(fixture::SESSION)).map_err(fixture::debug)?;
+    let changes = [
+        (
+            AdmissionAuthorityGuardKeyV1::Account {
+                account_id: account_id.clone(),
+            },
+            AdmissionPublicationPurposeV1::AccountSecurityAndPresence,
+            "account-current",
+            AdmissionAuthorityGuardStateV1::Account {
+                security: FreshAccountSecurityObservationV1 {
+                    account_id: account_id.clone(),
+                    minimum_generation: 1,
+                    allowed: true,
+                    provenance: FreshEvidenceProvenanceV1 {
+                        source_authority: "test".into(),
+                        purpose: FreshEvidencePurposeV1::PlatformSecurity,
+                        scope: Fnd04EvidenceScope::FreshAdmission,
+                        source_revision: 1,
+                        accepted_source_revision: 1,
+                        decision_identity: "account-current".into(),
+                        accepted_decision_identity: "account-current".into(),
+                        source_observed_at: 1,
+                        clock_uncertainty_seconds: 0,
+                        publication_revision: 1,
+                    },
+                },
+                presence: Some((character, session)),
+            },
+        ),
+        (
+            AdmissionAuthorityGuardKeyV1::Character(character),
+            AdmissionPublicationPurposeV1::CharacterOwnershipAndLease,
+            "character-current",
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id,
+                world_id: fixture::scope()?.world_id(),
+                eligible: true,
+                lease_generation: 1,
+                holder: Some(session),
+            },
+        ),
+    ]
+    .map(
+        |(key, purpose, decision, state)| AdmissionAuthorityPublicationChangeV1 {
+            key,
+            source: AdmissionPublicationSourceV1 {
+                authority: "test".into(),
+                purpose,
+                source_revision: 1,
+                decision_identity: decision.into(),
+                source_observed_at: 1,
+                clock_uncertainty_seconds: 0,
+            },
+            precondition: AdmissionPublicationPreconditionV1::Bootstrap {
+                restored_publication_high_water: Some(0),
+            },
+            publication_revision: 1,
+            state,
+        },
+    );
+    let encoded = changes
+        .iter()
+        .map(|change| encode_guard(change, crate::durability::MAX_ADMISSION_GUARD_BYTES))
+        .collect::<Result<Vec<_>, _>>()?;
+    let guards = AdmissionGuardStore::from_root(h.root.clone());
+    let mut tx = h.pool.begin().await?;
+    crate::durability::db::lock_admission_relations(&mut tx).await?;
+    guards
+        .persist_locked(&mut tx, &changes, &[None, None], &encoded)
+        .await?;
+    for change in &changes {
+        assert_eq!(
+            guards.load_locked(&mut tx, &change.key).await?.as_ref(),
+            Some(change)
+        );
+    }
+    tx.commit().await?;
     Ok(())
 }
 

@@ -89,6 +89,8 @@ enum HistoryProbe {
     SessionIncomplete,
     SessionGap,
     ReadinessHistoryAhead,
+    CharacterHistoryAhead,
+    AccountHistoryAhead,
 }
 
 async fn qualify_fence_changes(
@@ -267,7 +269,7 @@ async fn qualify_fence_changes(
             assert_eq!(page(&payload)?.1.len(), 64);
             command_id += 1;
         }
-        // A partial assignment or session-use history must fence an already
+        // Partial assignment, session-use or publisher history must fence an already
         // admitted connection too. Keep every live participant/assignment/ready
         // fact unchanged. Each disposable database gets exactly one monotonic
         // history fault, with no history rewrite or high-water/completeness reset.
@@ -311,6 +313,14 @@ async fn qualify_fence_changes(
                 HistoryProbe::ReadinessHistoryAhead => (
                     "INSERT INTO game_durability_admission_guard_history(guard_key,publication_revision,source_authority,source_revision,decision_identity,change_json) SELECT decode('03','hex')||scope_key,publication_revision+1,source_authority,source_revision+1,decision_identity||':restore-probe',change_json FROM game_durability_admission_runtime_guards WHERE scope_key=decode('01','hex')||uuid_send(encode($1,'hex')::uuid)||uuid_send(encode($2,'hex')::uuid)",
                     "readiness projection behind retained history",
+                ),
+                HistoryProbe::CharacterHistoryAhead => (
+                    "INSERT INTO game_durability_admission_guard_history(guard_key,publication_revision,source_authority,source_revision,decision_identity,change_json) SELECT decode('02','hex')||uuid_send(character_id),publication_revision+1,source_authority,source_revision+1,decision_identity||':restore-probe',change_json FROM game_durability_admission_character_guards WHERE character_id=encode($1,'hex')::uuid",
+                    "Character projection behind retained history",
+                ),
+                HistoryProbe::AccountHistoryAhead => (
+                    "INSERT INTO game_durability_admission_guard_history(guard_key,publication_revision,source_authority,source_revision,decision_identity,change_json) SELECT decode('01','hex')||int8send(octet_length(a.account_id::text)::bigint)||convert_to(a.account_id::text,'UTF8'),a.publication_revision+1,a.source_authority,a.source_revision+1,a.decision_identity||':restore-probe',a.change_json FROM game_durability_admission_account_guards a JOIN game_durability_admission_character_guards c ON c.account_id=a.account_id WHERE c.character_id=encode($1,'hex')::uuid AND c.holder_game_session_id=a.holder_game_session_id",
+                    "account projection behind retained history",
                 ),
                 HistoryProbe::None => unreachable!("fault selected above"),
             };
@@ -713,6 +723,16 @@ fn boss_cooldown_list_postgres_real_dispatch_session_history_gap() -> TestResult
 #[test]
 fn boss_cooldown_list_postgres_real_dispatch_readiness_history_ahead() -> TestResult {
     cooldown_scenario(HistoryProbe::ReadinessHistoryAhead)
+}
+
+#[test]
+fn boss_cooldown_list_postgres_real_dispatch_participant_history_character_ahead() -> TestResult {
+    cooldown_scenario(HistoryProbe::CharacterHistoryAhead)
+}
+
+#[test]
+fn boss_cooldown_list_postgres_real_dispatch_participant_history_account_ahead() -> TestResult {
+    cooldown_scenario(HistoryProbe::AccountHistoryAhead)
 }
 
 fn cooldown_scenario(history_probe: HistoryProbe) -> TestResult {
