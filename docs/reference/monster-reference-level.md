@@ -16,6 +16,14 @@ Evidence classification: **UNKNOWN** for the official formula and official creat
   `reference_level`, `referenceLevel`, and `monster reference`; neither pinned reference supplies
   the mechanic, formula constants, or creature cap values.
 
+## Implementation disposition
+
+Official curve constants and creature caps remain UNKNOWN. Generated Gnomprona, Rotten Blood,
+and all other creature caps therefore remain explicitly null, preserving neutral damage.
+Creature melee and damage-spell dispatch share `monster_reference_level_damage_multiplier`,
+which resolves the creature cap, spatial overrides and target-owned player/party levels.
+Explicitly authored caps enable the MRL-3 observed approximation below; it is not source parity.
+
 ## Observed approximation (no official formula; Canary/Crystal UNKNOWN)
 
 The 2024-04-16 change describes a softer first 100 levels below a cap followed by a faster

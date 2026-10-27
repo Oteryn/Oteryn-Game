@@ -120,9 +120,16 @@ async fn reorder<C: ContainerSortContent>(
            UNION ALL SELECT item_instance_id,parent_item_instance_id,placement_ordinal,true FROM game_item_nested_entries \
          ), tree AS ( \
            SELECT e.*,1 AS depth FROM edges e WHERE parent_item_instance_id=encode($1,'hex')::uuid \
-           UNION ALL SELECT e.*,t.depth+1 FROM edges e JOIN tree t ON e.parent_item_instance_id=t.item_instance_id WHERE t.depth<9 \
-         ) SELECT item_instance_id::text,parent_item_instance_id::text,placement_ordinal::text,nested,depth FROM tree ORDER BY item_instance_id LIMIT 501"
-    ).bind(target.as_slice()).fetch_all(&mut **tx).await?;
+           UNION ALL SELECT e.*,t.depth+1 FROM edges e JOIN tree t ON e.parent_item_instance_id=t.item_instance_id WHERE t.depth<$2 \
+         ) SELECT item_instance_id::text,parent_item_instance_id::text,placement_ordinal::text,nested,depth FROM tree ORDER BY item_instance_id LIMIT $3"
+    )
+    .bind(target.as_slice())
+    // Fetch one row beyond each accepted bound so an oversized tree is
+    // distinguishable from a tree which exactly fills the supported limit.
+    .bind(ITEM_LOOP_DEPTH_MAX + 1)
+    .bind(ITEM_LOOP_TREE_ITEMS_MAX + 1)
+    .fetch_all(&mut **tx)
+    .await?;
     if rows.len() > ITEM_LOOP_TREE_ITEMS_MAX as usize
         || rows
             .iter()

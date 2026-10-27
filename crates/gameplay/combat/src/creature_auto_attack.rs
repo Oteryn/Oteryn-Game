@@ -32,7 +32,7 @@ pub const DAMAGE_MULTIPLIER_SCALE: u32 = 1_000_000;
 /// Observed approximation (no official formula; Canary/Crystal UNKNOWN).
 /// Generic fallback: +0.2% per level for the first 100, then +1% per level.
 /// Area-specific observed points may calibrate this approximation independently.
-pub const fn monster_reference_level_damage_multiplier(
+const fn generic_reference_level_damage_multiplier(
     reference_level: Option<u32>,
     player_level: u32,
 ) -> u32 {
@@ -48,7 +48,7 @@ pub const fn monster_reference_level_damage_multiplier(
 
 /// Resolve an authored spatial spawn override, then scale only this hit's player's damage.
 /// The independent reader supplies a same-area party minimum, or None when unavailable.
-pub fn reference_level_damage_multiplier(
+pub fn monster_reference_level_damage_multiplier(
     reference_level: Option<u32>,
     areas: &[crate::content::ProjectV2ReferenceLevelOverride],
     origin: crate::foundation::MovementLocalPosition,
@@ -59,7 +59,7 @@ pub fn reference_level_damage_multiplier(
         .iter()
         .find(|area| reference_level_area_contains(area, origin))
     else {
-        return monster_reference_level_damage_multiplier(reference_level, facts.player_level);
+        return generic_reference_level_damage_multiplier(reference_level, facts.player_level);
     };
     let level = match area.party_mode {
         ProjectV2ReferenceLevelPartyMode::PerPlayer => facts.player_level,
@@ -97,7 +97,7 @@ pub fn reference_level_damage_multiplier(
         previous = *point;
     }
     if area.curve.is_empty() {
-        return monster_reference_level_damage_multiplier(Some(cap), level);
+        return generic_reference_level_damage_multiplier(Some(cap), level);
     }
     // Beyond the observations retain their last value and use the faster tail slope.
     DAMAGE_MULTIPLIER_SCALE
@@ -124,7 +124,24 @@ pub fn reference_level_area_contains(
 
 #[cfg(test)]
 mod reference_level_tests {
-    use super::{DAMAGE_MULTIPLIER_SCALE, monster_reference_level_damage_multiplier};
+    use super::{DAMAGE_MULTIPLIER_SCALE, generic_reference_level_damage_multiplier};
+
+    #[test]
+    fn requested_reference_level_boundaries_use_the_observed_approximation() {
+        // MRL-3 supersedes below-cap neutrality; see docs/reference/monster-reference-level.md.
+        for (level, extra) in [
+            (601, 0),
+            (600, 0),
+            (599, 2_000),
+            (500, 200_000),
+            (499, 210_000),
+        ] {
+            assert_eq!(
+                generic_reference_level_damage_multiplier(Some(600), level),
+                DAMAGE_MULTIPLIER_SCALE + extra
+            );
+        }
+    }
 
     #[test]
     fn approximation_is_neutral_at_cap_and_accelerates_after_one_hundred_levels() {
@@ -137,7 +154,7 @@ mod reference_level_tests {
             (reference - 101, 210_000),
         ] {
             assert_eq!(
-                monster_reference_level_damage_multiplier(Some(reference), player_level),
+                generic_reference_level_damage_multiplier(Some(reference), player_level),
                 DAMAGE_MULTIPLIER_SCALE + extra
             );
         }
@@ -146,7 +163,7 @@ mod reference_level_tests {
     #[test]
     fn creature_without_reference_level_is_unchanged() {
         assert_eq!(
-            monster_reference_level_damage_multiplier(None, 1),
+            generic_reference_level_damage_multiplier(None, 1),
             DAMAGE_MULTIPLIER_SCALE
         );
     }
@@ -1095,7 +1112,7 @@ impl AutoAttackOwner {
             });
         }
         let requested = draw("damage_draw", source.minimum, source.maximum)?;
-        let multiplier = reference_level_damage_multiplier(
+        let multiplier = monster_reference_level_damage_multiplier(
             source.reference_level,
             &source.reference_level_overrides,
             from.position(),

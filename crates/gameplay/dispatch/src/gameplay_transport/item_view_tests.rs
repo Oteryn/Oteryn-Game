@@ -80,14 +80,14 @@ fn live_handles_are_bounded_at_max_and_refused_at_max_plus_one() {
 #[test]
 fn the_map_view_raises_the_bound_by_mapw_rl_04_and_refuses_one_more() {
     use oteryn_protocol_oteryn::item_view::MAX_LIVE_ITEM_HANDLES_MAP_VIEW;
-    assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_325);
+    assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_339);
     for (table, bound) in [
-        (ItemHandleTable::default().with_map_view(), 1_325),
+        (ItemHandleTable::default().with_map_view(), 1_339),
         (
             ItemHandleTable::default()
                 .with_container_tree()
                 .with_map_view(),
-            1_661,
+            1_675,
         ),
     ] {
         let mut table = table;

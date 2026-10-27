@@ -2808,7 +2808,17 @@ fn reference_level_party_area_attack_shares_base_roll_and_scales_each_player() {
             } else {
                 800
             };
-            let multiplier = monster_reference_level_damage_multiplier(cap, level);
+            let mut target_facts = world.facts.attack;
+            target_facts.player_level = level;
+            let multiplier = monster_reference_level_damage_multiplier(
+                cap,
+                &[],
+                runtime
+                    .read_actor_position(*actor)
+                    .expect("position")
+                    .position(),
+                &target_facts,
+            );
             let applied = result
                 .as_ref()
                 .expect("hit")
@@ -2875,7 +2885,7 @@ fn reference_level_observed_area_curves_reach_real_damage_dispatch() {
             let at_deficit = |deficit| {
                 let mut facts = world.facts.attack;
                 facts.player_level = cap - deficit;
-                crate::creature_auto_attack::reference_level_damage_multiplier(
+                crate::creature_auto_attack::monster_reference_level_damage_multiplier(
                     None,
                     &source.reference_level_overrides,
                     origin,

@@ -1064,7 +1064,15 @@ fn reference_level_melee_native_source_scales_only_in_the_overridden_area() {
             )
             .expect("melee dispatch");
         let base = *neutral.get_or_insert(hit.requested);
-        let multiplier = monster_reference_level_damage_multiplier(in_area.then_some(790), level);
+        let multiplier = monster_reference_level_damage_multiplier(
+            in_area.then_some(790),
+            &[],
+            runtime
+                .read_actor_position(facts.target)
+                .expect("position")
+                .position(),
+            &facts,
+        );
         assert_eq!(
             u64::from(hit.requested),
             u64::from(base) * u64::from(multiplier) / u64::from(DAMAGE_MULTIPLIER_SCALE)

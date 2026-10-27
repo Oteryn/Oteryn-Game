@@ -8,7 +8,8 @@ use crate::content::{
 };
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{
-    AttackError, CurrentConditionPolicy, DAMAGE_MULTIPLIER_SCALE, reference_level_damage_multiplier,
+    AttackError, CurrentConditionPolicy, DAMAGE_MULTIPLIER_SCALE,
+    monster_reference_level_damage_multiplier,
 };
 use crate::creature_damage_spell_delayed as delayed;
 use crate::foundation::owner_timer::SemanticTimeMicros;
@@ -2048,7 +2049,7 @@ impl DamageSpellOwner {
             } else {
                 0
             };
-            let reference_multiplier = reference_level_damage_multiplier(
+            let reference_multiplier = monster_reference_level_damage_multiplier(
                 source.reference_level,
                 &source.reference_level_overrides,
                 runtime
