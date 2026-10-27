@@ -17,13 +17,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        412,
-        "06201a8f693ef231059f18c099a85a39e5c44515447b836ac2c17fa572684d1a",
+        400,
+        "53b4d57a6d0d07012ff138105ecf15c4a0ed14bf2a26abb54f8773db3424364c",
     ),
     (
         "definitions/declarations.json",
-        27_600_059,
-        "0ec892e05a7c93137ecf00a5c144ecaaa162118ce746e5a2e905bdff6f85789e",
+        27_600_058,
+        "f8ed5ec659d0e5340fcd4a3164a5d7f25fe8a8fae54ed5ea3712263766e18827",
     ),
     (
         "definitions/reference.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1955,
-        "c7333bf00a0b7fa8397f4465b85f46049bc8c054e4d0f82c94563beaa57d4edf",
+        1951,
+        "c7e6530ad553ca4fe5b8bf94156f34610e29ef99d18ddcdbc2bb12f9d0d43e8f",
     ),
     (
         "presentations/bindings.json",
@@ -47,13 +47,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        406,
-        "48e0c34573b5813975cb6ee02af3df769e4c918a5b1221c9c2c12010dcdfdd68",
+        402,
+        "aa8776ab83aab6dfb658a829729a3daa51739a5df484d5401a3685758075479f",
     ),
     (
         "provenance/imports.json",
-        6770800,
-        "6ac5b17b337f384a25aed9523eda8b2fd2ba94d7ffe62b3e2869859dcaa1994f",
+        6_771_443,
+        "d8026c56aa5251f77c000450cab3d26ca4ebcd46ac1f31921cd7e775a02b7d9f",
     ),
     (
         "provenance/sources.json",
@@ -138,7 +138,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "79dc93e72d80018ba7eb246f05984683baa0ab55dd9361158bd4db199f7f1e3b";
+const TREE_SHA256: &str = "83c785a1cf024acdfe7d1d3270318752543444bd7c7ac3e06cdbec68b4cc7737";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -387,11 +387,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(
-        project.project_revision(),
-        "npc-premium-services-20261022-r1"
-    );
-    assert_eq!(project.imports().len(), 31);
+    assert_eq!(project.project_revision(), "tibia-news-bal-1-20261027-r1");
+    assert_eq!(project.imports().len(), 32);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -399,6 +396,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             !b.batch_id.starts_with("monster-full-mechanics-")
                 && b.batch_id != "g4-item-forge289-br-r1"
                 && b.batch_id != "g4-item-fx-audio295-raw-evidence-r1"
+                && b.batch_id != "official-creature-balance-8918-8935-9024-9039"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
