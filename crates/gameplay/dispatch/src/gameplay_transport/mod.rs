@@ -113,6 +113,7 @@ mod quest_callbacks;
 mod quest_log_source;
 mod resume;
 mod reward_bag_use;
+pub mod rotten_blood_dispatch;
 mod rune_use_bridge;
 mod seam_rooms;
 pub mod server_save_countdown;
