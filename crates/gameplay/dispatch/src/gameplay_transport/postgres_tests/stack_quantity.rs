@@ -18,13 +18,26 @@ fn stack_quantity_dispatch_split_merge_drop_replay_and_atomic_refusals() -> Test
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "stack quantity e2e panic")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn boss_activity_item_consumer_postgres_real_dispatch() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "boss item consumer e2e panic")??;
+    Ok(())
+}
+
+fn scenario(boss_item_fences: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "stack_quantity", true, false).await?;
@@ -144,9 +157,51 @@ fn scenario() -> TestResult {
         admitted.item_fence = Some(fence);
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             owner.offered_capabilities(),
-            &[4, 6, 12, 14, 18, CAPABILITY_ITEM_STACK_COUNT_V1],
+            if boss_item_fences {
+                &[
+                    4,
+                    6,
+                    12,
+                    14,
+                    18,
+                    CAPABILITY_ITEM_STACK_COUNT_V1,
+                    oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1,
+                ]
+            } else {
+                &[4, 6, 12, 14, 18, CAPABILITY_ITEM_STACK_COUNT_V1]
+            },
         )
         .ok_or("count capability selectable")?;
+        if boss_item_fences {
+            eprintln!(
+                "Canonical PostgreSQL 18.6; boss prerequisite Channel item consumer through real dispatch"
+            );
+            let (_, result, _) = exchange_with_boss_fences(
+                &owner,
+                admitted,
+                10,
+                None,
+                30,
+                true,
+                true,
+                Some(&harness),
+            )
+            .await?;
+            assert_eq!(result, ItemMoveOutcome::Moved);
+            assert_eq!(quantity(&harness, id(71)).await?, 70);
+            let nested: i64 = sqlx::query_scalar("SELECT i.quantity FROM game_item_nested_entries n JOIN game_item_instances i USING(item_instance_id) WHERE n.parent_item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(nested, 30);
+            let receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_item_loop_move_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(receipts, 1);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         // Split 30 into the visible carried bag. Source keeps its identity and 70 units.
         let (next, result, payload) = exchange(&owner, admitted, 1, None, 30, true, true).await?;
         assert_eq!(result, ItemMoveOutcome::Moved);
@@ -260,6 +315,20 @@ async fn exchange(
     to: bool,
     nested: bool,
 ) -> TestResult<(AdmittedSession, ItemMoveOutcome, Vec<u8>)> {
+    exchange_with_boss_fences(owner, admitted, command_id, replay, count, to, nested, None).await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn exchange_with_boss_fences(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    replay: Option<Vec<u8>>,
+    count: u8,
+    to: bool,
+    nested: bool,
+    boss_fixture: Option<&Harness>,
+) -> TestResult<(AdmittedSession, ItemMoveOutcome, Vec<u8>)> {
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let client_task = async {
         let mut source = None;
@@ -352,6 +421,52 @@ async fn exchange(
             payload.extend([0x30, count]);
             payload
         };
+        if let Some(harness) = boss_fixture {
+            use oteryn_protocol_oteryn::CommandStatus;
+            use oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_COOLDOWNS;
+            // Prime carried-command reconciliation on this same connection
+            // before changing interpretation, as in the cooldown qualification.
+            send(&mut client, 1, COMMAND_TYPE_BOSS_COOLDOWNS, &[]).await?;
+            assert_eq!(
+                command_result(&mut client, 1).await?.0,
+                CommandStatus::Accepted
+            );
+            for index in 0..4 {
+                let mut revisions = ["profile-1", "ruleset-1", "content-1", "starter-1"];
+                revisions[index] = "boss-item-incompatible-2";
+                sqlx::query("SELECT game_character_configure_interpretation($1,$2,$3,$4)")
+                    .bind(revisions[0])
+                    .bind(revisions[1])
+                    .bind(revisions[2])
+                    .bind(revisions[3])
+                    .execute(&harness.pool)
+                    .await?;
+                let id = 2 + index as u64 * 2;
+                send(&mut client, id, COMMAND_TYPE_ITEM_MOVE_INTENT, &actual).await?;
+                let (_, payload) = command_result(&mut client, id).await?;
+                assert_eq!(
+                    decode_item_move_result_with_equip_drop(&payload, true).map_err(debug)?,
+                    ItemMoveOutcome::Rejected,
+                    "interpretation column {index}"
+                );
+                assert_eq!(quantity(harness, super::fixture::id(71)).await?, 100);
+                let receipts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_item_loop_move_receipts")
+                        .fetch_one(&harness.pool)
+                        .await?;
+                assert_eq!(receipts, 0, "refused move wrote a receipt");
+                sqlx::query("SELECT game_character_configure_interpretation('profile-1','ruleset-1','content-1','starter-1')")
+                    .execute(&harness.pool).await?;
+                send(&mut client, id + 1, COMMAND_TYPE_BOSS_COOLDOWNS, &[]).await?;
+                let (status, payload) = command_result(&mut client, id + 1).await?;
+                assert_eq!(
+                    status,
+                    CommandStatus::Accepted,
+                    "restored interpretation column {index}"
+                );
+                assert!(!payload.is_empty());
+            }
+        }
         send(
             &mut client,
             command_id,
@@ -411,6 +526,21 @@ async fn exchange(
     };
     let (result, actual) = result.ok_or("client did not finish")??;
     Ok((admitted, result, actual))
+}
+
+async fn command_result(
+    client: &mut tokio::io::DuplexStream,
+    command_id: u64,
+) -> TestResult<(oteryn_protocol_oteryn::CommandStatus, Vec<u8>)> {
+    loop {
+        let raw = super::item_look::read_frame(client).await?;
+        let envelope = crate::foundation::decode_wire_envelope(&raw)?;
+        if envelope.message_type() == crate::foundation::MessageType::CommandResult {
+            let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, command_id);
+            return Ok((result.status, result.payload.to_vec()));
+        }
+    }
 }
 
 async fn send(

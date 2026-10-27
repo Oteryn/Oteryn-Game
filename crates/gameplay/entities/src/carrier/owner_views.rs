@@ -179,8 +179,8 @@ impl CurrentOwnerCombatDeath<'_> {
             .corpse_projections
             .iter()
             .find(|projection| projection.occurrence.actor == actor)
-            .map(|projection| (projection.occurrence.death_key(), projection.position()))
             .ok_or(CarrierError::CommittedLethalUnavailable)
+            .and_then(|projection| Ok((projection.occurrence.death_key()?, projection.position())))
     }
 
     /// P2 4180039074: the owner clock of the turn that committed `actor`'s lethal receipt, read
@@ -273,9 +273,8 @@ impl ChannelRuntimeV1 {
         let context = self.pinned_position_context();
         let carrier = &self.carrier;
         let actor = |version: &VersionedPosition| VisibleRuntimeActor {
-            actor: ExactActorRef(ActorRef::from_owner_parts(
-                carrier.world_id,
-                carrier.channel_id,
+            actor: ExactActorRef(ActorRef::from_scoped_owner_parts(
+                carrier.runtime_scope,
                 carrier.scope_generation,
                 version.actor_local_id,
                 version.actor_local_generation,
@@ -396,9 +395,8 @@ impl ChannelRuntimeV1 {
             }
             out.try_reserve(1)
                 .map_err(|_| CarrierError::AllocationFailed)?;
-            out.push(ExactActorRef(ActorRef::from_owner_parts(
-                self.carrier.world_id,
-                self.carrier.channel_id,
+            out.push(ExactActorRef(ActorRef::from_scoped_owner_parts(
+                self.carrier.runtime_scope,
                 self.carrier.scope_generation,
                 ActorLocalId((i + 1) as u32),
                 ActorLocalGeneration(*generation),

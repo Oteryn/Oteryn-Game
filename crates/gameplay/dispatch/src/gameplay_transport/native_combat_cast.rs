@@ -2007,7 +2007,7 @@ fn source_cost_request(
                 transaction_id,
                 &companion.spawn,
             )
-        }),
+        }).transpose().map_err(|_| SpellCastDisposition::Rejected)?,
     })
 }
 

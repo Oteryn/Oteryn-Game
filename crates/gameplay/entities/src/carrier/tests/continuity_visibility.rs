@@ -75,8 +75,8 @@ fn advancing_live_continuity_immediately_fences_all_old_operations() {
 fn stale_equal_and_cross_scope_advances_leave_guard_unchanged() {
     let mut continuity = continuity(70, 8);
     let before = (
-        continuity.world_id,
-        continuity.channel_id,
+        continuity.runtime_scope.world_id(),
+        continuity.channel_id().expect("Channel fixture"),
         continuity.current_generation,
         continuity.current_generation_claimed,
     );
@@ -95,8 +95,8 @@ fn stale_equal_and_cross_scope_advances_leave_guard_unchanged() {
     );
     assert_eq!(
         (
-            continuity.world_id,
-            continuity.channel_id,
+            continuity.runtime_scope.world_id(),
+            continuity.channel_id().expect("Channel fixture"),
             continuity.current_generation,
             continuity.current_generation_claimed,
         ),

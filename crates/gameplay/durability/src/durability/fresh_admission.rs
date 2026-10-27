@@ -1083,7 +1083,9 @@ fn decode_hex(text: &str) -> Result<Vec<u8>> {
         return Err(DurabilityError::InvalidStoredState);
     }
     text.as_bytes()
-        .as_chunks::<2>().0.iter()
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| checked(u8::from_str_radix(checked(std::str::from_utf8(pair))?, 16)))
         .collect()
 }
@@ -1138,6 +1140,74 @@ async fn session_use_state(
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(SessionUseState { revision, complete })
+}
+
+impl FreshAdmissionStore {
+    /// Retained session identity-use proof for a current participant consumer. For
+    /// an original fresh session, also validate its bounded admission receipt and
+    /// its exact membership/retained-origin binding. Legacy and replacement sessions
+    /// retain the identity-use check; this does not prove their admission lineage.
+    /// The caller holds `lock_admission_relations` in its bounded transaction.
+    /// This never proves an activity handoff or current lease.
+    pub(super) async fn committed_session_use(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        character: CharacterId,
+        session: GameSessionId,
+    ) -> Result<bool> {
+        use sqlx::Row;
+        let state = match session_use_state(tx, character).await {
+            Ok(state) => state,
+            Err(DurabilityError::InvalidStoredState) => return Ok(false),
+            Err(error) => return Err(error),
+        };
+        if !state.complete || state.revision == 0 {
+            return Ok(false);
+        }
+        // session_use_state already proves the bounded, gap-free revision range.
+        // NULL bindings are legacy observations, not committed issuance evidence.
+        // Find an original fresh receipt by its immutable, unique session identity,
+        // independently of the live projection's origin pointers. A damaged
+        // projection must not hide that retained origin by dropping both pointers.
+        let row = sqlx::query(
+            "SELECT m.operation_binding,s.fresh_replay_key,s.initial_fresh_replay_key, \
+                    r.replay_key AS issued_replay_key \
+             FROM game_durability_session_use_memberships m \
+             JOIN game_durability_reconnect_sessions s USING (game_session_id) \
+             LEFT JOIN game_durability_fresh_admission_receipts r USING (game_session_id) \
+             WHERE m.game_session_id=encode($1,'hex')::uuid \
+               AND m.character_id=encode($2,'hex')::uuid \
+               AND m.operation_binding IS NOT NULL \
+               AND m.operation_binding <> decode(repeat('00',16),'hex')",
+        )
+        .bind(session.as_bytes().as_slice())
+        .bind(character.as_bytes().as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+        let Some(row) = row else {
+            return Ok(false);
+        };
+        let Some(replay) = row.try_get::<Option<Vec<u8>>, _>("issued_replay_key")? else {
+            return Ok(true);
+        };
+        let fresh: Option<Vec<u8>> = row.try_get("fresh_replay_key")?;
+        let initial: Option<Vec<u8>> = row.try_get("initial_fresh_replay_key")?;
+        if fresh.as_ref().or(initial.as_ref()) != Some(&replay)
+            || (fresh.is_some() && initial.is_some() && fresh != initial)
+        {
+            return Ok(false);
+        }
+        let receipt = match self.receipt_locked(tx, &replay).await {
+            Ok(Some(receipt)) => receipt,
+            Ok(None) | Err(DurabilityError::InvalidStoredState) => return Ok(false),
+            Err(error) => return Err(error),
+        };
+        let binding: Vec<u8> = row.try_get("operation_binding")?;
+        let origin = receipt.binding();
+        Ok(origin.candidate_session == session
+            && checked(origin.initial_commit())?.character_id() == character
+            && origin.transport.to_bytes().as_slice() == binding.as_slice())
+    }
 }
 
 /// Consumed only inside the caller's already serialized session transaction.

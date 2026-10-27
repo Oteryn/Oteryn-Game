@@ -8,8 +8,10 @@ fn uuid_v7(raw: u64) -> [u8; 16] {
 
 fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
     PreProductionContinuityGrant {
-        world_id: WorldId::decode(&uuid_v7(seed)).expect("valid WorldId fixture"),
-        channel_id: ChannelId::decode(&uuid_v7(seed + 1)).expect("valid ChannelId fixture"),
+        runtime_scope: RuntimeScopeRefV1::channel(
+            WorldId::decode(&uuid_v7(seed)).expect("valid WorldId fixture"),
+            ChannelId::decode(&uuid_v7(seed + 1)).expect("valid ChannelId fixture"),
+        ),
         scope_generation: ScopeOwnershipGeneration::new(generation)
             .expect("non-zero generation fixture"),
     }
@@ -72,8 +74,8 @@ pub(super) fn runtime(capacity: usize) -> ChannelRuntimeV1 {
 
 fn spawn_position_context(continuity: &NamespaceContinuityGuard) -> PreProductionPositionContext {
     PreProductionPositionContext {
-        world_id: continuity.world_id,
-        channel_id: continuity.channel_id,
+        scope: positions::PositionScope::new(continuity.runtime_scope)
+            .expect("valid scoped context"),
         scope_generation: continuity.current_generation,
         coordinate_frame_marker: 1,
         map_revision_marker: 1,
@@ -82,9 +84,8 @@ fn spawn_position_context(continuity: &NamespaceContinuityGuard) -> PreProductio
 }
 
 fn corpse_actor_at(continuity: &NamespaceContinuityGuard, local: u32) -> ExactActorRef {
-    ExactActorRef(ActorRef::from_owner_parts(
-        continuity.world_id,
-        continuity.channel_id,
+    ExactActorRef(ActorRef::from_scoped_owner_parts(
+        continuity.runtime_scope,
         continuity.current_generation,
         ActorLocalId(local),
         ActorLocalGeneration(1),

@@ -21,6 +21,14 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<(), DurabilityError> {
+        // Bed admission settles the saved Channel projection. An activity
+        // session must not consume a sleeper or rewrite that projection.
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) {
+            return Err(DurabilityError::Unavailable);
+        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;

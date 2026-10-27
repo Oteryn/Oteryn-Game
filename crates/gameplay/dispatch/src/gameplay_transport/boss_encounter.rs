@@ -1,0 +1,88 @@
+//! Shared boss cooldown query, composed with the admitted Character and native durability.
+use super::{ComposedFreshAdmission, connection::AdmittedSession};
+use oteryn_protocol_oteryn::boss_encounter as wire;
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn boss_cooldowns_wire(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+    ) -> super::guild_intent::GuildReply {
+        use super::guild_intent::GuildReply;
+        let (Some(actor), Some(fence)) = (admitted.runtime_actor, admitted.item_fence) else {
+            return GuildReply::Rejected;
+        };
+        if id == 0
+            || kind != wire::COMMAND_TYPE_BOSS_COOLDOWNS
+            || !admitted
+                .continuity
+                .selected_capabilities
+                .contains(wire::CAPABILITY_BOSS_ENCOUNTER_V1)
+            || wire::decode_cooldown_query(payload).is_err()
+            || fence.game_session_id != admitted.game_session_id
+            || fence.connection_generation.get() != admitted.continuity.connection_generation
+        {
+            return GuildReply::Rejected;
+        }
+        {
+            let runtime = self.runtime.lock().await;
+            let binding = runtime.binding();
+            if admitted.world_id != binding.world_id()
+                || admitted.channel_id != binding.channel_id()
+                || fence.runtime_scope
+                    != crate::foundation::RuntimeScopeRefV1::channel(
+                        binding.world_id(),
+                        binding.channel_id(),
+                    )
+                || fence.scope_ownership_generation != binding.scope_generation()
+                || runtime.owner_fence().is_err()
+                || !runtime
+                    .player_control_facts(actor, admitted.game_session_id)
+                    .is_ok_and(|f| f.control_loss.is_none())
+            {
+                return GuildReply::Rejected;
+            }
+        }
+        match self
+            .root
+            .read_boss_cooldown_list(self.character, self.holder, fence, payload)
+            .await
+        {
+            Ok(Some(bytes)) => GuildReply::Payload(bytes),
+            Ok(None) => GuildReply::Rejected,
+            Err(_) => GuildReply::Unavailable,
+        }
+    }
+}
+
+macro_rules! authority_methods {
+    () => {
+        fn boss_cooldowns_command(
+            &self,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            _id: u64,
+            _kind: u32,
+            _payload: &[u8],
+        ) -> impl std::future::Future<Output = $crate::gameplay_transport::guild_intent::GuildReply>
+        {
+            async { $crate::gameplay_transport::guild_intent::GuildReply::Rejected }
+        }
+    };
+}
+pub(super) use authority_methods;
+macro_rules! composed_methods {
+    () => {
+        async fn boss_cooldowns_command(
+            &self,
+            admitted: connection::AdmittedSession,
+            id: u64,
+            kind: u32,
+            payload: &[u8],
+        ) -> crate::gameplay_transport::guild_intent::GuildReply {
+            self.boss_cooldowns_wire(admitted, id, kind, payload).await
+        }
+    };
+}
+pub(super) use composed_methods;

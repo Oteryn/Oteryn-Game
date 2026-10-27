@@ -50,10 +50,11 @@ fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
         bytes
     }
     PreProductionContinuityGrant {
-        world_id: oteryn_gameplay_foundation::foundation::WorldId::decode(&uuid_v7(seed))
-            .expect("world"),
-        channel_id: oteryn_gameplay_foundation::foundation::ChannelId::decode(&uuid_v7(seed + 1))
-            .expect("channel"),
+        runtime_scope: RuntimeScopeRefV1::channel(
+            oteryn_gameplay_foundation::foundation::WorldId::decode(&uuid_v7(seed)).expect("world"),
+            oteryn_gameplay_foundation::foundation::ChannelId::decode(&uuid_v7(seed + 1))
+                .expect("channel"),
+        ),
         scope_generation: oteryn_gameplay_foundation::foundation::ScopeOwnershipGeneration::new(
             generation,
         )
@@ -63,8 +64,12 @@ fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
 
 fn creature_fixture(seed: u64) -> CombatDeathFixture {
     let scope = grant(seed, 1);
-    CombatDeathFixture::new(scope.world_id, scope.channel_id, scope.scope_generation)
-        .expect("fixture creature")
+    CombatDeathFixture::new(
+        scope.world_id(),
+        scope.channel_id().expect("Channel fixture"),
+        scope.scope_generation,
+    )
+    .expect("fixture creature")
 }
 
 // --- White-box: `DamageContributors` boundary and tie-break, independent of the carrier ---
