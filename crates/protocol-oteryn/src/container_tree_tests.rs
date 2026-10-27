@@ -475,7 +475,7 @@ fn command_9_takes_the_container_destination_only_under_capability_14() {
 
 #[test]
 fn live_handle_bound_adds_16_views_of_21_items() {
-    assert_eq!(MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE, 637);
+    assert_eq!(MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE, 651);
     assert_eq!(
         MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE,
         MAX_LIVE_ITEM_HANDLES + MAX_CONTAINER_VIEWS * (1 + MAX_CONTAINER_VIEW_ENTRIES)

@@ -64,16 +64,18 @@ pub const CAPABILITY_ITEM_EQUIP_DROP_V1_REQUIRES: &[u32] = &[
 pub const MAX_CHARACTER_INVENTORY_ITEMS: usize = 30;
 /// `ITEMV0-RL-02`: entries in one domain-11 view, the corpse container capacity
 /// (`GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX`).
-pub const MAX_OPEN_CONTAINER_ENTRIES: usize = 16;
+pub const MAX_OPEN_CONTAINER_ENTRIES: usize = 30;
 /// `ITEMV0-RL-03`: live handles of one session. A handle is live while its item is in one of the
 /// session's views: domain 1 shows at most 255 objects besides the own player (`MOVE-RL-11`),
 /// domain 9 at most [`MAX_CHARACTER_INVENTORY_ITEMS`] and domain 11 at most
 /// [`MAX_OPEN_CONTAINER_ENTRIES`] entries; the open corpse keeps its domain-1 handle.
-pub const MAX_LIVE_ITEM_HANDLES: usize = 301;
+pub const MAX_LIVE_ITEM_HANDLES: usize = (crate::world_spatial_entities::MAX_SNAPSHOT_ENTITIES - 1)
+    + MAX_CHARACTER_INVENTORY_ITEMS
+    + MAX_OPEN_CONTAINER_ENTRIES;
 /// `ITEMV0-RL-03-MAP-VIEW`: live handles of a session that selected capability 18
 /// `WORLD_MAP_VIEW_V1`: [`MAX_LIVE_ITEM_HANDLES`] plus the map view's `MAPW-RL-04` = 1,024
 /// handle-bearing entries. With capability 14 too, the bound is
-/// `ITEMV0-RL-03-CONTAINER-TREE` (637) plus 1,024 = 1,661.
+/// `ITEMV0-RL-03-CONTAINER-TREE` (651) plus 1,024 = 1,675.
 pub const MAX_LIVE_ITEM_HANDLES_MAP_VIEW: usize =
     MAX_LIVE_ITEM_HANDLES + crate::world_map::MAX_MAP_VIEW_HANDLES;
 
@@ -95,7 +97,7 @@ const MAX_EQUIPPED_ITEM_ELEMENT_BYTES: usize = 2 + MAX_EQUIPPED_ITEM_BYTES;
 pub const MAX_CHARACTER_INVENTORY_EQUIP_DROP_BYTES: usize = MAX_EQUIPPED_ITEMS
     * MAX_EQUIPPED_ITEM_ELEMENT_BYTES
     + (MAX_CHARACTER_INVENTORY_ITEMS - MAX_EQUIPPED_ITEMS) * MAX_ITEM_ENTRY_ELEMENT_BYTES;
-/// Domain 11 snapshot and delta: the container handle 1 + 10 and 16 entry elements.
+/// Domain 11 snapshot and delta: the corpse handle 1 + 10 and 30 entry elements.
 pub const MAX_OPEN_CONTAINER_BYTES: usize =
     11 + MAX_OPEN_CONTAINER_ENTRIES * MAX_ITEM_ENTRY_ELEMENT_BYTES;
 /// `ItemTargetV1`: the handle 1 + 10.
