@@ -23,7 +23,6 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::rune_use_bridge::test_faults::{self, Point};
 use crate::gameplay_transport::{ComposedFreshAdmission, SeamRooms, item_fence_of};
 use crate::spell::cast::CharacterCastFacts;
-use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use oteryn_protocol_oteryn::actor_spell::SpellTargetPosition;
 use oteryn_protocol_oteryn::item_view::{
     STATE_DOMAIN_CHARACTER_INVENTORY, decode_character_inventory,
@@ -508,8 +507,24 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     let victim;
     {
         let mut runtime = dependencies.runtime.lock().await;
-        native
-            .install_companion_policies(&mut runtime)
+        // Keep damage/replay observations deterministic across the Forge population tick.
+        let mut policy = native
+            .policies()
+            .policies()
+            .iter()
+            .find(|policy| policy.definition_key == "oteryn:creature.rat")
+            .ok_or("target creature policy")?
+            .as_ref()
+            .clone();
+        policy.forge_difficulty = None;
+        let policies =
+            crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
+                native.source_digest(),
+                vec![policy],
+            )
+            .map_err(debug)?;
+        runtime
+            .install_companion_policies(policies)
             .map_err(debug)?;
         runtime
             .bind_attacker_lease(
