@@ -46,6 +46,25 @@ END $$;
 REVOKE ALL ON FUNCTION game_house_move_out_release(UUID) FROM PUBLIC,oteryn_game_control;
 GRANT EXECUTE ON FUNCTION game_house_move_out_release(UUID) TO oteryn_game_runtime;
 
+-- Route from the locked operation, without granting runtime access to the
+-- private disposition table. Guild and other causes retain their own release
+-- path; direct misuse of the ordinary release above still raises 23514.
+CREATE FUNCTION game_house_disposition_is_personal_move_out(op UUID) RETURNS BOOLEAN
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE d game_house_dispositions%ROWTYPE;
+BEGIN
+ SELECT * INTO d FROM game_house_dispositions WHERE operation_id=op FOR UPDATE;
+ IF NOT FOUND THEN
+  RAISE EXCEPTION 'house disposition release operation missing' USING ERRCODE='23514';
+ END IF;
+ RETURN d.cause='MOVE_OUT' AND d.owner_guild_id IS NULL;
+END $$;
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_house_disposition_is_personal_move_out(UUID) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_house_disposition_is_personal_move_out(UUID) FROM PUBLIC,oteryn_game_control;
+GRANT EXECUTE ON FUNCTION game_house_disposition_is_personal_move_out(UUID) TO oteryn_game_runtime;
+
 -- Personal terminal release proves ACL removal through its own physical audit,
 -- just as the existing Guild release proves its own deletion. Ordinary ACL edits
 -- still require the existing bounded same-transaction management receipt.

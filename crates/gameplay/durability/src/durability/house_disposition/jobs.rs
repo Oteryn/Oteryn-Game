@@ -68,10 +68,10 @@ impl DurabilityRoot {
                 let changed=port(&mut tx,&node,"advance",&p).await?;
                 if changed.as_bool()==Some(true) {
                     audit::write(&mut tx,&node,&p,&operation).await?;
-                    // TRUE only for the first state-3 release; earlier advances cheaply
-                    // return FALSE under the operation lock. SQL errors propagate through
-                    // DurabilityError and roll back this batch and its audit together.
-                    sqlx::query_scalar::<_, bool>("SELECT game_house_move_out_release($1::uuid)")
+                    // Classify the locked disposition, never caller input. Guild and
+                    // other causes keep their own release path. Personal release stays
+                    // atomic with custody and audit; any SQL error rolls back all three.
+                    sqlx::query_scalar::<_, bool>("SELECT CASE WHEN game_house_disposition_is_personal_move_out($1::uuid) THEN game_house_move_out_release($1::uuid) ELSE FALSE END")
                         .bind(&operation)
                         .fetch_one(&mut *tx)
                         .await?;
