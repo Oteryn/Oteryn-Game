@@ -470,6 +470,7 @@ pub struct WheelAllocation {
 pub struct WheelStages {
     revelations: BTreeMap<String, u8>,
     augments: BTreeMap<String, u8>,
+    convictions: BTreeMap<String, u8>,
     spell_augments: BTreeMap<String, u8>,
 }
 
@@ -512,6 +513,7 @@ impl WheelStages {
             })
             .collect();
         let mut augments = BTreeMap::<String, u8>::new();
+        let mut convictions = BTreeMap::<String, u8>::new();
         for ((points, rule), key) in allocation
             .slots
             .0
@@ -519,9 +521,13 @@ impl WheelStages {
             .zip(&ruleset.slots)
             .zip(&rules.convictions)
         {
-            if *points == rule.capacity && rules.augment_targets.contains_key(key) {
-                let stage = augments.entry(key.clone()).or_default();
-                *stage = (*stage + 1).min(MAX_AUGMENT_STAGE);
+            if *points == rule.capacity {
+                let active = convictions.entry(key.clone()).or_default();
+                *active = active.saturating_add(1);
+                if rules.augment_targets.contains_key(key) {
+                    let stage = augments.entry(key.clone()).or_default();
+                    *stage = (*stage + 1).min(MAX_AUGMENT_STAGE);
+                }
             }
         }
         let mut spell_augments = BTreeMap::<String, u8>::new();
@@ -534,6 +540,7 @@ impl WheelStages {
         Self {
             revelations,
             augments,
+            convictions,
             spell_augments,
         }
     }
@@ -548,6 +555,12 @@ impl WheelStages {
     #[must_use]
     pub fn augment_stage(&self, perk: &str) -> u8 {
         self.augments.get(perk).copied().unwrap_or(0)
+    }
+
+    /// Number of fully allocated slots carrying this conviction perk.
+    #[must_use]
+    pub fn conviction_count(&self, perk: &str) -> u8 {
+        self.convictions.get(perk).copied().unwrap_or(0)
     }
 
     /// The augment stage of a spell, by the spell name the ruleset's augment perks target, 0..2.
