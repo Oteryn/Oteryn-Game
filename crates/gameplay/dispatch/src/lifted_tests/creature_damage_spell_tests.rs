@@ -1551,12 +1551,22 @@ fn summer_current_ice_area_uses_runtime_fence_and_replays_without_damage() {
     qualify_current_spell_replay("radiant_acolyte", 1);
 }
 
+#[test]
+fn summer_current_holy_target_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_paragon", 2);
+}
+
+#[test]
+fn summer_current_holy_target_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_paragon", 2);
+}
+
 fn qualify_current_spell_replay(name: &str, index: usize) {
     let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
     let execute = if index == 1 {
         DamageSpellOwner::execute_current_elemental_area
     } else {
-        DamageSpellOwner::execute_current_physical
+        DamageSpellOwner::execute_current_target_damage
     };
     let stamp = runtime.issue_owner_work().expect("current owner work");
     let mut spells = DamageSpellOwner::default();
@@ -1641,7 +1651,7 @@ fn qualify_current_spell_lethal(name: &str, index: usize) {
     let execute = if index == 1 {
         DamageSpellOwner::execute_current_elemental_area
     } else {
-        DamageSpellOwner::execute_current_physical
+        DamageSpellOwner::execute_current_target_damage
     };
     let stamp = runtime.issue_owner_work().expect("current owner work");
     vitals

@@ -1,4 +1,4 @@
-//! Native scheduled physical target and source-qualified Acolyte ice / Paragon fire circle damage.
+//! Native scheduled physical/holy target and qualified Acolyte ice / Paragon fire circle damage.
 //! Timing, chance, damage, replay and lethal consequences stay in their existing owners.
 use super::*;
 use crate::creature_auto_attack::{AttackFacts, ProfileAbilityProposal};
@@ -71,7 +71,7 @@ impl SpellWorldReader for CurrentTarget {
 }
 
 // Runtime, Item transaction and player states stay locked from these independent reads
-// through execution. Only physical targets and the qualified Acolyte ice / Paragon fire circles enter.
+// through execution. Only physical targets, Paragon holy targets and qualified ice/fire circles enter.
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn execute(
     runtime: &mut ChannelRuntimeV1,
@@ -120,11 +120,13 @@ pub(super) async fn execute(
                 source.area,
                 Some(ProjectV2AbilityArea::Circle { radius_tiles: 4 })
             );
-        let physical = source.element.as_deref() == Some("physical")
+        let target_damage = (source.element.as_deref() == Some("physical")
+            || (source.element.as_deref() == Some("holy")
+                && record.profile.target.key == "oteryn:creature.radiant_paragon"))
             && source.area.is_none()
             && source.needs_target;
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack
-            || !(elemental_area || physical)
+            || !(elemental_area || target_damage)
             || source.needs_direction
             || source.chain.is_some()
             || source.windup.is_some()
@@ -283,6 +285,7 @@ pub(super) async fn execute(
             let protection = match source.element.as_deref() {
                 Some("ice") => state.equipped_ice_protection(),
                 Some("fire") => state.equipped_fire_protection(),
+                Some("holy") => state.equipped_holy_protection(),
                 Some("physical") => state.equipped_physical_protection(),
                 _ => continue,
             };
@@ -335,7 +338,7 @@ pub(super) async fn execute(
         let execute = if elemental_area {
             crate::creature_damage_spell::DamageSpellOwner::execute_current_elemental_area
         } else {
-            crate::creature_damage_spell::DamageSpellOwner::execute_current_physical
+            crate::creature_damage_spell::DamageSpellOwner::execute_current_target_damage
         };
         let result = execute(
             &mut spells,

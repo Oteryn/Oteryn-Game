@@ -1074,10 +1074,10 @@ impl DamageSpellOwner {
         )
     }
 
-    /// Execute a source-bound physical target spell under the runtime's own current fence.
+    /// Execute a source-bound physical or holy target spell under the runtime's own current fence.
     /// The restricted shape needs no external condition authority or timer installation.
     #[allow(clippy::too_many_arguments)]
-    pub fn execute_current_physical(
+    pub fn execute_current_target_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         stamp: RuntimeWorkStamp,
@@ -1088,7 +1088,7 @@ impl DamageSpellOwner {
         now: SemanticTimeMicros,
     ) -> Result<SpellOutcome, AttackError> {
         if source.list != ScheduleList::Attack
-            || source.element.as_deref() != Some("physical")
+            || !matches!(source.element.as_deref(), Some("physical" | "holy"))
             || !source.needs_target
             || source.needs_direction
             || source.area.is_some()

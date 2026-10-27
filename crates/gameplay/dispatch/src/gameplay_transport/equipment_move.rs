@@ -363,6 +363,12 @@ pub(super) async fn move_equipment(
                         .get(&crate::content::ReferenceResistanceKind::Fire)
                         .copied(),
                 );
+                state.install_equipped_holy_protection(
+                    effects
+                        .protections
+                        .get(&crate::content::ReferenceResistanceKind::Holy)
+                        .copied(),
+                );
                 equipment_effects_owner::install_suppressions(state, effects);
                 state.install_equipped_armor(armor);
                 state.install_equipped_defence(defence);

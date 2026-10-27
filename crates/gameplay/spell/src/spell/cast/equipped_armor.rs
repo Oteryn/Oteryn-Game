@@ -79,6 +79,20 @@ impl PlayerSpellState {
         self.equipped_fire_protection = protection;
     }
 
+    /// Direct holy protection from the last committed equipment read.
+    #[must_use]
+    pub const fn equipped_holy_protection(&self) -> Option<ReferenceRationalPercent> {
+        self.equipped_holy_protection
+    }
+
+    /// Replace direct holy protection on admission or a committed equipment move.
+    pub fn install_equipped_holy_protection(
+        &mut self,
+        protection: Option<ReferenceRationalPercent>,
+    ) {
+        self.equipped_holy_protection = protection;
+    }
+
     /// PARITY-EQUIP-MODIFIERS-1: the critical hit and leech of the worn equipment, installed with
     /// the armor; zero before any install.
     #[must_use]

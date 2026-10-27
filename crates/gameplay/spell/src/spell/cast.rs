@@ -120,6 +120,9 @@ pub struct PlayerSpellState {
     /// Current committed equipment protection against direct fire damage (not fields).
     pub(super) equipped_fire_protection:
         Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct holy damage.
+    pub(super) equipped_holy_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
     /// Current committed equipment protection against direct ice damage (not fields).
     pub(super) equipped_ice_protection:
         Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
@@ -183,6 +186,7 @@ impl PlayerSpellState {
                 equipped_physical_protection: None,
                 equipped_ice_protection: None,
                 equipped_fire_protection: None,
+                equipped_holy_protection: None,
                 equipped_offence: Default::default(),
                 training: None,
                 training_payment: None,

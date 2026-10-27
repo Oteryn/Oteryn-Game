@@ -99,6 +99,13 @@ fn summer_acolyte_ice_area_hits_multiple_players_through_the_production_owner() 
 }
 
 #[test]
+fn summer_paragon_holy_target_hits_at_range_through_the_production_owner() -> TestResult {
+    scenario_thread::run("summer-paragon-holy-target", || {
+        scenario_with_creature_at_range(None, false, Some("paragon"), false, true, false)
+    })
+}
+
+#[test]
 fn summer_paragon_fire_area_hits_multiple_players_through_the_production_owner() -> TestResult {
     scenario_thread::run("summer-paragon-fire-area", || {
         scenario_with_creature_at_range(None, false, Some("paragon"), false, true, true)
@@ -146,6 +153,7 @@ fn scenario_with_creature_at_range(
     ranged_spell: bool,
     elemental_area: bool,
 ) -> TestResult {
+    let holy_target = radiant == Some("paragon") && ranged_spell && !elemental_area;
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "kill_reward_e2e", false, false).await?;
@@ -446,14 +454,14 @@ fn scenario_with_creature_at_range(
             );
         }
 
-        if elemental_area {
+        if elemental_area || holy_target {
             let mut runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             for (tag, position) in [
                 (
                     100,
                     MovementLocalPosition {
-                        x: 1,
+                        x: if holy_target { 3 } else { 1 },
                         ..OPEN_PLAYER
                     },
                 ),
@@ -531,6 +539,13 @@ fn scenario_with_creature_at_range(
                     },
                 ));
                 if radiant == Some("paragon") {
+                    // Qualify fire and holy independently despite both being scheduled.
+                    state.install_equipped_holy_protection((!holy_target || tag == 50).then_some(
+                        crate::content::ReferenceRationalPercent {
+                            numerator: 100,
+                            denominator: 1,
+                        },
+                    ));
                     state.install_equipped_fire_protection(Some(
                         crate::content::ReferenceRationalPercent {
                             numerator: 100,
@@ -707,7 +722,7 @@ fn scenario_with_creature_at_range(
                     assert_eq!(
                         state.vitals().health,
                         initial,
-                        "the real spell must meet current armor, then physical protection"
+                        "the real spell must meet its current equipment mitigation"
                     );
                     last_sequence = spell_sequence;
                     drop(states);
@@ -717,13 +732,23 @@ fn scenario_with_creature_at_range(
                     let state = states
                         .get_mut(&runtime, actor, session)
                         .ok_or("player spell state")?;
-                    state.install_equipped_armor(0);
-                    state.install_equipped_physical_protection((gated_casts == 0).then_some(
-                        crate::content::ReferenceRationalPercent {
-                            numerator: 100,
-                            denominator: 1,
-                        },
-                    ));
+                    if holy_target {
+                        // Keep armor and physical/ice/fire protection. Only holy changes.
+                        state.install_equipped_holy_protection((gated_casts == 0).then_some(
+                            crate::content::ReferenceRationalPercent {
+                                numerator: 100,
+                                denominator: 1,
+                            },
+                        ));
+                    } else {
+                        state.install_equipped_armor(0);
+                        state.install_equipped_physical_protection((gated_casts == 0).then_some(
+                            crate::content::ReferenceRationalPercent {
+                                numerator: 100,
+                                denominator: 1,
+                            },
+                        ));
+                    }
                     gated_casts += 1;
                     drop(states);
                     drop(runtime);
@@ -739,6 +764,32 @@ fn scenario_with_creature_at_range(
                             "both equipment gates precede the positive cast"
                         );
                         assert_eq!(state.vitals().health, 0, "the source cast is lethal");
+                        if holy_target {
+                            assert_eq!(state.equipped_armor(), 5_000);
+                            assert!(state.equipped_physical_protection().is_some());
+                            assert!(state.equipped_ice_protection().is_some());
+                            assert!(state.equipped_fire_protection().is_some());
+                            for tag in [100, 101] {
+                                let bystander_session =
+                                    GameSessionId::decode(&id(tag)).map_err(debug)?;
+                                let bystander = runtime
+                                    .positioned_melee_census()
+                                    .map_err(debug)?
+                                    .into_iter()
+                                    .find(|(_, _, session)| *session == Some(bystander_session))
+                                    .ok_or("holy bystander")?
+                                    .0;
+                                assert_eq!(
+                                    states
+                                        .get(&runtime, bystander, bystander_session)
+                                        .ok_or("holy bystander state")?
+                                        .vitals()
+                                        .health,
+                                    500,
+                                    "holy target spell leaves other current players unchanged"
+                                );
+                            }
+                        }
                         assert!(
                             states.player_death(&runtime, actor, session).is_some(),
                             "the real player death owner retains its occurrence"
