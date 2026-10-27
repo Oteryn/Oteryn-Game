@@ -119,6 +119,11 @@ existing `monster_melee` owner (2,000 ms, 100% chance, primary physical damage o
 The production-owner PostgreSQL test exercises damage for every Radiant. The exact
 loot tables are exercised by the deterministic planner with their original probabilities;
 that check does not qualify corpse materialization, loot custody or durable settlement.
+The Summer Item producer excludes blank imbuement scroll (51442) and etcher (51443)
+from its loot materialization/stack flag changes: their existing imbuement/refinement
+records retain ownership. These are the only overlaps between the Summer loot IDs
+and the imbuement binding/refinement rows. Their donor loot rows remain evidence,
+without qualifying either utility item for Summer materialization.
 Nine boss profiles select base HP/XP from Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
 with individual source paths and SHA256s in the owning input. Those values include donor
 placeholders and remain **not verified against Global**. Difficulty scaling and encounter
