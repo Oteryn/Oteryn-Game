@@ -7,5 +7,5 @@
   "commands": [124],
   "domains": [],
   "supersedes": [],
-  "offers": {"production": false, "item_view": true, "bundle_world": true}
+  "offers": {"production": false, "item_view": false, "bundle_world": false}
 }

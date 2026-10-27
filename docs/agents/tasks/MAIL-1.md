@@ -1355,12 +1355,15 @@ remain intentional accepted differences.
 - The durability function handles letters and empty parcels. Parcel trees still
   require the CharacterInbox tree-location owner; migration 0076's invariant
   rejects a root with contents, so bypassing it here would lose or duplicate
-  descendants.
+  descendants. The validation pass now refuses child entries before deleting
+  the source and qualifies native stamp/removal proofs for empty items.
 - Qualified mail content and mailbox placement bindings are still absent from
   the generated native content. Therefore capability offer gating and the
   concrete runtime adapter that resolves handles/content and invokes the
   durability function remain disabled; content regeneration was not run
-  because there was no valid source authoring input to regenerate.
+  because there was no valid source authoring input to regenerate. Both registry
+  fragments now keep all MAIL offer sets disabled; the transport maps every
+  durability result, including replay conflict and already-posted replay.
 - The existing item-text owner remains the rewrite authority. MAIL_V1 composes
   its tagged write intent but the runtime adapter must call that owner after
   resolving a reachable item.
@@ -1370,10 +1373,10 @@ remain intentional accepted differences.
 | Mechanic | Canary pin | Crystal pin | Global | Oteryn | Status |
 |---|---|---|---|---|---|
 | Letter recipient/address | first text line | same | exact character name | canonical same-World name, typed privacy-safe refusal | implemented rules; runtime adapter pending |
-| Letter custody + stamp | move to Inbox, transform id + 1 | same (explicit Cylinder cast) | instant Inbox delivery | one fenced SQL transaction, identity preserved | implemented durability leaf |
+| Letter custody + stamp | move to Inbox, transform id + 1 | same (explicit Cylinder cast) | instant Inbox delivery | one fenced SQL transaction, identity preserved | implemented leaf; native PG stamp/count/replay checks |
 | Parcel tree | whole container | whole container | whole parcel | Inbox tree schema unavailable | blocked |
 | Invalid recipient | remains on mailbox | same | reappears on mailbox | stays with sender, typed refusal | intentional conflict |
-| Posting rate | unlimited | unlimited | no documented ceiling | one per second | intentional conflict, implemented schema |
-| Inbox mail ceiling | unlimited | unlimited | no documented ceiling | 50,000 items | intentional conflict; letter count implemented |
+| Posting rate | unlimited | unlimited | no documented ceiling | one per second | intentional conflict; focused native PG check |
+| Inbox mail ceiling | unlimited | unlimited | no documented ceiling | 50,000 items | intentional conflict; trigger count + full refusal qualified |
 | Junior parcels | no reference rule | no reference rule | not documented | refused | accepted Oteryn difference; full parcel path blocked |
-| Replay/event | process-local action | same | not specified | CommandRef occurrence plus text-free outbox | implemented schema/leaf |
+| Replay/event | process-local action | same | not specified | CommandRef occurrence plus text-free outbox | native PG occurrence/outbox + replay qualified |
