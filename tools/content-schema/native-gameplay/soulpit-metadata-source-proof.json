@@ -82,5 +82,129 @@
       "global_evidence": "not verified against Global",
       "status": "Requires owning canonical Creature identity/import; not an executable species row"
     }
-  ]
+  ],
+  "wiki_metadata_observations": {
+    "checked_on": "2026-10-26",
+    "scope": "TibiaWiki secondary evidence, not a Global capture or native Creature admission. These observations do not create canonical identity or make the rows executable.",
+    "rows": [
+      {
+        "core": 47654,
+        "name": "Nightslayer",
+        "class": "Human",
+        "difficulty": "medium",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Nightslayer",
+          "https://tibia.fandom.com/wiki/Free_Account_Bestiary"
+        ]
+      },
+      {
+        "core": 47691,
+        "name": "Cake Golem",
+        "class": "Construct",
+        "difficulty": "easy",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Cake_Golem"
+        ]
+      },
+      {
+        "core": 47697,
+        "name": "Berrypest",
+        "difficulty": "harmless",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Berrypest",
+          "https://tibia.fandom.com/wiki/Bestiary/All"
+        ],
+        "class": "Vermin"
+      },
+      {
+        "core": 47773,
+        "name": "Furious Fire Elemental",
+        "class": "Elemental",
+        "difficulty": "medium",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Furious_Fire_Elemental",
+          "https://tibia.fandom.com/wiki/Bestiary/Difficulties"
+        ]
+      },
+      {
+        "core": 48089,
+        "name": "Albino Dragon",
+        "class": "Dragon",
+        "difficulty": "medium",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Albino_Dragon",
+          "https://tibia.fandom.com/wiki/Bestiary/Difficulties"
+        ]
+      },
+      {
+        "core": 49007,
+        "name": "Elder Forest Fury",
+        "class": "Magical",
+        "difficulty": "medium",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Elder_Forest_Fury",
+          "https://tibia.fandom.com/wiki/Bestiary/All"
+        ]
+      },
+      {
+        "core": 49033,
+        "name": "Orger",
+        "class": "Giant",
+        "difficulty": "medium",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Orger",
+          "https://tibia.fandom.com/wiki/Bestiary/Difficulties"
+        ]
+      },
+      {
+        "core": 49034,
+        "name": "Roast Pork",
+        "class": "Mammal",
+        "difficulty": "medium",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Roast_Pork"
+        ]
+      },
+      {
+        "core": 49036,
+        "name": "Loricate Orger",
+        "class": "Giant",
+        "difficulty": "medium",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Bestiary/Classes",
+          "https://tibia.fandom.com/wiki/Bestiary/Difficulties"
+        ]
+      },
+      {
+        "core": 49037,
+        "name": "Bellicose Orger",
+        "class": "Giant",
+        "difficulty": "medium",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Bestiary/Classes",
+          "https://tibia.fandom.com/wiki/Bestiary/All"
+        ]
+      },
+      {
+        "core": 49040,
+        "name": "Rabid Wolf",
+        "class": "Mammal",
+        "difficulty": "easy",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Category:Bestiary_Mammal_Creatures",
+          "https://tibia.fandom.com/wiki/Bestiary/Points"
+        ]
+      },
+      {
+        "core": 49041,
+        "name": "Ragged Rabid Wolf",
+        "class": "Mammal",
+        "difficulty": "easy",
+        "sources": [
+          "https://tibia.fandom.com/wiki/Ragged_Rabid_Wolf"
+        ]
+      }
+    ],
+    "unresolved": "Cow has no qualified taxonomy recorded here. All 13 cores still need owning canonical Creature admission and dependent profiles. Wiki difficulty evidence does not resolve the Cake Golem source attack semantics or event admission."
+  }
 }
