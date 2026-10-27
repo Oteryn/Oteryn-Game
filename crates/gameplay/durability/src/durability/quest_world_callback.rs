@@ -47,10 +47,44 @@ pub(super) async fn consume(
     if !pinned {
         return Ok(false);
     }
-    if callback.offerings.is_empty() {
+    if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
     }
     permit.check_channel(world_id, channel_id)?;
+    if let Some(required) = &callback.item_on_target {
+        let row = sqlx::query("SELECT i.item_instance_id::text AS item,to_jsonb(i) AS before_item,i.quantity FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id,world_id) JOIN game_item_container_slots s ON s.character_id=e.character_id AND s.item_instance_id=e.parent_item_instance_id AND s.world_id=e.world_id WHERE e.character_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.definition_family='Item' AND i.definition_production_key=$3 AND i.quantity >= $4 ORDER BY i.item_instance_id LIMIT 1 FOR UPDATE OF i")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
+            .bind(&required.item).bind(i64::from(required.count)).fetch_optional(&mut **tx).await?;
+        let Some(row) = row else {
+            return Ok(false);
+        };
+        let item: String = row.try_get("item")?;
+        let before: serde_json::Value = row.try_get("before_item")?;
+        let transaction: String = sqlx::query_scalar("SELECT game_character_uuid_v7()::text")
+            .fetch_one(&mut **tx)
+            .await?;
+        let proof = serde_json::to_vec(&serde_json::json!({"callback": callback, "context": context,
+            "character": fence.character_id.as_bytes(), "session": command.game_session_id().as_bytes(),
+            "command": command.command_id().get(), "connection": fence.connection_generation.get(),
+            "lease": fence.character_lease_generation, "scope": fence.scope_ownership_generation.get(),
+            "before": before, "count": required.count})).map_err(|_| DurabilityError::InvalidStoredState)?;
+        sqlx::query("INSERT INTO game_quest_callback_consumptions(transaction_id,item_instance_id,character_id,cause_id,cause_ordinal,transition_key,before_item,before_ground,quantity,proof,proof_sha256) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6,$7,NULL,$8,$9,sha256($9))")
+            .bind(&transaction).bind(&item).bind(fence.character_id.as_bytes().as_slice())
+            .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
+            .bind(&request.transition_key).bind(before).bind(i32::from(required.count)).bind(proof).execute(&mut **tx).await?;
+        if let Some(replacement) = &required.replacement {
+            if required.count != 1 || row.try_get::<i64, _>("quantity")? != 1 {
+                return Ok(false);
+            }
+            sqlx::query("UPDATE game_item_instances SET definition_production_key=$2,last_transaction_id=$3::uuid WHERE item_instance_id=$1::uuid")
+                .bind(&item).bind(replacement).bind(&transaction).execute(&mut **tx).await?;
+        } else {
+            sqlx::query("UPDATE game_item_instances SET quantity=quantity-$2,lifecycle=CASE WHEN quantity=$2 THEN 2 ELSE 1 END,last_transaction_id=$3::uuid WHERE item_instance_id=$1::uuid")
+                .bind(&item).bind(i64::from(required.count)).bind(&transaction).execute(&mut **tx).await?;
+            sqlx::query("DELETE FROM game_item_container_entries e USING game_item_instances i WHERE e.item_instance_id=$1::uuid AND i.item_instance_id=e.item_instance_id AND i.quantity=0")
+                .bind(&item).execute(&mut **tx).await?;
+        }
+    }
     // Stable tile order and then instance order. A single item cannot satisfy two altars.
     let mut offerings = callback.offerings.iter().collect::<Vec<_>>();
     offerings.sort_by_key(|o| o.position);

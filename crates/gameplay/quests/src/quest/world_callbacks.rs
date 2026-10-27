@@ -59,6 +59,17 @@ pub struct Storage {
     pub set: i64,
 }
 
+/// One carried item applied to the selected world object.  This deliberately is not a
+/// recipe language: the source is consumed or changed exactly once by the receipt owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ItemOnTarget {
+    pub item: String,
+    pub count: u16,
+    pub replacement: Option<String>,
+    pub target_replacement: Option<u16>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
@@ -73,6 +84,8 @@ pub struct Callback {
     pub teleport: Option<Position>,
     pub storage: Vec<Storage>,
     pub offerings: Vec<Offering>,
+    #[serde(default)]
+    pub item_on_target: Option<ItemOnTarget>,
     pub return_on_failure: bool,
     pub failure_message: Option<String>,
     pub sources: Vec<String>,
@@ -117,6 +130,19 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.storage.len() > MAX_EFFECTS
             || callback.offerings.len() > MAX_EFFECTS
             || (!callback.offerings.is_empty() && callback.storage.is_empty())
+            || callback.sources.is_empty()
+            || !callback.sources.iter().any(|source| {
+                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+            })
+            || callback.item_on_target.as_ref().is_some_and(|item| {
+                item.count == 0
+                    || item.count > 100
+                    || !super::valid_quest_key(&item.item)
+                    || item
+                        .replacement
+                        .as_ref()
+                        .is_some_and(|key| !super::valid_quest_key(key))
+            })
             || callback
                 .failure_message
                 .as_ref()
@@ -148,7 +174,9 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
         for storage in &callback.storage {
-            if !tracks.iter().any(|t| t.key == storage.track) {
+            if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
+                track.max = track.max.max(storage.set).max(storage.maximum);
+            } else {
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),
@@ -274,6 +302,47 @@ mod tests {
         let mut bounded = source;
         bounded["callbacks"][0]["failure_message"] = "x".repeat(256).into();
         assert!(parse(&bounded.to_string()).is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn quest_world_callbacks_three_bounded_action_classes_are_source_witnessed()
+    -> Result<(), String> {
+        let callbacks = load()?;
+        let outlaw = callbacks
+            .iter()
+            .find(|callback| callback.key.ends_with("outlaw-camp-door"))
+            .ok_or("outlaw door")?;
+        assert_eq!(
+            (outlaw.selector.action, outlaw.lever),
+            (Some(1108), Some([1642, 1643]))
+        );
+        assert_eq!(
+            (outlaw.storage[0].minimum, outlaw.storage[0].maximum),
+            (3, 3)
+        );
+
+        let key = callbacks
+            .iter()
+            .find(|callback| callback.key.ends_with("fish-napping-key"))
+            .ok_or("fish key")?;
+        let item = key.item_on_target.as_ref().ok_or("item target")?;
+        assert_eq!((&*item.item, item.count), ("oteryn:item.tibia.i7934", 1));
+        assert_eq!(key.selector.action, Some(51394));
+
+        let door = callbacks
+            .iter()
+            .find(|callback| callback.key.ends_with("travelling-trader-delivery"))
+            .ok_or("trader delivery")?;
+        assert_eq!(
+            (
+                door.storage[0].minimum,
+                door.storage[0].maximum,
+                door.storage[0].set
+            ),
+            (3, 3, 4)
+        );
+        assert_eq!(door.selector.unique, Some(3020));
         Ok(())
     }
 }

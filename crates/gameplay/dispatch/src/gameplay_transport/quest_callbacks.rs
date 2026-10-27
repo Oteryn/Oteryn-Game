@@ -565,6 +565,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(pair) = callback.lever {
             after.appearance_id = pair[usize::from(!close)];
         }
+        if let Some(appearance) = callback
+            .item_on_target
+            .as_ref()
+            .and_then(|item| item.target_replacement)
+        {
+            after.appearance_id = appearance;
+        }
         let mut passages = Vec::new();
         let mut replacements = Vec::new();
         for passage_definition in &callback.passages {
