@@ -25,6 +25,12 @@ fn party_membership_real_dispatch_postgres_end_to_end() -> TestResult {
     run(false)
 }
 pub(super) fn run(partyskull: bool) -> TestResult {
+    run_case(partyskull, false)
+}
+pub(super) fn run_reference_level() -> TestResult {
+    run_case(false, true)
+}
+fn run_case(partyskull: bool, reference_level: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -35,7 +41,9 @@ pub(super) fn run(partyskull: bool) -> TestResult {
                 let h = Harness::create(admin, "party_membership_wire", false)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h, partyskull).await.map_err(|e| e.to_string());
+                let result = scenario(&h, partyskull, reference_level)
+                    .await
+                    .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
                 result
             })
@@ -167,7 +175,7 @@ async fn roundtrip(
     }
     result
 }
-async fn scenario(h: &Harness, partyskull: bool) -> TestResult {
+async fn scenario(h: &Harness, partyskull: bool, reference_level: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -356,6 +364,9 @@ async fn scenario(h: &Harness, partyskull: bool) -> TestResult {
         sqlx::query("UPDATE game_parties SET shared_xp_enabled=false,revision=revision+1")
             .execute(&h.pool)
             .await?;
+    }
+    if reference_level {
+        super::monster_reference_level::check(&owner, &admitted).await?;
     }
     let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Pass(1)]).await?;
     assert_eq!(result[0].members.len(), 3);

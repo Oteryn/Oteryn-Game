@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import subprocess
@@ -415,6 +416,12 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
     family_counts = creature_family_counts(reference)
     legacy_profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])
                        if row["target"]["family"] != "Encounter"}
+    # The successor explicitly materializes MRL's null default; preserve all other legacy facts.
+    for key, profile in list(legacy_profiles.items()):
+        if key[0] == "Creature":
+            profile = copy.deepcopy(profile)
+            profile["profile"]["details"].setdefault("reference_level", None)
+            legacy_profiles[key] = profile
     migrated_profiles: dict[tuple[str, str, str], Any] = {}
     migrated_bindings: list[Any] = []
     for family, node in CREATURE_FAMILY_NODES.items():
@@ -433,6 +440,11 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
             for row in payload["records"]:
                 definition = row["definition"]
                 migrated.append(definition)
+                if family == "Creature":
+                    details = row.get("authoring", {}).get("profile", {}).get("details", {})
+                    cap = details.get("reference_level")
+                    require("reference_level" in details and (cap is None or type(cap) is int and cap > 0),
+                            "CREATURE_REFERENCE_LEVEL")
                 if "authoring" in row:
                     migrated_profiles[target_id(definition["identity"])] = row["authoring"]
                 for binding in row.get("source_bindings", []):
