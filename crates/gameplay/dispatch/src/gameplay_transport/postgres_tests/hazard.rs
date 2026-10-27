@@ -1263,6 +1263,16 @@ async fn party_checks(
         .bind(remote.current_character_lease().character_id().as_bytes().as_slice())
         .bind(party.ok_or("party")?.as_slice()).bind(owner.channel_id.as_bytes().as_slice())
         .execute(&harness.pool).await?;
+    party_condition_leave_rejoin_checks(
+        harness,
+        owner,
+        actor,
+        other,
+        primary,
+        secondary,
+        party.ok_or("party")?,
+    )
+    .await?;
     let mut runtime = owner.runtime.lock().await;
     let at = runtime.read_actor_position(other).map_err(debug)?;
     runtime
@@ -1457,9 +1467,131 @@ async fn party_checks(
     Ok(())
 }
 
-// Install a nonlethal periodic fixture before the existing accepted Kick. The
-// occurrence lands at the former level 1 but dodges at the post-Kick level 2.
-// The missing local member must cease to block the source once membership ends.
+// A live member's accepted Leave raises the minimum from 1 to 2; accepting a new
+// invitation lowers it again. Each condition starts before the membership change,
+// with an occurrence that lands at 1 and dodges at 2. Keep the remote member so
+// Leave does not close the existing party used by the later census assertions.
+async fn party_condition_leave_rejoin_checks(
+    harness: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    other: crate::foundation::ExactActorRef,
+    primary: crate::durability::item_transfer::CurrentCharacterItemFence,
+    secondary: crate::durability::item_transfer::CurrentCharacterItemFence,
+    party: [u8; 16],
+) -> TestResult {
+    use crate::durability::{spell_item_transaction as item_tx, world_party};
+    use crate::foundation::{CommandId, CommandRef, PartyAction};
+
+    for (fence, number, action, expected_loss) in [
+        (secondary, 70010, PartyAction::Leave, Some(0)),
+        (
+            primary,
+            70011,
+            PartyAction::Invite {
+                target: *secondary.character_id.as_bytes(),
+            },
+            None,
+        ),
+        // Native rat mitigation is 3/25 percent: the 4-point Energy tick
+        // truncates to 3 HP in the existing periodic damage parser.
+        (secondary, 70012, PartyAction::Accept { party }, Some(3)),
+    ] {
+        let condition = if expected_loss.is_some() {
+            Some(stage_party_membership_condition(owner, actor, primary.game_session_id).await?)
+        } else {
+            None
+        };
+        let permit = owner.spell_lane_permit().await.ok_or("party change lane")?;
+        let runtime = owner.runtime.lock().await;
+        let spells = owner.states.spell_states.lock().await;
+        let attack = owner.states.attack.lock().await;
+        let mut tx = harness.pool.begin().await?;
+        let authority = item_tx::assert_spell_item_authority_in_transaction(
+            &mut tx,
+            &permit,
+            owner.root,
+            owner.character,
+            owner.holder,
+            &fence,
+            CommandRef::new(
+                fence.game_session_id,
+                CommandId::new(number).map_err(debug)?,
+            ),
+            runtime.content_pin().server_artifact_digest(),
+        )
+        .await
+        .map_err(debug)?;
+        let receipt = if matches!(action, PartyAction::Leave) {
+            world_party::ingress::leave_in_transaction(
+                &mut tx,
+                &authority,
+                &runtime,
+                other,
+                attack.party_attack_state(other, secondary.game_session_id),
+                owner.owner_now(),
+            )
+            .await
+            .map_err(debug)?
+        } else {
+            let visible = if matches!(action, PartyAction::Invite { .. }) {
+                crate::durability::admission_journal::party_target_binding::prove_visible_party_target_in_transaction(
+                    &mut tx, owner.root, &authority, &runtime, actor, other,
+                    secondary.game_session_id,
+                )
+                .await
+                .map_err(debug)?
+            } else {
+                None
+            };
+            world_party::apply_world_party_command_in_transaction(
+                &mut tx,
+                &authority,
+                action,
+                visible.as_ref(),
+            )
+            .await
+            .map_err(debug)?
+        };
+        assert_eq!(receipt.disposition, "APPLIED", "party command {number}");
+        assert!(!receipt.replayed);
+        assert_eq!(receipt.party_id, (number != 70010).then_some(party));
+        tx.commit().await?;
+        drop(attack);
+        drop(spells);
+        drop(runtime);
+        drop(permit);
+        if let Some((target, health, due)) = condition {
+            owner.clock_origin -=
+                Duration::from_micros(due.saturating_sub(owner.owner_now().get()) + 10_000);
+            owner.drain_monster_melee().await;
+            let after = owner
+                .runtime
+                .lock()
+                .await
+                .companion_snapshot(target)
+                .map_err(debug)?;
+            assert_eq!(
+                health - after.health,
+                expected_loss.ok_or("condition expected loss")?,
+                "condition uses current membership after party command {number}"
+            );
+            assert!(after.state.conditions.instances().is_empty());
+            owner.drain_monster_melee().await;
+            let mut runtime = owner.runtime.lock().await;
+            let retried = runtime.companion_snapshot(target).map_err(debug)?;
+            assert_eq!(retried.health, after.health, "no duplicate membership tick");
+            assert_eq!(retried.state.conditions, after.state.conditions);
+            runtime
+                .set_test_creature_health(target, health)
+                .map_err(debug)?;
+        }
+    }
+    Ok(())
+}
+
+// Install a nonlethal periodic fixture before an accepted membership change. The
+// occurrence lands at level 1 but dodges at level 2.
 async fn stage_party_membership_condition(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
