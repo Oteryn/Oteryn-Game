@@ -846,7 +846,13 @@ mod progression_dispatch_tests {
     use oteryn_simulation_determinism::SemanticTimeMicros;
 
     #[test]
-    fn food_regeneration_credits_through_the_channel_owner_and_stops_at_expiry() {
+    fn food_regeneration_credits_through_the_channel_owner_fed_and_after_expiry() {
+        for fed in [true, false] {
+            assert_channel_regeneration(fed);
+        }
+    }
+
+    fn assert_channel_regeneration(fed: bool) {
         use crate::map::boot::tests::{floor_bundle, floor_items, floor_pins};
         use {
             crate::foundation::{ChannelRuntimeV1, NodeId},
@@ -911,7 +917,29 @@ mod progression_dispatch_tests {
             .get_mut(&runtime, actor, session)
             .expect("current state")
             .restore_saved_vitals(100, 100);
-        assert!(states.apply_food(&runtime, actor, session, 6, 0).is_some());
+        if fed {
+            assert!(states.apply_food(&runtime, actor, session, 6, 0).is_some());
+        }
+        let before = states
+            .get(&runtime, actor, session)
+            .expect("current state")
+            .vitals();
+        for now_us in [0, 50_000, 500_000] {
+            let _ = states.tick_in_environment(
+                &mut runtime,
+                &cells,
+                actor,
+                session,
+                SemanticTimeMicros::from_micros(now_us),
+            );
+            assert_eq!(
+                states
+                    .get(&runtime, actor, session)
+                    .expect("current state")
+                    .vitals(),
+                before
+            );
+        }
         for second in 1..=12 {
             let _ = states.tick_in_environment(
                 &mut runtime,
@@ -924,8 +952,29 @@ mod progression_dispatch_tests {
                 .get(&runtime, actor, session)
                 .expect("current state")
                 .vitals();
-            let expected = if second < 6 { (100, 100) } else { (101, 102) };
-            assert_eq!((vitals.health, vitals.mana), expected, "second {second}");
+            let fed_seconds = if fed { second.min(6) } else { 0 };
+            let hungry_seconds = second - fed_seconds;
+            let expected = (
+                100 + fed_seconds / 3 + hungry_seconds / 4,
+                100 + 2 * (fed_seconds / 5 + (hungry_seconds + fed_seconds % 5) / 6),
+            );
+            assert_eq!(
+                (u64::from(vitals.health), u64::from(vitals.mana)),
+                expected,
+                "second {second}"
+            );
+            let before = states
+                .get(&runtime, actor, session)
+                .expect("current state")
+                .clone();
+            let _ = states.tick_in_environment(
+                &mut runtime,
+                &cells,
+                actor,
+                session,
+                SemanticTimeMicros::from_micros(second * 1_000_000),
+            );
+            assert_eq!(states.get(&runtime, actor, session), Some(&before));
         }
     }
 }
