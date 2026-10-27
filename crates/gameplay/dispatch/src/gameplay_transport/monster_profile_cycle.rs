@@ -6,7 +6,7 @@ use crate::foundation::ChannelRuntimeV1;
 use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
-mod physical_spell;
+pub(super) mod physical_spell;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
@@ -201,10 +201,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 owner
                     .tick_creature_fields(&mut tx, &authority, runtime, states, room, native, now)
                     .await?;
+                let needs_reference_parties = native.creature_profiles().records.iter().any(|record| {
+                    matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
+                        if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
+                            .any(|area| area.party_mode == crate::content::ProjectV2ReferenceLevelPartyMode::LowestMember)))
+                });
+                let parties = physical_spell::read_reference_parties(
+                    &mut tx, &authority, owner.root, runtime, states, needs_reference_parties,
+                )
+                .await;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 physical_spell::execute(
-                    runtime, states, attack, room, native, &mut map, &proposals, now,
+                    runtime, states, attack, room, native, &mut map, &proposals, &parties, now,
                 )
                 .await;
                 drop(map);

@@ -16,6 +16,9 @@ inventory pins in content_world_project_repository.rs, the content tree (world_p
 the Charm, Proficiency, RewardClaim and StarterKit registrations, then the validators. The script never
 commits; review `git status` and commit the merge yourself.
 
+Use `--resolve --no-stage` for a worker that must leave the Git index untouched.
+This requires a conflict-free worktree; it refreshes the bundle pins without staging.
+
 With `--resolve` it finally runs `world-bundle-compiler pin-refresh` on the staged merge, so the
 World pins (`content/world/pins/<slug>.json` and `.identity.json`) and the preproduction
 manifest's `[world_bundle]` table follow the merged inputs; a pin conflict is derived too, unless
@@ -378,16 +381,19 @@ def main() -> int:
         action="store_true",
         help="after a stopped git merge: resolve derived conflicts, regenerate and stage",
     )
+    parser.add_argument("--no-stage", action="store_true", help="leave the git index untouched, including with --resolve")
     parser.add_argument("--skip-checks", action="store_true", help="regenerate only")
     parser.add_argument("--check", action="store_true", help="run the registered content checks without writing")
     args = parser.parse_args()
     if args.check:
-        if args.resolve or args.skip_checks:
+        if args.resolve or args.skip_checks or args.no_stage:
             parser.error("--check cannot be combined with mutation options")
         for command in CHECKS:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
                 run(command)
         return 0
+    if args.no_stage and git("diff", "--name-only", "--diff-filter=U").strip():
+        raise SystemExit("--no-stage requires a conflict-free worktree")
     conflicted = resolve_conflicts() if args.resolve else []
     materialize_world()
     repin_rust_inventory()
@@ -408,10 +414,12 @@ def main() -> int:
             ).splitlines()
             if path in derived
         ]
-        run(["git", "add", "-A", "--", *sorted(set(conflicted) | set(changed))])
+        if not args.no_stage:
+            run(["git", "add", "-A", "--", *sorted(set(conflicted) | set(changed))])
         # Refresh the bundle pin last; the input digest is a staged-tree diagnostic only.
         run(["cargo", "+1.99.1", "run", "--locked", "--release", "-p", "oteryn-world-bundle-compiler", "--", "pin-refresh", "."])
-        run(["git", "add", "--", WORLD_PINS, PREPROD_MANIFEST])
+        if not args.no_stage:
+            run(["git", "add", "--", WORLD_PINS, PREPROD_MANIFEST])
     print("Derived content regenerated. Review `git status` and commit.")
     return 0
 

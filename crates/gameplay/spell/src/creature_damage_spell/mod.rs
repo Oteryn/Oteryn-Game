@@ -8,8 +8,7 @@ use crate::content::{
 };
 use crate::creature_auto_attack::ProfileAbilityProposal;
 use crate::creature_auto_attack::{
-    AttackError, CurrentConditionPolicy, DAMAGE_MULTIPLIER_SCALE,
-    monster_reference_level_damage_multiplier,
+    AttackError, CurrentConditionPolicy, DAMAGE_MULTIPLIER_SCALE, reference_level_damage_multiplier,
 };
 use crate::creature_damage_spell_delayed as delayed;
 use crate::foundation::owner_timer::SemanticTimeMicros;
@@ -35,8 +34,9 @@ pub struct SpellSource {
     pub entry_index: usize,
     pub minimum: u32,
     pub maximum: u32,
-    /// Creature-owned Monster Reference Level. The currently unsourced curve is neutral.
+    /// Creature-owned cap for the observed MRL approximation.
     pub reference_level: Option<u32>,
+    pub reference_level_overrides: Vec<crate::content::ProjectV2ReferenceLevelOverride>,
     pub critical: Option<crate::source_critical_baseline::SourceCriticalBaseline>,
     pub conditions: Vec<ConditionDefinition>,
     pub appearances: Vec<crate::content::ProjectV2InlineEffect>,
@@ -524,6 +524,9 @@ impl SpellSource {
                     .details
                     .as_ref()
                     .and_then(|details| details.reference_level),
+                reference_level_overrides: cp.details.as_ref().map_or_else(Vec::new, |details| {
+                    details.reference_level_overrides.clone()
+                }),
                 critical: None,
                 conditions,
                 appearance_cast: !appearances.is_empty(),
@@ -708,6 +711,9 @@ impl SpellSource {
                     .details
                     .as_ref()
                     .and_then(|details| details.reference_level),
+                reference_level_overrides: cp.details.as_ref().map_or_else(Vec::new, |details| {
+                    details.reference_level_overrides.clone()
+                }),
                 critical: None,
                 conditions: Vec::new(),
                 appearances: Vec::new(),
@@ -774,6 +780,9 @@ impl SpellSource {
                 .details
                 .as_ref()
                 .and_then(|details| details.reference_level),
+            reference_level_overrides: cp.details.as_ref().map_or_else(Vec::new, |details| {
+                details.reference_level_overrides.clone()
+            }),
             critical,
             conditions,
             appearance_cast: !appearances.is_empty(),
@@ -2039,9 +2048,14 @@ impl DamageSpellOwner {
             } else {
                 0
             };
-            let reference_multiplier = monster_reference_level_damage_multiplier(
+            let reference_multiplier = reference_level_damage_multiplier(
                 source.reference_level,
-                facts.attack.player_level,
+                &source.reference_level_overrides,
+                runtime
+                    .read_actor_position(proposal.issuer)
+                    .map_err(|_| AttackError::StaleIssuer)?
+                    .position(),
+                &facts.attack,
             );
             let requested_for_player = u32::try_from(
                 u64::from(requested) * u64::from(reference_multiplier)

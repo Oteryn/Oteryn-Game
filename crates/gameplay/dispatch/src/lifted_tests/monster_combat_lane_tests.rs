@@ -78,6 +78,7 @@ mod tests {
                 defense: 0,
                 armor: 0,
                 player_level: 1,
+                reference_level_party_lowest: None,
             })
         }
     }

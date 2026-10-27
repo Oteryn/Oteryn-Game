@@ -1,0 +1,86 @@
+[
+  {
+    "area": "Bulltaur Lair",
+    "reference_level": 340,
+    "observations": [
+      [
+        188,
+        800000
+      ],
+      [
+        276,
+        220000
+      ]
+    ],
+    "curve": [
+      {
+        "levels_below": 64,
+        "extra_damage_ppm": 220000
+      },
+      {
+        "levels_below": 100,
+        "extra_damage_ppm": 300000
+      },
+      {
+        "levels_below": 152,
+        "extra_damage_ppm": 800000
+      }
+    ]
+  },
+  {
+    "area": "Nimmersatt Breeding Ground",
+    "reference_level": 454,
+    "observations": [
+      [
+        220,
+        600000
+      ],
+      [
+        454,
+        0
+      ]
+    ],
+    "curve": [
+      {
+        "levels_below": 100,
+        "extra_damage_ppm": 100000
+      },
+      {
+        "levels_below": 234,
+        "extra_damage_ppm": 600000
+      }
+    ]
+  },
+  {
+    "area": "Rotten Blood",
+    "reference_level": 790,
+    "observations": [
+      [
+        550,
+        580000
+      ],
+      [
+        731,
+        420000
+      ],
+      [
+        790,
+        0
+      ]
+    ],
+    "curve": [
+      {
+        "levels_below": 59,
+        "extra_damage_ppm": 420000
+      },
+      {
+        "levels_below": 100,
+        "extra_damage_ppm": 430000
+      },
+      {
+        "levels_below": 240,
+        "extra_damage_ppm": 580000
+      }
+    ]
+  }
+]
