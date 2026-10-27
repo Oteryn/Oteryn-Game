@@ -195,10 +195,12 @@ fn scenario() -> TestResult {
             pin.qualified_room().map_revision_digest(),
             (2, 0, 7),
         );
-        let deps = Dependencies::with_content(
+        // One player plus Alice and Rashid each occupy a carrier slot.
+        let deps = Dependencies::with_content_and_capacity(
             channel_pin,
             crate::content::qualify_native_entry_room(world).map_err(debug)?,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
+            3,
         )?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
