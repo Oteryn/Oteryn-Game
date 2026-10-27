@@ -333,14 +333,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         loop_move::move_loop_item(self, actor, command, request).await
     }
 
-    /// BAGS-1: a container of the carried tree (capability 14).
+    /// Carried or reachable proven direct Ground container (capability 14).
     async fn observe_container(
         &self,
-        _actor: ExactActorRef,
+        actor: ExactActorRef,
         fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
         target: item_view::ItemKey,
     ) -> Option<container_view::ContainerObservation> {
-        loop_move::observe_container(self, fence, target).await
+        loop_move::observe_container(self, actor, fence, target).await
     }
 
     /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one

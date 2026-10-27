@@ -11,8 +11,8 @@
 //!   (domain 17) shows them over the bundle map, each with its definition's facts. An item whose
 //!   `map_revision` is not the bundle's, or whose definition the pinned index does not name, is
 //!   not shown. A failed durable read fails the map view closed.
-//! - **Containers (capability 14).** [`observe_container`] reads a container of the carried tree
-//!   with its direct entries; a container is carried, so it is always in reach.
+//! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
+//!   direct Ground containers within one tile on the actor's floor, under the Channel lane.
 
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
@@ -533,12 +533,12 @@ fn drop_cell(
     Ok(ground_cell(to.x, to.y, to.floor))
 }
 
-/// BAGS-1: a container of the fenced Character's carried tree (the main backpack included) with
-/// its direct entries. `None` for anything that is not an item instance, without an item fence
-/// or a pinned index, or when the item owner cannot be read; an instance outside the carried
-/// tree is `Gone`, a carried item that is no container `NotAContainer`.
+/// A carried container or proven direct Ground container with its direct entries.
+/// Ground reach uses the actor's current same-floor position under the Channel lane.
+/// Other external roots and nested Ground containers remain unavailable.
 pub(super) async fn observe_container(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
 ) -> Option<ContainerObservation> {
@@ -546,18 +546,83 @@ pub(super) async fn observe_container(
         return None;
     };
     let fence = fence?;
+    // Retain the Channel lane across current position and durable custody reads.
+    // The resulting view is historical data, never permission for a later write.
+    let _permit = admission.spell_lane_permit().await?;
+    let current = super::FreshAdmissionStore::from_root(admission.root.clone())
+        .current_session_at(fence.game_session_id)
+        .await
+        .ok()?
+        .0;
+    if current.session_state() != super::GameSessionState::Active
+        || super::item_fence_of(current) != Some(fence)
+        || admission
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(actor, fence.game_session_id)
+            .is_err()
+    {
+        return Some(ContainerObservation::Gone);
+    }
     let index = pinned_index(
         &*admission.runtime.lock().await,
         admission.active_generation,
     )?;
     let native = admission.active_generation?.native_gameplay()?;
-    let Some(read) = admission
+    let carried = admission
         .root
         .read_item_loop_container(admission.character, fence.character_id, container)
         .await
-        .ok()?
-    else {
-        return Some(ContainerObservation::Gone);
+        .ok()?;
+    let is_carried = carried.is_some();
+    let (read, reachable) = if let Some(read) = carried {
+        (read, true)
+    } else {
+        let (base, at, content_revision, placement_context) = {
+            let mut runtime = admission.runtime.lock().await;
+            let pin = runtime.content_pin();
+            let content_revision = sha256_revision(pin.server_artifact_digest());
+            let placement_context = pin.frame_binding_digest().to_vec();
+            let at = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)?;
+            (
+                at.map.overlay.base().clone(),
+                (at.at.x, at.at.y, at.at.floor),
+                content_revision,
+                placement_context,
+            )
+        };
+        let overlay = loop_ground(admission, &base, Some(index)).await?;
+        let Some((cell, _)) = overlay.ground_entry(&container) else {
+            return Some(ContainerObservation::Gone);
+        };
+        let reachable = in_reach(
+            at,
+            (i32::from(cell.x), i32::from(cell.y), i16::from(cell.floor)),
+        );
+        let Some(read) = admission
+            .root
+            .read_item_loop_ground_container(
+                admission.character,
+                fence,
+                container,
+                LoopGround {
+                    spatial_position: ground_cell(
+                        i32::from(cell.x),
+                        i32::from(cell.y),
+                        i16::from(cell.floor),
+                    ),
+                    map_revision: map_revision(&base),
+                    content_revision,
+                    placement_context,
+                },
+            )
+            .await
+            .ok()?
+        else {
+            return Some(ContainerObservation::Gone);
+        };
+        (read, reachable)
     };
     let capacity = generation_item_facts(native, &read.container.definition)
         .ok()
@@ -565,8 +630,16 @@ pub(super) async fn observe_container(
         .and_then(|capacity| u8::try_from(capacity).ok())
         .filter(|capacity| (1..=MAX_CONTAINER_VIEW_ENTRIES).contains(&usize::from(*capacity)));
     let Some(capacity) = capacity else {
-        return Some(ContainerObservation::NotAContainer);
+        // USE uses NotAContainer as evidence of carried custody for consumption.
+        return Some(if is_carried {
+            ContainerObservation::NotAContainer
+        } else {
+            ContainerObservation::Gone
+        });
     };
+    if !reachable {
+        return Some(ContainerObservation::TooFar);
+    }
     let entries = read
         .entries
         .iter()

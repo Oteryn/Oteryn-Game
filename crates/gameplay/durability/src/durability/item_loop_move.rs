@@ -135,8 +135,8 @@ pub struct LoopMoveReceipt {
     pub replayed: bool,
 }
 
-/// One container of a carried tree: the item, its parent container (`None` for the main
-/// backpack) and its direct entries, newest first.
+/// An observed container: its item, parent (`None` for the main backpack or a Ground root)
+/// and direct entries, newest first. This is historical view data, never custody authority.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoopContainer {
     pub container: InventoryItem,
@@ -1597,6 +1597,68 @@ impl DurabilityRoot {
                 })
             })
             .await
+    }
+
+    /// Direct proven Ground container at the exact owner-observed placement. This
+    /// is view data only: the caller checks current session and reach under its
+    /// Channel lane; a subsequent text write must reacquire every custody fence.
+    /// Nested Ground containers, houses and corpse/reward roots remain unavailable.
+    pub async fn read_item_loop_ground_container(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        container: [u8; 16],
+        ground: LoopGround,
+    ) -> std::result::Result<Option<LoopContainer>, DurabilityError> {
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &record).await?;
+                let row = sqlx::query(
+                    "SELECT i.definition_family, i.definition_production_key, \
+                            i.definition_revision_ref, i.quantity \
+                       FROM game_item_instances i JOIN game_item_ground_locations g \
+                         USING (item_instance_id, world_id) \
+                      WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 \
+                        AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid \
+                        AND g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
+                        AND (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) \
+                            = ($5,$6,$7,$8) \
+                        AND (game_item_loop_drop_ref(g.corpse_ref) \
+                             OR game_item_loop_map_mint_source(i.item_instance_id)) \
+                      FOR SHARE OF i, g",
+                )
+                .bind(container.as_slice()).bind(world.as_bytes().as_slice())
+                .bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
+                .bind(&ground.spatial_position).bind(&ground.map_revision)
+                .bind(&ground.content_revision).bind(&ground.placement_context)
+                .fetch_optional(&mut *tx).await?;
+                let read = match row {
+                    None => None,
+                    Some(row) => {
+                        let entries = match load_nested_entries(&mut tx, container).await {
+                            Ok(entries) => entries,
+                            Err(LoopError::Durability(error)) => return Err(error),
+                            Err(LoopError::Database(error)) => return Err(error.into()),
+                            Err(LoopError::Refused(_)) => return Err(DurabilityError::InvalidStoredState),
+                        };
+                        Some(LoopContainer {
+                            container: InventoryItem {
+                                item_instance_id: container,
+                                definition: definition_of(&row).map_err(|_| DurabilityError::InvalidStoredState)?,
+                                quantity: stored_u32(row.try_get("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                            },
+                            parent: None,
+                            entries,
+                        })
+                    }
+                };
+                super::db::commit_semantic_transaction(tx, deadline).await?;
+                Ok(read)
+            })
+        }).await
     }
 
     /// Live loop drops and unchanged map-MINT Ground rows of the Channel, for the map

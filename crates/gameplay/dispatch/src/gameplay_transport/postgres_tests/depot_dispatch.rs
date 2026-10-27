@@ -1,6 +1,8 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
 #[path = "depot_dispatch/stash_cases.rs"]
 mod stash_cases;
+#[path = "depot_dispatch/write_text_ground_view.rs"]
+mod write_text_ground_view;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -23,7 +25,7 @@ use oteryn_protocol_oteryn::depot::*;
 fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "depot e2e panicked")?
         .map_err(Into::into)
@@ -33,13 +35,23 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
 fn stash_session_dispatch_conserves_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "stash e2e panicked")?
         .map_err(Into::into)
 }
 
-fn scenario(stash: bool) -> TestResult {
+#[test]
+fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "ground container e2e panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario(stash: bool, ground_container: bool) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
             .await
@@ -231,7 +243,13 @@ fn scenario(stash: bool) -> TestResult {
         // under test starts below at the real dispatch, with a map handle issued by domain 17.
         let mut carried = None;
         let mut stacks = Vec::new();
-        for ordinal in 0..=if stash { 3 } else { 1 } {
+        for ordinal in 0..=if stash {
+            3
+        } else if ground_container {
+            2
+        } else {
+            1
+        } {
             let mut seed = harness
                 .root
                 .freeze_item_mint(
@@ -252,12 +270,16 @@ fn scenario(stash: bool) -> TestResult {
                             "fixture:purpose.map-target".into(),
                             0,
                         ),
-                        item: if ordinal == 0 {
+                        item: if ordinal == 0 || (ground_container && ordinal == 1) {
                             backpack_definition.clone()
                         } else {
                             coin_definition.clone()
                         },
-                        quantity: if ordinal == 0 { 1 } else { 100 },
+                        quantity: if ordinal == 0 || (ground_container && ordinal == 1) {
+                            1
+                        } else {
+                            100
+                        },
                         ground: GroundPlacement {
                             spatial_position:
                                 crate::durability::map_item_mint_audit::map_item_spatial_position(
@@ -300,7 +322,7 @@ fn scenario(stash: bool) -> TestResult {
                         } else {
                             ItemTransferDestination::MainBackpack
                         },
-                        item: if ordinal == 0 {
+                        item: if ordinal == 0 || (ground_container && ordinal == 1) {
                             backpack_facts.clone()
                         } else {
                             coin_facts.clone()
@@ -361,6 +383,26 @@ fn scenario(stash: bool) -> TestResult {
             .table()
             .handle(&ItemKey::Instance(carried.ok_or("carried")?))
             .ok_or("source handle")?;
+        if ground_container {
+            write_text_ground_view::exercise(
+                &owner,
+                admitted,
+                carried.ok_or("ground container")?,
+                *stacks.get(1).ok_or("Ground non-container")?,
+                index
+                    .definition_ref(
+                        "Item",
+                        &backpack_definition.production_key,
+                        &backpack_definition.revision_ref,
+                    )
+                    .ok_or("bag reference")?,
+            )
+            .await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if stash {
             use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
             let free = owner
