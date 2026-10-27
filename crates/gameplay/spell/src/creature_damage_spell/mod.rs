@@ -7,7 +7,10 @@ use crate::content::{
     ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2FormulaAuthoring, ProjectV2Magnitude,
 };
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::creature_auto_attack::{AttackError, CurrentConditionPolicy};
+use crate::creature_auto_attack::{
+    AttackError, CurrentConditionPolicy, DAMAGE_MULTIPLIER_SCALE,
+    monster_reference_level_damage_multiplier,
+};
 use crate::creature_damage_spell_delayed as delayed;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ApplicationFacts, ConditionDefinition};
@@ -32,6 +35,8 @@ pub struct SpellSource {
     pub entry_index: usize,
     pub minimum: u32,
     pub maximum: u32,
+    /// Creature-owned Monster Reference Level. The currently unsourced curve is neutral.
+    pub reference_level: Option<u32>,
     pub critical: Option<crate::source_critical_baseline::SourceCriticalBaseline>,
     pub conditions: Vec<ConditionDefinition>,
     pub appearances: Vec<crate::content::ProjectV2InlineEffect>,
@@ -515,6 +520,10 @@ impl SpellSource {
                 entry_index: index,
                 minimum: 0,
                 maximum: 0,
+                reference_level: cp
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.reference_level),
                 critical: None,
                 conditions,
                 appearance_cast: !appearances.is_empty(),
@@ -695,6 +704,10 @@ impl SpellSource {
                 entry_index: index,
                 minimum: 0,
                 maximum: 0,
+                reference_level: cp
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.reference_level),
                 critical: None,
                 conditions: Vec::new(),
                 appearances: Vec::new(),
@@ -757,6 +770,10 @@ impl SpellSource {
             entry_index: index,
             minimum,
             maximum,
+            reference_level: cp
+                .details
+                .as_ref()
+                .and_then(|details| details.reference_level),
             critical,
             conditions,
             appearance_cast: !appearances.is_empty(),
@@ -2022,7 +2039,16 @@ impl DamageSpellOwner {
             } else {
                 0
             };
-            let remaining = requested.saturating_sub(armor);
+            let reference_multiplier = monster_reference_level_damage_multiplier(
+                source.reference_level,
+                facts.attack.player_level,
+            );
+            let requested_for_player = u32::try_from(
+                u64::from(requested) * u64::from(reference_multiplier)
+                    / u64::from(DAMAGE_MULTIPLIER_SCALE),
+            )
+            .map_err(|_| AttackError::NumericOverflow)?;
+            let remaining = requested_for_player.saturating_sub(armor);
             let blocked =
                 source.element.is_some() && facts.immune || source.armor && remaining == 0;
             let amount = if blocked {

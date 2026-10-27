@@ -122,6 +122,7 @@ impl SpellWorldReader for World<'_> {
                 target_protected: false,
                 defense: 0,
                 armor: 0,
+                player_level: 1,
             },
             multiplier_ppm: 1_000_000,
             immune: false,

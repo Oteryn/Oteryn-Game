@@ -107,7 +107,7 @@ pub(super) async fn consume(
         if input.replacement.is_some() && (input.count != 1 || input.quantity != 1) {
             return Ok(false);
         }
-        lock_location(tx, &input).await?;
+        lock_location(tx, permit, &input).await?;
         inputs.push(input);
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.
@@ -190,12 +190,15 @@ pub(super) async fn consume(
         .bind(&input.replacement)
         .execute(&mut **tx)
         .await?;
-        apply_input(tx, &input, &transaction).await?;
+        apply_input(tx, permit, &input, &transaction).await?;
     }
     Ok(true)
 }
 
-fn location_queries(kind: &str) -> Result<(&'static str, &'static str), DurabilityError> {
+fn location_queries(
+    _permit: &SpellLanePermit,
+    kind: &str,
+) -> Result<(&'static str, &'static str), DurabilityError> {
     match kind {
         "ground" => Ok((
             "SELECT to_jsonb(l) FROM game_item_ground_locations l \
@@ -228,9 +231,10 @@ fn location_queries(kind: &str) -> Result<(&'static str, &'static str), Durabili
 
 async fn lock_location(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     input: &Input,
 ) -> Result<(), DurabilityError> {
-    let (query, _) = location_queries(&input.kind)?;
+    let (query, _) = location_queries(permit, &input.kind)?;
     let actual: Option<serde_json::Value> = sqlx::query_scalar(query)
         .bind(&input.item)
         .fetch_optional(&mut **tx)
@@ -243,6 +247,7 @@ async fn lock_location(
 
 async fn apply_input(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    permit: &SpellLanePermit,
     input: &Input,
     transaction: &str,
 ) -> Result<(), DurabilityError> {
@@ -260,7 +265,7 @@ async fn apply_input(
         return Err(DurabilityError::InvalidStoredState);
     }
     if input.replacement.is_none() && input.quantity == i64::from(input.count) {
-        let (_, query) = location_queries(&input.kind)?;
+        let (_, query) = location_queries(permit, &input.kind)?;
         let removed = sqlx::query(query)
             .bind(&input.item)
             .execute(&mut **tx)

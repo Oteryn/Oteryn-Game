@@ -57,7 +57,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .unwrap_or_default()
     }
 
-    /// Current dedication bonuses for stat/combat owners. Like stages, this is recomputed from
+    /// Current dedication, conviction and revelation effects for stat/spell/combat owners. Like stages, this is recomputed from
     /// the session allocation on every read, so admission and a replaced allocation cannot
     /// retain an old projection.
     pub fn wheel_stat_bonuses(
@@ -75,14 +75,60 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?
             .get(&session)?
             .clone()?;
-        let data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded().ok()?;
-        oteryn_gameplay_progression::wheel_effects::derive_stat_bonuses(
-            data.wheel(),
-            &allocation,
-            vocation,
-            level,
-            promoted,
-            premium,
-        )
+        project_wheel_runtime_effects(&allocation, vocation, level, promoted, premium)
+    }
+}
+
+fn project_wheel_runtime_effects(
+    allocation: &crate::durability::character_wheel::WheelAllocation,
+    vocation: &str,
+    level: u32,
+    promoted: bool,
+    premium: bool,
+) -> Option<oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects> {
+    let data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded().ok()?;
+    oteryn_gameplay_progression::wheel_effects::derive_runtime_effects(
+        data.wheel(),
+        allocation,
+        vocation,
+        level,
+        promoted,
+        premium,
+    )
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used, reason = "qualified embedded dispatch fixture")]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dispatch_projects_full_slice_conviction_and_revelation_effects() {
+        let data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded()
+            .expect("qualified catalogue");
+        let mut points = [0; oteryn_gameplay_progression::wheel::WHEEL_SLOTS];
+        for (index, slot) in data.wheel()["topology"]
+            .as_array()
+            .expect("topology")
+            .iter()
+            .enumerate()
+        {
+            if slot["domain"] == "green" {
+                points[index] = u16::try_from(slot["capacity"].as_u64().expect("capacity"))
+                    .expect("bounded capacity");
+            }
+        }
+        let allocation = crate::durability::character_wheel::WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().to_owned()),
+            wheel_revision: 1,
+            slots: crate::durability::character_wheel::WheelSlots::new(points)
+                .expect("bounded slots"),
+            current: true,
+        };
+        let effects = project_wheel_runtime_effects(&allocation, "elite_knight", 2_000, true, true)
+            .expect("dispatch projection");
+        assert_eq!(effects.revelation_stages.get("gift_of_life"), Some(&3));
+        assert!(effects.life_leech_hundredths_percent > 0);
+        assert!(!effects.sockets.resonance_stages.is_empty());
     }
 }

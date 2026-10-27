@@ -351,13 +351,14 @@ fn scenario_with_creature_charmed(
             5
         };
         if settle_radiant {
+            // Official balance override (tibia.com news 8935), content/creatures/official-balance.json.
             let exact = match radiant {
-                Some("acolyte") => 32_960,
-                Some("inquisitor") => 32_460,
-                Some("paragon") => 34_780,
-                Some("templar") => 34_520,
-                Some("warden") => 35_540,
-                Some("zealot") => 35_220,
+                Some("acolyte") => 37_245,
+                Some("inquisitor") => 36_680,
+                Some("paragon") => 39_301,
+                Some("templar") => 39_008,
+                Some("warden") => 40_160,
+                Some("zealot") => 39_799,
                 _ => return Err("unknown Summer Radiant".into()),
             };
             assert_eq!(expected_xp, exact, "{creature_key} exact native XP");
