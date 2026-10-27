@@ -82,8 +82,10 @@ async fn exchange(
 async fn qualify_fence_changes(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
-    pool: &sqlx::PgPool,
+    h: &Harness,
 ) -> TestResult {
+    let pool = &h.pool;
+    let activity = prepare_unadmitted_activity(h).await?;
     let before = *admitted;
     let fence = before.item_fence.ok_or("missing cooldown fence")?;
     let (mut server, mut client) = tokio::io::duplex(4096);
@@ -108,6 +110,17 @@ async fn qualify_fence_changes(
         let (_, expected_entries, expected_next) = page(&payload)?;
         assert_eq!(expected_entries.len(), 64);
         command_id += 1;
+        // Refused admission must leave this already admitted connection usable.
+        // These are administrative failure probes, not a handoff implementation.
+        for attempt in 0..3 {
+            refuse_unproven_activity_handoff(h, before, activity, attempt).await?;
+            let (status, payload) = query(&mut client, generation, command_id).await?;
+            assert_eq!(status, CommandStatus::Accepted, "handoff probe {attempt}");
+            let (_, entries, next) = page(&payload)?;
+            assert_eq!(entries, expected_entries);
+            assert_eq!(next, expected_next);
+            command_id += 1;
+        }
         // Administrative fixture mutations isolate each live participant fact.
         // They grant no session or handoff authority and change no immutable
         // publication history. Each refusal must produce a CommandResult on
@@ -245,6 +258,164 @@ async fn qualify_fence_changes(
         return Err(format!("participant/interpretation connection ended {ended:?}").into());
     };
     *admitted = current;
+    Ok(())
+}
+
+// Allocate and attest only the runtime. A ready assignment conveys no
+// participant provenance and must never make any of the probes below succeed.
+async fn prepare_unadmitted_activity(
+    h: &Harness,
+) -> TestResult<crate::foundation::RuntimeScopeRefV1> {
+    use super::fresh_fixture::fresh::Source;
+    use crate::durability::admission_authority_guards::GuardPublicationDisposition;
+    use crate::durability::runtime_scope_assignment::{
+        AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
+        RuntimeScopeAssignmentWriter,
+    };
+    use crate::foundation::admission_authority_publication::{
+        AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
+    };
+    let scope = crate::foundation::RuntimeScopeRefV1::instance(
+        fixture::fence(1)?.runtime_scope.world_id(),
+        fixture::id(88),
+    )
+    .map_err(debug)?;
+    sqlx::query("INSERT INTO game_control_activity_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)")
+        .bind(scope.world_id().as_bytes().as_slice()).bind(fixture::id(88).as_slice())
+        .execute(&h.pool).await?;
+    let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "sequencer-writer")
+        .await
+        .map_err(debug)?;
+    let outcome = writer
+        .submit(&AssignmentRequest {
+            operation_key: OperationKey::from_bytes([88; 32]),
+            actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+            command: AssignmentCommand::Assign {
+                scope,
+                target: h.node.fact(),
+            },
+        })
+        .await
+        .map_err(debug)?;
+    let AssignmentOutcome::Committed(receipt) = outcome else {
+        return Err(format!("activity allocation refused: {outcome:?}").into());
+    };
+    assert_eq!(receipt.assignment.scope, scope);
+    assert_eq!(receipt.assignment.ownership_generation, 1);
+    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+        .fetch_one(&h.pool)
+        .await?;
+    let mut source = Source::new(now)?;
+    source
+        .rows
+        .retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
+    assert_eq!(source.rows.len(), 1);
+    source.rows[0].key = AdmissionAuthorityGuardKeyV1::Runtime(scope);
+    let publication = AdmissionAuthorityPublicationV1::prepare(&source, now).map_err(debug)?;
+    assert_eq!(
+        h.root
+            .publish_runtime_readiness(&h.node, &publication)
+            .await
+            .map_err(debug)?,
+        GuardPublicationDisposition::Applied
+    );
+    Ok(scope)
+}
+
+// Hash the exact bounded participant rows rather than print account/session
+// data in assertion failures. No query scans other Characters or their history.
+async fn participant_binding(h: &Harness, admitted: AdmittedSession) -> TestResult<String> {
+    Ok(sqlx::query_scalar(
+        "SELECT md5(jsonb_build_array(to_jsonb(s),to_jsonb(c),to_jsonb(a),to_jsonb(r))::text) \
+         FROM game_durability_reconnect_sessions s \
+         JOIN game_durability_admission_character_guards c ON c.character_id=s.character_id \
+         JOIN game_durability_admission_account_guards a ON a.account_id=s.account_id \
+         JOIN game_character_roots r ON r.character_id=s.character_id \
+         WHERE s.game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(admitted.game_session_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+async fn refuse_unproven_activity_handoff(
+    h: &Harness,
+    admitted: AdmittedSession,
+    activity: crate::foundation::RuntimeScopeRefV1,
+    attempt: u8,
+) -> TestResult {
+    let crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } = activity else {
+        return Err("activity probe requires Instance".into());
+    };
+    let original = participant_binding(h, admitted).await?;
+    let candidate = fixture::id(90 + attempt);
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL statement_timeout='5s'")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid FOR UPDATE")
+        .bind(admitted.game_session_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+    let error = if attempt == 0 {
+        // Updating the existing source cannot stand in for committed provenance.
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET runtime_scope_kind=2,runtime_scope_channel_id=NULL,runtime_scope_instance_id=encode($2,'hex')::uuid WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(admitted.game_session_id.as_bytes().as_slice()).bind(instance_id.as_slice())
+            .execute(&mut *tx).await.expect_err("unproven scope update must refuse")
+    } else {
+        // Simulate the dangerous half of a handoff in one transaction: retire
+        // source, advance/release its lease and clear presence, then try an
+        // unproven destination.
+        // Rollback must restore every one of those facts, not merely the scope.
+        let retired = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3,current_transport_ref=NULL,prepared_attempt_ref=NULL WHERE game_session_id=encode($1,'hex')::uuid AND session_state IN (1,2)")
+            .bind(admitted.game_session_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+        assert_eq!(retired.rows_affected(), 1);
+        let leased = sqlx::query("UPDATE game_durability_admission_character_guards SET lease_generation=lease_generation+1,holder_game_session_id=NULL WHERE character_id=(SELECT character_id FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid) AND holder_game_session_id=encode($1,'hex')::uuid")
+            .bind(admitted.game_session_id.as_bytes().as_slice())
+            .execute(&mut *tx).await?;
+        assert_eq!(leased.rows_affected(), 1);
+        let present = sqlx::query("UPDATE game_durability_admission_account_guards SET presence_character_id=NULL,holder_game_session_id=NULL WHERE account_id=(SELECT account_id FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid) AND holder_game_session_id=encode($1,'hex')::uuid")
+            .bind(admitted.game_session_id.as_bytes().as_slice())
+            .execute(&mut *tx).await?;
+        assert_eq!(present.rows_affected(), 1);
+        // A terminal administrative row is allowed as history, but activating
+        // it must prove the same handoff as a fresh INSERT. Neither is admission.
+        let inserted = sqlx::query(
+            "INSERT INTO game_durability_reconnect_sessions \
+             (game_session_id,account_id,character_id,world_id,runtime_scope_kind, \
+              runtime_scope_world_id,runtime_scope_channel_id,runtime_scope_instance_id, \
+              control_loss_epoch,original_grace_deadline,predecessor_generation, \
+              character_lease_generation,scope_ownership_generation,current_generation,session_state) \
+             SELECT encode($2,'hex')::uuid,account_id,character_id,world_id,2, \
+                    runtime_scope_world_id,NULL,encode($3,'hex')::uuid, \
+                    1,COALESCE(original_grace_deadline,floor(extract(epoch FROM clock_timestamp()))::bigint),1, \
+                    character_lease_generation+1,1,1,$4 \
+             FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(admitted.game_session_id.as_bytes().as_slice()).bind(candidate.as_slice())
+            .bind(instance_id.as_slice()).bind(if attempt == 1 { 1_i16 } else { 3_i16 })
+            .execute(&mut *tx).await;
+        if attempt == 1 {
+            inserted.expect_err("unproven destination INSERT must refuse")
+        } else {
+            assert_eq!(inserted?.rows_affected(), 1);
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=1 WHERE game_session_id=encode($1,'hex')::uuid")
+                .bind(candidate.as_slice()).execute(&mut *tx).await
+                .expect_err("unproven terminal destination activation must refuse")
+        }
+    };
+    // Check the precise provenance guard, not an unrelated UNIQUE/CHECK error.
+    assert_eq!(
+        error.as_database_error().and_then(|e| e.code()).as_deref(),
+        Some("23514")
+    );
+    assert!(
+        error
+            .to_string()
+            .contains("activity session requires a committed activity handoff")
+    );
+    tx.rollback().await?;
+    assert_eq!(participant_binding(h, admitted).await?, original);
+    let retained: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid)")
+        .bind(candidate.as_slice()).fetch_one(&h.pool).await?;
+    assert!(!retained, "failed handoff retained its destination");
     Ok(())
 }
 
@@ -647,7 +818,7 @@ fn scenario() -> TestResult {
                 .await?
                 .is_none()
         );
-        qualify_fence_changes(&owner, &mut admitted, &h.pool).await?;
+        qualify_fence_changes(&owner, &mut admitted, &h).await?;
         refuse_live_instance_scope(&owner, admitted, &h.pool).await?;
         // No query changes the Character revision or its cooldown rows.
         let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
