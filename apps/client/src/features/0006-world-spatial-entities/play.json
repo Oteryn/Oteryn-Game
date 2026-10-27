@@ -1,0 +1,10 @@
+{
+  "concerns": [
+    "protocol",
+    "view"
+  ],
+  "events": {
+    "WorldSpatial": "spatial",
+    "WorldSpatialEntities": "entities"
+  }
+}

@@ -10,7 +10,6 @@
     "not_applicable": {
       "state": "Local hotkey routing has no state concern.",
       "protocol": "Local hotkey routing has no protocol concern.",
-      "view": "Local hotkey routing has no view concern.",
       "settings": "Local hotkey routing has no settings concern."
     }
   },
