@@ -462,7 +462,9 @@ async fn prepare_item_grant(
                 quantity: amount,
                 backpack: backpack.clone(),
                 overflow_placement: placement.clone(),
-                allow_ground_overflow: true,
+                // Random food explicitly permits a tile fallback. Conjuring must
+                // fit the entire grant in inventory or roll back its payment.
+                allow_ground_overflow: food_profile.is_some(),
             });
             remaining -= amount;
         }
@@ -991,7 +993,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let attempt=pending.as_ref().ok_or(DurabilityError::Unavailable)?;
             let outcome=match items::apply_spell_items_in_transaction_guarded(&mut tx,&authority,&attempt.request,verdict,&crate::gameplay_transport::world_required_field_guard::player_origin(&owner.required_capabilities)).await{
                 Ok(outcome)=>outcome,
-                Err(items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED) | items::SpellItemError::FieldCapabilityRefused)=>{
+                Err(items::SpellItemError::Rejected(WORLD_ITEM_NEW_GRANT_REFUSED
+                    | "no equipped main backpack" | "backpack capacity exceeded")
+                    | items::SpellItemError::FieldCapabilityRefused)=>{
                     // The writer holds the exact-command lock and found no historical receipt.
                     // Only a successful rollback proves this attempt cannot later COMMIT.
                     tx.rollback().await.map_err(|_|DurabilityError::Unavailable)?;
