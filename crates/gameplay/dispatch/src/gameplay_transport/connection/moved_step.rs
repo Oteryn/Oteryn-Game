@@ -4,7 +4,8 @@ use super::*;
 /// The frames that follow one moved step of `actor`: with capability 6 the interest set's change
 /// (VIS-3, a resync ends the connection), without it the v1 own-actor delta; the open corpse a
 /// step out of reach or to another floor closes (ITEM-VIEW-1b §4.3); and the tiles the step
-/// brought into, kept in or took out of view (MAP-WIRE-2). A client step sends them after its
+/// brought into, kept in or took out of view (MAP-WIRE-2). Open container trees are
+/// reobserved at the committed position, closing external views that left reach. A client step sends them after its
 /// result, a chase step (CHASE-1) on its own. `None` ends the connection.
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn moved_step_frames<S, A>(
@@ -14,6 +15,7 @@ pub(super) async fn moved_step_frames<S, A>(
     admitted: &mut AdmittedSession,
     visibility: Option<&mut SessionVisibility>,
     mut item_view: Option<&mut SessionItemView>,
+    container_views: Option<&mut ContainerViewState>,
     world_map: Option<&mut SessionMapView>,
     generation: u64,
     sequence: &mut u64,
@@ -83,6 +85,28 @@ where
         });
         admitted.continuity.item_view = view.continuity();
         if let Some(delta) = closed.ok()? {
+            let (delta_sequence, frame) = item_view_delta(generation, *sequence, &delta)?;
+            *sequence = delta_sequence;
+            admitted.continuity.server_sequence = *sequence;
+            write_frame(stream, &frame).await.ok()?;
+        }
+    }
+    // Capability 14 views retain entry handles independently of the map view.
+    // Revalidate after every committed move (client, chase or relocation), so
+    // leaving Ground reach retires nested selections even while the root stays
+    // in the wider map view. Carried views remain open. The view set is bounded
+    // by MAX_CONTAINER_VIEWS; with no open views there are no owner reads.
+    if let (Some(views), Some(view)) = (container_views, item_view.as_deref_mut()) {
+        let refreshed = super::super::container_view::refresh::refresh(
+            authority,
+            actor,
+            admitted.item_fence,
+            views,
+            view,
+        )
+        .await;
+        admitted.continuity.item_view = view.continuity();
+        if let Some(delta) = refreshed.ok()? {
             let (delta_sequence, frame) = item_view_delta(generation, *sequence, &delta)?;
             *sequence = delta_sequence;
             admitted.continuity.server_sequence = *sequence;

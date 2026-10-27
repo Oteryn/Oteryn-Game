@@ -352,8 +352,10 @@ Protocol ids are exclusively 76/77 and 59; new resource entries are exclusively 
 
 ### Unfinished / integration boundary
 
-- HOUSE-1a owns final owner/Account-slot/ACL reconciliation, fence release and reacquisition.
-  Acquisition/catalogue activation and House-scoped admission remain their owners' gates;
+- The server gap is closed on current `main`: migration 0270 composes the final personal
+  owner/Account-slot/ACL reconciliation and fence release with the last bounded custody batch
+  and its HouseOperation event. A crash can therefore expose neither released ownership with
+  undelivered items nor a duplicate delivery. Acquisition remains HOUSE-1a's existing gate;
   this change neither manufactures ownership nor bypasses House grants.
 - House-scoped owner commands and actual committed-House-session exit/quiescence qualification
   need HOUSE-ACL-1 / HOUSE-RUNTIME-1b/1c. This implementation accepts current Channel sessions;
@@ -364,9 +366,33 @@ Protocol ids are exclusively 76/77 and 59; new resource entries are exclusively 
   as evidence for this implementation. No unrelated PG suites were run on the shared PC.
 - Rent/eviction, Guild disposition and direct resale remain outside the ordinary move-out path.
   The real Guild fence ABI stays fail-closed for partial/incompatible installation.
-- Client UI is outside this task. No client paths, workflows, policy enforcement, credentials,
-  dependency files or Git publication state were changed. The task record remains active for
-  CP integration, rather than being archived by an uncommitted worker.
+- Client UI support remains outside this server task; capability 59 and commands 76/77 were
+  already registered by the merged slice, so this completion allocates no protocol identifier.
+
+### Final parity evidence (2026-10-27)
+
+The required reference pins were treated as behavioural evidence, not as source to transplant:
+Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446` and Crystal
+`201189f871d23597b82caf88fd611454a2ddefb8`. Both support deferred house loss and bulk return
+of house contents to player storage. Their mutable owner/depot loops conflict with Oteryn's
+accepted custody model. Oteryn deliberately captures the per-item reclaim subject at freeze,
+delivers through the native Inbox in batches of 100, caps the census at 2000, retains immutable
+step receipts, and releases only in the same transaction as the final audited batch. Crystal's
+restart toggle is evidence that bulk work must not run as an unbounded interactive operation;
+it is not adopted as a restart-only scheduler.
+
+| Mechanic | Canary | Crystal | Global | Oteryn | Status |
+|---|---|---|---|---|---|
+| Notice / cancel | Deferred house loss | Deferred/restart-configured loss | Absolute deadline | 1–30 day absolute notice; fenced cancel/replay | complete |
+| Freeze census | Mutable bulk traversal | Bulk depot traversal | Bound server work | Immutable sorted census, maximum 2000 | complete (accepted difference) |
+| Item destination | Owner storage | Owner depot | Return belongings | Captured reclaim subject Inbox; no owner fallback | complete (accepted difference) |
+| Work scheduling | Server house pass | Optional restart pass | Avoid interactive bulk work | World/Channel job, 100 houses and 100 items per step | complete (accepted difference) |
+| Release | House becomes unowned | House becomes unowned | Reacquirable after custody | Atomic owner/slot/ACL/fence release after audited final batch | complete |
+| Restart | Persistent house state | Restart processing option | No loss/duplication | Durable census/steps plus atomic terminal release | complete |
+
+Remaining integration work is limited to the independently owned LO-01 lock-order contract and
+the broader concurrency qualification listed above; rent/eviction, Guild disposition, direct
+resale, and a supported client UI remain outside HOUSE-1b.
 
 Verified local results: protocol **393/393**, housing **24/24**, capability negotiation
 **61/61**, mechanic PostgreSQL **2/2**, D1413 Inbox PostgreSQL **1/1**, governance Python
