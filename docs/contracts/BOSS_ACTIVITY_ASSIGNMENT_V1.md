@@ -212,6 +212,26 @@ snapshot, fresh destination ownership or recovery. Other consumers' shared
 participant fences retain their current behavior; this additional proof is
 currently composed at the cooldown read boundary only.
 
+Command 133 also reads its runtime readiness through the admission guard owner's
+existing payload/mirror and retained-history validator in that same transaction.
+A valid assignment history and a ready runtime projection are insufficient when
+that projection no longer matches the readiness publisher's retained decisions.
+Invalid or absent readiness evidence refuses the page; database availability
+errors retain their existing unavailable result. This additional readiness-history
+proof is composed at the cooldown boundary only, not every shared participant
+consumer.
+
+`boss_cooldown_list_postgres_real_dispatch_readiness_history_ahead` first accepts
+commands on the real Channel connection, then administratively appends a newer
+readiness history row while leaving the runtime projection unchanged. The probe
+uses the admission history key (`0x03 || runtime_scope_key`), distinct from both
+the runtime and assignment key spaces. It retains valid assignment history, ready
+ownership, session/lease/Character/presence facts and requires both a new wire
+command and the direct durable reader to refuse. The disposable database retains
+this deliberately inconsistent restoration probe; no history or protection is
+rewritten. This qualifies a production prerequisite's refusal, not a readiness
+publisher, successful handoff, Instance admission or restart recovery.
+
 Command 133's durable cooldown reader uses the item-only Character fence,
 including the live root's account, World and current Game-owned interpretation,
 before reading cooldown rows. It does not require an expected CharacterRevision:

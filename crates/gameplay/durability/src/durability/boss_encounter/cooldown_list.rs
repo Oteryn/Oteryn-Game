@@ -1,9 +1,11 @@
 //! Bounded, current-session-fenced read of the shared cooldown owner.
+use super::super::admission_authority_guards::AdmissionGuardStore;
 use super::super::character_authority::ReconciledCharacterAuthority;
 use super::super::character_progression::assert_item_only_fence;
 use super::super::db::{begin_semantic_transaction, commit_semantic_transaction};
 use super::super::item_transfer::CurrentCharacterItemFence;
 use super::*;
+use crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1;
 use oteryn_protocol_oteryn::boss_encounter::{
     BossCooldownEntry, COOLDOWN_PAGE_SIZE, decode_cooldown_query, encode_cooldown_list,
 };
@@ -29,6 +31,7 @@ impl super::super::DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
+        let guards = AdmissionGuardStore::from_root(self.clone());
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
@@ -47,6 +50,15 @@ impl super::super::DurabilityRoot {
                     .await?
                     {
                         return Ok(None);
+                    }
+                    // A ready mirror and assignment history do not prove the
+                    // readiness publisher's retained decision. Reuse its owner
+                    // validator under the same relation locks and deadline.
+                    let runtime_key = AdmissionAuthorityGuardKeyV1::Runtime(fence.runtime_scope);
+                    match guards.load_locked(&mut tx, &runtime_key).await {
+                        Ok(Some(_)) => {}
+                        Ok(None) | Err(DurabilityError::InvalidStoredState) => return Ok(None),
+                        Err(error) => return Err(error),
                     }
                     if assert_item_only_fence(&mut tx, &fence, &node)
                         .await?

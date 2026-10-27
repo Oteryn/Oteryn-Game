@@ -88,6 +88,7 @@ enum HistoryProbe {
     AssignmentGap,
     SessionIncomplete,
     SessionGap,
+    ReadinessHistoryAhead,
 }
 
 async fn qualify_fence_changes(
@@ -272,6 +273,21 @@ async fn qualify_fence_changes(
         // history fault, with no history rewrite or high-water/completeness reset.
         if !matches!(history_probe, HistoryProbe::None) {
             let original = participant_binding(h, before).await?;
+            let runtime_facts = || async {
+                sqlx::query_as::<_, (bool, String)>(
+                    "SELECT g.ready,g.ownership_generation::text FROM game_durability_admission_runtime_guards g \
+                     JOIN game_durability_reconnect_sessions s ON g.scope_key=decode('01','hex')||uuid_send(s.runtime_scope_world_id)||uuid_send(s.runtime_scope_channel_id) \
+                     WHERE s.game_session_id=encode($1,'hex')::uuid",
+                )
+                .bind(fence.game_session_id.as_bytes().as_slice())
+                .fetch_one(pool)
+                .await
+            };
+            let ready_before = runtime_facts().await?;
+            assert_eq!(
+                ready_before,
+                (true, fence.scope_ownership_generation.get().to_string())
+            );
             assert!(
                 sqlx::query_scalar::<_, bool>(
                     "SELECT game_runtime_scope_assignment_history_valid()"
@@ -292,13 +308,37 @@ async fn qualify_fence_changes(
                     "UPDATE game_durability_session_use_ledgers SET revision=revision+1,revision_floor=revision_floor+1 WHERE character_id=encode($1,'hex')::uuid",
                     "partial session-use history",
                 ),
+                HistoryProbe::ReadinessHistoryAhead => (
+                    "INSERT INTO game_durability_admission_guard_history(guard_key,publication_revision,source_authority,source_revision,decision_identity,change_json) SELECT decode('03','hex')||scope_key,publication_revision+1,source_authority,source_revision+1,decision_identity||':restore-probe',change_json FROM game_durability_admission_runtime_guards WHERE scope_key=decode('01','hex')||uuid_send(encode($1,'hex')::uuid)||uuid_send(encode($2,'hex')::uuid)",
+                    "readiness projection behind retained history",
+                ),
                 HistoryProbe::None => unreachable!("fault selected above"),
             };
-            let updated = sqlx::query(statement)
-                .bind(fence.character_id.as_bytes().as_slice())
-                .execute(pool)
-                .await?;
+            let updated = if matches!(history_probe, HistoryProbe::ReadinessHistoryAhead) {
+                let crate::foundation::RuntimeScopeRefV1::Channel {
+                    world_id,
+                    channel_id,
+                } = fence.runtime_scope
+                else {
+                    return Err("Channel readiness fixture required".into());
+                };
+                sqlx::query(statement)
+                    .bind(world_id.as_bytes().as_slice())
+                    .bind(channel_id.as_bytes().as_slice())
+                    .execute(pool)
+                    .await?
+            } else {
+                sqlx::query(statement)
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .execute(pool)
+                    .await?
+            };
             assert_eq!(updated.rows_affected(), 1);
+            assert_eq!(
+                runtime_facts().await?,
+                ready_before,
+                "{label}: retain ready ownership projection"
+            );
             assert_eq!(
                 sqlx::query_scalar::<_, bool>(
                     "SELECT game_runtime_scope_assignment_history_valid()"
@@ -668,6 +708,11 @@ fn boss_cooldown_list_postgres_real_dispatch_session_history_incomplete() -> Tes
 #[test]
 fn boss_cooldown_list_postgres_real_dispatch_session_history_gap() -> TestResult {
     cooldown_scenario(HistoryProbe::SessionGap)
+}
+
+#[test]
+fn boss_cooldown_list_postgres_real_dispatch_readiness_history_ahead() -> TestResult {
+    cooldown_scenario(HistoryProbe::ReadinessHistoryAhead)
 }
 
 fn cooldown_scenario(history_probe: HistoryProbe) -> TestResult {
