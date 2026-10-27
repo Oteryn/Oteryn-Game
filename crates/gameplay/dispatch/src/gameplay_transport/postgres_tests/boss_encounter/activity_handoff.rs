@@ -2,6 +2,9 @@
 // Administrative preparations cannot admit an Instance or substitute for a writer.
 use super::*;
 
+#[path = "activity_handoff/concurrency.rs"]
+mod concurrency;
+
 const ACTIVITY_PARTICIPANT_INSERT: &str = "\
     INSERT INTO game_activity_handoff_participants \
     (handoff_id,world_id,character_id,account_id,origin_channel_id, \
@@ -265,5 +268,6 @@ pub(super) async fn qualify_activity_provenance(
         !writable,
         "unqualified runtime received activity write authority"
     );
+    concurrency::qualify_source_reservations(h, admitted).await?;
     Ok(())
 }

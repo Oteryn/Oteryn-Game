@@ -102,6 +102,17 @@ All preparations roll back, the participant binding stays unchanged, and the sam
 connection must still accept command 133 with the same cooldown page afterward.
 This is storage/refusal qualification, not positive Instance gameplay evidence.
 
+The same scenario also uses separate PostgreSQL transactions to qualify source
+reservation serialization. Backend lock observations prove a competing group is
+waiting on the first preparation before it commits. Exactly one membership is
+retained; after its abort, the refused group can retry. A separate probe advances
+only the source connection generation while a preparation's trigger waits. The
+generation selected before that wait is refused after the advance commits.
+Restoring this administrative probe permits preparation again; every prepared
+group is aborted with its membership retained. The admitted connection must still
+accept command 133 afterward. These are storage races with administrative writes,
+not production reconnect, compensation, handoff or Instance admission evidence.
+
 The native PostgreSQL qualification is
 `durability::boss_encounter::activity_assignment_tests::boss_activity_assignment_postgres`.
 It covers real assignment APIs, exact grants, command replay/conflict, readiness
