@@ -120,7 +120,7 @@ pub(super) async fn prepare(
 
 pub(super) async fn assert_receipts(h: &Harness, case: Case) -> TestResult {
     let awarded_xp: i64 = sqlx::query_scalar(
-        "SELECT COALESCE(sum(xp_awarded),0) FROM game_party_kill_xp_members",
+        "SELECT COALESCE(sum(xp_awarded),0)::BIGINT FROM game_party_kill_xp_members",
     )
     .fetch_one(&h.pool)
     .await?;
