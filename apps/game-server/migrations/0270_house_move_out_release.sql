@@ -45,3 +45,42 @@ DO $$ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION game_house_move_out_release(UUID) FROM PUBLIC,oteryn_game_control;
 GRANT EXECUTE ON FUNCTION game_house_move_out_release(UUID) TO oteryn_game_runtime;
+
+-- Personal terminal release proves ACL removal through its own physical audit,
+-- just as the existing Guild release proves its own deletion. Ordinary ACL edits
+-- still require the existing bounded same-transaction management receipt.
+-- Deferred checks run after the release definer exits; keep private disposition
+-- proof reads inside this pinned definer, without granting runtime table access.
+CREATE OR REPLACE FUNCTION game_house_management_acl_proven() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE w UUID; h TEXT; k TEXT;
+BEGIN
+ w:=CASE WHEN TG_OP='DELETE' THEN OLD.world_id ELSE NEW.world_id END;
+ h:=CASE WHEN TG_OP='DELETE' THEN OLD.house_key ELSE NEW.house_key END;
+ k:=CASE WHEN TG_OP='DELETE' THEN OLD.list_key ELSE NEW.list_key END;
+ IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_house_dispositions d JOIN game_house_properties p USING(world_id,house_key)
+  WHERE d.world_id=w AND d.house_key=h AND d.state=3
+   AND (d.owner_guild_id IS NOT NULL OR (d.cause='MOVE_OUT'
+    AND p.owner_character_id IS NULL AND p.owner_account_id IS NULL
+    AND NOT EXISTS(SELECT 1 FROM game_account_housing_slots s WHERE s.world_id=w AND s.house_key=h)
+    AND EXISTS(SELECT 1 FROM game_house_disposition_audit_outbox a WHERE a.operation_id=d.operation_id
+     AND a.written_xact_id=pg_current_xact_id())))
+   AND d.released_at IS NOT NULL AND d.written_xact_id=pg_current_xact_id()
+   AND p.state=1 AND p.owner_guild_id IS NULL AND p.ownership_generation=d.ownership_revision+1) THEN
+  RETURN NULL;
+ END IF;
+ IF NOT EXISTS(SELECT 1 FROM game_house_management_receipts r JOIN game_house_properties p USING(world_id,house_key)
+  WHERE r.world_id=w AND r.house_key=h AND r.list_key=k AND r.action_kind=1
+   AND r.created_xact_id=pg_current_xact_id() AND r.result_revision=p.acl_revision)
+  OR (SELECT count(*) FROM (SELECT 1 FROM game_house_acl_entries WHERE world_id=w AND house_key=h AND list_key=k LIMIT 201) bounded)>200 THEN
+  RAISE EXCEPTION 'House ACL requires bounded same-transaction receipt' USING ERRCODE='23514';
+ END IF;
+ IF TG_OP='INSERT' AND NOT EXISTS(SELECT 1 FROM game_character_roots WHERE character_id=NEW.character_id AND world_id=w AND lifecycle=1) THEN
+  RAISE EXCEPTION 'House ACL member must be active in this World' USING ERRCODE='23514';
+ END IF;
+ RETURN NULL;
+END $$;
+
+DO $$ BEGIN
+ EXECUTE format('ALTER FUNCTION game_house_management_acl_proven() SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_house_management_acl_proven() FROM PUBLIC;

@@ -112,7 +112,15 @@ async fn replayed(
     action: u8,
     due: i64,
 ) -> TestResult<HouseMoveOutReply> {
-    reply(owner, admitted, id, action, due, CommandStatus::DuplicateReplay).await
+    reply(
+        owner,
+        admitted,
+        id,
+        action,
+        due,
+        CommandStatus::DuplicateReplay,
+    )
+    .await
 }
 async fn reply(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -211,10 +219,19 @@ fn scenario() -> TestResult {
             })
             .map_err(debug)?;
             // FND-02 §13.4: replacement bytes under a reserved ID are not a new House intent.
-            let (status, replay) =
-                exchange(&owner, &mut admitted, 2, COMMAND_TYPE_HOUSE_MOVE_OUT, &bytes).await?;
+            let (status, replay) = exchange(
+                &owner,
+                &mut admitted,
+                2,
+                COMMAND_TYPE_HOUSE_MOVE_OUT,
+                &bytes,
+            )
+            .await?;
             assert_eq!(status, CommandStatus::DuplicateReplay);
-            assert_eq!(decode_house_move_out_reply(&replay).map_err(debug)?, noticed);
+            assert_eq!(
+                decode_house_move_out_reply(&replay).map_err(debug)?,
+                noticed
+            );
             // The native House receipt still refuses changed input under the committed ID.
             assert!(matches!(
                 owner
@@ -244,7 +261,10 @@ fn scenario() -> TestResult {
             else {
                 return Err("cancel receipt".into());
             };
-            assert_eq!(decode_house_move_out_reply(&receipt).map_err(debug)?, cancelled);
+            assert_eq!(
+                decode_house_move_out_reply(&receipt).map_err(debug)?,
+                cancelled
+            );
             assert_eq!(
                 command(&owner, &mut admitted, 5, 0, 0).await?.operation,
                 second.operation
@@ -292,7 +312,7 @@ fn scenario() -> TestResult {
         seed::overdue(&h).await?;
         seed::prepare_entrant(&h).await?;
         seed::assert_unproven_checkpoint_closed(&h).await?;
-        for (phase, count, state) in [(0, 0, 2), (1, 100, 2)] {
+        for (phase, count, state) in [(0, 0, 2), (1, 100, 2), (2, 101, 3), (3, 101, 3)] {
             // Fresh Root and composed owner after every committed boundary, including DRAINED.
             h.root = seed::runtime_root(&h, &admin).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -307,31 +327,63 @@ fn scenario() -> TestResult {
             owner
                 .drain_source_house_dispositions()
                 .await
-                .map_err(debug)?;
+                .map_err(|e| format!("phase {phase} drain: {e:?}"))?;
             let next = admitted.continuity.next_command_id;
-            let result = command(&owner, &mut admitted, next, 0, 0).await?;
-            assert_eq!(
-                (result.state, result.census_count, result.delivered),
-                (state, 101, count)
-            );
+            if phase < 2 {
+                let result = command(&owner, &mut admitted, next, 0, 0).await?;
+                assert_eq!(
+                    (result.state, result.census_count, result.delivered),
+                    (state, 101, count)
+                );
+                assert!(
+                    !sqlx::query_scalar::<_, bool>(
+                        "SELECT game_house_move_out_release(operation_id) FROM game_house_dispositions WHERE house_key=$1 AND state<>4",
+                    )
+                    .bind(HOUSE)
+                    .fetch_one(&h.pool)
+                    .await?
+                );
+            } else {
+                // Atomic release revokes the former owner's projection permission.
+                let bytes = encode_house_move_out_request(&HouseMoveOutRequest {
+                    house: HOUSE.into(),
+                    action: 0,
+                    due_at_unix_ms: 0,
+                })
+                .map_err(debug)?;
+                assert_eq!(
+                    exchange(
+                        &owner,
+                        &mut admitted,
+                        next,
+                        COMMAND_TYPE_HOUSE_MOVE_OUT_QUERY,
+                        &bytes
+                    )
+                    .await?
+                    .0,
+                    CommandStatus::Rejected
+                );
+            }
+            let persisted: (i16, i32, i64) = sqlx::query_as(
+                "SELECT state,census_count,(SELECT count(*) FROM game_house_disposition_steps s WHERE s.operation_id=d.operation_id) FROM game_house_dispositions d WHERE house_key=$1 AND state<>4",
+            )
+            .bind(HOUSE)
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(persisted, (i16::from(state), 101, i64::from(count)));
             if phase == 0 {
                 seed::assert_frozen(&h).await?;
                 seed::blocked_steps_rollback(&h, &owner).await?;
             }
             commands = std::mem::take(&mut owner.states.command_ingress);
+            drop(owner);
+            drop(authority);
+            if phase >= 2 {
+                // Observe both final commit and replay using a newly recovered Root.
+                h.root = seed::runtime_root(&h, &admin).await?;
+                seed::assert_final(&h, *recipient.as_bytes()).await?;
+            }
         }
-        // The final bounded batch and owner release are one commit.  Rebuilding the
-        // Root afterwards proves the released terminal receipt is restart-safe.
-        h.root = seed::runtime_root(&h, &admin).await?;
-        {
-            let seal = h.recovery.seal_current().map_err(debug)?;
-            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
-            deps.owner(&h, &authority)
-                .drain_source_house_dispositions()
-                .await
-                .map_err(debug)?;
-        }
-        seed::assert_final(&h, *recipient.as_bytes()).await?;
         seed::assert_runtime_privileges(&h).await?;
         h.cleanup().await
     })

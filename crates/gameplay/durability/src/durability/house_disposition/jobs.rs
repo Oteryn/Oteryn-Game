@@ -68,6 +68,9 @@ impl DurabilityRoot {
                 let changed=port(&mut tx,&node,"advance",&p).await?;
                 if changed.as_bool()==Some(true) {
                     audit::write(&mut tx,&node,&p,&operation).await?;
+                    // TRUE only for the first state-3 release; earlier advances cheaply
+                    // return FALSE under the operation lock. SQL errors propagate through
+                    // DurabilityError and roll back this batch and its audit together.
                     sqlx::query_scalar::<_, bool>("SELECT game_house_move_out_release($1::uuid)")
                         .bind(&operation)
                         .fetch_one(&mut *tx)
