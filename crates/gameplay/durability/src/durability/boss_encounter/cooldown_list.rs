@@ -9,7 +9,8 @@ use oteryn_protocol_oteryn::boss_encounter::{
 };
 
 impl super::super::DurabilityRoot {
-    /// Read only this admitted Character's page under current recovery, session, lease,
+    /// Read only this admitted Character's page under retained session identity use,
+    /// current recovery, session, lease,
     /// assignment, node and live Character-root interpretation proofs. This is an item-only
     /// read: unrelated CharacterRevision advances do not invalidate it. The semantic-pass
     /// deadline bounds every database wait.
@@ -34,6 +35,19 @@ impl super::super::DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
+                    // A materialized live session is insufficient after a partial
+                    // restore loses issuance history. Prove retained identity use
+                    // before the independent participant/root/runtime checks.
+                    if !super::super::fresh_admission::committed_session_use(
+                        &mut tx,
+                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                            .map_err(|_| DurabilityError::InvalidStoredState)?,
+                        fence.game_session_id,
+                    )
+                    .await?
+                    {
+                        return Ok(None);
+                    }
                     if assert_item_only_fence(&mut tx, &fence, &node)
                         .await?
                         .is_err()

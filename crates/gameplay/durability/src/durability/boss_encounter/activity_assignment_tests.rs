@@ -425,6 +425,26 @@ async fn qualify_gameplay_fence(h: &fixture::Harness) -> TestResult {
         .await
         .map_err(fixture::debug)?;
     let channel_fence = fixture::item_fence()?;
+    // A live materialized Channel session without retained identity-use evidence
+    // must not become the source of gameplay or a future activity handoff.
+    assert!(
+        h.root
+            .read_boss_cooldown_list(&authority, &h.node, channel_fence, &[])
+            .await?
+            .is_none()
+    );
+    qualify_session_provenance(h).await?;
+    // The harness seeds its Channel directly, so publish that fixture's exact
+    // retained issuance too. No positive activity session is constructed.
+    sqlx::query(
+        "INSERT INTO game_durability_session_use_ledgers VALUES(encode($1,'hex')::uuid,1,true,1,1)",
+    )
+    .bind(id(fixture::CHARACTER).as_slice())
+    .execute(&h.pool)
+    .await?;
+    sqlx::query("INSERT INTO game_durability_session_use_memberships VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3)")
+        .bind(id(fixture::SESSION).as_slice()).bind(id(fixture::CHARACTER).as_slice())
+        .bind(id(fixture::SESSION).as_slice()).execute(&h.pool).await?;
     assert!(
         h.root
             .read_boss_cooldown_list(&authority, &h.node, channel_fence, &[])
@@ -498,6 +518,128 @@ async fn qualify_gameplay_fence(h: &fixture::Harness) -> TestResult {
     );
     qualify_channel_position_consumers(h, &authority, scope).await?;
     qualify_live_respawn_retention(h, &authority, scope).await?;
+    Ok(())
+}
+
+// Exact issuance is separate from a complete ledger. Faults use one disposable
+// transaction each; no immutable membership is edited or deleted for restoration.
+async fn qualify_session_provenance(h: &fixture::Harness) -> TestResult {
+    use crate::durability::db::lock_admission_relations;
+    use crate::durability::fresh_admission::committed_session_use;
+    use crate::foundation::{CharacterId, GameSessionId};
+
+    let character = CharacterId::decode(&id(fixture::CHARACTER)).map_err(fixture::debug)?;
+    let session = GameSessionId::decode(&id(fixture::SESSION)).map_err(fixture::debug)?;
+    for (label, owner, member, revision, member_revision, complete, binding, expected) in [
+        (
+            "valid issuance",
+            fixture::CHARACTER,
+            fixture::SESSION,
+            1,
+            1,
+            true,
+            Some(id(90)),
+            true,
+        ),
+        (
+            "other Character",
+            91,
+            fixture::SESSION,
+            1,
+            1,
+            true,
+            Some(id(90)),
+            false,
+        ),
+        (
+            "other session",
+            fixture::CHARACTER,
+            91,
+            1,
+            1,
+            true,
+            Some(id(90)),
+            false,
+        ),
+        (
+            "legacy observation",
+            fixture::CHARACTER,
+            fixture::SESSION,
+            1,
+            1,
+            true,
+            None,
+            false,
+        ),
+        (
+            "zero operation",
+            fixture::CHARACTER,
+            fixture::SESSION,
+            1,
+            1,
+            true,
+            Some([0; 16]),
+            false,
+        ),
+        (
+            "incomplete history",
+            fixture::CHARACTER,
+            fixture::SESSION,
+            1,
+            1,
+            false,
+            Some(id(90)),
+            false,
+        ),
+        (
+            "missing revision",
+            fixture::CHARACTER,
+            fixture::SESSION,
+            2,
+            1,
+            true,
+            Some(id(90)),
+            false,
+        ),
+        (
+            "wrong revision range",
+            fixture::CHARACTER,
+            fixture::SESSION,
+            1,
+            2,
+            true,
+            Some(id(90)),
+            false,
+        ),
+    ] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL statement_timeout='5s'")
+            .execute(&mut *tx)
+            .await?;
+        lock_admission_relations(&mut tx).await?;
+        sqlx::query("INSERT INTO game_durability_session_use_ledgers VALUES(encode($1,'hex')::uuid,1,$2,$3::text::numeric,$3::text::numeric)")
+            .bind(id(owner).as_slice()).bind(complete).bind(revision.to_string())
+            .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_durability_session_use_memberships VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,$4)")
+            .bind(id(member).as_slice()).bind(id(owner).as_slice())
+            .bind(member_revision.to_string()).bind(binding.as_ref().map(|value| value.as_slice()))
+            .execute(&mut *tx).await?;
+        if owner != fixture::CHARACTER {
+            // Keep the requested Character's independent ledger complete too.
+            // Only this session's membership belongs to the foreign Character.
+            sqlx::query("INSERT INTO game_durability_session_use_ledgers VALUES(encode($1,'hex')::uuid,1,true,1,1)")
+                .bind(character.as_bytes().as_slice()).execute(&mut *tx).await?;
+            sqlx::query("INSERT INTO game_durability_session_use_memberships VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,$3)")
+                .bind(id(92).as_slice()).bind(character.as_bytes().as_slice())
+                .bind(id(90).as_slice()).execute(&mut *tx).await?;
+        }
+        assert_eq!(
+            committed_session_use(&mut tx, character, session).await?,
+            expected,
+            "{label}"
+        );
+        tx.rollback().await?;
+    }
     Ok(())
 }
 

@@ -79,11 +79,19 @@ async fn exchange(
 // Keep one connection alive across the changes. Its initial valid command
 // reconciles carried commands before the participant/interpretation changes;
 // later commands exercise the cooldown handler rather than setup/reconciliation.
+#[derive(Clone, Copy)]
+enum HistoryProbe {
+    None,
+    AssignmentGap,
+    SessionIncomplete,
+    SessionGap,
+}
+
 async fn qualify_fence_changes(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     h: &Harness,
-    missing_receipt: bool,
+    history_probe: HistoryProbe,
 ) -> TestResult {
     let pool = &h.pool;
     let activity = prepare_unadmitted_activity(h).await?;
@@ -246,12 +254,11 @@ async fn qualify_fence_changes(
             assert_eq!(page(&payload)?.1.len(), 64);
             command_id += 1;
         }
-        // A partially restored assignment history must fence an already admitted
-        // connection too. Keep every live participant/assignment/readiness fact
-        // unchanged and advance only the administrative writer high water, leaving
-        // one receipt missing. This disposable database is not repaired by lowering
-        // high water or rewriting history.
-        if missing_receipt {
+        // A partial assignment or session-use history must fence an already
+        // admitted connection too. Keep every live participant/assignment/ready
+        // fact unchanged. Each disposable database gets exactly one monotonic
+        // history fault, with no history rewrite or high-water/completeness reset.
+        if !matches!(history_probe, HistoryProbe::None) {
             let original = participant_binding(h, before).await?;
             assert!(
                 sqlx::query_scalar::<_, bool>(
@@ -260,22 +267,37 @@ async fn qualify_fence_changes(
                 .fetch_one(pool)
                 .await?
             );
-            let updated = sqlx::query("UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water=source_revision_high_water+1 WHERE writer_id=1")
-            .execute(pool).await?;
+            let (statement, label) = match history_probe {
+                HistoryProbe::AssignmentGap => (
+                    "UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water=source_revision_high_water+1 WHERE writer_id=1 AND encode($1,'hex')::uuid IS NOT NULL",
+                    "partial assignment history",
+                ),
+                HistoryProbe::SessionIncomplete => (
+                    "UPDATE game_durability_session_use_ledgers SET complete=false WHERE character_id=encode($1,'hex')::uuid",
+                    "incomplete session-use history",
+                ),
+                HistoryProbe::SessionGap => (
+                    "UPDATE game_durability_session_use_ledgers SET revision=revision+1,revision_floor=revision_floor+1 WHERE character_id=encode($1,'hex')::uuid",
+                    "partial session-use history",
+                ),
+                HistoryProbe::None => unreachable!("fault selected above"),
+            };
+            let updated = sqlx::query(statement)
+                .bind(fence.character_id.as_bytes().as_slice())
+                .execute(pool)
+                .await?;
             assert_eq!(updated.rows_affected(), 1);
-            assert!(
-                !sqlx::query_scalar::<_, bool>(
+            assert_eq!(
+                sqlx::query_scalar::<_, bool>(
                     "SELECT game_runtime_scope_assignment_history_valid()"
                 )
                 .fetch_one(pool)
-                .await?
+                .await?,
+                !matches!(history_probe, HistoryProbe::AssignmentGap),
+                "{label}: isolate assignment history from session provenance"
             );
             let (status, payload) = query(&mut client, generation, command_id).await?;
-            assert_eq!(
-                status,
-                CommandStatus::Rejected,
-                "partial assignment history"
-            );
+            assert_eq!(status, CommandStatus::Rejected, "{label}");
             assert!(payload.is_empty());
             assert!(
                 owner
@@ -283,7 +305,7 @@ async fn qualify_fence_changes(
                     .read_boss_cooldown_list(owner.character, owner.holder, fence, &[])
                     .await?
                     .is_none(),
-                "partial assignment history must refuse durable gameplay"
+                "{label} must refuse durable gameplay"
             );
             assert_eq!(participant_binding(h, before).await?, original);
         }
@@ -618,26 +640,36 @@ fn cursor(key: &str) -> Vec<u8> {
 
 #[test]
 fn boss_cooldown_list_postgres_real_dispatch() -> TestResult {
-    cooldown_scenario(false)
+    cooldown_scenario(HistoryProbe::None)
 }
 
 #[test]
 fn boss_cooldown_list_postgres_real_dispatch_assignment_history_gap() -> TestResult {
-    cooldown_scenario(true)
+    cooldown_scenario(HistoryProbe::AssignmentGap)
 }
 
-fn cooldown_scenario(missing_receipt: bool) -> TestResult {
+#[test]
+fn boss_cooldown_list_postgres_real_dispatch_session_history_incomplete() -> TestResult {
+    cooldown_scenario(HistoryProbe::SessionIncomplete)
+}
+
+#[test]
+fn boss_cooldown_list_postgres_real_dispatch_session_history_gap() -> TestResult {
+    cooldown_scenario(HistoryProbe::SessionGap)
+}
+
+fn cooldown_scenario(history_probe: HistoryProbe) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(missing_receipt).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(history_probe).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "boss cooldown E2E panicked")??;
     Ok(())
 }
-fn scenario(missing_receipt: bool) -> TestResult {
+fn scenario(history_probe: HistoryProbe) -> TestResult {
     run(async |admin| {
         reset();
         let h =
@@ -869,8 +901,8 @@ fn scenario(missing_receipt: bool) -> TestResult {
                 .await?
                 .is_none()
         );
-        qualify_fence_changes(&owner, &mut admitted, &h, missing_receipt).await?;
-        if !missing_receipt {
+        qualify_fence_changes(&owner, &mut admitted, &h, history_probe).await?;
+        if matches!(history_probe, HistoryProbe::None) {
             refuse_live_instance_scope(&owner, admitted, &h.pool).await?;
         }
         // No query changes the Character revision or its cooldown rows.

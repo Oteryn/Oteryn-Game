@@ -1083,7 +1083,9 @@ fn decode_hex(text: &str) -> Result<Vec<u8>> {
         return Err(DurabilityError::InvalidStoredState);
     }
     text.as_bytes()
-        .as_chunks::<2>().0.iter()
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| checked(u8::from_str_radix(checked(std::str::from_utf8(pair))?, 16)))
         .collect()
 }
@@ -1138,6 +1140,38 @@ async fn session_use_state(
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(SessionUseState { revision, complete })
+}
+
+/// Retained session issuance proof for a current participant consumer. The caller
+/// holds `lock_admission_relations` in its bounded semantic transaction, so the
+/// ledger and immutable membership cannot change between this check and use.
+/// This proves session identity use, never an activity handoff or current lease.
+pub(super) async fn committed_session_use(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    session: GameSessionId,
+) -> Result<bool> {
+    let state = match session_use_state(tx, character).await {
+        Ok(state) => state,
+        Err(DurabilityError::InvalidStoredState) => return Ok(false),
+        Err(error) => return Err(error),
+    };
+    if !state.complete || state.revision == 0 {
+        return Ok(false);
+    }
+    // session_use_state already proves the bounded, gap-free revision range.
+    // NULL bindings are legacy observations, not committed issuance evidence.
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM game_durability_session_use_memberships \
+         WHERE game_session_id=encode($1,'hex')::uuid \
+           AND character_id=encode($2,'hex')::uuid \
+           AND operation_binding IS NOT NULL \
+           AND operation_binding <> decode(repeat('00',16),'hex'))",
+    )
+    .bind(session.as_bytes().as_slice())
+    .bind(character.as_bytes().as_slice())
+    .fetch_one(&mut **tx)
+    .await?)
 }
 
 /// Consumed only inside the caller's already serialized session transaction.

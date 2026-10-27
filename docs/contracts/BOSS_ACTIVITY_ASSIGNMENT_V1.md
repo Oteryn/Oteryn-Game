@@ -139,6 +139,35 @@ the placed cell. This is durable consumer qualification with fixture coordinates
 not real-dispatch Instance admission, D119 destination resolution or restart
 qualification.
 
+Command 133 also proves retained session identity use before taking its item-only
+participant fence. Inside the same bounded semantic transaction and existing
+admission relation locks, the fresh-admission owner validates the Character's
+session-use ledger against its immutable membership count and revision range.
+The exact session must belong to that Character and retain a nonzero operation
+binding. A missing or incomplete ledger, a revision gap, another session or
+Character's membership, or a legacy/unbound observation refuses the page.
+The existing 65,536-entry per-Character ledger bound limits this history check;
+it is not a scan of every participant or session in the World.
+
+`boss_cooldown_list_postgres_real_dispatch_session_history_incomplete` and
+`boss_cooldown_list_postgres_real_dispatch_session_history_gap` first pass the
+same real Channel connection controls as the original cooldown scenario. Each
+then changes exactly one session-use ledger fact in its disposable database:
+withdraw completeness, or advance revision and floor by one without a membership.
+Assignment history remains valid, participant/session/lease/root rows remain
+unchanged, and a new command 133 must return Rejected with no payload; the direct
+durable read must also refuse. No completeness flag, revision or retained receipt
+is reset to restore the database. The allocation/gameplay-fence case separately
+checks absent history, exact membership, foreign identities, NULL/zero operation
+bindings, incompleteness and both count/range mismatches. Those probes roll back
+their own fixture transaction without editing immutable history.
+
+This session identity-use proof is a prerequisite for an activity source
+participant. It does not prove an activity transfer, group barrier, origin/content
+snapshot, fresh destination ownership or recovery. Other consumers' shared
+participant fences retain their current behavior; this additional proof is
+currently composed at the cooldown read boundary only.
+
 Command 133's durable cooldown reader uses the item-only Character fence,
 including the live root's account, World and current Game-owned interpretation,
 before reading cooldown rows. It does not require an expected CharacterRevision:
