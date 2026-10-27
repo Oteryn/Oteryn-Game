@@ -309,6 +309,50 @@ pub struct CharacterCharmState {
     pub assignments: BTreeMap<CharmKey, BestiaryRaceKey>,
 }
 
+/// A character-bound CHARM-4 view built from the CHARM-3 durable snapshot. Keeping the character
+/// beside the snapshot prevents a state loaded for one session from being evaluated for another.
+#[derive(Debug, Clone)]
+pub struct CombatCharmState {
+    character: CharacterId,
+    state: CharacterCharmState,
+}
+
+impl CombatCharmState {
+    #[must_use]
+    pub const fn new(character: CharacterId, state: CharacterCharmState) -> Self {
+        Self { character, state }
+    }
+}
+
+impl oteryn_gameplay_progression::charm_effects::CharmStateRead for CombatCharmState {
+    fn character(&self) -> [u8; 16] {
+        *self.character.as_bytes()
+    }
+
+    fn assignments_for_race(
+        &self,
+        race_key: &str,
+    ) -> std::result::Result<
+        Vec<oteryn_gameplay_progression::charm_effects::CharmAssignment>,
+        oteryn_gameplay_progression::charm_effects::CharmStateUnavailable,
+    > {
+        Ok(self
+            .state
+            .assignments
+            .iter()
+            .filter(|(_, race)| race.as_str() == race_key)
+            .filter_map(|(charm, _)| {
+                self.state.unlocks.get(charm).map(|stage| {
+                    oteryn_gameplay_progression::charm_effects::CharmAssignment {
+                        charm_key: charm.as_str().to_owned(),
+                        unlocked_stage: stage.get(),
+                    }
+                })
+            })
+            .collect())
+    }
+}
+
 /// The admitted content generation's bounded keys and progression catalogue.
 #[allow(
     dead_code,
@@ -1153,6 +1197,37 @@ mod tests {
     use crate::foundation::{
         ChannelId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
     };
+    use oteryn_gameplay_progression::charm_effects::CharmStateRead;
+
+    #[test]
+    fn combat_view_returns_only_assignments_for_the_requested_race() {
+        let mut character_bytes = [7; 16];
+        character_bytes[6] = 0x77;
+        character_bytes[8] = 0x87;
+        let character = CharacterId::from_bytes(character_bytes).expect("character");
+        let wound = CharmKey::new("oteryn:charm.wound").expect("charm");
+        let dodge = CharmKey::new("oteryn:charm.dodge").expect("charm");
+        let rat = BestiaryRaceKey::new("oteryn:creature.rat").expect("race");
+        let wolf = BestiaryRaceKey::new("oteryn:creature.wolf").expect("race");
+        let state = CharacterCharmState {
+            unlocks: BTreeMap::from([
+                (wound.clone(), CharmStage::new(2).expect("stage")),
+                (dodge.clone(), CharmStage::new(3).expect("stage")),
+            ]),
+            assignments: BTreeMap::from([(wound, rat), (dodge, wolf)]),
+        };
+        let view = CombatCharmState::new(character, state);
+
+        assert_eq!(view.character(), character_bytes);
+        assert_eq!(
+            view.assignments_for_race("oteryn:creature.rat")
+                .expect("assignment"),
+            [oteryn_gameplay_progression::charm_effects::CharmAssignment {
+                charm_key: "oteryn:charm.wound".to_owned(),
+                unlocked_stage: 2,
+            }]
+        );
+    }
 
     #[test]
     fn production_bestiary_facts_bound_current_generation_keys() {

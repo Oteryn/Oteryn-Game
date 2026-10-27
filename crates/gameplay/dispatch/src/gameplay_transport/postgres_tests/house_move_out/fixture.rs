@@ -124,6 +124,12 @@ pub(super) async fn house_and_items(h: &Harness, recipient: [u8; 16], count: i32
     .bind(id(41).as_slice())
     .execute(&mut *tx)
     .await?;
+    // Historical ownership also includes BED-1's revision anchor; the real
+    // owner-change trigger requires it even when this house has no sleepers.
+    sqlx::query("INSERT INTO game_house_bed_revisions(world_id,house_key,revision) VALUES(encode($1,'hex')::uuid,$2,1)")
+        .bind(id(WORLD).as_slice()).bind(HOUSE).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_house_acl_entries(world_id,house_key,list_key,character_id) VALUES(encode($1,'hex')::uuid,$2,'guest',encode($3,'hex')::uuid)")
+        .bind(id(WORLD).as_slice()).bind(HOUSE).bind(recipient.as_slice()).execute(&mut *tx).await?;
     sqlx::query("CREATE TEMP TABLE house_items ON COMMIT DROP AS SELECT game_character_uuid_v7() AS item,game_character_uuid_v7() AS mint,game_character_uuid_v7() AS placement,n AS ordinal FROM generate_series(1,$1) n")
         .bind(count).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) SELECT item,encode($1,'hex')::uuid,'Item','oteryn:content.item.vase','r1',1,1,mint FROM house_items")
@@ -214,16 +220,38 @@ pub(super) async fn assert_frozen(h: &Harness) -> TestResult {
         Some("55P03")
     );
     tx.rollback().await?;
+    let mut tx = h.pool.begin().await?;
+    let deleted = sqlx::query("DELETE FROM game_house_acl_entries WHERE house_key=$1")
+        .bind(HOUSE)
+        .execute(&mut *tx)
+        .await?;
+    assert_eq!(deleted.rows_affected(), 1);
+    let error = sqlx::query("SET CONSTRAINTS game_house_management_acl_proven IMMEDIATE")
+        .execute(&mut *tx)
+        .await
+        .expect_err("ACL deletion without release or management receipt committed");
+    assert_eq!(
+        error.as_database_error().and_then(|e| e.code()).as_deref(),
+        Some("23514")
+    );
+    tx.rollback().await?;
     Ok(())
 }
 
 pub(super) async fn assert_final(h: &Harness, recipient: [u8; 16]) -> TestResult {
     let mut tx = h.pool.begin().await?;
-    let error=sqlx::query("INSERT INTO game_item_house_interior_locations SELECT item_instance_id,world_id,$1,'frozen',1,game_character_uuid_v7() FROM game_character_inbox_deliveries LIMIT 1")
-        .bind(HOUSE).execute(&mut *tx).await.err().ok_or("DRAINED fence missing")?;
+    sqlx::query("INSERT INTO game_item_house_interior_locations SELECT item_instance_id,world_id,$1,'frozen',1,game_character_uuid_v7() FROM game_character_inbox_deliveries LIMIT 1")
+        .bind(HOUSE).execute(&mut *tx).await?;
+    // Release removes the immediate content fence; native placement proof is
+    // still checked by the deferred constraint at commit.
+    let error = sqlx::query("SET CONSTRAINTS game_house_location_proven IMMEDIATE")
+        .execute(&mut *tx)
+        .await
+        .err()
+        .ok_or("unproven placement accepted after release")?;
     assert_eq!(
         error.as_database_error().and_then(|e| e.code()).as_deref(),
-        Some("55P03")
+        Some("23514")
     );
     tx.rollback().await?;
 
@@ -245,12 +273,26 @@ pub(super) async fn assert_final(h: &Harness, recipient: [u8; 16]) -> TestResult
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(remaining, 0);
-    let retained: bool =
-        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_ownership WHERE house_key=$1)")
+    let released: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_ownership WHERE house_key=$1 AND owner_character_id IS NULL) AND EXISTS(SELECT 1 FROM game_house_properties WHERE house_key=$1 AND state=1 AND owner_character_id IS NULL AND owner_account_id IS NULL AND content_fence_operation IS NULL) AND NOT EXISTS(SELECT 1 FROM game_account_housing_slots WHERE house_key=$1) AND NOT EXISTS(SELECT 1 FROM game_house_acl_entries WHERE house_key=$1) AND NOT EXISTS(SELECT 1 FROM game_house_acl WHERE house_key=$1) AND NOT EXISTS(SELECT 1 FROM game_house_editors WHERE house_key=$1) AND EXISTS(SELECT 1 FROM game_house_dispositions WHERE house_key=$1 AND state=3 AND released_at IS NOT NULL)")
             .bind(HOUSE)
             .fetch_one(&h.pool)
             .await?;
-    assert!(retained);
+    assert!(released);
+    assert!(
+        !sqlx::query_scalar::<_, bool>(
+            "SELECT game_house_move_out_release(operation_id) FROM game_house_dispositions WHERE house_key=$1 AND state=3",
+        )
+        .bind(HOUSE)
+        .fetch_one(&h.pool)
+        .await?
+    );
+    // A released operation no longer content-fences the vacant house.
+    sqlx::query("SELECT game_house_disposition_fence_check(encode($1,'hex')::uuid,$2,NULL,FALSE)")
+        .bind(id(WORLD).as_slice())
+        .bind(HOUSE)
+        .execute(&h.pool)
+        .await?;
     let events:i64=sqlx::query_scalar("SELECT count(*) FROM game_house_disposition_audit_outbox WHERE event_type_id=8 AND envelope_sha256=sha256(envelope)").fetch_one(&h.pool).await?;
     assert_eq!(events, 7); // notice/cancel twice, freeze, 100, 1
     assert!(
