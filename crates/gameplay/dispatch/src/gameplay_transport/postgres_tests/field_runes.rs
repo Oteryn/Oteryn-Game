@@ -972,6 +972,16 @@ async fn field_scenario_inner(
                 while field_handle.is_none() {
                     let frame = read_frame(&mut client).await?;
                     let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                    // The wait can span idle probes; an unanswered probe ends the session.
+                    if envelope.message_type() == MessageType::LivenessProbe {
+                        let probe = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
+                            .map_err(debug)?;
+                        let ack = oteryn_protocol_oteryn::encode_liveness_ack(1, probe, 0)
+                            .map_err(debug)?;
+                        client.write_u32(u32::try_from(ack.len())?).await?;
+                        client.write_all(&ack).await?;
+                        continue;
+                    }
                     field_handle = field_handle_from_wire(&envelope, &map_header, start)?;
                 }
             }
