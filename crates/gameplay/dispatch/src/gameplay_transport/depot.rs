@@ -245,6 +245,33 @@ pub(super) async fn execute(
                 .forget_weapon(actor, command.game_session_id);
         }
     }
+    // The page read (including a post-commit refresh) can wait while reconnect
+    // displaces this connection. Retain the lane and recheck the full session
+    // fence before publishing any current town/page identities. A committed
+    // move still keeps its terminal result, without granting an open view.
+    let current = super::FreshAdmissionStore::from_root(admission.root.clone())
+        .current_session_at(command.game_session_id)
+        .await
+        .ok()?
+        .0;
+    if current.session_state() != super::GameSessionState::Active
+        || super::item_fence_of(current) != Some(fence)
+        || admission
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(actor, command.game_session_id)
+            .is_err()
+    {
+        return Some(empty(
+            intent,
+            if outcome == DepotOutcome::Moved {
+                DepotOutcome::Moved
+            } else {
+                DepotOutcome::Rejected
+            },
+        ));
+    }
     let index = native.item_index()?;
     // Preserve the native identities from this exact post-move page read; an ordinal
     // is a depot-local address, never an ItemInstanceId. The lane stays held here.

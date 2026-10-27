@@ -1,6 +1,8 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
 #[path = "depot_dispatch/stash_cases.rs"]
 mod stash_cases;
+#[path = "depot_dispatch/write_text_depot_session.rs"]
+mod write_text_depot_session;
 #[path = "depot_dispatch/write_text_ground_nested_view.rs"]
 mod write_text_ground_nested_view;
 #[path = "depot_dispatch/write_text_ground_view.rs"]
@@ -27,7 +29,7 @@ use oteryn_protocol_oteryn::depot::*;
 fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "depot e2e panicked")?
         .map_err(Into::into)
@@ -37,7 +39,7 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
 fn stash_session_dispatch_conserves_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "stash e2e panicked")?
         .map_err(Into::into)
@@ -47,7 +49,7 @@ fn stash_session_dispatch_conserves_and_replays() -> TestResult {
 fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, true, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, true, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "ground container e2e panicked")?
         .map_err(Into::into)
@@ -57,13 +59,28 @@ fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> Tes
 fn write_text_ground_nested_container_real_dispatch_observes_ancestry_and_reach() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, true, true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, true, true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "nested Ground container e2e panicked")?
         .map_err(Into::into)
 }
 
-fn scenario(stash: bool, ground_container: bool, nested_ground: bool) -> TestResult {
+#[test]
+fn write_text_depot_real_dispatch_revalidates_session_after_page_wait() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, false, false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "depot session e2e panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario(
+    stash: bool,
+    ground_container: bool,
+    nested_ground: bool,
+    depot_session: bool,
+) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
             .await
@@ -470,6 +487,34 @@ fn scenario(stash: bool, ground_container: bool, nested_ground: bool) -> TestRes
                 fence,
             )
             .await;
+        }
+        if depot_session {
+            let deposit = DepotIntent {
+                town: Some(0),
+                box_number: 17,
+                page: 0,
+                action: DepotAction::Deposit(handle),
+            };
+            let moved = owner
+                .depot(
+                    deps.actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: 3,
+                        item_fence: Some(fence),
+                    },
+                    deposit,
+                    Some(ItemKey::Instance(carried.ok_or("carried")?)),
+                )
+                .await
+                .ok_or("page race deposit")?;
+            assert_eq!(moved.reply.outcome, DepotOutcome::Moved);
+            assert_eq!(moved.items, vec![(1, carried.ok_or("carried")?)]);
+            write_text_depot_session::exercise(&owner, admitted, &harness.pool, deposit).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
         }
         let browse = DepotIntent {
             town: None,
