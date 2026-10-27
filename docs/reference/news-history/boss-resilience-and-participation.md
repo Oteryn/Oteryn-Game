@@ -31,3 +31,50 @@ The pinned reward script does not contain the news-era resilience adjustment or 
 Oteryn therefore keeps the source-backed three dimensions but applies the later news rules in the
 native encounter owner. It does not reproduce the pinned Lua loot-factor formula: NEWS 7609 does not
 supply its missing resilience numbers, and floating-point loot generation remains outside this task.
+
+## Oteryn deviation: 10% fair-share reward threshold
+
+Owner decision 2026-10-27 ("zgoda na próg 10%"). Implemented as
+`REWARD_FAIR_SHARE_THRESHOLD_PERCENT` and `reward_eligibility` in
+`crates/gameplay/encounter-rules/src/boss.rs`, and `settle_rewards` in
+`crates/gameplay/encounters/src/bosses/resilience.rs`.
+
+**Rule.** A character earns a boss reward only if it dealt boss damage (NEWS 7861) **and** its
+resilience-adjusted score `(d/D + r/R + h/H) / 3` is at least 10% of the fair share `1 / n`, where
+`n` counts the characters that dealt damage. The comparison is integer fixed-point.
+
+**Why.** In both pinned reward scripts the loot factor is
+`n^(-1/3) * (1 + n^(-1/3))^(score / (1/n))`. Its floor `n^(-1/3)` applies to any nonzero score, so a
+single hit is worth about half a full reward. Real Tibia behaviour for this case is **UNKNOWN**;
+the threshold is an Oteryn rule, not parity.
+
+**Test behind the number.** The pinned formula was reproduced and run on these scenarios
+(boss with 1,000,000 HP; values are loot factors; 1.0 is an average share):
+
+| Scenario | Pinned formula | 10% threshold | 25% threshold |
+|---|---|---|---|
+| 5-player team (EK, RP, MS, ED, weak DPS at 2.6% of score) | EK 1.212, RP 0.783, MS 0.797, ED 1.458, weak DPS 0.620 | unchanged | weak DPS **cut to 0** |
+| Same team plus a 1-hit leech | leech **0.550**; others shift slightly | leech **0**; team as in row 1 | leech 0, weak DPS 0 |
+| Solo EK plus a 1-hit leech | EK 2.554, leech **0.794** | EK 2.000, leech **0** | EK 2.000, leech 0 |
+
+10% removes token hits and keeps every real contributor, including a weak damage dealer and a
+healer who hit once. 25% was rejected because it removes the weak damage dealer.
+
+The simulation (Python, same formula as `reward_chest.lua`):
+
+```python
+def factors(parts, thr=0.0):  # parts: (name, dealt, received, healed)
+    D = 0.1 + sum(p[1] for p in parts); R = 0.1 + sum(p[2] for p in parts)
+    H = 0.1 + sum(p[3] for p in parts)
+    sc = [(n, (d / D + r / R + h / H) / 3, d) for n, d, r, h in parts]
+    elig = [s for s in sc if s[1] != 0 and s[2] > 0]
+    if thr:
+        elig = [s for s in elig if s[1] >= thr / len(elig)]
+    n = len(elig); base = n ** (-1 / 3)
+    out = {s[0]: 0.0 for s in sc}
+    for name, s, _ in elig:
+        out[name] = base * (1 + base) ** (s * n)
+    return out
+```
+
+The unit tests in `boss.rs` and `resilience.rs` pin the same scenarios.
