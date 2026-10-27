@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "4102f456f4fed6e8cbcb5b9b53356279f7fae420
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "24b5197d8c22835f08a27423ae909f2bdf6b240e7c64026ce76174753c820e4c"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "fad3789aa947facb7e7fca40aecba2af290cbac0"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "fab7bc25bc2a55c6a4eec2aa20ec05c795b483d2"
 EXPECTED_POST_MERGE_RUST_SHA256 = "3ad65add5903a3ea6745b8cc26c589477bdc0a963a7f5780a6d75307475a03a1"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -624,7 +624,7 @@ def main() -> int:
                 "    name: Merge Queue / Node boot against the real Platform\n",
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
-                "ref: 5d4883acf7079e26fd51e03f460166730de1ada0",
+                "ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05",
                 "bash tools/qualification/node_boot/run.sh | tee \"$evidence\"",
                 "grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' \"$evidence\"",
             ),
@@ -632,7 +632,7 @@ def main() -> int:
                 "    name: Merge Queue / Server Seam over TCP+TLS\n",
                 "    if: needs.candidate.outputs.server_qualification != 'false'\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
-                "ref: 5d4883acf7079e26fd51e03f460166730de1ada0",
+                "ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05",
                 "WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee \"$evidence\"",
                 "grep -Fxq 'S3B_RESULT=SEAM_PASS' \"$evidence\"",
             ),
