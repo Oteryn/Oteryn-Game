@@ -2156,6 +2156,32 @@ async fn drive_player_field(
         if scenario == Scenario::Aged {
             wait_field_client(&mut client, std::time::Duration::from_secs(6)).await?;
         }
+        if scenario == Scenario::EquippedRollback {
+            // A concurrent field owner retains the lane and its sole ready SQL
+            // holder. STEP must wait for that turn before any preflight read.
+            let permit = owner
+                .spell_lane_permit()
+                .await
+                .ok_or("contended field lane")?;
+            let pass = owner.root.try_issue_semantic_pass().map_err(debug)?;
+            {
+                let step =
+                    owner.ordinary_paced_step(target, session, StepDirection::West, None, None);
+                tokio::pin!(step);
+                let polled = std::future::poll_fn(|cx| {
+                    std::task::Poll::Ready(std::future::Future::poll(step.as_mut(), cx))
+                })
+                .await;
+                assert!(
+                    polled.is_pending(),
+                    "STEP must await the occupied field lane, got {polled:?}"
+                );
+            }
+            pass.run(|_, _| Box::pin(async { Ok(()) }))
+                .await
+                .map_err(debug)?;
+            drop(permit);
+        }
         if scenario == Scenario::Death {
             let (outcome, _) = owner
                 .ordinary_paced_step(target, session, StepDirection::West, None, None)
@@ -2259,7 +2285,8 @@ async fn drive_player_field(
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
                     assert_eq!(
                         decode_step_result(result.payload).map_err(debug)?,
-                        StepDisposition::Moved
+                        StepDisposition::Moved,
+                        "scenario={scenario:?} step={id} replay={replay}"
                     );
                     if replay {
                         assert_eq!(result.status, CommandStatus::DuplicateReplay);

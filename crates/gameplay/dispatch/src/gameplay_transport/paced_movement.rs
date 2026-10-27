@@ -27,14 +27,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
         };
+        // Preflight SQL shares the field owner's bounded durability holder.
+        // Take the lane before those reads so a concurrent field turn cannot
+        // exhaust the holder or invalidate their player-state predecessor.
+        let Some(mut permit) = self.spell_lane_permit().await else {
+            return (StepOutcome::rejected(), None);
+        };
         if !self.refresh_pvp_locks(actor, session).await {
             return (StepOutcome::rejected(), None);
         }
         let equipment = self.read_movement_equipment(actor, session).await;
         // Lock order (§1.2): the lane before any Channel guard.
-        let Some(mut permit) = self.spell_lane_permit().await else {
-            return (StepOutcome::rejected(), None);
-        };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         // A periodic condition turn may finish while this step waits for the
