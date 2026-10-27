@@ -1,0 +1,11 @@
+{
+  "id": 115,
+  "name": "MAIL_V1",
+  "constant": "mail::CAPABILITY_MAIL_V1",
+  "requires": [4],
+  "acceptance_requires": false,
+  "commands": [124],
+  "domains": [],
+  "supersedes": [],
+  "offers": {"production": false, "item_view": true, "bundle_world": true}
+}

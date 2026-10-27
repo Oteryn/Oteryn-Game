@@ -1322,3 +1322,58 @@ in place of the genuinely blocked owners. The production caller and dispatch
 E2E checklist items remain open with the L4/L5 work, under the current packet's
 explicit blocking-dependency exception. `git diff --check` passes; every new
 Rust file is below 600 lines. Earlier 2026-10-17 evidence remains historical.
+
+## 2026-10-27 remaining server implementation
+
+Migration 0271 now owns the closed `MAIL_POST` cause, CommandRef occurrence,
+one-post-per-second index/guard and text-free `MAIL_POSTED` outbox. The native
+durability entry point replays before resolving mutable handles, retains the
+same-World recipient root lock, locks the Inbox counter, removes the direct
+backpack entry, applies the `PRESERVE_INSTANCE` stamp definition and inserts
+the Inbox delivery, operation and event in the caller's single fenced
+transaction. The 50,000 ceiling is checked before custody changes. MAIL_V1 uses
+the verified-free capability 115 and command 124 for tagged posting and text
+rewrite intents; the dispatch composition calls the owner rather than treating
+decoded client data as authority. Client UI explicitly records the capability
+as unsupported.
+
+The requested evidence pins were fetched and inspected directly. Canary
+`47dfd51f45280a59a1d3e50ba7edd573d7234446` and Crystal
+`201189f871d23597b82caf88fd611454a2ddefb8` agree on recipient extraction,
+unlimited Inbox movement followed by the `item id + 1` stamp transform, and
+preservation of letter writer/date. Their only mailbox implementation diff is
+Crystal's explicit `static_pointer_cast<Cylinder>` at the Inbox move. Conflicts
+with Oteryn are explicit: both references leave invalid mail on the mailbox and
+have neither Oteryn's typed refusal nor its posting rate/Inbox ceiling; neither
+provides Oteryn's durable CommandRef replay, session-generation fencing,
+transactional outbox, or junior parcel policy. Global's documented mailbox
+behavior matches those reference semantics; Oteryn's typed refusal and limits
+remain intentional accepted differences.
+
+### Remaining after this increment
+
+- The durability function handles letters and empty parcels. Parcel trees still
+  require the CharacterInbox tree-location owner; migration 0076's invariant
+  rejects a root with contents, so bypassing it here would lose or duplicate
+  descendants.
+- Qualified mail content and mailbox placement bindings are still absent from
+  the generated native content. Therefore capability offer gating and the
+  concrete runtime adapter that resolves handles/content and invokes the
+  durability function remain disabled; content regeneration was not run
+  because there was no valid source authoring input to regenerate.
+- The existing item-text owner remains the rewrite authority. MAIL_V1 composes
+  its tagged write intent but the runtime adapter must call that owner after
+  resolving a reachable item.
+
+### Current parity table
+
+| Mechanic | Canary pin | Crystal pin | Global | Oteryn | Status |
+|---|---|---|---|---|---|
+| Letter recipient/address | first text line | same | exact character name | canonical same-World name, typed privacy-safe refusal | implemented rules; runtime adapter pending |
+| Letter custody + stamp | move to Inbox, transform id + 1 | same (explicit Cylinder cast) | instant Inbox delivery | one fenced SQL transaction, identity preserved | implemented durability leaf |
+| Parcel tree | whole container | whole container | whole parcel | Inbox tree schema unavailable | blocked |
+| Invalid recipient | remains on mailbox | same | reappears on mailbox | stays with sender, typed refusal | intentional conflict |
+| Posting rate | unlimited | unlimited | no documented ceiling | one per second | intentional conflict, implemented schema |
+| Inbox mail ceiling | unlimited | unlimited | no documented ceiling | 50,000 items | intentional conflict; letter count implemented |
+| Junior parcels | no reference rule | no reference rule | not documented | refused | accepted Oteryn difference; full parcel path blocked |
+| Replay/event | process-local action | same | not specified | CommandRef occurrence plus text-free outbox | implemented schema/leaf |

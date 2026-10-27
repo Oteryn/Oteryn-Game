@@ -72,6 +72,7 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 mod loop_training;
+pub mod mail;
 mod map_door;
 mod mining;
 mod monk_save;
