@@ -3,6 +3,10 @@ use oteryn_gameplay_content::content::spell_data::Vocation;
 
 /// The fixed tick of the food condition; every vocation period is a multiple of it.
 pub const FOOD_TICK_MS: u32 = 1_000;
+pub const FED_HEALTH_PERIOD_MS: u32 = 3_000;
+pub const FED_MANA_PERIOD_MS: u32 = 5_000;
+pub const UNFED_HEALTH_PERIOD_MS: u32 = 4_000;
+pub const UNFED_MANA_PERIOD_MS: u32 = 6_000;
 
 /// One vocation's regeneration: `amount` points per `period_ms` for each pool.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,20 +69,37 @@ pub fn credit_fed_second(
     max_health: u32,
     max_mana: u32,
 ) {
+    credit_second(state, rate, max_health, max_mana, true);
+}
+
+/// Credits one native regeneration tick. Food changes only the two clocks; vocation amounts
+/// remain the source of each completed tick's credit.
+pub fn credit_second(
+    state: &mut RegenerationState,
+    rate: RegenerationRate,
+    max_health: u32,
+    max_mana: u32,
+    fed: bool,
+) {
     if state.health == 0 {
         return;
     }
+    let (health_period_ms, mana_period_ms) = if fed {
+        (FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS)
+    } else {
+        (UNFED_HEALTH_PERIOD_MS, UNFED_MANA_PERIOD_MS)
+    };
     state.regen_health_ms = state.regen_health_ms.saturating_add(FOOD_TICK_MS);
-    if state.regen_health_ms >= rate.health_period_ms {
-        state.regen_health_ms -= rate.health_period_ms;
+    if state.regen_health_ms >= health_period_ms {
+        state.regen_health_ms -= health_period_ms;
         state.health = state
             .health
             .saturating_add(rate.health_amount)
             .min(max_health);
     }
     state.regen_mana_ms = state.regen_mana_ms.saturating_add(FOOD_TICK_MS);
-    if state.regen_mana_ms >= rate.mana_period_ms {
-        state.regen_mana_ms -= rate.mana_period_ms;
+    if state.regen_mana_ms >= mana_period_ms {
+        state.regen_mana_ms -= mana_period_ms;
         state.mana = state.mana.saturating_add(rate.mana_amount).min(max_mana);
     }
 }
@@ -86,7 +107,7 @@ pub fn credit_fed_second(
 /// Holds one fed tick inside a protection zone (Canary `ConditionRegeneration`): the fed time
 /// accumulates but credits nothing, and stops one tick short of each period so the first
 /// tick outside credits the due period once and starts the next one from zero.
-pub fn hold_fed_second(state: &mut RegenerationState, rate: RegenerationRate) {
+pub fn hold_fed_second(state: &mut RegenerationState, _rate: RegenerationRate) {
     if state.health == 0 {
         return;
     }
@@ -96,8 +117,8 @@ pub fn hold_fed_second(state: &mut RegenerationState, rate: RegenerationRate) {
             .min(period.saturating_sub(FOOD_TICK_MS))
             .max(progress)
     };
-    state.regen_health_ms = hold(state.regen_health_ms, rate.health_period_ms);
-    state.regen_mana_ms = hold(state.regen_mana_ms, rate.mana_period_ms);
+    state.regen_health_ms = hold(state.regen_health_ms, FED_HEALTH_PERIOD_MS);
+    state.regen_mana_ms = hold(state.regen_mana_ms, FED_MANA_PERIOD_MS);
 }
 
 #[cfg(test)]
@@ -131,6 +152,23 @@ mod tests {
             assert_eq!(regen["gainmanaticks"], got.mana_period_ms, "{key}");
             assert_eq!(got.health_period_ms % FOOD_TICK_MS, 0, "{key}");
             assert_eq!(got.mana_period_ms % FOOD_TICK_MS, 0, "{key}");
+        }
+    }
+
+    #[test]
+    fn fed_and_unfed_clocks_credit_one_vocation_amount_per_period() {
+        let rate = rate(Vocation::Knight);
+        for (fed, seconds, expected) in [(true, 5, (11, 12)), (false, 6, (11, 12))] {
+            let mut state = RegenerationState {
+                health: 10,
+                mana: 10,
+                regen_health_ms: 0,
+                regen_mana_ms: 0,
+            };
+            for _ in 0..seconds {
+                credit_second(&mut state, rate, 100, 100, fed);
+            }
+            assert_eq!((state.health, state.mana), expected);
         }
     }
 }

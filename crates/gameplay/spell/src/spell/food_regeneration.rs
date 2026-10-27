@@ -23,6 +23,20 @@ pub fn credit_fed_second(state: &mut PlayerSpellState) {
     });
 }
 
+/// Credits the always-on native clock, using the saturation state selected by the condition
+/// owner for this occurrence.
+pub fn credit_second(state: &mut PlayerSpellState, fed: bool) {
+    apply(state, |regeneration, rate, max_health, max_mana| {
+        oteryn_gameplay_progression::regeneration::credit_second(
+            regeneration,
+            rate,
+            max_health,
+            max_mana,
+            fed,
+        );
+    });
+}
+
 /// Holds one fed tick of a living actor standing in a protection zone.
 pub fn hold_fed_second(state: &mut PlayerSpellState) {
     apply(state, |regeneration, rate, _, _| {
@@ -87,18 +101,17 @@ mod tests {
     }
 
     #[test]
-    fn fed_knight_regenerates_per_vocation_period_and_stops_when_the_food_ends() {
+    fn fed_then_unfed_knight_uses_the_respective_native_periods() {
         let mut state = actor(Vocation::Knight);
         eat_food(&mut state, 10, 0).expect("eat");
         run(&mut state, 0, 5, TickFacts::default());
-        assert_eq!((state.health, state.mana), (100, 100));
-        run(&mut state, 5, 15, TickFacts::default());
-        // 10 fed seconds: one health credit (6 s), one mana credit (6 s).
         assert_eq!((state.health, state.mana), (101, 102));
+        run(&mut state, 5, 15, TickFacts::default());
+        // Ten fed seconds followed by five unfed seconds retain one credit per due clock.
+        assert_eq!((state.health, state.mana), (104, 104));
         assert!(state.conditions.instances().is_empty());
-        let after = (state.health, state.mana, state.regen_health_ms);
-        tick(&mut state, 60_000, TickFacts::default()).expect("tick");
-        assert_eq!((state.health, state.mana, state.regen_health_ms), after);
+        run(&mut state, 15, 18, TickFacts::default());
+        assert_eq!((state.health, state.mana), (105, 106));
     }
 
     #[test]
@@ -118,8 +131,7 @@ mod tests {
         lapsed.premium_current = false;
         eat_food(&mut lapsed, 6, 0).expect("eat");
         run(&mut lapsed, 0, 6, TickFacts::default());
-        // Knight rate: one health credit in 6 s (Elite Knight would need 4 s).
-        assert_eq!(lapsed.health, 101);
+        assert_eq!(lapsed.health, 102);
         assert_eq!(lapsed.regen_health_ms, 0);
         let mut current = actor(Vocation::EliteKnight);
         current.premium_current = true;
@@ -133,20 +145,48 @@ mod tests {
         let mut state = actor(Vocation::Knight);
         eat_food(&mut state, 10, 0).expect("eat");
         run(&mut state, 0, 5, TickFacts::default());
-        assert_eq!(state.regen_health_ms, 5_000);
+        assert_eq!(state.regen_health_ms, 2_000);
         super::super::actor_conditions::clear_on_lifecycle(&mut state);
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
     }
 
     #[test]
-    fn vocations_differ_and_unfed_actors_do_not_regenerate() {
+    fn fed_and_unfed_actors_regenerate_on_their_native_clocks() {
         let mut druid = actor(Vocation::Druid);
         let mut unfed = actor(Vocation::Druid);
         eat_food(&mut druid, 12, 0).expect("eat");
         run(&mut druid, 0, 12, TickFacts::default());
         run(&mut unfed, 0, 12, TickFacts::default());
-        assert_eq!((druid.health, druid.mana), (101, 108));
-        assert_eq!((unfed.health, unfed.mana), (100, 100));
+        assert_eq!((druid.health, druid.mana), (104, 104));
+        assert_eq!((unfed.health, unfed.mana), (103, 104));
+    }
+
+    #[test]
+    fn real_periodic_dispatch_path_ticks_fed_and_unfed_actors() {
+        fn dispatch(state: &mut PlayerSpellState, seconds: u64) {
+            for second in 1..=seconds {
+                let cycle = super::super::actor_conditions::stage_source_owner_cycle(
+                    state,
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                        second * 1_000_000,
+                    ),
+                    Some(TickFacts::default()),
+                    None,
+                )
+                .expect("periodic dispatch")
+                .expect("clock successor");
+                assert!(cycle.combat_ticks.is_empty());
+                *state = cycle.next;
+            }
+        }
+
+        let mut fed = actor(Vocation::Knight);
+        let mut unfed = actor(Vocation::Knight);
+        eat_food(&mut fed, 6, 0).expect("eat");
+        dispatch(&mut fed, 6);
+        dispatch(&mut unfed, 6);
+        assert_eq!((fed.health, fed.mana), (102, 102));
+        assert_eq!((unfed.health, unfed.mana), (101, 102));
     }
 
     #[test]
@@ -171,17 +211,15 @@ mod tests {
             in_protection_zone: true,
             standing_on_field: None,
         };
-        // Knight: health and mana every 6 s. Ten seconds in the zone hold one tick short.
+        // Fed clocks hold one second short of HP 3 s and MP 5 s.
         run(&mut state, 0, 10, pz);
         assert_eq!((state.health, state.mana), (100, 100));
-        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (5_000, 5_000));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (2_000, 4_000));
         // The first tick outside credits once and starts the next period from zero.
         run(&mut state, 10, 11, TickFacts::default());
         assert_eq!((state.health, state.mana), (101, 102));
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
         run(&mut state, 11, 16, TickFacts::default());
-        assert_eq!((state.health, state.mana), (101, 102));
-        run(&mut state, 16, 17, TickFacts::default());
         assert_eq!((state.health, state.mana), (102, 104));
     }
 
@@ -195,10 +233,8 @@ mod tests {
         };
         run(&mut state, 0, 2, TickFacts::default());
         run(&mut state, 2, 4, pz);
-        assert_eq!(state.regen_health_ms, 4_000);
+        assert_eq!(state.regen_health_ms, 2_000);
         run(&mut state, 4, 5, TickFacts::default());
-        assert_eq!(state.health, 100);
-        run(&mut state, 5, 6, TickFacts::default());
         assert_eq!(state.health, 101);
     }
 

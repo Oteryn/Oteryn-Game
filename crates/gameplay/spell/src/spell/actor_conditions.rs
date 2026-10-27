@@ -524,6 +524,25 @@ fn tick_inner(
         return rejected();
     }
     let mut staged = state.clone();
+    let fed = staged
+        .conditions
+        .active_at(
+            oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
+            now.saturating_sub(1),
+        )
+        .is_some();
+    let regeneration_due = staged.regeneration_next_tick_us.unwrap_or(now);
+    if regeneration_due <= now {
+        if facts.in_protection_zone && fed {
+            super::food_regeneration::hold_fed_second(&mut staged);
+        } else {
+            super::food_regeneration::credit_second(&mut staged, fed);
+        }
+        staged.regeneration_next_tick_us = Some(
+            regeneration_due
+                .saturating_add(u64::from(super::food_regeneration::FOOD_TICK_MS) * 1_000),
+        );
+    }
     let mut combat = Vec::new();
     let ticks = if damage {
         staged.conditions.take_due(now, facts)
@@ -550,13 +569,10 @@ fn tick_inner(
             }
             TickKind::Regeneration {
                 key: oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
-                suppressed,
+                suppressed: _,
             } => {
-                if suppressed {
-                    super::food_regeneration::hold_fed_second(&mut staged);
-                } else {
-                    super::food_regeneration::credit_fed_second(&mut staged);
-                }
+                // The food condition owns saturation duration. The always-on clock above owns
+                // the single health/mana credit for this periodic dispatch occurrence.
             }
             // Retain the generic refusal handling; NIGHT-W1 #1 permits agony in PZ.
             TickKind::Agony { refused: true, .. } => {}
@@ -642,6 +658,7 @@ pub fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     }
     state.regen_health_ms = 0;
     state.regen_mana_ms = 0;
+    state.regeneration_next_tick_us = None;
     state.soul_window = None;
     if let Some(monk) = state.monk.as_mut() {
         monk.clear_on_death();
