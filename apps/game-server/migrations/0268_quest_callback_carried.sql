@@ -140,13 +140,26 @@ $arm$,CASE n WHEN 'game_item_container_entry_removal_proven' THEN 'game_item_con
  END LOOP;
 END $migration$;
 
+-- Runtime may remove only the exact backpack slot consumed by this transaction.
+-- Keep the ordinary DELETE triggers as the final custody and completion guards.
+CREATE FUNCTION game_quest_callback_remove_backpack(consumed_item UUID)
+RETURNS SETOF UUID LANGUAGE sql SECURITY DEFINER AS $$
+ DELETE FROM game_item_container_slots s
+ WHERE s.item_instance_id=consumed_item AND EXISTS(
+   SELECT 1 FROM game_quest_callback_consumptions r
+   JOIN game_item_instances i USING(item_instance_id)
+   WHERE r.item_instance_id=s.item_instance_id AND r.location_kind='backpack'
+     AND r.before_location=to_jsonb(s) AND r.created_xact_id=pg_current_xact_id()
+     AND i.quantity=0 AND i.lifecycle=2 AND game_quest_callback_after(r,i))
+ RETURNING s.item_instance_id
+$$;
+
 DO $$ DECLARE n TEXT; BEGIN
  FOREACH n IN ARRAY ARRAY['game_quest_callback_carried(uuid,uuid)',
-   'game_quest_callback_after(game_quest_callback_consumptions,game_item_instances)'] LOOP
+   'game_quest_callback_after(game_quest_callback_consumptions,game_item_instances)',
+   'game_quest_callback_remove_backpack(uuid)'] LOOP
    EXECUTE format('ALTER FUNCTION %s SET search_path=pg_catalog,%I,pg_temp',n,current_schema());
    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',n);
    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO oteryn_game_runtime',n);
  END LOOP;
 END $$;
-
-GRANT DELETE ON game_item_container_slots TO oteryn_game_runtime;

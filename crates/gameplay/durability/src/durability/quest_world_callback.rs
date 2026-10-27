@@ -215,7 +215,7 @@ fn location_queries(kind: &str) -> Result<(&'static str, &'static str), Durabili
         "backpack" => Ok((
             "SELECT to_jsonb(l) FROM game_item_container_slots l \
              WHERE item_instance_id=$1::uuid FOR UPDATE",
-            "DELETE FROM game_item_container_slots WHERE item_instance_id=$1::uuid",
+            "SELECT * FROM game_quest_callback_remove_backpack($1::uuid)",
         )),
         "equipment" => Ok((
             "SELECT to_jsonb(l) FROM game_character_equipment_slots l \
