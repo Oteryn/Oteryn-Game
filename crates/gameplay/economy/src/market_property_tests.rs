@@ -22,7 +22,9 @@ fn market_property_checked_totals_and_fees() {
             if let Ok(total) = offer_total(amount, price) {
                 assert_eq!(u128::from(total), wide);
                 let fee = placement_fee(amount, price).map_err(|e| format!("{e:?}"))?;
-                assert_eq!(fee, (total / 50).clamp(MIN_FEE, MAX_FEE));
+                let expected = (u128::from(total) * 25 / 1_000)
+                    .clamp(u128::from(MIN_FEE), u128::from(MAX_FEE));
+                assert_eq!(u128::from(fee), expected);
                 assert!((MIN_FEE..=MAX_FEE).contains(&fee));
             }
         }

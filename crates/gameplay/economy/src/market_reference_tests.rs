@@ -2,10 +2,9 @@
 use super::tests::offer;
 use super::*;
 
-// Each row corresponds to MARKET-1.md's Reference parity table. These immutable
-// reference files, rather than today's changing manual, pin this 2% ruleset:
-// https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/game/game.cpp
-// https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/config.lua.dist
+// Each row corresponds to MARKET-1.md's Reference parity table. Tibia news 8996
+// supersedes the older Canary snapshot for the current fee rate and cap:
+// https://www.tibia.com/news/?subtopic=newsarchive&id=8996
 // https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/src/io/iomarket.cpp
 #[test]
 fn market_reference_numeric_rules() {
@@ -18,16 +17,16 @@ fn market_reference_numeric_rules() {
             999_999_999_999,
         ),
         ("minimum fee", placement_fee(1, 1).expect("fee"), 20),
-        ("2 percent", placement_fee(3, 500).expect("fee"), 30),
+        ("2.5 percent", placement_fee(3, 500).expect("fee"), 37),
         (
             "floor fractional gold",
             placement_fee(1, 1099).expect("fee"),
-            21,
+            27,
         ),
         (
             "maximum fee",
             placement_fee(1, MAX_TOTAL).expect("fee"),
-            1_000_000,
+            2_500_000,
         ),
         (
             "30 days in microseconds",
