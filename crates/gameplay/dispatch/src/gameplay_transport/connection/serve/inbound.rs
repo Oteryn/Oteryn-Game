@@ -86,6 +86,17 @@ where
             return Err(ServeEnd::Disconnected);
         }
         Next::Probe => {
+            // Idle work (including the durable logout) stays within the existing database
+            // pass deadline. Timeout follows ordinary control-loss reconciliation.
+            match tokio::time::timeout(
+                crate::durability::DB_PASS_DEADLINE,
+                idle::tick(stream, authority, session),
+            )
+            .await
+            {
+                Ok(result) => result?,
+                Err(_) => return Err(ServeEnd::Disconnected),
+            }
             let probe = match session.liveness.tick() {
                 Ok(probe_id) => encode_liveness_probe(session.generation, probe_id),
                 Err(LivenessEnd::ControlLost) => {

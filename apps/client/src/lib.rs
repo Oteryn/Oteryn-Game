@@ -1,14 +1,14 @@
-//! Production pre-native client composition.
-//! Terminal evidence is revalidated after the MPL-2.0 and Linux lint corrections.
-
+//! Native client process and component composition.
 pub mod combat_input;
 pub mod cyclopedia;
 pub mod input;
+pub mod map;
 pub mod play;
 pub mod scene;
 pub mod spell;
 #[cfg(windows)]
 pub mod win_mutex;
+#[deprecated(note = "use map")]
 pub mod world;
 
 use oteryn_client_runtime::{ClientRuntime, RuntimeError};

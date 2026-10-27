@@ -6,6 +6,8 @@ syntax = "proto3";
 
 package oteryn.protocol.v1.world_spatial;
 
+import "party_skull_v1.proto";
+
 enum StepDirection {
   STEP_DIRECTION_UNSPECIFIED = 0;
   STEP_DIRECTION_NORTH = 1;
@@ -149,4 +151,7 @@ message WorldSpatialEntitiesDeltaV2 {
   repeated WorldSpatialEntityV1 enter = 3;
   repeated WorldSpatialEntityV1 update = 4;
   repeated EntityRefV1 leave = 5;
+  // PARTY-SKULL-1: capability 134 only; an icons-only delta, no enter/update/leave.
+  // Absent on ordinary spatial deltas. The bundle replaces the observer's icon view.
+  oteryn.party_skull.v1.PartyIconsV1 party_icons = 6;
 }

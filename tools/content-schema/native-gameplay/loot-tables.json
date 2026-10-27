@@ -5199,6 +5199,7 @@
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i36982","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i37002","revision":"definition-r1"},"materializable":false},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i37003","revision":"definition-r1"},"materializable":false},
+{"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i37109","revision":"definition-r1"},"materializable":true},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3723","revision":"definition-r1"},"materializable":true},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3724","revision":"definition-r1"},"materializable":true},
 {"container_capacity":null,"item":{"family":"Item","key":"oteryn:item.tibia.i3725","revision":"definition-r1"},"materializable":true},

@@ -30,6 +30,7 @@ use tokio::sync::{Mutex as SlotQueue, OwnedMutexGuard};
 mod cyclopedia;
 mod death_promotion;
 mod npc_purchase;
+mod npc_travel;
 #[cfg(test)]
 mod writer_registration_tests;
 
@@ -398,6 +399,38 @@ impl RevisionSlot {
                     fence,
                     request.clone(),
                     std::sync::Arc::clone(&catalogue),
+                )
+            },
+        )
+        .await
+    }
+
+    /// World callback storage and altar inputs share one revision slot and transaction.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_world_callback(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: QuestTransitionRequest,
+        catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
+        context: super::quest_world_callback::QuestWorldContext,
+    ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_character_world_callback(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    permit,
+                    context.clone(),
                 )
             },
         )

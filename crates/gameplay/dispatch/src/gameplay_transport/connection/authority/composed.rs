@@ -4,6 +4,36 @@ use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     mechanic_composed_methods!();
+    async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::house_transfer::CAPABILITY_HOUSE_TRANSFER_V1)
+        {
+            return true;
+        }
+        let (Some(fence), Some(controller)) = (admitted.item_fence, admitted.controller) else {
+            return false;
+        };
+        self.root
+            .note_house_transfer_input(self.holder, fence, controller.transport)
+            .await
+            .is_ok()
+    }
+    async fn house_scope_ack(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<(u64, Vec<u8>)>, ()> {
+        self.project_house_transfer(admitted).await
+    }
+    async fn house_transfer(
+        &self,
+        admitted: AdmittedSession,
+        command: u64,
+        body: &[u8],
+    ) -> super::super::super::house_transfer::TransferResult {
+        self.transfer_house(admitted, command, body).await
+    }
     fn channel_list(&self) -> Option<Vec<u8>> {
         Some(oteryn_protocol_oteryn::channel_list::encode_channel_list(
             self.world_id.as_bytes(),
@@ -11,6 +41,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             self.premium_only,
         ))
     }
+    async fn observe_party_icons(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>> {
+        self.observe_party_skull(admitted).await
+    }
+
     async fn party_command(
         &self,
         admitted: connection::AdmittedSession,
@@ -507,6 +544,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_imbuement_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_imbuement_item_impl(actor, command, intent, source, target)
+            .await
+    }
+
     async fn use_item_completion(
         &self,
         actor: ExactActorRef,
@@ -566,6 +615,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     ///
     /// C2: a `USE` naming the injected entry chest is routed to [`Self::use_chest`] instead;
     /// every other placement takes the unchanged door path.
+    async fn quest_callback_unresolved(&self, session: GameSessionId) -> bool {
+        self.has_pending_quest_callback(session)
+    }
+
+    async fn prepare_quest_callback_resume(&self, admitted: &mut AdmittedSession) -> bool {
+        if !tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            self.reconcile_quest_callbacks(admitted.game_session_id),
+        )
+        .await
+        .unwrap_or(false)
+        {
+            return false;
+        }
+        admitted.continuity.next_command_id == 1
+            || self
+                .states
+                .command_ingress
+                .recover_trade_continuity(admitted)
+                .is_some()
+    }
+
     async fn use_object(
         &self,
         actor: ExactActorRef,
@@ -670,6 +741,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.set_fight_modes(actor, game_session_id, modes).await
     }
 
+    async fn expert_fight_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        command_id: u64,
+        modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    ) -> oteryn_protocol_oteryn::attack::AttackIntentDisposition {
+        self.set_expert_fight_modes(actor, session, command_id, modes)
+            .await
+    }
+
+    async fn observe_expert_modes(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes> {
+        self.observe_expert_fight_modes(actor, session).await
+    }
+
     async fn observe_combat_state(
         &self,
         actor: ExactActorRef,
@@ -698,8 +788,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.lose_control_for_cause(admitted, wait, reset).await
     }
 
-    async fn enter_input(&self) -> Option<input_gate::InputPermit<'_>> {
-        self.states.input_gate.enter().await
+    async fn enter_input(&self, session: GameSessionId) -> Option<input_gate::InputPermit<'_>> {
+        let permit = self.states.input_gate.enter().await?;
+        if !tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            self.reconcile_quest_callbacks(session),
+        )
+        .await
+        .unwrap_or(false)
+        {
+            return None;
+        }
+        Some(permit)
     }
 
     async fn resume(
@@ -738,6 +838,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.exercise_training(admitted, command, intent, weapon, dummy)
             .await
     }
+    fn gameplay_idle_policy(&self) -> super::super::GameplayIdlePolicy {
+        self.states.gameplay_idle_policy
+    }
+
+    async fn gameplay_idle_exemptions(&self, admitted: AdmittedSession) -> Option<(bool, bool)> {
+        let actor = admitted.runtime_actor?;
+        let mut runtime = self.runtime.lock().await;
+        runtime.owner_fence().ok()?;
+        let facts = runtime
+            .player_control_facts(actor, admitted.game_session_id)
+            .ok()?;
+        if facts.control_loss.is_some() {
+            return None;
+        }
+        let no_logout = self.no_logout_tile(&mut runtime, actor)?;
+        drop(runtime);
+        Some((self.idle_training(admitted).await?, no_logout))
+    }
+
     async fn training_activity(&self, admitted: AdmittedSession, kind: u32) -> bool {
         self.loop_training_activity(admitted, kind).await
     }

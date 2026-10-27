@@ -171,6 +171,7 @@ class LootTablesTests(unittest.TestCase):
         self.assertEqual(16, items['oteryn:item.tibia.i5964']['container_capacity'])
         self.assertTrue(items['oteryn:item.tibia.i3031']['materializable'])
         self.assertTrue(items['oteryn:item.tibia.i3607']['materializable'])
+        self.assertTrue(items['oteryn:item.tibia.i37109']['materializable'])
 
     def write(self, directory, creatures, loot, items):
         base = Path(directory)
@@ -178,6 +179,32 @@ class LootTablesTests(unittest.TestCase):
             (base/name).mkdir()
             (base/name/f'{name}-0.json').write_text(json.dumps({'family': family, 'records': [{'definition': r} for r in records]}))
         return base/'creatures', base/'loot', base/'items'
+
+    def test_forge_resource_uses_exact_native_admission_without_promoting_legacy(self):
+        ref = {'family': 'Item', 'key': 'oteryn:item.tibia.i37109', 'revision': 'r1'}
+        definition = {'identity': ref, 'materializable': False}
+        profile = {'production_definition': {'family': 'Item', 'production_key': ref['key'],
+                                             'revision_ref': 'r1'},
+                   'admission': {'materializable': True}}
+        with tempfile.TemporaryDirectory() as directory:
+            paths = self.write(directory, [], [], [definition])
+            native = paths[2] / 'spell-native-profiles.json'
+            for materializable in (True, False):
+                profile['admission']['materializable'] = materializable
+                native.write_text(json.dumps({'records': [profile]}))
+                actual = json.loads(full.loot_tables({'records': []}, *paths))
+                self.assertEqual(actual['items'][0]['materializable'], materializable)
+            self.assertFalse(full.item_facts(paths[2])[ref['key']]['materializable'])
+            native.write_text(json.dumps({'records': [profile, profile]}))
+            with self.assertRaisesRegex(ValueError, 'one exact native Item profile'):
+                full.loot_tables({'records': []}, *paths)
+            profile['production_definition']['revision_ref'] = 'wrong'
+            native.write_text(json.dumps({'records': [profile]}))
+            with self.assertRaisesRegex(ValueError, 'one exact native Item profile'):
+                full.loot_tables({'records': []}, *paths)
+            native.write_text(json.dumps({'records': []}))
+            with self.assertRaisesRegex(ValueError, 'one exact native Item profile'):
+                full.loot_tables({'records': []}, *paths)
 
     def test_null_binding_is_explicit_and_a_missing_item_refuses(self):
         ref = lambda family, key: {'family': family, 'key': key, 'revision': 'r1'}

@@ -23,7 +23,7 @@ struct SessionIngress {
     result_sequence_floor: u64,
     active: bool,
     pending_delivery: Option<(u64, u64, u64)>,
-    reconciled_trade_sequence: Option<u64>,
+    reconciled_sequence: Option<u64>,
 }
 
 /// Owned alongside the Channel's admitted sessions, forgotten only at retirement.
@@ -69,6 +69,36 @@ impl SessionCommands {
         command: crate::foundation::CommandRef,
         code: oteryn_protocol_oteryn::player_trade::ResultCode,
     ) -> Option<()> {
+        self.complete_reconciled(
+            command,
+            code == oteryn_protocol_oteryn::player_trade::ResultCode::Rejected,
+            &code.payload(),
+        )
+    }
+
+    /// The callback owner has reconciled this exact original USE against its durable receipt.
+    pub(super) fn complete_quest_callback(
+        &self,
+        command: crate::foundation::CommandRef,
+        disposition: oteryn_protocol_oteryn::world_object::UseDisposition,
+    ) -> Option<()> {
+        {
+            let commands = self.0.lock().ok()?;
+            let state = commands.get(&command.game_session_id())?.lock().ok()?;
+            if state.active {
+                return None;
+            }
+        }
+        let payload = oteryn_protocol_oteryn::world_object::encode_use_result(disposition).ok()?;
+        self.complete_reconciled(command, false, &payload)
+    }
+
+    fn complete_reconciled(
+        &self,
+        command: crate::foundation::CommandRef,
+        rejected: bool,
+        payload: &[u8],
+    ) -> Option<()> {
         let commands = self.0.lock().ok()?;
         let state = commands.get(&command.game_session_id())?;
         let mut state = state.lock().ok()?;
@@ -80,12 +110,12 @@ impl SessionCommands {
             generation,
             sequence,
             pending,
-            if code == oteryn_protocol_oteryn::player_trade::ResultCode::Rejected {
+            if rejected {
                 oteryn_protocol_oteryn::CommandStatus::Rejected
             } else {
                 oteryn_protocol_oteryn::CommandStatus::Accepted
             },
-            &code.payload(),
+            payload,
         )
         .ok()?;
         let digest = base64::engine::general_purpose::STANDARD.encode(Sha256::digest(&frame));
@@ -97,7 +127,7 @@ impl SessionCommands {
         state.retained = Some(frame);
         state.result_sequence_floor = sequence;
         state.pending_delivery = None;
-        state.reconciled_trade_sequence = Some(sequence);
+        state.reconciled_sequence = Some(sequence);
         Some(())
     }
 
@@ -105,7 +135,7 @@ impl SessionCommands {
     pub(super) fn recover_trade_continuity(&self, admitted: &mut AdmittedSession) -> Option<()> {
         let commands = self.0.lock().ok()?;
         let state = commands.get(&admitted.game_session_id)?.lock().ok()?;
-        if let Some(sequence) = state.reconciled_trade_sequence {
+        if let Some(sequence) = state.reconciled_sequence {
             if state.active
                 || state.ingress.outstanding() != 0
                 || state.ingress.next_command_id().map(CommandId::get)
@@ -259,7 +289,7 @@ impl SessionCommandStream {
                 // Exhaustion is refused before domain execution; the namespace never wraps.
                 self.next = state.ingress.next_command_id().ok_or(unavailable)?.get();
                 state.pending_delivery = Some((generation, sequence + 1, command));
-                state.reconciled_trade_sequence = None;
+                state.reconciled_sequence = None;
                 Ok(CommandAction::Execute)
             }
             IngressDecision::SequenceGap { expected } => Err((CommandSequenceGap, expected.get())),
@@ -307,7 +337,7 @@ impl SessionCommandStream {
                 })
                 .ok()?;
             state.pending_delivery = None;
-            state.reconciled_trade_sequence = None;
+            state.reconciled_sequence = None;
         } else {
             effect();
             self.next = self.next.checked_add(1)?;

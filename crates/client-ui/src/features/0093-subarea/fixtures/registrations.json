@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0093-subarea",
+    "kind": "handlers",
+    "id": "0093-subarea-unsupported",
+    "status": "unsupported",
+    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "commands": [
+      109
+    ],
+    "not_applicable": {
+      "state": "Unsupported until the owning mechanic migration.",
+      "protocol": "Unsupported until the owning mechanic migration.",
+      "view": "Unsupported until the owning mechanic migration.",
+      "input": "Unsupported until the owning mechanic migration.",
+      "settings": "Unsupported until the owning mechanic migration."
+    }
+  }
+]

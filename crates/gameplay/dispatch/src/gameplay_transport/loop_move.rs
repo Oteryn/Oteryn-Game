@@ -52,6 +52,94 @@ impl ItemLoopContent for NativeItemWeights<'_> {
     fn loop_facts(&self, definition: &TypedDefinitionRef) -> Option<ItemDefinitionFacts> {
         generation_item_facts(self.0, definition).ok()
     }
+    fn loop_definition(&self, reference: u32) -> Option<TypedDefinitionRef> {
+        let (key, revision) = self
+            .0
+            .item_index()?
+            .definition_at(std::num::NonZeroU32::new(reference)?)?;
+        Some(TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: key.into(),
+            revision_ref: revision.into(),
+        })
+    }
+    fn is_quiver(&self, definition: &TypedDefinitionRef) -> bool {
+        definition.family == "Item"
+            && matches!(
+                definition.production_key.as_str(),
+                "oteryn:item.tibia.i35562"
+                    | "oteryn:item.tibia.i35848"
+                    | "oteryn:item.tibia.i35849"
+                    | "oteryn:item.tibia.i35524"
+                    | "oteryn:item.tibia.i36666"
+                    | "oteryn:item.tibia.i39150"
+                    | "oteryn:item.tibia.i39160"
+                    | "oteryn:item.tibia.i45644"
+            )
+            && self.loop_facts(definition).is_some()
+    }
+    fn is_ammunition(&self, definition: &TypedDefinitionRef) -> bool {
+        self.0
+            .item_policy(&definition.production_key, &definition.revision_ref)
+            .is_some_and(|p| {
+                matches!(
+                    p.record().authoring.ranged,
+                    Some(crate::content::ProjectV2RangedWeapon::Ammunition { .. })
+                )
+            })
+    }
+    fn loot_category(
+        &self,
+        definition: &TypedDefinitionRef,
+    ) -> oteryn_gameplay_items::quick_loot::LootCategory {
+        use oteryn_gameplay_items::quick_loot::LootCategory;
+        if crate::durability::item_loop_move::is_loot_coin(definition) {
+            return LootCategory::Gold;
+        }
+        let Some(policy) = self
+            .0
+            .item_policy(&definition.production_key, &definition.revision_ref)
+        else {
+            return LootCategory::Other;
+        };
+        if let Some(taxonomy) = &policy.record().authoring.taxonomy {
+            match taxonomy.primary.to_ascii_lowercase().as_str() {
+                "creature products" => return LootCategory::CreatureProduct,
+                "potions" | "food" | "runes" | "attack runes" | "healing runes"
+                | "support runes" | "ammunition" => return LootCategory::Consumable,
+                "armors"
+                | "helmets"
+                | "legs"
+                | "boots"
+                | "rings"
+                | "amulets and necklaces"
+                | "shields"
+                | "spellbooks"
+                | "quivers"
+                | "sword weapons"
+                | "axe weapons"
+                | "club weapons"
+                | "distance weapons"
+                | "fist fighting weapons"
+                | "wands"
+                | "rods"
+                | "armas de arremesso"
+                | "clavas" => return LootCategory::Equipment,
+                _ => {}
+            }
+        }
+        use crate::content::ReferenceItemField;
+        if matches!(
+            policy.record().semantics.equipment,
+            ReferenceItemField::Known(_)
+        ) {
+            return LootCategory::Equipment;
+        }
+        if self.is_ammunition(definition) {
+            return LootCategory::Consumable;
+        }
+        LootCategory::Other
+    }
 }
 
 /// The loop Ground items of one Channel as a map overlay over the bundle base, with the facts
@@ -128,6 +216,9 @@ pub struct LoopGroundFacts<'a, F> {
 }
 
 impl<F: MapFacts> MapFacts for LoopGroundFacts<'_, F> {
+    fn base_hidden(&self, key: u64) -> bool {
+        self.inner.base_hidden(key)
+    }
     fn base_text(&self, key: u64) -> Option<&str> {
         self.inner.base_text(key)
     }

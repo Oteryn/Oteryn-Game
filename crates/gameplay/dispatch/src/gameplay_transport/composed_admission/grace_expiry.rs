@@ -103,7 +103,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
-            match self.fence_transition(actor, hold).await {
+            match self.fence_transition(actor, hold, false).await {
                 FenceStep::Fenced => {}
                 FenceStep::Wait => {
                     tokio::time::sleep(next_backoff()).await;

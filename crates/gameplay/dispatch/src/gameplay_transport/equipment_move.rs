@@ -78,6 +78,26 @@ impl EquipmentMoveContent for NativeItemWeights<'_> {
             })
     }
 
+    fn is_quiver_item(&self, key: &str, revision: &str) -> bool {
+        crate::durability::item_loop_move::ItemLoopContent::is_quiver(
+            self,
+            &crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key.into(),
+                revision_ref: revision.into(),
+            },
+        )
+    }
+    fn is_ammunition_item(&self, key: &str, revision: &str) -> bool {
+        crate::durability::item_loop_move::ItemLoopContent::is_ammunition(
+            self,
+            &crate::durability::item_mint::TypedDefinitionRef {
+                family: "Item".into(),
+                production_key: key.into(),
+                revision_ref: revision.into(),
+            },
+        )
+    }
     /// Refuse timed forms the owner cannot host. Supported carried/equipped budgets
     /// are checkpointed by the production move path below.
     fn is_timed_item(&self, production_key: &str, revision_ref: &str) -> bool {

@@ -352,8 +352,8 @@ def dependency_report(creatures: dict, presentations: dict, familiars: Path, pro
 
 
 def item_facts(definitions: Path = ITEM_DEFINITIONS) -> dict:
-    """Admission facts of every Item definition, by key: the only source of the loot section's
-    `items` list (ARCH-KILL-REWARD-LOGOUT-1 §1.1, CP D929)."""
+    """Admission facts of every Item definition, by key. The Forge resource's native
+    admission is resolved separately below (ARCH-KILL-REWARD-LOGOUT-1 §1.1, CP D929)."""
     facts = {}
     for path in sorted(definitions.glob('items-*.json')):
         _, shard = read(path)
@@ -372,7 +372,7 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
     """The `loot_tables` section (OTERYN_NATIVE_LOOT_TABLES/v1, OTNGP08): one `creature_loot` row per
     pinned Creature profile with its definition's `loot` reference copied as is (`null` for a
     profile with no Creature definition), exactly the referenced loot tables, and the admission
-    facts of every Item those tables and the pinned corpses name. A named Item missing from the
+    facts of every Item those tables, pinned corpses and Forge creature resource name. A named Item missing from the
     Item definitions refuses the section."""
     definitions = {}
     for path in sorted(creature_definitions.glob('creatures-*.json')):
@@ -417,6 +417,22 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 for entry in table['entries']:
                     name(entry['item'])
         bindings[target['key']] = {'creature': target, 'loot': loot}
+    # FORGECREATURE: this resource is added by the live fiend's death classification,
+    # rather than by every creature's static loot table. Preserve core admission facts.
+    sliver = facts.get('oteryn:item.tibia.i37109')
+    if sliver is not None:
+        # FORGECREATURE admits this resource through its native Item profile;
+        # the legacy definition deliberately remains reference-only.
+        _, profiles = read(item_definitions / 'spell-native-profiles.json')
+        ref = sliver['item']
+        exact = {'family': ref['family'], 'production_key': ref['key'],
+                 'revision_ref': ref['revision']}
+        admitted = [row for row in profiles['records']
+                    if row['production_definition'] == exact]
+        if len(admitted) != 1:
+            raise ValueError('Forge resource requires one exact native Item profile')
+        sliver['materializable'] = admitted[0]['admission']['materializable'] is True
+        name(sliver['item'])
     if max(len(bindings), len(used), len(named)) > LOOT_RECORDS_MAX:
         raise ValueError('Loot section exceeds its record bound')
     order = lambda rows: [rows[key] for key in sorted(rows, key=lambda key: key.encode('utf-8'))]

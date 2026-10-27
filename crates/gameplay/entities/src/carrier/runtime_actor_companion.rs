@@ -46,6 +46,7 @@ pub struct CompanionSnapshot {
     pub state: CompanionState,
     pub health: i64,
     pub maximum_health: i64,
+    pub forge: Option<oteryn_gameplay_domain::domain::forge_creature::ForgeCreature>,
     pub position: MovementLocalPosition,
     pub position_revision: u64,
 }
@@ -195,6 +196,7 @@ impl ChannelRuntimeV1 {
             .player_slot_index(&self.continuity, owner.0, session)?;
         self.validate_companion_snapshot(expected)?;
         if expected.health <= 0
+            || expected.forge.is_some()
             || self
                 .companion_policy(&expected.state.policy.definition_key)?
                 .as_ref()
@@ -216,6 +218,7 @@ impl ChannelRuntimeV1 {
             .player_slot_index(&self.continuity, prepared.owner.0, prepared.session)?;
         self.validate_companion_snapshot(&prepared.expected)?;
         if prepared.expected.health <= 0
+            || prepared.expected.forge.is_some()
             || self
                 .companion_policy(&prepared.expected.state.policy.definition_key)?
                 .as_ref()
@@ -730,6 +733,7 @@ impl ChannelRuntimeV1 {
             || position.revision != expected.position_revision
             || *health != expected.health
             || spell_combat.maximum_health != expected.maximum_health
+            || spell_combat.forge != expected.forge
             || state.as_ref() != &expected.state
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
@@ -782,6 +786,7 @@ impl ChannelRuntimeV1 {
             state: state.as_ref().clone(),
             health: *health,
             maximum_health: spell_combat.maximum_health,
+            forge: spell_combat.forge,
             position: MovementLocalPosition {
                 x: position.position.x,
                 y: position.position.y,
@@ -1024,7 +1029,7 @@ impl ChannelRuntimeV1 {
         self.carrier
             .player_slot_index(&self.continuity, owner.0, session)?;
         let current = self.companion_snapshot(expected.actor)?;
-        if &current != expected {
+        if &current != expected || current.forge.is_some() {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::PlanConflict);
         }
         let index = self
@@ -1203,6 +1208,7 @@ mod tests {
             definition_revision: "test-1".into(),
             display_name: name.into(),
             maximum_health: 812,
+            forge_difficulty: None,
             base_speed: 220,
             outfit_look_type: 991,
             object_look_type: None,

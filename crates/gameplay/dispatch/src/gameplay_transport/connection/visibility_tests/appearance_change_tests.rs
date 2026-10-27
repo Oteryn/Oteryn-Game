@@ -21,7 +21,13 @@ impl FreshAdmissionAuthority for AppearanceChannel {
         self.channel.observe(actor).await
     }
     async fn observe_visible_entities(&self, actor: ExactActorRef) -> Option<ChannelEntities> {
-        self.channel.observe_visible_entities(actor).await
+        let mut entities = self.channel.observe_visible_entities(actor).await?;
+        for entity in &mut entities.entities {
+            if entity.identity == [9; 16] {
+                entity.health_percent = if self.revision.get() == 1 { 50 } else { 25 };
+            }
+        }
+        Some(entities)
     }
     async fn appearance_change(
         &self,
@@ -73,6 +79,7 @@ impl FreshAdmissionAuthority for AppearanceChannel {
                         addons: 0,
                     },
                     selection_revision: None,
+                    forge_stacks: (entity.identity == [9; 16]).then_some(15),
                 })
                 .collect(),
         })
@@ -96,8 +103,18 @@ fn appearance_change_rejected_unresolved_and_downgraded_clients_publish_nothing(
     })
 }
 async fn scenario(selected: &[u32], outcome: Option<appearance::ChangeResult>) -> TestResult {
+    scenario_actor(selected, outcome, selected.contains(&104)).await
+}
+async fn scenario_actor(
+    selected: &[u32],
+    outcome: Option<appearance::ChangeResult>,
+    as_creature: bool,
+) -> TestResult {
     let mut shown = creature([9; 16], at(102, 100), 1);
-    shown.kind = VisibleKind::Player;
+    if !as_creature {
+        shown.kind = VisibleKind::Player;
+    }
+    shown.health_percent = 50;
     let mut hidden = creature([8; 16], at(1000, 1000), 1);
     hidden.kind = VisibleKind::Player;
     let authority = AppearanceChannel {
@@ -139,6 +156,11 @@ async fn scenario(selected: &[u32], outcome: Option<appearance::ChangeResult>) -
         },
     )?;
     let serving = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS);
+    let binding_count = if as_creature && !selected.contains(&104) {
+        1
+    } else {
+        2
+    };
     let observing = async {
         // Consume the actual join framing. Domain 21 must precede VIS-2 in its body.
         let _begin = read_one(&mut client).await?;
@@ -150,7 +172,19 @@ async fn scenario(selected: &[u32], outcome: Option<appearance::ChangeResult>) -
             assert_eq!(domains[0].domain_id, 21);
             let snapshot =
                 appearance::Snapshot::decode(domains[0].payload).map_err(|e| format!("{e:?}"))?;
-            assert_eq!(snapshot.bindings.len(), 2);
+            assert_eq!(snapshot.bindings.len(), binding_count);
+            let shown = snapshot
+                .bindings
+                .iter()
+                .find(|b| b.entity.identity == [9; 16]);
+            if binding_count == 1 {
+                assert!(shown.is_none());
+            } else {
+                assert_eq!(
+                    shown.ok_or("shown binding")?.forge_stacks,
+                    selected.contains(&104).then_some(15)
+                );
+            }
             assert!(
                 !snapshot
                     .bindings
@@ -160,6 +194,24 @@ async fn scenario(selected: &[u32], outcome: Option<appearance::ChangeResult>) -
         } else {
             assert!(!domains.iter().any(|d| d.domain_id == 21));
         }
+        let spatial = domains.iter().find(|d| d.domain_id == 1).ok_or("spatial")?;
+        let spatial =
+            oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot(
+                spatial.payload,
+            )
+            .map_err(|e| format!("{e:?}"))?;
+        let shown = spatial
+            .entities
+            .iter()
+            .find(|e| e.entity.identity == [9; 16])
+            .ok_or("shown")?;
+        assert!(matches!(
+            shown.detail,
+            oteryn_protocol_oteryn::world_spatial_entities::EntityDetail::Actor {
+                health_percent: 50,
+                ..
+            }
+        ));
         let _commit = read_one(&mut client).await?;
         write_frame(&mut client, &command).await?;
         if selected.contains(&25) && outcome.is_none() {
@@ -192,7 +244,7 @@ async fn scenario(selected: &[u32], outcome: Option<appearance::ChangeResult>) -
                         .map_err(|e| format!("{e:?}"))?
                         .upserts
                         .len(),
-                    2
+                    binding_count
                 );
                 let spatial = read_one(&mut client).await?;
                 let envelope = decode_wire_envelope(&spatial)?;
@@ -202,6 +254,18 @@ async fn scenario(selected: &[u32], outcome: Option<appearance::ChangeResult>) -
                 assert_eq!(delta.actor_position, at(100, 100));
                 assert_eq!(delta.update.len(), 2);
                 assert!(delta.enter.is_empty());
+                let shown = delta
+                    .update
+                    .iter()
+                    .find(|e| e.entity.identity == [9; 16])
+                    .ok_or("shown health update")?;
+                assert!(matches!(
+                    shown.detail,
+                    oteryn_protocol_oteryn::world_spatial_entities::EntityDetail::Actor {
+                        health_percent: 25,
+                        ..
+                    }
+                ));
             } else {
                 assert!(
                     tokio::time::timeout(
@@ -235,4 +299,15 @@ async fn scenario(selected: &[u32], outcome: Option<appearance::ChangeResult>) -
     }
     assert_eq!(authority.calls.get(), usize::from(selected.contains(&25)));
     Ok(())
+}
+
+#[test]
+fn forge_creature_real_dispatch_exposes_negotiated_marker_with_stationary_health() -> TestResult {
+    run(async { scenario(&[6, 25, 104], Some(appearance::ChangeResult::Committed(2))).await })
+}
+#[test]
+fn forge_creature_real_dispatch_downgrade_omits_creature_bindings() -> TestResult {
+    run(async {
+        scenario_actor(&[6, 25], Some(appearance::ChangeResult::Committed(2)), true).await
+    })
 }

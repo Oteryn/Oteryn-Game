@@ -46,6 +46,7 @@ pub(super) enum RangedDamage {
 pub(super) fn loadout(
     content: &NativeGameplayState,
     equipment: &EquipmentSnapshot,
+    quiver_entries: &[EquippedItem],
 ) -> Option<Option<Arc<RangedLoadout>>> {
     for slot in [6, 5] {
         let Some(weapon) = equipment.items.iter().find(|item| item.slot == slot) else {
@@ -64,11 +65,38 @@ pub(super) fn loadout(
                     ammunition,
                     ..
                 } => {
-                    // Ammunition is a direct equipment slot (durable slot 10), never a bag search.
-                    let ammo = equipment
-                        .items
+                    // Extra quiver precedes Shield; a quiver's empty/incompatible entries do
+                    // not mask a later compatible stack. Legacy direct slot ammunition remains valid.
+                    let candidates: Vec<_> = quiver_entries
                         .iter()
-                        .find(|item| item.slot == 10 && item.quantity > 0);
+                        .chain(equipment.items.iter().filter(|i| i.slot == 10))
+                        .filter_map(|item| {
+                            let profile = content
+                                .item_policy(
+                                    &item.definition.production_key,
+                                    &item.definition.revision_ref,
+                                )?
+                                .record()
+                                .authoring
+                                .ranged
+                                .as_ref()?;
+                            match profile {
+                                ProjectV2RangedWeapon::Ammunition {
+                                    ammunition: kind, ..
+                                } => Some(oteryn_gameplay_items::quick_loot::Ammunition {
+                                    key: item,
+                                    kind,
+                                    quantity: item.quantity,
+                                }),
+                                _ => None,
+                            }
+                        })
+                        .collect();
+                    let ammo = oteryn_gameplay_items::quick_loot::select_quiver_ammunition(
+                        &ammunition,
+                        &candidates,
+                    )
+                    .map(|ammo| ammo.key);
                     let ammo = ammo.and_then(|item| {
                         let profile = content
                             .item_policy(
@@ -571,7 +599,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         )
                         .await
                         .map_err(|_| DurabilityError::Unavailable)?;
+                        let (_, remaining) = oteryn_gameplay_items::quick_loot::consume_one(
+                            oteryn_gameplay_items::quick_loot::Ammunition {
+                                key: projectile.item_instance_id,
+                                kind: (),
+                                quantity: projectile.quantity,
+                            },
+                        )
+                        .ok_or(DurabilityError::Unavailable)?;
                         if source.state_revision != projectile.state_revision
+                            || source.quantity_after != remaining
                             || source.quantity_before != projectile.quantity
                         {
                             return Err(DurabilityError::Unavailable);

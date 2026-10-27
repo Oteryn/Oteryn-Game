@@ -299,6 +299,7 @@ where
             effects::npc(stream, session, update).await?;
         }
         Dispatch::Attack(_) => {
+            pvp_expert::refresh(stream, authority, session).await?;
             // The changed target or modes reach domain 10 right after the result.
             let Some(state) = authority
                 .observe_combat_state(session.actor, session.admitted.game_session_id)
@@ -342,6 +343,7 @@ where
         | Dispatch::ContainerView(_, None)
         | Dispatch::Look(..)
         | Dispatch::Achievements(_)
+        | Dispatch::CharacterInfo(_)
         | Dispatch::Highscores(_)
         | Dispatch::Guild(_)
         | Dispatch::Reply(..)

@@ -28,6 +28,7 @@
 //! because the bundle carries no height facts.
 
 use super::floor_catalogue::{OBJECT, TERRAIN};
+mod quest_callback;
 mod rope;
 use super::overlay::TilePos;
 use super::palette_appearance;
@@ -37,6 +38,7 @@ use crate::content::{CollisionClass, LogicalCell, NativeEntryMovementCells};
 use crate::map::boot::BundleCollisionIndexExt;
 use crate::movement::{CardinalStep, MovementError};
 use oteryn_world_bundle::bundle::Family;
+pub use quest_callback::prepare_quest_callback_teleport;
 pub use rope::prepare_bundle_rope;
 use std::collections::{BTreeMap, BTreeSet};
 use {

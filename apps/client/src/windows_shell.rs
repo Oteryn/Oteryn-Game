@@ -1,9 +1,9 @@
 use oteryn_client::input::{MouseActions, StepDir, arrow_step, click_tile, logout_key};
+use oteryn_client::map::{START, World};
 use oteryn_client::play::{PlayEnd, PlayLink, PlayView};
 use oteryn_client::pre_native_status;
 use oteryn_client::scene::Scene;
 use oteryn_client::spell::SpellHotkeys;
-use oteryn_client::world::{START, World};
 use oteryn_client::{AdmittedSession, ClientBootstrap, GameplayEntryError};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_input_platform::InputPlatformAdapter;

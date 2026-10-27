@@ -8,6 +8,39 @@ mod composed;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     mechanic_authority_methods!();
+    fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { true }
+    }
+    fn house_scope_ack(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<Option<(u64, Vec<u8>)>, ()>> {
+        async { Ok(None) }
+    }
+    fn house_transfer(
+        &self,
+        _admitted: AdmittedSession,
+        _command: u64,
+        _body: &[u8],
+    ) -> impl Future<Output = super::super::house_transfer::TransferResult> {
+        async { Some((None, Vec::new())) }
+    }
+    fn gameplay_idle_policy(&self) -> super::GameplayIdlePolicy {
+        super::GameplayIdlePolicy::default()
+    }
+
+    /// Server clock; deterministic transport qualification may supply a controlled clock.
+    fn gameplay_idle_now(&self) -> tokio::time::Instant {
+        tokio::time::Instant::now()
+    }
+
+    /// `(training, no_logout_tile)` from the existing owners. Unknown facts defer idle removal.
+    fn gameplay_idle_exemptions(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<(bool, bool)>> {
+        async { Some((false, false)) }
+    }
     /// PREMCHAN: the bounded list of Game Channels served by this owner. This node currently
     /// serves exactly one Channel. No routing or admission authority is granted by the list.
     fn channel_list(&self) -> Option<Vec<u8>> {
@@ -35,10 +68,12 @@ pub trait FreshAdmissionAuthority {
         async { Err(AdmissionRefusal::Unavailable) }
     }
 
-    /// OPS-SAVE-2: the permit one player command runs under, or `None` once the node is
-    /// quiescing for its shutdown save: the command then has no effect and gets a rejected
-    /// result. Authorities without a shutdown save never refuse.
-    fn enter_input(&self) -> impl Future<Output = Option<InputPermit<'_>>> {
+    /// OPS-SAVE-2: one admitted session's input permit. Quiescing for shutdown or unresolved
+    /// gameplay work in that session refuses new effects. Injected authorities are ungated.
+    fn enter_input(
+        &self,
+        _session: GameSessionId,
+    ) -> impl Future<Output = Option<InputPermit<'_>>> {
         async { Some(InputPermit::ungated()) }
     }
 
@@ -73,6 +108,7 @@ pub trait FreshAdmissionAuthority {
                 content_generation: own.content_generation,
                 observer: identity,
                 entities: vec![ChannelEntity {
+                    health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                     kind: VisibleKind::Player,
                     identity,
@@ -293,6 +329,19 @@ pub trait FreshAdmissionAuthority {
         }
     }
 
+    /// An ambiguous quest callback commit has no terminal command result yet.
+    fn quest_callback_unresolved(&self, _session: GameSessionId) -> impl Future<Output = bool> {
+        async { false }
+    }
+
+    /// Reconcile retained callback truth before opening a resumed command stream/snapshot.
+    fn prepare_quest_callback_resume(
+        &self,
+        _admitted: &mut AdmittedSession,
+    ) -> impl Future<Output = bool> {
+        async { true }
+    }
+
     /// One `USE_INTENT` for the admitted actor against a world-object placement (USE-WIRE-V1,
     /// #162 5868482467), applied by the Channel owner.
     ///
@@ -365,6 +414,19 @@ pub trait FreshAdmissionAuthority {
         _target: Option<ItemKey>,
     ) -> impl Future<Output = Option<UseOutcome>> {
         async { Some(UseOutcome::rejected()) }
+    }
+
+    /// IMBUEITEMS-1: filled scroll or etcher USE-with an inventory item.
+    /// `None` leaves the intent to the existing map-use handlers.
+    fn use_imbuement_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
     }
 
     fn offline_training(
@@ -612,6 +674,14 @@ pub trait FreshAdmissionAuthority {
         _target: ItemKey,
     ) -> impl Future<Output = Option<ContainerObservation>> {
         async { None }
+    }
+
+    /// Current observer-relative icons. Unavailable facts produce no update.
+    fn observe_party_icons(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>>> {
+        std::future::ready(None)
     }
 
     /// PARTY-1: basic session-fenced membership commands and own-state query.
@@ -923,6 +993,24 @@ pub trait FreshAdmissionAuthority {
         _modes: FightModes,
     ) -> impl Future<Output = AttackIntentDisposition> {
         async { AttackIntentDisposition::Rejected }
+    }
+
+    fn expert_fight_modes(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+        _command_id: u64,
+        _modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
+    ) -> impl Future<Output = AttackIntentDisposition> {
+        async { AttackIntentDisposition::Rejected }
+    }
+
+    fn observe_expert_modes(
+        &self,
+        _actor: ExactActorRef,
+        _game_session_id: GameSessionId,
+    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::pvp_expert::ExpertFightModes>> {
+        async { None }
     }
 
     /// ATTACK-1b: the admitted actor's `ACTOR_COMBAT_STATE` (domain 10) for the snapshot, or

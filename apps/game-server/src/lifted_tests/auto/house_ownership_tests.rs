@@ -85,6 +85,9 @@ fn request(n: u8, maximum: u64) -> TestResult<HouseBidRequest> {
         ),
         house_key: HOUSE.into(),
         maximum,
+        content_digest: [7; 32],
+        kind: "private_house",
+        catalogue_rent: 100,
     })
 }
 async fn seed(h: &Harness, active: bool) -> TestResult {

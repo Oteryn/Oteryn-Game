@@ -10,6 +10,10 @@ mod catalog;
 mod error;
 mod sheets;
 mod store;
+/// Bounded map-window appearance loading.
+pub mod window;
+/// Immutable world placement formats.
+pub mod world;
 
 pub use appearance::{
     AppearanceIndex, DrawCell, Hook, MAX_APPEARANCE_ID, MAX_ENTRY_CELLS, Placement, ResolvedEntry,

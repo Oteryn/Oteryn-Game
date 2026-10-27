@@ -56,7 +56,7 @@ pub(super) async fn prepare_inner(
         &oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastIntent,
     )>,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
-    pvp_secure: bool,
+    pvp_modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     if !applicable(spell)
@@ -167,7 +167,7 @@ pub(super) async fn prepare_inner(
         bindings,
     } = qualify_targets(
         tx, root, authority, runtime, states, room, objects, spell, intent, profile, actor, named,
-        pvp_secure, &players, &creatures, spatial,
+        pvp_modes, &players, &creatures, spatial,
     )
     .await?;
     let PaidPreparation {
@@ -203,6 +203,7 @@ pub(super) async fn prepare_inner(
         draw,
     )?;
     Ok(PreparedNativeCombatCast {
+        item_spell_leech: item_spell_augments::leech(owned, spell, &before),
         corpse_companion: None,
         direct_companion: None,
         field_policy_revision: None,
@@ -216,7 +217,7 @@ pub(super) async fn prepare_inner(
         roster,
         training,
         timers,
-        magnitude: output.magnitude,
+        magnitude: output.magnitude.map(Box::new),
         facts_binding: b.clone(),
         creatures,
         players,
@@ -459,7 +460,7 @@ async fn qualify_targets(
     profile: &crate::spell::executable_catalog::OperationalProfile,
     actor: ExactActorRef,
     named: Option<(ExactActorRef, &ParameterSpellCastIntent)>,
-    pvp_secure: bool,
+    pvp_modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
     players: &[(ExactActorRef, GameSessionId, PlayerSpellState)],
     creatures: &[crate::foundation::CompanionSnapshot],
     spatial: SpatialPhase,
@@ -498,7 +499,7 @@ async fn qualify_targets(
                 continue;
             }
             if let Ok(facts) = crate::gameplay_transport::pvp_live::legal_player(
-                tx, root, authority, runtime, states, room, objects, actor, *target, pvp_secure,
+                tx, root, authority, runtime, states, room, objects, actor, *target, pvp_modes,
             )
             .await
             {
@@ -663,7 +664,7 @@ fn prepare_payment(
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PaidPreparation, SpellCastDisposition> {
     let prepare_paid = |draw: &mut dyn FnMut(i64, i64) -> i64| {
-        prepare_ordinary_owner_cast_with_caster(
+        let mut paid = prepare_ordinary_owner_cast_with_caster(
             book,
             before,
             spell,
@@ -678,7 +679,10 @@ fn prepare_payment(
                 .as_ref()
                 .map(|_| (world as &dyn ChainWorld, chain_start)),
             draw,
-        )
+        )?;
+        item_spell_augments::cooldown(owned, spell, &mut paid.next, &mut paid.anchor, now)?;
+        paid.resolution.cooldowns = paid.next.cooldowns.clone();
+        Ok(paid)
     };
     // Entire footprint, magnitude prerequisites, owner stores and outbox capacity
     // are qualified using a non-executed preview before consuming the live stream.

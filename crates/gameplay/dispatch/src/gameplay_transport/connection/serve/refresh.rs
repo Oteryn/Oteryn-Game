@@ -222,6 +222,7 @@ where
     A: FreshAdmissionAuthority,
 {
     // ATTACK-1b: due swings run; a changed domain 10 state sends a delta.
+    pvp_expert::refresh(stream, authority, session).await?;
     let Some(state) = authority
         .tick_combat(session.actor, session.admitted.game_session_id)
         .await
@@ -368,6 +369,7 @@ where
     session.sequence = to_sequence;
     session.revision = to_revision;
     session.admitted.continuity.spatial_revision = session.revision;
+    party_skull::refresh(stream, authority, session).await?;
     // MAP-WIRE-2: tiles in view changed by others (an item dropped, a door opened).
     if let (Some(view), Some(items)) = (session.world_map.as_mut(), session.item_view.as_mut()) {
         let update = world_map_delta(

@@ -80,6 +80,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
     )
     .expect("facts");
     PendingKillSettlement {
+        forge: None,
         damage_shares: Vec::new(),
         activity_observed_at: None,
         activity_at_death: Some(Vec::new()),
@@ -96,6 +97,20 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         target: actor,
         no_progression_logged: false,
     }
+}
+
+fn pending_with_ordinary_surprise_bag() -> PendingKillSettlement {
+    let mut pending = pending(2, 50, 3, 0);
+    let row = Arc::make_mut(&mut pending.row);
+    row.loot_table_ref =
+        LootDefinitionRef::new("Loot", "oteryn:loot.creature.rat", "definition-r1");
+    row.loot_table.entries.push(LootTableEntry {
+        item: LootDefinitionRef::new("Item", "oteryn:item.tibia.i6570", "definition-r1"),
+        min_count: 1,
+        max_count: 1,
+        probability_ppm: Some(1_000_000),
+    });
+    pending
 }
 
 fn taken(outcome: TakeOutcome) -> TakenKillSettlement {
@@ -116,6 +131,20 @@ fn a_death_is_queued_once() {
     assert_eq!(queue.append(pending(2, 50, 3, 0)), AppendOutcome::Duplicate);
     in_flight.finish();
     assert_eq!(queue.counts(), (0, 0, 0));
+}
+
+#[test]
+fn production_kill_settlement_does_not_reserve_an_all_year_surprise_bag_mint() {
+    let queue = KillSettlementQueue::default();
+    assert_eq!(
+        queue.append(pending_with_ordinary_surprise_bag()),
+        AppendOutcome::Queued
+    );
+
+    let in_flight = taken(queue.take(session(50), 3));
+
+    assert_eq!(in_flight.loot_mints, 0);
+    in_flight.finish();
 }
 
 #[test]

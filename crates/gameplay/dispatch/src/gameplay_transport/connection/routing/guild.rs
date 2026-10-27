@@ -20,7 +20,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
             )
             .await
         {
-            transport::guild_intent::GuildReply::Payload(bytes) => Dispatch::Guild(bytes),
+            transport::guild_intent::GuildReply::Payload(bytes) => {
+                // Validate this family's egress contract before retaining an accepted reply.
+                if transport::guild_war::owns(command.command_type)
+                    && oteryn_protocol_oteryn::guild_war::decode_guild_war_result(&bytes).is_err()
+                {
+                    return None;
+                }
+                Dispatch::Guild(bytes)
+            }
             transport::guild_intent::GuildReply::Rejected => Dispatch::Unregistered,
             transport::guild_intent::GuildReply::Unavailable => {
                 return None;
