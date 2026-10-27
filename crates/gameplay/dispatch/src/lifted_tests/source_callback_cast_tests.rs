@@ -141,6 +141,7 @@ impl SpellWorldReader for Reader {
                 defense: 0,
                 armor: 0,
                 player_level: 1,
+                reference_level_party_lowest: None,
             },
             multiplier_ppm: 1000000,
             immune: false,

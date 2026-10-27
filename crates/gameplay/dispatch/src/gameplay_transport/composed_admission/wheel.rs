@@ -19,6 +19,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
+        if let (Ok(Some(fence)), Some(ruleset), Some(gate)) = (
+            self.current_quest_fence(session).await,
+            &self.wheel_ruleset,
+            self.premium_coordinator,
+        ) {
+            let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+            // The permanent receipt is also the initialization marker on reconnect/restart.
+            let _ = slot
+                .atelier(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    crate::durability::character_atelier::AtelierRequest::initialize(
+                        fence.character_id,
+                    ),
+                    std::sync::Arc::clone(ruleset),
+                    gate,
+                )
+                .await;
+        }
         if let Ok(mut sessions) = self.states.wheel_sessions.lock() {
             sessions.insert(session, allocation);
         }

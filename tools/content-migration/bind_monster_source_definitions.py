@@ -29,6 +29,18 @@ def definition_digest(root: Path):
     }
     return hashlib.sha256(canonical(closure)).hexdigest()
 
+def explicit_reference_levels(value):
+    """Materialize the nullable MRL default without changing any other source fact."""
+    if isinstance(value, dict):
+        if value.get("kind") == "Creature" and "profile" in value:
+            value["profile"]["details"].setdefault("reference_level", None)
+        for child in value.values():
+            explicit_reference_levels(child)
+    elif isinstance(value, list):
+        for child in value:
+            explicit_reference_levels(child)
+
+
 def bind_definitions(root: Path, generated: dict[str, bytes]):
     result = dict(generated)
     creatures = json.loads(result[CREATURES])
@@ -50,6 +62,7 @@ def bind_definitions(root: Path, generated: dict[str, bytes]):
                 resistance = next(row for row in source["resistances"] if row["damage_type"] == element)
                 native = next(row for row in target["resistances"] if row["damage_type"] == element)
                 native["percent"] = resistance["percent"]
+    explicit_reference_levels(creatures)
     creatures["source_definitions_sha256"] = definition_digest(root)
     result[CREATURES] = canonical(creatures) + b"\n"
     manifest = json.loads(result[MANIFEST])

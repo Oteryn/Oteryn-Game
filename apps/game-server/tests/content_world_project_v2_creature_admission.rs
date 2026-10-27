@@ -169,6 +169,7 @@ fn creature_profile() -> ProjectV2AuthoringProfile {
                 defense: 30,
                 critical_chance_ppm: 0,
                 reference_level: None,
+                reference_level_overrides: Vec::new(),
                 condition_immunities: vec!["invisible".into(), "paralyze".into()],
                 flags: ProjectV2CreatureFlags {
                     attackable: true,
@@ -1104,5 +1105,52 @@ fn accepted_creature_ai_content_limits_reject_first_excess_at_admission() {
                 result.as_ref().err()
             );
         }
+    }
+}
+
+#[test]
+fn reference_level_area_authoring_defaults_and_rejects_ambiguous_or_zero_caps() {
+    let area = json!({"bounds": {"min_x": 90, "min_y": 90, "max_x_exclusive": 110, "max_y_exclusive": 110}, "floor": 7, "reference_level": 790});
+    let decoded: ProjectV2ReferenceLevelOverride =
+        serde_json::from_value(area.clone()).expect("area");
+    assert_eq!(
+        decoded.party_mode,
+        ProjectV2ReferenceLevelPartyMode::PerPlayer
+    );
+    let mut value = serde_json::to_value(creature_profile()).expect("profile");
+    value["data"]["profile"]["details"]["reference_level_overrides"] = json!([area]);
+    let profile: ProjectV2AuthoringProfile = serde_json::from_value(value).expect("profile");
+    let creature = match profile.data {
+        ProjectV2AuthoringProfileData::Creature(creature) => Some(creature),
+        _ => None,
+    }
+    .expect("creature");
+    let details = creature.details.expect("details");
+    assert_eq!(details.reference_level, None);
+    let mut valid = draft();
+    if let ProjectV2AuthoringProfileData::Creature(creature) = profile_mut(&mut valid, CREATURE) {
+        creature.details = Some(details.clone());
+    }
+    assert!(admit(valid).is_ok(), "valid MRL area admitted");
+    for bad in [
+        json!({"reference_level": 0}),
+        json!({"reference_level_overrides": [decoded.clone(), decoded.clone()]}),
+        json!({"reference_level_overrides": [{"bounds": {"min_x": 110, "min_y": 90, "max_x_exclusive": 90, "max_y_exclusive": 110}, "floor": 7, "reference_level": null}]}),
+        json!({"reference_level_overrides": [{"bounds": decoded.bounds, "floor": 7, "reference_level": 790, "curve": [{"levels_below": 10, "extra_damage_ppm": 200}, {"levels_below": 9, "extra_damage_ppm": 100}]}]}),
+    ] {
+        let mut changed = draft();
+        let creature = match profile_mut(&mut changed, CREATURE) {
+            ProjectV2AuthoringProfileData::Creature(creature) => Some(creature),
+            _ => None,
+        }
+        .expect("creature");
+        let mut candidate = serde_json::to_value(&details).expect("details");
+        for (key, value) in bad.as_object().expect("mutation") {
+            candidate[key] = value.clone();
+        }
+        creature.details = Some(Box::new(
+            serde_json::from_value(candidate).expect("details"),
+        ));
+        assert!(admit(changed).is_err(), "invalid MRL data admitted");
     }
 }
