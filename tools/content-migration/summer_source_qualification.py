@@ -56,7 +56,7 @@ def apply_native(root, generated, encode):
         if key in by_key:
             row = by_key[key]
             record["source_qualification"] = row["qualification"]
-            if key == "oteryn:creature.radiant_acolyte":
+            if key in {"oteryn:creature.radiant_acolyte", "oteryn:creature.radiant_paragon"}:
                 record["attack_definitions"] = attack_definitions(root, record)
             if "attacks" in row:
                 melee = [(index, attack["fields"]) for index, attack in

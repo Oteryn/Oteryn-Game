@@ -65,6 +65,20 @@ impl PlayerSpellState {
         self.equipped_ice_protection = protection;
     }
 
+    /// Direct fire protection from the last committed equipment read; fields are separate.
+    #[must_use]
+    pub const fn equipped_fire_protection(&self) -> Option<ReferenceRationalPercent> {
+        self.equipped_fire_protection
+    }
+
+    /// Replace direct fire protection on admission or a committed equipment move.
+    pub fn install_equipped_fire_protection(
+        &mut self,
+        protection: Option<ReferenceRationalPercent>,
+    ) {
+        self.equipped_fire_protection = protection;
+    }
+
     /// PARITY-EQUIP-MODIFIERS-1: the critical hit and leech of the worn equipment, installed with
     /// the armor; zero before any install.
     #[must_use]

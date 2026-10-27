@@ -1,4 +1,4 @@
-//! Native scheduled physical target and source-qualified Acolyte ice circle damage.
+//! Native scheduled physical target and source-qualified Acolyte ice / Paragon fire circle damage.
 //! Timing, chance, damage, replay and lethal consequences stay in their existing owners.
 use super::*;
 use crate::creature_auto_attack::{AttackFacts, ProfileAbilityProposal};
@@ -71,7 +71,7 @@ impl SpellWorldReader for CurrentTarget {
 }
 
 // Runtime, Item transaction and player states stay locked from these independent reads
-// through execution. Only the existing physical target and Acolyte ice circle shapes enter.
+// through execution. Only physical targets and the qualified Acolyte ice / Paragon fire circles enter.
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn execute(
     runtime: &mut ChannelRuntimeV1,
@@ -108,9 +108,14 @@ pub(super) async fn execute(
         ) else {
             continue;
         };
-        let ice = source.element.as_deref() == Some("ice")
-            && record.profile.target.key == "oteryn:creature.radiant_acolyte"
-            && !source.needs_target
+        let elemental_area = matches!(
+            (
+                source.element.as_deref(),
+                record.profile.target.key.as_str()
+            ),
+            (Some("ice"), "oteryn:creature.radiant_acolyte")
+                | (Some("fire"), "oteryn:creature.radiant_paragon")
+        ) && !source.needs_target
             && matches!(
                 source.area,
                 Some(ProjectV2AbilityArea::Circle { radius_tiles: 4 })
@@ -119,7 +124,7 @@ pub(super) async fn execute(
             && source.area.is_none()
             && source.needs_target;
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack
-            || !(ice || physical)
+            || !(elemental_area || physical)
             || source.needs_direction
             || source.chain.is_some()
             || source.windup.is_some()
@@ -148,7 +153,7 @@ pub(super) async fn execute(
         } else {
             vec![(0, 0)]
         };
-        let center = if ice { from } else { to };
+        let center = if elemental_area { from } else { to };
         let mut tiles = BTreeMap::new();
         for (dx, dy) in offsets {
             let (Some(x), Some(y)) = (center.x.checked_add(dx), center.y.checked_add(dy)) else {
@@ -161,7 +166,7 @@ pub(super) async fn execute(
             };
             // An immutable source blocker is already a refusal. Do not require sight
             // through that blocker (or usable item metadata for a tile never admitted).
-            if ice
+            if elemental_area
                 && room
                     .movement_cells()
                     .spell_tiles()
@@ -185,7 +190,7 @@ pub(super) async fn execute(
             }
             // Sight excludes its endpoints. An area needs the actual current tile too:
             // ground, PZ, floor changes and Item blockers come from the same transaction.
-            let area_tile = if ice {
+            let area_tile = if elemental_area {
                 map.read(runtime, at).await
             } else {
                 Some(true)
@@ -227,7 +232,7 @@ pub(super) async fn execute(
             let Some(session) = *session else {
                 continue;
             };
-            if !ice && *target != proposal.target {
+            if !elemental_area && *target != proposal.target {
                 continue;
             }
             let Ok(position) = runtime.read_actor_position(*target) else {
@@ -275,10 +280,11 @@ pub(super) async fn execute(
             else {
                 continue;
             };
-            let protection = if ice {
-                state.equipped_ice_protection()
-            } else {
-                state.equipped_physical_protection()
+            let protection = match source.element.as_deref() {
+                Some("ice") => state.equipped_ice_protection(),
+                Some("fire") => state.equipped_fire_protection(),
+                Some("physical") => state.equipped_physical_protection(),
+                _ => continue,
             };
             let multiplier = match protection {
                 Some(protection) => oteryn_gameplay_items::equipment_effects::apply_protection(
@@ -326,8 +332,8 @@ pub(super) async fn execute(
             tiles,
         };
         let mut spells = std::mem::take(&mut states.monster_spells);
-        let execute = if ice {
-            crate::creature_damage_spell::DamageSpellOwner::execute_current_ice_area
+        let execute = if elemental_area {
+            crate::creature_damage_spell::DamageSpellOwner::execute_current_elemental_area
         } else {
             crate::creature_damage_spell::DamageSpellOwner::execute_current_physical
         };

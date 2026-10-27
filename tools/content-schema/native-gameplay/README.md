@@ -102,15 +102,17 @@ rows remain provisional pinned donor values, **not verified against Global**; bo
 and scaling retain the same limitation. This metadata does not activate an encounter or
 admit an unsupported corpse lifecycle.
 
-The Acolyte additionally carries `attack_definitions`: the exact canonical reference
-`records` and typed authoring `profiles` for its Creature, Behavior, Abilities, Effects
+The Acolyte and Paragon additionally carry `attack_definitions`: the exact canonical reference
+`records` and typed authoring `profiles` for each Creature, Behavior, Abilities, Effects
 and Formulas (at most 128 records and 128 profiles). The loader requires matching
-Creature and Behavior bodies and rejects duplicate or mismatched records and profiles. This closure enables the existing AI schedule; references alone
-retain the legacy targeting-only projection. The native dispatch consumes only its
-single-target physical spell (`attack-3`) through the existing damage-spell owner,
-using the runtime's current fence, transaction-bound sight and current player facts.
-Area and elemental spells remain unsupported by this consumer. The source's numerical
-damage and chance retain their provisional qualification above.
+Creature and Behavior bodies and rejects duplicate or mismatched records and profiles.
+This closure enables the existing AI schedule; references alone retain the legacy
+targeting-only projection. The native dispatch consumes Acolyte's single-target physical spell (`attack-3`)
+and ice circle (`attack-2`), plus Paragon's fire circle (`attack-2`), through the existing
+damage-spell owner, using the runtime's current fence, transaction-bound sight and
+current player facts. Circles read current area tiles and element-specific direct
+equipment protection. Other authored spells remain unsupported by this consumer.
+The source's numerical damage and chance retain their provisional qualification above.
 
 The Summer producer also binds all six Radiants' pinned physical melee rows to the
 existing `monster_melee` owner (2,000 ms, 100% chance, primary physical damage only).

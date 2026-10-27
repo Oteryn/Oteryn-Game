@@ -164,7 +164,7 @@ fn setup_named(
         },
     )
     .expect("qualified fixture");
-    let (records, profiles) = if name == "radiant_acolyte" {
+    let (records, profiles) = if matches!(name, "radiant_acolyte" | "radiant_paragon") {
         let document: crate::content::native_gameplay::CreatureProfilesDocument =
             serde_json::from_slice(include_bytes!(concat!(
                 env!("CARGO_MANIFEST_DIR"),
@@ -174,9 +174,9 @@ fn setup_named(
         let definitions = document
             .records
             .into_iter()
-            .find(|record| record.profile.target.key == "oteryn:creature.radiant_acolyte")
+            .find(|record| record.profile.target.key == format!("oteryn:creature.{name}"))
             .and_then(|record| record.attack_definitions)
-            .expect("actual Acolyte closure");
+            .expect("actual Radiant closure");
         (definitions.records, definitions.profiles)
     } else if name == "bony_sea_devil" {
         let packet = native_windup_packet();
@@ -1543,19 +1543,18 @@ fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
 
 #[test]
 fn summer_current_physical_spell_uses_runtime_fence_and_replays_without_damage() {
-    qualify_current_spell_replay(2);
+    qualify_current_spell_replay("radiant_acolyte", 2);
 }
 
 #[test]
 fn summer_current_ice_area_uses_runtime_fence_and_replays_without_damage() {
-    qualify_current_spell_replay(1);
+    qualify_current_spell_replay("radiant_acolyte", 1);
 }
 
-fn qualify_current_spell_replay(index: usize) {
-    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
-        setup_named("radiant_acolyte", index);
+fn qualify_current_spell_replay(name: &str, index: usize) {
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
     let execute = if index == 1 {
-        DamageSpellOwner::execute_current_ice_area
+        DamageSpellOwner::execute_current_elemental_area
     } else {
         DamageSpellOwner::execute_current_physical
     };
@@ -1629,19 +1628,18 @@ fn qualify_current_spell_replay(index: usize) {
 
 #[test]
 fn summer_current_physical_spell_lethal_hit_retains_the_existing_death_receipt() {
-    qualify_current_spell_lethal(2);
+    qualify_current_spell_lethal("radiant_acolyte", 2);
 }
 
 #[test]
 fn summer_current_ice_area_lethal_hit_retains_the_existing_death_receipt() {
-    qualify_current_spell_lethal(1);
+    qualify_current_spell_lethal("radiant_acolyte", 1);
 }
 
-fn qualify_current_spell_lethal(index: usize) {
-    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
-        setup_named("radiant_acolyte", index);
+fn qualify_current_spell_lethal(name: &str, index: usize) {
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
     let execute = if index == 1 {
-        DamageSpellOwner::execute_current_ice_area
+        DamageSpellOwner::execute_current_elemental_area
     } else {
         DamageSpellOwner::execute_current_physical
     };
@@ -2611,4 +2609,14 @@ fn presentation_current_tile_policy_unavailable_refuses_and_no_vital_commit() {
         ),
         Err(AttackError::MissingCombatFacts)
     );
+}
+
+#[test]
+fn summer_current_paragon_fire_area_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_paragon", 1);
+}
+
+#[test]
+fn summer_current_paragon_fire_area_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_paragon", 1);
 }

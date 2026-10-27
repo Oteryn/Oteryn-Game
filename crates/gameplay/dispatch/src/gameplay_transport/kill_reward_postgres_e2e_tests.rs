@@ -99,6 +99,13 @@ fn summer_acolyte_ice_area_hits_multiple_players_through_the_production_owner() 
 }
 
 #[test]
+fn summer_paragon_fire_area_hits_multiple_players_through_the_production_owner() -> TestResult {
+    scenario_thread::run("summer-paragon-fire-area", || {
+        scenario_with_creature_at_range(None, false, Some("paragon"), false, true, true)
+    })
+}
+
+#[test]
 fn summer_radiant_all_six_kills_settle_and_decay_on_postgres() -> TestResult {
     scenario_thread::run("summer-radiant-settlements", || {
         for name in [
@@ -137,7 +144,7 @@ fn scenario_with_creature_at_range(
     radiant: Option<&str>,
     settle_radiant: bool,
     ranged_spell: bool,
-    ice_area: bool,
+    elemental_area: bool,
 ) -> TestResult {
     run(async |admin| {
         let harness =
@@ -439,7 +446,7 @@ fn scenario_with_creature_at_range(
             );
         }
 
-        if ice_area {
+        if elemental_area {
             let mut runtime = owner.runtime.lock().await;
             let mut states = owner.states.spell_states.lock().await;
             for (tag, position) in [
@@ -496,7 +503,7 @@ fn scenario_with_creature_at_range(
                     )
                     .ok_or("extra spell state")?;
             }
-            // A physical spell cannot qualify this test. Direct ice protection is read
+            // A physical spell cannot qualify this test. Direct elemental protection is read
             // independently for both victims, while armor remains equipped throughout.
             for tag in [50, 100, 101] {
                 let session = GameSessionId::decode(&id(tag)).map_err(debug)?;
@@ -505,11 +512,11 @@ fn scenario_with_creature_at_range(
                     .map_err(debug)?
                     .into_iter()
                     .find(|(_, _, current)| *current == Some(session))
-                    .ok_or("ice player")?
+                    .ok_or("area player")?
                     .0;
                 let state = states
                     .get_mut(&runtime, target, session)
-                    .ok_or("ice state")?;
+                    .ok_or("area state")?;
                 state.install_equipped_armor(5_000);
                 state.install_equipped_physical_protection(Some(
                     crate::content::ReferenceRationalPercent {
@@ -523,10 +530,18 @@ fn scenario_with_creature_at_range(
                         denominator: 1,
                     },
                 ));
+                if radiant == Some("paragon") {
+                    state.install_equipped_fire_protection(Some(
+                        crate::content::ReferenceRationalPercent {
+                            numerator: 100,
+                            denominator: 1,
+                        },
+                    ));
+                }
             }
         }
 
-        if ice_area {
+        if elemental_area {
             let mut protected_cast = false;
             let mut damaged = false;
             for _ in 0..128 {
@@ -553,12 +568,12 @@ fn scenario_with_creature_at_range(
                     let target = census
                         .iter()
                         .find(|(_, _, current)| *current == Some(session))
-                        .ok_or("ice player")?
+                        .ok_or("area player")?
                         .0;
                     health.push(
                         states
                             .get(&runtime, target, session)
-                            .ok_or("ice state")?
+                            .ok_or("area state")?
                             .vitals()
                             .health,
                     );
@@ -574,20 +589,25 @@ fn scenario_with_creature_at_range(
                     assert_eq!(
                         health,
                         [500, 500, 500],
-                        "current ice protection blocks the first source cast"
+                        "current elemental protection blocks the first source cast"
                     );
-                    // Keep all physical protection and armor; remove only direct ice protection.
+                    // Keep all physical protection and armor; remove only the source element protection.
                     for tag in [50, 100] {
                         let session = GameSessionId::decode(&id(tag)).map_err(debug)?;
                         let target = census
                             .iter()
                             .find(|(_, _, current)| *current == Some(session))
-                            .ok_or("ice player")?
+                            .ok_or("area player")?
                             .0;
-                        states
+                        let state = states
                             .get_mut(&runtime, target, session)
-                            .ok_or("ice state")?
-                            .install_equipped_ice_protection(None);
+                            .ok_or("area state")?;
+                        if radiant == Some("paragon") {
+                            // Ice protection stays installed and cannot block a fire hit.
+                            state.install_equipped_fire_protection(None);
+                        } else {
+                            state.install_equipped_ice_protection(None);
+                        }
                     }
                     protected_cast = true;
                 } else if health[0] < 500 || health[1] < 500 {
@@ -595,14 +615,14 @@ fn scenario_with_creature_at_range(
                     assert_eq!(
                         health,
                         [0, 0, 500],
-                        "one ice circle lethally hits both players through their physical armor"
+                        "one elemental circle lethally hits both players through their physical armor"
                     );
                     for tag in [50, 100] {
                         let session = GameSessionId::decode(&id(tag)).map_err(debug)?;
                         let target = census
                             .iter()
                             .find(|(_, _, current)| *current == Some(session))
-                            .ok_or("ice player")?
+                            .ok_or("area player")?
                             .0;
                         assert!(states.player_death(&runtime, target, session).is_some());
                     }
@@ -611,11 +631,11 @@ fn scenario_with_creature_at_range(
                 }
                 drop(states);
                 drop(runtime);
-                owner.clock_origin = owner.clock_origin.checked_sub(PASS).ok_or("ice clock")?;
+                owner.clock_origin = owner.clock_origin.checked_sub(PASS).ok_or("area clock")?;
             }
             assert!(
                 damaged,
-                "automatic source ice circle must execute (protected cast {protected_cast})"
+                "automatic source elemental circle must execute (protected cast {protected_cast})"
             );
             drop(owner);
             drop(authority);

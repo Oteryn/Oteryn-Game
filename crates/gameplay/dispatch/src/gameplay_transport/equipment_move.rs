@@ -357,6 +357,12 @@ pub(super) async fn move_equipment(
                         .get(&crate::content::ReferenceResistanceKind::Ice)
                         .copied(),
                 );
+                state.install_equipped_fire_protection(
+                    effects
+                        .protections
+                        .get(&crate::content::ReferenceResistanceKind::Fire)
+                        .copied(),
+                );
                 equipment_effects_owner::install_suppressions(state, effects);
                 state.install_equipped_armor(armor);
                 state.install_equipped_defence(defence);
