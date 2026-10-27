@@ -74,9 +74,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             0 => None,
             1 => Some(task_board::select_transition(request.task)),
             2 => Some(task_board::claim_transition(request.task)),
+            3 => {
+                let Some(tracks) = self.task_board_tracks(session) else {
+                    return TaskBoardReply::Rejected;
+                };
+                let state = task_board::state(&tracks);
+                let Some(path) = usize::from(request.task).checked_sub(1) else {
+                    return TaskBoardReply::Rejected;
+                };
+                task_board::talisman_upgrade_transition(path, state.talisman_levels[path])
+            }
             _ => return TaskBoardReply::Rejected,
         };
-        let mut refused = false;
+        let mut refused = request.action == 3 && transition_key.is_none();
         if let Some(transition_key) = transition_key {
             let Ok(Some(fence)) = self.current_quest_fence(session).await else {
                 return TaskBoardReply::Rejected;
@@ -146,8 +156,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let copy = sessions.get(&session)?.copy.as_ref()?;
         Some(
             copy.tracks()
-                .range(task_board::QUEST.to_owned()..)
-                .take_while(|(key, _)| key.starts_with(task_board::QUEST))
+                .range("oteryn:taskboard/".to_owned()..)
+                .take_while(|(key, _)| key.starts_with("oteryn:taskboard/"))
                 .map(|(key, value)| (key.clone(), *value))
                 .collect(),
         )
@@ -192,6 +202,14 @@ fn board_reply(refused: bool, tracks: &std::collections::BTreeMap<String, i64>) 
         selected: state.selected,
         kills: state.kills,
         points: state.points,
+        bounty_points: state.bounty_points,
+        talisman_levels: state.talisman_levels,
+        talisman_bonuses: std::array::from_fn(|path| {
+            task_board::talisman_bonus(path, state.talisman_levels[path])
+        }),
+        talisman_next_costs: state.talisman_levels.map(|level| {
+            task_board::talisman_upgrade_cost(level).unwrap_or(0)
+        }),
         tasks: task_board::TASKS
             .iter()
             .zip(state.claimed_at)
