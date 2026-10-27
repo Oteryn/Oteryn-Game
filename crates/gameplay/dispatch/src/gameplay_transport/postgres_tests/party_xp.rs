@@ -731,13 +731,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             continue;
         }
         let runtime = owner.runtime.lock().await;
-        if matches!(
-            case,
-            Case::Inactive | Case::ForgeIdle | Case::ForgeFar | Case::ForgeForeign
-        ) {
-            // This is a level-one solo fist attacker (the build seed is not a level).
-            // Balanced-mode chip damage depended on the old content-seeded draws to
-            // kill within 64 passes. Use the real offensive mode for this XP fixture.
+        if case.forge() || matches!(case, Case::Inactive) {
+            // These level-one fist attackers qualify reward settlement, not fight-mode
+            // balance. Content-pinned draws can leave the 72-HP Fiendish rat alive
+            // after 256 Balanced passes. Use the same real Offensive mode for every
+            // Forge case, including the solo, range and foreign-contributor fixtures.
             assert!(owner.states.attack.lock().await.set_modes(
                 &runtime,
                 actor,

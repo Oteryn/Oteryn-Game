@@ -150,7 +150,7 @@ fn corpse_must_be_an_admitted_materializable_bounded_container() {
         json!({"materializable": false, "container_capacity": 16}),
         json!({"materializable": true, "container_capacity": null}),
         json!({"materializable": true, "container_capacity": 0}),
-        json!({"materializable": true, "container_capacity": 17}),
+        json!({"materializable": true, "container_capacity": 31}),
     ] {
         let mut value = section();
         value["items"][0]["materializable"] = facts["materializable"].clone();
@@ -167,9 +167,15 @@ fn corpse_must_be_an_admitted_materializable_bounded_container() {
         reason(&build(&value), RAT),
         NoSettlementReason::CorpseItemInadmissible
     );
-    let mut value = section();
-    value["items"][0]["container_capacity"] = json!(1);
-    build(&value).row(RAT).expect("capacity 1 is admitted");
+    // Decision 20 raises the shared ceiling to 30; the source container need
+    // not have the rat's original capacity of 16 or equal the loot-plan limit.
+    for capacity in [1, 16, 17, 30] {
+        let mut value = section();
+        value["items"][0]["container_capacity"] = json!(capacity);
+        build(&value)
+            .row(RAT)
+            .expect("capacity within 1..=30 is admitted");
+    }
 }
 
 #[test]

@@ -168,6 +168,7 @@ fn creature_profile() -> ProjectV2AuthoringProfile {
                 inspection: "You see a dragon.".into(),
                 defense: 30,
                 critical_chance_ppm: 0,
+                reference_level: None,
                 condition_immunities: vec!["invisible".into(), "paralyze".into()],
                 flags: ProjectV2CreatureFlags {
                     attackable: true,

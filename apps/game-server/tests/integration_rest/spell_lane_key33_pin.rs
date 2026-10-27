@@ -44,7 +44,7 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/map_item_mint.rs", "apply_mint"),
     ("crates/gameplay/durability/src/durability/native_map_items.rs", "adopt_current_ground"),
     ("crates/gameplay/durability/src/durability/native_map_items.rs", "initialize_in_transaction"),
-    ("crates/gameplay/durability/src/durability/quest_world_callback.rs", "consume"),
+    ("crates/gameplay/durability/src/durability/quest_world_callback.rs", "location_queries"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_field_chains_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_temporal.rs", "drain_due_items_in_transaction"),
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "apply_consumption_operation"),

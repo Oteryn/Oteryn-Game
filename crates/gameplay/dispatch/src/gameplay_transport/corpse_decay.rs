@@ -42,7 +42,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .iter()
             .map(|corpse| corpse.corpse_item_instance_id)
             .collect();
-        for corpse in schedule.corpses {
+        for corpse in &schedule.corpses {
             if corpse.decay_at_unix_ms > schedule.database_now_unix_ms {
                 continue;
             }
@@ -71,6 +71,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .is_ok_and(|owner| owner.generation() == fence.scope_ownership_generation)
         {
             let _ = runtime.retain_live_corpse_items(&live);
+            for corpse in &schedule.corpses {
+                let _ = runtime.refresh_corpse_item(
+                    corpse.corpse_item_instance_id,
+                    &corpse.definition.family,
+                    &corpse.definition.production_key,
+                    &corpse.definition.revision_ref,
+                );
+            }
         }
     }
 }
