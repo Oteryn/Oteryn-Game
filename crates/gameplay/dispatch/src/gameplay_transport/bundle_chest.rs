@@ -70,9 +70,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         })
         .ok()?;
         let (claim, bound) = resolved.canonical?;
-        // Quest-transition admission remains at channel boot for canonical Content.
-        // Do not bypass that admission for an unmounted transition in a source shard.
-        if bound.placement.quest_transition.is_some() {
+        // Source shards bypass the entry-room Content check at boot. Resolve their
+        // authored transition against this owner's loaded catalogue before any mint
+        // reservation, just as canonical chests do at channel activation.
+        if bound
+            .placement
+            .quest_transition
+            .as_ref()
+            .is_some_and(|key| {
+                self.quest_catalogue
+                    .as_ref()
+                    .and_then(|catalogue| catalogue.transition(key))
+                    .is_none()
+            })
+        {
             return Some(outcome(UseDisposition::Rejected));
         }
         Some(
@@ -157,9 +168,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     ruleset_revision: entry_chest::RULESET_REVISION.into(),
                     sim_revision: entry_chest::SIM_REVISION.into(),
                     achievement: None,
-                    quest_transition: None,
+                    quest_transition: bound.placement.quest_transition.clone(),
                     key_number: bound.placement.key_number,
                 };
+                // Arm recovery before the commit: the deadline may cancel an
+                // already committed mint before its acknowledgement reaches us.
+                if bound.placement.quest_transition.is_some() {
+                    self.schedule_quest_refresh(command.game_session_id);
+                }
                 let result = async {
                     let mut candidate = self
                         .root
@@ -176,6 +192,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .await
                 }
                 .await;
+                // The mint owns the atomic obligation insert. The quest owner applies
+                // it in its revision slot; admission/cadence resumes an unacknowledged
+                // commit without minting the reward or advancing the track twice.
+                if bound.placement.quest_transition.is_some() && result.is_ok() {
+                    self.refresh_quest_session(command.game_session_id, false)
+                        .await;
+                }
                 match result {
                     Ok((_, notice)) => UseOutcome {
                         earned: super::earned_notice(
