@@ -1,6 +1,26 @@
 use super::*;
 
 #[test]
+fn market_schema_uses_current_placement_fee_rate_and_cap() -> TestResult {
+    run("marketfee", async |h| {
+        let function: String = sqlx::query_scalar(
+            "SELECT pg_get_functiondef('game_market_write(uuid,uuid,uuid,numeric,numeric,numeric,uuid,smallint,uuid,text,text,smallint,integer,bigint,boolean,integer,bytea,bytea)'::regprocedure)",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(function.contains("least(2500000,greatest(20,(total*25)/1000))"));
+
+        let constraint: String = sqlx::query_scalar(
+            "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='game_market_settlements'::regclass AND conname='game_market_settlements_fee_check'",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(constraint.contains("2500000"));
+        Ok(())
+    })
+}
+
+#[test]
 fn market_native_operation_history_binding_immutability_and_occurrence_namespace() -> TestResult {
     run("marketreceipt", async |h| {
         let occurrence = Occurrence::Command(CommandRef::new(

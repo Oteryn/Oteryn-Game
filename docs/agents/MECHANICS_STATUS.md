@@ -24,6 +24,7 @@
 | Container sort (NEWS-HIST-CONTAINER-SORT-1) | Worktree implementation: fenced item-loop ordinal permutation; name, total weight, expiry, stack size; both directions, bags first, recursive | Capability 146 / command 168 registered; native UI unsupported fragment | Auto-sort on insertion; native UI; exact-head independent review and CI before integration. |
 | Cooking / food crafting (COOK-1) | 🔵 Plan w [CRAFT-1](tasks/CRAFT-1.md) | Do weryfikacji przy alokacji | Składniki, przepisy, oven/fire i jedzenie z regen; rozszerzenie poniżej, bez nowej karty. |
 | Mining / gathering (MINING-1) | 🔵 [waiting](tasks/MINING-1.md) | Do weryfikacji przy alokacji | Pick na stone/ore, resource cooldown/respawn i drops; osobna decyzja o yields. |
+| Market | Fee 2.5%, cap 2,500,000 gold | Bez zmian | Parity z tibia.com news 8996 (2026-10-06). |
 | In-game Store (STORE-1) | 🔵 [waiting](tasks/STORE-1.md) | Do weryfikacji przy alokacji | Balance, catalogue, durable fenced purchase i history przez kontrakt Platform; bez real payments. |
 
 ## COOK-1 — rozszerzenie istniejącego CRAFT-1
