@@ -19,6 +19,7 @@
 
 | Mechanika / funkcja | Serwer | Klient | Co pozostaje |
 |---|---|---|---|
+| Supply Stash — free accounts (DEPOT-FREE-STASH-1) | Stow i withdraw dostępne dla Free i expired Premium; istniejący fenced owner, ograniczenia i replay zachowane | Bez zmian protokołu | Lokalna kwalifikacja i parity: [FSTASH-FINAL](../../FSTASH-FINAL.md). |
 | Boss encounters / Bosstiary (BOSS-1) | 🔵 Plan w [MONSTER-META-1](tasks/MONSTER-META-1.md) | Do weryfikacji przy alokacji | Cooldown postaci, lever/room entry, kill credit, loot i Bosstiary; rozszerzenie poniżej, bez nowej karty. |
 | Cooking / food crafting (COOK-1) | 🔵 Plan w [CRAFT-1](tasks/CRAFT-1.md) | Do weryfikacji przy alokacji | Składniki, przepisy, oven/fire i jedzenie z regen; rozszerzenie poniżej, bez nowej karty. |
 | Mining / gathering (MINING-1) | 🔵 [waiting](tasks/MINING-1.md) | Do weryfikacji przy alokacji | Pick na stone/ore, resource cooldown/respawn i drops; osobna decyzja o yields. |

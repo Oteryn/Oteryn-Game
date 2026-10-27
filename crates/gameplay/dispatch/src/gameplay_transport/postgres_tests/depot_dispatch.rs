@@ -16,6 +16,7 @@ use crate::durability::item_mint::{
     GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest,
 };
 use crate::durability::item_transfer::{ItemTransferDestination, ItemTransferRequest};
+use crate::durability::premium_fence::EntitlementState;
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -38,12 +39,38 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
 }
 
 #[test]
-fn stash_session_dispatch_conserves_and_replays() -> TestResult {
+fn stash_session_dispatch_free_conserves_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(true, false, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "stash e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn stash_session_dispatch_conserves_and_replays() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(true, false, false, false, false, Some(EntitlementState::Active))
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "Premium stash e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn stash_session_dispatch_expired_premium_conserves_and_replays() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(true, false, false, false, false, Some(EntitlementState::Expired))
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "expired Premium stash e2e panicked")?
         .map_err(Into::into)
 }
 
@@ -93,6 +120,24 @@ fn scenario(
     nested_ground: bool,
     depot_session: bool,
     ground_movement: bool,
+) -> TestResult {
+    scenario_with_premium(
+        stash,
+        ground_container,
+        nested_ground,
+        depot_session,
+        ground_movement,
+        None,
+    )
+}
+
+fn scenario_with_premium(
+    stash: bool,
+    ground_container: bool,
+    nested_ground: bool,
+    depot_session: bool,
+    ground_movement: bool,
+    stash_premium: Option<EntitlementState>,
 ) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
@@ -258,7 +303,7 @@ fn scenario(
             )
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let (consumer, clock, activation, _) =
+        let (consumer, clock, activation, mut evidence) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
         if stash {
             harness
@@ -271,6 +316,19 @@ fn scenario(
                 .await
                 .map_err(debug)?;
         }
+        let consumer = if stash_premium == Some(EntitlementState::Expired) {
+            evidence.state = EntitlementState::Expired;
+            evidence.effective_until_us = evidence.authority_issued_at_us;
+            let consumer = std::sync::Arc::new(crate::premium::PremiumConsumer::default());
+            consumer.prove_for_test(evidence);
+            assert_eq!(
+                consumer.class(id(40), clock.read_current_window()),
+                crate::premium::PremiumClass::Expired
+            );
+            consumer
+        } else {
+            consumer
+        };
         let premium =
             crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
                 consumer,
@@ -476,28 +534,14 @@ fn scenario(
             return harness.cleanup().await;
         }
         if stash {
-            use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
-            let free = owner
-                .stash(
-                    deps.actor,
-                    UseCommand {
-                        game_session_id: session,
-                        command_id: 900,
-                        item_fence: Some(fence),
-                    },
-                    StashIntent {
-                        page: 0,
-                        action: StashAction::Stow(handle),
-                    },
-                    Some(ItemKey::Instance(carried.ok_or("source")?)),
-                    true,
-                )
-                .await
-                .ok_or("free refusal")?;
-            assert_eq!(free.outcome, StashOutcome::PremiumRequired);
-            owner.premium_coordinator = Some(&premium);
-            owner.admit_premium(id(40), session);
-            assert!(owner.session_premium_gate(session).await.premium_current());
+            if stash_premium.is_some() {
+                owner.premium_coordinator = Some(&premium);
+                owner.admit_premium(id(40), session);
+            }
+            assert_eq!(
+                owner.session_premium_gate(session).await.premium_current(),
+                stash_premium == Some(EntitlementState::Active)
+            );
             let other_handles = stacks
                 .iter()
                 .skip(1)

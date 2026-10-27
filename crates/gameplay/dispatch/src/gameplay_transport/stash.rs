@@ -71,9 +71,6 @@ pub(super) async fn execute(
         },
         row_open,
         access_refusal: (!reachable).then_some(StashOutcome::NoLocker),
-        premium: admission
-            .session_premium_gate(command.game_session_id)
-            .await,
     };
     if intent.action != StashAction::Browse {
         let previous = admission

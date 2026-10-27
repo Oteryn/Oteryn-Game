@@ -145,12 +145,16 @@ pub(super) async fn exercise(
             assert_eq!(added.rows[0].quantity, 63 + 100 * (u32::try_from(i)? + 1));
             latest = added.rows[0].handle;
         }
-        send(&mut client, 9, intent(latest, 201)).await?;
-        let multiple = result(&mut client, 9, &mut deltas).await?;
+        send(&mut client, 9, intent(latest, 2000)).await?;
+        let full = result(&mut client, 9, &mut deltas).await?;
+        assert_eq!(full.outcome, StashOutcome::NoRoom);
+        assert_eq!(full.rows[0].quantity, 263);
+        send(&mut client, 10, intent(latest, 201)).await?;
+        let multiple = result(&mut client, 10, &mut deltas).await?;
         assert_eq!(multiple.outcome, StashOutcome::Committed);
         assert_eq!(multiple.rows[0].quantity, 62);
-        send(&mut client, 10, intent(multiple.rows[0].handle, 62)).await?;
-        let empty = result(&mut client, 10, &mut deltas).await?;
+        send(&mut client, 11, intent(multiple.rows[0].handle, 62)).await?;
+        let empty = result(&mut client, 11, &mut deltas).await?;
         assert_eq!(empty.outcome, StashOutcome::Committed);
         assert!(empty.rows.is_empty());
         assert!(deltas >= 9);
