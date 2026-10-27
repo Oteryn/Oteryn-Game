@@ -25,7 +25,7 @@ SEMANTIC_WORKFLOW_PATH = ".github/workflows/game-atlas-semantic-search.yml"
 STATIC_WORKFLOW_PATH = ".github/workflows/game-atlas-static-creatures.yml"
 REGRESSION_COMMAND = f"python -S {REGRESSION}"
 EXPECTED_SEMANTIC_WORKFLOW_BLOB = "b566607e6d6fe54aa02d58004ed0aacdff6c00f6"
-EXPECTED_STATIC_WORKFLOW_BLOB = "0ac19bcea61f375d66628063ca671bcb502164db"
+EXPECTED_STATIC_WORKFLOW_BLOB = "d3e15437a57e7637e130dc7e8f3079eb68e5e288"
 
 SEMANTIC_PR_PATHS = (
     "tools/game-atlas-semantic-search/**",
@@ -617,7 +617,7 @@ def _assert_static_execution_steps(workflow: str) -> None:
         workflow,
         "Set up Python",
         (
-            "        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0",
+            "        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0",
             "        with:",
             "          python-version: '3.12'",
             "          check-latest: false",
