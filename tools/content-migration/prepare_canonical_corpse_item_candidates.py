@@ -181,9 +181,9 @@ def prepare_item(source_id, scope_binding, tables, bindings, native_records, app
     if capacity is not None:
         rows.append(promotion_row(scope_binding['key'], source_id, 'container.capacity', capacity))
         proposed['container.capacity'] = capacity
-        if capacity > 16:
-            diagnostics.append({'code': 'SOURCE_CAPACITY_EXCEEDS_D3_16', 'source_capacity': capacity,
-                                'accepted_runtime_ceiling': 16, 'source_value_preserved': True})
+        if capacity > 30:
+            diagnostics.append({'code': 'SOURCE_CAPACITY_EXCEEDS_D3_30', 'source_capacity': capacity,
+                                'accepted_runtime_ceiling': 30, 'source_value_preserved': True})
     for field, flag in (('movable', 'unmove'), ('pickupable', 'take')):
         keys = ('pickupable', 'allowpickupable') if field == 'pickupable' else ('movable',)
         explicit = [k for k in keys if k in record['fields']]

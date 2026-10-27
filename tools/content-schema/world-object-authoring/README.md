@@ -69,6 +69,14 @@ every base shard and the base census, adds separate shards using numeric ranges 
 8,578 Terrain and 12,877 WorldObject. The donor input is required once these supplemental
 shards exist. Static catalog definitions add no placements, gameplay, class or admission.
 
+## Appearance-only Summer ground (decision 21)
+
+Run `python3 tools/content-schema/world-object-authoring/summer_ground.py [--check]`.
+The tool verifies the official client artifact and membership for ground 44576, emits
+its exact Terrain identity without an Item pointer, and refreshes the existing palette
+slot. Region bytes and palette positions stay stable. The full catalogue builder
+includes the same shard with the qualified official catalogue. XML-only facts remain UNKNOWN.
+
 ## Pinned Crystal census (`ff7ede5`)
 
 - After D149, **21,330 records**: 8,548 Terrain and 12,782 WorldObject (128 placeholder slots excluded). This

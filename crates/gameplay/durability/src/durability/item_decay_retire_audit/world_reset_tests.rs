@@ -81,7 +81,7 @@ fn world_reset_rejects_mixed_causes_locations_and_substituted_binding() {
                 .ground_container_entry
                 .as_mut()
                 .unwrap()
-                .placement_ordinal = 17
+                .placement_ordinal = mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX + 1
         },
         |message| {
             message
@@ -117,7 +117,7 @@ fn world_reset_largest_admitted_audit_fits_the_registered_envelope() {
         message.runtime_scope_ownership_generation = u64::MAX;
         let ground = if entry {
             let entry = message.ground_container_entry.as_mut().unwrap();
-            entry.placement_ordinal = 16;
+            entry.placement_ordinal = mint::GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX;
             entry.parent_ground.as_mut().unwrap()
         } else {
             message.ground.as_mut().unwrap()

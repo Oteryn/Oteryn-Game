@@ -19,7 +19,7 @@ COMPILER = (
     "tools/content-schema/item-authoring/lower_elemental_magic_modifier_packet.py"
 )
 PROOF = "docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-source-qualification-v1.json"
-PROOF_SHA = "5424043d2faea0b479a4d3cc0cf854c408aa9f374108e6ad0e0e5d874a719e2b"
+PROOF_SHA = "10485477204885eb94089a20828b0aa93251d2638ea4b55213423afed412af9e"
 OUTPUT = (
     ROOT
     / "docs/agents/evidence/OTV2-20261002-item-elemental-magic-modifier-promotion-v1.json"

@@ -164,7 +164,24 @@ fn setup_named(
         },
     )
     .expect("qualified fixture");
-    let (records, profiles) = if name == "bony_sea_devil" {
+    let (records, profiles) = if matches!(
+        name,
+        "radiant_acolyte" | "radiant_paragon" | "radiant_templar"
+    ) {
+        let document: crate::content::native_gameplay::CreatureProfilesDocument =
+            serde_json::from_slice(include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/creatures/definitions/spell-native-profiles.json"
+            )))
+            .expect("actual native profiles");
+        let definitions = document
+            .records
+            .into_iter()
+            .find(|record| record.profile.target.key == format!("oteryn:creature.{name}"))
+            .and_then(|record| record.attack_definitions)
+            .expect("actual Radiant closure");
+        (definitions.records, definitions.profiles)
+    } else if name == "bony_sea_devil" {
         let packet = native_windup_packet();
         (
             serde_json::from_value(packet["records"].clone()).expect("qualified fixture"),
@@ -1528,6 +1545,178 @@ fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
 }
 
 #[test]
+fn summer_current_physical_spell_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_acolyte", 2);
+}
+
+#[test]
+fn summer_current_ice_area_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_acolyte", 1);
+}
+
+#[test]
+fn summer_current_holy_target_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_paragon", 2);
+}
+
+#[test]
+fn summer_current_holy_target_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_paragon", 2);
+}
+
+fn qualify_current_spell_replay(name: &str, index: usize) {
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
+    let execute = if index == 1 {
+        DamageSpellOwner::execute_current_elemental_area
+    } else {
+        DamageSpellOwner::execute_current_target_damage
+    };
+    let stamp = runtime.issue_owner_work().expect("current owner work");
+    let mut spells = DamageSpellOwner::default();
+    let first = execute(
+        &mut spells,
+        &mut runtime,
+        stamp,
+        &mut vitals,
+        &source,
+        &proposal,
+        &mut world,
+        SemanticTimeMicros::from_micros(2_000_000),
+    )
+    .expect("source under the runtime's fence");
+    assert!(
+        first.targets[0]
+            .1
+            .as_ref()
+            .expect("target")
+            .damage
+            .is_some()
+    );
+    let after = crate::gameplay_transport::actor_spell::observe_vitals(
+        &runtime,
+        &vitals,
+        proposal.target,
+        world.facts.attack.session,
+    )
+    .expect("current player");
+    assert_eq!(
+        execute(
+            &mut spells,
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(9_000_000),
+        )
+        .expect("same occurrence"),
+        first
+    );
+    assert_eq!(
+        crate::gameplay_transport::actor_spell::observe_vitals(
+            &runtime,
+            &vitals,
+            proposal.target,
+            world.facts.attack.session,
+        )
+        .expect("current player"),
+        after
+    );
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        execute(
+            &mut spells,
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(10_000_000),
+        ),
+        Err(AttackError::StaleOwner)
+    );
+}
+
+#[test]
+fn summer_current_physical_spell_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_acolyte", 2);
+}
+
+#[test]
+fn summer_current_ice_area_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_acolyte", 1);
+}
+
+fn qualify_current_spell_lethal(name: &str, index: usize) {
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
+    let execute = if index == 1 {
+        DamageSpellOwner::execute_current_elemental_area
+    } else {
+        DamageSpellOwner::execute_current_target_damage
+    };
+    let stamp = runtime.issue_owner_work().expect("current owner work");
+    vitals
+        .apply_attack_damage(
+            &mut runtime,
+            proposal.target,
+            world.facts.attack.session,
+            184,
+            "pre-spell-hit",
+            SemanticTimeMicros::from_micros(1_000_000),
+        )
+        .expect("one HP remains");
+    let mut spells = DamageSpellOwner::default();
+    let first = execute(
+        &mut spells,
+        &mut runtime,
+        stamp,
+        &mut vitals,
+        &source,
+        &proposal,
+        &mut world,
+        SemanticTimeMicros::from_micros(2_000_000),
+    )
+    .expect("source");
+    let damage = first.targets[0]
+        .1
+        .as_ref()
+        .expect("target")
+        .damage
+        .as_ref()
+        .expect("damage");
+    assert_eq!(damage.health_after, 0);
+    assert!(damage.death.is_some());
+    assert!(vitals.is_dead(proposal.target));
+    assert!(
+        vitals
+            .player_death(&runtime, proposal.target, world.facts.attack.session)
+            .is_some()
+    );
+    assert_eq!(
+        execute(
+            &mut spells,
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(3_000_000),
+        )
+        .expect("lethal replay"),
+        first
+    );
+    assert!(vitals.is_dead(proposal.target));
+    assert!(
+        vitals
+            .player_death(&runtime, proposal.target, world.facts.attack.session)
+            .is_some()
+    );
+}
+
+#[test]
 fn native_hunter_armor_only_blocks_real_arrow_without_vital_commit() {
     let (mut r, mut v, s, p, mut w, f, stamp) = setup_named("hunter", 1);
     assert!(s.armor);
@@ -2433,4 +2622,34 @@ fn presentation_current_tile_policy_unavailable_refuses_and_no_vital_commit() {
         ),
         Err(AttackError::MissingCombatFacts)
     );
+}
+
+#[test]
+fn summer_current_paragon_fire_area_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_paragon", 1);
+}
+
+#[test]
+fn summer_current_paragon_fire_area_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_paragon", 1);
+}
+
+#[test]
+fn summer_current_templar_energy_area_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_templar", 1);
+}
+
+#[test]
+fn summer_current_templar_energy_area_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_templar", 1);
+}
+
+#[test]
+fn summer_current_templar_holy_target_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay("radiant_templar", 2);
+}
+
+#[test]
+fn summer_current_templar_holy_target_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal("radiant_templar", 2);
 }

@@ -143,7 +143,8 @@ def source_inputs():
                 ):
                     generated_seen.add(entry["appearance_id"])
                     continue
-                owners.add(record["provenance"]["item_pointer"]["key"])
+                if pointer := record["provenance"].get("item_pointer"):
+                    owners.add(pointer["key"])
     return (
         document,
         members,

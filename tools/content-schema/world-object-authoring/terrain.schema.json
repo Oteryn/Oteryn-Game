@@ -361,7 +361,10 @@
                   "description": "SHA-256 of the exact admitted official appearances.dat artifact; not a Git commit."
                 },
                 "profile": {
-                  "const": "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1"
+                  "enum": [
+                    "OTERYN_OFFICIAL_CLIENT_WORLD_APPEARANCE/v1",
+                    "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1"
+                  ]
                 },
                 "client_version": {
                   "type": "string",
@@ -588,9 +591,47 @@
       "required": [
         "source",
         "source_item_id",
-        "item_pointer",
         "route",
         "fields"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "item_pointer"
+          ]
+        },
+        {
+          "properties": {
+            "source": {
+              "properties": {
+                "engine": {
+                  "const": "official_client"
+                },
+                "profile": {
+                  "const": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1"
+                }
+              }
+            },
+            "route": {
+              "properties": {
+                "owner": {
+                  "const": "Terrain"
+                },
+                "reason": {
+                  "const": "appearance_only_ground"
+                }
+              }
+            },
+            "source_item_id": {
+              "const": 44576
+            }
+          },
+          "not": {
+            "required": [
+              "item_pointer"
+            ]
+          }
+        }
       ]
     },
     "knownSourceRef": {
@@ -649,6 +690,16 @@
                     },
                     "profile": {
                       "const": "OTERYN_OFFICIAL_CLIENT_OWN_WIKI_WORLD/v1"
+                    }
+                  }
+                },
+                {
+                  "properties": {
+                    "engine": {
+                      "const": "official_client"
+                    },
+                    "profile": {
+                      "const": "OTERYN_OFFICIAL_CLIENT_APPEARANCE_ONLY_GROUND/v1"
                     }
                   }
                 }
