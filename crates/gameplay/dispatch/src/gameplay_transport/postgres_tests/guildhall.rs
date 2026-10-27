@@ -109,33 +109,37 @@ async fn access(h: &Harness, character: [u8; 16]) -> TestResult<Option<String>> 
 }
 #[test]
 fn guildhall_postgres_real_dispatch_split_escrow() -> TestResult {
-    run_scenario(0)
+    run_scenario(0, false)
 }
 
 #[test]
 fn guildhall_postgres_real_dispatch_disband_owned() -> TestResult {
-    run_scenario(1)
+    run_scenario(1, false)
+}
+#[test]
+fn guildhall_postgres_real_dispatch_disposition_release_routing() -> TestResult {
+    run_scenario(1, true)
 }
 #[test]
 fn guildhall_postgres_real_dispatch_disband_bid() -> TestResult {
-    run_scenario(2)
+    run_scenario(2, false)
 }
 #[test]
 fn guildhall_postgres_real_dispatch_catalogue_activation() -> TestResult {
-    run_scenario(3)
+    run_scenario(3, false)
 }
-fn run_scenario(ending: u8) -> TestResult {
+fn run_scenario(ending: u8, reject_ordinary_release: bool) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(ending).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(ending, reject_ordinary_release).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "guildhall thread panicked")??;
     Ok(())
 }
-fn scenario(ending: u8) -> TestResult {
+fn scenario(ending: u8, reject_ordinary_release: bool) -> TestResult {
     run(|admin| async move {
         reset();
         let h =
@@ -691,6 +695,12 @@ fn scenario(ending: u8) -> TestResult {
         sqlx::query("INSERT INTO game_item_house_interior_locations SELECT item,encode($1,'hex')::uuid,$2,'\\x01'::bytea,1,placement FROM hall_items").bind(id(42).as_slice()).bind(HOUSE).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_item_house_reclaim_provenance(item_instance_id,world_id,house_key,reclaim_subject_character_id,placement_transaction_id,provenance_revision) SELECT item,encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,placement,1 FROM hall_items").bind(id(42).as_slice()).bind(HOUSE).bind(id(41).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
+        if reject_ordinary_release {
+            // Fail even on an early-state call: guild work must never enter the
+            // personal release function, including before it reaches DRAINED.
+            sqlx::query("CREATE OR REPLACE FUNCTION game_house_move_out_release(op UUID) RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$ BEGIN RAISE EXCEPTION 'ordinary release called for guild disposition' USING ERRCODE='23514'; END $$")
+                .execute(&h.pool).await?;
+        }
         if ending == 1 {
             bank_command(
                 &owner,
@@ -704,11 +714,27 @@ fn scenario(ending: u8) -> TestResult {
             sqlx::query("UPDATE game_house_properties SET paid_until=clock_timestamp()-interval '8 days',rent_gold=2000,revision=revision+1 WHERE house_key=$1")
                 .bind(HOUSE).execute(&h.pool).await?;
         }
+        let mut saw_drained_owned = false;
         for _ in 0..8 {
             owner
                 .drain_source_house_dispositions()
                 .await
                 .map_err(debug)?;
+            if reject_ordinary_release {
+                let disposition: Option<(i16, bool, Option<Vec<u8>>)> = sqlx::query_as(
+                    "SELECT d.state,d.released_at IS NOT NULL,uuid_send(p.owner_guild_id) FROM game_house_dispositions d JOIN game_house_properties p USING(world_id,house_key) WHERE d.house_key=$1 AND d.state<>4",
+                )
+                .bind(HOUSE)
+                .fetch_optional(&h.pool)
+                .await?;
+                if let Some((3, false, owner_guild)) = disposition {
+                    assert_eq!(owner_guild.as_deref(), Some(guild.as_bytes().as_slice()));
+                    saw_drained_owned = true;
+                }
+            }
+        }
+        if reject_ordinary_release {
+            assert!(saw_drained_owned, "guild custody drains before its own release pass");
         }
         let release: (i16, Option<Vec<u8>>) = sqlx::query_as(
             "SELECT state,uuid_send(owner_guild_id) FROM game_house_properties WHERE house_key=$1",

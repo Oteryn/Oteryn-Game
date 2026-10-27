@@ -144,9 +144,13 @@ fn write_postgres_native_ground_requires_current_scope_adoption() -> TestResult 
             let mut tx = h.pool.begin().await?;
             sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
             sqlx::query("UPDATE game_runtime_scope_assignments SET ownership_generation=2").execute(&mut *tx).await?;
+            // Keep the synthetic assignment and its retained receipt coherent:
+            // the session fence validates history before checking Ground custody.
+            sqlx::query("UPDATE game_runtime_scope_assignment_receipts r SET ownership_generation=a.ownership_generation FROM game_runtime_scope_assignments a WHERE r.operation_key=a.operation_key").execute(&mut *tx).await?;
             sqlx::query("UPDATE game_durability_admission_runtime_guards SET ownership_generation=2").execute(&mut *tx).await?;
             sqlx::query("UPDATE game_durability_reconnect_sessions SET scope_ownership_generation=2").execute(&mut *tx).await?;
             tx.commit().await?;
+            assert!(sqlx::query_scalar::<_, bool>("SELECT game_runtime_scope_assignment_history_valid()").fetch_one(&h.pool).await?);
             let mut fence = native::item_fence()?;
             fence.scope_ownership_generation = crate::foundation::ScopeOwnershipGeneration::new(2)?;
             assert!(matches!(native_write_fenced(&h, item, 1, "refused", Some(placement()), fence).await?, Err(ItemTextWriteError::NotReachable)));
