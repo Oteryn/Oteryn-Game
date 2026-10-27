@@ -89,7 +89,7 @@ fn write_postgres_scalar_ceiling_and_rewrite_metadata_survive_reload() -> TestRe
             let pool = &harness.pool;
             let character = storage_fixture(pool).await?;
             // Native migrator installs the successor, retaining standing 0101.
-            let installed: bool = sqlx::query_scalar("SELECT success FROM _sqlx_migrations WHERE version=263")
+            let installed: bool = sqlx::query_scalar("SELECT success FROM _sqlx_migrations WHERE version=267")
                 .fetch_one(pool).await?;
             assert!(installed);
             let original = rewrite_request(1, &"🦀".repeat(4000))?;
@@ -127,14 +127,14 @@ fn write_postgres_scalar_ceiling_and_rewrite_metadata_survive_reload() -> TestRe
                 .bind(original.item_instance_id.as_slice()).fetch_one(pool).await?;
             assert_eq!(retained, original.text);
             // Re-running this migration is safe and retains existing text/ACLs.
-            sqlx::raw_sql(include_str!("../../../../../../../apps/game-server/migrations/0263_item_text_write_limits.sql"))
+            sqlx::raw_sql(include_str!("../../../../../../../apps/game-server/migrations/0267_item_text_write_limits.sql"))
                 .execute(pool).await?;
             text_storage_delete_retains_tombstone_and_rewrite_advances_on_existing_fixture(pool, &character).await?;
             Ok::<(), Box<dyn std::error::Error>>(())
         }.await;
         harness.cleanup().await?;
         if result.is_ok() {
-            eprintln!("WRITE-NATIVE-PG migration0263 scalar/byte ceiling, metadata, replay, rollback and rerun PASS");
+            eprintln!("WRITE-NATIVE-PG migration0267 scalar/byte ceiling, metadata, replay, rollback and rerun PASS");
         }
         result
     })

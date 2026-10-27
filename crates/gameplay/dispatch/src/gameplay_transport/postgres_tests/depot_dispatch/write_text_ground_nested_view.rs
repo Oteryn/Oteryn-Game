@@ -98,7 +98,7 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 12, 14, 18])
             .ok_or("capabilities")?;
-    dispatch_nested(owner, admitted, definition).await?;
+    dispatch_ground(owner, admitted, definition, true).await?;
 
     // Each corrupt ancestry class fails closed; restore each fixture before the
     // next assertion. No production constraint or runtime test is disabled.
@@ -274,10 +274,11 @@ fn open(command_id: u64, handle: ItemHandle) -> TestResult<Vec<u8>> {
     Ok(input)
 }
 
-async fn dispatch_nested(
+pub(super) async fn dispatch_ground(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
     definition: std::num::NonZeroU32,
+    nested: bool,
 ) -> TestResult {
     use tokio::io::AsyncWriteExt;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
@@ -328,19 +329,24 @@ async fn dispatch_nested(
         client.write_all(&open(1, root_handle)?).await?;
         let views = read_views(&mut client, 1).await?;
         assert_eq!(views.views[0].container_handle, root_handle);
-        assert_eq!(views.views[0].entries.len(), 1);
-        let child_handle = views.views[0].entries[0].handle;
-        // The second command uses the handle just advertised by the first
-        // command, in the same actual production connection.
-        client.write_all(&open(2, child_handle)?).await?;
-        let views = read_views(&mut client, 2).await?;
-        let child = views
-            .views
-            .iter()
-            .find(|view| view.container_handle == child_handle)
-            .ok_or("nested view")?;
-        assert_eq!(child.parent_handle, Some(root_handle));
-        assert!(child.entries.is_empty());
+        assert_eq!(views.views[0].parent_handle, None);
+        if nested {
+            assert_eq!(views.views[0].entries.len(), 1);
+            let child_handle = views.views[0].entries[0].handle;
+            // The second command uses the handle just advertised by the first
+            // command, in the same actual production connection.
+            client.write_all(&open(2, child_handle)?).await?;
+            let views = read_views(&mut client, 2).await?;
+            let child = views
+                .views
+                .iter()
+                .find(|view| view.container_handle == child_handle)
+                .ok_or("nested view")?;
+            assert_eq!(child.parent_handle, Some(root_handle));
+            assert!(child.entries.is_empty());
+        } else {
+            assert!(views.views[0].entries.is_empty());
+        }
         client.shutdown().await?;
         Ok::<(), Box<dyn std::error::Error>>(())
     };
@@ -371,7 +377,7 @@ async fn dispatch_nested(
         }),
     )
     .await?;
-    result.ok_or("nested Ground client did not finish")?
+    result.ok_or("Ground client did not finish")?
 }
 
 async fn read_frame(client: &mut tokio::io::DuplexStream) -> TestResult<Vec<u8>> {

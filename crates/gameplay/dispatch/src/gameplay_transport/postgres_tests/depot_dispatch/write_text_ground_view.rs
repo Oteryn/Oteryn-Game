@@ -2,11 +2,7 @@
 use super::*;
 use crate::gameplay_transport::container_view::ContainerObservation;
 use crate::gameplay_transport::item_move::{LoopMove, LoopMoveResult, LoopTarget};
-use oteryn_protocol_oteryn::container_tree::{
-    COMMAND_TYPE_CONTAINER_VIEW_INTENT, ContainerViewIntent, ContainerViewOutcome,
-    decode_container_view_result, decode_container_views, encode_container_view_intent,
-};
-use oteryn_protocol_oteryn::{MessageType, decode_snapshot_chunk, decode_wire_envelope};
+use oteryn_protocol_oteryn::container_tree::COMMAND_TYPE_CONTAINER_VIEW_INTENT;
 
 pub(super) async fn exercise(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
@@ -149,93 +145,8 @@ pub(super) async fn exercise(
             .selected_capabilities
             .command_selected(COMMAND_TYPE_CONTAINER_VIEW_INTENT)
     );
-    // Obtain the actual advertised map handle from a production-shaped snapshot.
-    // Replaying the same initial continuity below issues that same initial table.
-    let (_, output) =
-        super::super::weather_wire::fixture_access::serve_input(owner, admitted, &[]).await?;
-    let mut handle = None;
-    for frame in frames(&output)? {
-        let envelope = decode_wire_envelope(frame)?;
-        if envelope.message_type() == MessageType::SnapshotChunk {
-            for domain in decode_snapshot_chunk(envelope.payload())?.1 {
-                if domain.domain_id == 17 {
-                    let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
-                        domain.payload,
-                    )
-                    .map_err(debug)?;
-                    handle =
-                        map.tiles
-                            .iter()
-                            .flat_map(|tile| &tile.items)
-                            .find_map(|entry| {
-                                if entry.definition
-                                    == oteryn_protocol_oteryn::world_map::MapDefinition::Item(
-                                        definition,
-                                    )
-                                    && let oteryn_protocol_oteryn::world_map::MapOrigin::Handle(
-                                        handle,
-                                    ) = entry.origin
-                                {
-                                    Some(handle)
-                                } else {
-                                    None
-                                }
-                            });
-                }
-            }
-        }
-    }
-    let payload = encode_container_view_intent(&ContainerViewIntent::Open {
-        handle: handle.ok_or("advertised Ground handle")?,
-        replace_view: None,
-    })
-    .map_err(debug)?;
-    let frame = oteryn_protocol_oteryn::encode_client_command(
-        1,
-        &oteryn_protocol_oteryn::ClientCommandValue {
-            command_id: 1,
-            command_type: COMMAND_TYPE_CONTAINER_VIEW_INTENT,
-            payload: &payload,
-        },
-    )?;
-    let mut input = u32::try_from(frame.len())?.to_be_bytes().to_vec();
-    input.extend(frame);
-    let (end, output) =
-        super::super::weather_wire::fixture_access::serve_input(owner, admitted, &input).await?;
-    let mut opened = false;
-    let mut shown = false;
-    for frame in frames(&output)? {
-        let envelope = decode_wire_envelope(frame)?;
-        match envelope.message_type() {
-            MessageType::CommandResult => {
-                let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
-                assert_eq!(
-                    result.status,
-                    oteryn_protocol_oteryn::CommandStatus::Accepted
-                );
-                assert_eq!(
-                    decode_container_view_result(result.payload).map_err(debug)?,
-                    ContainerViewOutcome::Opened
-                );
-                opened = true;
-            }
-            MessageType::StateDelta => {
-                let delta = oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?;
-                if delta.domain_id == 14 {
-                    let views = decode_container_views(delta.payload).map_err(debug)?;
-                    assert_eq!(views.views.len(), 1);
-                    assert_eq!(views.views[0].container_handle, handle.ok_or("handle")?);
-                    assert!(views.views[0].entries.is_empty());
-                    shown = true;
-                }
-            }
-            _ => {}
-        }
-    }
-    assert!(
-        opened && shown,
-        "real dispatch must open and advertise the Ground view: opened={opened}, shown={shown}, {end}"
-    );
+    super::write_text_ground_nested_view::dispatch_ground(owner, admitted, definition, false)
+        .await?;
     {
         let mut runtime = owner.runtime.lock().await;
         let mut movement = runtime.borrow_movement_position();
@@ -293,14 +204,4 @@ pub(super) async fn exercise(
         })
     ));
     Ok(())
-}
-
-fn frames(mut bytes: &[u8]) -> TestResult<Vec<&[u8]>> {
-    let mut result = Vec::new();
-    while !bytes.is_empty() {
-        let length = u32::from_be_bytes(bytes.get(..4).ok_or("frame length")?.try_into()?) as usize;
-        result.push(bytes.get(4..4 + length).ok_or("frame body")?);
-        bytes = &bytes[4 + length..];
-    }
-    Ok(result)
 }
