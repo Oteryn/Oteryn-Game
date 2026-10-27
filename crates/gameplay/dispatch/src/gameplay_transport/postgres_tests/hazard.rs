@@ -2340,6 +2340,7 @@ async fn outgoing_party_condition_checks(
         "current party level zero allows both originally dodging ticks to land: {losses:?}"
     );
     outgoing_staggered_party_condition_checks(owner, actor, session, other, other_session).await?;
+    outgoing_repeated_party_condition_checks(owner, actor, session, other).await?;
     Ok(())
 }
 
@@ -2547,6 +2548,230 @@ async fn outgoing_staggered_party_condition_checks(
             .await
             .set_test_creature_health(target, original_health)
             .map_err(debug)?;
+    }
+    Ok(())
+}
+
+// One application survives its first tick. Each later occurrence must read the
+// current party area facts instead of retaining the first tick's level or dodge.
+async fn outgoing_repeated_party_condition_checks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    other: crate::foundation::ExactActorRef,
+) -> TestResult {
+    use crate::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionLineage, ConditionSourceKind, TickFacts,
+    };
+    use crate::foundation::{ConditionValues, DotElement};
+    use crate::gameplay_transport::hazard::combat;
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+    let (target, original_health, other_position) = {
+        let runtime = owner.runtime.lock().await;
+        let target = runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .filter_map(|creature| runtime.companion_snapshot(creature.actor).ok())
+            .find(|snapshot| {
+                snapshot.state.policy.definition_key == "canary:creature/rat"
+                    && snapshot.health > 6
+                    && combat::eligible(&runtime, snapshot.actor)
+            })
+            .ok_or("living repeated condition rat")?;
+        (
+            target.actor,
+            target.health,
+            runtime
+                .read_actor_position(other)
+                .map_err(debug)?
+                .position(),
+        )
+    };
+    for move_member in [false, true] {
+        for mask in 0..4 {
+            let dodges = [mask & 1 != 0, mask & 2 != 0];
+            let applied_at = owner.owner_now().get();
+            let due = applied_at + 6_000_000;
+            let later_due = due + 6_000_000;
+            let pending = {
+                let mut runtime = owner.runtime.lock().await;
+                assert!(combat::in_area(&runtime, actor));
+                assert!(combat::in_area(&runtime, other));
+                let before = runtime.companion_snapshot(target).map_err(debug)?;
+                assert!(before.state.conditions.instances().is_empty());
+                assert_eq!(before.health, original_health);
+                let lease = runtime
+                    .bound_attacker_lease(actor, session)
+                    .map_err(debug)?;
+                let root = GameplayDecisionRoot::from_bytes(
+                    runtime.content_pin().server_artifact_digest(),
+                );
+                // Explicit fixture magnitude: two 4-point Energy ticks, not a
+                // shipping spell or equipment coefficient.
+                let definition = ConditionDefinition::new(
+                    "test.hazard.repeated.condition",
+                    1,
+                    ConditionValues::DamageOverTime {
+                        element: DotElement::Energy,
+                        total_min: 8,
+                        total_max: 8,
+                        per_tick: 4,
+                        interval_ms: 6000,
+                        delayed: true,
+                    },
+                )
+                .ok_or("repeated condition definition")?;
+                let facts = ApplicationFacts {
+                    now: applied_at,
+                    base_speed: 100,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: false,
+                    decision_root: &root,
+                    occurrence: DecisionOccurrenceId::from_bytes([0x76; 16]),
+                };
+                let mut lineage = ConditionLineage {
+                    source_character: *lease.character_id().as_bytes(),
+                    source_session: *session.as_bytes(),
+                    source_lease_generation: lease.generation(),
+                    source_actor_placement: actor.placement_identity(),
+                    source_scope_generation: actor.scope_generation().get(),
+                    source_content_digest: runtime.content_pin().server_artifact_digest(),
+                    source_catalog_digest: runtime.content_pin().server_artifact_digest(),
+                    source_creation_command: 1_200_000,
+                };
+                let mut template = before.state.conditions.clone();
+                template
+                    .apply_with_lineage(
+                        &definition,
+                        Some(actor),
+                        ConditionSourceKind::Player,
+                        &[],
+                        &facts,
+                        &lineage,
+                    )
+                    .map_err(debug)?;
+                let first = template.take_due(due, TickFacts::default());
+                let second = template.take_due(later_due, TickFacts::default());
+                assert_eq!((first.len(), second.len()), (1, 1));
+                assert!(template.instances().is_empty());
+                let mut occurrences = [first[0].clone(), second[0].clone()];
+                // Two level-1 dodges have probability about 4 in a million.
+                // Search just their occurrence hashes, then construct the real
+                // application once with the selected shared creation command.
+                lineage.source_creation_command = (1_200_000..11_200_000)
+                    .find(|command| {
+                        occurrences.iter_mut().zip(dodges).all(|(tick, dodge)| {
+                            let Some(lineage) = tick.provenance.lineage.as_mut() else {
+                                return false;
+                            };
+                            lineage.source_creation_command = *command;
+                            combat::condition_dodge_roll(&runtime, actor, target, tick)
+                                .is_some_and(|roll| combat::dodges(1, roll) == dodge)
+                        })
+                    })
+                    .ok_or_else(|| format!("bounded repeated occurrence: mask {mask}"))?;
+                let mut next = before.state.clone();
+                next.conditions
+                    .apply_with_lineage(
+                        &definition,
+                        Some(actor),
+                        ConditionSourceKind::Player,
+                        &[],
+                        &facts,
+                        &lineage,
+                    )
+                    .map_err(debug)?;
+                let mut preview = next.conditions.clone();
+                let first = preview.take_due(due, TickFacts::default());
+                assert_eq!(first.len(), 1);
+                assert_eq!(preview.instances().len(), 1);
+                let pending = preview.instances().to_vec();
+                let second = preview.take_due(later_due, TickFacts::default());
+                assert_eq!(second.len(), 1);
+                assert!(preview.instances().is_empty());
+                assert_eq!(first[0].provenance, second[0].provenance);
+                assert_eq!(first[0].sequence, second[0].sequence);
+                assert_eq!((first[0].due, second[0].due), (due, later_due));
+                for (tick, dodge) in [(&first[0], dodges[0]), (&second[0], dodges[1])] {
+                    let roll = combat::condition_dodge_roll(&runtime, actor, target, tick)
+                        .ok_or("selected repeated occurrence")?;
+                    assert_eq!(combat::dodges(1, roll), dodge);
+                }
+                runtime
+                    .compare_companion_state(&before, next)
+                    .map_err(debug)?;
+                pending
+            };
+            // Occurrence search is fixture preparation, not a simulation turn.
+            // Keep host load from advancing the owner's clock across both due times.
+            owner.clock_origin += Duration::from_micros(owner.owner_now().get() - applied_at);
+            let early_loss = i64::from(!dodges[0]) * 3;
+            let final_loss = early_loss + i64::from(move_member || !dodges[1]) * 3;
+            for (at, expected_loss, first) in
+                [(due, early_loss, true), (later_due, final_loss, false)]
+            {
+                owner.clock_origin -=
+                    Duration::from_micros(at.saturating_sub(owner.owner_now().get()) + 10_000);
+                owner.drain_monster_melee().await;
+                let after = owner
+                    .runtime
+                    .lock()
+                    .await
+                    .companion_snapshot(target)
+                    .map_err(debug)?;
+                assert_eq!(
+                    original_health - after.health,
+                    expected_loss,
+                    "repeated mask {mask}, moved {move_member}, first {first}"
+                );
+                if first {
+                    assert_eq!(after.state.conditions.instances(), pending.as_slice());
+                } else {
+                    assert!(after.state.conditions.instances().is_empty());
+                }
+                owner.drain_monster_melee().await;
+                let mut runtime = owner.runtime.lock().await;
+                let retried = runtime.companion_snapshot(target).map_err(debug)?;
+                assert_eq!(
+                    retried.health, after.health,
+                    "no repeated-tick retry damage"
+                );
+                assert_eq!(
+                    retried.state.conditions, after.state.conditions,
+                    "retry preserves the remaining tick cursor"
+                );
+                if first && move_member {
+                    let mut movement = runtime.borrow_movement_position();
+                    let at = movement.read(other).map_err(debug)?;
+                    movement
+                        .commit_cardinal(
+                            at,
+                            MovementLocalPosition {
+                                x: 33501,
+                                ..other_position
+                            },
+                        )
+                        .map_err(debug)?;
+                    assert!(!combat::in_area(&runtime, other));
+                    assert!(combat::in_area(&runtime, actor));
+                }
+            }
+            let mut runtime = owner.runtime.lock().await;
+            runtime
+                .set_test_creature_health(target, original_health)
+                .map_err(debug)?;
+            if move_member {
+                let mut movement = runtime.borrow_movement_position();
+                let at = movement.read(other).map_err(debug)?;
+                movement
+                    .commit_cardinal(at, other_position)
+                    .map_err(debug)?;
+            }
+        }
     }
     Ok(())
 }
