@@ -247,9 +247,8 @@ impl ChannelRuntimeV1 {
             .ok_or(NpcPlacementError::Carrier(
                 CarrierError::CapacityArithmeticOverflow,
             ))?;
-        let actor_ref = ActorRef::from_owner_parts(
-            carrier.world_id,
-            carrier.channel_id,
+        let actor_ref = ActorRef::from_scoped_owner_parts(
+            carrier.runtime_scope,
             carrier.scope_generation,
             actor_local_id,
             ActorLocalGeneration(generation),

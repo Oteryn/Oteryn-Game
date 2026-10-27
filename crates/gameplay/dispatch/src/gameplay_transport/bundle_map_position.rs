@@ -97,6 +97,10 @@ pub(super) async fn observe(
     view: &mut world_map::SessionMapView,
     items: &mut item_view::SessionItemView,
 ) -> Option<Result<Option<world_map::MapUpdate>, world_map::MapViewError>> {
+    // The view reads the same Ground owner as field casts, retirement and
+    // expiry. Resolve an uncertain writer and serialize cache rebuilds before
+    // borrowing runtime or issuing the bounded durable read.
+    let _permit = admission.spell_lane_permit().await?;
     let (at, index) = {
         let mut runtime = admission.runtime.lock().await;
         let index = item_ref_admission::pinned_index(&runtime, admission.active_generation);

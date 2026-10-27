@@ -70,6 +70,15 @@ pub async fn begin_spell_owner_transaction<'a>(
     super::db::begin_semantic_transaction(holder, deadline).await
 }
 
+/// Field harm may expire a protective Item. Take the canonical type-2 fence
+/// before recovery, session, scope or Item locks, just as the timed Item owner.
+pub async fn begin_field_owner_transaction<'a>(
+    holder: &'a mut sqlx::pool::PoolConnection<Postgres>,
+    deadline: std::time::Instant,
+) -> std::result::Result<super::item_mint_audit::Type2Transaction<'a>, DurabilityError> {
+    super::db::begin_type2_transaction(holder, deadline).await
+}
+
 pub struct WorldItemSpellCommit {
     pub committed: super::spell_owner_commit::CommittedSpellOwnerTransaction,
     pub training: Option<super::character_build::BuildCommitOutcome>,
@@ -114,22 +123,26 @@ impl DurabilityRoot {
                             &mut tx, permit, &record, &node, scope, generation,
                         )
                         .await?;
+                        let restarted =
+                            super::field_removal::retire_restarted_fields(&mut tx, &authority, 500)
+                                .await?;
                         let fields =
-                            expire_due_spell_items_bounded(&mut tx, &authority, 500).await?;
+                            expire_due_spell_items_bounded(&mut tx, &authority, 500 - restarted)
+                                .await?;
                         let temporal = super::spell_item_temporal::drain_due_items_in_transaction(
                             &mut tx,
                             &authority,
-                            500 - fields.len(),
+                            500 - restarted - fields.len(),
                         )
                         .await?;
                         let chained =
                             super::spell_item_temporal::drain_due_field_chains_in_transaction(
                                 &mut tx,
                                 &authority,
-                                500 - fields.len() - temporal,
+                                500 - restarted - fields.len() - temporal,
                             )
                             .await?;
-                        Ok(fields.len() + temporal + chained)
+                        Ok(restarted + fields.len() + temporal + chained)
                     }
                     .await;
                     match outcome {
@@ -418,13 +431,16 @@ pub struct PreparedCompanionAcquisition {
     master_scope_matches: bool,
 }
 impl PreparedCompanionAcquisition {
-    pub fn from_spawn(transaction: [u8; 16], spawn: &impl CompanionAcquisitionSource) -> Self {
-        Self {
-            binding: companion_binding(transaction, spawn),
-            master_scope_matches: spawn.actor().world_id() == spawn.master_actor().world_id()
-                && spawn.actor().channel_id() == spawn.master_actor().channel_id()
+    pub fn from_spawn(
+        transaction: [u8; 16],
+        spawn: &impl CompanionAcquisitionSource,
+    ) -> Result<Self> {
+        Ok(Self {
+            binding: companion_binding(transaction, spawn)?,
+            master_scope_matches: spawn.actor().runtime_scope()
+                == spawn.master_actor().runtime_scope()
                 && spawn.actor().scope_generation() == spawn.master_actor().scope_generation(),
-        }
+        })
     }
 }
 impl CompanionBinding {
@@ -471,10 +487,11 @@ impl CommittedCompanionAcquisition {
         b.corpse == *spawn.corpse_item_instance_id()
             && b.corpse_revision == spawn.corpse_state_revision()
             && b.world == *actor.world_id().as_bytes()
-            && b.channel == *actor.channel_id().as_bytes()
+            && actor
+                .channel_id()
+                .is_some_and(|channel| b.channel == *channel.as_bytes())
             && b.ownership_generation == actor.scope_generation().get()
-            && actor.world_id() == master.world_id()
-            && actor.channel_id() == master.channel_id()
+            && actor.runtime_scope() == master.runtime_scope()
             && actor.scope_generation() == master.scope_generation()
             && b.actor_id == actor.actor_local_id()
             && b.actor_generation == actor.actor_local_generation()
@@ -581,15 +598,18 @@ pub async fn reconcile_spell_owner_commit_with_direct_in_transaction(
 fn companion_binding(
     transaction: [u8; 16],
     spawn: &impl CompanionAcquisitionSource,
-) -> CompanionBinding {
+) -> Result<CompanionBinding> {
     let actor = spawn.actor();
     let master = spawn.master_actor();
-    CompanionBinding {
+    Ok(CompanionBinding {
         transaction,
         corpse: *spawn.corpse_item_instance_id(),
         corpse_revision: spawn.corpse_state_revision(),
         world: *actor.world_id().as_bytes(),
-        channel: *actor.channel_id().as_bytes(),
+        channel: *actor
+            .channel_id()
+            .ok_or(SpellItemError::Rejected("Instance companion unsupported"))?
+            .as_bytes(),
         ownership_generation: actor.scope_generation().get(),
         actor_id: actor.actor_local_id(),
         actor_generation: actor.actor_local_generation(),
@@ -600,7 +620,7 @@ fn companion_binding(
         cell: spawn.spawn_cell(),
         creature_key: spawn.creature_definition_key().into(),
         creature_revision: spawn.creature_definition_revision().into(),
-    }
+    })
 }
 
 pub async fn record_companion_acquisition_in_transaction(
@@ -609,7 +629,7 @@ pub async fn record_companion_acquisition_in_transaction(
     request: &SpellItemTransactionRequest,
     spawn: &impl CompanionAcquisitionSource,
 ) -> Result<PendingCompanionAcquisition> {
-    let binding = companion_binding(request.transaction_id, spawn);
+    let binding = companion_binding(request.transaction_id, spawn)?;
     if request.companion.as_ref().map(|p| &p.binding) != Some(&binding) {
         return Err(SpellItemError::Rejected(
             "companion absent from the exact compound cast intent",
@@ -1250,7 +1270,7 @@ pub fn decoded_placement(row: &sqlx::postgres::PgRow) -> Result<GroundPlacement>
 
 // The Channel owner lock serializes Ground custody; retain row locks on
 // mutable ItemInstances without requiring UPDATE on immutable locations.
-const TILE_ROWS: &str = "SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.minted_transaction_id::text,g.stack_ordinal::text,g.runtime_scope_ownership_generation::text AS ground_scope_generation,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,COALESCE(fc.blocks_movement,l.blocks_movement,nm.blocks_movement) AS blocks_movement,COALESCE(fc.blocks_projectile,l.blocks_projectile,nm.blocks_projectile) AS blocks_projectile,COALESCE(fc.immovable_block_solid,l.immovable_block_solid,nm.immovable_block_solid) AS immovable_block_solid,l.expires_at_unix_ms,r.cause_kind AS origin_cause_kind,r.world_id::text AS creature_origin_world,r.channel_id::text AS creature_origin_channel,r.creature_placement AS creature_origin_placement,r.creature_actor_generation::text AS creature_origin_generation,r.creature_definition_key AS creature_origin_key,r.creature_definition_revision AS creature_origin_revision,r.spell_production_key AS creature_origin_ability,r.spell_revision AS creature_origin_ability_revision,r.creature_occurrence AS creature_origin_occurrence,r.creature_map_digest AS creature_origin_map,r.creature_frame_digest AS creature_origin_frame,r.creature_source_body_digest AS creature_origin_body,r.creature_cast_digest AS creature_origin_cast,r.character_id::text AS origin_character,r.game_session_id::text AS origin_session,r.command_id::text AS origin_command,r.occurred_at_unix_ms AS origin_created_unix_ms,r.ownership_generation::text AS origin_generation,r.caster_lease_generation::text AS origin_lease,r.caster_placement_digest AS origin_placement,r.catalog_digest AS origin_catalog,l.content_generation_digest AS origin_content, EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION') AS corpse FROM game_item_ground_locations g JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id LEFT JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.operation_kind=1 AND l.transaction_id=i.minted_transaction_id LEFT JOIN game_spell_item_receipts r ON r.transaction_id=l.transaction_id LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND fc.content_digest=l.content_generation_digest LEFT JOIN game_native_map_item_receipts nm ON nm.item_instance_id=i.item_instance_id AND nm.transaction_id=i.minted_transaction_id AND nm.reset_epoch=coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=g.world_id),0) AND (nm.definition_family,nm.definition_key,nm.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND nm.quantity=i.quantity AND i.state_revision=1 AND i.last_transaction_id IS NULL AND (nm.world_id,nm.channel_id,nm.spatial_position,nm.map_revision,nm.content_revision,nm.placement_context)=(g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) AND (nm.scope_generation=g.runtime_scope_ownership_generation OR EXISTS(SELECT 1 FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=nm.transaction_id AND ad.ownership_generation=g.runtime_scope_ownership_generation)) AND nm.content_revision='sha256:'||encode(nm.content_digest,'hex') AND nm.map_revision='sha256:'||encode(nm.map_digest,'hex') AND nm.placement_context=nm.frame_digest AND (nm.owner_kind IS NULL OR nm.owner_kind IN('container','door')) AND EXISTS(SELECT 1 FROM game_native_map_item_audit na WHERE na.transaction_id=nm.transaction_id AND na.item_instance_id=nm.item_instance_id AND na.event_id=nm.event_id AND na.envelope=nm.source_intent AND na.envelope_digest=nm.binding AND na.created_xact_id=nm.created_xact_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND i.lifecycle=1 ORDER BY g.stack_ordinal DESC NULLS FIRST LIMIT 501 FOR UPDATE OF i";
+const TILE_ROWS: &str = "SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.minted_transaction_id::text,g.stack_ordinal::text,g.runtime_scope_ownership_generation::text AS ground_scope_generation,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,COALESCE(fc.blocks_movement,l.blocks_movement,nm.blocks_movement) AS blocks_movement,COALESCE(fc.blocks_projectile,l.blocks_projectile,nm.blocks_projectile) AS blocks_projectile,COALESCE(fc.immovable_block_solid,l.immovable_block_solid,nm.immovable_block_solid) AS immovable_block_solid,l.expires_at_unix_ms,l.definition_production_key AS origin_item_key,r.cause_kind AS origin_cause_kind,r.world_id::text AS creature_origin_world,r.channel_id::text AS creature_origin_channel,r.creature_placement AS creature_origin_placement,r.creature_actor_generation::text AS creature_origin_generation,r.creature_definition_key AS creature_origin_key,r.creature_definition_revision AS creature_origin_revision,r.spell_production_key AS creature_origin_ability,r.spell_revision AS creature_origin_ability_revision,r.creature_occurrence AS creature_origin_occurrence,r.creature_map_digest AS creature_origin_map,r.creature_frame_digest AS creature_origin_frame,r.creature_source_body_digest AS creature_origin_body,r.creature_cast_digest AS creature_origin_cast,r.character_id::text AS origin_character,r.game_session_id::text AS origin_session,r.command_id::text AS origin_command,r.occurred_at_unix_ms AS origin_created_unix_ms,r.ownership_generation::text AS origin_generation,r.caster_lease_generation::text AS origin_lease,r.caster_placement_digest AS origin_placement,r.catalog_digest AS origin_catalog,l.content_generation_digest AS origin_content, EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION') AS corpse FROM game_item_ground_locations g JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id LEFT JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.operation_kind=1 AND l.transaction_id=i.minted_transaction_id LEFT JOIN game_spell_item_receipts r ON r.transaction_id=l.transaction_id LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND fc.content_digest=l.content_generation_digest LEFT JOIN game_native_map_item_receipts nm ON nm.item_instance_id=i.item_instance_id AND nm.transaction_id=i.minted_transaction_id AND nm.reset_epoch=coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=g.world_id),0) AND (nm.definition_family,nm.definition_key,nm.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND nm.quantity=i.quantity AND i.state_revision=1 AND i.last_transaction_id IS NULL AND (nm.world_id,nm.channel_id,nm.spatial_position,nm.map_revision,nm.content_revision,nm.placement_context)=(g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) AND (nm.scope_generation=g.runtime_scope_ownership_generation OR EXISTS(SELECT 1 FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=nm.transaction_id AND ad.ownership_generation=g.runtime_scope_ownership_generation)) AND nm.content_revision='sha256:'||encode(nm.content_digest,'hex') AND nm.map_revision='sha256:'||encode(nm.map_digest,'hex') AND nm.placement_context=nm.frame_digest AND (nm.owner_kind IS NULL OR nm.owner_kind IN('container','door')) AND EXISTS(SELECT 1 FROM game_native_map_item_audit na WHERE na.transaction_id=nm.transaction_id AND na.item_instance_id=nm.item_instance_id AND na.event_id=nm.event_id AND na.envelope=nm.source_intent AND na.envelope_digest=nm.binding AND na.created_xact_id=nm.created_xact_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND i.lifecycle=1 ORDER BY g.stack_ordinal DESC NULLS FIRST LIMIT 501 FOR UPDATE OF i";
 
 async fn locked_tile_rows(
     tx: &mut Transaction<'_, Postgres>,
@@ -1415,6 +1435,7 @@ pub fn decode_tile_rows(
             field_origin: match row.try_get::<Option<String>, _>("origin_lease")? {
                 None => None,
                 Some(lease) => Some(DurableFieldOrigin {
+                    source_item_key: row.try_get("origin_item_key")?,
                     created_at_unix_ms: row.try_get("origin_created_unix_ms")?,
                     character_id: uuid(&row.try_get::<String, _>("origin_character")?)?,
                     game_session_id: uuid(&row.try_get::<String, _>("origin_session")?)?,
@@ -1582,7 +1603,10 @@ fn encode_intent(
     }
     if let Some(origin) = &request.caster_origin
         && (*origin.actor.world_id().as_bytes() != authority.world
-            || *origin.actor.channel_id().as_bytes() != authority.channel
+            || !origin
+                .actor
+                .channel_id()
+                .is_some_and(|channel| *channel.as_bytes() == authority.channel)
             || origin.actor.scope_generation().get() != authority.ownership_generation
             || origin.character_lease_generation != authority.character_lease_generation)
     {
@@ -1896,6 +1920,41 @@ pub async fn apply_spell_items_in_transaction_guarded(
     }
     new_write_verdict?;
     super::field_capability_port::validate_new_write(tx, authority, request, origin).await?;
+    if matches!(origin, SpellFieldOrigin::Player(_))
+        && request.operations.iter().any(|operation| {
+            matches!(operation, SpellItemOperation::MintGround { definition, .. }
+                if definition.field_class != SpellFieldClass::NotField)
+        })
+    {
+        // PARTY-PVP-0: casting a field starts a PZ/logout block even without a
+        // hit, but never a skull. This is after the exact-receipt replay branch
+        // and in the same transaction as the charge and Ground mutations.
+        let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } =
+            authority.runtime_scope()
+        else {
+            return Err(SpellItemError::Rejected("field caster World unavailable"));
+        };
+        super::pvp_state::write_deadline_in_transaction(
+            tx,
+            world_id,
+            &super::pvp_state::PvpWriteAhead {
+                character_id: crate::domain::CharacterId::from_bytes(authority.character)
+                    .map_err(|_| SpellItemError::Rejected("field caster identity"))?,
+                kinds: super::pvp_state::PvpDeadlineKinds {
+                    logout_block: true,
+                    pz_block: true,
+                    ..Default::default()
+                },
+            },
+        )
+        .await
+        .map_err(|error| match error {
+            super::character_progression::CharacterProgressionError::Unavailable(error) => {
+                SpellItemError::Durability(error)
+            }
+            _ => SpellItemError::Rejected("field caster lock refused"),
+        })?;
+    }
     let occurred_at: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
             .fetch_one(&mut **tx)

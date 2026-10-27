@@ -1,0 +1,15 @@
+{
+  "id": 91,
+  "name": "FIELD_RUNES_V1",
+  "owner_decision": "FIELD-RUNES-1 owner allocation 2026-10-26",
+  "owner": "Channel rune cast and durable Item owners; field, wall, bomb and barrier Rune USE extension",
+  "requires": [
+    4,
+    11,
+    22,
+    30
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false
+}

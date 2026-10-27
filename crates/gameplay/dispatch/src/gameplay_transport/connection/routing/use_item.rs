@@ -125,6 +125,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     item_fence: admitted.item_fence,
                 },
                 intent, item_view.as_ref(), visibility.as_ref(),
+                &admitted.continuity.selected_capabilities,
             ).await {
                 Some(outcome) => Dispatch::Use(outcome),
                 None => return None,

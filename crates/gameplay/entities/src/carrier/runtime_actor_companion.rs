@@ -765,8 +765,8 @@ impl ChannelRuntimeV1 {
         else {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature);
         };
-        if actor.0.world_id != self.binding.world_id
-            || actor.0.channel_id != self.binding.channel_id
+        if actor.runtime_scope()
+            != RuntimeScopeRefV1::channel(self.binding.world_id, self.binding.channel_id)
             || actor.scope_generation() != self.binding.scope_generation
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::WrongScope);

@@ -97,3 +97,11 @@ mod tests {
         Ok(())
     }
 }
+
+/// Transport-owned Bestiary and Charm values exposed to feature protocol adapters.
+pub mod cyclopedia_protocol {
+    pub use oteryn_session::{
+        BestiaryRaceProgress, CharmAssignDisposition, CharmAssignIntent, CharmKind, CharmState,
+        CharmUnlockDisposition, CharmUnlockStageIntent, CharmView,
+    };
+}

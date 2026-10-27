@@ -1,0 +1,10 @@
+{
+  "id": 133,
+  "name": "BOSS_COOLDOWNS",
+  "owner_decision": "BOSS-ENCOUNTER-1 owner decisions 23/24, 2026-10-26",
+  "capability": 117,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/boss_encounter_v1.proto#BossCooldownQueryV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/boss_encounter_v1.proto#BossCooldownListV1",
+  "max_payload_bytes": 515,
+  "max_result_payload_bytes": 34400
+}

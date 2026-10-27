@@ -9,8 +9,7 @@ impl PreProductionContinuityGrant {
         scope_generation: ScopeOwnershipGeneration,
     ) -> Self {
         Self {
-            world_id,
-            channel_id,
+            runtime_scope: RuntimeScopeRefV1::channel(world_id, channel_id),
             scope_generation,
         }
     }
@@ -18,13 +17,16 @@ impl PreProductionContinuityGrant {
     /// Test builds only: the World this grant names.
     #[cfg(any(test, feature = "test-support"))]
     pub const fn world_id(&self) -> WorldId {
-        self.world_id
+        self.runtime_scope.world_id()
     }
 
     /// Test builds only: the Channel this grant names.
     #[cfg(any(test, feature = "test-support"))]
-    pub const fn channel_id(&self) -> ChannelId {
-        self.channel_id
+    pub const fn channel_id(&self) -> Option<ChannelId> {
+        match self.runtime_scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => Some(channel_id),
+            RuntimeScopeRefV1::Instance { .. } => None,
+        }
     }
 
     /// Test builds only: the scope ownership generation this grant names.
@@ -38,13 +40,16 @@ impl NamespaceContinuityGuard {
     /// Test builds only: the World of this guard's namespace.
     #[cfg(any(test, feature = "test-support"))]
     pub const fn world_id(&self) -> WorldId {
-        self.world_id
+        self.runtime_scope.world_id()
     }
 
     /// Test builds only: the Channel of this guard's namespace.
     #[cfg(any(test, feature = "test-support"))]
-    pub const fn channel_id(&self) -> ChannelId {
-        self.channel_id
+    pub const fn channel_id(&self) -> Option<ChannelId> {
+        match self.runtime_scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => Some(channel_id),
+            RuntimeScopeRefV1::Instance { .. } => None,
+        }
     }
 
     /// Test builds only: the current scope ownership generation.
@@ -56,8 +61,7 @@ impl NamespaceContinuityGuard {
     test_support_pub! {
         fn from_pre_production_grant(grant: PreProductionContinuityGrant) -> Self {
             Self {
-                world_id: grant.world_id,
-                channel_id: grant.channel_id,
+                runtime_scope: grant.runtime_scope,
                 current_generation: grant.scope_generation,
                 current_generation_claimed: false,
                 active: true,
@@ -67,7 +71,7 @@ impl NamespaceContinuityGuard {
 
     test_support_pub! {
         fn advance(&mut self, grant: PreProductionContinuityGrant) -> Result<(), CarrierError> {
-            if grant.world_id != self.world_id || grant.channel_id != self.channel_id {
+            if grant.runtime_scope != self.runtime_scope {
                 return Err(CarrierError::WrongScope);
             }
             if grant.scope_generation.get() <= self.current_generation.get() {

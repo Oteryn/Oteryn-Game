@@ -37,9 +37,8 @@ fn evicting_a_corpse_projection_evicts_its_reward_occurrence() {
     let (continuity, mut carrier) = carrier(4);
     let context = spawn_position_context(&continuity);
     let actor = |local: u32| {
-        ActorRef::from_owner_parts(
-            continuity.world_id,
-            continuity.channel_id,
+        ActorRef::from_scoped_owner_parts(
+            continuity.runtime_scope,
             continuity.current_generation,
             ActorLocalId(local),
             ActorLocalGeneration(1),

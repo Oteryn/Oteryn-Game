@@ -1,0 +1,20 @@
+{
+  "id": 91,
+  "name": "FIELD_RUNES_V1",
+  "constant": "world_object::CAPABILITY_FIELD_RUNES_V1",
+  "requires": [
+    4,
+    11,
+    22,
+    30
+  ],
+  "acceptance_requires": false,
+  "commands": [],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": false
+  }
+}
