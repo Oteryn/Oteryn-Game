@@ -33,7 +33,7 @@ fn imbuement_reference_parity() {
         Rule::Tier(ImbuementTier::Powerful, 250_000, true, 100),
         Rule::Duration(20 * 60 * 60 * 1_000),
         Rule::Slots(3),
-        Rule::Clear(30_000),
+        Rule::Clear(15_000),
         Rule::Checkpoint(60 * 1_000),
     ];
     for row in rows {

@@ -93,7 +93,7 @@ class ImbuementAuthoringTests(unittest.TestCase):
     def test_current_global_fees_exclude_obsolete_xml_prices(self):
         tiers = self.definition("Vampirism")["tiers"]
         self.assertEqual([t["apply_fee_gold"] for t in tiers], [7500, 60000, 250000])
-        self.assertEqual([t["clear_fee_gold"] for t in tiers], [30000] * 3)
+        self.assertEqual([t["clear_fee_gold"] for t in tiers], [15000] * 3)
 
     def test_comparison_matches_by_name_and_tier(self):
         report = authoring.comparison()

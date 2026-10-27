@@ -810,13 +810,13 @@
     },
     {
       "id": "clear_fee_gold",
-      "value": 30000,
+      "value": 15000,
       "evidence": [
         "fandom_imbuing_fees"
       ],
-      "parity_status": "PUBLIC_REFERENCE_CONFIRMED",
-      "target_time_status": "CURRENT_TASK_REFERENCE_2026_10_27",
-      "notes": "Per single occupied slot cleared at a shrine. Tibia.com news 8442 publishes the 30,000 gold cleansing fee."
+      "parity_status": "DERIVED_SEARCH_SNIPPET_ONLY",
+      "target_time_status": "CURRENT_COMMUNITY_REFERENCE_READ_2026_10_01",
+      "notes": "Per single occupied slot cleared at a shrine. The official manual confirms a fee but does not publish its amount."
     },
     {
       "id": "duration_ms",

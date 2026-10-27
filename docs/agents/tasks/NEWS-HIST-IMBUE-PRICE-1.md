@@ -3,7 +3,7 @@
 ```yaml
 task_id: NEWS-HIST-IMBUE-PRICE-1
 type: mechanic
-title: Reconcile current imbuement application and cleansing fees
+title: Reconcile current imbuement application fees
 mode: REPAIR
 status: implementing
 repository: Oteryn/Oteryn-Game
@@ -29,16 +29,16 @@ owned_paths:
 
 ## Outcome
 
-The existing imbuement fee/receipt owners charge the current official application and cleansing fees. Account access, creator Premium checks, and shrine access are unchanged.
+The existing imbuement fee/receipt owners charge the current official application fees, preserving the separate single-slot shrine removal price. Account access, creator Premium checks, and shrine access are unchanged.
 
 ## Reference parity
 
 | Behaviour | Canary 47dfd51f | tibia.com news | Oteryn before | Oteryn after |
 |---|---:|---:|---:|---:|
-| Basic application | 5,000 | 7,500 (news 7907/8396) | 5,000 | 7,500 |
-| Intricate application | 30,000 | 60,000 (news 7907/8396) | 30,000 | 60,000 |
-| Powerful application | 200,000 | 250,000 (news 7907/8396) | 200,000 | 250,000 |
-| Cleanse one imbuement | 15,000 | 30,000 (news 8442) | 15,000 | 30,000 |
+| Basic application | 5,000 | 7,500 (news 8396) | 5,000 | 7,500 |
+| Intricate application | 30,000 | 60,000 (news 8396) | 30,000 | 60,000 |
+| Powerful application | 200,000 | 250,000 (news 8396) | 200,000 | 250,000 |
+| Clear one shrine slot | 15,000 | No new shrine price; news 8396 prices the separate cleansing item at 30,000 | 15,000 | 15,000 |
 
 ## Acceptance criteria
 
@@ -51,7 +51,7 @@ The existing imbuement fee/receipt owners charge the current official applicatio
 
 NOT_APPLICABLE: this changes fixed fee values inside the existing fenced atomic owner; it introduces no authority, session, recovery, or controller boundary.
 
-## Validation
+## Cloud validation (historical; superseded by local qualification in IMBUE-FINAL.md)
 
 - PASS: `cargo test --locked -p oteryn-gameplay-items --lib imbuement --quiet` (4 passed).
 - PASS: `cargo test --locked -p oteryn-gameplay-durability --lib imbuement_cause --quiet` (4 passed).
@@ -61,3 +61,11 @@ NOT_APPLICABLE: this changes fixed fee values inside the existing fenced atomic 
 - PASS: `oteryn-world-bundle-compiler pin-refresh .` completed; no World pin changed.
 - WARNING: native dispatch test compiled and selected the real route but returned route-less because `OTERYN_TEST_POSTGRES_ADMIN_URL` is not configured.
 - WARNING: full `python3 tools/content-migration/regenerate_content.py` was invoked as required but its predecessor fetch cannot run because this checkout has no `origin`; the affected imbuement generators and pin refresh were then run directly and passed.
+
+## Local repair scope
+
+- Correct the unsupported 30,000-gold single-slot shrine fee: news 8396 prices the separate cleansing item, not shrine removal. News 7907 and 8442 could not be verified (HTTP 403); they are not evidence for a price change.
+- Keep migration 0298 as the only new migration. Preserve immutable historical rows with `NOT VALID` checks that enforce current fees on every new receipt and fee burn.
+- Decode historical V1 imbuement fee events at their original tier prices; the production writer and PostgreSQL still require current prices for new writes.
+- Restore the exact two-change-mint resource-bound assertion, update the dispatch offer test, and add a focused PostgreSQL migration regression.
+- Additional owned repair paths: `crates/gameplay/durability/src/durability/item_fee_burn_audit/purchase_cause.rs`, `crates/gameplay/durability/src/durability/item_fee_burn_audit/tests/imbuement_cause_tests.rs`, `crates/gameplay/dispatch/src/gameplay_transport/imbuement_tests.rs`, `crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/imbuement_fees_migration.rs`, and `IMBUE-FINAL.md`.

@@ -124,7 +124,7 @@ class GlobalRulesEvidenceTests(unittest.TestCase):
         self.assertFalse(self.rules["scroll_application_requires_premium"]["value"])
 
     def test_etcher_clear_all_is_separate_from_single_slot_shrine_fee(self):
-        self.assertEqual(self.rules["clear_fee_gold"]["value"], 30000)
+        self.assertEqual(self.rules["clear_fee_gold"]["value"], 15000)
         self.assertEqual(self.rules["etcher_npc_price_gold"]["value"], 30000)
         self.assertTrue(self.rules["etcher_clears_all_slots"]["value"])
         self.assertIsNone(self.rules["etcher_consumed_units"]["value"])

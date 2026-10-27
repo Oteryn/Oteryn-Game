@@ -23,7 +23,7 @@ EVIDENCE_PINS = {
     "imbuement-bindings.json": "1b7640df513afe5cf79297c1701282e288c28dfc6587de19cbf2655fa980bfea",
     "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
     "imbuement-eligibility.json": "6206c9a93006dcf7b0db715789bb7e216d4c352a0df99dcf5a7400923730c69b",
-    "global-rules-evidence.json": "d996c2c325b2fa85469c430a1bf3a3c6253fafabdd490d2355f4cdd8c9609e9c",
+    "global-rules-evidence.json": "5f04de7e15226dfa57b36cd9d6f6d03c847f020bbc0efebe118bde02742e3413",
     "imbuement-combat.json": "5f14f4d9748e956fe36d779dbebcd6daeb90ff27ff0eb6abadbe7237cc7d57e7",
     "crystal-imbuements-evidence.json": "2a5723725bd1046e36dc54453ec836810f2b1e972a05d4886eeebeafefbe45fe",
     "missing-item-definitions.json": "0b90ec4d5afe9a8aca3f4838dc0916ba06755a315b745d4dd68f954f91569c30",
