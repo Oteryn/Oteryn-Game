@@ -246,7 +246,7 @@ BEGIN
   SELECT vessels_after INTO previous FROM game_character_wheel_receipts
    WHERE character_id=NEW.character_id AND after_wheel_revision=NEW.before_wheel_revision;
   IF NEW.vessels_before IS DISTINCT FROM coalesce(previous,'[null,null,null,null]'::jsonb)
-    OR current_vessels IS DISTINCT FROM NEW.vessels_after THEN
+    OR coalesce(current_vessels,'[null,null,null,null]'::jsonb) IS DISTINCT FROM NEW.vessels_after THEN
    RAISE EXCEPTION 'Wheel vessel receipt chain mismatch' USING ERRCODE='23514';
   END IF;
   FOR slot_index IN 0..3 LOOP
