@@ -679,6 +679,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
         (32954, 32022, -6),
         (33175, 31764, -6),
         (32734, 31668, -6),
+        (33270, 32440, -6),
         (33270, 32441, -6),
     ];
     let mut grouped = std::collections::BTreeMap::<_, Vec<Tile>>::new();
