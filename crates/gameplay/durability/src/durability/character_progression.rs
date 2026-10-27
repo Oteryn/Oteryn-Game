@@ -503,6 +503,18 @@ pub(super) async fn assert_runtime_scope_fence(
     generation: ScopeOwnershipGeneration,
     node: &NodeIncarnationProof,
 ) -> std::result::Result<bool, DurabilityError> {
+    // Readiness attests history at publication time. A partial restore can leave
+    // that ready projection and an assignment row intact while losing receipts;
+    // neither projection is then current authority. The native validator holds
+    // the writer's share lock until this semantic transaction ends, serializing
+    // its history proof with assignment successors before we lock their rows.
+    let history_valid: bool =
+        sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
+            .fetch_one(&mut **tx)
+            .await?;
+    if !history_valid {
+        return Ok(false);
+    }
     let (runtime_kind, channel_id, instance_id) = match scope {
         RuntimeScopeRefV1::Channel { channel_id, .. } => (1_u8, Some(*channel_id.as_bytes()), None),
         RuntimeScopeRefV1::Instance { instance_id, .. } => (2, None, Some(instance_id)),

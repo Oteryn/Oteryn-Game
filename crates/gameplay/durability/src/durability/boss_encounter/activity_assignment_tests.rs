@@ -96,6 +96,16 @@ async fn runtime_fence(
     generation: u64,
     node: &NodeIncarnationProof,
 ) -> TestResult<bool> {
+    runtime_fence_with_history(h, scope, generation, node, false).await
+}
+
+async fn runtime_fence_with_history(
+    h: &fixture::Harness,
+    scope: RuntimeScopeRefV1,
+    generation: u64,
+    node: &NodeIncarnationProof,
+    missing_receipt: bool,
+) -> TestResult<bool> {
     use crate::durability::character_authority::assert_recovery_fence;
     use crate::durability::character_progression::assert_runtime_scope_fence;
     use crate::durability::db::{
@@ -118,8 +128,22 @@ async fn runtime_fence(
                 let mut tx = begin_semantic_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &recovery).await?;
                 lock_admission_relations(&mut tx).await?;
+                if missing_receipt {
+                    // Model a partial restore without changing the otherwise valid
+                    // assignment, ready guard, node, or participant. Never retain
+                    // this administrative corruption or lower the high water.
+                    let updated = sqlx::query("UPDATE game_runtime_scope_assignment_writer SET source_revision_high_water=source_revision_high_water+1 WHERE writer_id=1")
+                        .execute(&mut *tx).await?;
+                    assert_eq!(updated.rows_affected(), 1);
+                    assert!(!sqlx::query_scalar::<_, bool>("SELECT game_runtime_scope_assignment_history_valid()")
+                        .fetch_one(&mut *tx).await?);
+                }
                 let current = assert_runtime_scope_fence(&mut tx, scope, generation, &node).await?;
-                commit_semantic_transaction(tx, deadline).await?;
+                if missing_receipt {
+                    tx.rollback().await?;
+                } else {
+                    commit_semantic_transaction(tx, deadline).await?;
+                }
                 Ok(current)
             })
         })
@@ -225,6 +249,13 @@ async fn qualify(h: &fixture::Harness) -> TestResult {
     // Positive Instance runtime fence: exact assignment tag 3 resolves the
     // attested runtime tag 2. The participant session fence still refuses it.
     assert!(runtime_fence(h, scope, 1, &h.node).await?);
+    for current_scope in [fixture::scope()?, scope] {
+        assert!(
+            !runtime_fence_with_history(h, current_scope, 1, &h.node, true).await?,
+            "a ready runtime cannot authorize gameplay with an assignment receipt gap"
+        );
+        assert!(runtime_fence(h, current_scope, 1, &h.node).await?);
+    }
     assert!(!runtime_fence(h, scope, 1, &false_proof).await?);
     assert!(!runtime_fence(h, scope, 2, &h.node).await?);
     for other in [

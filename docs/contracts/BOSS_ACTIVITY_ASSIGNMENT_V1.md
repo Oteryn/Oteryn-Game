@@ -37,6 +37,25 @@ guard at the successor ownership generation with `ready = false`. Stale generati
 or holder possession cannot restore readiness. Receipts prove allocation decisions;
 they never prove a Character handoff, encounter death or reward.
 
+Gameplay revalidates retained assignment history inside its current semantic
+transaction, before locking the matching assignment and ready guard. The native
+history validator retains the singleton writer's share lock through that
+transaction. A previously attested ready projection cannot authorize gameplay
+after a partial restore leaves a receipt gap or a materialized assignment that
+does not reproduce its latest receipt. Invalid history refuses both Channel and
+activity runtime fences; it grants neither participant admission nor recovery.
+The activity allocation qualification checks ready Channel and Instance runtime
+fences against a transactional receipt gap, then rolls the administrative probe
+back and requires both valid controls to pass again.
+`boss_cooldown_list_postgres_real_dispatch_assignment_history_gap` independently
+checks an admitted Channel connection: after accepted command-133 controls, an
+administrative high-water advance leaves one receipt missing while retaining
+the assignment, readiness and participant rows. A new command must return
+Rejected with an empty payload, the durable read must refuse, and the participant
+binding must remain unchanged. Its disposable database is not repaired by
+lowering high water or rewriting retained history. This qualifies a refusal
+after partial restore, not restart recovery or admitted Instance gameplay.
+
 House and activity identity collisions are refused in either allocation order,
 even after revocation. Assignment and bare-session checks serialize using the
 same World/Instance advisory lock as house admission. A live bare instance session
