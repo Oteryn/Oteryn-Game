@@ -288,6 +288,7 @@ pub(super) async fn dispatch_ground(
     use tokio::io::AsyncWriteExt;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let session = admitted.game_session_id;
+    let character = admitted.item_fence.ok_or("item fence")?.character_id;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = crate::gameplay_transport::connection::serve_admitted(
         &mut server,
@@ -297,11 +298,16 @@ pub(super) async fn dispatch_ground(
     );
     let exchange = async move {
         let mut root_handle = None;
+        let mut carried_handle = None;
         loop {
             let frame = read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&frame)?;
             if envelope.message_type() == MessageType::SnapshotChunk {
                 for domain in decode_snapshot_chunk(envelope.payload())?.1 {
+                    if domain.domain_id == 9 {
+                        carried_handle = oteryn_protocol_oteryn::item_view::decode_character_inventory_with_equip_drop(domain.payload, true)
+                            .map_err(debug)?.main_backpack.map(|item| item.handle);
+                    }
                     if domain.domain_id == 17 {
                         let map = oteryn_protocol_oteryn::world_map::decode_world_map_snapshot(
                             domain.payload,
@@ -431,6 +437,13 @@ pub(super) async fn dispatch_ground(
                 .ok_or("nested view after session fixture restoration")?;
             assert_eq!(child.parent_handle, Some(root_handle));
             assert!(child.entries.is_empty());
+            revalidate_carried_after_lock(
+                character,
+                &mut client,
+                pool,
+                carried_handle.ok_or("advertised carried root")?,
+            )
+            .await?;
         }
         client.shutdown().await?;
         Ok::<(), Box<dyn std::error::Error>>(())
@@ -541,6 +554,86 @@ async fn revalidate_session_after_lock(
     // Restore only fixture data so the same advertised handle can demonstrate
     // that the refused read did not manufacture a new view or lose its parent.
     fixture(pool, "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation-1 WHERE game_session_id=encode($1,'hex')::uuid", &[*session.as_bytes()]).await?;
+    Ok(())
+}
+
+async fn revalidate_carried_after_lock(
+    character: crate::domain::CharacterId,
+    client: &mut tokio::io::DuplexStream,
+    pool: &sqlx::PgPool,
+    handle: ItemHandle,
+) -> TestResult {
+    use tokio::io::AsyncWriteExt;
+    let mut blocker = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *blocker)
+        .await?;
+    let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *blocker)
+        .await?;
+    sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR NO KEY UPDATE")
+        .bind(character.as_bytes().as_slice()).execute(&mut *blocker).await?;
+    let slot: serde_json::Value = sqlx::query_scalar("SELECT to_jsonb(s) FROM game_item_container_slots s WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character.as_bytes().as_slice()).fetch_one(&mut *blocker).await?;
+    client.write_all(&open(13, handle)?).await?;
+    wait_for_blocker(pool, pid).await?;
+    // A privileged custody change commits only once this real view read is
+    // waiting. The retained advertised handle cannot substitute for custody.
+    sqlx::query("DELETE FROM game_item_container_slots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character.as_bytes().as_slice())
+        .execute(&mut *blocker)
+        .await?;
+    blocker.commit().await?;
+    read_outcome(client, 13, ContainerViewOutcome::Stale).await?;
+
+    let mut restoring = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *restoring)
+        .await?;
+    sqlx::query("INSERT INTO game_item_container_slots SELECT * FROM jsonb_populate_record(NULL::game_item_container_slots,$1)")
+        .bind(slot).execute(&mut *restoring).await?;
+    restoring.commit().await?;
+    client.write_all(&open(14, handle)?).await?;
+    let restored = read_views(client, 14, 3).await?;
+    let carried = restored
+        .views
+        .iter()
+        .find(|view| view.container_handle == handle)
+        .ok_or("restored carried view")?;
+    assert_eq!(carried.parent_handle, None);
+    assert_eq!(
+        carried.entries.len(),
+        1,
+        "unchanged carried entries return after fixture restoration"
+    );
+
+    // Pause the next real open after custody admission but before its entry
+    // SELECT completes. A competing carried-tree writer must still be fenced
+    // by the reader's root lock, rather than race the remaining statements.
+    let mut entries = pool.begin().await?;
+    sqlx::query("LOCK TABLE game_item_container_entries IN ACCESS EXCLUSIVE MODE")
+        .execute(&mut *entries)
+        .await?;
+    let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *entries)
+        .await?;
+    client.write_all(&open(15, handle)?).await?;
+    wait_for_blocker(pool, pid).await?;
+    let mut writer = pool.begin().await?;
+    let error = sqlx::query("SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR NO KEY UPDATE NOWAIT")
+        .bind(character.as_bytes().as_slice()).execute(&mut *writer).await
+        .expect_err("carried entry read must retain the Character root lock");
+    assert_eq!(
+        error
+            .as_database_error()
+            .and_then(|error| error.code())
+            .as_deref(),
+        Some("55P03")
+    );
+    writer.rollback().await?;
+    entries.commit().await?;
+    let unchanged = read_views(client, 15, 3).await?;
+    assert_eq!(unchanged, restored);
     Ok(())
 }
 

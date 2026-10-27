@@ -1563,6 +1563,8 @@ impl DurabilityRoot {
 
     /// `container` with its parent and its direct contents (newest first) when it is in
     /// `character_id`'s carried tree, the main backpack included; `None` otherwise.
+    /// Retain the Character root's shared lock across ownership and entry reads,
+    /// serializing with the composition-rule-4 writers of this carried tree.
     pub async fn read_item_loop_container(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
@@ -1578,6 +1580,20 @@ impl DurabilityRoot {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &record).await?;
                     let read: LoopResult<Option<LoopContainer>> = async {
+                        // Custody and entries are separate READ COMMITTED statements.
+                        // A historical owner result cannot authorize entries read after
+                        // a concurrent transfer. All carried-tree writers lock this
+                        // root first; take its shared lock before any custody read.
+                        let root = sqlx::query(
+                            "SELECT character_id FROM game_character_roots \
+                              WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR SHARE",
+                        )
+                        .bind(character_id.as_bytes().as_slice())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                        if root.is_none() {
+                            return Ok(None);
+                        }
                         let slot = load_slot(&mut tx, character_id).await?;
                         let main = slot.is_some_and(|slot| slot.item_instance_id == container);
                         if !main {
