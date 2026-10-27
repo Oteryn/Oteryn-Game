@@ -771,6 +771,15 @@ async fn field_scenario_inner(
             let state = states
                 .get_mut(&runtime, target, target_session)
                 .ok_or("target state")?;
+            // These assertions isolate field damage. Unfed actors now regenerate too;
+            // keep this fresh fixture's regeneration deadline beyond the 180-second
+            // scenario timeout and its 11-second clock advance. Preserve Monk state.
+            let monk = state.monk.take();
+            crate::spell::actor_conditions::clear_on_lifecycle(state);
+            state
+                .make_playable(owner.owner_now().checked_add(3_600_000_000).map_err(debug)?)
+                .map_err(debug)?;
+            state.monk = monk;
             if scenario == Scenario::Death {
                 state.health = 8;
             }
