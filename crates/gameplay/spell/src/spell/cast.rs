@@ -125,6 +125,11 @@ pub struct PlayerSpellState {
     /// Current committed equipment protection against direct fire damage (not fields).
     pub(super) equipped_fire_protection:
         Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Additional direct damage elements, installed alongside the existing typed projections.
+    pub(super) equipped_element_protections: std::collections::BTreeMap<
+        oteryn_gameplay_content::content::ReferenceResistanceKind,
+        oteryn_gameplay_content::content::ReferenceRationalPercent,
+    >,
     /// Current committed equipment protection against direct holy damage.
     pub(super) equipped_holy_protection:
         Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
@@ -194,6 +199,7 @@ impl PlayerSpellState {
                 equipped_energy_protection: None,
                 equipped_fire_protection: None,
                 equipped_holy_protection: None,
+                equipped_element_protections: Default::default(),
                 equipped_offence: Default::default(),
                 training: None,
                 training_payment: None,

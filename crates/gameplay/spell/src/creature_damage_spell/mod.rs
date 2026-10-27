@@ -1102,7 +1102,7 @@ impl DamageSpellOwner {
         )
     }
 
-    /// Execute a source-bound physical or holy target spell under the runtime's own current fence.
+    /// Execute a source-bound physical, holy, earth or death target spell under the current fence.
     /// The restricted shape needs no external condition authority or timer installation.
     #[allow(clippy::too_many_arguments)]
     pub fn execute_current_target_damage(
@@ -1116,7 +1116,10 @@ impl DamageSpellOwner {
         now: SemanticTimeMicros,
     ) -> Result<SpellOutcome, AttackError> {
         if source.list != ScheduleList::Attack
-            || !matches!(source.element.as_deref(), Some("physical" | "holy"))
+            || !matches!(
+                source.element.as_deref(),
+                Some("physical" | "holy" | "earth" | "death")
+            )
             || !source.needs_target
             || source.needs_direction
             || source.area.is_some()
@@ -2069,8 +2072,9 @@ impl DamageSpellOwner {
             let amount = if blocked {
                 0
             } else {
-                u32::try_from(u64::from(remaining) * u64::from(facts.multiplier_ppm) / 1_000_000)
-                    .map_err(|_| AttackError::NumericOverflow)?
+                facts
+                    .mitigate_damage(remaining)
+                    .ok_or(AttackError::NumericOverflow)?
             };
             prepared
                 .try_reserve(1)
