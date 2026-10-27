@@ -246,8 +246,7 @@ fn indexed<T>(entries: &[T], index: NonZeroU32) -> Option<&T> {
 /// Both snapshots have the same durable revision, ready for connection domain envelopes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CharmConnectionViews {
-    pub(in crate::gameplay_transport) combat_state:
-        crate::durability::charm_state::CharacterCharmState,
+    pub(crate) combat_state: crate::durability::charm_state::CharacterCharmState,
     pub revision: CharacterRevision,
     pub bestiary: Vec<BestiaryRaceProgress>,
     pub charms: CharmView,
