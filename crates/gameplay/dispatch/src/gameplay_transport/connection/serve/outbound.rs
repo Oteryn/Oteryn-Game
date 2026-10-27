@@ -116,7 +116,7 @@ where
         Dispatch::Spell(outcome) => {
             effects::spell(stream, authority, session, outcome).await?;
         }
-        Dispatch::Timed(_, deltas) => {
+        Dispatch::Timed(_, deltas) | Dispatch::ContainerSort(deltas) => {
             for delta in deltas {
                 let Some((delta_sequence, frame)) =
                     item_view_delta(session.generation, session.sequence, &delta)

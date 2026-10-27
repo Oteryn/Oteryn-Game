@@ -1,0 +1,15 @@
+{
+  "id": 146,
+  "name": "CONTAINER_SORT_V1",
+  "owner_decision": "NEWS-HIST-CONTAINER-SORT-1",
+  "owner": "Game item loop owner",
+  "requires": [
+    14
+  ],
+  "command_types": [
+    168
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Bundle Worlds with container trees and active pinned item content."
+}
