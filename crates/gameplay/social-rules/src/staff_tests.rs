@@ -64,3 +64,16 @@ fn staff_rules_closed_signed_grammar() -> Result<(), Box<dyn std::error::Error>>
     assert!(serde_json::from_str::<StaffRole>("\"PLAYER\"").is_err());
     Ok(())
 }
+
+#[test]
+fn staff_rules_accept_a_bounded_kick_target() {
+    let mut request = request();
+    request.action = Action::Kick {
+        character_id: "2902030405067008800a0b0c0d0e0f29".into(),
+    };
+    assert!(request.valid(StaffRole::Gm));
+    request.action = Action::Kick {
+        character_id: "00000000000000000000000000000000".into(),
+    };
+    assert!(!request.valid(StaffRole::Admin));
+}

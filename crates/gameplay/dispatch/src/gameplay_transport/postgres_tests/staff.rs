@@ -844,11 +844,12 @@ fn scenario() -> TestResult {
                 character_id: hex(&id(41)),
             },
         );
+        let signed_next = signing.sign(&canonical(&next)?, false)?;
         assert!(
             submit(
                 &restarted,
                 admitted,
-                &signing.sign(&canonical(&next)?, false)?,
+                &signed_next,
                 false
             )
             .await?
@@ -856,6 +857,48 @@ fn scenario() -> TestResult {
             "legitimately expired audit evidence does not break the retained chain"
         );
         assert_eq!(counts(&h).await?, (6, 5, 1));
+        let kick = signing.request(
+            11,
+            &sha(&signed_next.canonical),
+            97,
+            now,
+            rules::Action::Kick {
+                character_id: hex(&id(41)),
+            },
+        );
+        let signed_kick = signing.sign(&canonical(&kick)?, false)?;
+        let kick_outcome = submit(&restarted, admitted, &signed_kick, false)
+            .await?
+            .ok_or("kick record")?;
+        assert_eq!(wire::decode_result(&kick_outcome)?.code, wire::StaffCode::Ok);
+        let kick_rows: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_staff_kicks WHERE operation_id=$1::uuid",
+        )
+        .bind(&kick.operation_id)
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(kick_rows, 1, "real dispatch writes one audited kick record");
+        let kick_receipt = rules::Receipt {
+            activation_sha256: signing.config.newest_activation_sha256.clone(),
+            control_seq: "12".into(),
+            disposition: rules::ReceiptDisposition::Committed,
+            environment: signing.config.environment.clone(),
+            operation_id: kick.operation_id.clone(),
+            outcome_sha256: sha(&kick_outcome),
+            previous_link_sha256: sha(&signed_kick.canonical),
+            request_sha256: sha(&signed_kick.canonical),
+            roster_sha256: signing.config.allowed_signers_sha256.clone(),
+        };
+        assert!(
+            submit(
+                &restarted,
+                admitted,
+                &signing.sign(&canonical(&kick_receipt)?, true)?,
+                true
+            )
+            .await?
+            .is_some()
+        );
         // Privilege checks use the real runtime role rather than the test administrator.
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
