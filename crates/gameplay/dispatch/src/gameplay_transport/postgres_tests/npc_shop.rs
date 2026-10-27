@@ -39,6 +39,7 @@ use tokio::io::AsyncWriteExt;
 const MEAT: &str = "oteryn:item.tibia.i3577";
 const FISH: &str = "oteryn:item.tibia.i3578";
 const TRADER: &str = "oteryn:npc.alice";
+const RASHID: &str = "oteryn:npc.rashid";
 
 #[test]
 fn npc_shop_postgres_real_wire_look_sell_all_replay_and_nothing_left() -> TestResult {
@@ -223,10 +224,15 @@ fn scenario() -> TestResult {
             sub_type: None,
             parity_pending: false,
         };
-        let book = NpcTalkBook::from_model(&model).with(
-            TRADER,
-            NpcTalkEntry::new("Alice", Some("Alice trades.")).with_offers(vec![offer]),
-        );
+        let book = NpcTalkBook::from_model(&model)
+            .with(
+                TRADER,
+                NpcTalkEntry::new("Alice", Some("Alice trades.")).with_offers(vec![offer.clone()]),
+            )
+            .with(
+                RASHID,
+                NpcTalkEntry::new("Rashid", Some("Rashid trades.")).with_offers(vec![offer]),
+            );
         let revision = book.catalogue_revision();
         owner.states.chat.install_npc_talk(Arc::new(book));
         let session = deps.admitted.game_session_id;
@@ -244,15 +250,26 @@ fn scenario() -> TestResult {
             runtime
                 .place_npcs(
                     &NpcPlacementTable {
-                        npcs: vec![NpcPlacements {
-                            key: TRADER.into(),
-                            placements: vec![NpcPlacement {
-                                floor: -i8::try_from(spot.floor)?,
-                                x: u16::try_from(spot.x + 1)?,
-                                y: u16::try_from(spot.y)?,
-                                direction: MovementFacing::South,
-                            }],
-                        }],
+                        npcs: vec![
+                            NpcPlacements {
+                                key: TRADER.into(),
+                                placements: vec![NpcPlacement {
+                                    floor: -i8::try_from(spot.floor)?,
+                                    x: u16::try_from(spot.x + 1)?,
+                                    y: u16::try_from(spot.y)?,
+                                    direction: MovementFacing::South,
+                                }],
+                            },
+                            NpcPlacements {
+                                key: RASHID.into(),
+                                placements: vec![NpcPlacement {
+                                    floor: -i8::try_from(spot.floor)?,
+                                    x: u16::try_from(spot.x + 2)?,
+                                    y: u16::try_from(spot.y)?,
+                                    direction: MovementFacing::South,
+                                }],
+                            },
+                        ],
                     },
                     |_| true,
                     true,
@@ -358,6 +375,26 @@ fn scenario() -> TestResult {
         // A new sell-all finds no meat: refused, nothing written.
         let (status, nothing) = exchange(&owner, &mut admitted, Some((7, 8)), 9, &sell_all).await?;
         assert_ne!(nothing.disposition, NpcIntentDisposition::Ok, "{status:?}");
+        assert_eq!(footprint(&h).await?, after);
+
+        // A visible Rashid outside today's server-owned Canary destination cannot trade. This
+        // traverses the production command decoder and dispatcher, rather than calling the
+        // schedule predicate directly, and leaves durable state untouched.
+        let placed_rashid = owner.runtime.lock().await.visible_entities().npcs[1];
+        let rashid_intent = NpcShopIntent {
+            npc_actor: EntityRef {
+                identity: placed_rashid.actor.placement_identity(),
+                generation: placed_rashid.generation,
+            },
+            catalogue_revision: revision,
+            offer_index: 0,
+            side: NpcTradeSide::Sell,
+            action: NpcShopAction::SellAll,
+            expected_unit_price: 4,
+        };
+        let (_, unavailable) =
+            exchange(&owner, &mut admitted, Some((10, 11)), 12, &rashid_intent).await?;
+        assert_ne!(unavailable.disposition, NpcIntentDisposition::Ok);
         assert_eq!(footprint(&h).await?, after);
         drop(owner);
         drop(authority);
