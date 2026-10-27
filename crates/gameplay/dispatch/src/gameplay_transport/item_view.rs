@@ -518,6 +518,9 @@ pub struct SessionItemView {
     /// a text compositor must recheck locker reach and custody under its retained lane.
     /// Like container-tree views, this is deliberately absent from continuity.
     pub(super) open_depot: Option<(u16, u8)>,
+    /// Exact native instances on the last shown depot page, never guessed from ordinals.
+    /// These are historical selection data; writing must revalidate under its own lane.
+    pub(super) depot_items: Vec<(u64, [u8; 16])>,
 }
 
 impl SessionItemView {
@@ -535,6 +538,7 @@ impl SessionItemView {
             carried_open: continuity.open_corpse,
             equip_drop: false,
             open_depot: None,
+            depot_items: Vec::new(),
         }
     }
 

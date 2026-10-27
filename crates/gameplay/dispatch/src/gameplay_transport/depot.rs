@@ -1,6 +1,6 @@
 //! Live depot composition. No town or Character authority comes from a client.
 use super::ComposedFreshAdmission;
-use super::connection::UseCommand;
+use super::connection::{DepotObservation, UseCommand};
 use super::equipment_move::native_for_move;
 use super::item_ref_admission::{NativeItemWeights, definition_ref};
 use super::item_view::ItemKey;
@@ -12,14 +12,17 @@ use oteryn_protocol_oteryn::depot::{
 };
 use sha2::{Digest, Sha256};
 
-fn empty(intent: DepotIntent, outcome: DepotOutcome) -> DepotReply {
-    DepotReply {
-        outcome,
-        town: None,
-        box_number: intent.box_number,
-        page: intent.page,
-        total: 0,
-        entries: Vec::new(),
+fn empty(intent: DepotIntent, outcome: DepotOutcome) -> DepotObservation {
+    DepotObservation {
+        items: Vec::new(),
+        reply: DepotReply {
+            outcome,
+            town: None,
+            box_number: intent.box_number,
+            page: intent.page,
+            total: 0,
+            entries: Vec::new(),
+        },
     }
 }
 
@@ -74,7 +77,7 @@ pub(super) async fn execute(
     command: UseCommand,
     intent: DepotIntent,
     selected_item: Option<ItemKey>,
-) -> Option<DepotReply> {
+) -> Option<DepotObservation> {
     let Some(fence) = command.item_fence else {
         return Some(empty(intent, DepotOutcome::Rejected));
     };
@@ -243,6 +246,13 @@ pub(super) async fn execute(
         }
     }
     let index = native.item_index()?;
+    // Preserve the native identities from this exact post-move page read; an ordinal
+    // is a depot-local address, never an ItemInstanceId. The lane stays held here.
+    let items = page
+        .entries
+        .iter()
+        .map(|entry| (entry.ordinal, entry.item.item_instance_id))
+        .collect();
     let entries = page
         .entries
         .into_iter()
@@ -254,12 +264,15 @@ pub(super) async fn execute(
             })
         })
         .collect::<Option<Vec<_>>>()?;
-    Some(DepotReply {
-        outcome,
-        town: Some(town),
-        box_number: intent.box_number,
-        page: intent.page,
-        total: page.total,
-        entries,
+    Some(DepotObservation {
+        items,
+        reply: DepotReply {
+            outcome,
+            town: Some(town),
+            box_number: intent.box_number,
+            page: intent.page,
+            total: page.total,
+            entries,
+        },
     })
 }

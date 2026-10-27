@@ -4,7 +4,7 @@
 
 pub(super) mod appearance_change;
 mod authority;
-pub use authority::FreshAdmissionAuthority;
+pub use authority::{DepotObservation, FreshAdmissionAuthority};
 mod moved_step;
 mod routing;
 mod serve;

@@ -4,6 +4,15 @@ use super::*;
 
 mod composed;
 
+/// Native depot page data from one owner read. Item identities never enter the
+/// ordinal-only depot wire reply. This observation grants neither reach nor custody.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DepotObservation {
+    pub reply: oteryn_protocol_oteryn::depot::DepotReply,
+    /// Exact instance identities, paired with the corresponding reply ordinals.
+    pub items: Vec<(u64, [u8; 16])>,
+}
+
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
@@ -524,7 +533,7 @@ pub trait FreshAdmissionAuthority {
         _command: UseCommand,
         _intent: oteryn_protocol_oteryn::depot::DepotIntent,
         _item: Option<ItemKey>,
-    ) -> impl Future<Output = Option<oteryn_protocol_oteryn::depot::DepotReply>> {
+    ) -> impl Future<Output = Option<DepotObservation>> {
         async { None }
     }
 

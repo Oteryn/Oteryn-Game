@@ -521,7 +521,8 @@ fn scenario(stash: bool) -> TestResult {
                 None,
             )
             .await
-            .ok_or("durable replay")?;
+            .ok_or("durable replay")?
+            .reply;
         assert_eq!(replay.outcome, DepotOutcome::Moved);
         // Reusing an ordinal after withdrawal cannot move another item; a wrong town fails closed.
         let wrong = owner
@@ -539,7 +540,8 @@ fn scenario(stash: bool) -> TestResult {
                 None,
             )
             .await
-            .ok_or("town refusal")?;
+            .ok_or("town refusal")?
+            .reply;
         assert_eq!(wrong.outcome, DepotOutcome::Stale);
         let replay_command = UseCommand {
             game_session_id: session,
@@ -557,7 +559,8 @@ fn scenario(stash: bool) -> TestResult {
                 None,
             )
             .await
-            .ok_or("conflicting replay")?;
+            .ok_or("conflicting replay")?
+            .reply;
         assert_eq!(changed.outcome, DepotOutcome::Rejected);
         let stale = crate::durability::item_transfer::CurrentCharacterItemFence {
             connection_generation: crate::foundation::ConnectionGeneration::new(2)
@@ -576,8 +579,60 @@ fn scenario(stash: bool) -> TestResult {
                 Some(ItemKey::Instance(carried.ok_or("carried")?)),
             )
             .await
-            .ok_or("stale fence")?;
+            .ok_or("stale fence")?
+            .reply;
         assert_eq!(refused.outcome, DepotOutcome::Rejected);
+        // The native page preserves exact identities from storage; neither the wire
+        // ordinal nor its definition can be used as an instance identity. In particular,
+        // this second deposit gets a new ordinal while keeping the same ItemInstance.
+        let observation = owner
+            .depot(
+                deps.actor,
+                UseCommand {
+                    command_id: 9,
+                    ..replay_command
+                },
+                deposit,
+                Some(ItemKey::Instance(carried.ok_or("carried")?)),
+            )
+            .await
+            .ok_or("selection deposit")?;
+        assert_eq!(observation.reply.outcome, DepotOutcome::Moved);
+        assert_eq!(observation.items, vec![(2, carried.ok_or("carried")?)]);
+        assert_eq!(observation.reply.entries[0].ordinal, observation.items[0].0);
+        let observation = owner
+            .depot(
+                deps.actor,
+                UseCommand {
+                    command_id: 10,
+                    ..replay_command
+                },
+                browse,
+                None,
+            )
+            .await
+            .ok_or("selection browse")?;
+        assert_eq!(observation.reply.outcome, DepotOutcome::Opened);
+        assert_eq!(observation.items, vec![(2, carried.ok_or("carried")?)]);
+        // Restore custody through the fenced owner; an empty current page retains no IDs.
+        let observation = owner
+            .depot(
+                deps.actor,
+                UseCommand {
+                    command_id: 11,
+                    ..replay_command
+                },
+                DepotIntent {
+                    action: DepotAction::Withdraw(2),
+                    ..withdraw
+                },
+                None,
+            )
+            .await
+            .ok_or("selection withdraw")?;
+        assert_eq!(observation.reply.outcome, DepotOutcome::Moved);
+        assert!(observation.items.is_empty());
+        assert!(observation.reply.entries.is_empty());
         {
             let mut runtime = owner.runtime.lock().await;
             let mut movement = runtime.borrow_movement_position();
@@ -599,12 +654,15 @@ fn scenario(stash: bool) -> TestResult {
                 None,
             )
             .await
-            .ok_or("reach refusal")?;
+            .ok_or("reach refusal")?
+            .reply;
         assert_eq!(far.outcome, DepotOutcome::NoLocker);
         let replay = owner
             .depot(deps.actor, replay_command, deposit, None)
             .await
             .ok_or("replay outside locker")?;
+        assert!(replay.items.is_empty());
+        let replay = replay.reply;
         assert_eq!(replay.outcome, DepotOutcome::Moved);
         assert_eq!(
             replay.town, None,

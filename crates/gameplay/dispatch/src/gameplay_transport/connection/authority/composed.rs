@@ -312,7 +312,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::depot::DepotIntent,
         item: Option<item_view::ItemKey>,
-    ) -> Option<oteryn_protocol_oteryn::depot::DepotReply> {
+    ) -> Option<connection::DepotObservation> {
         depot::execute(self, actor, command, intent, item).await
     }
 
