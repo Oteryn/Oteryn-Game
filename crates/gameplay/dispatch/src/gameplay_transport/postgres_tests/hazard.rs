@@ -2339,6 +2339,215 @@ async fn outgoing_party_condition_checks(
         losses[3] > losses[1] && losses[3] > losses[2],
         "current party level zero allows both originally dodging ticks to land: {losses:?}"
     );
+    outgoing_staggered_party_condition_checks(owner, actor, session, other, other_session).await?;
+    Ok(())
+}
+
+// Two conditions share their current player source, but each occurrence keeps
+// its own dodge. The later Fire tick must survive the earlier Energy/Agony turn.
+async fn outgoing_staggered_party_condition_checks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    other: crate::foundation::ExactActorRef,
+    other_session: GameSessionId,
+) -> TestResult {
+    use crate::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionLineage, ConditionSourceKind, TickFacts,
+        TickKind,
+    };
+    use crate::foundation::{ConditionValues, DotElement};
+    use crate::gameplay_transport::hazard::combat;
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+    let (target, original_health) = {
+        let runtime = owner.runtime.lock().await;
+        let target = runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .filter_map(|creature| runtime.companion_snapshot(creature.actor).ok())
+            .find(|snapshot| {
+                snapshot.state.policy.definition_key == "canary:creature/rat"
+                    && snapshot.health > 10
+                    && combat::eligible(&runtime, snapshot.actor)
+            })
+            .ok_or("living staggered condition rat")?;
+        assert!(combat::in_area(&runtime, actor));
+        assert!(combat::in_area(&runtime, other));
+        (target.actor, target.health)
+    };
+    // Every combination, including two different outcomes from the same player.
+    for mask in 0..8 {
+        let dodges = [mask & 1 != 0, mask & 2 != 0, mask & 4 != 0];
+        let due = owner.owner_now().get() + 1_000_000;
+        let later_due = due + 5_000_000;
+        let pending_fire = {
+            let mut runtime = owner.runtime.lock().await;
+            let before = runtime.companion_snapshot(target).map_err(debug)?;
+            assert!(before.state.conditions.instances().is_empty());
+            assert_eq!(before.health, original_health);
+            let root =
+                GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+            let mut next = before.state.clone();
+            for (ordinal, (source, source_session, element, interval_ms)) in [
+                (actor, session, Some(DotElement::Energy), 1000),
+                (other, other_session, None, 1000),
+                (actor, session, Some(DotElement::Fire), 6000),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let lease = runtime
+                    .bound_attacker_lease(source, source_session)
+                    .map_err(debug)?;
+                let values = if let Some(element) = element {
+                    ConditionValues::DamageOverTime {
+                        element,
+                        total_min: 4,
+                        total_max: 4,
+                        per_tick: 4,
+                        interval_ms,
+                        delayed: true,
+                    }
+                } else {
+                    ConditionValues::Agony {
+                        total_min: 4,
+                        total_max: 4,
+                        per_tick: 4,
+                        interval_ms,
+                        delayed: true,
+                    }
+                };
+                let definition =
+                    ConditionDefinition::new("test.hazard.staggered.condition", 1, values)
+                        .ok_or("staggered condition definition")?;
+                let facts = ApplicationFacts {
+                    now: due - 1_000_000,
+                    base_speed: 100,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: false,
+                    decision_root: &root,
+                    occurrence: DecisionOccurrenceId::from_bytes([0x75; 16]),
+                };
+                next = (1_100_000..1_200_000)
+                    .find_map(|command| {
+                        let lineage = ConditionLineage {
+                            source_character: *lease.character_id().as_bytes(),
+                            source_session: *source_session.as_bytes(),
+                            source_lease_generation: lease.generation(),
+                            source_actor_placement: source.placement_identity(),
+                            source_scope_generation: source.scope_generation().get(),
+                            source_content_digest: runtime.content_pin().server_artifact_digest(),
+                            source_catalog_digest: runtime.content_pin().server_artifact_digest(),
+                            source_creation_command: command,
+                        };
+                        let mut candidate = next.clone();
+                        candidate
+                            .conditions
+                            .apply_with_lineage(
+                                &definition,
+                                Some(source),
+                                ConditionSourceKind::Player,
+                                &[],
+                                &facts,
+                                &lineage,
+                            )
+                            .ok()?;
+                        // Preview the same two turns as the real scheduler;
+                        // jumping straight to Fire would spend the bounded
+                        // catch-up budget on the earlier conditions instead.
+                        let mut preview = candidate.conditions.clone();
+                        let early = preview.take_due(due, TickFacts::default());
+                        let ticks = if ordinal == 2 {
+                            preview.take_due(later_due, TickFacts::default())
+                        } else {
+                            early
+                        };
+                        let tick = ticks.iter().find(|tick| {
+                            tick.provenance.source == Some(source)
+                                && match tick.kind {
+                                    TickKind::Damage {
+                                        element: actual, ..
+                                    } => element == Some(actual),
+                                    TickKind::Agony { .. } => element.is_none(),
+                                    _ => false,
+                                }
+                        })?;
+                        let roll = combat::condition_dodge_roll(&runtime, source, target, tick)?;
+                        (combat::dodges(1, roll) == dodges[ordinal]).then_some(candidate)
+                    })
+                    .ok_or_else(|| {
+                        format!("bounded staggered occurrence: mask {mask}, source {ordinal}")
+                    })?;
+            }
+            assert_eq!(next.conditions.instances().len(), 3);
+            let ticks = next.conditions.clone().take_due(due, TickFacts::default());
+            assert_eq!(ticks.len(), 2);
+            assert!(ticks.iter().all(|tick| tick.due == due));
+            let mut preview = next.conditions.clone();
+            preview.take_due(due, TickFacts::default());
+            assert_eq!(preview.instances().len(), 1);
+            let fire = preview.instances()[0].clone();
+            let remaining = preview.take_due(later_due, TickFacts::default());
+            assert_eq!(remaining.len(), 1);
+            assert_eq!(remaining[0].due, later_due);
+            assert_eq!(remaining[0].provenance.source, Some(actor));
+            runtime
+                .compare_companion_state(&before, next)
+                .map_err(debug)?;
+            fire
+        };
+        // Native rat mitigation truncates each elemental 4-point tick to 3 HP;
+        // Agony bypasses mitigation and lands for exactly 4 HP.
+        let early_loss = i64::from(!dodges[0]) * 3 + i64::from(!dodges[1]) * 4;
+        let final_loss = early_loss + i64::from(!dodges[2]) * 3;
+        for (at, expected_loss, pending) in
+            [(due, early_loss, true), (later_due, final_loss, false)]
+        {
+            owner.clock_origin -=
+                Duration::from_micros(at.saturating_sub(owner.owner_now().get()) + 10_000);
+            owner.drain_monster_melee().await;
+            let after = owner
+                .runtime
+                .lock()
+                .await
+                .companion_snapshot(target)
+                .map_err(debug)?;
+            assert_eq!(
+                original_health - after.health,
+                expected_loss,
+                "mask {mask}, due {at}"
+            );
+            if pending {
+                assert_eq!(
+                    after.state.conditions.instances(),
+                    std::slice::from_ref(&pending_fire)
+                );
+            } else {
+                assert!(after.state.conditions.instances().is_empty());
+            }
+            owner.drain_monster_melee().await;
+            let runtime = owner.runtime.lock().await;
+            let retried = runtime.companion_snapshot(target).map_err(debug)?;
+            assert_eq!(
+                retried.health, after.health,
+                "no duplicate staggered damage"
+            );
+            assert_eq!(
+                retried.state.conditions, after.state.conditions,
+                "no duplicate cursor advance"
+            );
+        }
+        owner
+            .runtime
+            .lock()
+            .await
+            .set_test_creature_health(target, original_health)
+            .map_err(debug)?;
+    }
     Ok(())
 }
 
