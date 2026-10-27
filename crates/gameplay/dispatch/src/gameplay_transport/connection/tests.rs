@@ -5,6 +5,9 @@ mod capability_tests;
 #[path = "tests/idle_kick.rs"]
 mod idle_kick;
 
+#[path = "tests/integrity.rs"]
+mod integrity;
+
 mod bed_sleep_dispatch_tests {
     include!("../bed_sleep_dispatch_tests.rs");
 }

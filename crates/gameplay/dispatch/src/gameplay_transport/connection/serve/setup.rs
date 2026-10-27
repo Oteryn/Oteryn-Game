@@ -3,6 +3,7 @@
 use super::*;
 
 struct LiveSetup {
+    integrity: integrity::Integrity,
     initial: snapshot::InitialSnapshot,
     items: snapshot::ItemSnapshot,
     sessions: snapshot::SessionSnapshot,
@@ -16,13 +17,14 @@ pub(super) async fn prepare<S, A>(
     policy: LivenessPolicy,
     actor: ExactActorRef,
     baseline: WorldSpatialObservation,
-    revisions: (u64, u64),
+    integrity: integrity::Integrity,
 ) -> Result<ServeState, ServeEnd>
 where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
-    let (generation, revision) = revisions;
+    let generation = admitted.continuity.connection_generation;
+    let revision = admitted.continuity.spatial_revision;
     // VIS-3: domain 1 goes first; with capability 6 it is composed after the item view below, so
     // that its objects carry their item handles under capability 4.
     let mut payloads = Vec::new();
@@ -140,6 +142,7 @@ where
         generation,
         revision,
         LiveSetup {
+            integrity,
             initial,
             items,
             sessions,
@@ -159,6 +162,7 @@ async fn live<A: FreshAdmissionAuthority>(
     setup: LiveSetup,
 ) -> Result<ServeState, ServeEnd> {
     let LiveSetup {
+        integrity,
         initial,
         items,
         sessions,
@@ -296,6 +300,7 @@ async fn live<A: FreshAdmissionAuthority>(
     // runs that step first, so non-step traffic never postpones it indefinitely.
     let chase_yielded = false;
     Ok(ServeState {
+        integrity,
         stash_rows: None,
         stash_revision: 0,
         target_walk: None,
