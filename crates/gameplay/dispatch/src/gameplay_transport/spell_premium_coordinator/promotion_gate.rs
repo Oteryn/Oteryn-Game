@@ -52,7 +52,7 @@ impl crate::durability::daily_reward_delivery::DailyRewardPremiumGate for DailyR
 }
 
 impl SpellPremiumCoordinator {
-    async fn transaction_permission(
+    pub(in crate::gameplay_transport) async fn transaction_permission(
         &self,
         tx: &mut PremiumGateTx<'_>,
         account: [u8; 16],
