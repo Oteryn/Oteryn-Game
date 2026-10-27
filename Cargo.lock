@@ -1930,6 +1930,7 @@ version = "0.1.0"
 dependencies = [
  "oteryn-diagnostics",
  "oteryn-foundation",
+ "oteryn-session",
  "tokio",
 ]
 
@@ -1946,6 +1947,7 @@ name = "oteryn-client-ui"
 version = "0.1.0"
 dependencies = [
  "oteryn-client-domain",
+ "oteryn-client-runtime",
  "oteryn-input-actions",
  "oteryn-renderer",
  "serde_json",

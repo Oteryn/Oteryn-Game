@@ -3,16 +3,9 @@
   "kind": "handlers",
   "id": "0001-bestiary-charms-unsupported",
   "status": "unsupported",
-  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
-  "commands": [
-    4,
-    5
-  ],
+  "reason": "Command dispatch moves with CLIENT-STRUCT-5; step 4 owns the feature UI and mappings.",
+  "commands": [4, 5],
   "not_applicable": {
-    "state": "Unsupported until the owning mechanic migration.",
-    "protocol": "Unsupported until the owning mechanic migration.",
-    "view": "Unsupported until the owning mechanic migration.",
-    "input": "Unsupported until the owning mechanic migration.",
-    "settings": "Unsupported until the owning mechanic migration."
+    "input": "Cyclopedia commands are selected from page controls, not keybindings."
   }
 }

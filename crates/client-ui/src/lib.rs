@@ -30,3 +30,7 @@ pub mod spell_action_bar {
         "/src/features/local-spell-action-bar/input.rs"
     ));
 }
+
+/// Bestiary and Charms page state, protocol mapping, views, and settings.
+#[path = "features/0001-bestiary-charms/mod.rs"]
+pub mod bestiary_charms;
