@@ -144,6 +144,7 @@ impl SpellWorldReader for Reader {
                 reference_level_party_lowest: None,
             },
             multiplier_ppm: 1000000,
+            equipment_protection: None,
             immune: false,
             condition_policy: None,
         })

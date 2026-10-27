@@ -8,9 +8,31 @@ pub struct SpellCombatFacts {
     pub attack: AttackFacts,
     /// Elemental resistance only. Excludes armor/shield, already-authored base formula and primary damage draw.
     pub multiplier_ppm: u32,
+    /// Summed equipment and installed imbuement protection, applied once after blocking.
+    pub equipment_protection: Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
     pub immune: bool,
     pub condition_policy: Option<CurrentConditionPolicy>,
 }
+impl SpellCombatFacts {
+    /// Apply equipment's signed absorb sum before the remaining elemental multiplier.
+    pub fn mitigate_damage(&self, damage: u32) -> Option<u32> {
+        if self.multiplier_ppm > 10_000_000 {
+            return None;
+        }
+        let damage = match self.equipment_protection {
+            Some(protection) => {
+                u32::try_from(oteryn_gameplay_items::equipment_effects::apply_protection(
+                    i64::from(damage),
+                    protection,
+                )?)
+                .ok()?
+            }
+            None => damage,
+        };
+        u32::try_from(u64::from(damage) * u64::from(self.multiplier_ppm) / 1_000_000).ok()
+    }
+}
+
 pub trait SpellWorldReader {
     /// Actual immutable current loader owner. Missing membership fails closed before
     /// RNG, cast occurrence or condition mutation; source JSON is never this owner.

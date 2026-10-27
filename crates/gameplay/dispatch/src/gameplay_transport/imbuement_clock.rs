@@ -45,6 +45,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return false;
         };
         let mut clocks = self.states.timed_items.imbuements.lock().await;
+        let has_combat_effects = observed
+            .iter()
+            .chain(clocks.get(&session).into_iter().flat_map(|c| &c.observed))
+            .any(|b| matches!(b.category, 0 | 2..=7 | 10 | 11));
         let clock = clocks.entry(session).or_insert_with(|| ImbuementClock {
             at_ms: now,
             observed: observed.clone(),
@@ -130,6 +134,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             clock.observed = observed;
         }
         clock.at_ms = now;
-        true
+        drop(clocks);
+        if !has_combat_effects {
+            return true;
+        }
+        let Ok(effects) = self.read_admission_effects(session).await else {
+            return false;
+        };
+        let runtime = self.runtime.lock().await;
+        self.install_admission_suppressions(&runtime, actor, session, effects)
+            .await
+            .is_some()
     }
 }

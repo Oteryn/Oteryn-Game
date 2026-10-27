@@ -203,12 +203,14 @@ pub(super) async fn execute(
                 source.area,
                 Some(ProjectV2AbilityArea::Circle { radius_tiles: 4 })
             );
-        let target_damage = (source.element.as_deref() == Some("physical")
-            || (source.element.as_deref() == Some("holy")
-                && matches!(
-                    record.profile.target.key.as_str(),
-                    "oteryn:creature.radiant_paragon" | "oteryn:creature.radiant_templar"
-                )))
+        let target_damage = (matches!(
+            source.element.as_deref(),
+            Some("physical" | "earth" | "death")
+        ) || (source.element.as_deref() == Some("holy")
+            && matches!(
+                record.profile.target.key.as_str(),
+                "oteryn:creature.radiant_paragon" | "oteryn:creature.radiant_templar"
+            )))
             && source.area.is_none()
             && source.needs_target;
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack
@@ -368,24 +370,18 @@ pub(super) async fn execute(
             else {
                 continue;
             };
-            let protection = match source.element.as_deref() {
-                Some("energy") => state.equipped_energy_protection(),
-                Some("ice") => state.equipped_ice_protection(),
-                Some("fire") => state.equipped_fire_protection(),
-                Some("holy") => state.equipped_holy_protection(),
-                Some("physical") => state.equipped_physical_protection(),
+            use crate::content::ReferenceResistanceKind as Kind;
+            let kind = match source.element.as_deref() {
+                Some("earth") => Kind::Earth,
+                Some("death") => Kind::Death,
+                Some("energy") => Kind::Energy,
+                Some("ice") => Kind::Ice,
+                Some("fire") => Kind::Fire,
+                Some("holy") => Kind::Holy,
+                Some("physical") => Kind::Physical,
                 _ => continue,
             };
-            let multiplier = match protection {
-                Some(protection) => oteryn_gameplay_items::equipment_effects::apply_protection(
-                    1_000_000, protection,
-                ),
-                None => Some(1_000_000),
-            };
-            let Some(multiplier_ppm) = multiplier.and_then(|value| u32::try_from(value).ok())
-            else {
-                continue;
-            };
+            let protection = state.equipped_element_protection(kind);
             facts.push(SpellCombatFacts {
                 attack: AttackFacts {
                     issuer: proposal.issuer,
@@ -407,7 +403,8 @@ pub(super) async fn execute(
                                 .filter(|(position, _)| crate::creature_auto_attack::reference_level_area_contains(area, *position))
                                 .map(|(_, level)| *level).min())),
                 },
-                multiplier_ppm,
+                multiplier_ppm: 1_000_000,
+                equipment_protection: protection,
                 immune: false,
                 condition_policy: None,
             });

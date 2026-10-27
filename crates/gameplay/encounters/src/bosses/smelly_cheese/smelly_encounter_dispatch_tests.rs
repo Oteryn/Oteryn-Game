@@ -207,6 +207,7 @@ mod tests {
                     reference_level_party_lowest: None,
                 },
                 multiplier_ppm: self.multiplier,
+                equipment_protection: None,
                 immune: false,
                 condition_policy: None,
             })
