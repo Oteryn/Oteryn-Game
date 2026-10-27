@@ -1218,6 +1218,20 @@ async fn prepare_source_self_from_owners(
                     crate::foundation::runtime_actor_spell_types::CompanionConditionUpdate {expected:expected.clone(),next:next.clone()}))
             })).collect::<Result<Vec<_>,SpellCastDisposition>>()?;
         if let Some((actor, magnitude)) = paid.party_heal {
+            if actor != b.actor {
+                effects.push(
+                    crate::foundation::runtime_actor_spell_types::OwnerCombatEffect {
+                        target: b.actor,
+                        sub_ordinal: u16::try_from(effects.len())
+                            .map_err(|_| SpellCastDisposition::Rejected)?,
+                        change:
+                            crate::foundation::runtime_actor_spell_types::OwnerCombatChange::Heal {
+                                target_atom: crate::spell::combat_execution::actor_atom(b.actor),
+                                magnitude,
+                            },
+                    },
+                );
+            }
             effects.push(
                 crate::foundation::runtime_actor_spell_types::OwnerCombatEffect {
                     target: actor,
@@ -1270,6 +1284,12 @@ async fn prepare_source_self_from_owners(
     let mut preview_batch = make_batch(&preview)?;
     let mut preview_requests = requests.clone();
     if let Some((actor, _)) = preview.party_heal {
+        if actor != b.actor {
+            preview_requests.push(super::super::spell_presentations::LocatedCueRequest {
+                binding: "appearance:effect/magic_blue".into(),
+                target: super::super::spell_presentations::CueTarget::Actor(b.actor),
+            });
+        }
         // Canary harmonyHeal impact magic-blue is separate from the Focus cast effect.
         preview_requests.push(super::super::spell_presentations::LocatedCueRequest {
             binding: "appearance:effect/magic_blue".into(),
@@ -1390,6 +1410,12 @@ async fn prepare_source_self_from_owners(
     // source cue before RNG, but the committed queue contains only the resolved branch.
     requests.retain(|request| selected_cues.contains(request.binding.as_str()));
     if let Some((actor, _)) = paid.party_heal {
+        if actor != b.actor {
+            requests.push(super::super::spell_presentations::LocatedCueRequest {
+                binding: "appearance:effect/magic_blue".into(),
+                target: super::super::spell_presentations::CueTarget::Actor(b.actor),
+            });
+        }
         requests.push(super::super::spell_presentations::LocatedCueRequest {
             binding: "appearance:effect/magic_blue".into(),
             target: super::super::spell_presentations::CueTarget::Actor(actor),

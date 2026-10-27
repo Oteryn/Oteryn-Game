@@ -122,6 +122,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 continue;
             };
+            if selected.character_facts.vocation == crate::spell::Vocation::EliteKnight
+                && self
+                    .wheel_stages(
+                        entry.session,
+                        "elite_knight",
+                        selected.character_facts.level,
+                        true,
+                    )
+                    .conviction_count("battle_instinct")
+                    > 0
+                && let Some(bonuses) = battle_instinct_for_actor(&mut runtime, entry.actor)
+            {
+                // Re-read the live census for every due swing. No equipment transition is
+                // needed to replace the previous adjacent-creature result (news 9024).
+                selected.skills.attack = selected.skills.attack.saturating_add(bonuses.melee);
+                selected.skills.shielding =
+                    selected.skills.shielding.saturating_add(bonuses.shielding);
+            }
             let pvp_black = if !runtime.contains_live_creature(selected.target) {
                 let Some(black) = self
                     .pvp_target_legal(
@@ -221,7 +239,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 };
                 let mut offence = offence.clone();
-                if !extension && let Ok(snapshot) = runtime.companion_snapshot(target) {
+                if let Ok(snapshot) = runtime.companion_snapshot(target) {
+                    let source = if extension {
+                        CharmHitSource::CharacterAutoAttackOffTarget
+                    } else {
+                        CharmHitSource::CharacterAttack
+                    };
                     let outcomes = charm_combat::evaluate(
                         &states,
                         &runtime,
@@ -236,9 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             ordinal,
                             b"damage-calculation",
                         ),
-                        CharmHookEvent::AttackDamageCalculation {
-                            source: CharmHitSource::CharacterAttack,
-                        },
+                        CharmHookEvent::AttackDamageCalculation { source },
                     );
                     charm_combat::bonuses(&mut offence, &outcomes);
                 }
@@ -499,9 +520,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                     &mut trained,
                 );
-                let outcomes = if extension {
-                    Vec::new()
-                } else {
+                // Equipment leech remains a primary-target effect in this owner. Secondary
+                // auto-attack targets only receive the explicit D186 charm exceptions.
+                if extension {
+                    offence.life_leech = 0;
+                    offence.mana_leech = 0;
+                }
+                let outcomes = {
+                    let source = if extension {
+                        CharmHitSource::CharacterAutoAttackOffTarget
+                    } else {
+                        CharmHitSource::CharacterAttack
+                    };
                     charm_combat::evaluate(
                         &states,
                         &runtime,
@@ -513,7 +543,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         swing_occurrence(entry.actor, swing.lineage, ordinal, b"committed-hit"),
                         CharmHookEvent::committed_hit(
                             &result,
-                            CharmHitSource::CharacterAttack,
+                            source,
                             CharmAttackerFacts {
                                 level: character_facts.level,
                                 max_health: u64::from(character_facts.max_health),
@@ -524,16 +554,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                 };
                 charm_combat::bonuses(&mut offence, &outcomes);
-                if !extension {
-                    equipped_offence::leech_hit(
-                        &mut states,
-                        &runtime,
-                        entry.actor,
-                        entry.session,
-                        &offence,
-                        &result,
-                    );
-                }
+                equipped_offence::leech_hit(
+                    &mut states,
+                    &runtime,
+                    entry.actor,
+                    entry.session,
+                    &offence,
+                    &result,
+                );
                 if result.applied
                     && result.health_after < result.health_before
                     && snapshot.state.master.is_none()
@@ -655,6 +683,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(pvp_permit);
         self.save_trained_levels(trained).await;
     }
+}
+
+fn battle_instinct_for_actor(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+) -> Option<oteryn_gameplay_progression::wheel_effects::BattleInstinctBonuses> {
+    let at = runtime
+        .borrow_movement_position()
+        .read(actor)
+        .ok()?
+        .position();
+    let adjacent = runtime
+        .positioned_actor_census()
+        .ok()?
+        .into_iter()
+        .filter(|(candidate, position, session)| {
+            let position = position.position();
+            session.is_none()
+                && *candidate != actor
+                && position.floor == at.floor
+                && position.x.abs_diff(at.x) <= 1
+                && position.y.abs_diff(at.y) <= 1
+        })
+        .count();
+    let adjacent = u32::try_from(adjacent).ok()?;
+    let data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded().ok()?;
+    oteryn_gameplay_progression::wheel_effects::battle_instinct_bonuses(data.wheel(), adjacent)
 }
 
 /// SKILL-TRAIN-1: the swing at a creature trains the swing's skill by how its block met it.

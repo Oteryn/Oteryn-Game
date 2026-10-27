@@ -1229,11 +1229,11 @@ async fn field_scenario_inner(
                     ),
                     use_with_position: None,
                 };
-                move_field_caster_fixture(&owner, actor, -1).await?;
-                move_field_caster_fixture(&owner, actor, -1).await?;
+                move_field_caster(&mut client, step_command + 1, StepDirection::West).await?;
+                move_field_caster(&mut client, step_command + 2, StepDirection::West).await?;
                 let far = use_tool.clone();
                 let refused = test_command(
-                    step_command + 1,
+                    step_command + 3,
                     COMMAND_TYPE_USE_INTENT,
                     &encode_item_use_intent(&far).map_err(debug)?,
                 );
@@ -1252,10 +1252,10 @@ async fn field_scenario_inner(
                         break;
                     }
                 }
-                move_field_caster_fixture(&owner, actor, 1).await?;
-                move_field_caster_fixture(&owner, actor, 1).await?;
+                move_field_caster(&mut client, step_command + 4, StepDirection::East).await?;
+                move_field_caster(&mut client, step_command + 5, StepDirection::East).await?;
                 let bytes = test_command(
-                    step_command + 2,
+                    step_command + 6,
                     COMMAND_TYPE_USE_INTENT,
                     &encode_item_use_intent(&use_tool).map_err(debug)?,
                 );
@@ -1684,19 +1684,45 @@ fn field_handle_from_wire(
         }))
 }
 
-async fn move_field_caster_fixture(
-    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    actor: crate::foundation::ExactActorRef,
-    dx: i32,
+// Move through dispatch so each step publishes its map cursor. Directly committing two
+// fixture moves can race the visibility cadence: a two-tile jump needs a map snapshot,
+// which the live connection cannot send, so it disconnects before the machete command.
+async fn move_field_caster(
+    client: &mut tokio::io::DuplexStream,
+    command_id: u64,
+    direction: StepDirection,
 ) -> TestResult {
-    let mut runtime = owner.runtime.lock().await;
-    let before = runtime.read_actor_position(actor).map_err(debug)?;
-    let at = before.position();
-    runtime
-        .borrow_movement_position()
-        .commit_cardinal(before, MovementLocalPosition { x: at.x + dx, ..at })
-        .map_err(debug)?;
-    Ok(())
+    let command = test_command(
+        command_id,
+        COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        &encode_step_intent(direction),
+    );
+    client.write_u32(u32::try_from(command.len())?).await?;
+    client.write_all(&command).await?;
+    let mut moved = false;
+    loop {
+        let frame = read_frame(client).await?;
+        let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+        assert_ne!(envelope.message_type(), MessageType::ProtocolError);
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(result.command_id, command_id);
+            assert_eq!(
+                decode_step_result(result.payload).map_err(debug)?,
+                StepDisposition::Moved
+            );
+            moved = true;
+        }
+        // The result precedes moved_step_frames. Require its real map delta before
+        // sending another move, independently of the periodic visibility timer.
+        if moved && envelope.message_type() == MessageType::StateDelta {
+            let delta =
+                oteryn_protocol_oteryn::decode_state_delta(envelope.payload()).map_err(debug)?;
+            if delta.domain_id == oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW {
+                return Ok(());
+            }
+        }
+    }
 }
 
 fn field_world(
