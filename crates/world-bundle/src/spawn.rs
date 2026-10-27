@@ -82,6 +82,39 @@ pub struct Creature {
     pub period: Period,
 }
 
+/// BOSS-RAID-0 §5: a boss has one durable scheduling policy. Chance is an exact
+/// ratio in (0, 1]; no floating point value crosses the content boundary.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+pub enum BossPolicy {
+    Respawn { min_s: u64, max_s: u64 },
+    AtReset { chance: BossChance },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BossChance {
+    pub numerator: u64,
+    pub denominator: u64,
+}
+
+impl BossPolicy {
+    /// The largest interval must also fit a portable database millisecond timestamp.
+    pub fn validate(self) -> Result<(), Error> {
+        let valid = match self {
+            Self::Respawn { min_s, max_s } => {
+                min_s > 0 && min_s <= max_s && max_s <= (i64::MAX / 1000) as u64
+            }
+            Self::AtReset { chance } => {
+                chance.numerator > 0
+                    && chance.numerator <= chance.denominator
+                    && chance.denominator <= i64::MAX as u64
+            }
+        };
+        check(valid, "invalid boss spawn policy")
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Point {
     /// Index into the creature table.
@@ -90,6 +123,7 @@ pub struct Point {
     pub y: u16,
     pub direction: Direction,
     pub respawn_ms: u32,
+    pub boss_policy: Option<BossPolicy>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -178,10 +212,16 @@ pub fn validate(table: &Table, world: &Extent) -> Result<(), Error> {
                 world.contains(point.x, point.y, source.floor),
                 "spawn point outside the World",
             )?;
-            limit(
-                (MIN_RESPAWN_MS..=MAX_RESPAWN_MS).contains(&point.respawn_ms),
-                "respawn delay outside RL-13",
-            )?;
+            match point.boss_policy {
+                Some(policy) => {
+                    policy.validate()?;
+                    check(point.respawn_ms == 0, "boss uses ordinary respawn delay")?;
+                }
+                None => limit(
+                    (MIN_RESPAWN_MS..=MAX_RESPAWN_MS).contains(&point.respawn_ms),
+                    "respawn delay outside RL-13",
+                )?,
+            }
         }
     }
     Ok(())
@@ -216,6 +256,19 @@ pub fn encode(table: &Table) -> Vec<u8> {
             put(&mut out, zigzag(i32::from(point.y) - i32::from(source.y)));
             out.push(point.direction.byte());
             put(&mut out, point.respawn_ms.into());
+            match point.boss_policy {
+                Some(BossPolicy::Respawn { min_s, max_s }) => {
+                    out.push(1);
+                    put(&mut out, min_s);
+                    put(&mut out, max_s);
+                }
+                Some(BossPolicy::AtReset { chance }) => {
+                    out.push(2);
+                    put(&mut out, chance.numerator);
+                    put(&mut out, chance.denominator);
+                }
+                None => {}
+            }
         }
     }
     out
@@ -261,7 +314,25 @@ pub fn decode(raw: &[u8], world: &Extent) -> Result<Table, Error> {
             let py = at(y, r.varint()?)?;
             let direction = Direction::from_byte(r.byte()?)?;
             let respawn_ms = r.bounded(u64::from(u32::MAX), "respawn delay")? as u32;
+            let boss_policy = if respawn_ms == 0 {
+                Some(match r.byte()? {
+                    1 => BossPolicy::Respawn {
+                        min_s: r.varint()?,
+                        max_s: r.varint()?,
+                    },
+                    2 => BossPolicy::AtReset {
+                        chance: BossChance {
+                            numerator: r.varint()?,
+                            denominator: r.varint()?,
+                        },
+                    },
+                    _ => return Err(Error::Format("unknown boss policy tag".into())),
+                })
+            } else {
+                None
+            };
             list.push(Point {
+                boss_policy,
                 creature,
                 x: px,
                 y: py,

@@ -127,6 +127,7 @@ fn point(creature: &str, x: u16) -> SpawnPoint {
         cell: (x, 1, 7),
         direction: Direction::South,
         respawn_ms: 60_000,
+        boss_policy: None,
     }
 }
 
@@ -154,7 +155,11 @@ fn families() -> Families {
             "b",
             9,
             vec![
-                point("dragonlord", 8),
+                SpawnPoint {
+                    respawn_ms: 0,
+                    boss_policy: Some(spawn::BossPolicy::Respawn { min_s: 1, max_s: 2 }),
+                    ..point("dragonlord", 8)
+                },
                 point("guard", 9),
                 point("ghost", 10),
                 point("bat", 11),
@@ -201,7 +206,6 @@ fn points_are_admitted_dropped_or_routed_by_their_cell_and_creature() -> TestRes
     assert_eq!(
         dropped,
         [
-            ("oteryn:spawn.b", 8, SpawnReason::Boss),
             ("oteryn:spawn.b", 9, SpawnReason::EncounterBound),
             ("oteryn:spawn.b", 10, SpawnReason::UnboundCreature),
             ("oteryn:spawn.c", 2, SpawnReason::NotWalkable),
@@ -216,7 +220,7 @@ fn points_are_admitted_dropped_or_routed_by_their_cell_and_creature() -> TestRes
     );
     assert_eq!((report.sources, report.points), (3, 14));
     // Source c has no point left and is not written; the rest is sorted by key.
-    assert_eq!((report.realized_sources, report.realized_points), (2, 3));
+    assert_eq!((report.realized_sources, report.realized_points), (2, 4));
     assert_eq!(report.inactive_points, 1);
     let keys: Vec<_> = table.sources.iter().map(|s| s.key.as_str()).collect();
     assert_eq!(keys, ["oteryn:spawn.a", "oteryn:spawn.b"]);
@@ -229,10 +233,11 @@ fn points_are_admitted_dropped_or_routed_by_their_cell_and_creature() -> TestRes
         creatures,
         [
             ("oteryn:creature.bat", Period::Night),
+            ("oteryn:creature.dragonlord", Period::All),
             ("oteryn:creature.rat", Period::All)
         ]
     );
-    // Source a keeps the one rat on x=1; source b keeps its bat and its rat, in order.
+    // Source a keeps one rat; source b keeps its qualified boss, bat and rat in authored order.
     let b = &table.sources[1];
     assert_eq!(b.floor, -7);
     assert_eq!(
@@ -240,9 +245,14 @@ fn points_are_admitted_dropped_or_routed_by_their_cell_and_creature() -> TestRes
             .iter()
             .map(|p| (p.creature, p.x))
             .collect::<Vec<_>>(),
-        [(0, 11), (1, 12)]
+        [(1, 8), (0, 11), (2, 12)]
     );
-    assert_eq!(report.count(SpawnReason::Boss), 1);
+    let mut unqualified = families.clone();
+    unqualified.spawns[0].points[0] = point("dragonlord", 8);
+    assert!(
+        realize_spawns(&input(&regions, &palette, &unqualified), &Resolver).is_err(),
+        "a boss without policy is invalid"
+    );
     Ok(())
 }
 
@@ -252,13 +262,13 @@ fn the_bundle_holds_the_family_byte_reproducibly_and_proves_equivalent() -> Test
     let input = input(&regions, &palette, &families);
     let first = compile(&input, &Resolver)?;
     assert_eq!(first.bytes, compile(&input, &Resolver)?.bytes);
-    assert_eq!(first.spawns.realized_points, 3);
+    assert_eq!(first.spawns.realized_points, 4);
     let read = bundle::read(&first.bytes)?;
     assert_eq!(
         (read.manifest.spawns.sources, read.manifest.spawns.points),
-        (2, 3)
+        (2, 4)
     );
-    assert_eq!(read.spawns.point_count(), 3);
+    assert_eq!(read.spawns.point_count(), 4);
     equivalence(&input, &Resolver, &first.bytes)?;
     // Another family gives another bundle and no longer proves equivalent.
     let mut other = families.clone();
@@ -266,6 +276,12 @@ fn the_bundle_holds_the_family_byte_reproducibly_and_proves_equivalent() -> Test
     let changed = compile(&self::input(&regions, &palette, &other), &Resolver)?;
     assert_ne!(changed.bytes, first.bytes);
     assert!(equivalence(&input, &Resolver, &changed.bytes).is_err());
+    let mut downgraded = read.manifest.clone();
+    downgraded.identity.min_runtime_version = "2".into();
+    assert!(
+        bundle::write(&downgraded, &read.sectors, &read.spawns).is_err(),
+        "boss policies cannot be published under an older runtime requirement"
+    );
     // The writer refuses counts that are not the table's.
     let mut manifest = read.manifest.clone();
     manifest.spawns.points += 1;
@@ -301,6 +317,7 @@ fn table(sources: usize, points: usize) -> spawn::Table {
                         y: 10,
                         direction: Direction::North,
                         respawn_ms: spawn::MIN_RESPAWN_MS,
+                        boss_policy: None,
                     })
                     .collect(),
             })
@@ -400,4 +417,57 @@ fn the_source_shard_checks_its_bounds_before_it_holds_anything() {
     ));
     assert!(matches!(add(1, 999), Err(Error::Limit(_))));
     assert!(add(0, 1_000).is_err());
+}
+
+#[test]
+fn boss_spawn1_policy_loader_rejects_invalid_and_ambiguous_policies() -> TestResult {
+    use serde_json::json;
+    for policy in [
+        json!({"respawn":{"min_s":0,"max_s":1}}),
+        json!({"respawn":{"min_s":2,"max_s":1}}),
+        json!({"respawn":{"min_s":1,"max_s":0}}),
+        json!({"at_reset":{"chance":{"numerator":0,"denominator":1}}}),
+        json!({"at_reset":{"chance":{"numerator":2,"denominator":1}}}),
+        json!({"at_reset":{"chance":{"numerator":1,"denominator":0}}}),
+        json!({"at_reset":{"chance":0.5}}),
+        json!({"respawn":{"min_s":1,"max_s":2},"at_reset":{"chance":{"numerator":1,"denominator":2}}}),
+        json!({"respawn":{"min_s":1,"max_s":2,"chance":1}}),
+    ] {
+        let mut value: serde_json::Value = serde_json::from_slice(&shard(1, 0))?;
+        value["records"][0]["declaration"]["points"][0]["boss_policy"] = policy.clone();
+        assert!(
+            Families::default()
+                .add_spawns(&serde_json::to_vec(&value)?)
+                .is_err(),
+            "{policy}"
+        );
+    }
+    for policy in [
+        json!({"respawn":{"min_s":1,"max_s":2}}),
+        json!({"at_reset":{"chance":{"numerator":1,"denominator":2}}}),
+    ] {
+        let mut value: serde_json::Value = serde_json::from_slice(&shard(1, 0))?;
+        value["records"][0]["declaration"]["points"][0]["boss_policy"] = policy;
+        let mut families = Families::default();
+        families.add_spawns(&serde_json::to_vec(&value)?)?;
+        families
+            .creatures
+            .insert("oteryn:creature.rat".into(), creature("All", false, false));
+        let (regions, palette) = (regions()?, palette());
+        assert!(
+            realize_spawns(&input(&regions, &palette, &families), &Resolver).is_err(),
+            "ordinary creature with boss policy"
+        );
+        families
+            .creatures
+            .insert("oteryn:creature.rat".into(), creature("All", true, false));
+        let (table, report) = realize_spawns(&input(&regions, &palette, &families), &Resolver)?;
+        assert_eq!(report.realized_points, 1);
+        let bytes = spawn::encode(&table);
+        assert_eq!(spawn::decode(&bytes, &world())?, table);
+        let mut malformed = table.clone();
+        malformed.sources[0].points[0].respawn_ms = 1000;
+        assert!(spawn::validate(&malformed, &world()).is_err());
+    }
+    Ok(())
 }

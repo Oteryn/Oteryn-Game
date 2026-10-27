@@ -88,6 +88,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         creature: "fixture:rat".into(),
         row: row(drops),
         ground: DeathGroundContext {
+            boss_spawn: None,
             map_revision: "map-1".into(),
             content_revision: "content-1".into(),
             ruleset_revision: "ruleset-1".into(),

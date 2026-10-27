@@ -1,4 +1,5 @@
 use super::*;
+use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn admit_fresh_session(

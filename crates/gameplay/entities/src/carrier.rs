@@ -44,6 +44,9 @@ mod boss_activity_scope_tests;
 #[path = "carrier/area_heal_batch_native_tests.rs"]
 mod area_heal_batch_native_tests;
 
+mod boss_spawns;
+pub use boss_spawns::BossSpawn;
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 #[path = "carrier/channel_actor_position_tests.rs"]
@@ -1061,6 +1064,7 @@ pub struct ChannelRuntimeV1 {
     owner_cycle: oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
+    boss_spawns: Vec<BossSpawn>,
     forge_next_tick_micros: u64,
     forge_fiends: Vec<(ExactActorRef, Option<u64>)>,
     /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
@@ -1174,6 +1178,7 @@ impl ChannelRuntimeV1 {
                     },
                 ),
             spawn_schedule: spawn::RespawnSchedule::default(),
+            boss_spawns: Vec::new(),
             forge_next_tick_micros: 0,
             forge_fiends: Vec::new(),
             spawn_deadlines: BTreeSet::new(),

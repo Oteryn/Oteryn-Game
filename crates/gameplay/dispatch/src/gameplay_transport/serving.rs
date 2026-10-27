@@ -85,6 +85,23 @@ pub async fn serve_gameplay(
             .chat
             .install_relay(std::sync::Arc::new(relay));
     }
+    // Check every initial boss clock before accepting connections; confirmed claims may wait for a free tile.
+    let mut boss_timers = std::collections::BTreeMap::new();
+    loop {
+        if authority
+            .boss_spawn_pass(&mut boss_timers)
+            .await
+            .map_err(|_| GameplayServeError::OwnerUnavailable)?
+        {
+            break;
+        }
+        if world_respawns::stopping_first(tokio::time::sleep(Duration::from_millis(25)), shutdown)
+            .await
+            .is_none()
+        {
+            return Ok(());
+        }
+    }
     // QUEST-STATE-0 §5.4: the owner cadence requests failed quest obligations again, whether or
     // not the session's connection runs any other cadence. It never ends on its own.
     let quest_retries = async {
@@ -119,6 +136,7 @@ pub async fn serve_gameplay(
     let mut cycles = pin!(authority.run_source_owner_cycles(&cycles_stop));
     let mut respawns = pin!(authority.run_world_respawns(shutdown));
     let mut respawns_done = false;
+    let mut owner_failed = false;
     let mut countdown = pin!(authority.run_server_save_countdown(shutdown));
     let mut countdown_done = false;
     let mut quiesce = pin!(async {
@@ -147,8 +165,12 @@ pub async fn serve_gameplay(
     let mut cycles_done = false;
     let mut flush_done = false;
     poll_fn(|context| {
-        if !respawns_done && respawns.as_mut().poll(context).is_ready() {
+        if !respawns_done && let Poll::Ready(exit) = respawns.as_mut().poll(context) {
             respawns_done = true;
+            if exit != crate::monster_owner_cycle::respawn_job::RespawnExit::Shutdown {
+                owner_failed = true;
+                return Poll::Ready(());
+            }
         }
         if !countdown_done && countdown.as_mut().poll(context).is_ready() {
             countdown_done = true;
@@ -180,5 +202,9 @@ pub async fn serve_gameplay(
         }
     })
     .await;
-    Ok(())
+    if owner_failed {
+        Err(GameplayServeError::OwnerUnavailable)
+    } else {
+        Ok(())
+    }
 }

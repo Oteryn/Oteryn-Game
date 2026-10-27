@@ -800,6 +800,32 @@ impl DurabilityRoot {
         candidate: &mut ItemMintCandidate,
         top_damage_character_id: [u8; 16],
     ) -> Result<ItemMintOutcome> {
+        self.commit_corpse_mint_inner(permit, authority, node, candidate, top_damage_character_id, None).await
+    }
+
+    /// Boss clock transition and corpse receipt share the same fenced transaction.
+    pub async fn commit_boss_corpse_mint(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        candidate: &mut ItemMintCandidate,
+        top_damage_character_id: [u8; 16],
+        boss: (String, u64, oteryn_gameplay_content::content::BossPolicy),
+    ) -> Result<ItemMintOutcome> {
+        self.commit_corpse_mint_inner(permit, authority, node, candidate, top_damage_character_id, Some(boss)).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn commit_corpse_mint_inner(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        candidate: &mut ItemMintCandidate,
+        top_damage_character_id: [u8; 16],
+        boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
+    ) -> Result<ItemMintOutcome> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
             return Err(ItemMintError::InvalidInput);
         }
@@ -924,6 +950,14 @@ impl DurabilityRoot {
                     };
                     insert_corpse_mint(&mut tx, permit, &frozen, tuple, top_damage_character_id)
                         .await?;
+                    if let Some((spawn, cycle, policy)) = &boss {
+                        let death = &frozen.request.cause.death;
+                        let key = super::boss_encounter::BossClockKey { world: death.world_id,
+                            channel: death.channel_id, spawn: spawn.clone() };
+                        super::boss_encounter::advance_death_in_transaction(&mut tx, &key,
+                            death.scope_ownership_generation, *cycle, *policy).await
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    }
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
                         event_id: frozen.event_id,

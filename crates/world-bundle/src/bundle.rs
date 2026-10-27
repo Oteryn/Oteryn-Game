@@ -20,7 +20,7 @@ pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
 /// from the previous value lacks; it never goes down (decision ARCH-WORLD-CONTENT-SERVE-1 §1.2).
-pub const RUNTIME_VERSION: u32 = 2;
+pub const RUNTIME_VERSION: u32 = 3;
 /// The sorted, unique capabilities the node implements. A PR adds a value only with the runtime
 /// code that implements it. Empty today.
 pub const SUPPORTED_CAPABILITIES: &[&str] = &[];
@@ -466,6 +466,20 @@ pub fn validate_npcs(m: &Manifest, table: &npc::Table) -> Result<(), Error> {
 /// The spawn family against the manifest counts and the World extent (format v3).
 pub fn validate_spawns(m: &Manifest, table: &spawn::Table) -> Result<(), Error> {
     spawn::validate(table, &m.world)?;
+    if table
+        .sources
+        .iter()
+        .flat_map(|source| &source.points)
+        .any(|point| point.boss_policy.is_some())
+    {
+        check(
+            m.identity
+                .min_runtime_version
+                .parse::<u32>()
+                .is_ok_and(|version| version >= 3),
+            "boss spawn policies require runtime compatibility 3",
+        )?;
+    }
     check(
         m.spawns.sources as usize == table.sources.len()
             && m.spawns.points as usize == table.point_count(),
