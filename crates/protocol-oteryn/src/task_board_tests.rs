@@ -7,6 +7,10 @@ fn board(selected: u8, kills: i64) -> TaskBoardReply {
         selected,
         kills,
         points: 75,
+        bounty_points: 41,
+        talisman_levels: [1, 2, 3, 4],
+        talisman_bonuses: [300, 350, 400, 1_000],
+        talisman_next_costs: [17, 29, 41, 53],
         tasks: (0..MAX_TASKS)
             .map(|index| TaskBoardTask {
                 race: format!("oteryn:creature.race_{index}"),
@@ -19,7 +23,7 @@ fn board(selected: u8, kills: i64) -> TaskBoardReply {
 
 #[test]
 fn task_board_request_strict_codec() {
-    let valid = [(0, 0), (1, 1), (1, 5), (2, 3)];
+    let valid = [(0, 0), (1, 1), (1, 5), (2, 3), (3, 1), (3, 4)];
     for (action, task) in valid {
         let r = TaskBoardRequest { action, task };
         let bytes = encode_task_board_request(&r).expect("request");
@@ -34,7 +38,7 @@ fn task_board_request_strict_codec() {
         unknown.extend_from_slice(&[24, 1]);
         assert!(decode_task_board_request(&unknown).is_err());
     }
-    for (action, task) in [(0, 1), (1, 0), (2, 6), (3, 1)] {
+    for (action, task) in [(0, 1), (1, 0), (2, 6), (3, 0), (3, 5), (4, 1)] {
         let r = TaskBoardRequest { action, task };
         assert!(encode_task_board_request(&r).is_err(), "{r:?}");
         assert!(decode_task_board_request(&[8, action, 16, task]).is_err());
@@ -64,7 +68,7 @@ fn task_board_reply_strict_codec() {
         duplicate.extend_from_slice(&[16, 0]);
         assert!(decode_task_board_reply(&duplicate).is_err());
         let mut unknown = bytes;
-        unknown.extend_from_slice(&[48, 1]);
+        unknown.extend_from_slice(&[80, 1]);
         assert!(decode_task_board_reply(&unknown).is_err());
     }
     for invalid in [
@@ -99,6 +103,10 @@ fn task_board_reply_strict_codec() {
     }
     largest.kills = i64::MAX;
     largest.points = i64::MAX;
+    largest.bounty_points = i64::MAX;
+    largest.talisman_levels = [i64::MAX; TALISMAN_PATHS];
+    largest.talisman_bonuses = [i64::MAX; TALISMAN_PATHS];
+    largest.talisman_next_costs = [i64::MAX; TALISMAN_PATHS];
     let bytes = encode_task_board_reply(&largest).expect("largest reply");
     assert_eq!(decode_task_board_reply(&bytes), Ok(largest));
     assert_eq!(

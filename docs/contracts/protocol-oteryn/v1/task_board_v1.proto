@@ -4,8 +4,8 @@ package oteryn.protocol.v1;
 // duplicate/unknown fields refused; the reply decodes only in its canonical encoding.
 // No client identity, fence, kill count or time input: the server's quest store decides.
 message TaskBoardRequestV1 {
-  uint32 action = 1; // 0 query, 1 select task, 2 claim task
-  uint32 task = 2; // 1-based task number 1..5; 0 for a query
+  uint32 action = 1; // 0 query, 1 select task, 2 claim task, 3 upgrade talisman
+  uint32 task = 2; // 1-based task 1..5 or talisman path 1..4; 0 for a query
 }
 message TaskBoardTaskV1 {
   string race = 1; // Creature race key, oteryn: prefix, 128 bytes maximum
@@ -18,4 +18,9 @@ message TaskBoardReplyV1 {
   uint64 kills = 3; // 0 when none active, else <= the active task's required
   uint64 points = 4; // task points, <= i64::MAX
   repeated TaskBoardTaskV1 tasks = 5; // <= 5, in task-number order
+  uint64 bounty_points = 6; // separate from weekly task points, <= i64::MAX
+  // Exactly four unpacked values each, ordered damage, life leech, loot, Bestiary.
+  repeated uint64 talisman_levels = 7 [packed = false];
+  repeated uint64 talisman_bonuses = 8 [packed = false]; // hundredths of one percent
+  repeated uint64 talisman_next_costs = 9 [packed = false]; // 0 at maximum level
 }
