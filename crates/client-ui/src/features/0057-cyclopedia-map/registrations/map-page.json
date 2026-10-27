@@ -1,0 +1,8 @@
+{
+  "mechanic": "0057-cyclopedia-map",
+  "kind": "cyclopedia-pages",
+  "id": "cyclopedia-map",
+  "status": "supported",
+  "entry": "view.rs::map_page",
+  "parent": "root"
+}

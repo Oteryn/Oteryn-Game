@@ -1,0 +1,8 @@
+{
+  "mechanic": "0001-bestiary-charms",
+  "kind": "cyclopedia-pages",
+  "id": "cyclopedia-bestiary",
+  "status": "supported",
+  "entry": "view.rs::bestiary_page",
+  "parent": "root"
+}

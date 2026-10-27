@@ -13,6 +13,7 @@ release-role = "production"
 
 [dependencies]
 oteryn-client-domain = { version = "=0.1.0", path = "../client-domain" }
+oteryn-client-runtime = { version = "=0.1.0", path = "../client-runtime" }
 oteryn-input-actions = { version = "=0.1.0", path = "../input-actions" }
 oteryn-renderer = { version = "=0.1.0", path = "../renderer" }
 
