@@ -33,7 +33,8 @@ impl Counts {
 }
 
 pub(super) struct Integrity {
-    recent: [Option<Instant>; COMMANDS_PER_SECOND],
+    // Boxed: the window moves through several connection futures and must not grow them.
+    recent: Box<[Option<Instant>; COMMANDS_PER_SECOND]>,
     cursor: usize,
     counts: Counts,
     emitted_at: Option<Instant>,
@@ -42,7 +43,7 @@ pub(super) struct Integrity {
 impl Default for Integrity {
     fn default() -> Self {
         Self {
-            recent: [None; COMMANDS_PER_SECOND],
+            recent: Box::new([None; COMMANDS_PER_SECOND]),
             cursor: 0,
             counts: Counts::default(),
             emitted_at: None,
@@ -165,10 +166,8 @@ mod tests {
     -> Result<(), &'static str> {
         // Keep observe's real clock behind the explicit test clock.
         let now = Instant::now() + Duration::from_secs(3600);
-        let mut gate = Integrity {
-            emitted_at: Some(now),
-            ..Integrity::default()
-        };
+        let mut gate = Integrity::default();
+        gate.emitted_at = Some(now);
         gate.observe(&Dispatch::Step(StepOutcome::too_early(), 0));
         for disposition in [UseDisposition::Exhausted, UseDisposition::TooFar] {
             gate.observe(&Dispatch::Use(UseOutcome {
