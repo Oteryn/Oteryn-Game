@@ -838,7 +838,8 @@ fn scenario() -> TestResult {
         let replay = owner
             .depot(actor, use_command(2), deposit, None)
             .await
-            .ok_or("durable depot replay")?;
+            .ok_or("durable depot replay")?
+            .reply;
         assert_eq!(replay.outcome, DepotOutcome::Moved);
         assert_eq!(ledger(&h).await?, deposited, "a depot replay moves nothing");
 
@@ -927,7 +928,8 @@ fn scenario() -> TestResult {
                 None,
             )
             .await
-            .ok_or("successor depot browse")?;
+            .ok_or("successor depot browse")?
+            .reply;
         assert_eq!(depot_view.outcome, DepotOutcome::Opened);
         assert_eq!(depot_view.entries.len(), 1);
         assert_eq!(depot_view.entries[0].count, 1);
