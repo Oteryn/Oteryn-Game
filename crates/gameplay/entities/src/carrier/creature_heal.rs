@@ -121,7 +121,7 @@ impl ChannelRuntimeV1 {
         }
         let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
         self.carrier.assert_slot_spell_unreserved(index)?;
-        let before = match &self.carrier.slots[index] {
+        let (before, maximum) = match &self.carrier.slots[index] {
             Slot::CreatureOccupied { generation, .. }
                 if *generation != actor.0.actor_local_generation.0 =>
             {
@@ -130,10 +130,16 @@ impl ChannelRuntimeV1 {
             Slot::CreatureOccupied {
                 target_identity,
                 health,
+                spell_combat,
                 ..
-            } if target_identity.as_ref() == registration.target.as_bytes() && *health > 0 => {
-                *health
-            }
+            } if target_identity.as_ref() == registration.target.as_bytes() && *health > 0 => (
+                *health,
+                if spell_combat.forge.is_some() {
+                    spell_combat.maximum_health
+                } else {
+                    registration.max_health
+                },
+            ),
             Slot::CreatureOccupied {
                 target_identity, ..
             } if target_identity.as_ref() != registration.target.as_bytes() => {
@@ -141,7 +147,7 @@ impl ChannelRuntimeV1 {
             }
             _ => return Err(CarrierError::CreatureNotActionable),
         };
-        if before > registration.max_health {
+        if maximum < registration.max_health || before > maximum {
             return Err(CarrierError::InvalidCreatureHealth);
         }
         // The live actor's slot drops its former occupant's entries; the other dead actors'
@@ -179,9 +185,7 @@ impl ChannelRuntimeV1 {
         // Aggregate current-owner ScopeRuntimeFence is required at the composition call.
         // Allocate source binding before native HP write, including replay state replacement.
         let ability = registration.ability.clone();
-        let after = before
-            .saturating_add(server_draw)
-            .min(registration.max_health);
+        let after = before.saturating_add(server_draw).min(maximum);
         let Slot::CreatureOccupied { health, .. } = &mut self.carrier.slots[index] else {
             return Err(CarrierError::NotCreature);
         };
@@ -259,6 +263,7 @@ impl ChannelRuntimeV1 {
                 generation,
                 target_identity,
                 health,
+                spell_combat,
                 ..
             } = &mut next
             else {
@@ -270,11 +275,16 @@ impl ChannelRuntimeV1 {
             if target_identity.as_ref() != key.as_bytes() || *health <= 0 {
                 return Err(CarrierError::CreatureTargetMismatch);
             }
-            if *health > *max as i64 {
+            let maximum = if spell_combat.forge.is_some() {
+                spell_combat.maximum_health
+            } else {
+                *max as i64
+            };
+            if *health > maximum {
                 return Err(CarrierError::InvalidCreatureHealth);
             }
             let before = *health;
-            let after = before.saturating_add(*draw as i64).min(*max as i64);
+            let after = before.saturating_add(*draw as i64).min(maximum);
             *health = after;
             prepared.push((index, next));
             results.push(OwnerDamageResult {
@@ -312,10 +322,16 @@ impl ChannelRuntimeV1 {
             Slot::CreatureOccupied {
                 target_identity,
                 health,
+                spell_combat,
                 ..
             } if target_identity.as_ref() == key.as_bytes()
                 && *health > 0
-                && *health <= max as i64 =>
+                && *health
+                    <= if spell_combat.forge.is_some() {
+                        spell_combat.maximum_health
+                    } else {
+                        max as i64
+                    } =>
             {
                 Ok(*health as u64)
             }

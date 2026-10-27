@@ -1529,7 +1529,33 @@ fn creature_policies(
             }
             None
         };
+        let forge_difficulty = value.bestiary.as_ref().and_then(|bestiary| {
+            let difficulty = match bestiary.difficulty.as_str() {
+                "trivial" => 1,
+                "easy" => 2,
+                "medium" => 4,
+                "hard" => 6,
+                "challenging" => 8,
+                _ => return None,
+            };
+            let hostile = record.behavior.as_ref().is_some_and(|profile| {
+                matches!(&profile.data, ProjectV2AuthoringProfileData::Behavior(b) if b.targeting.hostile)
+            });
+            (details.system_eligibility.forge
+                && bestiary.occurrence.as_deref() == Some("common")
+                && !details.system_eligibility.reward_boss
+                && !details.summoning.is_familiar
+                && value.familiar.is_none()
+                && value.bosstiary.is_none()
+                && details.bosstiary.is_none()
+                && details.reward_encounter.is_none()
+                && details.flags.attackable
+                && details.corpse_item.is_some()
+                && value.experience.is_some_and(|xp| xp > 0)
+                && hostile).then_some(difficulty)
+        });
         records.push(CompiledCreaturePolicy {
+            forge_difficulty,
             preferred_distance,
             reward_boss: Some(details.system_eligibility.reward_boss),
             blocked_by_nearby_players: details.spawn_eligibility.blocked_by_nearby_players,

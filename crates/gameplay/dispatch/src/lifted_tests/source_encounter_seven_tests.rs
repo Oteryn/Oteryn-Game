@@ -120,6 +120,7 @@ fn policy(d: &ProjectV2Draft, key: &str) -> CompiledCreaturePolicy {
         display_name: detail.display_name.clone(),
         maximum_health: i64::try_from(cp.health.expect("qualified fixture"))
             .expect("qualified fixture"),
+        forge_difficulty: None,
         base_speed: i32::try_from(cp.speed.expect("qualified fixture")).expect("qualified fixture"),
         outfit_look_type: appearance
             .asset_binding

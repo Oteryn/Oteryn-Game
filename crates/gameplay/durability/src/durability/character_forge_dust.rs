@@ -12,7 +12,7 @@
 //! before any write; a gain above the limit credits up to the limit and records the lost part.
 //!
 //! The causes are closed and reserved: `SPEND` for PROF-SHAPE-1b's `ProficiencyCause`, `GAIN`
-//! for FORGE-CREATURE-1's dust on kill. Production wires neither yet. The material-free
+//! for FORGE-CREATURE-1's dust on kill. The creature kill owner composes GAIN with its XP settlement. The material-free
 //! D1230 `LIMIT_RAISE` owner below reserves and commits its own closed receipt. `CONVERT` and
 //! the remaining Forge causes still require their separate native admission.
 
@@ -324,6 +324,22 @@ async fn write_entry(
         before,
         after,
     }))
+}
+
+/// Receipt-only read used by the kill owner's terminal replay, including lost overflow.
+pub(super) async fn read_creature_gain(
+    connection: &mut PgConnection,
+    character: CharacterId,
+    occurrence: [u8; 16],
+) -> std::result::Result<Option<ForgeDustEntry>, DurabilityError> {
+    sqlx::query(ENTRY_SELECT_BY_OCCURRENCE)
+        .bind(character.as_bytes().as_slice())
+        .bind(CAUSE_CREATURE_KILL)
+        .bind(occurrence.as_slice())
+        .fetch_optional(connection)
+        .await?
+        .map(|row| entry_from_row(&row))
+        .transpose()
 }
 
 const ENTRY_SELECT_BY_OCCURRENCE: &str = "\
