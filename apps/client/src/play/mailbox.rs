@@ -30,6 +30,8 @@ pub enum PlayEvent {
 /// Pushed deltas coalesced to latest state, so an undrained shell holds a bounded amount.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Pushed {
+    /// Transient domain-16 updates, reduced before publication to the shell.
+    pub quests: Vec<oteryn_session::AppliedDelta<oteryn_client_runtime::quest_log::QuestLog>>,
     /// The latest own-actor position pushed by domain 1.
     pub own: Option<ActorPosition>,
     /// The latest full list of the other visible entities, when it changed.
@@ -54,7 +56,10 @@ impl Pushed {
 pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
-struct Mailbox {
+pub(super) struct Mailbox {
+    pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
+    pub(super) quest_pending: bool,
+    pub(super) quest_shutdown: bool,
     /// Pushes that arrived before `stepped` was stored: older than its outcome.
     before: Pushed,
     stepped: Option<Box<StepOutcome>>,
@@ -67,15 +72,15 @@ struct Mailbox {
 }
 
 const MAX_COMBAT_REPORTS: usize = 8;
-type SharedMailbox = Arc<Mutex<Mailbox>>;
+pub(super) type SharedMailbox = Arc<Mutex<Mailbox>>;
 
-fn lock(mailbox: &SharedMailbox) -> MutexGuard<'_, Mailbox> {
+pub(super) fn lock(mailbox: &SharedMailbox) -> MutexGuard<'_, Mailbox> {
     mailbox.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
 /// The task's end of the mailbox.
 #[derive(Debug, Clone)]
-pub struct Outbox(SharedMailbox);
+pub struct Outbox(pub(super) SharedMailbox);
 
 impl Outbox {
     pub(super) fn stepped(&self, outcome: StepOutcome) {
@@ -88,6 +93,8 @@ impl Outbox {
     pub(super) fn push(&self, events: Vec<SessionEvent>) {
         let mut mailbox = lock(&self.0);
         coalesce_pushed(&mut mailbox.pushed, events);
+        let deltas = std::mem::take(&mut mailbox.pushed.quests);
+        super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);
     }
 
     pub(super) fn entities(&self, entities: Vec<WorldSpatialEntity>) {
@@ -119,8 +126,8 @@ impl Outbox {
 /// The shell's end of the session task: steps out, a bounded mailbox in, neither ever blocking.
 #[derive(Debug)]
 pub struct PlayLink {
-    commands: UnboundedSender<PlayCommand>,
-    mailbox: SharedMailbox,
+    pub(super) commands: UnboundedSender<PlayCommand>,
+    pub(super) mailbox: SharedMailbox,
 }
 
 impl PlayLink {
@@ -171,4 +178,10 @@ pub fn play_channel() -> (PlayLink, UnboundedReceiver<PlayCommand>, Outbox) {
         command_rx,
         Outbox(mailbox),
     )
+}
+
+impl Drop for PlayLink {
+    fn drop(&mut self) {
+        lock(&self.mailbox).quest_shutdown = true;
+    }
 }

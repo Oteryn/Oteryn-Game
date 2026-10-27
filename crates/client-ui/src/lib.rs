@@ -16,6 +16,9 @@ pub mod paced_movement {
         "/src/features/0013-paced-movement/input.rs"
     ));
 }
+/// Quest log panel and input bindings.
+#[path = "features/0016-quest-log/mod.rs"]
+pub mod quest_log;
 /// Logout key intent mapping.
 pub mod logout {
     include!(concat!(
