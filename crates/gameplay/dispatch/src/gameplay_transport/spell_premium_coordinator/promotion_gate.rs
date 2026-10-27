@@ -11,6 +11,10 @@ impl NpcPurchaseGate for SpellPremiumCoordinator {
         account: [u8; 16],
         service: &PurchaseService,
     ) -> Result<bool, DurabilityError> {
+        // Inquisition completion permits this offer even after Premium lapses.
+        if service.key() == "oteryn:service.blessing.henricus" {
+            return Ok(true);
+        }
         self.transaction_permission(tx, account, |status| match service {
             PurchaseService::Promotion(_) => {
                 oteryn_gameplay_progression::promotion::purchase_permitted(&status)

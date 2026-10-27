@@ -478,3 +478,12 @@ mod storage;
 mod tests;
 mod writer;
 use storage::*;
+
+/// The caller holds the Character root lock, as do all QuestState writers.
+pub(super) async fn inquisition_blessing_eligible(
+    connection: &mut sqlx::PgConnection,
+    character: CharacterId,
+) -> std::result::Result<bool, DurabilityError> {
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_inquisition_quest' AND track_key='oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline' AND value=25)")
+        .bind(character.as_bytes().as_slice()).fetch_one(connection).await?)
+}

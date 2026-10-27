@@ -85,9 +85,9 @@ impl BlessingCatalogue {
         Ok(catalogue)
     }
 
-    /// Henricus' Inquisition offer contains the five regular Pilgrimage blessings and charges
-    /// only for blessings not currently held. The caller keeps quoting and granting in its one
-    /// durable purchase transaction.
+    /// Price the five regular Pilgrimage blessings with Henricus' 10% surcharge.
+    /// The durable owner also enforces eligibility and refuses partial regular ownership;
+    /// this pure missing-set calculation alone does not authorize a purchase.
     pub fn henricus_quote(&self, level: u32, held: &[String]) -> Option<(u64, Vec<&Blessing>)> {
         let missing = self
             .blessings
@@ -100,7 +100,9 @@ impl BlessingCatalogue {
         if missing.is_empty() {
             return None;
         }
-        let price = missing.iter().map(|blessing| blessing.price(level)).sum();
+        let base: u64 = missing.iter().map(|blessing| blessing.price(level)).sum();
+        // Integer gold units: apply the multiplier once to the complete quote.
+        let price = base * 11 / 10;
         Some((price, missing))
     }
 }

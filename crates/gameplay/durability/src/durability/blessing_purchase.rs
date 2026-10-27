@@ -11,8 +11,40 @@ pub(super) async fn quote(
     npc: &str,
     service: &PurchaseService,
     level: u32,
-) -> Result<Result<(u64, Option<String>), PurchaseRefusal>, DurabilityError> {
+) -> Result<Result<(u64, Vec<String>), PurchaseRefusal>, DurabilityError> {
     let catalogue = BlessingCatalogue::load().map_err(|_| DurabilityError::InvalidStoredState)?;
+    if service.key() == "oteryn:service.blessing.henricus" {
+        if npc != "oteryn:npc.henricus"
+            || !super::quest_state::inquisition_blessing_eligible(connection, character).await?
+        {
+            return Ok(Err(PurchaseRefusal::NotEligible));
+        }
+        // Character root FOR UPDATE serializes the held set with all blessing/death writers.
+        let held: Vec<String> = sqlx::query_scalar("SELECT blessing_key FROM game_character_blessings WHERE character_id=encode($1,'hex')::uuid ORDER BY blessing_key LIMIT 9 FOR UPDATE")
+            .bind(character.as_bytes().as_slice()).fetch_all(&mut *connection).await?;
+        if held.len() > 8 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let quote = catalogue.henricus_quote(level, &held);
+        if quote
+            .as_ref()
+            .is_some_and(|(_, missing)| missing.len() != 5)
+        {
+            // Public real-Tibia behaviour overrides Canary's missing-subset sale.
+            return Ok(Err(PurchaseRefusal::PartialOwnership));
+        }
+        return Ok(quote
+            .map(|(price, missing)| {
+                (
+                    price,
+                    missing
+                        .iter()
+                        .map(|blessing| blessing.storage_key.clone())
+                        .collect(),
+                )
+            })
+            .ok_or(PurchaseRefusal::AlreadyHeld));
+    }
     let Some(blessing) = catalogue.blessings.iter().find(|blessing| {
         blessing.service == service.key()
             && blessing.premium
@@ -27,7 +59,7 @@ pub(super) async fn quote(
     }
     Ok(Ok((
         blessing.price(level),
-        Some(blessing.storage_key.clone()),
+        vec![blessing.storage_key.clone()],
     )))
 }
 

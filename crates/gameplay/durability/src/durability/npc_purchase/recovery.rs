@@ -18,7 +18,20 @@ pub(in crate::durability) async fn verify_purchase_integrity(
           OR f.purchase_service_key IS DISTINCT FROM r.service_key \
           OR f.committed_character_revision<>r.committed_character_revision \
           OR f.fee_gold_units<>r.fee_gold_units OR f.created_xact_id<>r.created_xact_id \
-          OR (r.cause_kind=2 AND p.character_id IS NULL) LIMIT 1",
+          OR (r.cause_kind=2 AND p.character_id IS NULL) \
+        UNION ALL SELECT 1 FROM game_character_blessings b \
+        JOIN game_character_npc_purchase_receipts r ON r.purchase_occurrence_id::text=b.provenance \
+        WHERE r.blessing_keys IS NOT NULL AND (r.character_id<>b.character_id \
+          OR NOT (b.blessing_key=ANY(r.blessing_keys))) \
+        UNION ALL SELECT 1 FROM game_character_npc_purchase_receipts r \
+        CROSS JOIN LATERAL unnest(r.blessing_keys) k(key) \
+        WHERE NOT EXISTS (SELECT 1 FROM game_character_blessings b \
+            WHERE b.character_id=r.character_id AND b.blessing_key=k.key \
+              AND b.provenance=r.purchase_occurrence_id::text) \
+          AND NOT EXISTS (SELECT 1 FROM game_character_death_receipts d \
+            WHERE d.character_id=r.character_id \
+              AND d.committed_character_revision>r.committed_character_revision \
+              AND k.key=ANY(d.blessings_before) AND NOT (k.key=ANY(d.blessings_after))) LIMIT 1",
     )
     .fetch_optional(connection)
     .await?
