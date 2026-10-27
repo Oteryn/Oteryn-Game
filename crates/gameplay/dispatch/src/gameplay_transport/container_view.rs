@@ -139,6 +139,10 @@ pub struct ContainerViewState {
 }
 
 impl ContainerViewState {
+    pub(super) fn container_for_view(&self, id: u8) -> Option<ItemKey> {
+        self.views.get(&id).map(|view| view.container)
+    }
+
     pub fn open_views(&self) -> usize {
         self.views.len()
     }

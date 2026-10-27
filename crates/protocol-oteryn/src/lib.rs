@@ -31,6 +31,7 @@ pub mod charm_progression;
 mod charm_wire;
 pub mod chat;
 pub mod command_replay;
+pub mod container_sort;
 pub mod container_tree;
 mod contract_registries;
 pub mod creature_push;
