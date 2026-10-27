@@ -139,10 +139,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // Transaction is read-only. Keep its scope lock until every synchronous consumer ends.
                 drop(reader);
+                let next_due = table.earliest_due().into_iter().chain(next_step).min();
+                owner
+                    .tick_creature_fields(&mut tx, &authority, runtime, states, room, native, now)
+                    .await?;
                 tx.rollback()
                     .await
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                Ok(table.earliest_due().into_iter().chain(next_step).min())
+                Ok(next_due)
             })
         })
         .await

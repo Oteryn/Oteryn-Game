@@ -20,6 +20,7 @@ where
             &mut session.admitted,
             session.visibility.as_mut(),
             session.item_view.as_mut(),
+            session.container_views.as_mut(),
             session.world_map.as_mut(),
             session.generation,
             &mut session.sequence,

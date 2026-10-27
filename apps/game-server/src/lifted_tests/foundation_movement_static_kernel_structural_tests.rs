@@ -188,7 +188,7 @@ impl Harness {
             .expect("admit fixture actor");
         let context = PreProductionPositionContext::for_test(
             owner.world_id(),
-            owner.channel_id(),
+            owner.channel_id().expect("Channel fixture"),
             owner.current_generation(),
             11,
             12,
@@ -459,7 +459,10 @@ fn stale_snapshot_wrong_scope_context_and_coordinate_overflow_reject_before_look
         Err(MoveError::PositionContextMismatch)
     );
     let mut wrong_actor = fixture.actor;
-    wrong_actor.channel_id = ChannelId::decode(&uuid_v7(99)).expect("other channel");
+    wrong_actor.runtime_scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        oteryn_gameplay_foundation::foundation::ExactActorRef(wrong_actor).world_id(),
+        ChannelId::decode(&uuid_v7(99)).expect("other channel"),
+    );
     let wrong_snapshot = PositionSnapshot {
         actor_ref: wrong_actor,
         ..fixture.snapshot
@@ -609,7 +612,7 @@ fn recycled_actor_and_stale_owner_reject_before_cell_lookup() {
         .owner
         .advance(PreProductionContinuityGrant::fixture(
             fixture.owner.world_id(),
-            fixture.owner.channel_id(),
+            fixture.owner.channel_id().expect("Channel fixture"),
             ScopeOwnershipGeneration::new(2).expect("new owner generation"),
         ))
         .expect("advance owner");

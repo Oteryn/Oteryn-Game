@@ -46,6 +46,8 @@ mod field_step_ingress;
 pub(in crate::gameplay_transport) mod native_combat_cast;
 #[path = "parameter_cast.rs"]
 mod parameter_cast;
+#[path = "player_field.rs"]
+pub(in crate::gameplay_transport) mod player_field;
 #[path = "spell_timer_callbacks.rs"]
 mod spell_timer_callbacks;
 #[path = "world_item_cast.rs"]
@@ -97,6 +99,11 @@ pub struct ChannelSpellStates {
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
     pub(in crate::gameplay_transport) actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
+    pub(in crate::gameplay_transport) charm_states: Vec<(
+        ExactActorRef,
+        GameSessionId,
+        crate::durability::charm_state::CombatCharmState,
+    )>,
     /// One real Channel-owner lane; no timer is restored from client intent.
     pub spell_timers: Option<crate::spell::delayed_execution::SpellTimerOwner>,
     pub pending_familiars: Vec<
@@ -263,6 +270,7 @@ impl Default for ChannelSpellStates {
             hunting_stamina: Vec::new(),
             owner_wake: Default::default(),
             actors: Vec::new(),
+            charm_states: Vec::new(),
             spell_timers: Default::default(),
             pending_familiars: Default::default(),
             pending_familiar_lifecycle: Default::default(),
@@ -315,6 +323,37 @@ fn mint_player_death_occurrence() -> Option<PlayerDeathOccurrence> {
 }
 
 impl ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn install_charm_state(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        state: crate::durability::charm_state::CombatCharmState,
+    ) -> bool {
+        if runtime.player_control_facts(actor, session).is_err() {
+            return false;
+        }
+        self.charm_states.retain(|(present, held, _)| {
+            runtime.player_control_facts(*present, *held).is_ok()
+                && !(*present == actor && *held == session)
+        });
+        self.charm_states.push((actor, session, state));
+        true
+    }
+
+    pub(in crate::gameplay_transport) fn charm_state(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<&crate::durability::charm_state::CombatCharmState> {
+        runtime.player_control_facts(actor, session).ok()?;
+        self.charm_states
+            .iter()
+            .find(|(present, held, _)| *present == actor && *held == session)
+            .map(|(_, _, state)| state)
+    }
+
     /// Unknown durable outcomes retain their original prepared owner state.
     pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.has_pending_native(actor, session)
@@ -484,6 +523,8 @@ impl ChannelSpellStates {
         self.actors.retain(|(present, session, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
         });
+        self.charm_states
+            .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
         self.prune_source_memos(runtime);
         let actors = &self.actors;
         self.deaths.retain(|(dead, session, _)| {

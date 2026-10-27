@@ -27,17 +27,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
         };
+        // Preflight SQL shares the field owner's bounded durability holder.
+        // Take the lane before those reads so a concurrent field turn cannot
+        // exhaust the holder or invalidate their player-state predecessor.
+        let Some(mut permit) = self.spell_lane_permit().await else {
+            return (StepOutcome::rejected(), None);
+        };
         if !self.refresh_pvp_locks(actor, session).await {
             return (StepOutcome::rejected(), None);
         }
         let equipment = self.read_movement_equipment(actor, session).await;
-        let now = self.owner_now().get();
         // Lock order (§1.2): the lane before any Channel guard.
-        let Some(permit) = self.spell_lane_permit().await else {
-            return (StepOutcome::rejected(), None);
-        };
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
+        // A periodic condition turn may finish while this step waits for the
+        // lane or Channel locks. Sample time only after acquiring its owners;
+        // field entry must not predate the condition predecessor it observes.
+        let now = self.owner_now().get();
         // USE-AUTOWALK-1: a relocation (even away and back) invalidates the queued step.
         // Compare while holding the same owner lock as the movement commit.
         if follow.is_some_and(|(target, expected)| {
@@ -85,10 +91,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let equipped_speed_delta = equipment
             .as_ref()
             .and_then(|read| read.current_delta(&runtime, &states, actor, session));
-        // MAP-CUTOVER-1b (§1.2): a bundle World has no field items; a step reads only the bundle
-        // collision index.
+        // A field-enabled World reads dynamic Ground Items before committing its step.
         let origin = runtime.read_actor_position(actor).ok();
-        let outcome = if self.bundle_map().is_some() {
+        let outcome = if self.bundle_map().is_some()
+            && self
+                .required_capabilities
+                .effective()
+                .binary_search(&30)
+                .is_err()
+        {
             states.step_with_creature_field_contact(
                 &mut runtime,
                 self.movement_cells,
@@ -103,7 +114,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         } else {
             self.step_with_field_ingress(
-                &permit,
+                &mut permit,
                 &mut runtime,
                 &mut states,
                 actor,

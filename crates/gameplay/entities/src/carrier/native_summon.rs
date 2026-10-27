@@ -311,7 +311,7 @@ impl ChannelActorCarrier {
         let p = receipt.projection.position.position;
         let death = NativeSummonDeath {
             child: actor,
-            death: receipt.projection.occurrence.death_key(),
+            death: receipt.projection.occurrence.death_key()?,
             position: MovementLocalPosition {
                 x: p.x,
                 y: p.y,
@@ -390,7 +390,7 @@ impl ChannelActorCarrier {
                 let p = receipt.projection.position.position;
                 deaths.push(NativeSummonDeath {
                     child,
-                    death: receipt.projection.occurrence.death_key(),
+                    death: receipt.projection.occurrence.death_key()?,
                     position: MovementLocalPosition {
                         x: p.x,
                         y: p.y,

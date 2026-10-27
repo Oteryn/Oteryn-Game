@@ -135,8 +135,8 @@ pub struct LoopMoveReceipt {
     pub replayed: bool,
 }
 
-/// One container of a carried tree: the item, its parent container (`None` for the main
-/// backpack) and its direct entries, newest first.
+/// An observed container: its item, parent (`None` for the main backpack or a Ground root)
+/// and direct entries, newest first. This is historical view data, never custody authority.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoopContainer {
     pub container: InventoryItem,
@@ -147,6 +147,8 @@ pub struct LoopContainer {
 /// One live loop drop or map-MINT Ground item with its persisted append ordinal, for the overlay.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoopGroundItem {
+    /// Spell fields use the runtime floor axis; the map projection converts it once.
+    pub field_collision: Option<(bool, bool)>,
     pub stack_ordinal: u64,
     pub item: GroundItemInstance,
 }
@@ -361,6 +363,46 @@ async fn loop_subtree(
         row.try_get::<Option<i32>, _>("height")?.unwrap_or(0),
         row.try_get::<Option<i64>, _>("size")?.unwrap_or(1),
     ))
+}
+
+/// A historical nested-container ancestry hint, target first. The extra row
+/// detects overdeep paths; repeated identities detect cycles. Never authorize a
+/// view from this hint without locking and rereading the same path.
+async fn ground_container_path(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    container: [u8; 16],
+) -> std::result::Result<Option<Vec<[u8; 16]>>, DurabilityError> {
+    let rows = sqlx::query(
+        "WITH RECURSIVE path(item, depth) AS ( \
+           SELECT encode($1,'hex')::uuid, 0 \
+           UNION ALL \
+           SELECT n.parent_item_instance_id, p.depth+1 FROM path p \
+             JOIN game_item_nested_entries n ON n.item_instance_id=p.item \
+            WHERE p.depth <= $2 \
+         ) SELECT p.item::text, COALESCE(i.world_id=encode($3,'hex')::uuid \
+                    AND i.lifecycle=1 AND i.quantity=1, false) AS live \
+             FROM path p LEFT JOIN game_item_instances i ON i.item_instance_id=p.item \
+            ORDER BY p.depth LIMIT $4",
+    )
+    .bind(container.as_slice())
+    .bind(ITEM_LOOP_DEPTH_MAX)
+    .bind(world.as_bytes().as_slice())
+    .bind(i64::from(ITEM_LOOP_DEPTH_MAX) + 2)
+    .fetch_all(&mut **tx)
+    .await?;
+    if rows.is_empty() || rows.len() > ITEM_LOOP_DEPTH_MAX as usize + 1 {
+        return Ok(None);
+    }
+    let mut path = Vec::with_capacity(rows.len());
+    for row in rows {
+        let item = uuid_text(row.try_get("item")?)?;
+        if !row.try_get::<bool, _>("live")? || path.contains(&item) {
+            return Ok(None);
+        }
+        path.push(item);
+    }
+    Ok(Some(path))
 }
 
 /// Direct nested entries of `parent`, newest first, bounded by the container ceiling.
@@ -1523,6 +1565,8 @@ impl DurabilityRoot {
 
     /// `container` with its parent and its direct contents (newest first) when it is in
     /// `character_id`'s carried tree, the main backpack included; `None` otherwise.
+    /// Retain the Character root's shared lock across ownership and entry reads,
+    /// serializing with the composition-rule-4 writers of this carried tree.
     pub async fn read_item_loop_container(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
@@ -1538,6 +1582,20 @@ impl DurabilityRoot {
                     let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &record).await?;
                     let read: LoopResult<Option<LoopContainer>> = async {
+                        // Custody and entries are separate READ COMMITTED statements.
+                        // A historical owner result cannot authorize entries read after
+                        // a concurrent transfer. All carried-tree writers lock this
+                        // root first; take its shared lock before any custody read.
+                        let root = sqlx::query(
+                            "SELECT character_id FROM game_character_roots \
+                              WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1 FOR SHARE",
+                        )
+                        .bind(character_id.as_bytes().as_slice())
+                        .fetch_optional(&mut *tx)
+                        .await?;
+                        if root.is_none() {
+                            return Ok(None);
+                        }
                         let slot = load_slot(&mut tx, character_id).await?;
                         let main = slot.is_some_and(|slot| slot.item_instance_id == container);
                         if !main {
@@ -1599,6 +1657,115 @@ impl DurabilityRoot {
             .await
     }
 
+    /// Historical root hint for a bounded external container path. The view
+    /// reader must revalidate this exact root and placement under its locks.
+    pub async fn read_item_loop_ground_container_root(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        container: [u8; 16],
+    ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &record).await?;
+                let root = ground_container_path(&mut tx, world, container).await?
+                    .and_then(|path| path.last().copied());
+                super::db::commit_semantic_transaction(tx, deadline).await?;
+                Ok(root)
+            })
+        }).await
+    }
+
+    /// Container below a proven Ground root at the exact owner-observed placement. This
+    /// is view data only: the caller checks current session and reach under its
+    /// Channel lane; a subsequent text write must reacquire every custody fence.
+    /// Ancestry is bounded, locked in UUID order and reread after lock waits.
+    /// Houses and corpse/reward roots remain unavailable.
+    pub async fn read_item_loop_ground_container(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        container: [u8; 16],
+        root: [u8; 16],
+        ground: LoopGround,
+    ) -> std::result::Result<Option<LoopContainer>, DurabilityError> {
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &record).await?;
+                let Some(path) = ground_container_path(&mut tx, world, container).await? else {
+                    return Ok(None);
+                };
+                if path.last() != Some(&root) {
+                    return Ok(None);
+                }
+                let mut sorted = path.clone();
+                sorted.sort_unstable();
+                // A concurrent move must finish before we read custody. All
+                // item locks precede the Ground owner lock, as in the text owner.
+                for item in sorted {
+                    sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR SHARE")
+                        .bind(item.as_slice()).fetch_one(&mut *tx).await?;
+                }
+                // Ground rows have no runtime UPDATE grant: retain the existing
+                // location-owner lock rather than FOR SHARE on the Ground table.
+                sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
+                    .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+                    .execute(&mut *tx).await?;
+                if ground_container_path(&mut tx, world, container).await?.as_ref() != Some(&path) {
+                    return Ok(None);
+                }
+                let row = sqlx::query(
+                    "SELECT target.definition_family, target.definition_production_key, \
+                            target.definition_revision_ref, target.quantity \
+                       FROM game_item_instances i JOIN game_item_ground_locations g \
+                         USING (item_instance_id, world_id) \
+                       JOIN game_item_instances target ON target.item_instance_id=encode($9,'hex')::uuid \
+                      WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 \
+                        AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid \
+                        AND g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
+                        AND (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) \
+                            = ($5,$6,$7,$8) \
+                        AND (game_item_loop_drop_ref(g.corpse_ref) \
+                             OR game_item_loop_map_mint_source(i.item_instance_id)) \
+                      FOR SHARE OF i, target",
+                )
+                .bind(root.as_slice()).bind(world.as_bytes().as_slice())
+                .bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
+                .bind(&ground.spatial_position).bind(&ground.map_revision)
+                .bind(&ground.content_revision).bind(&ground.placement_context).bind(container.as_slice())
+                .fetch_optional(&mut *tx).await?;
+                let read = match row {
+                    None => None,
+                    Some(row) => {
+                        let entries = match load_nested_entries(&mut tx, container).await {
+                            Ok(entries) => entries,
+                            Err(LoopError::Durability(error)) => return Err(error),
+                            Err(LoopError::Database(error)) => return Err(error.into()),
+                            Err(LoopError::Refused(_)) => return Err(DurabilityError::InvalidStoredState),
+                        };
+                        Some(LoopContainer {
+                            container: InventoryItem {
+                                item_instance_id: container,
+                                definition: definition_of(&row).map_err(|_| DurabilityError::InvalidStoredState)?,
+                                quantity: stored_u32(row.try_get("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                            },
+                            parent: path.get(1).copied(),
+                            entries,
+                        })
+                    }
+                };
+                super::db::commit_semantic_transaction(tx, deadline).await?;
+                Ok(read)
+            })
+        }).await
+    }
+
     /// Live loop drops and unchanged map-MINT Ground rows of the Channel, for the map
     /// overlay of the Channel.
     pub async fn read_item_loop_ground(
@@ -1617,25 +1784,30 @@ impl DurabilityRoot {
                                 i.minted_transaction_id::text, \
                                 g.runtime_scope_ownership_generation::text, g.spatial_position, \
                                 g.corpse_ref, g.map_revision, g.content_revision, \
-                                g.native_room_placement_context, g.stack_ordinal \
+                                g.native_room_placement_context, g.stack_ordinal, \
+                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
+                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
                            FROM game_item_ground_locations g \
                            JOIN game_item_instances i USING (item_instance_id, world_id) \
+                           LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
+                           LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
                           WHERE g.world_id = encode($1,'hex')::uuid \
                             AND g.channel_id = encode($2,'hex')::uuid AND i.lifecycle = 1 \
                             AND (game_item_loop_drop_ref(g.corpse_ref) \
-                                 OR game_item_loop_map_mint_source(i.item_instance_id)) \
+                                 OR game_item_loop_map_mint_source(i.item_instance_id) \
+                                 OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL))) \
                           ORDER BY g.stack_ordinal, i.item_instance_id \
                           LIMIT $3",
                     )
                     .bind(world.as_bytes().as_slice())
                     .bind(channel.as_bytes().as_slice())
-                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + 1)
+                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + 1)
                     .fetch_all(&mut *tx)
                     .await?;
                     // Keep the bounded Ground read fail-closed, including pending map pickups.
                     // A MINT uses the same positive Ground INSERT ordinal as a loop drop;
                     // never substitute the base placement ordinal or invent a missing one.
-                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX)
+                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     if rows.len() > bound {
                         return Err(DurabilityError::InvalidStoredState);
@@ -1648,6 +1820,7 @@ impl DurabilityRoot {
                             .and_then(|ordinal| u64::try_from(ordinal).ok())
                             .ok_or(DurabilityError::InvalidStoredState)?;
                         items.push(LoopGroundItem {
+                            field_collision:row.try_get::<Option<bool>,_>("field_blocks_movement")?.zip(row.try_get("field_blocks_projectile")?),
                             stack_ordinal,
                             item: GroundItemInstance {
                                 item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,

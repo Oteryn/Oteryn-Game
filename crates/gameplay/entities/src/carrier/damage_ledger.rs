@@ -297,7 +297,11 @@ impl CommittedLethalReceipt {
 /// current wall-clock millisecond, so two calls never collide). Called at
 /// most once per (death, character): `reward_occurrence_inner` memoizes the
 /// first result and every later call returns that same value.
-fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16] {
+fn mint_reward_occurrence_bytes(
+    actor: ActorRef,
+    channel_id: ChannelId,
+    character: [u8; 16],
+) -> [u8; 16] {
     use sha2::{Digest, Sha256};
     let millis = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -305,8 +309,8 @@ fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16
         .unwrap_or(0);
     let digest = Sha256::new()
         .chain_update(b"oteryn:combat-death-xp-occurrence:v1")
-        .chain_update(actor.world_id.as_bytes())
-        .chain_update(actor.channel_id.as_bytes())
+        .chain_update(ExactActorRef(actor).world_id().as_bytes())
+        .chain_update(channel_id.as_bytes())
         .chain_update(ExactActorRef(actor).scope_generation().get().to_be_bytes())
         .chain_update(actor.actor_local_id.0.to_be_bytes())
         .chain_update(actor.actor_local_generation.0.to_be_bytes())
@@ -819,9 +823,8 @@ impl ChannelActorCarrier {
             character: winner.character,
             lease_generation,
             session,
-            actor: ExactActorRef(ActorRef::from_owner_parts(
-                self.world_id,
-                self.channel_id,
+            actor: ExactActorRef(ActorRef::from_scoped_owner_parts(
+                self.runtime_scope,
                 self.scope_generation,
                 ActorLocalId(
                     u32::try_from(slot_index + 1)
@@ -946,12 +949,18 @@ impl ChannelActorCarrier {
         }
         self.validate_summon_actor(continuity, actor)?;
         self.validate_lethal_receipt(continuity, &receipt)?;
+        // The installed encounter hook still consumes a Channel-only durable
+        // key. Refuse that composition before cascading or retaining anything.
+        let captured_sealed_key = self
+            .encounter_hooks
+            .as_ref()
+            .map(|_| receipt.projection.occurrence.death_key())
+            .transpose()?;
         if fail_before_write {
             return Err(CarrierError::InjectedCorpseProjectionFailure);
         }
         self.cascade_native_summon_deaths(continuity, actor)?;
         let projected = receipt.projection;
-        let captured_sealed_key = projected.occurrence.death_key();
         // Bounded FIFO retention (`MAX_RETAINED_CORPSE_PROJECTIONS`): a retained projection
         // deliberately outlives its actor's slot (lost-response replay, above), so this Vec is
         // not otherwise pruned; evict the oldest unpinned entry rather than grow without bound
@@ -960,8 +969,8 @@ impl ChannelActorCarrier {
         // outlives, and is never evicted independently of, its projection, so a retained
         // projection can never re-mint a second occurrence for the same death.
         self.retain_corpse_projection(projected);
-        if let Some(hooks) = self.encounter_hooks.as_mut() {
-            hooks.projected_death(actor, captured_sealed_key);
+        if let (Some(hooks), Some(key)) = (self.encounter_hooks.as_mut(), captured_sealed_key) {
+            hooks.projected_death(actor, key);
         }
         if fail_after_write {
             return Err(CarrierError::InjectedCorpseResponseFailure);
@@ -1019,8 +1028,7 @@ impl ChannelActorCarrier {
     /// Whether `actor`'s committed death is projected and retained in this world, Channel and
     /// scope generation.
     pub(super) fn retains_corpse_projection(&self, actor: ExactActorRef) -> bool {
-        actor.world_id() == self.world_id
-            && actor.channel_id() == self.channel_id
+        actor.runtime_scope() == self.runtime_scope
             && actor.scope_generation() == self.scope_generation
             && self
                 .corpse_projections
@@ -1126,7 +1134,7 @@ impl ChannelActorCarrier {
         {
             return Err(CarrierError::CapacityExceeded);
         }
-        let occurrence = mint_reward_occurrence_bytes(actor_ref, character);
+        let occurrence = mint_reward_occurrence_bytes(actor_ref, self.channel_id()?, character);
         self.death_reward_occurrences.push(DeathRewardOccurrence {
             actor: actor_ref,
             character,

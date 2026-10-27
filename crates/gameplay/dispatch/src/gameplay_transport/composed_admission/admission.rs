@@ -370,6 +370,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if writes_after_progression(positioned, admitted.first_entry) {
             self.admit_quest_session(&admitted).await;
         }
+        // CHARM-WIRE-1: snapshot CHARM-3 assignments before the session becomes input-eligible.
+        // The runtime actor/session check on installation fences the snapshot against a replaced
+        // session; a failed durable read leaves Charm evaluation unavailable (fail closed).
+        if writes_after_progression(positioned, admitted.first_entry)
+            && let Ok(state) = self
+                .root
+                .read_character_charm_state(self.character, character_id)
+                .await
+        {
+            let state = crate::durability::charm_state::CombatCharmState::new(character_id, state);
+            let runtime = self.runtime.lock().await;
+            self.states.spell_states.lock().await.install_charm_state(
+                &runtime,
+                actor,
+                admitted.game_session_id,
+                state,
+            );
+        }
         Ok(admitted)
     }
 

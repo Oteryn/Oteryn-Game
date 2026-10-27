@@ -207,12 +207,38 @@ pub async fn record_live_pvp_harm_in_transaction(
     binding: [u8; 32],
     damage: u32,
 ) -> Result<()> {
+    record_harm_in_transaction(tx, authority, facts, ordinal, binding, damage, &[]).await
+}
+
+/// A field occurrence is issued by the real condition/entry store, separately
+/// from its historical creation command. Ordinary command replay stays separate.
+pub async fn record_field_pvp_harm_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    facts: &LivePvpFacts,
+    occurrence: [u8; 32],
+    binding: [u8; 32],
+    damage: u32,
+) -> Result<()> {
+    record_harm_in_transaction(tx, authority, facts, 0, binding, damage, &occurrence).await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn record_harm_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    facts: &LivePvpFacts,
+    ordinal: u16,
+    binding: [u8; 32],
+    damage: u32,
+    field_occurrence: &[u8],
+) -> Result<()> {
     check_transaction(tx, authority).await?;
     if facts.attacker != authority.character_id_bytes() {
         return Err(refused());
     }
     let command = authority.command();
-    if let Some(old) = read_receipt(tx, command, ordinal, facts.target).await? {
+    if let Some(old) = read_receipt(tx, command, ordinal, facts.target, field_occurrence).await? {
         if old != binding.to_vec() {
             return Err(refused());
         }
@@ -253,8 +279,8 @@ pub async fn record_live_pvp_harm_in_transaction(
     sqlx::query("INSERT INTO game_character_pvp_aggression(attacker,target,until_at,scope_generation,attacker_placement,target_placement) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '70 seconds',$3::text::numeric,$4,$5) ON CONFLICT(attacker,target) DO UPDATE SET until_at=GREATEST(game_character_pvp_aggression.until_at,EXCLUDED.until_at),scope_generation=EXCLUDED.scope_generation,attacker_placement=EXCLUDED.attacker_placement,target_placement=EXCLUDED.target_placement")
         .bind(facts.attacker.as_slice()).bind(facts.target.as_slice()).bind(authority.scope_generation().to_string()).bind(facts.actor_placement.as_slice()).bind(facts.target_placement.as_slice()).execute(&mut **tx).await?;
     }
-    sqlx::query("INSERT INTO game_character_pvp_harm(game_session_id,command_id,ordinal,victim,attacker,binding,damage,unjustified) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8)")
-        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(i32::from(ordinal)).bind(facts.target.as_slice()).bind(facts.attacker.as_slice()).bind(binding.as_slice()).bind(i32::try_from(damage).map_err(|_|refused())?).bind(unjustified).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_character_pvp_harm(game_session_id,command_id,ordinal,victim,attacker,binding,damage,unjustified,field_occurrence) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,encode($4,'hex')::uuid,encode($5,'hex')::uuid,$6,$7,$8,$9)")
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(i32::from(ordinal)).bind(facts.target.as_slice()).bind(facts.attacker.as_slice()).bind(binding.as_slice()).bind(i32::try_from(damage).map_err(|_|refused())?).bind(unjustified).bind(field_occurrence).execute(&mut **tx).await?;
     Ok(())
 }
 
@@ -263,9 +289,10 @@ async fn read_receipt(
     command: CommandRef,
     ordinal: u16,
     target: [u8; 16],
+    field_occurrence: &[u8],
 ) -> Result<Option<Vec<u8>>> {
-    Ok(sqlx::query_scalar("SELECT binding FROM game_character_pvp_harm WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND ordinal=$3 AND victim=encode($4,'hex')::uuid")
-        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(i32::from(ordinal)).bind(target.as_slice()).fetch_optional(&mut **tx).await?)
+    Ok(sqlx::query_scalar("SELECT binding FROM game_character_pvp_harm WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND ordinal=$3 AND victim=encode($4,'hex')::uuid AND field_occurrence=$5")
+        .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(i32::from(ordinal)).bind(target.as_slice()).bind(field_occurrence).fetch_optional(&mut **tx).await?)
 }
 
 /// The commit window retains the staged physical attempt across cancellation/unknown COMMIT.
@@ -287,8 +314,57 @@ pub async fn live_pvp_receipt_matches_in_transaction(
     binding: [u8; 32],
 ) -> Result<bool> {
     check_transaction(tx, authority).await?;
-    match read_receipt(tx, authority.command(), ordinal, target).await? {
+    match read_receipt(tx, authority.command(), ordinal, target, &[]).await? {
         Some(old) if old == binding => Ok(true),
+        Some(_) => Err(refused()),
+        None => Ok(false),
+    }
+}
+
+/// The target's fresh sealed read fences reconciliation without turning the
+/// creator's old lease into current authority for a new hit.
+pub async fn record_field_cycle_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    read: &super::spell_item_transaction::StandingTileRead,
+    occurrence: [u8; 32],
+    binding: [u8; 32],
+) -> Result<()> {
+    read.check_transaction(tx).await?;
+    sqlx::query("INSERT INTO game_player_field_cycles(occurrence,binding,victim,game_session_id) VALUES($1,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+        .bind(occurrence.as_slice()).bind(binding.as_slice()).bind(read.fence().character_id.as_bytes().as_slice()).bind(read.fence().game_session_id.as_bytes().as_slice()).execute(&mut **tx).await?;
+    Ok(())
+}
+
+/// Read positive evidence for every retained successor, including self damage
+/// and condition-only turns, while holding the original scope serialization.
+pub async fn field_cycle_matches_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    read: &super::spell_item_transaction::StandingTileRead,
+    occurrence: [u8; 32],
+    binding: [u8; 32],
+) -> Result<bool> {
+    read.check_transaction(tx).await?;
+    let old:Option<Vec<u8>>=sqlx::query_scalar("SELECT binding FROM game_player_field_cycles WHERE occurrence=$1 AND victim=encode($2,'hex')::uuid AND game_session_id=encode($3,'hex')::uuid")
+        .bind(occurrence.as_slice()).bind(read.fence().character_id.as_bytes().as_slice()).bind(read.fence().game_session_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    match old {
+        Some(old) if old.as_slice() == binding => Ok(true),
+        Some(_) => Err(refused()),
+        None => Ok(false),
+    }
+}
+
+/// Independently check the joined harm receipts of a committed cycle.
+pub async fn field_pvp_receipt_matches_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    read: &super::spell_item_transaction::StandingTileRead,
+    occurrence: [u8; 32],
+    binding: [u8; 32],
+) -> Result<bool> {
+    read.check_transaction(tx).await?;
+    let old:Option<Vec<u8>>=sqlx::query_scalar("SELECT binding FROM game_character_pvp_harm WHERE field_occurrence=$1 AND victim=encode($2,'hex')::uuid LIMIT 1")
+        .bind(occurrence.as_slice()).bind(read.fence().character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    match old {
+        Some(old) if old.as_slice() == binding => Ok(true),
         Some(_) => Err(refused()),
         None => Ok(false),
     }

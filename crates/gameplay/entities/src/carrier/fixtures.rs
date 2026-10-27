@@ -48,8 +48,10 @@ impl ChannelRuntimeV1 {
     #[cfg(any(test, feature = "test-support"))]
     const fn test_position_context(&self) -> PreProductionPositionContext {
         PreProductionPositionContext {
-            world_id: self.binding.world_id,
-            channel_id: self.binding.channel_id,
+            scope: positions::PositionScope::channel(
+                self.binding.world_id,
+                self.binding.channel_id,
+            ),
             scope_generation: self.binding.scope_generation,
             coordinate_frame_marker: 11,
             map_revision_marker: 12,
@@ -228,8 +230,10 @@ impl MovementActorFixture {
             bytes
         }
         let grant = PreProductionContinuityGrant {
-            world_id: WorldId::decode(&uuid(10)).map_err(|_| CarrierError::WrongScope)?,
-            channel_id: ChannelId::decode(&uuid(11)).map_err(|_| CarrierError::WrongScope)?,
+            runtime_scope: RuntimeScopeRefV1::channel(
+                WorldId::decode(&uuid(10)).map_err(|_| CarrierError::WrongScope)?,
+                ChannelId::decode(&uuid(11)).map_err(|_| CarrierError::WrongScope)?,
+            ),
             scope_generation: ScopeOwnershipGeneration::new(1)
                 .map_err(|_| CarrierError::WrongScope)?,
         };
@@ -241,8 +245,7 @@ impl MovementActorFixture {
             carrier.admit(&owner, ActorState(1))?
         };
         let context = PreProductionPositionContext {
-            world_id: owner.world_id,
-            channel_id: owner.channel_id,
+            scope: positions::PositionScope::new(owner.runtime_scope)?,
             scope_generation: owner.current_generation,
             coordinate_frame_marker: 11,
             map_revision_marker: 12,
@@ -266,7 +269,7 @@ impl MovementActorFixture {
     }
 
     pub const fn world_id(&self) -> WorldId {
-        self.owner.world_id
+        self.owner.runtime_scope.world_id()
     }
     pub const fn actor(&self) -> ExactActorRef {
         self.actor
@@ -349,8 +352,7 @@ impl MovementActorFixture {
 
     pub fn advance_owner(&mut self) -> Result<(), CarrierError> {
         self.owner.advance(PreProductionContinuityGrant {
-            world_id: self.owner.world_id,
-            channel_id: self.owner.channel_id,
+            runtime_scope: self.owner.runtime_scope,
             scope_generation: ScopeOwnershipGeneration::new(2)
                 .map_err(|_| CarrierError::WrongScope)?,
         })
@@ -446,15 +448,13 @@ impl CombatDeathFixture {
     ) -> Result<Self, CarrierError> {
         let mut owner =
             NamespaceContinuityGuard::from_pre_production_grant(PreProductionContinuityGrant {
-                world_id,
-                channel_id,
+                runtime_scope: RuntimeScopeRefV1::channel(world_id, channel_id),
                 scope_generation,
             });
         let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, capacity)?;
         let actor = carrier.admit_creature(&owner, ActorState(1), Self::TARGET, health)?;
         let context = PreProductionPositionContext {
-            world_id,
-            channel_id,
+            scope: positions::PositionScope::channel(world_id, channel_id),
             scope_generation,
             coordinate_frame_marker: 41,
             map_revision_marker: 42,
@@ -641,8 +641,7 @@ impl CombatDeathFixture {
     /// carrier still serves its original generation.
     pub fn advance_owner(&mut self, next: ScopeOwnershipGeneration) -> Result<(), CarrierError> {
         self.owner.advance(PreProductionContinuityGrant {
-            world_id: self.owner.world_id,
-            channel_id: self.owner.channel_id,
+            runtime_scope: self.owner.runtime_scope,
             scope_generation: next,
         })
     }
@@ -675,9 +674,8 @@ impl ChannelActorCarrier {
                     game_session_id: Some(bound),
                     committed: true,
                     ..
-                } if *bound == session => Some(ExactActorRef(ActorRef::from_owner_parts(
-                    self.world_id,
-                    self.channel_id,
+                } if *bound == session => Some(ExactActorRef(ActorRef::from_scoped_owner_parts(
+                    self.runtime_scope,
                     self.scope_generation,
                     ActorLocalId(u32::try_from(index + 1).ok()?),
                     ActorLocalGeneration(*generation),
@@ -789,6 +787,6 @@ impl crate::carrier::CombatDeathFixture {
         let actor = self.actor();
         let mut combat = self.borrow_combat_death();
         let projection = project_fixed_one_creature_death(&mut combat, actor)?;
-        Ok((projection.occurrence().death_key(), projection.position()))
+        Ok((projection.occurrence().death_key()?, projection.position()))
     }
 }
