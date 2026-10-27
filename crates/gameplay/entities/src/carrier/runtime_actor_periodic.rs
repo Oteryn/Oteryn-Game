@@ -9,6 +9,15 @@ use super::*;
 use oteryn_gameplay_foundation::foundation::RuntimeWorkStamp;
 use oteryn_gameplay_foundation::foundation::condition::{ConditionTick, TickFacts, TickKind};
 
+/// A field recipe observed by the current map owner. Cursor and HP remain in
+/// the creature slot; this value never restores a historical controller.
+pub struct CreatureFieldEntry {
+    pub definition: oteryn_gameplay_foundation::foundation::condition::ConditionDefinition,
+    pub source: Option<ExactActorRef>,
+    pub lineage: Option<oteryn_gameplay_foundation::foundation::condition::ConditionLineage>,
+    pub occurrence: oteryn_simulation_determinism::DecisionOccurrenceId,
+}
+
 #[derive(Debug)]
 pub struct PreparedCreaturePeriodicTurn {
     before: CompanionSnapshot,
@@ -28,6 +37,97 @@ pub struct CreaturePeriodicReceipt {
     pub ticks: Vec<ConditionTick<ExactActorRef>>,
 }
 impl ChannelRuntimeV1 {
+    /// Install entry once per actual position successor, before its due HP
+    /// turn. Cancellation between these synchronous owner turns leaves the
+    /// initial tick pending in the sole native condition store.
+    pub fn commit_creature_field_entry(
+        &mut self,
+        actor: ExactActorRef,
+        now_us: u64,
+        field: Option<&CreatureFieldEntry>,
+    ) -> Result<(), CarrierError> {
+        self.assert_actor_spell_unreserved(actor)?;
+        let before = self.companion_snapshot(actor)?;
+        self.owner_fence()?;
+        let index = self.carrier.validate_ref(&self.continuity, actor.0)?;
+        let Slot::CreatureOccupied { committed, .. } = &self.carrier.slots[index] else {
+            return Err(CarrierError::NotCreature);
+        };
+        if committed.field_entry_revision == Some(before.position_revision) {
+            return Ok(());
+        }
+        let mut next = before.state.clone();
+        if let Some(field) = field {
+            if field.source.is_some() != field.lineage.is_some() {
+                return Err(CarrierError::PlanConflict);
+            }
+            if let Some(lineage) = &field.lineage
+                && (lineage.source_content_digest != self.content_pin().server_artifact_digest()
+                    || lineage.source_scope_generation != self.binding().scope_generation().get()
+                    || field.source.is_none_or(|source| {
+                        source.placement_identity() != lineage.source_actor_placement
+                            || !self.borrow_exact_actor_lookup().contains(source)
+                    }))
+            {
+                return Err(CarrierError::PlanConflict);
+            }
+            let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+                self.content_pin().server_artifact_digest(),
+            );
+            let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
+                now: now_us,
+                base_speed: u16::try_from(before.state.policy.base_speed)
+                    .map_err(|_| CarrierError::PlanConflict)?,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: false,
+                decision_root: &root,
+                occurrence: field.occurrence,
+            };
+            use oteryn_gameplay_domain::domain::condition::ConditionRefusal;
+            use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
+            let result = if let Some(lineage) = &field.lineage {
+                next.conditions.apply_with_lineage(
+                    &field.definition,
+                    field.source,
+                    ConditionSourceKind::Field,
+                    &before.state.policy.condition_immunities,
+                    &facts,
+                    lineage,
+                )
+            } else {
+                next.conditions.apply(
+                    &field.definition,
+                    None,
+                    ConditionSourceKind::Field,
+                    &before.state.policy.condition_immunities,
+                    &facts,
+                )
+            };
+            match result {
+                Ok(_)
+                | Err(
+                    ConditionRefusal::Immune
+                    | ConditionRefusal::KeptCurrent
+                    | ConditionRefusal::ReentryProtected,
+                ) => {}
+                Err(_) => return Err(CarrierError::PlanConflict),
+            }
+        }
+        let Slot::CreatureOccupied {
+            committed,
+            companion,
+            ..
+        } = &mut self.carrier.slots[index]
+        else {
+            return Err(CarrierError::NotCreature);
+        };
+        *companion = Some(Box::new(next));
+        committed.field_entry_revision = Some(before.position_revision);
+        Ok(())
+    }
+
     /// Stages only a source-qualified physical actor's existing condition store.
     /// `facts` belong to the actual world/tile owner, not the attacker or client.
     pub fn stage_creature_periodic_turn(

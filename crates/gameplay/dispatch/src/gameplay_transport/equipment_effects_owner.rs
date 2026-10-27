@@ -359,3 +359,6 @@ pub(in crate::gameplay_transport) fn install_suppressions(
 #[cfg(test)]
 #[path = "equipment_effects_owner_tests.rs"]
 mod tests;
+
+#[path = "equipment_field.rs"]
+mod field;

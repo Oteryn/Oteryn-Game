@@ -83,6 +83,7 @@ pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     intent: UseIntent,
     view: Option<&SessionItemView>,
     visibility: Option<&SessionVisibility>,
+    selected: &SelectedCapabilities,
 ) -> Option<UseOutcome> {
     let key = match intent.target {
         UseTarget::Item(handle) => {
@@ -94,7 +95,14 @@ pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
         .use_with
         .is_none_or(|entity| visibility.is_some_and(|v| v.shows(entity)));
     authority
-        .use_rune(actor, command, intent, key, visible)
+        .use_rune(
+            actor,
+            command,
+            intent,
+            key,
+            visible,
+            selected.contains(oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1),
+        )
         .await
 }
 
@@ -219,6 +227,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         intent: UseIntent,
         key: Option<ItemKey>,
         visible: bool,
+        field_runes: bool,
     ) -> Option<UseOutcome> {
         let Ok((current, _)) =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(self.root.clone())
@@ -298,6 +307,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 return Some(outcome(UseDisposition::NothingToUse));
             };
+            if !field_runes
+                && !matches!(
+                    spell.carrier,
+                    crate::spell::Carrier::Rune {
+                        item: 3174 | 3188,
+                        ..
+                    }
+                )
+            {
+                return Some(UseOutcome::rejected());
+            }
             let index = self
                 .spells
                 .spells
