@@ -135,7 +135,11 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
                 source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
             })
             || callback.item_on_target.as_ref().is_some_and(|item| {
-                item.count == 0
+                item.target_replacement == Some(0)
+                    || (item.replacement.is_some() && item.count != 1)
+                    || callback.storage.is_empty()
+                    || callback.trigger != Trigger::Use
+                    || item.count == 0
                     || item.count > 100
                     || !super::valid_quest_key(&item.item)
                     || item
@@ -241,7 +245,7 @@ mod tests {
     fn quest_world_callbacks_reject_ambiguous_and_unbounded_authoring() -> Result<(), String> {
         let source: serde_json::Value =
             serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;
-        for case in 0..5 {
+        for case in 0..10 {
             let mut bad = source.clone();
             match case {
                 0 => {
@@ -253,6 +257,15 @@ mod tests {
                         bad["callbacks"][3]["offerings"][0].clone()
                 }
                 3 => bad["callbacks"][3]["offerings"][0]["count"] = 101.into(),
+                4 => bad["callbacks"][6]["item_on_target"]["target_replacement"] = 0.into(),
+                5 => bad["callbacks"][0]["sources"] = serde_json::json!(["crystal:unverified"]),
+                6 => bad["callbacks"][6]["item_on_target"]["replacement"] = "bad".into(),
+                7 => {
+                    bad["callbacks"][6]["item_on_target"]["replacement"] =
+                        "oteryn:item.tibia.i3114".into();
+                    bad["callbacks"][6]["item_on_target"]["count"] = 2.into();
+                }
+                8 => bad["callbacks"][6]["storage"] = serde_json::json!([]),
                 _ => bad["callbacks"][0]["failure_message"] = "x".repeat(257).into(),
             }
             assert!(parse(&bad.to_string()).is_err(), "case {case}");
@@ -309,6 +322,29 @@ mod tests {
     fn quest_world_callbacks_three_bounded_action_classes_are_source_witnessed()
     -> Result<(), String> {
         let callbacks = load()?;
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        for callback in callbacks.iter().filter(|c| {
+            c.item_on_target.is_some()
+                || c.key.ends_with("outlaw-camp-door")
+                || c.key.ends_with("travelling-trader-delivery")
+        }) {
+            for storage in &callback.storage {
+                assert!(
+                    lowered.source_track(&storage.track).is_some(),
+                    "{}",
+                    storage.track
+                );
+                assert_eq!(
+                    lowered
+                        .catalogue()
+                        .track(&storage.track)
+                        .ok_or("track")?
+                        .quest,
+                    callback.quest
+                );
+            }
+        }
         let outlaw = callbacks
             .iter()
             .find(|callback| callback.key.ends_with("outlaw-camp-door"))

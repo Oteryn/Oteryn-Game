@@ -264,7 +264,7 @@
     },
     {
       "key": "oteryn:quest-callback/outlaw-camp-door",
-      "quest": "oteryn:quest.the_travelling_trader",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
       "trigger": "use",
       "selector": {
         "position": null,
@@ -281,7 +281,7 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/quest/u8_1/travelling_trader/mission02",
+          "track": "oteryn:quest-progress/quest/u8_1/the_travelling_trader/mission02",
           "minimum": 3,
           "maximum": 3,
           "set": 3
@@ -298,7 +298,7 @@
     },
     {
       "key": "oteryn:quest-callback/fish-napping-key",
-      "quest": "oteryn:quest.the_thieves_guild",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
       "trigger": "use",
       "selector": {
         "position": null,
@@ -316,7 +316,7 @@
       },
       "storage": [
         {
-          "track": "oteryn:quest-progress/quest/u8_2/thieves_guild/mission06",
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
           "minimum": 2,
           "maximum": 2,
           "set": 2
@@ -338,7 +338,7 @@
     },
     {
       "key": "oteryn:quest-callback/travelling-trader-delivery",
-      "quest": "oteryn:quest.the_travelling_trader",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
       "trigger": "use",
       "selector": {
         "position": null,
@@ -352,7 +352,7 @@
       "teleport": null,
       "storage": [
         {
-          "track": "oteryn:quest-progress/quest/u8_1/travelling_trader/mission02",
+          "track": "oteryn:quest-progress/quest/u8_1/the_travelling_trader/mission02",
           "minimum": 3,
           "maximum": 3,
           "set": 4
