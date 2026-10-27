@@ -23,6 +23,10 @@ pub fn install(draft: &mut ProjectV2Draft) -> Result<(), &'static str> {
             "oteryn:service.promotion.eremo".to_owned(),
         ),
     ];
+    bindings.push((
+        "oteryn:npc.henricus".into(),
+        "oteryn:service.blessing.henricus".into(),
+    ));
     for blessing in catalogue
         .blessings
         .into_iter()
@@ -32,6 +36,7 @@ pub fn install(draft: &mut ProjectV2Draft) -> Result<(), &'static str> {
             bindings.push((npc, blessing.service.clone()));
         }
     }
+    bindings.sort();
     for (npc_key, service_key) in bindings {
         if draft.state.declarations.iter().any(|record|matches!(record,ProjectV2Declaration::Service {identity,..} if identity.key==service_key)) {return Err("Premium Service already declared");}
         let Some(ProjectV2Declaration::Npc {services,..})=draft.state.declarations.iter_mut().find(|record|matches!(record,ProjectV2Declaration::Npc {identity,..} if identity.key==npc_key)) else {return Err("Premium NPC is absent");};
@@ -65,6 +70,7 @@ use crate::content::blessing_catalogue::{Blessing, BlessingCatalogue};
 pub enum PremiumNpcService {
     Promotion { service: String },
     Blessing(Blessing),
+    Henricus,
 }
 
 pub fn resolve(npc: &str, services: &[ProjectV2DefinitionRef]) -> Vec<PremiumNpcService> {
@@ -75,6 +81,13 @@ pub fn resolve(npc: &str, services: &[ProjectV2DefinitionRef]) -> Vec<PremiumNpc
     let promotion = format!("oteryn:service.promotion.{stem}");
     if services.iter().any(|reference| reference.key == promotion) {
         offered.push(PremiumNpcService::Promotion { service: promotion });
+    }
+    if npc == "oteryn:npc.henricus"
+        && services
+            .iter()
+            .any(|reference| reference.key == "oteryn:service.blessing.henricus")
+    {
+        offered.push(PremiumNpcService::Henricus);
     }
     if let Ok(catalogue) = BlessingCatalogue::load() {
         for blessing in catalogue.blessings {

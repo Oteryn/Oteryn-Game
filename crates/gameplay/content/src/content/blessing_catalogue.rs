@@ -84,6 +84,27 @@ impl BlessingCatalogue {
         }
         Ok(catalogue)
     }
+
+    /// Price the five regular Pilgrimage blessings with Henricus' 10% surcharge.
+    /// The durable owner also enforces eligibility and refuses partial regular ownership;
+    /// this pure missing-set calculation alone does not authorize a purchase.
+    pub fn henricus_quote(&self, level: u32, held: &[String]) -> Option<(u64, Vec<&Blessing>)> {
+        let missing = self
+            .blessings
+            .iter()
+            .filter(|blessing| {
+                blessing.price_family == PriceFamily::Regular
+                    && !held.iter().any(|key| key == &blessing.storage_key)
+            })
+            .collect::<Vec<_>>();
+        if missing.is_empty() {
+            return None;
+        }
+        let base: u64 = missing.iter().map(|blessing| blessing.price(level)).sum();
+        // Integer gold units: apply the multiplier once to the complete quote.
+        let price = base * 11 / 10;
+        Some((price, missing))
+    }
 }
 
 #[cfg(test)]
