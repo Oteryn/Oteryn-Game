@@ -346,8 +346,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
                 if !extension {
-                    run_charm_hook(
+                    let Some(charm_state) =
+                        states.charm_state(&runtime, entry.actor, entry.session)
+                    else {
+                        continue;
+                    };
+                    if run_charm_hook(
                         self.imported_charms,
+                        charm_state,
                         character,
                         &race_key,
                         &root,
@@ -360,7 +366,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         CharmHookEvent::AttackDamageCalculation {
                             source: CharmHitSource::CharacterAttack,
                         },
-                    );
+                    )
+                    .is_err()
+                    {
+                        continue;
+                    }
                 }
                 let ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
                     ranged::creature_damage(
@@ -522,8 +532,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &mut activity_cells,
                 );
                 if !extension {
-                    run_charm_hook(
+                    let Some(charm_state) =
+                        states.charm_state(&runtime, entry.actor, entry.session)
+                    else {
+                        continue;
+                    };
+                    if run_charm_hook(
                         self.imported_charms,
+                        charm_state,
                         character,
                         &race_key,
                         &root,
@@ -538,7 +554,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             },
                             creature_max_health,
                         ),
-                    );
+                    )
+                    .is_err()
+                    {
+                        continue;
+                    }
                 }
                 if result.health_after <= 0 {
                     let lethal = crate::combat::CapturedRewardPrincipal {

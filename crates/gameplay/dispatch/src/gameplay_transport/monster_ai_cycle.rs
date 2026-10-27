@@ -364,23 +364,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             if let Ok(lease) = runtime.bound_attacker_lease(player, session) {
                 let character = *lease.character_id().as_bytes();
-                super::attack::run_charm_hook(
+                let Some(charm_state) = states.charm_state(&runtime, player, session) else {
+                    continue;
+                };
+                if super::attack::run_charm_hook(
                     self.imported_charms,
+                    charm_state,
                     character,
                     race_key,
                     &decision_root,
                     decision_occurrence,
                     CharmHookEvent::IncomingCreatureAttack,
-                );
-                if let Some(base_damage) = base_damage {
-                    super::attack::run_charm_hook(
+                )
+                .is_err()
+                {
+                    continue;
+                }
+                if let Some(base_damage) = base_damage
+                    && super::attack::run_charm_hook(
                         self.imported_charms,
+                        charm_state,
                         character,
                         race_key,
                         &decision_root,
                         decision_occurrence,
                         CharmHookEvent::IncomingCreatureHit { base_damage },
-                    );
+                    )
+                    .is_err()
+                {
+                    continue;
                 }
             }
             attack.record_hit_taken(&runtime, player, session, semantic_now);
