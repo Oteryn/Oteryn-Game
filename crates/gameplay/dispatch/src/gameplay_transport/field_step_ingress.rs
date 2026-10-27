@@ -24,7 +24,7 @@ struct StepIngressRead<'read, 'holder> {
     origin: MovementPositionSnapshot,
     destination: MovementLocalPosition,
     before: Option<PlayerSpellState>,
-    read: StandingTileRead,
+    read: &'read StandingTileRead,
     world:
         Option<&'read crate::durability::spell_field_policy::WorldFieldPolicyRead<'read, 'holder>>,
     creator: Option<CurrentFieldCreator>,
@@ -55,7 +55,14 @@ impl StepIngressRead<'_, '_> {
         session: GameSessionId,
         direction: CardinalStep,
         prepared: Option<&crate::movement::source_floor_change::PreparedCurrentSourceStep<'_>>,
-    ) -> Result<Option<super::CreatureFieldContact>, MovementError> {
+        blocking: &dyn crate::map::floor::CellBlocker,
+    ) -> Result<
+        (
+            Option<super::CreatureFieldContact>,
+            Option<super::player_field::PlayerFieldContact>,
+        ),
+        MovementError,
+    > {
         let fence = self.read.fence();
         if actor != self.actor
             || !self.player_fields_current
@@ -91,6 +98,7 @@ impl StepIngressRead<'_, '_> {
                     session,
                     self.origin,
                     direction,
+                    blocking,
                 )? != self.destination
             }
             || SpellGroundTarget::for_native_tile_read(room, runtime, self.destination)
@@ -120,6 +128,7 @@ impl StepIngressRead<'_, '_> {
         // not silently erased here: only the durable expiry writer may remove it.
         let mut first_magic_field = true;
         let mut creature_contact = None;
+        let mut player_contact = None;
         for item in self.read.items() {
             if item.blocks_movement {
                 return Err(MovementError::Blocked);
@@ -188,19 +197,33 @@ impl StepIngressRead<'_, '_> {
                         continue;
                     }
                     if values.is_some() && !tile.flags().protection_zone {
-                        let creator = self.creator.as_ref().ok_or(MovementError::NotQualified)?;
+                        // Safe field identities remain harmless to players after
+                        // their caster leaves. Historical ownership is not a
+                        // requirement for crossing a non-damaging field.
+                        if item.field_origin.as_ref().is_some_and(|origin| {
+                            matches!(
+                                origin.source_item_key.as_str(),
+                                "oteryn:item.tibia.i2134"
+                                    | "oteryn:item.tibia.i2135"
+                                    | "oteryn:item.tibia.i21465"
+                            )
+                        }) {
+                            continue;
+                        }
                         // A current player owns this field, so source onStepInField
                         // attaches that owner in a NoPvP tile; canDoCombat rejects
                         // the initial hit. Other ordered rows still need inspection.
-                        if tile.no_pvp_zone() == Some(true) {
+                        if item.field_origin.is_some() && tile.no_pvp_zone() == Some(true) {
                             continue;
                         }
+                        let creator = self.creator.as_ref();
                         let world = self.world.ok_or(MovementError::NotQualified)?;
                         if world.world() != runtime.binding().world_id() {
                             return Err(MovementError::NotQualified);
                         }
                         let target = self.before.as_ref().ok_or(MovementError::NotQualified)?;
-                        let protected = creator.level < world.protection_level()
+                        let protected = creator
+                            .is_some_and(|creator| creator.level < world.protection_level())
                             || target.character_facts().level < world.protection_level();
                         if protected {
                             // Source isProtected rejects before combat flags,
@@ -224,25 +247,32 @@ impl StepIngressRead<'_, '_> {
                             .checked_sub(origin.created_at_unix_ms)
                             .filter(|v| *v >= 0)
                             .ok_or(MovementError::NotQualified)?;
-                        let history = target
-                            .source_field_attack_history(
-                                creator.actor,
-                                creator.session,
-                                creator.lease,
-                                self.now_us,
-                                world.in_fight_ms(),
-                            )
-                            .ok_or(MovementError::NotQualified)?;
-                        let _source_attaches_player_owner = world.mode()
-                            == crate::durability::spell_field_policy::FieldWorldType::NoPvp
-                            || age <= 5000
-                            || history;
-                        // World NoPvP alone is insufficient: source still allows
-                        // player combat when both current tiles are PvP zones.
-                        // Current combat flags/skull/faction and initial field
-                        // equipment/Mantra absorption remain unavailable. Never
-                        // replace a historical player source with environmental HP.
-                        return Err(MovementError::NotQualified);
+                        let history = if let Some(creator) = creator {
+                            target
+                                .source_field_attack_history(
+                                    creator.actor,
+                                    creator.session,
+                                    creator.lease,
+                                    self.now_us,
+                                    world.in_fight_ms(),
+                                )
+                                .ok_or(MovementError::NotQualified)?
+                        } else {
+                            false
+                        };
+                        let source_attaches_player_owner = creator.is_some()
+                            && (world.mode()
+                                == crate::durability::spell_field_policy::FieldWorldType::NoPvp
+                                || age <= 5000
+                                || history);
+                        player_contact=Some(super::player_field::PlayerFieldContact{
+                            origin:origin.clone(),item:item.item_instance_id,
+                            attributed:source_attaches_player_owner,
+                            definition:oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                                &format!("native.field.{}",record.production_binding.external_id),1,values.ok_or(MovementError::NotQualified)?).ok_or(MovementError::NotQualified)?,
+                            element:recipe.element().map_err(|_|MovementError::NotQualified)?.ok_or(MovementError::NotQualified)?,
+                        });
+                        continue;
                     }
                     // The accepted current PZ condition owner refuses harmful
                     // initial application, so no DOT instance or HP mutation is
@@ -255,9 +285,10 @@ impl StepIngressRead<'_, '_> {
                 }
             }
         }
-        Ok(creature_contact)
+        Ok((creature_contact, player_contact))
     }
 }
+#[allow(clippy::too_many_arguments)]
 fn destination(
     runtime: &ChannelRuntimeV1,
     cells: &crate::content::NativeEntryMovementCells,
@@ -265,7 +296,14 @@ fn destination(
     session: GameSessionId,
     origin: MovementPositionSnapshot,
     direction: CardinalStep,
+    blocking: &dyn crate::map::floor::CellBlocker,
 ) -> Result<MovementLocalPosition, MovementError> {
+    if crate::map::floor::table_of(cells).is_some() {
+        return Ok(crate::map::floor::prepare_bundle_step(
+            runtime, cells, actor, session, origin, direction, false, blocking,
+        )?
+        .destination());
+    }
     if crate::movement::source_floor_change::is_source_profile(cells) {
         return Ok(crate::movement::source_floor_change::prepare_source_step(
             runtime, cells, actor, session, origin, direction,
@@ -291,7 +329,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(in crate::gameplay_transport) async fn step_with_field_ingress(
         &self,
-        permit: &crate::durability::spell_owner_commit::SpellLanePermit,
+        permit: &mut crate::durability::spell_owner_commit::SpellLanePermit,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -362,12 +400,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return fail();
         };
         // The physical result is retained before rollback/pool-return awaits.
-        // Read-only transaction cleanup failure cannot turn an actual movement
-        // commit into a reported rejection or trigger a second movement.
+        // Transaction cleanup failure cannot turn an actual movement commit
+        // into a reported rejection or trigger a second movement. Field writes
+        // retain their own exact occurrence for reconciliation.
         let mut context = (self, runtime, states, blocking, None);
         let result=pass.run_with_context(&mut context,move|holder,deadline,ctx|Box::pin(async move{
             let(owner,runtime,states,blocking,outcome)=ctx;
-            let mut tx=crate::durability::spell_item_transaction::begin_spell_owner_transaction(holder,deadline).await?;
+            let mut tx=crate::durability::spell_item_transaction::begin_field_owner_transaction(holder,deadline).await?;
             let current=FreshAdmissionStore::from_root(owner.root.clone()).current_session_in_transaction(&mut tx,session).await?;
             if current.session_state()!=GameSessionState::Active{return Err(crate::durability::DurabilityError::Unavailable)}
             let fence=CurrentCharacterItemFence{
@@ -380,7 +419,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let prepared=if crate::movement::source_floor_change::is_source_profile(owner.movement_cells) {
                 Some(crate::movement::source_floor_change::collect_current_source_step(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,room,runtime,&objects,source,actor,session,origin,direction).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)
             } else {None};
-            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.movement_cells,actor,session,origin,direction).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
+            let destination=if let Some(prepared)=&prepared {prepared.destination()} else {destination(runtime,owner.movement_cells,actor,session,origin,direction,*blocking).map_err(|_|crate::durability::DurabilityError::Unavailable)?};
             let target=SpellGroundTarget::for_native_tile_read(room,runtime,destination).map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let read=crate::durability::spell_item_transaction::read_standing_player_tile_in_transaction(&mut tx,permit,owner.root,owner.character,owner.holder,&fence,source.source_digest(),&target).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             let player_fields_current = if read.items().iter().any(|item| item.field_origin.is_some() && source.item_policy(&item.definition.production_key, &item.definition.revision_ref).is_none_or(|policy| {
@@ -414,21 +453,62 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     break;
                 }
             }
-            let world_data=if creator.is_some(){crate::durability::spell_field_policy::read_world_field_policy_in_transaction(&mut tx,owner.root,fence.runtime_scope,fence.scope_ownership_generation.get()).await?}else{None};
+            let world_data=if read.items().iter().any(|item|item.field_origin.is_some()) || read.items().iter().any(|item|matches!(item.definition.production_key.as_str(),"oteryn:item.tibia.i10181"|"oteryn:item.tibia.i10182")){crate::durability::spell_field_policy::read_world_field_policy_in_transaction(&mut tx,owner.root,fence.runtime_scope,fence.scope_ownership_generation.get()).await?}else{None};
             let world=world_data.map(|data|data.bind(&tx));
             let validation={
-                let ingress=StepIngressRead{_transaction:&tx,actor,session,direction,origin,destination,before,read,world:world.as_ref(),creator,player_fields_current,now_us};
-                ingress.validate_current(runtime,states,room,source,actor,session,direction,prepared.as_ref())
+                let ingress=StepIngressRead{_transaction:&tx,actor,session,direction,origin,destination,before,read:&read,world:world.as_ref(),creator,player_fields_current,now_us};
+                ingress.validate_current(runtime,states,room,source,actor,session,direction,prepared.as_ref(),*blocking)
             };
+            let remove_magic_wall=world.as_ref().is_some_and(|policy|policy.mode()==crate::durability::spell_field_policy::FieldWorldType::NoPvp);
             drop(world);
+            drop(objects);
             match validation {
-                Ok(contact)=>{
+                Ok((contact,player))=>{
+                    let mut player=if let Some(contact)=player {
+                        owner.stage_player_field_entry(&mut tx,permit,runtime,states,&read,actor,session,destination,now_us,contact).await?
+                    }else{None};
+                    let removal = read.items().iter().find(|item| remove_magic_wall && matches!(item.definition.production_key.as_str(),"oteryn:item.tibia.i10181"|"oteryn:item.tibia.i10182")).map(|item|item.item_instance_id);
+                    if let Some(item) = removal {
+                        crate::durability::field_removal::remove_field_in_transaction(&mut tx,owner.root,&read,item,None,None,None).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+                    }
                     let proof=if let Some(prepared)=prepared {Some(crate::movement::source_floor_change::bind_current_source_step(&mut tx,runtime,prepared).await.map_err(|_|crate::durability::DurabilityError::Unavailable)?)} else {None};
                     *outcome=Some(states.step_with_creature_field_contact(runtime,owner.movement_cells,actor,session,now_us,direction,*blocking,equipment_delta,proof,contact));
+                    if let Some(mut pending)=player.take() && outcome.as_ref().is_some_and(Result::is_ok) {
+                        pending.retain_step_cooldowns(runtime,states);
+                        let mut window=permit.open_commit_window(pending,super::player_field::park);
+                        #[cfg(test)]
+                        if super::super::field_removal::faults::take(super::super::field_removal::faults::PLAYER,false) {
+                            window.mark_already_committed();
+                            tx.into_inner().rollback().await?;
+                            return Err(crate::durability::DurabilityError::Unavailable);
+                        }
+                        crate::durability::pvp_live::commit_live_pvp_transaction(tx.into_inner(),deadline,&mut window).await?;
+                        #[cfg(test)]
+                        if super::super::field_removal::faults::take(super::super::field_removal::faults::PLAYER,true) {return Err(crate::durability::DurabilityError::Unavailable);}
+                        if !window.attempt().matches_current(runtime,states) {return Err(crate::durability::DurabilityError::Unavailable)}
+                        window.install().install(runtime,states);
+                        return Ok(());
+                    }
+                    if let Some(item) = removal && outcome.as_ref().is_some_and(Result::is_ok) {
+                        let pending=super::super::field_removal::PendingFieldRemoval{fence,content:source.source_digest(),target:read.target().clone(),item,tool:None,command:None,binding:None};
+                        let mut window=permit.open_commit_window(pending,super::super::field_removal::park);
+                        #[cfg(test)]
+                        if super::super::field_removal::faults::take(super::super::field_removal::faults::REMOVAL,false) {
+                            window.mark_already_committed();
+                            tx.into_inner().rollback().await?;
+                            return Err(crate::durability::DurabilityError::Unavailable);
+                        }
+                        crate::durability::pvp_live::commit_live_pvp_transaction(tx.into_inner(),deadline,&mut window).await?;
+                        #[cfg(test)]
+                        if super::super::field_removal::faults::take(super::super::field_removal::faults::REMOVAL,true) {return Err(crate::durability::DurabilityError::Unavailable);}
+                        window.install();
+                        owner.states.loop_ground.invalidate();
+                        return Ok(());
+                    }
                 },
                 Err(error)=>*outcome=Some(Err(error)),
             }
-            tx.rollback().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
+            tx.into_inner().rollback().await.map_err(|_|crate::durability::DurabilityError::Unavailable)?;
             Ok(())
         })).await;
         if let Some(outcome) = context.4 {
@@ -485,7 +565,8 @@ mod tests {
                     actor,
                     session,
                     origin,
-                    direction
+                    direction,
+                    &std::collections::BTreeSet::<crate::content::LogicalCell>::new(),
                 )?,
                 MovementLocalPosition {
                     x: origin.position().x + dx,

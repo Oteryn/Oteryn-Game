@@ -5,12 +5,8 @@ pub fn select_safe_field(
     target_no_pvp: Option<bool>,
 ) -> Result<u32, &'static str> {
     let no_pvp = target_no_pvp.ok_or("field tile PvP policy unknown")?;
-    // ATTACK-1b already holds disconnected actors using its current in-fight owner.
-    // Field creation/hits are not connected to that owner, and FIELD-1 excludes
-    // player-affecting PvP. Keep this slice restricted to qualified NoPvP contexts.
-    if !no_pvp && !world_no_pvp {
-        return Err("field in-fight owner required");
-    }
+    // Creation and contact join the current fenced PvP owner. Normal Worlds
+    // retain harmful identities; safe World/tile conversion remains source exact.
     // Canary999025 combat.cpp1189–1244 and utils_definitions.hpp589–603.
     Ok(select_source_field_id(
         source_id,
@@ -97,11 +93,17 @@ mod safe_field_tests {
     }
 
     #[test]
-    fn losing_safe_tile_or_changing_world_context_cannot_admit_pvp_creation() {
+    fn changing_world_context_selects_the_matching_harmful_identity() {
         for source in [2123, 2121, 2126] {
             assert!(select_safe_field(source, false, Some(true)).is_ok());
-            assert!(select_safe_field(source, false, Some(false)).is_err());
-            assert!(select_safe_field(source, false, Some(false)).is_err());
+            assert_eq!(
+                select_safe_field(source, false, Some(false)).unwrap(),
+                select_source_field_id(source, true, false, false)
+            );
+            assert_eq!(
+                select_safe_field(source, true, Some(false)).unwrap(),
+                select_source_field_id(source, true, true, false)
+            );
             assert!(select_safe_field(source, true, Some(false)).is_ok());
         }
     }

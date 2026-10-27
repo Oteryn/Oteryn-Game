@@ -24,13 +24,22 @@ fn exact_lookup_rejects_cross_scope_and_invalid_identity() {
     assert_eq!(carrier.lookup(&continuity, actor_ref), Ok(&ActorState(7)));
 
     let mut wrong_world = actor_ref;
-    wrong_world.world_id = grant(20, 1).world_id;
+    wrong_world.runtime_scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+        grant(20, 1).runtime_scope.world_id(),
+        oteryn_gameplay_foundation::foundation::ExactActorRef(wrong_world)
+            .channel_id()
+            .expect("Channel actor"),
+    );
     assert_eq!(
         carrier.lookup(&continuity, wrong_world),
         Err(CarrierError::WrongScope)
     );
     let mut wrong_channel = actor_ref;
-    wrong_channel.channel_id = grant(20, 1).channel_id;
+    wrong_channel.runtime_scope =
+        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+            oteryn_gameplay_foundation::foundation::ExactActorRef(wrong_channel).world_id(),
+            grant(20, 1).channel_id().expect("Channel fixture"),
+        );
     assert_eq!(
         carrier.lookup(&continuity, wrong_channel),
         Err(CarrierError::WrongScope)
@@ -167,4 +176,35 @@ fn ai2_multiple_creatures_coexist_bounded_only_by_general_capacity() {
             .current_owner_exact_lookup(&continuity)
             .contains(ExactActorRef(second))
     );
+}
+
+#[test]
+fn boss_activity_actor_cannot_borrow_a_channel_slot_with_identical_uuid() {
+    let (continuity, mut carrier) = carrier(1);
+    let actor = carrier.admit(&continuity, ActorState(7)).expect("admit");
+    let before = carrier.clone();
+    let instance = ActorRef::from_scoped_owner_parts(
+        RuntimeScopeRefV1::instance(
+            continuity.runtime_scope.world_id(),
+            *continuity.channel_id().expect("Channel fixture").as_bytes(),
+        )
+        .expect("same UUID, different scope kind"),
+        continuity.current_generation,
+        actor.actor_local_id,
+        actor.actor_local_generation,
+    );
+    assert_eq!(
+        carrier.lookup(&continuity, instance),
+        Err(CarrierError::WrongScope)
+    );
+    assert_eq!(
+        carrier.read_position(&continuity, instance),
+        Err(CarrierError::WrongScope)
+    );
+    assert_eq!(
+        carrier.remove(&continuity, instance),
+        Err(CarrierError::WrongScope)
+    );
+    assert_eq!(carrier, before);
+    assert_eq!(carrier.lookup(&continuity, actor), Ok(&ActorState(7)));
 }

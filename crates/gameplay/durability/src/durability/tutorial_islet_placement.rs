@@ -26,7 +26,10 @@ impl DurabilityRoot {
         placed: FinalLastPosition,
     ) -> Result<bool, CharacterProgressionError> {
         let cell = placed.record.cell;
-        if placed.record.world_id != fence.runtime_scope.world_id()
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) || placed.record.world_id != fence.runtime_scope.world_id()
             || cell.floor != ISLET_TEMPLE.2
             || cell.x.abs_diff(ISLET_TEMPLE.0) > 3
             || cell.y.abs_diff(ISLET_TEMPLE.1) > 3

@@ -4,16 +4,13 @@ use oteryn_gameplay_content::content::spell_data::{
     Carrier, Execution, SpellDefinition, SpellEffect,
 };
 
-/// The legacy USE qualification admits Light Magic Missile and the single-tile
-/// Fire Field carrier. Field creation still requires current World/tile policy
-/// and ADMIT0 eligibility in the atomic spell-item writer.
+/// Rune families implemented by the admitted USE adapter. Geometry, source Item
+/// policy, World policy and payment remain qualified by the existing cast owner.
 pub fn direct_rune(spell: &SpellDefinition) -> bool {
-    if has_world_geometry(spell) {
-        return false;
-    }
     match (&spell.carrier, &spell.execution) {
         (Carrier::Rune { item: 3174, .. }, Execution::Effects(effects)) => {
-            !effects.is_empty()
+            !has_world_geometry(spell)
+                && !effects.is_empty()
                 && effects.iter().all(|effect| {
                     matches!(
                         effect,
@@ -21,7 +18,13 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
                     )
                 })
         }
-        (Carrier::Rune { item: 3188, .. }, Execution::Effects(effects)) => {
+        (
+            Carrier::Rune {
+                item: 3149 | 3164 | 3166 | 3172 | 3173 | 3176 | 3188 | 3190 | 3192,
+                ..
+            },
+            Execution::Effects(effects),
+        ) => {
             effects.iter().any(|effect| {
                 matches!(effect,
                 SpellEffect::ResolvedOther { profile, .. }
@@ -33,6 +36,19 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
                             || profile.operation == "presentation_only")
             })
         }
+        (
+            Carrier::Rune {
+                item: 3156 | 3180, ..
+            },
+            Execution::NativeProfile(profile),
+        ) => profile.dependencies()["effects"]
+            .as_array()
+            .is_some_and(|effects| {
+                effects.len() == 1
+                    && effects[0]["operation"] == "create_item"
+                    && effects[0]["duration_selection"] == "uniform_integer_seconds"
+                    && effects[0].get("pvp_safe_item").is_some()
+            }),
         _ => false,
     }
 }

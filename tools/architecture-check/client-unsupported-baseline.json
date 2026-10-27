@@ -57,6 +57,7 @@
   "0083-channel-list",
   "0086-house-transfer",
   "0087-pvp-expert",
+  "0091-field-runes",
   "0092-zones-nologout",
   "0093-subarea",
   "0097-character-info",
@@ -65,6 +66,7 @@
   "0103-guild-war",
   "0104-forge-creature",
   "0115-mail",
+  "0117-boss-encounter",
   "0132-inspection",
   "0134-party-skull"
 ]

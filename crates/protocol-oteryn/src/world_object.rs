@@ -32,6 +32,8 @@ pub const CAPABILITY_ITEM_USE_V1: u32 = 15;
 pub const CAPABILITY_ITEM_USE_V1_REQUIRES: &[u32] = &[
     CAPABILITY_ITEM_VIEW_MOVE_V1, // ITEM_VIEW_MOVE_V1
 ];
+/// Field, wall, bomb and barrier runes through the existing USE intent.
+pub const CAPABILITY_FIELD_RUNES_V1: u32 = 91;
 /// Registered capability `RUNE_USE_V1` (RUNE-USE-0 §4, RUNE-WIRE-1; number leased by the #1622
 /// control plane). It owns no command type or domain: it extends command type 2 with the `position`
 /// arm of field 4 and the dispositions 18 and 19. Not offered before RUNE-CAST-1.

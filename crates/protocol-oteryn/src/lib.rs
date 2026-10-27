@@ -22,6 +22,7 @@ pub mod appearance;
 pub mod attack;
 pub mod bed;
 pub mod bestiary;
+pub mod boss_encounter;
 pub mod capability_tables;
 pub mod channel_list;
 pub mod character_info;

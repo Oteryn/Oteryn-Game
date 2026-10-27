@@ -262,9 +262,21 @@ fn validate_layout(feature: &Path, entries: &[Value]) -> Result<(), String> {
 pub(crate) fn render(entries: &[Value], coverage: &[Value]) -> Result<(String, String), String> {
     let registrations = serde_json::to_string(&entries).map_err(|e| e.to_string())?;
     let report = serde_json::to_string_pretty(&coverage).map_err(|e| e.to_string())?;
-    // Private descriptors only: executable feature dispatch arrives with the first mechanic.
+    let pages = entries
+        .iter()
+        .filter(|entry| entry["kind"] == "cyclopedia-pages" && entry["status"] == "supported")
+        .map(|entry| {
+            let mechanic = entry["mechanic"].as_str().ok_or("cyclopedia mechanic")?;
+            let id = entry["id"].as_str().ok_or("cyclopedia page id")?;
+            let parent = entry["parent"].as_str().ok_or("cyclopedia page parent")?;
+            let entry = entry["entry"].as_str().ok_or("cyclopedia page entry")?;
+            Ok(format!(
+                "    CyclopediaPageRegistration {{ mechanic: {mechanic:?}, id: {id:?}, parent: {parent:?}, entry: {entry:?} }},\n"
+            ))
+        })
+        .collect::<Result<String, String>>()?;
     let rust = format!(
-        "// Generated; do not commit.\nconst _: &str = {registrations:?};\nconst _: &str = {report:?};\n"
+        "// Generated; do not commit.\nconst _: &str = {registrations:?};\nconst _: &str = {report:?};\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\npub struct CyclopediaPageRegistration {{\n    pub mechanic: &'static str,\n    pub id: &'static str,\n    pub parent: &'static str,\n    pub entry: &'static str,\n}}\n\nstatic CYCLOPEDIA_PAGES: &[CyclopediaPageRegistration] = &[\n{pages}];\n\n#[must_use]\npub const fn cyclopedia_pages() -> &'static [CyclopediaPageRegistration] {{ CYCLOPEDIA_PAGES }}\n"
     );
     Ok((rust, report))
 }

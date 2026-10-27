@@ -7,9 +7,7 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 pub mod direct_companion_source_seal {
     pub trait Sealed {}
 }
-pub trait DirectCompanionAcquisitionSource:
-    direct_companion_source_seal::Sealed
-{
+pub trait DirectCompanionAcquisitionSource: direct_companion_source_seal::Sealed {
     fn actor(&self) -> ExactActorRef;
     fn master_actor(&self) -> ExactActorRef;
     fn character_id(&self) -> CharacterId;
@@ -31,7 +29,7 @@ pub enum DirectCompanionSource {
     },
 }
 fn actor_json(a: ExactActorRef) -> serde_json::Value {
-    serde_json::json!({"world":a.world_id().as_bytes(),"channel":a.channel_id().as_bytes(),
+    serde_json::json!({"world":a.world_id().as_bytes(),"channel":a.channel_id().map(|channel| *channel.as_bytes()),
       "scope_generation":a.scope_generation().get(),"local_id":a.actor_local_id(),
       "local_generation":a.actor_local_generation(),"placement":a.placement_identity()})
 }
@@ -89,8 +87,8 @@ impl DirectBinding {
     }
     fn valid(&self) -> bool {
         self.actor != self.master
-            && self.actor.world_id() == self.master.world_id()
-            && self.actor.channel_id() == self.master.channel_id()
+            && self.actor.channel_id().is_some()
+            && self.actor.runtime_scope() == self.master.runtime_scope()
             && self.actor.scope_generation() == self.master.scope_generation()
             && !self.creature_key.is_empty()
             && self.creature_key.len() <= 512
@@ -102,7 +100,10 @@ impl DirectBinding {
         self.valid()
             && self.transaction == r.transaction_id
             && *self.actor.world_id().as_bytes() == a.world
-            && *self.actor.channel_id().as_bytes() == a.channel
+            && self
+                .actor
+                .channel_id()
+                .is_some_and(|channel| *channel.as_bytes() == a.channel)
             && self.actor.scope_generation().get() == a.ownership_generation
             && self.character == a.character
             && self.session == *a.command.game_session_id().as_bytes()
@@ -238,7 +239,7 @@ pub async fn record_prepared_direct_companion_acquisition_in_transaction(
         ));
     }
     sqlx::query("INSERT INTO game_spell_direct_companion_acquisition_receipts(transaction_id,world_id,channel_id,ownership_generation,actor_local_id,actor_local_generation,master_character_id,master_game_session_id,master_actor_local_id,master_actor_local_generation,creature_key,creature_revision,cell_x,cell_y,cell_z,source_kind,binding_json,actor_placement_identity,master_placement_identity,source_json) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6::text::numeric(20,0),encode($7,'hex')::uuid,encode($8,'hex')::uuid,$9,$10::text::numeric(20,0),$11,$12,$13,$14,$15,$16,$17::text::jsonb,encode($18,'hex')::uuid,encode($19,'hex')::uuid,$20::text::jsonb)")
-        .bind(b.transaction.as_slice()).bind(b.actor.world_id().as_bytes().as_slice()).bind(b.actor.channel_id().as_bytes().as_slice())
+        .bind(b.transaction.as_slice()).bind(b.actor.world_id().as_bytes().as_slice()).bind(b.actor.channel_id().ok_or(SpellItemError::Rejected("Instance direct companion unsupported"))?.as_bytes().as_slice())
         .bind(b.actor.scope_generation().get().to_string()).bind(i64::from(b.actor.actor_local_id())).bind(b.actor.actor_local_generation().to_string())
         .bind(b.character.as_slice()).bind(b.session.as_slice()).bind(i64::from(b.master.actor_local_id())).bind(b.master.actor_local_generation().to_string())
         .bind(&b.creature_key).bind(&b.creature_revision).bind(b.cell.x).bind(b.cell.y).bind(b.cell.z)

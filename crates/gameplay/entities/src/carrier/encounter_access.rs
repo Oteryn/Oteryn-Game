@@ -91,8 +91,8 @@ impl ChannelActorCarrier {
     ) -> Result<usize, CarrierError> {
         self.validate_ref(continuity, actor)
     }
-    pub fn encounter_scope(&self) -> (WorldId, ChannelId, ScopeOwnershipGeneration) {
-        (self.world_id, self.channel_id, self.scope_generation)
+    pub fn encounter_scope(&self) -> (RuntimeScopeRefV1, ScopeOwnershipGeneration) {
+        (self.runtime_scope, self.scope_generation)
     }
     pub fn encounter_is_native_summon(&self, actor: ExactActorRef) -> bool {
         self.is_native_summon(actor)
@@ -153,8 +153,8 @@ impl ChannelActorCarrier {
 impl ChannelRuntimeV1 {
     pub fn encounter_owner_scope(&self) -> (WorldId, ChannelId, ScopeOwnershipGeneration) {
         (
-            self.continuity.world_id,
-            self.continuity.channel_id,
+            self.binding.world_id,
+            self.binding.channel_id,
             self.continuity.current_generation,
         )
     }
@@ -288,12 +288,14 @@ impl ChannelRuntimeV1 {
     }
 
     pub fn encounter_death_is_current(&self, key: CreatureDeathOccurrenceKey) -> bool {
-        self.carrier.validate_ref(&self.continuity, key.0).is_ok()
+        self.carrier
+            .validate_ref(&self.continuity, key.actor)
+            .is_ok()
             && self
                 .carrier
                 .corpse_projections
                 .iter()
-                .any(|p| p.occurrence.death_key() == key)
+                .any(|p| p.occurrence.death_key() == Ok(key))
     }
 
     pub fn remove_encounter_actor(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {
@@ -418,8 +420,8 @@ impl ChannelRuntimeV1 {
     ) -> Result<(), CarrierError> {
         self.continuity
             .advance(PreProductionContinuityGrant::fixture(
-                self.carrier.world_id,
-                self.carrier.channel_id,
+                self.binding.world_id,
+                self.binding.channel_id,
                 generation,
             ))
     }

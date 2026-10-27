@@ -1,0 +1,23 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+
+// BOSS-ENCOUNTER-1, owner decisions 23 and 24. Capability 117, command 133.
+// Server-only implementation. This capability exposes the cooldown read path;
+// it does not advertise activity-instance admission or reward delivery.
+message BossCooldownQueryV1 {
+  // Empty starts the list. Otherwise the previous page's next_after_boss_key.
+  // Strictly bounded to a production key (512 UTF-8 bytes), in C sort order.
+  string after_boss_key = 1;
+}
+message BossCooldownEntryV1 {
+  string boss_key = 1;
+  uint64 available_at_unix_ms = 2;
+}
+message BossCooldownListV1 {
+  uint64 now_unix_ms = 1;
+  // At most 64 rows of this admitted Character, including expired cooldowns.
+  repeated BossCooldownEntryV1 entries = 2;
+  // Empty if exhausted; otherwise the last key returned. Live keyset pagination:
+  // concurrent admissions may appear on later queries, no snapshot is promised.
+  string next_after_boss_key = 3;
+}

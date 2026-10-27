@@ -20,6 +20,8 @@ const PLAN: &str = "docs/architecture/reviews/OTERYN_GAME_MECHANICS_COMPLETION_P
 enum Gate {
     /// Open on a bundle World: reads `combat`, opened by a merged PR.
     Open { batch: &'static str, pr: u32 },
+    /// An explicitly allocated mechanic opens this gate in the candidate diff.
+    AllocatedOpen { task: &'static str },
     /// Closed on a bundle World: reads `qualified`; each owner is a plan batch.
     Closed { owners: &'static [&'static str] },
     /// Reads `qualified` only to select the fixture source World's path; a bundle World is served
@@ -125,7 +127,10 @@ const INVENTORY: &[Entry] = &[
             batch: "MAGIC-COND-1",
             pr: 2086,
         },
-        calls: &[("gameplay_transport/spell_periodic.rs", 1)],
+        calls: &[
+            ("gameplay_transport/player_field.rs", 1),
+            ("gameplay_transport/spell_periodic.rs", 1),
+        ],
     },
     Entry {
         gate: "parameter cast and its commit: locate message",
@@ -167,10 +172,14 @@ const INVENTORY: &[Entry] = &[
         plan: "field step ingress",
         accessor: "gate_field_step_ingress",
         key: "",
-        state: Gate::Closed {
-            owners: &["LOOP-WORLD-1"],
+        state: Gate::AllocatedOpen {
+            task: "FIELD-RUNES-1",
         },
-        calls: &[("gameplay_transport/field_step_ingress.rs", 2)],
+        calls: &[
+            ("gameplay_transport/field_removal.rs", 1),
+            ("gameplay_transport/field_step_ingress.rs", 2),
+            ("gameplay_transport/postgres_tests/field_runes.rs", 2),
+        ],
     },
     // The durable custody of the map's Items; on a bundle World that is its Ground persistence.
     Entry {
@@ -429,7 +438,7 @@ fn every_room_accessor_is_inventoried() {
     let mut expected: BTreeMap<String, Vec<(String, Room)>> = BTreeMap::new();
     for entry in INVENTORY {
         let room = match entry.state {
-            Gate::Open { .. } => Room::Combat,
+            Gate::Open { .. } | Gate::AllocatedOpen { .. } => Room::Combat,
             Gate::Closed { .. } | Gate::SourceWorldBranch => Room::Qualified,
         };
         expected
@@ -537,11 +546,22 @@ fn every_gate_call_is_inventoried() {
 }
 
 #[test]
-fn every_gate_names_its_opener_or_owner() {
+fn every_gate_names_its_opener_or_owner() -> Result<(), Box<dyn std::error::Error>> {
     for entry in INVENTORY {
         match entry.state {
             Gate::Open { batch, pr } => {
                 assert!(!batch.is_empty() && pr > 0, "open gate `{}`", entry.gate);
+            }
+            Gate::AllocatedOpen { task } => {
+                assert_eq!(task, "FIELD-RUNES-1");
+                let contract: serde_json::Value = serde_json::from_str(include_str!(
+                    "../../../../../docs/contracts/protocol-oteryn/v1/registry/capabilities/0091-field-runes-v1.json"
+                ))?;
+                assert!(
+                    contract["owner_decision"]
+                        .as_str()
+                        .is_some_and(|decision| decision.starts_with(task))
+                );
             }
             Gate::Closed { owners } => {
                 assert!(
@@ -553,6 +573,7 @@ fn every_gate_names_its_opener_or_owner() {
             Gate::SourceWorldBranch => {}
         }
     }
+    Ok(())
 }
 
 #[test]
@@ -582,6 +603,13 @@ fn every_gate_is_recorded_in_the_plan_row() {
                     "the plan row has no clause recording that {batch} #{pr} opened `{}` ({})",
                     entry.gate,
                     entry.plan
+                );
+            }
+            Gate::AllocatedOpen { task } => {
+                assert!(
+                    clause(entry, &[task.to_owned()]),
+                    "allocated gate {} missing from plan",
+                    entry.gate
                 );
             }
             Gate::Closed { owners } => {
@@ -670,6 +698,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
+    ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     ("gameplay_transport/postgres_tests/party_xp.rs", 1),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     ("gameplay_transport/postgres_tests/player_trade.rs", 2),
