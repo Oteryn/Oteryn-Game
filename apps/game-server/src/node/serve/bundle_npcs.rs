@@ -245,8 +245,15 @@ pub(super) fn place(
             production,
             ..
         }) => {
+            let mut table = table.clone();
+            let unix_ms = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .ok()
+                .and_then(|elapsed| i64::try_from(elapsed.as_millis()).ok())
+                .unwrap_or(0);
+            oteryn_gameplay_entities::rashid_schedule::rotate_placements(&mut table, unix_ms);
             let outcome = runtime
-                .place_npcs(table, |key| admitted.contains(key), *production)
+                .place_npcs(&table, |key| admitted.contains(key), *production)
                 .map_err(|error| match error {
                     NpcPlacementError::NpcNotAdmitted(_) => {
                         BootError::ContentActivation("NPC not admitted by the NPC catalogue")

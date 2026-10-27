@@ -18,6 +18,7 @@ pub use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
 pub use oteryn_gameplay_domain::domain::carrier_values::LocalPosition;
 
 pub mod content_adapters;
+pub mod rashid_schedule;
 
 #[allow(dead_code)]
 pub mod carrier;

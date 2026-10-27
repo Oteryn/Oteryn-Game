@@ -172,6 +172,7 @@ pub(super) async fn trade(
     if !admission.states.player_trades.physical_service(session) {
         return Err(Box::new(NpcTradeStep::rejected()));
     }
+    let now = unix_ms_now();
     let (offer, coins) = {
         let runtime = admission.runtime.lock().await;
         let index = pinned_index(&runtime, admission.active_generation);
@@ -186,6 +187,24 @@ pub(super) async fn trade(
             Ok(offer) => offer,
             Err(refusal) => return Err(Box::new(NpcTradeStep::Refused(*refusal))),
         };
+        let available = runtime
+            .visible_entities()
+            .npcs
+            .iter()
+            .find(|npc| {
+                npc.actor.placement_identity() == intent.npc_actor.identity
+                    && npc.generation == intent.npc_actor.generation
+            })
+            .is_some_and(|npc| {
+                oteryn_gameplay_entities::rashid_schedule::trade_available(
+                    &offer.npc_key,
+                    npc.position,
+                    now,
+                )
+            });
+        if !available {
+            return Err(Box::new(NpcTradeStep::rejected()));
+        }
         let coin = |coin: Coin| {
             let production_key = coin.production_key();
             index
@@ -255,7 +274,7 @@ pub(super) async fn trade(
         item,
         transaction_id: id(b"oteryn:npc-trade-transaction:v1"),
         event_id: id(b"oteryn:npc-trade-event:v1"),
-        occurred_at_unix_ms: unix_ms_now(),
+        occurred_at_unix_ms: now,
         output_item_instance_ids: [
             id(b"oteryn:npc-trade-output-1:v1"),
             id(b"oteryn:npc-trade-output-2:v1"),
