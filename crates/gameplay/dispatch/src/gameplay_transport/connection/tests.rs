@@ -13,6 +13,9 @@ mod item_transform_dispatch_tests {
     include!("../item_transform_dispatch_tests.rs");
 }
 
+#[path = "tests/write_text_depot_view.rs"]
+mod write_text_depot_view;
+
 use super::*;
 use crate::gameplay_transport::world_spatial::encode_step_result;
 use oteryn_protocol_oteryn::world_object::decode_use_result_with_gate;

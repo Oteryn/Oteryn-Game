@@ -236,6 +236,7 @@ mod tests {
         let mut attack = super::super::attack::ChannelAttackStates::default();
         let mut trained = Vec::new();
         let mut vitals = super::super::attack::player_block::PlayerBiteVitals {
+            charm: None,
             states: &mut states,
             attack: &mut attack,
             formula: None,

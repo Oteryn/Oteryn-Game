@@ -1,0 +1,11 @@
+{
+  "id": 140,
+  "name": "PREY_V1",
+  "owner_decision": "PREY0-PREY-AND-HUNTING-TASKS-V1",
+  "owner": "Game prey owner",
+  "requires": [],
+  "command_types": [160],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Unoffered until the fenced prey writer and admitted draw content are installed."
+}

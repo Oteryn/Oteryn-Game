@@ -1,10 +1,10 @@
 //! Ordered phases of the Channel owner's auto-attack pass.
 
-use super::equipped_offence;
 use super::player_block::PlayerBiteVitals;
 use super::shared_experience::aggressive_monster;
 use super::skill_training::{TrainingDue, swing_block, swing_family, train_hit};
 use super::*;
+use super::{charm_combat, equipped_offence};
 use crate::ability::creature_bite::CreatureBiteVitals;
 use crate::ability::exact_actor_resolution::{ExactActorProposal, resolve_exact_actor};
 use crate::combat_attack::{SwingPoll, player_fist_formula, player_melee_formula};
@@ -23,7 +23,7 @@ use oteryn_gameplay_combat_rules::resolution::{
 };
 use oteryn_gameplay_items::equipment_effects::apply_protection;
 use oteryn_gameplay_progression::charm_effects::{
-    CharmAttackerFacts, CharmHitSource, CharmHookEvent,
+    CharmAttackerFacts, CharmEffectOutcome, CharmHitSource, CharmHookEvent,
 };
 use sha2::Digest;
 
@@ -220,7 +220,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     }
                     continue;
                 };
-                let character = *lease.character_id().as_bytes();
+                let mut offence = offence.clone();
+                if !extension && let Ok(snapshot) = runtime.companion_snapshot(target) {
+                    let outcomes = charm_combat::evaluate(
+                        &states,
+                        &runtime,
+                        self.imported_charms,
+                        entry.actor,
+                        entry.session,
+                        &snapshot.state.policy.definition_key,
+                        &root,
+                        swing_occurrence(
+                            entry.actor,
+                            swing.lineage,
+                            ordinal,
+                            b"damage-calculation",
+                        ),
+                        CharmHookEvent::AttackDamageCalculation {
+                            source: CharmHitSource::CharacterAttack,
+                        },
+                    );
+                    charm_combat::bonuses(&mut offence, &outcomes);
+                }
                 let Some((damage, revision)) =
                     draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence)
                 else {
@@ -345,23 +366,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 }
                 let creature_max_health = u64::try_from(snapshot.maximum_health).unwrap_or(0);
-                if !extension {
-                    run_charm_hook(
-                        self.imported_charms,
-                        character,
-                        &race_key,
-                        &root,
-                        swing_occurrence(
-                            entry.actor,
-                            swing.lineage,
-                            ordinal,
-                            b"damage-calculation",
-                        ),
-                        CharmHookEvent::AttackDamageCalculation {
-                            source: CharmHitSource::CharacterAttack,
-                        },
-                    );
-                }
                 let ranged_magnitude = if let Some(ranged) = &selected.weapon.ranged {
                     ranged::creature_damage(
                         ranged,
@@ -495,6 +499,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                     &mut trained,
                 );
+                let outcomes = if extension {
+                    Vec::new()
+                } else {
+                    charm_combat::evaluate(
+                        &states,
+                        &runtime,
+                        self.imported_charms,
+                        entry.actor,
+                        entry.session,
+                        &race_key,
+                        &root,
+                        swing_occurrence(entry.actor, swing.lineage, ordinal, b"committed-hit"),
+                        CharmHookEvent::committed_hit(
+                            &result,
+                            CharmHitSource::CharacterAttack,
+                            CharmAttackerFacts {
+                                level: character_facts.level,
+                                max_health: u64::from(character_facts.max_health),
+                                max_mana: u64::from(character_facts.max_mana),
+                            },
+                            creature_max_health,
+                        ),
+                    )
+                };
+                charm_combat::bonuses(&mut offence, &outcomes);
                 if !extension {
                     equipped_offence::leech_hit(
                         &mut states,
@@ -521,26 +550,69 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     &result,
                     &mut activity_cells,
                 );
-                if !extension {
-                    run_charm_hook(
-                        self.imported_charms,
-                        character,
-                        &race_key,
-                        &root,
-                        swing_occurrence(entry.actor, swing.lineage, ordinal, b"committed-hit"),
-                        CharmHookEvent::committed_hit(
-                            &result,
-                            CharmHitSource::CharacterAttack,
-                            CharmAttackerFacts {
-                                level: character_facts.level,
-                                max_health: u64::from(character_facts.max_health),
-                                max_mana: u64::from(character_facts.max_mana),
-                            },
-                            creature_max_health,
-                        ),
-                    );
+                // Source-qualified leaf damage uses the existing independent replay stream.
+                // It neither consumes another player command nor re-enters Charm evaluation.
+                let mut lethal_result = result;
+                if result.applied
+                    && result.health_after > 0
+                    && result.health_before > result.health_after
+                {
+                    for outcome in &outcomes {
+                        let Some(CharmEffectOutcome::ProcDamage { damage, amount }) =
+                            charm_combat::effect(outcome)
+                        else {
+                            continue;
+                        };
+                        let Some(draw) = swing_draw(
+                            &root,
+                            entry.actor,
+                            swing.lineage,
+                            ordinal,
+                            b"charm-armor",
+                            "attack.charm-armor",
+                            0,
+                            i64::MAX,
+                        ) else {
+                            continue;
+                        };
+                        let Some(amount) = charm_combat::damage_amount(
+                            &runtime,
+                            target,
+                            damage,
+                            amount,
+                            draw as u64,
+                        )
+                        .filter(|n| *n > 0) else {
+                            continue;
+                        };
+                        let stream = format!(
+                            "charm-attack:{}:{}",
+                            swing.lineage.command_id().get(),
+                            outcome.charm_key
+                        );
+                        if let Ok(child) = runtime.commit_source_damage(
+                            target,
+                            entry.actor,
+                            entry.session,
+                            stream.as_bytes(),
+                            u64::from(ordinal),
+                            amount,
+                            now.get() / 1_000,
+                        ) {
+                            record_hit_activity(
+                                entry,
+                                &runtime,
+                                content,
+                                target,
+                                now,
+                                &child,
+                                &mut activity_cells,
+                            );
+                            lethal_result = child;
+                        }
+                    }
                 }
-                if result.health_after <= 0 {
+                if lethal_result.health_after <= 0 {
                     let lethal = crate::combat::CapturedRewardPrincipal {
                         character: lease.character_id(),
                         lease_generation: lease.generation(),
@@ -638,6 +710,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let mut vitals = PlayerBiteVitals {
+            charm: None,
             states: &mut *states,
             attack: &mut *attack,
             formula: content.training_formula(),
