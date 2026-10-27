@@ -433,10 +433,9 @@ fn registries_bind_the_item_view_ids_and_limits() {
         limit("ITEMV0-RL-02"),
         Some(MAX_OPEN_CONTAINER_ENTRIES as u64)
     );
-    assert_eq!(
-        limit("GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX"),
-        Some(MAX_OPEN_CONTAINER_ENTRIES as u64)
-    );
+    // SUMMER decision 20 raised durable corpse capacity to 30. The capability-4
+    // item view still has its separate ITEMV0-RL-02 limit of 16 entries.
+    assert_eq!(limit("GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX"), Some(30));
     assert_eq!(limit("ITEMV0-RL-03"), Some(MAX_LIVE_ITEM_HANDLES as u64));
     assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_325);
     assert_eq!(

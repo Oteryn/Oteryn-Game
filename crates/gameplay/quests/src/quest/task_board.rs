@@ -17,6 +17,11 @@ pub const QUEST: &str = "oteryn:taskboard/weekly";
 pub const SELECTED: &str = "oteryn:taskboard/weekly/selected";
 pub const KILLS: &str = "oteryn:taskboard/weekly/kills";
 pub const POINTS: &str = "oteryn:taskboard/weekly/points";
+pub const BOUNTY_POINTS: &str = "oteryn:taskboard/bounty/points";
+pub const TALISMAN_DAMAGE: &str = "oteryn:taskboard/bounty/talisman/damage";
+pub const TALISMAN_LIFE_LEECH: &str = "oteryn:taskboard/bounty/talisman/life-leech";
+pub const TALISMAN_LOOT: &str = "oteryn:taskboard/bounty/talisman/loot";
+pub const TALISMAN_BESTIARY: &str = "oteryn:taskboard/bounty/talisman/bestiary";
 /// The weekly lockout of a claimed task, in database seconds.
 pub const LOCKOUT_SECONDS: i64 = 604_800;
 /// The experience of one claim: the shared Beginner formula `25L²-75L+100` at level 10.
@@ -24,6 +29,45 @@ pub const EXPERIENCE: i64 = 1_850;
 /// Task points of one Beginner kill task (Canary and Crystal agree on 25).
 pub const TASK_POINTS: i64 = 25;
 const POINTS_MAX: i64 = 1_000_000_000;
+pub const TALISMAN_MAX_LEVEL: i64 = 355;
+pub const TALISMAN_PATHS: [&str; 4] = [
+    TALISMAN_DAMAGE,
+    TALISMAN_LIFE_LEECH,
+    TALISMAN_LOOT,
+    TALISMAN_BESTIARY,
+];
+
+#[must_use]
+pub const fn talisman_upgrade_cost(level: i64) -> Option<i64> {
+    if level < 0 || level >= TALISMAN_MAX_LEVEL {
+        None
+    } else {
+        Some(5 + level * 12)
+    }
+}
+
+/// Effect in hundredths of one percent. The fourth path is double-Bestiary chance.
+#[must_use]
+pub const fn talisman_bonus(path: usize, level: i64) -> i64 {
+    if level <= 0 || path >= TALISMAN_PATHS.len() {
+        return 0;
+    }
+    let ordinary = if level <= 15 {
+        250 + level * 50
+    } else if level <= 55 {
+        1_000 + (level - 15) * 25
+    } else {
+        2_000 + (level - 55) * 10
+    };
+    if path == 3 { ordinary * 2 } else { ordinary }
+}
+
+#[must_use]
+pub fn talisman_upgrade_transition(path: usize, level: i64) -> Option<String> {
+    TALISMAN_PATHS.get(path)?;
+    talisman_upgrade_cost(level)?;
+    Some(format!("{QUEST}/talisman-upgrade-{path}-{level}"))
+}
 
 /// One kill task: the Bestiary race key (the Creature identity key) and the required kills.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -121,8 +165,10 @@ pub fn tracks() -> Vec<QuestTrack> {
         track(SELECTED, i64::try_from(TASKS.len()).unwrap_or(i64::MAX)),
         track(KILLS, required),
         track(POINTS, POINTS_MAX),
+        track(BOUNTY_POINTS, POINTS_MAX),
     ];
     tracks.extend(numbers().map(|(number, _)| track(claimed_at_track(number), i64::MAX)));
+    tracks.extend(TALISMAN_PATHS.map(|key| track(key, TALISMAN_MAX_LEVEL)));
     tracks
 }
 
@@ -130,7 +176,7 @@ pub fn tracks() -> Vec<QuestTrack> {
 pub fn transitions() -> Vec<QuestTransition> {
     use QuestComparison as C;
     use QuestEffectKind as K;
-    numbers()
+    let mut transitions: Vec<_> = numbers()
         .flat_map(|(number, task)| {
             let active = i64::from(number);
             [
@@ -167,7 +213,21 @@ pub fn transitions() -> Vec<QuestTransition> {
                 ),
             ]
         })
-        .collect()
+        .collect();
+    for (path, track_key) in TALISMAN_PATHS.iter().enumerate() {
+        for level in 0..TALISMAN_MAX_LEVEL {
+            let cost = 5 + level * 12;
+            transitions.push(transition(
+                format!("{QUEST}/talisman-upgrade-{path}-{level}"),
+                vec![
+                    effect(BOUNTY_POINTS, C::Ge(cost), K::Add(-cost)),
+                    effect(*track_key, C::Eq(level), K::Add(1)),
+                ],
+                None,
+            ));
+        }
+    }
+    transitions
 }
 
 /// The boot catalogue with the Task Board quest added.
@@ -182,6 +242,8 @@ pub struct TaskBoardState {
     pub selected: u8,
     pub kills: i64,
     pub points: i64,
+    pub bounty_points: i64,
+    pub talisman_levels: [i64; TALISMAN_PATHS.len()],
     /// Per task, the database time of its last claim; 0 when never claimed.
     pub claimed_at: [i64; TASKS.len()],
 }
@@ -197,6 +259,8 @@ pub fn state(tracks: &BTreeMap<String, i64>) -> TaskBoardState {
         selected: u8::try_from(value(SELECTED)).unwrap_or(0),
         kills: value(KILLS),
         points: value(POINTS),
+        bounty_points: value(BOUNTY_POINTS),
+        talisman_levels: TALISMAN_PATHS.map(value),
         claimed_at,
     }
 }
