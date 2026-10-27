@@ -1350,6 +1350,8 @@ async fn party_checks(
             .any(|l| l.contains("active area level is unavailable")),
         "{lines:?}"
     );
+    let (condition_target, condition_health, condition_due) =
+        stage_party_membership_condition(owner, actor, session).await?;
     let permit = owner
         .spell_lane_permit()
         .await
@@ -1382,6 +1384,38 @@ async fn party_checks(
     tx.commit().await?;
     drop(runtime);
     drop(permit);
+    owner.clock_origin -=
+        Duration::from_micros(condition_due.saturating_sub(owner.owner_now().get()) + 10_000);
+    owner.drain_monster_melee().await;
+    let after = owner
+        .runtime
+        .lock()
+        .await
+        .companion_snapshot(condition_target)
+        .map_err(debug)?;
+    assert_eq!(
+        after.health, condition_health,
+        "accepted Kick raises the current party minimum to 2 before the tick"
+    );
+    assert!(
+        after.state.conditions.instances().is_empty(),
+        "membership-change tick is consumed"
+    );
+    owner.drain_monster_melee().await;
+    let retried = owner
+        .runtime
+        .lock()
+        .await
+        .companion_snapshot(condition_target)
+        .map_err(debug)?;
+    assert_eq!(
+        retried.health, after.health,
+        "membership-change tick does not replay damage"
+    );
+    assert_eq!(
+        retried.state.conditions, after.state.conditions,
+        "membership-change retry keeps the consumed cursor"
+    );
     let (_, lines) = exchange(owner, admitted, npc, "hazard", None).await?;
     assert!(
         lines.iter().any(|l| l.contains("active area level is 2")),
@@ -1421,6 +1455,104 @@ async fn party_checks(
         "cross-Channel membership must not block real monster combat"
     );
     Ok(())
+}
+
+// Install a nonlethal periodic fixture before the existing accepted Kick. The
+// occurrence lands at the former level 1 but dodges at the post-Kick level 2.
+// The missing local member must cease to block the source once membership ends.
+async fn stage_party_membership_condition(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+) -> TestResult<(crate::foundation::ExactActorRef, i64, u64)> {
+    use crate::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionLineage, ConditionSourceKind, TickFacts,
+    };
+    use crate::foundation::{ConditionValues, DotElement};
+    use crate::gameplay_transport::hazard::combat;
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+    let due = owner.owner_now().get() + 1_000_000;
+    let mut runtime = owner.runtime.lock().await;
+    let before = runtime
+        .visible_entities()
+        .creatures
+        .iter()
+        .filter_map(|creature| runtime.companion_snapshot(creature.actor).ok())
+        .find(|snapshot| {
+            snapshot.state.policy.definition_key == "canary:creature/rat"
+                && snapshot.health > 4
+                && combat::eligible(&runtime, snapshot.actor)
+        })
+        .ok_or("living membership condition rat")?;
+    assert!(before.state.conditions.instances().is_empty());
+    assert!(combat::in_area(&runtime, actor));
+    let lease = runtime
+        .bound_attacker_lease(actor, session)
+        .map_err(debug)?;
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let definition = ConditionDefinition::new(
+        "test.hazard.membership.condition",
+        1,
+        ConditionValues::DamageOverTime {
+            element: DotElement::Energy,
+            total_min: 4,
+            total_max: 4,
+            per_tick: 4,
+            interval_ms: 1000,
+            delayed: true,
+        },
+    )
+    .ok_or("membership condition definition")?;
+    let facts = ApplicationFacts {
+        now: due - 1_000_000,
+        base_speed: 100,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: false,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([0x74; 16]),
+    };
+    let next = (1_000_000..1_100_000)
+        .find_map(|command| {
+            let lineage = ConditionLineage {
+                source_character: *lease.character_id().as_bytes(),
+                source_session: *session.as_bytes(),
+                source_lease_generation: lease.generation(),
+                source_actor_placement: actor.placement_identity(),
+                source_scope_generation: actor.scope_generation().get(),
+                source_content_digest: runtime.content_pin().server_artifact_digest(),
+                source_catalog_digest: runtime.content_pin().server_artifact_digest(),
+                source_creation_command: command,
+            };
+            let mut candidate = before.state.clone();
+            candidate
+                .conditions
+                .apply_with_lineage(
+                    &definition,
+                    Some(actor),
+                    ConditionSourceKind::Player,
+                    &[],
+                    &facts,
+                    &lineage,
+                )
+                .ok()?;
+            let ticks = candidate
+                .conditions
+                .clone()
+                .take_due(due, TickFacts::default());
+            let [tick] = ticks.as_slice() else {
+                return None;
+            };
+            let roll = combat::condition_dodge_roll(&runtime, actor, before.actor, tick)?;
+            (!combat::dodges(1, roll) && combat::dodges(2, roll)).then_some(candidate)
+        })
+        .ok_or("bounded membership-change condition occurrence")?;
+    runtime
+        .compare_companion_state(&before, next)
+        .map_err(debug)?;
+    Ok((before.actor, before.health, due))
 }
 
 // A retained cast must distinguish proven rollback from a committed payment when the
