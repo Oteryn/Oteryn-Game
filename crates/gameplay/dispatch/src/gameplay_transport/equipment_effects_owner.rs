@@ -316,6 +316,12 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             state.install_equipped_physical_protection(physical_protection(&effects));
+            state.install_equipped_ice_protection(
+                effects
+                    .protections
+                    .get(&crate::content::ReferenceResistanceKind::Ice)
+                    .copied(),
+            );
             install_suppressions(state, effects);
             state.install_equipped_armor(armor);
             state.install_equipped_defence(defence);

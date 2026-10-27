@@ -1543,21 +1543,35 @@ fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
 
 #[test]
 fn summer_current_physical_spell_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay(2);
+}
+
+#[test]
+fn summer_current_ice_area_uses_runtime_fence_and_replays_without_damage() {
+    qualify_current_spell_replay(1);
+}
+
+fn qualify_current_spell_replay(index: usize) {
     let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
-        setup_named("radiant_acolyte", 2);
+        setup_named("radiant_acolyte", index);
+    let execute = if index == 1 {
+        DamageSpellOwner::execute_current_ice_area
+    } else {
+        DamageSpellOwner::execute_current_physical
+    };
     let stamp = runtime.issue_owner_work().expect("current owner work");
     let mut spells = DamageSpellOwner::default();
-    let first = spells
-        .execute_current_physical(
-            &mut runtime,
-            stamp,
-            &mut vitals,
-            &source,
-            &proposal,
-            &mut world,
-            SemanticTimeMicros::from_micros(2_000_000),
-        )
-        .expect("physical source under the runtime's fence");
+    let first = execute(
+        &mut spells,
+        &mut runtime,
+        stamp,
+        &mut vitals,
+        &source,
+        &proposal,
+        &mut world,
+        SemanticTimeMicros::from_micros(2_000_000),
+    )
+    .expect("source under the runtime's fence");
     assert!(
         first.targets[0]
             .1
@@ -1574,17 +1588,17 @@ fn summer_current_physical_spell_uses_runtime_fence_and_replays_without_damage()
     )
     .expect("current player");
     assert_eq!(
-        spells
-            .execute_current_physical(
-                &mut runtime,
-                stamp,
-                &mut vitals,
-                &source,
-                &proposal,
-                &mut world,
-                SemanticTimeMicros::from_micros(9_000_000),
-            )
-            .expect("same occurrence"),
+        execute(
+            &mut spells,
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(9_000_000),
+        )
+        .expect("same occurrence"),
         first
     );
     assert_eq!(
@@ -1599,7 +1613,8 @@ fn summer_current_physical_spell_uses_runtime_fence_and_replays_without_damage()
     );
     runtime.retire_owner_cycle();
     assert_eq!(
-        spells.execute_current_physical(
+        execute(
+            &mut spells,
             &mut runtime,
             stamp,
             &mut vitals,
@@ -1614,8 +1629,22 @@ fn summer_current_physical_spell_uses_runtime_fence_and_replays_without_damage()
 
 #[test]
 fn summer_current_physical_spell_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal(2);
+}
+
+#[test]
+fn summer_current_ice_area_lethal_hit_retains_the_existing_death_receipt() {
+    qualify_current_spell_lethal(1);
+}
+
+fn qualify_current_spell_lethal(index: usize) {
     let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
-        setup_named("radiant_acolyte", 2);
+        setup_named("radiant_acolyte", index);
+    let execute = if index == 1 {
+        DamageSpellOwner::execute_current_ice_area
+    } else {
+        DamageSpellOwner::execute_current_physical
+    };
     let stamp = runtime.issue_owner_work().expect("current owner work");
     vitals
         .apply_attack_damage(
@@ -1628,17 +1657,17 @@ fn summer_current_physical_spell_lethal_hit_retains_the_existing_death_receipt()
         )
         .expect("one HP remains");
     let mut spells = DamageSpellOwner::default();
-    let first = spells
-        .execute_current_physical(
-            &mut runtime,
-            stamp,
-            &mut vitals,
-            &source,
-            &proposal,
-            &mut world,
-            SemanticTimeMicros::from_micros(2_000_000),
-        )
-        .expect("physical source");
+    let first = execute(
+        &mut spells,
+        &mut runtime,
+        stamp,
+        &mut vitals,
+        &source,
+        &proposal,
+        &mut world,
+        SemanticTimeMicros::from_micros(2_000_000),
+    )
+    .expect("source");
     let damage = first.targets[0]
         .1
         .as_ref()
@@ -1655,17 +1684,17 @@ fn summer_current_physical_spell_lethal_hit_retains_the_existing_death_receipt()
             .is_some()
     );
     assert_eq!(
-        spells
-            .execute_current_physical(
-                &mut runtime,
-                stamp,
-                &mut vitals,
-                &source,
-                &proposal,
-                &mut world,
-                SemanticTimeMicros::from_micros(3_000_000),
-            )
-            .expect("lethal replay"),
+        execute(
+            &mut spells,
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(3_000_000),
+        )
+        .expect("lethal replay"),
         first
     );
     assert!(vitals.is_dead(proposal.target));

@@ -351,6 +351,12 @@ pub(super) async fn move_equipment(
                 state.install_equipped_physical_protection(
                     equipment_effects_owner::physical_protection(&effects),
                 );
+                state.install_equipped_ice_protection(
+                    effects
+                        .protections
+                        .get(&crate::content::ReferenceResistanceKind::Ice)
+                        .copied(),
+                );
                 equipment_effects_owner::install_suppressions(state, effects);
                 state.install_equipped_armor(armor);
                 state.install_equipped_defence(defence);

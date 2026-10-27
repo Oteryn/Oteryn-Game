@@ -948,7 +948,7 @@ pub struct PreparedPlayerTarget {
 pub struct CastMemo {
     issuer: ExactActorRef,
     pub list: ScheduleList,
-    entry: usize,
+    pub entry: usize,
     pub sequence: u64,
     at: SemanticTimeMicros,
     binding: [u8; 32],
@@ -1092,6 +1092,41 @@ impl DamageSpellOwner {
             || !source.needs_target
             || source.needs_direction
             || source.area.is_some()
+            || source.chain.is_some()
+            || source.windup.is_some()
+            || !source.variants.is_empty()
+            || !source.conditions.is_empty()
+            || !source.appearances.is_empty()
+            || source.dispel_invisible
+            || source.appearance_cast
+            || source.source_none_correction
+        {
+            return Err(AttackError::UnsupportedShape);
+        }
+        self.execute_inner(runtime, None, stamp, vitals, source, proposal, reader, now)
+    }
+
+    /// Execute a source-bound ice circle spell under the runtime's own current fence.
+    /// The restricted shape needs no external condition authority or timer installation.
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_current_ice_area(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn SpellWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
+        if source.list != ScheduleList::Attack
+            || source.element.as_deref() != Some("ice")
+            || source.needs_target
+            || source.needs_direction
+            || !matches!(
+                source.area,
+                Some(ProjectV2AbilityArea::Circle { radius_tiles: 4 })
+            )
             || source.chain.is_some()
             || source.windup.is_some()
             || !source.variants.is_empty()

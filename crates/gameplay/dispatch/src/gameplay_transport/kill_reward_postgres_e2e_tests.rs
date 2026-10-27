@@ -87,7 +87,14 @@ fn summer_radiant_all_six_execute_attacks_through_the_production_owner() -> Test
 #[test]
 fn summer_acolyte_physical_spell_hits_at_range_through_the_production_owner() -> TestResult {
     scenario_thread::run("summer-acolyte-physical-spell", || {
-        scenario_with_creature_at_range(None, false, Some("acolyte"), false, true)
+        scenario_with_creature_at_range(None, false, Some("acolyte"), false, true, false)
+    })
+}
+
+#[test]
+fn summer_acolyte_ice_area_hits_multiple_players_through_the_production_owner() -> TestResult {
+    scenario_thread::run("summer-acolyte-ice-area", || {
+        scenario_with_creature_at_range(None, false, Some("acolyte"), false, true, true)
     })
 }
 
@@ -121,7 +128,7 @@ fn scenario_with_creature(
     radiant: Option<&str>,
     settle_radiant: bool,
 ) -> TestResult {
-    scenario_with_creature_at_range(reconcile, capacity, radiant, settle_radiant, false)
+    scenario_with_creature_at_range(reconcile, capacity, radiant, settle_radiant, false, false)
 }
 
 fn scenario_with_creature_at_range(
@@ -130,6 +137,7 @@ fn scenario_with_creature_at_range(
     radiant: Option<&str>,
     settle_radiant: bool,
     ranged_spell: bool,
+    ice_area: bool,
 ) -> TestResult {
     run(async |admin| {
         let harness =
@@ -431,6 +439,191 @@ fn scenario_with_creature_at_range(
             );
         }
 
+        if ice_area {
+            let mut runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            for (tag, position) in [
+                (
+                    100,
+                    MovementLocalPosition {
+                        x: 1,
+                        ..OPEN_PLAYER
+                    },
+                ),
+                (
+                    101,
+                    MovementLocalPosition {
+                        x: 5,
+                        ..OPEN_PLAYER
+                    },
+                ),
+            ] {
+                let extra_session = GameSessionId::decode(&id(tag)).map_err(debug)?;
+                let extra = runtime
+                    .positioned_melee_census()
+                    .map_err(debug)?
+                    .into_iter()
+                    .find(|(_, _, session)| *session == Some(extra_session))
+                    .ok_or("extra player")?
+                    .0;
+                loop {
+                    let before = runtime.read_actor_position(extra).map_err(debug)?;
+                    let at = before.position();
+                    if at == position {
+                        break;
+                    }
+                    let next = MovementLocalPosition {
+                        x: at.x + (position.x - at.x).signum(),
+                        ..at
+                    };
+                    runtime
+                        .borrow_movement_position()
+                        .commit_cardinal(before, next)
+                        .map_err(debug)?;
+                }
+                states
+                    .initialize(
+                        &runtime,
+                        extra,
+                        extra_session,
+                        crate::spell::cast::CharacterCastFacts {
+                            vocation: crate::spell::Vocation::Monk,
+                            max_health: 500,
+                            ..crate::gameplay_transport::actor_spell::tests::FACTS
+                        },
+                        (3, 7_000_000),
+                        owner.owner_now(),
+                    )
+                    .ok_or("extra spell state")?;
+            }
+            // A physical spell cannot qualify this test. Direct ice protection is read
+            // independently for both victims, while armor remains equipped throughout.
+            for tag in [50, 100, 101] {
+                let session = GameSessionId::decode(&id(tag)).map_err(debug)?;
+                let target = runtime
+                    .positioned_melee_census()
+                    .map_err(debug)?
+                    .into_iter()
+                    .find(|(_, _, current)| *current == Some(session))
+                    .ok_or("ice player")?
+                    .0;
+                let state = states
+                    .get_mut(&runtime, target, session)
+                    .ok_or("ice state")?;
+                state.install_equipped_armor(5_000);
+                state.install_equipped_physical_protection(Some(
+                    crate::content::ReferenceRationalPercent {
+                        numerator: 100,
+                        denominator: 1,
+                    },
+                ));
+                state.install_equipped_ice_protection(Some(
+                    crate::content::ReferenceRationalPercent {
+                        numerator: 100,
+                        denominator: 1,
+                    },
+                ));
+            }
+        }
+
+        if ice_area {
+            let mut protected_cast = false;
+            let mut damaged = false;
+            for _ in 0..128 {
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    let caster = runtime.visible_entities().creatures[0].actor;
+                    let before = runtime.read_actor_position(caster).map_err(debug)?;
+                    runtime
+                        .borrow_movement_position()
+                        .commit_creature_relocation(
+                            caster,
+                            before,
+                            MovementLocalPosition { x: 0, ..OPEN_RAT },
+                        )
+                        .map_err(debug)?;
+                }
+                owner.drain_monster_melee().await;
+                let runtime = owner.runtime.lock().await;
+                let mut states = owner.states.spell_states.lock().await;
+                let census = runtime.positioned_melee_census().map_err(debug)?;
+                let mut health = Vec::new();
+                for tag in [50, 100, 101] {
+                    let session = GameSessionId::decode(&id(tag)).map_err(debug)?;
+                    let target = census
+                        .iter()
+                        .find(|(_, _, current)| *current == Some(session))
+                        .ok_or("ice player")?
+                        .0;
+                    health.push(
+                        states
+                            .get(&runtime, target, session)
+                            .ok_or("ice state")?
+                            .vitals()
+                            .health,
+                    );
+                }
+                assert_eq!(health[2], 500, "outside the source circle");
+                if !protected_cast
+                    && states
+                        .monster_spells
+                        .casts
+                        .iter()
+                        .any(|cast| cast.entry == 1)
+                {
+                    assert_eq!(
+                        health,
+                        [500, 500, 500],
+                        "current ice protection blocks the first source cast"
+                    );
+                    // Keep all physical protection and armor; remove only direct ice protection.
+                    for tag in [50, 100] {
+                        let session = GameSessionId::decode(&id(tag)).map_err(debug)?;
+                        let target = census
+                            .iter()
+                            .find(|(_, _, current)| *current == Some(session))
+                            .ok_or("ice player")?
+                            .0;
+                        states
+                            .get_mut(&runtime, target, session)
+                            .ok_or("ice state")?
+                            .install_equipped_ice_protection(None);
+                    }
+                    protected_cast = true;
+                } else if health[0] < 500 || health[1] < 500 {
+                    assert!(protected_cast);
+                    assert_eq!(
+                        health,
+                        [0, 0, 500],
+                        "one ice circle lethally hits both players through their physical armor"
+                    );
+                    for tag in [50, 100] {
+                        let session = GameSessionId::decode(&id(tag)).map_err(debug)?;
+                        let target = census
+                            .iter()
+                            .find(|(_, _, current)| *current == Some(session))
+                            .ok_or("ice player")?
+                            .0;
+                        assert!(states.player_death(&runtime, target, session).is_some());
+                    }
+                    damaged = true;
+                    break;
+                }
+                drop(states);
+                drop(runtime);
+                owner.clock_origin = owner.clock_origin.checked_sub(PASS).ok_or("ice clock")?;
+            }
+            assert!(
+                damaged,
+                "automatic source ice circle must execute (protected cast {protected_cast})"
+            );
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
+
         if radiant.is_some() && !settle_radiant {
             let initial = {
                 let runtime = owner.runtime.lock().await;
@@ -483,7 +676,8 @@ fn scenario_with_creature_at_range(
                 let spell_sequence = states
                     .monster_spells
                     .casts
-                    .first()
+                    .iter()
+                    .find(|cast| cast.entry == 2)
                     .map(|cast| cast.sequence);
                 if ranged_spell
                     && gated_casts < 2

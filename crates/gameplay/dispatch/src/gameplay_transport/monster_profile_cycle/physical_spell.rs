@@ -1,17 +1,22 @@
-//! First native scheduled spell consumer: single-target physical damage.
+//! Native scheduled physical target and source-qualified Acolyte ice circle damage.
 //! Timing, chance, damage, replay and lethal consequences stay in their existing owners.
 use super::*;
 use crate::creature_auto_attack::{AttackFacts, ProfileAbilityProposal};
 use crate::creature_damage_spell::{SpellCombatFacts, SpellSource, SpellWorldReader};
 use crate::foundation::{ExactActorRef, GameSessionId, MovementLocalPosition, RuntimeWorkStamp};
-use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
+use oteryn_gameplay_content::content::{
+    ProjectV2AbilityArea,
+    creature_attack_geometry::{self as geometry, Facing},
+};
+use std::collections::BTreeMap;
 
 struct CurrentTarget {
     stamp: RuntimeWorkStamp,
     players: Vec<(ExactActorRef, GameSessionId)>,
-    position: MovementLocalPosition,
-    facts: SpellCombatFacts,
-    tile_allowed: Option<bool>,
+    issuer: ExactActorRef,
+    element: String,
+    facts: Vec<SpellCombatFacts>,
+    tiles: BTreeMap<(i32, i32, i16), Option<bool>>,
 }
 
 impl SpellWorldReader for CurrentTarget {
@@ -41,14 +46,9 @@ impl SpellWorldReader for CurrentTarget {
         floor: i16,
         stamp: RuntimeWorkStamp,
     ) -> Option<bool> {
-        if stamp == self.stamp
-            && issuer == self.facts.attack.issuer
-            && self.position == (MovementLocalPosition { x, y, floor })
-        {
-            self.tile_allowed
-        } else {
-            None
-        }
+        (stamp == self.stamp && issuer == self.issuer)
+            .then(|| self.tiles.get(&(x, y, floor)).copied().flatten())
+            .flatten()
     }
 
     fn combat(
@@ -60,17 +60,18 @@ impl SpellWorldReader for CurrentTarget {
         element: Option<&str>,
         stamp: RuntimeWorkStamp,
     ) -> Option<SpellCombatFacts> {
-        (stamp == self.stamp
-            && issuer == self.facts.attack.issuer
-            && target == self.facts.attack.target
-            && session == self.facts.attack.session
-            && element == Some("physical"))
-        .then(|| self.facts.clone())
+        if stamp != self.stamp || issuer != self.issuer || element != Some(self.element.as_str()) {
+            return None;
+        }
+        self.facts
+            .iter()
+            .find(|facts| facts.attack.target == target && facts.attack.session == session)
+            .cloned()
     }
 }
 
 // Runtime, Item transaction and player states stay locked from these independent reads
-// through execution. This does not admit area, elemental, secondary or delayed effects.
+// through execution. Only the existing physical target and Acolyte ice circle shapes enter.
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn execute(
     runtime: &mut ChannelRuntimeV1,
@@ -107,10 +108,18 @@ pub(super) async fn execute(
         ) else {
             continue;
         };
+        let ice = source.element.as_deref() == Some("ice")
+            && record.profile.target.key == "oteryn:creature.radiant_acolyte"
+            && !source.needs_target
+            && matches!(
+                source.area,
+                Some(ProjectV2AbilityArea::Circle { radius_tiles: 4 })
+            );
+        let physical = source.element.as_deref() == Some("physical")
+            && source.area.is_none()
+            && source.needs_target;
         if proposal.list != crate::ai_think::profile_schedule::ScheduleList::Attack
-            || source.element.as_deref() != Some("physical")
-            || source.area.is_some()
-            || !source.needs_target
+            || !(ice || physical)
             || source.needs_direction
             || source.chain.is_some()
             || source.windup.is_some()
@@ -123,23 +132,6 @@ pub(super) async fn execute(
         let Ok(census) = runtime.positioned_melee_census() else {
             continue;
         };
-        let Some(session) = census
-            .iter()
-            .find(|(actor, _, _)| *actor == proposal.target)
-            .and_then(|(_, _, session)| *session)
-        else {
-            continue;
-        };
-        // This source shape has exactly one target; read its current committed session.
-        let players = vec![(proposal.target, session)];
-        if states.is_dead(proposal.target)
-            || states.has_pending_spell_commit(proposal.target, session)
-            || runtime
-                .assert_actor_spell_unreserved(proposal.target)
-                .is_err()
-        {
-            continue;
-        }
         let (Ok(from), Ok(to)) = (
             runtime.read_actor_position(proposal.issuer),
             runtime.read_actor_position(proposal.target),
@@ -148,90 +140,199 @@ pub(super) async fn execute(
         };
         let from = from.position();
         let to = to.position();
-        let tile = |position: MovementLocalPosition| {
-            room.movement_cells().spell_tiles().lookup(
-                room.movement_cells().scope(),
-                crate::content::LogicalCell {
-                    x: position.x,
-                    y: position.y,
-                    z: i32::from(position.floor),
-                },
-            )
+        let offsets = if let Some(area) = &source.area {
+            let Ok(offsets) = geometry::offsets(area, Facing::North) else {
+                continue;
+            };
+            offsets
+        } else {
+            vec![(0, 0)]
         };
-        let (Ok(issuer_tile), Ok(target_tile)) = (tile(from), tile(to)) else {
-            continue;
-        };
-        let Some(state) = states.get(runtime, proposal.target, session) else {
-            continue;
-        };
-        if state.vitals().health == 0 {
-            continue;
-        }
-        let Ok(invisible) = state.owned_invisible_at(now) else {
-            continue;
-        };
-        let Some(crate::content::ProjectV2AuthoringProfileData::Behavior(behavior)) =
-            record.behavior.as_ref().map(|p| &p.data)
-        else {
-            continue;
-        };
-        let semantic_now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
-        let Some(protected) =
-            attack.creature_target_protection(runtime, proposal.target, session, semantic_now)
-        else {
-            continue;
-        };
-        let multiplier = match state.equipped_physical_protection() {
-            Some(protection) => {
-                oteryn_gameplay_items::equipment_effects::apply_protection(1_000_000, protection)
+        let center = if ice { from } else { to };
+        let mut tiles = BTreeMap::new();
+        for (dx, dy) in offsets {
+            let (Some(x), Some(y)) = (center.x.checked_add(dx), center.y.checked_add(dy)) else {
+                continue;
+            };
+            let at = MovementLocalPosition {
+                x,
+                y,
+                floor: center.floor,
+            };
+            // An immutable source blocker is already a refusal. Do not require sight
+            // through that blocker (or usable item metadata for a tile never admitted).
+            if ice
+                && room
+                    .movement_cells()
+                    .spell_tiles()
+                    .lookup(
+                        room.movement_cells().scope(),
+                        crate::content::LogicalCell {
+                            x,
+                            y,
+                            z: i32::from(at.floor),
+                        },
+                    )
+                    .is_ok_and(|tile| {
+                        tile.flags().block_projectile
+                            || tile.flags().block_solid
+                            || tile.flags().protection_zone
+                            || tile.flags().floor_change
+                    })
+            {
+                tiles.insert((x, y, at.floor), Some(false));
+                continue;
             }
-            None => Some(1_000_000),
-        };
-        let Some(multiplier_ppm) = multiplier.and_then(|value| u32::try_from(value).ok()) else {
-            continue;
-        };
-        let facts = SpellCombatFacts {
-            attack: AttackFacts {
-                issuer: proposal.issuer,
-                target: proposal.target,
-                session,
-                revision: state.revision(),
-                visible: !invisible || behavior.targeting.sense_invisible,
-                issuer_pz: issuer_tile.flags().protection_zone,
-                target_pz: target_tile.flags().protection_zone,
-                issuer_protected: false,
-                target_protected: protected,
-                defense: 0,
-                armor: state.equipped_armor(),
-            },
-            multiplier_ppm,
-            immune: false,
-            condition_policy: None,
-        };
-        map.read_sight(runtime, from, to).await;
+            // Sight excludes its endpoints. An area needs the actual current tile too:
+            // ground, PZ, floor changes and Item blockers come from the same transaction.
+            let area_tile = if ice {
+                map.read(runtime, at).await
+            } else {
+                Some(true)
+            };
+            map.read_sight(runtime, from, at).await;
+            let allowed = room
+                .movement_cells()
+                .spell_tiles()
+                .lookup(
+                    room.movement_cells().scope(),
+                    crate::content::LogicalCell {
+                        x,
+                        y,
+                        z: i32::from(at.floor),
+                    },
+                )
+                .is_ok_and(|tile| !tile.flags().protection_zone && !tile.flags().floor_change);
+            let sight = crate::durability::native_world_read::source_sight_steps(from, at)
+                .ok()
+                .and_then(|steps| {
+                    steps
+                        .iter()
+                        .all(|(at, exempt)| *exempt || map.view().known(*at))
+                        .then(|| {
+                            area_tile
+                                .map(|admitted| admitted && allowed && map.view().sight(from, at))
+                        })
+                        .flatten()
+                });
+            tiles.insert((x, y, at.floor), sight);
+        }
         if !map.validate_transaction(runtime).await {
             return;
+        }
+        let mut players = Vec::new();
+        let mut facts = Vec::new();
+        let semantic_now = oteryn_simulation_determinism::SemanticTimeMicros::from_micros(now);
+        for (target, _, session) in &census {
+            let Some(session) = *session else {
+                continue;
+            };
+            if !ice && *target != proposal.target {
+                continue;
+            }
+            let Ok(position) = runtime.read_actor_position(*target) else {
+                continue;
+            };
+            let to = position.position();
+            if !tiles.contains_key(&(to.x, to.y, to.floor)) {
+                continue;
+            }
+            if states.is_dead(*target)
+                || states.has_pending_spell_commit(*target, session)
+                || runtime.assert_actor_spell_unreserved(*target).is_err()
+            {
+                continue;
+            }
+            let tile = |position: MovementLocalPosition| {
+                room.movement_cells().spell_tiles().lookup(
+                    room.movement_cells().scope(),
+                    crate::content::LogicalCell {
+                        x: position.x,
+                        y: position.y,
+                        z: i32::from(position.floor),
+                    },
+                )
+            };
+            let (Ok(issuer_tile), Ok(target_tile)) = (tile(from), tile(to)) else {
+                continue;
+            };
+            let Some(state) = states.get(runtime, *target, session) else {
+                continue;
+            };
+            if state.vitals().health == 0 {
+                continue;
+            }
+            let Ok(invisible) = state.owned_invisible_at(now) else {
+                continue;
+            };
+            let Some(crate::content::ProjectV2AuthoringProfileData::Behavior(behavior)) =
+                record.behavior.as_ref().map(|p| &p.data)
+            else {
+                continue;
+            };
+            let Some(protected) =
+                attack.creature_target_protection(runtime, *target, session, semantic_now)
+            else {
+                continue;
+            };
+            let protection = if ice {
+                state.equipped_ice_protection()
+            } else {
+                state.equipped_physical_protection()
+            };
+            let multiplier = match protection {
+                Some(protection) => oteryn_gameplay_items::equipment_effects::apply_protection(
+                    1_000_000, protection,
+                ),
+                None => Some(1_000_000),
+            };
+            let Some(multiplier_ppm) = multiplier.and_then(|value| u32::try_from(value).ok())
+            else {
+                continue;
+            };
+            facts.push(SpellCombatFacts {
+                attack: AttackFacts {
+                    issuer: proposal.issuer,
+                    target: *target,
+                    session,
+                    revision: state.revision(),
+                    visible: !invisible || behavior.targeting.sense_invisible,
+                    issuer_pz: issuer_tile.flags().protection_zone,
+                    target_pz: target_tile.flags().protection_zone,
+                    issuer_protected: false,
+                    target_protected: protected,
+                    defense: 0,
+                    armor: state.equipped_armor(),
+                },
+                multiplier_ppm,
+                immune: false,
+                condition_policy: None,
+            });
+            players.push((*target, session));
+        }
+        // Preserve the spell owner's bound after selecting the actual area, not the Channel roster.
+        if players.is_empty() || players.len() > 64 {
+            continue;
         }
         let Ok(stamp) = runtime.issue_owner_work() else {
             return;
         };
-        let sight = crate::durability::native_world_read::source_sight_steps(from, to)
-            .ok()
-            .and_then(|steps| {
-                steps
-                    .iter()
-                    .all(|(at, exempt)| *exempt || map.view().known(*at))
-                    .then(|| map.view().sight(from, to) && !target_tile.flags().floor_change)
-            });
         let mut reader = CurrentTarget {
             stamp,
             players,
-            position: to,
+            issuer: proposal.issuer,
+            element: source.element.clone().unwrap_or_default(),
             facts,
-            tile_allowed: sight,
+            tiles,
         };
         let mut spells = std::mem::take(&mut states.monster_spells);
-        let result = spells.execute_current_physical(
+        let execute = if ice {
+            crate::creature_damage_spell::DamageSpellOwner::execute_current_ice_area
+        } else {
+            crate::creature_damage_spell::DamageSpellOwner::execute_current_physical
+        };
+        let result = execute(
+            &mut spells,
             runtime,
             stamp,
             states,
@@ -241,13 +342,15 @@ pub(super) async fn execute(
             crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now),
         );
         states.monster_spells = spells;
-        if result.is_ok_and(|outcome| {
-            outcome.targets.iter().any(|(_, hit)| {
-                hit.as_ref()
-                    .is_ok_and(|hit| hit.damage.as_ref().is_some_and(|damage| damage.applied > 0))
-            })
-        }) {
-            attack.record_hit_taken(runtime, proposal.target, session, semantic_now);
+        if let Ok(outcome) = result {
+            for (target, hit) in outcome.targets {
+                if hit.is_ok_and(|hit| hit.damage.is_some_and(|damage| damage.applied > 0))
+                    && let Some((_, session)) =
+                        reader.players.iter().find(|(actor, _)| *actor == target)
+                {
+                    attack.record_hit_taken(runtime, target, *session, semantic_now);
+                }
+            }
         }
     }
 }
