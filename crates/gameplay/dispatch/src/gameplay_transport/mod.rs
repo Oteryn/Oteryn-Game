@@ -8,6 +8,7 @@ include!(concat!(env!("OUT_DIR"), "/mechanic_modules.rs"));
 // Keep sorted by module name; insert in order, never append.
 pub mod actor_spell;
 mod attack;
+mod automatic_spell_progression;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
