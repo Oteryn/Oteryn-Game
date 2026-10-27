@@ -1,6 +1,42 @@
 [
   {
     "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-move-east",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "ARROWRIGHT",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-move-north",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "ARROWUP",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-move-south",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "ARROWDOWN",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
+    "kind": "keybindings",
+    "id": "0013-paced-movement-move-west",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "ARROWLEFT",
+    "entry": "input.rs::default_arrow_binding"
+  },
+  {
+    "mechanic": "0013-paced-movement",
     "kind": "handlers",
     "id": "0013-paced-movement-unsupported",
     "status": "unsupported",
@@ -10,7 +46,6 @@
       "state": "Unsupported until the owning mechanic migration.",
       "protocol": "Unsupported until the owning mechanic migration.",
       "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
       "settings": "Unsupported until the owning mechanic migration."
     }
   }

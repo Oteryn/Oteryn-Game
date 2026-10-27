@@ -80,3 +80,6 @@ mod tests {
         Ok(())
     }
 }
+
+/// Deterministic movement timing and click-walk state.
+pub mod movement;
