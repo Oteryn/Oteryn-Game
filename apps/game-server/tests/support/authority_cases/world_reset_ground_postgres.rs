@@ -108,6 +108,17 @@ fn world_reset_ground_preserves_house_tiles() -> TestResult {
         retiring_fixture::seed_retiring(&harness.pool, world).await?;
         let reset = harness.root.retiring_world_reset(world).await?.ok_or("reset")?;
         sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3").execute(&harness.pool).await?;
+        // Even an all-house Ground phase requires the reset's fresh-generation drain.
+        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2)")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&harness.pool).await?;
+        let writer = RuntimeScopeAssignmentWriter::open(harness.root.clone(),"item-transfer-writer").await.map_err(debug)?;
+        let predecessor = harness.root.read_runtime_scope_predecessor(scope()?).await.map_err(debug)?.ok_or("predecessor")?;
+        let result = writer.submit(&AssignmentRequest {
+            operation_key: OperationKey::from_bytes([9;32]),
+            actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+            command: AssignmentCommand::Replace {scope:scope()?,predecessor,target:harness.node.fact()},
+        }).await.map_err(debug)?;
+        assert!(matches!(result,AssignmentOutcome::Committed(_)));
         assert!(harness.root.retire_world_reset_ground(&authority, &harness.node, &reset).await.map_err(debug)?);
         let state: (i16,i64) = sqlx::query_as("SELECT lifecycle,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(item.as_slice()).fetch_one(&harness.pool).await?;
