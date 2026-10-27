@@ -27,8 +27,14 @@ fn pvp_death_dispatch_commits_points_marks_and_skull_state_together() -> TestRes
         pvp_source_death_fixture::seed_ledger(&harness.pool, 41, 60, true, Some(1), "0 seconds")
             .await?;
         let mut request = death_request(90)?;
+        // Held-blessing fixture; native purchases are tested through dispatch separately.
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("INSERT INTO game_character_blessings(character_id, blessing_key, provenance) VALUES (encode($1,'hex')::uuid, 'oteryn:blessing.spiritual_shielding', 'fixture'), (encode($1,'hex')::uuid, 'oteryn:blessing.twist_of_fate', 'fixture')")
-            .bind(id(41).as_slice()).execute(&harness.pool).await?;
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
         request.held_blessings = vec![
             "oteryn:blessing.spiritual_shielding".into(),
             "oteryn:blessing.twist_of_fate".into(),
