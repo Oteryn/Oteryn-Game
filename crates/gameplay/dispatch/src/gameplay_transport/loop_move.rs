@@ -633,6 +633,25 @@ pub(super) async fn observe_container(
         };
         (read, reachable)
     };
+    // Custody reads can wait on physical item/location locks while reconnect
+    // advances the durable session. The pre-read check is historical after
+    // that await; never publish a new view to the displaced connection.
+    let current = super::FreshAdmissionStore::from_root(admission.root.clone())
+        .current_session_at(fence.game_session_id)
+        .await
+        .ok()?
+        .0;
+    if current.session_state() != super::GameSessionState::Active
+        || super::item_fence_of(current) != Some(fence)
+        || admission
+            .runtime
+            .lock()
+            .await
+            .player_control_facts(actor, fence.game_session_id)
+            .is_err()
+    {
+        return Some(ContainerObservation::Gone);
+    }
     let capacity = generation_item_facts(native, &read.container.definition)
         .ok()
         .and_then(|facts| facts.container_capacity)

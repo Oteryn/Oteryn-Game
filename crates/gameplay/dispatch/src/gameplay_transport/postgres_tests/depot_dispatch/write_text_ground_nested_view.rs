@@ -282,6 +282,7 @@ pub(super) async fn dispatch_ground(
 ) -> TestResult {
     use tokio::io::AsyncWriteExt;
     let actor = admitted.runtime_actor.ok_or("actor")?;
+    let session = admitted.game_session_id;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = crate::gameplay_transport::connection::serve_admitted(
         &mut server,
@@ -410,6 +411,21 @@ pub(super) async fn dispatch_ground(
                 assert_eq!(child.parent_handle, Some(root_handle));
                 assert!(child.entries.is_empty());
             }
+            // A new connection generation can win while the old connection's
+            // custody read is blocked. Give the existing view-command window
+            // time to expire before exercising the next commands.
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            revalidate_session_after_lock(session, &mut client, pool, root, selected_handle)
+                .await?;
+            client.write_all(&open(12, selected_handle)?).await?;
+            let restored = read_views(&mut client, 12, 2).await?;
+            let child = restored
+                .views
+                .iter()
+                .find(|view| view.container_handle == selected_handle)
+                .ok_or("nested view after session fixture restoration")?;
+            assert_eq!(child.parent_handle, Some(root_handle));
+            assert!(child.entries.is_empty());
         }
         client.shutdown().await?;
         Ok::<(), Box<dyn std::error::Error>>(())
@@ -476,16 +492,7 @@ async fn revalidate_after_lock(
     let original: Vec<u8> = sqlx::query_scalar("SELECT native_room_placement_context FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(root.as_slice()).fetch_one(&mut *blocker).await?;
     client.write_all(&open(command_id, handle)?).await?;
-    // The outer exchange driver continues polling serve_admitted while this
-    // future waits. Require an actual database waiter; elapsed time is no proof.
-    tokio::time::timeout(std::time::Duration::from_secs(5), async {
-        loop {
-            let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)))")
-                .bind(pid).fetch_one(pool).await?;
-            if blocked { return Ok::<(), sqlx::Error>(()); }
-            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
-        }
-    }).await??;
+    wait_for_blocker(pool, pid).await?;
     let mut changed = original.clone();
     *changed
         .first_mut()
@@ -502,6 +509,47 @@ async fn revalidate_after_lock(
     sqlx::query("UPDATE game_item_ground_locations SET native_room_placement_context=$2 WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(root.as_slice()).bind(original).execute(&mut *restoring).await?;
     restoring.commit().await?;
+    Ok(())
+}
+
+/// A privileged fixture advances the session only after the real command is
+/// waiting on the root row. The old session must not publish a refreshed view.
+async fn revalidate_session_after_lock(
+    session: crate::foundation::GameSessionId,
+    client: &mut tokio::io::DuplexStream,
+    pool: &sqlx::PgPool,
+    root: [u8; 16],
+    handle: ItemHandle,
+) -> TestResult {
+    use tokio::io::AsyncWriteExt;
+    let mut blocker = pool.begin().await?;
+    let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *blocker)
+        .await?;
+    sqlx::query("SELECT 1 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")
+        .bind(root.as_slice()).execute(&mut *blocker).await?;
+    client.write_all(&open(11, handle)?).await?;
+    wait_for_blocker(pool, pid).await?;
+    fixture(pool, "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid", &[*session.as_bytes()]).await?;
+    blocker.commit().await?;
+    read_outcome(client, 11, ContainerViewOutcome::Stale).await?;
+    // Restore only fixture data so the same advertised handle can demonstrate
+    // that the refused read did not manufacture a new view or lose its parent.
+    fixture(pool, "UPDATE game_durability_reconnect_sessions SET current_generation=current_generation-1 WHERE game_session_id=encode($1,'hex')::uuid", &[*session.as_bytes()]).await?;
+    Ok(())
+}
+
+async fn wait_for_blocker(pool: &sqlx::PgPool, pid: i32) -> TestResult {
+    // The outer exchange driver continues polling serve_admitted while this
+    // future waits. Require an actual database waiter; elapsed time is no proof.
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        loop {
+            let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)))")
+                .bind(pid).fetch_one(pool).await?;
+            if blocked { return Ok::<(), sqlx::Error>(()); }
+            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+        }
+    }).await??;
     Ok(())
 }
 
