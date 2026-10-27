@@ -85,3 +85,30 @@ fn world_reset_ground_retires_entries_before_roots_and_resumes_each_item() -> Te
         drop(authority);drop(seal);harness.cleanup().await
     })
 }
+
+#[test]
+fn world_reset_ground_preserves_house_tiles() -> TestResult {
+    let Some(admin) = configured_admin() else { return Ok(()); };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "reset_ground_house").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let item = harness.mint(&authority, "fixture:reset.house", 1).await?;
+        let position: Vec<u8> = sqlx::query_scalar("SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).fetch_one(&harness.pool).await?;
+        sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest) VALUES(encode($1,'hex')::uuid,'reset-house','private_house',1,0,$2)")
+            .bind(id(WORLD).as_slice()).bind(vec![7_u8;32]).execute(&harness.pool).await?;
+        sqlx::query("INSERT INTO game_house_tiles(world_id,house_key,spatial_position) VALUES(encode($1,'hex')::uuid,'reset-house',$2)")
+            .bind(id(WORLD).as_slice()).bind(position).execute(&harness.pool).await?;
+        let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+        retiring_fixture::seed_retiring(&harness.pool, world).await?;
+        let reset = harness.root.retiring_world_reset(world).await?.ok_or("reset")?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3").execute(&harness.pool).await?;
+        assert!(harness.root.retire_world_reset_ground(&authority, &harness.node, &reset).await.map_err(debug)?);
+        let state: (i16,i64) = sqlx::query_as("SELECT lifecycle,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(state, (1,1));
+        assert_eq!(harness.count("game_item_decay_retire_receipts").await?, 0);
+        drop(authority); drop(seal); harness.cleanup().await
+    })
+}
