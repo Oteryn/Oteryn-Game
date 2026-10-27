@@ -18,6 +18,30 @@ impl ChannelRuntimeV1 {
         sequence: u64,
         magnitude: u32,
     ) -> Result<OwnerDamageResult, CarrierError> {
+        self.commit_source_damage(
+            source,
+            reflector,
+            session,
+            stream,
+            sequence,
+            magnitude,
+            sequence / 1_000,
+        )
+    }
+
+    /// Independently fenced leaf damage for an existing owner occurrence. The sequence is
+    /// replay identity; `now_ms` timestamps attribution without changing that identity.
+    #[allow(clippy::too_many_arguments)]
+    pub fn commit_source_damage(
+        &mut self,
+        source: ExactActorRef,
+        reflector: ExactActorRef,
+        session: GameSessionId,
+        stream: &[u8],
+        sequence: u64,
+        magnitude: u32,
+        now_ms: u64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
         let lease = self.bound_attacker_lease(reflector, session)?;
         // The incoming owner may still hit a player held through disconnect. The bound
         // lease/session fence is required; a live client connection is not.
@@ -30,7 +54,7 @@ impl ChannelRuntimeV1 {
             .chain_update(stream)
             .finalize()
             .into();
-        let owner = self.borrow_exact_actor_commit_at(sequence / 1_000);
+        let owner = self.borrow_exact_actor_commit_at(now_ms);
         let index = owner.carrier.validate_ref(owner.continuity, source.0)?;
         let Slot::CreatureOccupied {
             committed,
@@ -85,7 +109,7 @@ impl ChannelRuntimeV1 {
             false,
             None,
             false,
-            Some(sequence / 1_000),
+            Some(now_ms),
         )?;
         let Some(mut next) = next else {
             return Ok(result);
@@ -117,7 +141,7 @@ impl ChannelRuntimeV1 {
                 .unsigned_abs(),
             ordinal,
             Some(mark),
-            Some(sequence / 1_000),
+            Some(now_ms),
         );
         owner.carrier.slots[index] = next;
         Ok(result)

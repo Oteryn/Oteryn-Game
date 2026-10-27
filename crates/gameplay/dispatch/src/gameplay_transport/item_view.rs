@@ -514,6 +514,13 @@ pub struct SessionItemView {
     carried_open: Option<ItemKey>,
     /// Capability 12 is selected: domain 9 shows the equipment.
     equip_drop: bool,
+    /// WRITE-1: the last depot box opened by this connection. Observation data only:
+    /// a text compositor must recheck locker reach and custody under its retained lane.
+    /// Like container-tree views, this is deliberately absent from continuity.
+    pub(super) open_depot: Option<(u16, u8)>,
+    /// Exact native instances on the last shown depot page, never guessed from ordinals.
+    /// These are historical selection data; writing must revalidate under its own lane.
+    pub(super) depot_items: Vec<(u64, [u8; 16])>,
 }
 
 impl SessionItemView {
@@ -530,6 +537,8 @@ impl SessionItemView {
             open_entries: Vec::new(),
             carried_open: continuity.open_corpse,
             equip_drop: false,
+            open_depot: None,
+            depot_items: Vec::new(),
         }
     }
 

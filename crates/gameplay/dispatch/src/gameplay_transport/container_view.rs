@@ -16,7 +16,8 @@
 //!   stays a domain 11 view at depth 1.
 //!
 //! - **Refresh (ITEM-LOOP-1, BAGS-USE-1).** After a committed move or USE every open view shows its
-//!   container's current observation; a view whose container left the carried tree closes.
+//!   container's current observation; a view whose container left carried custody or Ground
+//!   reach closes.
 //!
 //! Nothing here writes: moving an item in the tree is the item loop (`durability::item_loop_move`,
 //! BAGS-1).

@@ -32,10 +32,14 @@ const SQL_KEY33_FUNCTIONS: [(&str, &str); 3] = [
 // Keep each registration on one line so parallel additions remain insert-only.
 #[rustfmt::skip]
 const RUST_KEY33_SITES: &[(&str, &str)] = &[
+    ("crates/gameplay/durability/src/durability/field_removal.rs", "remove_field_in_transaction"),
+    ("crates/gameplay/durability/src/durability/field_removal.rs", "retire_restarted_fields"),
     ("crates/gameplay/durability/src/durability/item_decay_retire.rs", "apply_retire"),
     ("crates/gameplay/durability/src/durability/item_loop_move.rs", "apply_loop_move"),
+    ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
     ("crates/gameplay/durability/src/durability/item_mint.rs", "insert_corpse_loot_mint"),
     ("crates/gameplay/durability/src/durability/item_mint.rs", "insert_mint_with_corpse_attribution"),
+    ("crates/gameplay/durability/src/durability/item_text.rs", "lock_ground_text_item"),
     ("crates/gameplay/durability/src/durability/item_transfer.rs", "apply_transfer"),
     ("crates/gameplay/durability/src/durability/map_item_mint.rs", "apply_mint"),
     ("crates/gameplay/durability/src/durability/native_map_items.rs", "adopt_current_ground"),
@@ -50,15 +54,27 @@ const RUST_KEY33_SITES: &[(&str, &str)] = &[
     ("crates/gameplay/durability/src/durability/spell_item_transaction.rs", "expire_due_spell_items_bounded"),
 ];
 
+/// Non-lane readers use key 33 to stabilize custody, never to write a key-33 table.
+// WRITE-1: the container view rereads ancestry/placement after item locks; TEXT checks
+// Ground custody under its Character fence and writes only text state/receipts.
+// Keep each registration on one line so parallel additions remain insert-only.
+#[rustfmt::skip]
+const NON_LANE_KEY33_READS: &[(&str, &str)] = &[
+    ("crates/gameplay/durability/src/durability/item_loop_move.rs", "read_item_loop_ground_container"),
+    ("crates/gameplay/durability/src/durability/item_text.rs", "lock_ground_text_item"),
+];
+
 /// Lane-derived proofs: a permit or window directly, or a scope/item authority that is only
 /// minted by the permit-taking `assert_spell_item_*_with_recovery` functions, or a
-/// `PhysicalItemOwner`, whose variants only borrow one of those authorities.
-const LANE_PROOFS: [&str; 5] = [
+/// `PhysicalItemOwner`, whose variants only borrow one of those authorities, or a
+/// `StandingTileRead`, which owns a private scope authority from its permit-taking reader.
+const LANE_PROOFS: [&str; 6] = [
     "SpellLanePermit",
     "SpellCommitWindow",
     "SpellItemScopeAuthority",
     "SpellItemAuthority",
     "PhysicalItemOwner",
+    "StandingTileRead",
 ];
 
 /// Private helpers without a proof parameter, pinned to the proof-holding caller in the same file.
@@ -240,7 +256,8 @@ fn rust_key33_writers_are_pinned_and_hold_a_lane_proof() {
             .replace('\\', "/");
         let raw = fs::read_to_string(&path).expect("source text");
         let text = collapse(production(&raw));
-        let mut sites = key33_lock_sites(&text);
+        let locks = key33_lock_sites(&text);
+        let mut sites = locks.clone();
         for table in KEY33_TABLES {
             for verb in ["INSERT INTO", "DELETE FROM", "UPDATE"] {
                 sites.extend(find_all(&text, &format!("{verb} {table}")));
@@ -264,7 +281,11 @@ fn rust_key33_writers_are_pinned_and_hold_a_lane_proof() {
                 None => signature,
             };
             assert!(
-                LANE_PROOFS.iter().any(|proof| proof_holder.contains(proof)),
+                LANE_PROOFS.iter().any(|proof| proof_holder.contains(proof))
+                    || (locks.contains(&at)
+                        && NON_LANE_KEY33_READS
+                            .iter()
+                            .any(|(file, reader)| *file == relative && *reader == name)),
                 "{relative}::{name} writes a key-33 table without a lane-derived proof"
             );
         }
@@ -289,6 +310,15 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
         .expect("source"),
     );
     let text = production(&text).to_owned();
+    assert!(
+        text.contains("pub struct StandingTileRead { authority: SpellItemScopeAuthority,"),
+        "StandingTileRead must own a private lane-derived scope authority"
+    );
+    assert!(
+        signature_of(&text, "read_standing_player_tile_with_recovery")
+            .contains("permit: &SpellLanePermit,"),
+        "StandingTileRead must be minted behind a lane permit"
+    );
     for (literal, minters) in [
         (
             "SpellItemScopeAuthority {",
@@ -301,6 +331,10 @@ fn lane_proof_authorities_are_minted_only_behind_a_permit() {
         (
             "SpellItemAuthority {",
             &["assert_spell_item_authority_with_recovery"][..],
+        ),
+        (
+            "StandingTileRead {",
+            &["read_standing_player_tile_with_recovery"][..],
         ),
     ] {
         for at in find_all(&text, literal) {
