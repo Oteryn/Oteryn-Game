@@ -14,8 +14,14 @@ fn item_spell_augments_postgres_damage_critical_leech_and_replay() -> TestResult
     super::parameter_spell::scenario(5)
 }
 
+#[test]
+fn dmg2_postgres_equipment_spell_leech_without_augment_and_replay() -> TestResult {
+    super::parameter_spell::scenario(6)
+}
+
 pub(super) fn activate(
     world: WorldId,
+    equipment_leech: bool,
 ) -> TestResult<(ContentActivationController, NativeEntryContentPin)> {
     let mut input = native_gameplay::NativeGameplayInput::from_manifest(
         &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -39,12 +45,17 @@ pub(super) fn activate(
         .content_revision = "content-1".into();
     let pin = input.item_profiles.as_mut().ok_or("item profiles")?;
     let mut document: serde_json::Value = serde_json::from_slice(&pin.bytes)?;
+    let key = if equipment_leech {
+        "oteryn:item.tibia.i6529"
+    } else {
+        "oteryn:item.tibia.i2854"
+    };
     let item = document["records"]
         .as_array_mut()
         .ok_or("records")?
         .iter_mut()
-        .find(|r| r["production_definition"]["production_key"] == "oteryn:item.tibia.i2854")
-        .ok_or("backpack")?;
+        .find(|r| r["production_definition"]["production_key"] == key)
+        .ok_or("fixture item")?;
     // Qualified synthetic values isolate the executable field. XML unit conversion has its
     // own pinned-source tests; no production Item value is asserted by this fixture.
     item["attributes"]["spell_augments"] = serde_json::json!([
@@ -57,6 +68,24 @@ pub(super) fn activate(
         {"spell":"energy strike","kind":"life_leech","value":10000},
         {"spell":"energy strike","kind":"mana_leech","value":10000}
     ]);
+    if equipment_leech {
+        // No spell augment: the real equipment read must supply both leech rates.
+        item["attributes"]["spell_augments"] = serde_json::json!([]);
+        let modifiers = ["LIFE_LEECH_AMOUNT", "MANA_LEECH_AMOUNT"].map(|kind| {
+            serde_json::json!({
+                "kind": kind,
+                "parameter": {"state":"KNOWN", "value": {
+                    "kind":"RATIONAL_PERCENT", "value":{"numerator":100,"denominator":1}
+                }},
+                "evaluation_phase":{"state":"UNKNOWN"},
+                "priority":{"state":"UNKNOWN"},
+                "target_domain":{"state":"UNKNOWN"}
+            })
+        });
+        item["semantics"]["skill_modifiers"] = serde_json::json!({
+            "state":"KNOWN", "value":{"modifiers":{"state":"KNOWN", "value":modifiers}}
+        });
+    }
     *pin = pinned(serde_json::to_vec(&document)?);
     let room = qualify_selected_native_gameplay_room(world, &input).map_err(debug)?;
     let issuance = NativeEntryActivationIssuance {
