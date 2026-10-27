@@ -62,3 +62,7 @@ impl SpellHotkeys {
             .collect()
     }
 }
+
+#[cfg(test)]
+#[path = "tests/input.rs"]
+mod tests;

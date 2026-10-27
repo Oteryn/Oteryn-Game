@@ -24,12 +24,8 @@ pub mod logout {
     ));
 }
 /// Local spell action-bar key intent mapping.
-pub mod spell_action_bar {
-    include!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/src/features/local-spell-action-bar/input.rs"
-    ));
-}
+#[path = "features/local-spell-action-bar/mod.rs"]
+pub mod spell_action_bar;
 
 /// Bestiary and Charms page state, protocol mapping, views, and settings.
 #[path = "features/0001-bestiary-charms/mod.rs"]
