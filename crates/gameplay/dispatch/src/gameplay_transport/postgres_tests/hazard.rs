@@ -1445,7 +1445,7 @@ async fn outgoing_party_retry_checks(
     use crate::gameplay_transport::{hazard::combat, rune_use_bridge::test_faults};
     // Native spells additionally consume the ordinary party/vitals owner. Install
     // only its fixture prerequisites here; the later hazard-only census checks still
-    // exercise a member that has never dealt damage and deliberately stale presence.
+    // exercise a member without an installed combat state and deliberately stale presence.
     {
         let runtime = owner.runtime.lock().await;
         assert!(
@@ -1843,6 +1843,9 @@ async fn outgoing_party_retry_checks(
         }
     }
     owner.spells = original_book;
+    outgoing_party_condition_checks(owner, actor, session, other, other_session)
+        .await
+        .map_err(|error| format!("party condition checks: {error}"))?;
     // Remove only the temporary party spell-state fixture. The inherited census
     // qualification below must still work without any combat state for this member.
     owner
@@ -1856,6 +1859,222 @@ async fn outgoing_party_retry_checks(
     item_tx::verify_spell_item_chain(&mut tx)
         .await
         .map_err(debug)?;
+    Ok(())
+}
+
+// Two live player lineages share a due turn, but each keeps its own dodge
+// occurrence. Party membership/positions are read at consumption, not application.
+async fn outgoing_party_condition_checks(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    other: crate::foundation::ExactActorRef,
+    other_session: GameSessionId,
+) -> TestResult {
+    use crate::foundation::condition::{
+        ApplicationFacts, ConditionDefinition, ConditionLineage, ConditionSourceKind, TickFacts,
+    };
+    use crate::foundation::{ConditionValues, DotElement};
+    use crate::gameplay_transport::hazard::combat;
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+
+    let (target, original_health, other_position) = {
+        let runtime = owner.runtime.lock().await;
+        let target = runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .filter_map(|creature| runtime.companion_snapshot(creature.actor).ok())
+            .find(|snapshot| {
+                snapshot.state.policy.definition_key == "canary:creature/rat"
+                    && snapshot.health > 8
+                    && combat::eligible(&runtime, snapshot.actor)
+            })
+            .ok_or("living simultaneous condition rat")?;
+        assert!(combat::in_area(&runtime, actor));
+        assert!(combat::in_area(&runtime, other));
+        (
+            target.actor,
+            target.health,
+            runtime
+                .read_actor_position(other)
+                .map_err(debug)?
+                .position(),
+        )
+    };
+    let mut losses = Vec::new();
+    for (primary_dodge, secondary_dodge, move_member) in [
+        (true, true, false),
+        (true, false, false),
+        (false, true, false),
+        (true, true, true),
+    ] {
+        let due = owner.owner_now().get() + 1_000_000;
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let before = runtime.companion_snapshot(target).map_err(debug)?;
+            assert!(before.state.conditions.instances().is_empty());
+            let root =
+                GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+            let mut next = before.state.clone();
+            for (source, source_session, should_dodge, values) in [
+                (
+                    actor,
+                    session,
+                    primary_dodge,
+                    ConditionValues::DamageOverTime {
+                        element: DotElement::Energy,
+                        total_min: 4,
+                        total_max: 4,
+                        per_tick: 4,
+                        interval_ms: 1000,
+                        delayed: true,
+                    },
+                ),
+                (
+                    other,
+                    other_session,
+                    secondary_dodge,
+                    ConditionValues::Agony {
+                        total_min: 4,
+                        total_max: 4,
+                        per_tick: 4,
+                        interval_ms: 1000,
+                        delayed: true,
+                    },
+                ),
+            ] {
+                let lease = runtime
+                    .bound_attacker_lease(source, source_session)
+                    .map_err(debug)?;
+                let definition = ConditionDefinition::new("test.hazard.party.condition", 1, values)
+                    .ok_or("party condition definition")?;
+                let facts = ApplicationFacts {
+                    now: due - 1_000_000,
+                    base_speed: 100,
+                    mana_shield_capacity: 0,
+                    target_reentry_protected: false,
+                    source_reentry_protected: false,
+                    target_is_player: false,
+                    decision_root: &root,
+                    occurrence: DecisionOccurrenceId::from_bytes([0x73; 16]),
+                };
+                next = (900_000..1_000_000)
+                    .find_map(|command| {
+                        let lineage = ConditionLineage {
+                            source_character: *lease.character_id().as_bytes(),
+                            source_session: *source_session.as_bytes(),
+                            source_lease_generation: lease.generation(),
+                            source_actor_placement: source.placement_identity(),
+                            source_scope_generation: source.scope_generation().get(),
+                            source_content_digest: runtime.content_pin().server_artifact_digest(),
+                            source_catalog_digest: runtime.content_pin().server_artifact_digest(),
+                            source_creation_command: command,
+                        };
+                        let mut candidate = next.clone();
+                        candidate
+                            .conditions
+                            .apply_with_lineage(
+                                &definition,
+                                Some(source),
+                                ConditionSourceKind::Player,
+                                &[],
+                                &facts,
+                                &lineage,
+                            )
+                            .ok()?;
+                        let ticks = candidate
+                            .conditions
+                            .clone()
+                            .take_due(due, TickFacts::default());
+                        let tick = ticks
+                            .iter()
+                            .find(|tick| tick.provenance.source == Some(source))?;
+                        let roll = combat::condition_dodge_roll(&runtime, source, target, tick)?;
+                        (combat::dodges(1, roll) == should_dodge).then_some(candidate)
+                    })
+                    .ok_or("bounded simultaneous condition occurrence")?;
+            }
+            assert_eq!(next.conditions.instances().len(), 2);
+            let ticks = next.conditions.clone().take_due(due, TickFacts::default());
+            assert_eq!(ticks.len(), 2);
+            assert!(ticks.iter().all(|tick| tick.due == due));
+            for source in [actor, other] {
+                assert_eq!(
+                    ticks
+                        .iter()
+                        .filter(|tick| tick.provenance.source == Some(source))
+                        .count(),
+                    1
+                );
+            }
+            runtime
+                .compare_companion_state(&before, next)
+                .map_err(debug)?;
+            if move_member {
+                // Both conditions were applied in-area at party level 1. Moving
+                // one member out makes the primary's CURRENT party level zero,
+                // while the secondary source is itself outside. Both must land.
+                let mut movement = runtime.borrow_movement_position();
+                let at = movement.read(other).map_err(debug)?;
+                movement
+                    .commit_cardinal(
+                        at,
+                        MovementLocalPosition {
+                            x: 33501,
+                            ..other_position
+                        },
+                    )
+                    .map_err(debug)?;
+                assert!(!combat::in_area(&runtime, other));
+                assert!(combat::in_area(&runtime, actor));
+            }
+        }
+        owner.clock_origin -=
+            Duration::from_micros(due.saturating_sub(owner.owner_now().get()) + 10_000);
+        owner.drain_monster_melee().await;
+        let after = {
+            let runtime = owner.runtime.lock().await;
+            let after = runtime.companion_snapshot(target).map_err(debug)?;
+            assert!(
+                after.state.conditions.instances().is_empty(),
+                "both lineages consumed"
+            );
+            after
+        };
+        let loss = original_health - after.health;
+        if primary_dodge && secondary_dodge && !move_member {
+            assert_eq!(loss, 0, "both source occurrences dodge independently");
+        } else {
+            assert!(loss > 0, "the non-dodged source must land");
+        }
+        losses.push(loss);
+        owner.drain_monster_melee().await;
+        let mut runtime = owner.runtime.lock().await;
+        let retried = runtime.companion_snapshot(target).map_err(debug)?;
+        assert_eq!(
+            retried.health, after.health,
+            "retry deals no duplicate damage"
+        );
+        assert_eq!(
+            retried.state.conditions, after.state.conditions,
+            "retry does not advance the consumed condition cursor"
+        );
+        runtime
+            .set_test_creature_health(target, original_health)
+            .map_err(debug)?;
+        if move_member {
+            let mut movement = runtime.borrow_movement_position();
+            let at = movement.read(other).map_err(debug)?;
+            movement
+                .commit_cardinal(at, other_position)
+                .map_err(debug)?;
+        }
+    }
+    assert!(
+        losses[3] > losses[1] && losses[3] > losses[2],
+        "current party level zero allows both originally dodging ticks to land: {losses:?}"
+    );
     Ok(())
 }
 
