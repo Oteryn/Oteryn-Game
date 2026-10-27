@@ -26,7 +26,17 @@ pub(crate) fn project_native(
         return Err(ProfileRefusal::Missing);
     };
     let mut abilities = BTreeMap::new();
-    for profile in &record.source_item_abilities {
+    for profile in
+        record
+            .source_item_abilities
+            .iter()
+            .chain(record.attack_definitions.iter().flat_map(|definitions| {
+                definitions
+                    .profiles
+                    .iter()
+                    .filter(|profile| matches!(profile.data, Data::Ability(_)))
+            }))
+    {
         let Data::Ability(ability) = &profile.data else {
             return Err(ProfileRefusal::Invalid);
         };
@@ -41,6 +51,19 @@ pub(crate) fn project_native(
     // closure for those attacks. Preserve its existing swing owner and target-only projection;
     // never manufacture an Ability body from a ref, presentation, or attack magnitude.
     let mut projected = behavior.clone();
+    // A resolved native melee body still uses the existing separately qualified swing
+    // owner. Its source bounds supply the magnitude required by the think projection;
+    // no Ability body or damage formula is inferred from a reference.
+    if let Some(melee) = &record.monster_melee {
+        for entry in &mut projected.attacks {
+            if entry.ability == melee.ability && abilities.contains_key(&entry.ability) {
+                entry.magnitude = Some(crate::content::ProjectV2Magnitude {
+                    minimum: u64::from(melee.minimum),
+                    maximum: u64::from(melee.maximum),
+                });
+            }
+        }
+    }
     if projected
         .attacks
         .iter()

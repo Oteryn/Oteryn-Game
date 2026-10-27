@@ -143,6 +143,8 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_party_deadline_pass_us: u64,
     pub(in crate::gameplay_transport) monster_summons: crate::monster_summon::NativeSummonOwner,
     pub(in crate::gameplay_transport) monster_melee: crate::ai_monster_melee::MonsterMeleeOwner,
+    pub(in crate::gameplay_transport) monster_spells:
+        crate::creature_damage_spell::DamageSpellOwner,
     pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
     pub(in crate::gameplay_transport) monster_ai_sequence: u64,
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
@@ -285,6 +287,7 @@ impl Default for ChannelSpellStates {
             next_map_initialization_pass_us: Default::default(),
             next_party_deadline_pass_us: Default::default(),
             monster_melee: Default::default(),
+            monster_spells: Default::default(),
             monster_summons: Default::default(),
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),

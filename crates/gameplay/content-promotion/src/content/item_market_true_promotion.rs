@@ -10,7 +10,7 @@ pub const ITEM_MARKET_TRUE_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json"
 );
 pub const ITEM_MARKET_TRUE_PACKET_SHA256: &str =
-    "f8e58c6761d26bd30af35f5e2be9e172f2eeb9cd06435e2165af37dcd8e67ff7";
+    "97885f5b338624e2cd1bc50f227bbb296dd1fb270c95245ce32bbe5ad113bb0a";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,

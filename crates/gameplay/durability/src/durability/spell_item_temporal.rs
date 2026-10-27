@@ -226,7 +226,7 @@ pub async fn drain_due_field_chains_in_transaction(
        AND (i.definition_family,i.definition_production_key,i.definition_revision_ref)=(p.definition_family,p.definition_production_key,p.definition_revision)
        AND p.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint
        AND NOT EXISTS(SELECT 1 FROM game_spell_field_temporal_receipts done WHERE done.item_instance_id=i.item_instance_id AND done.source_stage=p.source_stage)
-       AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND g.runtime_scope_ownership_generation=$3::text::numeric)
+       AND ((g.world_id=i.world_id AND g.channel_id=encode($2,'hex')::uuid AND (g.runtime_scope_ownership_generation=$3::text::numeric OR game_corpse_stage_ground_current(i.item_instance_id,i.world_id,encode($2,'hex')::uuid,$3::text::numeric,g.stack_ordinal)))
          OR (((e.world_id=i.world_id AND bag.character_id=e.character_id) OR eq.world_id=i.world_id)
           AND cg.eligible AND cg.lease_generation=sess.character_lease_generation AND sess.session_state=2
           AND sess.character_id=cg.character_id AND sess.runtime_scope_kind=1 AND sess.runtime_scope_world_id=i.world_id

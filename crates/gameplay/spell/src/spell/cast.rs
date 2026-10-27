@@ -119,6 +119,18 @@ pub struct PlayerSpellState {
     /// EQUIP-PROTECTION-1: the summed physical protection of the last committed equipment read.
     pub(super) equipped_physical_protection:
         Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct energy damage (not fields).
+    pub(super) equipped_energy_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct fire damage (not fields).
+    pub(super) equipped_fire_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct holy damage.
+    pub(super) equipped_holy_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct ice damage (not fields).
+    pub(super) equipped_ice_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
     /// PARITY-EQUIP-MODIFIERS-1: the critical hit and leech of the last committed equipment read.
     pub(super) equipped_offence:
         oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
@@ -178,6 +190,10 @@ impl PlayerSpellState {
                 equipped_mana_shield: false,
                 equipped_defence: None,
                 equipped_physical_protection: None,
+                equipped_ice_protection: None,
+                equipped_energy_protection: None,
+                equipped_fire_protection: None,
+                equipped_holy_protection: None,
                 equipped_offence: Default::default(),
                 training: None,
                 training_payment: None,

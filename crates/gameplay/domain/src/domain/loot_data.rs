@@ -3,11 +3,11 @@
 /// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): a corpse container
 /// holds at most this many entries; a loot entry's `placement_ordinal` is
 /// `1..=` this.
-pub const CORPSE_CONTAINER_ENTRIES_MAX: u32 = 16;
+pub const CORPSE_CONTAINER_ENTRIES_MAX: u32 = 30;
 
 /// `GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` (D3 §4.2): a corpse container
-/// holds at most 16 entries, equal by construction to
-/// `COMBAT01-LOOT-PLAN-ITEMS`. Checked once, against the whole accepted plan,
+/// holds at most 30 entries (SUMMER owner decision 20). The independent
+/// `COMBAT01-LOOT-PLAN-ITEMS` ceiling still bounds generated loot plans. Checked against the whole plan,
 /// before the corpse or any entry is frozen.
 pub const GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX: usize = CORPSE_CONTAINER_ENTRIES_MAX as usize;
 

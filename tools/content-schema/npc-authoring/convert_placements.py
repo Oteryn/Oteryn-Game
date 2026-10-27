@@ -83,6 +83,9 @@ def provenance(candidate: dict, placement: dict) -> list[dict]:
         if source is None or (chosen and origin not in chosen):
             continue
         repository, revision, source_key = SOURCES[origin]
+        # Supplement NPCs already carry their own immutable donor revision. Do not
+        # attribute their definition digest to the older baseline source commit.
+        revision = source.get("revision", revision)
         rows.append(
             {
                 "arbitration": arbitration,

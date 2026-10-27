@@ -45,8 +45,10 @@ pub(in crate::durability::item_decay_retire) async fn admit(
     // of a direct corpse entry. These bounded families have indexed parent keys.
     crate::durability::world_reset::ground_step::validate_root(tx, step.corpse_item_instance_id)
         .await?;
-    let entries = sqlx::query("SELECT item_instance_id::text,placement_ordinal::text FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT 17")
-        .bind(step.corpse_item_instance_id.as_slice()).fetch_all(&mut **tx).await?;
+    let entries = sqlx::query("SELECT item_instance_id::text,placement_ordinal::text FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT $2")
+        .bind(step.corpse_item_instance_id.as_slice())
+        .bind((CORPSE_CONTAINER_ENTRIES_MAX + 1) as i64)
+        .fetch_all(&mut **tx).await?;
     if entries.len() > CORPSE_CONTAINER_ENTRIES_MAX {
         return Err(DurabilityError::InvalidStoredState);
     }
