@@ -32,6 +32,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Skull 3114 (tools/content-migration/quest_callback_profiles.py), from Canary
     // 47dfd51f items.xml and exact Crystal ff7ede59 bindings. speed_bonus=0.
     ("QUESTCB2", 1),
+    // The quest-advancing reward chest items 6120 and 9019, carried from ready
+    // reward_claims quest_transition placements (tools/content-migration/quest_callback_profiles.py).
+    // Both have speed_bonus=0.
+    ("QUESTCHEST-1", 2),
     // Item 7934 used by a world callback's item-on-target step
     // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
     ("QUESTCB3", 1),
