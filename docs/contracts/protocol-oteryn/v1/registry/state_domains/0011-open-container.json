@@ -10,7 +10,7 @@
       "id": 1,
       "name": "OPEN_CONTAINER_DELTA_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#OpenContainerV1",
-      "max_payload_bytes": 507
+      "max_payload_bytes": 941
     }
   ],
   "snapshot_types": [
@@ -18,7 +18,7 @@
       "id": 1,
       "name": "OPEN_CONTAINER_SNAPSHOT_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/item_view_v1.proto#OpenContainerV1",
-      "max_payload_bytes": 507
+      "max_payload_bytes": 941
     }
   ]
 }

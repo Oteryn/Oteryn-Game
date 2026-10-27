@@ -26,6 +26,50 @@ use std::collections::BTreeMap;
 pub type ProfileAbilityProposal =
     crate::foundation::profile_schedule::ProfileAbilityProposal<Ref, ProjectV2Magnitude>;
 
+/// Damage scale in parts per million.
+pub const DAMAGE_MULTIPLIER_SCALE: u32 = 1_000_000;
+
+/// Owner seam for monster reference-level damage scaling.
+///
+/// The pinned Canary and Crystal revisions do not implement the curve, so its constants remain
+/// UNKNOWN. Until a verified source supplies them, every input deliberately preserves damage.
+pub const fn monster_reference_level_damage_multiplier(
+    _reference_level: Option<u32>,
+    _player_level: u32,
+) -> u32 {
+    DAMAGE_MULTIPLIER_SCALE
+}
+
+#[cfg(test)]
+mod reference_level_tests {
+    use super::{DAMAGE_MULTIPLIER_SCALE, monster_reference_level_damage_multiplier};
+
+    #[test]
+    fn unknown_curve_is_neutral_at_and_around_its_requested_boundaries() {
+        let reference = 600;
+        for player_level in [
+            reference + 1,
+            reference,
+            reference - 1,
+            reference - 100,
+            reference - 101,
+        ] {
+            assert_eq!(
+                monster_reference_level_damage_multiplier(Some(reference), player_level),
+                DAMAGE_MULTIPLIER_SCALE
+            );
+        }
+    }
+
+    #[test]
+    fn creature_without_reference_level_is_unchanged() {
+        assert_eq!(
+            monster_reference_level_damage_multiplier(None, 1),
+            DAMAGE_MULTIPLIER_SCALE
+        );
+    }
+}
+
 /// Existing main formula evaluator and checked ATTACK constants are the only arithmetic owner.
 pub fn canonical_melee_bounds(attack: u32, skill: u32) -> Result<(u64, u64), AttackError> {
     let constants = AttackConstants::checked_in().ok_or(AttackError::InvalidSource)?;
@@ -84,6 +128,7 @@ pub struct MeleeSource {
     chance_ppm: u32,
     pub minimum: u32,
     pub maximum: u32,
+    reference_level: Option<u32>,
     critical: Option<crate::source_critical_baseline::SourceCriticalBaseline>,
     conditions: Vec<ConditionDefinition>,
     formula_revision: String,
@@ -278,6 +323,10 @@ impl MeleeSource {
             chance_ppm: e.chance_ppm,
             minimum,
             maximum,
+            reference_level: cp
+                .details
+                .as_ref()
+                .and_then(|details| details.reference_level),
             critical,
             conditions,
             formula_revision: fref.revision.clone(),
@@ -306,6 +355,8 @@ pub struct AttackFacts {
     /// Owner-evaluated defence maximum from accepted player-expression/equipment facts.
     pub defense: u32,
     pub armor: u32,
+    /// Current level from the player owner, used only by creature reference-level scaling.
+    pub player_level: u32,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SwingOutcome {
@@ -955,6 +1006,15 @@ impl AutoAttackOwner {
             });
         }
         let requested = draw("damage_draw", source.minimum, source.maximum)?;
+        let multiplier =
+            monster_reference_level_damage_multiplier(source.reference_level, facts.player_level);
+        let requested = u32::try_from(
+            u64::from(requested)
+                .checked_mul(u64::from(multiplier))
+                .ok_or(AttackError::NumericOverflow)?
+                / u64::from(DAMAGE_MULTIPLIER_SCALE),
+        )
+        .map_err(|_| AttackError::NumericOverflow)?;
         let source_critical = source
             .critical
             .map(|policy| {

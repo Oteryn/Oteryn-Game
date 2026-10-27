@@ -369,6 +369,16 @@ def repin_rust_inventory() -> None:
     if count != 1:
         raise SystemExit(f"{PIN_TEST.name}: TREE_SHA256 not found")
     PIN_TEST.write_text(text, encoding="utf-8", newline="\n")
+    # The NPC catalogue proves that it loaded this same complete package.
+    npc_test = ROOT / "apps/game-server/tests/content_npc_catalogue.rs"
+    npc_text, count = re.subn(
+        r'(catalogue\.source_tree_digest\(\),\s*")[0-9a-f]{64}(")',
+        lambda match: match.group(1) + tree.hexdigest() + match.group(2),
+        npc_test.read_text(encoding="utf-8"),
+    )
+    if count != 1:
+        raise SystemExit(f"{npc_test.name}: source_tree_digest pin not found")
+    npc_test.write_text(npc_text, encoding="utf-8", newline="\n")
 
 
 def main() -> int:
@@ -400,7 +410,7 @@ def main() -> int:
             if command[0] != "python3" or (ROOT / command[1]).is_file():
                 run(command)
     if args.resolve:
-        derived = derived_paths() | {PIN_PATH}
+        derived = derived_paths() | {PIN_PATH, "apps/game-server/tests/content_npc_catalogue.rs"}
         changed = [
             path
             for path in git(

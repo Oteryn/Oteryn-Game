@@ -119,6 +119,17 @@ pub(super) async fn prepare(
 }
 
 pub(super) async fn assert_receipts(h: &Harness, case: Case) -> TestResult {
+    let awarded_xp: i64 = sqlx::query_scalar(
+        "SELECT COALESCE(sum(xp_awarded),0)::BIGINT FROM game_party_kill_xp_members",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    if matches!(case, Case::ForgeReplay) {
+        assert_eq!(
+            awarded_xp, 20,
+            "5 rat XP * fiendish 2x, then 30% two-vocation bonus: ceil(10 * 1.3 / 2) = 7 per member; Premium stamina: floor(7 * 1.5) = 10 each, 20 total"
+        );
+    }
     let entries: Vec<(i64, i64, i64, i64)> = sqlx::query_as("SELECT amount,lost_amount,balance_before,balance_after FROM game_character_forge_dust_entries WHERE cause_occurrence_id<>encode($1,'hex')::uuid ORDER BY balance_before LIMIT 3")
         .bind(id(200).as_slice()).fetch_all(&h.pool).await?;
     let expected = match case {
@@ -155,10 +166,7 @@ pub(super) async fn assert_receipts(h: &Harness, case: Case) -> TestResult {
         1,
         "one ordinary sliver mint in the existing corpse"
     );
-    assert_eq!(
-        slivers[0].0, 1,
-        "trivial rat difficulty, including non-Premium killers"
-    );
+    assert!((3..=7).contains(&slivers[0].0), "pinned fiendish range");
     assert!(slivers[0].1 > 0);
     eprintln!(
         "FORGECREATURE POSTGRES_ASSERTIONS_COMPLETED recipients={}",

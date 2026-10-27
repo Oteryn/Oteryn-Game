@@ -39,7 +39,7 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
 }
 
 #[test]
-fn stash_session_dispatch_free_conserves_and_replays() -> TestResult {
+fn stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| scenario(true, false, false, false, false).map_err(|e| e.to_string()))?
@@ -62,7 +62,7 @@ fn stash_session_dispatch_conserves_and_replays() -> TestResult {
 }
 
 #[test]
-fn stash_session_dispatch_expired_premium_conserves_and_replays() -> TestResult {
+fn stash_session_dispatch_expired_premium_stows_withdraws_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {

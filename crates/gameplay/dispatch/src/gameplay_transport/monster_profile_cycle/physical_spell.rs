@@ -317,6 +317,7 @@ pub(super) async fn execute(
                     target_protected: protected,
                     defense: 0,
                     armor: state.equipped_armor(),
+                    player_level: state.character_facts().level,
                 },
                 multiplier_ppm,
                 immune: false,
