@@ -28,6 +28,9 @@ pub struct ProjectV2CreatureDetails {
     pub inspection: String,
     pub defense: u32,
     pub critical_chance_ppm: u32,
+    /// Optional level cap for creature-to-player damage scaling. No scaling is applied when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reference_level: Option<u32>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub condition_immunities: Vec<String>,
     pub flags: ProjectV2CreatureFlags,

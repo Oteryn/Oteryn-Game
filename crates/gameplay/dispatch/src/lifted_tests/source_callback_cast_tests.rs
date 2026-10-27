@@ -140,6 +140,7 @@ impl SpellWorldReader for Reader {
                 target_protected: false,
                 defense: 0,
                 armor: 0,
+                player_level: 1,
             },
             multiplier_ppm: 1000000,
             immune: false,
