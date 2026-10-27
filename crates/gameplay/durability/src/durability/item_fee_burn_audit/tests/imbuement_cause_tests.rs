@@ -47,6 +47,11 @@ fn apply() -> OneItemImbuementV1 {
 /// The widest fee: every allowed coin line whole, two change mints, every revision at its
 /// registered bound.
 fn fee(imbuement: OneItemImbuementV1) -> OneItemFeeBurnV1 {
+    let gold = imbuement.fee_gold_units().unwrap();
+    fee_at_price(imbuement, gold)
+}
+
+fn fee_at_price(imbuement: OneItemImbuementV1, fee: u64) -> OneItemFeeBurnV1 {
     let wide = |state: &mut Option<OneItemStateV1>| {
         state
             .as_mut()
@@ -56,9 +61,8 @@ fn fee(imbuement: OneItemImbuementV1) -> OneItemFeeBurnV1 {
             .unwrap()
             .revision_ref = "r".repeat(512);
     };
-    let fee = imbuement.fee_gold_units().unwrap();
     let lines = IMBUEMENT_FEE_INPUTS_MAX as u8;
-    let crystals = u32::try_from(fee / 10_000 + 1).unwrap();
+    let crystals = u32::try_from(fee.div_ceil(10_000)).unwrap();
     let mut value = burn(
         (0..lines)
             .map(|n| {
@@ -157,7 +161,7 @@ fn imbuement_audit_counts_the_item_and_each_material() {
 
 #[test]
 fn imbuement_audit_prices_by_action_and_tier() {
-    for (tier, gold) in [(1, 5_000), (2, 30_000), (3, 200_000)] {
+    for (tier, gold) in [(1, 7_500), (2, 60_000), (3, 250_000)] {
         assert_eq!(
             OneItemImbuementV1 { tier, ..apply() }.fee_gold_units(),
             Some(gold)
@@ -171,6 +175,19 @@ fn imbuement_audit_prices_by_action_and_tier() {
     value.fee_gold_units = 5_000;
     value.change_gold_units = value.burned_gold_units - 5_000;
     assert!(check_fee_burn(&value).is_err());
+}
+
+#[test]
+fn imbuement_audit_decodes_historical_application_fees() {
+    for (tier, gold) in [(1, 5_000), (2, 30_000), (3, 200_000)] {
+        let cause = OneItemImbuementV1 { tier, ..apply() };
+        // New commands still resolve the current price in item_imbuement's writer.
+        assert_ne!(cause.fee_gold_units(), Some(gold));
+        let value = fee_at_price(cause, gold);
+        let envelope =
+            encode_fee_burn_event_with(identity(), value.clone(), Type2EventTuple::V1).unwrap();
+        assert_eq!(decode_fee_burn_envelope(&envelope).unwrap().1, value);
+    }
 }
 
 #[test]

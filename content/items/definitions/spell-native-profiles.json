@@ -57543,6 +57543,148 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "oteryn:item.tibia.i7934",
+          "revision": "definition-r1"
+        },
+        "taxonomy": {
+          "primary": "Quest Items"
+        }
+      },
+      "semantics": {
+        "charges": {
+          "state": "UNKNOWN"
+        },
+        "classification": {
+          "state": "UNKNOWN"
+        },
+        "container": {
+          "state": "UNKNOWN"
+        },
+        "equipment": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "weight": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "description": {
+              "state": "KNOWN",
+              "value": "It is the key to his private room."
+            },
+            "name": {
+              "state": "KNOWN",
+              "value": "Theodore Loveless' key"
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "UNKNOWN"
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stack_max": {
+              "state": "UNKNOWN"
+            },
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            }
+          }
+        },
+        "temporal": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "speed_bonus": 0
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i7934",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "7934",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i7934",
+          "revision": "definition-r1"
+        }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/8018",
           "revision": "spell-p2-r21"
         },

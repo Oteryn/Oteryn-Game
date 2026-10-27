@@ -48,7 +48,15 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
             super::repair_cause::check(repair)
         }
         Some(FeeBurnCauseV1::Imbuement(imbuement))
-            if imbuement.fee_gold_units() == Some(value.fee_gold_units)
+            // Immutable V1 events retain their original tier price. New commands are
+            // checked against the current fee by item_imbuement and migration 0298.
+            if (imbuement.fee_gold_units() == Some(value.fee_gold_units)
+                || matches!(
+                    (imbuement.action, imbuement.tier, value.fee_gold_units),
+                    (super::imbuement_cause::IMBUEMENT_ACTION_APPLY, 1, 5_000)
+                        | (super::imbuement_cause::IMBUEMENT_ACTION_APPLY, 2, 30_000)
+                        | (super::imbuement_cause::IMBUEMENT_ACTION_APPLY, 3, 200_000)
+                ))
                 && value.lines.len() <= super::imbuement_cause::IMBUEMENT_FEE_INPUTS_MAX
                 && imbuement
                     .item
