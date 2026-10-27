@@ -73,7 +73,7 @@ const INVENTORY: &[Entry] = &[
                 "gameplay_transport/postgres_tests/daily_reward/effects.rs",
                 1,
             ),
-            ("gameplay_transport/postgres_tests/equipped_offence.rs", 1),
+            ("gameplay_transport/postgres_tests/equipped_offence.rs", 2),
             ("gameplay_transport/postgres_tests/hunting_stamina.rs", 3),
         ],
     },

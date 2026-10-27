@@ -245,6 +245,13 @@ fn native_range_auto_attack_commits_lethal_real_vitals_once() {
         )
         .expect("real owner hit");
     assert!((200..=300).contains(&hit.requested));
+    let critical = hit
+        .source_critical
+        .expect("Global monster auto-attack baseline");
+    assert_eq!(
+        critical.bonus_basis_points, 0,
+        "no unqualified damage bonus"
+    );
     let damage = hit.damage.expect("actual damage receipt");
     assert_eq!(damage.applied, 185);
     assert_eq!(damage.health_after, 0);
