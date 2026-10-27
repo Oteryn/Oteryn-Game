@@ -648,15 +648,13 @@ pub fn record_creature_kill(
         // The lethal hit is the untracked principal's own clocked damage.
         facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
     }
-    if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, difficulty)) = forge_kind {
+    if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) = forge_kind
+    {
         let Some(item) = sink.rewards.forge_sliver() else {
             refuse("forge_sliver_inadmissible", &creature);
             return;
         };
-        let count = u32::from(crate::domain::forge_creature::slivers(
-            difficulty,
-            facts.occurrence[14],
-        ));
+        let count = u32::from(crate::domain::forge_creature::slivers(facts.occurrence[14]));
         if count > 0 {
             Arc::make_mut(&mut row)
                 .loot_table
@@ -668,6 +666,13 @@ pub fn record_creature_kill(
                     probability_ppm: Some(1_000_000),
                 });
         }
+    }
+    if let Some((kind, _)) = forge_kind {
+        let Some(amount) = kind.experience(row.xp_amount.get()) else {
+            refuse("forge_xp_overflow", &creature);
+            return;
+        };
+        Arc::make_mut(&mut row).xp_amount = oteryn_simulation_determinism::ExactI64::new(amount);
     }
     let Ok(damage_shares) = owner.reward_damage_shares(target) else {
         refuse("damage_shares_unavailable", &creature);
