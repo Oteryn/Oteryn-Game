@@ -98,7 +98,7 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 12, 14, 18])
             .ok_or("capabilities")?;
-    dispatch_ground(owner, admitted, definition, true).await?;
+    dispatch_ground(owner, admitted, definition, Some((pool, root, child))).await?;
 
     // Each corrupt ancestry class fails closed; restore each fixture before the
     // next assertion. No production constraint or runtime test is disabled.
@@ -278,9 +278,10 @@ pub(super) async fn dispatch_ground(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: crate::gameplay_transport::connection::AdmittedSession,
     definition: std::num::NonZeroU32,
-    nested: bool,
+    nested: Option<(&sqlx::PgPool, [u8; 16], [u8; 16])>,
 ) -> TestResult {
     use tokio::io::AsyncWriteExt;
+    let actor = admitted.runtime_actor.ok_or("actor")?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = crate::gameplay_transport::connection::serve_admitted(
         &mut server,
@@ -327,16 +328,16 @@ pub(super) async fn dispatch_ground(
         }
         let root_handle = root_handle.ok_or("advertised Ground root handle")?;
         client.write_all(&open(1, root_handle)?).await?;
-        let views = read_views(&mut client, 1).await?;
+        let views = read_views(&mut client, 1, 1).await?;
         assert_eq!(views.views[0].container_handle, root_handle);
         assert_eq!(views.views[0].parent_handle, None);
-        if nested {
+        let selected_handle = if nested.is_some() {
             assert_eq!(views.views[0].entries.len(), 1);
             let child_handle = views.views[0].entries[0].handle;
             // The second command uses the handle just advertised by the first
             // command, in the same actual production connection.
             client.write_all(&open(2, child_handle)?).await?;
-            let views = read_views(&mut client, 2).await?;
+            let views = read_views(&mut client, 2, 2).await?;
             let child = views
                 .views
                 .iter()
@@ -344,8 +345,48 @@ pub(super) async fn dispatch_ground(
                 .ok_or("nested view")?;
             assert_eq!(child.parent_handle, Some(root_handle));
             assert!(child.entries.is_empty());
+            child_handle
         } else {
             assert!(views.views[0].entries.is_empty());
+            root_handle
+        };
+        // The connection retains its actual advertised handle and open views.
+        // A historical successful open must not bypass current root reach.
+        let next_command = if nested.is_some() { 3 } else { 2 };
+        move_actor(owner, actor, &[6, 5]).await?;
+        client
+            .write_all(&open(next_command, selected_handle)?)
+            .await?;
+        read_outcome(&mut client, next_command, ContainerViewOutcome::TooFar).await?;
+        move_actor(owner, actor, &[6, 7]).await?;
+        client
+            .write_all(&open(next_command + 1, selected_handle)?)
+            .await?;
+        let expected_views = if nested.is_some() { 2 } else { 1 };
+        let reopened = read_views(&mut client, next_command + 1, expected_views).await?;
+        assert!(
+            reopened
+                .views
+                .iter()
+                .any(|view| view.container_handle == selected_handle)
+        );
+        if let Some((pool, root, child)) = nested {
+            // Explicitly corrupt only fixture topology after this exact live
+            // connection has observed it. Reopening its retained handle must
+            // revalidate ancestry, rather than trust the earlier view.
+            fixture(pool, "INSERT INTO game_item_nested_entries SELECT item_instance_id,world_id,encode($2,'hex')::uuid,1,game_character_uuid_v7() FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid", &[root, child]).await?;
+            client.write_all(&open(5, selected_handle)?).await?;
+            read_outcome(&mut client, 5, ContainerViewOutcome::Stale).await?;
+            fixture(pool, "DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid", &[root]).await?;
+            client.write_all(&open(6, selected_handle)?).await?;
+            let restored = read_views(&mut client, 6, 2).await?;
+            let child = restored
+                .views
+                .iter()
+                .find(|view| view.container_handle == selected_handle)
+                .ok_or("restored nested view")?;
+            assert_eq!(child.parent_handle, Some(root_handle));
+            assert!(child.entries.is_empty());
         }
         client.shutdown().await?;
         Ok::<(), Box<dyn std::error::Error>>(())
@@ -391,6 +432,7 @@ async fn read_frame(client: &mut tokio::io::DuplexStream) -> TestResult<Vec<u8>>
 
 async fn read_views(
     client: &mut tokio::io::DuplexStream,
+    command_id: u64,
     expected: usize,
 ) -> TestResult<ContainerViews> {
     let mut results = 0;
@@ -401,6 +443,7 @@ async fn read_views(
         match envelope.message_type() {
             MessageType::CommandResult => {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                assert_eq!(result.command_id, command_id);
                 assert_eq!(
                     result.status,
                     oteryn_protocol_oteryn::CommandStatus::Accepted
@@ -424,6 +467,46 @@ async fn read_views(
             && views.views.len() == expected
         {
             return latest.ok_or_else(|| "container view delta".into());
+        }
+    }
+}
+
+async fn move_actor(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    steps: &[i32],
+) -> TestResult {
+    let mut runtime = owner.runtime.lock().await;
+    let mut movement = runtime.borrow_movement_position();
+    for &x in steps {
+        let snapshot = movement.read(actor).map_err(debug)?;
+        movement
+            .commit_cardinal(snapshot, MovementLocalPosition { x, y: 0, floor: 7 })
+            .map_err(debug)?;
+    }
+    Ok(())
+}
+
+async fn read_outcome(
+    client: &mut tokio::io::DuplexStream,
+    command_id: u64,
+    expected: ContainerViewOutcome,
+) -> TestResult {
+    loop {
+        let frame = read_frame(client).await?;
+        let envelope = decode_wire_envelope(&frame)?;
+        if envelope.message_type() == MessageType::CommandResult {
+            let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+            assert_eq!(result.command_id, command_id);
+            assert_eq!(
+                result.status,
+                oteryn_protocol_oteryn::CommandStatus::Accepted
+            );
+            assert_eq!(
+                decode_container_view_result(result.payload).map_err(debug)?,
+                expected
+            );
+            return Ok(());
         }
     }
 }

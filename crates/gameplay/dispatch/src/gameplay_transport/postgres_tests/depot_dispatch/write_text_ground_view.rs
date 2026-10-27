@@ -145,7 +145,7 @@ pub(super) async fn exercise(
             .selected_capabilities
             .command_selected(COMMAND_TYPE_CONTAINER_VIEW_INTENT)
     );
-    super::write_text_ground_nested_view::dispatch_ground(owner, admitted, definition, false)
+    super::write_text_ground_nested_view::dispatch_ground(owner, admitted, definition, None)
         .await?;
     {
         let mut runtime = owner.runtime.lock().await;
