@@ -307,6 +307,7 @@ impl PlayerSpellState {
         now: u64,
         facts: native::TickFacts,
     ) -> Vec<native::ConditionTick<String>> {
+        super::food_regeneration::step_due(self, now, facts.in_protection_zone);
         self.conditions.take_due(now, facts)
     }
     pub fn source_set_batch_revision(&mut self, revision: u64) {

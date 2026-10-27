@@ -9,6 +9,26 @@ pub use oteryn_gameplay_progression::regeneration::{
     FOOD_TICK_MS, RegenerationRate, RegenerationState, effective, rate,
 };
 
+/// Every condition consumer advances the same clock before consuming due conditions.
+pub(super) fn step_due(state: &mut PlayerSpellState, now: u64, in_protection_zone: bool) {
+    if state.regeneration_next_tick_us.unwrap_or(now) > now {
+        return;
+    }
+    let fed = state
+        .conditions
+        .active_at(
+            oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
+            now.saturating_sub(1),
+        )
+        .is_some();
+    if in_protection_zone {
+        hold_fed_second(state, fed);
+    } else {
+        credit_second(state, fed);
+    }
+    state.regeneration_next_tick_us = Some(now.saturating_add(u64::from(FOOD_TICK_MS) * 1_000));
+}
+
 /// Credits one fed tick to a living actor. Dead actors neither accumulate nor gain.
 pub fn credit_fed_second(state: &mut PlayerSpellState) {
     apply(state, |regeneration, rate, max_health, max_mana| {
@@ -277,6 +297,48 @@ mod tests {
         run(&mut state, 10, 11, TickFacts::default());
         assert_eq!((state.health, state.mana), (101, 102));
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+    }
+
+    #[test]
+    fn source_condition_clock_is_idempotent_at_the_same_now() {
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+
+        for fed in [false, true] {
+            for in_protection_zone in [false, true] {
+                let mut state = actor(Vocation::Knight);
+                state
+                    .make_playable(SemanticTimeMicros::from_micros(0))
+                    .expect("playable actor");
+                if fed {
+                    eat_food(&mut state, 120, 0).expect("eat");
+                }
+                let facts = TickFacts {
+                    in_protection_zone,
+                    standing_on_field: None,
+                };
+                for now in [1_000_000, 60_000_000] {
+                    let _ = state.source_take_due(now, facts);
+                    assert_eq!(state.regeneration_next_tick_us, Some(now + 1_000_000));
+                    let expected_progress = if now == 1_000_000 { 1_000 } else { 2_000 };
+                    assert_eq!(state.regen_health_ms, expected_progress);
+                    assert_eq!(state.regen_mana_ms, expected_progress);
+                    let before = state.clone();
+                    assert!(state.source_take_due(now, facts).is_empty());
+                    assert_eq!(state, before);
+                    assert!(
+                        super::super::actor_conditions::stage_source_owner_cycle(
+                            &state,
+                            SemanticTimeMicros::from_micros(now),
+                            Some(facts),
+                            None,
+                        )
+                        .expect("same-time environment cycle")
+                        .is_none()
+                    );
+                    assert_eq!(state, before);
+                }
+            }
+        }
     }
 
     #[test]

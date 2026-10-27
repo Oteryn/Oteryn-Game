@@ -524,23 +524,7 @@ fn tick_inner(
         return rejected();
     }
     let mut staged = state.clone();
-    let fed = staged
-        .conditions
-        .active_at(
-            oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
-            now.saturating_sub(1),
-        )
-        .is_some();
-    let regeneration_due = staged.regeneration_next_tick_us.unwrap_or(now);
-    if regeneration_due <= now {
-        if facts.in_protection_zone {
-            super::food_regeneration::hold_fed_second(&mut staged, fed);
-        } else {
-            super::food_regeneration::credit_second(&mut staged, fed);
-        }
-        staged.regeneration_next_tick_us =
-            Some(now.saturating_add(u64::from(super::food_regeneration::FOOD_TICK_MS) * 1_000));
-    }
+    super::food_regeneration::step_due(&mut staged, now, facts.in_protection_zone);
     let mut combat = Vec::new();
     let ticks = if damage {
         staged.conditions.take_due(now, facts)
