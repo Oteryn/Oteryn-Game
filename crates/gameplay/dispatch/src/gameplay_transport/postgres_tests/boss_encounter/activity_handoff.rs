@@ -5,6 +5,9 @@ use super::*;
 #[path = "activity_handoff/concurrency.rs"]
 mod concurrency;
 
+#[path = "activity_handoff/logout.rs"]
+mod logout;
+
 const ACTIVITY_PARTICIPANT_INSERT: &str = "\
     INSERT INTO game_activity_handoff_participants \
     (handoff_id,world_id,character_id,account_id,origin_channel_id, \

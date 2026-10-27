@@ -1,8 +1,9 @@
 -- BOSS-ENCOUNTER-1: retained activity handoff provenance and strict group barrier.
 -- This is storage qualification, not activity admission. In particular, neither
 -- the 0074 house-session CHECK nor the 0247 activity-session refusal is relaxed.
--- The runtime receives read access only until the handoff writer, fresh-session
--- issuance, return/recovery owner and InstanceRuntime are qualified together.
+-- The runtime receives read access only. Its existing terminal-session writer
+-- cancels a pending group through the narrow trigger below; admission, fresh
+-- destination issuance, return/recovery and InstanceRuntime remain unqualified.
 -- Rollback is forward-only: preserve snapshots and committed receipts.
 
 CREATE TABLE game_activity_handoff_groups (
@@ -217,13 +218,57 @@ CREATE CONSTRAINT TRIGGER game_activity_handoff_group_proven AFTER UPDATE
     FOR EACH ROW WHEN (OLD.state = 1 AND NEW.state = 2)
     EXECUTE FUNCTION game_activity_handoff_group_proven();
 
+-- An irreversibly ended source cannot satisfy the future admission barrier.
+-- Abort its entire PREPARED group atomically with the existing terminal-session
+-- writer (logout, grace expiry or replacement); keep every origin snapshot.
+-- A handoff writer must first decide COMMITTED in its own transaction, before
+-- terminalizing sources. The deferred group proof still checks its final state.
+-- No runtime role gets direct group UPDATE or admission authority from this.
+CREATE FUNCTION game_activity_handoff_source_ended() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    v_group RECORD;
+    v_count INTEGER := 0;
+    v_now BIGINT;
+BEGIN
+    FOR v_group IN
+        SELECT g.handoff_id, g.prepared_at
+        FROM game_activity_handoff_participants p
+        JOIN game_activity_handoff_groups g ON g.handoff_id = p.handoff_id
+        WHERE p.source_game_session_id = NEW.game_session_id AND g.state = 1
+        ORDER BY g.handoff_id LIMIT 2 FOR UPDATE OF g NOWAIT
+    LOOP
+        v_count := v_count + 1;
+        IF v_count > 1 THEN
+            RAISE EXCEPTION 'activity source has multiple prepared groups' USING ERRCODE = '23514';
+        END IF;
+        -- Membership/decisions lock group before source. A terminal writer has
+        -- the source already: NOWAIT avoids inverting that order into a deadlock.
+        -- Failure rolls back the whole terminal release; the owner reconciles
+        -- and retries its existing lifecycle rather than retaining half an abort.
+        v_now := floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint;
+        IF v_now < v_group.prepared_at THEN
+            RAISE EXCEPTION 'activity source ended before its preparation time' USING ERRCODE = '23514';
+        END IF;
+        UPDATE game_activity_handoff_groups SET state = 3, decided_at = v_now
+            WHERE handoff_id = v_group.handoff_id AND state = 1;
+    END LOOP;
+    RETURN NULL;
+END; $$;
+CREATE TRIGGER game_activity_handoff_source_ended AFTER UPDATE OF session_state
+    ON game_durability_reconnect_sessions FOR EACH ROW
+    WHEN (OLD.session_state <> 3 AND NEW.session_state = 3)
+    EXECUTE FUNCTION game_activity_handoff_source_ended();
+
 DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_activity_handoff_participant_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_activity_handoff_group_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_activity_handoff_group_proven() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_activity_handoff_source_ended() SET search_path = %I, pg_temp', current_schema());
 END $$;
 REVOKE ALL ON game_activity_handoff_groups, game_activity_handoff_participants FROM PUBLIC;
 REVOKE ALL ON FUNCTION game_activity_handoff_participant_guard(),
-    game_activity_handoff_group_guard(), game_activity_handoff_group_proven() FROM PUBLIC;
+    game_activity_handoff_group_guard(), game_activity_handoff_group_proven(),
+    game_activity_handoff_source_ended() FROM PUBLIC;
 GRANT SELECT ON game_activity_handoff_groups, game_activity_handoff_participants
     TO oteryn_game_runtime, oteryn_game_control;

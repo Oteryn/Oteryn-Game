@@ -2,7 +2,7 @@
 //! The enclosing scenario keeps a real admitted connection and checks it afterward.
 use super::*;
 
-async fn prepare_group(h: &Harness, source: &[u8; 16], tag: u8) -> TestResult<[u8; 16]> {
+pub(super) async fn prepare_group(h: &Harness, source: &[u8; 16], tag: u8) -> TestResult<[u8; 16]> {
     let handoff = fixture::id(tag);
     let inserted = sqlx::query(
         "INSERT INTO game_activity_handoff_groups \
@@ -22,7 +22,7 @@ async fn prepare_group(h: &Harness, source: &[u8; 16], tag: u8) -> TestResult<[u
     Ok(handoff)
 }
 
-async fn abort_group(h: &Harness, handoff: &[u8; 16]) -> TestResult {
+pub(super) async fn abort_group(h: &Harness, handoff: &[u8; 16]) -> TestResult {
     let changed = sqlx::query(
         "UPDATE game_activity_handoff_groups SET state=3,decided_at=1 \
          WHERE handoff_id=encode($1,'hex')::uuid AND state=1",
