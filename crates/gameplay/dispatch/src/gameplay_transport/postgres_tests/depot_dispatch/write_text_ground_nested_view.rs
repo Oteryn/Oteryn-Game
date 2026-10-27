@@ -387,6 +387,29 @@ pub(super) async fn dispatch_ground(
                 .ok_or("restored nested view")?;
             assert_eq!(child.parent_handle, Some(root_handle));
             assert!(child.entries.is_empty());
+            for (owner_lock, command_id) in [(false, 7), (true, 9)] {
+                revalidate_after_lock(
+                    owner,
+                    &mut client,
+                    pool,
+                    root,
+                    selected_handle,
+                    command_id,
+                    owner_lock,
+                )
+                .await?;
+                client
+                    .write_all(&open(command_id + 1, selected_handle)?)
+                    .await?;
+                let restored = read_views(&mut client, command_id + 1, 2).await?;
+                let child = restored
+                    .views
+                    .iter()
+                    .find(|view| view.container_handle == selected_handle)
+                    .ok_or("nested view after Ground proof restoration")?;
+                assert_eq!(child.parent_handle, Some(root_handle));
+                assert!(child.entries.is_empty());
+            }
         }
         client.shutdown().await?;
         Ok::<(), Box<dyn std::error::Error>>(())
@@ -419,6 +442,67 @@ pub(super) async fn dispatch_ground(
     )
     .await?;
     result.ok_or("Ground client did not finish")?
+}
+
+/// Observe a real command-21 read waiting on a physical lock, then change only
+/// the root placement in privileged fixture data. An earlier open and a path
+/// read before the wait must not authorize the now-stale Ground placement.
+async fn revalidate_after_lock(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    client: &mut tokio::io::DuplexStream,
+    pool: &sqlx::PgPool,
+    root: [u8; 16],
+    handle: ItemHandle,
+    command_id: u64,
+    owner_lock: bool,
+) -> TestResult {
+    use tokio::io::AsyncWriteExt;
+    let mut blocker = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *blocker)
+        .await?;
+    let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+        .fetch_one(&mut *blocker)
+        .await?;
+    if owner_lock {
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
+            .bind(owner.world_id.as_bytes().as_slice())
+            .bind(owner.channel_id.as_bytes().as_slice())
+            .execute(&mut *blocker).await?;
+    } else {
+        sqlx::query("SELECT 1 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR UPDATE")
+            .bind(root.as_slice()).execute(&mut *blocker).await?;
+    }
+    let original: Vec<u8> = sqlx::query_scalar("SELECT native_room_placement_context FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(root.as_slice()).fetch_one(&mut *blocker).await?;
+    client.write_all(&open(command_id, handle)?).await?;
+    // The outer exchange driver continues polling serve_admitted while this
+    // future waits. Require an actual database waiter; elapsed time is no proof.
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        loop {
+            let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)))")
+                .bind(pid).fetch_one(pool).await?;
+            if blocked { return Ok::<(), sqlx::Error>(()); }
+            tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+        }
+    }).await??;
+    let mut changed = original.clone();
+    *changed
+        .first_mut()
+        .ok_or("empty Ground placement context")? ^= 1;
+    sqlx::query("UPDATE game_item_ground_locations SET native_room_placement_context=$2 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(root.as_slice()).bind(changed).execute(&mut *blocker).await?;
+    blocker.commit().await?;
+    read_outcome(client, command_id, ContainerViewOutcome::Stale).await?;
+
+    let mut restoring = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *restoring)
+        .await?;
+    sqlx::query("UPDATE game_item_ground_locations SET native_room_placement_context=$2 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(root.as_slice()).bind(original).execute(&mut *restoring).await?;
+    restoring.commit().await?;
+    Ok(())
 }
 
 async fn read_frame(client: &mut tokio::io::DuplexStream) -> TestResult<Vec<u8>> {
