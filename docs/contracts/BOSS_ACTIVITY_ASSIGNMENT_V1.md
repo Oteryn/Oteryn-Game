@@ -69,6 +69,39 @@ and lease fences, and the actual InstanceRuntime. Readiness publication alone do
 not grant any of these. Each admission must allocate a fresh instance; replacing
 an assignment is never admission and does not admit participants.
 
+Migration 0265 adds the storage boundary for that future ownership flow. A group
+retains its World/Instance, activity/template/content binding, destination
+ownership generation and declared participant count. Its append-only membership
+retains each source Channel, exact source session/connection/lease/ownership
+generations, fresh destination session identity, Character interpretation and
+saved entry cell with coordinate-frame/map/artifact digests. The source snapshot
+must match the current Channel session, Character root and saved position when
+inserted. These consistency checks are not current node, recovery, eligibility,
+readiness, content-placement or session-use proofs; the future writer must supply
+those independently within its semantic transaction.
+
+Group membership serializes with the parent decision and competing reservations
+of the same source session. A group only transitions PREPARED to COMMITTED or
+ABORTED, once. Both outcomes and all participant snapshots are retained and
+immutable. An aborted source may retry with fresh group/Instance/destination
+identities; retained abort history does not spend the source session forever.
+A deferred commit constraint requires the entire declared group and every exact
+terminal Channel source plus bound Instance destination. The runtime and control
+roles have SELECT only on these tables. Neither a prepared snapshot nor a group
+receipt grants participant authority. In particular, migration 0265 leaves the
+0074 house-session CHECK and 0247 activity-session refusal unchanged. A successful
+group commit remains unavailable until the real ownership flow is installed;
+this schema is not an admission writer, return receipt or InstanceRuntime.
+
+`boss_cooldown_list_postgres_real_dispatch` additionally qualifies migration 0265
+on its admitted Channel connection. Administrative preparations test isolated
+origin/session/interpretation/entry mismatches, immutable membership and group
+decisions, competing source reservations, retry after abort, the partial-group
+barrier and refusal of a complete membership list without destination ownership.
+All preparations roll back, the participant binding stays unchanged, and the same
+connection must still accept command 133 with the same cooldown page afterward.
+This is storage/refusal qualification, not positive Instance gameplay evidence.
+
 The native PostgreSQL qualification is
 `durability::boss_encounter::activity_assignment_tests::boss_activity_assignment_postgres`.
 It covers real assignment APIs, exact grants, command replay/conflict, readiness

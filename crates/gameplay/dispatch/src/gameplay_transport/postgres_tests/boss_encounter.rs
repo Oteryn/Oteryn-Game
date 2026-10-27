@@ -15,6 +15,9 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::io::AsyncWriteExt;
 
+#[path = "boss_encounter/activity_handoff.rs"]
+mod activity_handoff;
+
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
@@ -125,6 +128,15 @@ async fn qualify_fence_changes(
             refuse_unproven_activity_handoff(h, before, activity, attempt).await?;
             let (status, payload) = query(&mut client, generation, command_id).await?;
             assert_eq!(status, CommandStatus::Accepted, "handoff probe {attempt}");
+            let (_, entries, next) = page(&payload)?;
+            assert_eq!(entries, expected_entries);
+            assert_eq!(next, expected_next);
+            command_id += 1;
+        }
+        if matches!(history_probe, HistoryProbe::None) {
+            activity_handoff::qualify_activity_provenance(h, before, activity).await?;
+            let (status, payload) = query(&mut client, generation, command_id).await?;
+            assert_eq!(status, CommandStatus::Accepted);
             let (_, entries, next) = page(&payload)?;
             assert_eq!(entries, expected_entries);
             assert_eq!(next, expected_next);
