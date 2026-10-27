@@ -15,6 +15,8 @@ use std::sync::Arc;
 
 #[path = "atelier/fixture.rs"]
 mod fixture;
+#[path = "atelier/paid.rs"]
+mod paid;
 
 #[test]
 fn atelier_postgres_runtime_grants_grade_json_reload_and_receipt_constraints() -> TestResult {
@@ -145,6 +147,7 @@ fn scenario() -> TestResult {
             occurrence: id(170),
             expected_atelier_revision: 1,
             mutation: AtelierMutation::SetLock { gem, locked: true },
+            resources: None,
         };
         let mut slot = owner.revision_sequencer.acquire(fence.character_id).await;
         assert!(
@@ -296,10 +299,68 @@ fn scenario() -> TestResult {
             Some("23514")
         );
         tx.rollback().await?;
+        migration_reapplication(&h).await?;
+        paid::exercise(&owner, &h).await?;
+        migration_reapplication(&h).await?;
         drop(restarted);
         drop(owner);
         drop(authority);
         drop(seal);
         h.cleanup().await
     })
+}
+
+// Reapply on initialized and then paid history: proof arms must not accumulate,
+// immutable receipts must survive, and historical imbuement fees stay NOT VALID.
+async fn migration_reapplication(h: &Harness) -> TestResult {
+    let state = stored(h).await?;
+    let definitions = |pool: sqlx::PgPool| async move {
+        sqlx::query_scalar::<_, String>(
+            "SELECT pg_get_functiondef(p.oid) FROM pg_proc p
+             WHERE p.oid IN ('game_item_fee_burn_consistency_guard()'::regprocedure,
+               'game_item_instance_change_proven()'::regprocedure,
+               'game_item_container_entry_removal_proven()'::regprocedure,
+               'game_item_placement_proven()'::regprocedure,
+               'game_item_mint_consistency_guard()'::regprocedure)
+             ORDER BY p.proname LIMIT 5",
+        )
+        .fetch_all(&pool)
+        .await
+    };
+    let receipts = |pool: sqlx::PgPool| async move {
+        sqlx::query_scalar::<_, serde_json::Value>(
+            "SELECT to_jsonb(r) FROM game_character_atelier_receipts r
+             WHERE character_id=encode($1,'hex')::uuid ORDER BY after_revision LIMIT 100",
+        )
+        .bind(id(41).as_slice())
+        .fetch_all(&pool)
+        .await
+    };
+    let history = receipts(h.pool.clone()).await?;
+    assert!(
+        history.len() < 100,
+        "fixture history must fit the bounded read"
+    );
+    let before = definitions(h.pool.clone()).await?;
+    assert_eq!(before.len(), 5);
+    let mut tx = h.pool.begin().await?;
+    sqlx::raw_sql(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../apps/game-server/migrations/0314_character_gem_atelier_paid.sql"
+    )))
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    assert_eq!(definitions(h.pool.clone()).await?, before);
+    assert_eq!(stored(h).await?, state);
+    assert_eq!(receipts(h.pool.clone()).await?, history);
+    let validated: bool = sqlx::query_scalar(
+        "SELECT convalidated FROM pg_constraint
+         WHERE conrelid='game_item_fee_burns'::regclass
+           AND conname='game_item_fee_burns_purchase_cause'",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(!validated, "historical imbuement fee receipts remain valid");
+    Ok(())
 }

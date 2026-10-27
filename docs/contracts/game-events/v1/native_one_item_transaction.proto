@@ -114,8 +114,9 @@ message OneItemTransactionV1 {
     OneItemHouseTransferV1 house_transfer = 11; // HOUSE-RUNTIME-1a additive candidate slot tag
     // Private proposal only; root coordinates Imbue tag 12 and rechecks before publication.
     OneItemForgeDustLimitV1 forge_dust_limit = 13; // material-free D1230 closed shape
-    OneItemCraftV1 craft = 15; // CRAFT-1: fixed cooking consume/mint proof
     OneItemPlayerTradeV1 player_trade = 14; // TRADE-PLAYER-1 writer-only; two reciprocal leaves
+    OneItemCraftV1 craft = 15; // CRAFT-1: fixed cooking consume/mint proof
+    OneItemAtelierV1 atelier = 16; // GEM3: dismantle fragment MINT proof
   }
 }
 
@@ -398,6 +399,9 @@ message OneItemFeeBurnCauseV1 {
     OneItemMarketFeeV1 market_fee = 6;
     OneItemImbuementV1 imbuement = 7;
     OneItemNpcPurchaseV1 npc_travel = 8; // item-only fee, paired with a travel arrival
+    OneItemNpcPurchaseV1 gem_reveal = 9; // paired with the same-transaction Atelier receipt
+    OneItemNpcPurchaseV1 gem_switch_domain = 10;
+    OneItemNpcPurchaseV1 gem_grade_up = 11;
   }
 }
 message OneItemMarketFeeV1 {
@@ -407,6 +411,7 @@ message OneItemMarketFeeV1 {
 message OneItemNpcPurchaseV1 {
   string service_key = 1;
   bytes occurrence = 2;
+  bytes atelier_proof = 3; // only GemReveal / GemGradeUp; same transaction's item BURN proof
 }
 
 // Shrine apply or clear, combined with its item-only fee in one transaction.
@@ -705,3 +710,6 @@ message OneItemTimedRepairV1 {
 // source before-state, fresh outputs and ordinals, station and scope generation.
 // Fixed cooking only: one input unit, at most four new outputs, no random draw.
 message OneItemCraftV1 { bytes proof = 1; }
+// Canonical JSON proof: Character, occurrence, closed mutation, parent and before/after item lines.
+// The Atelier receipt and existing custody guards bind every line in the same physical transaction.
+message OneItemAtelierV1 { bytes proof = 1; }

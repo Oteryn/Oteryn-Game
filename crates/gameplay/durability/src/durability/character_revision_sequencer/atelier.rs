@@ -10,7 +10,7 @@ impl RevisionSlot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
-        request: AtelierRequest,
+        request: AtelierRequest<'_>,
         ruleset: Arc<WheelRuleset>,
         gate: &G,
     ) -> Result<AtelierOutcome, CharacterProgressionError> {

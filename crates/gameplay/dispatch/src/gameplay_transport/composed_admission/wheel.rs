@@ -19,26 +19,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             _ => None,
         };
-        if let (Ok(Some(fence)), Some(ruleset), Some(gate)) = (
+        if let (Ok(Some(fence)), Some(_), Some(_)) = (
             self.current_quest_fence(session).await,
             &self.wheel_ruleset,
             self.premium_coordinator,
         ) {
-            let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-            // The permanent receipt is also the initialization marker on reconnect/restart.
-            let _ = slot
-                .atelier(
-                    self.root,
-                    self.character,
-                    self.holder,
-                    fence,
-                    crate::durability::character_atelier::AtelierRequest::initialize(
-                        fence.character_id,
+            let _ = self
+                .commit_gem_build(
+                    session,
+                    super::super::atelier::GemBuildCommand::Atelier(
+                        crate::durability::character_atelier::AtelierRequest::initialize(
+                            fence.character_id,
+                        ),
                     ),
-                    std::sync::Arc::clone(ruleset),
-                    gate,
                 )
                 .await;
+        }
+        let atelier = self
+            .root
+            .read_character_atelier(
+                self.character,
+                match self.current_quest_fence(session).await {
+                    Ok(Some(fence)) => fence.character_id,
+                    _ => return,
+                },
+            )
+            .await
+            .ok()
+            .flatten();
+        if let Ok(mut sessions) = self.states.atelier_sessions.lock() {
+            sessions.insert(session, atelier);
         }
         if let Ok(mut sessions) = self.states.wheel_sessions.lock() {
             sessions.insert(session, allocation);
@@ -96,7 +106,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .ok()?
             .get(&session)?
             .clone()?;
-        project_wheel_runtime_effects(&allocation, vocation, level, promoted, premium)
+        let mut effects =
+            project_wheel_runtime_effects(&allocation, vocation, level, promoted, premium)?;
+        if allocation.current
+            && level > 50
+            && promoted
+            && premium
+            && let Some(state) = self
+                .states
+                .atelier_sessions
+                .lock()
+                .ok()?
+                .get(&session)
+                .cloned()
+                .flatten()
+        {
+            let data =
+                oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded().ok()?;
+            effects.contribute_gems(&state, &data, &allocation)?;
+        }
+        Some(effects)
     }
 }
 

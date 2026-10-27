@@ -140,6 +140,15 @@ fn operation_fixtures() -> Vec<(u32, &'static str, OneItemOperationV1)> {
                 proof: vec![0x81, 0x07],
             }),
         ),
+        (
+            16,
+            "Atelier",
+            OneItemOperationV1::Atelier(
+                crate::durability::character_atelier::custody::OneItemAtelierV1 {
+                    proof: vec![0x81, 0x07],
+                },
+            ),
+        ),
     ]
 }
 
@@ -157,6 +166,7 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
             2,
             "PromotionPurchase",
             FeeBurnCauseV1::PromotionPurchase(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
                 service_key: "promotion".into(),
                 occurrence: vec![0x81, 0x07],
             }),
@@ -165,6 +175,7 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
             3,
             "BlessingPurchase",
             FeeBurnCauseV1::BlessingPurchase(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
                 service_key: "blessing".into(),
                 occurrence: vec![0x81, 0x07],
             }),
@@ -208,7 +219,35 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
             8,
             "NpcTravel",
             FeeBurnCauseV1::NpcTravel(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
                 service_key: "travel".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
+        (
+            9,
+            "GemReveal",
+            FeeBurnCauseV1::GemReveal(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "reveal".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
+        (
+            10,
+            "GemSwitchDomain",
+            FeeBurnCauseV1::GemSwitchDomain(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "switch".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
+        (
+            11,
+            "GemGradeUp",
+            FeeBurnCauseV1::GemGradeUp(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "grade".into(),
                 occurrence: vec![0x81, 0x07],
             }),
         ),
@@ -231,6 +270,10 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("ForgeDustLimit", "08016a06488101900107"),
         ("PlayerTrade", "080172040a028107"),
         ("Craft", "08017a040a028107"),
+        ("Atelier", "08018201040a028107"),
+        ("GemReveal", "4a0c0a0672657665616c12028107"),
+        ("GemSwitchDomain", "520c0a0673776974636812028107"),
+        ("GemGradeUp", "5a0b0a05677261646512028107"),
         ("CharmUnassign", "0a0b0a05636861726d12028107"),
         ("PromotionPurchase", "120f0a0970726f6d6f74696f6e12028107"),
         ("BlessingPurchase", "1a0e0a08626c657373696e6712028107"),
