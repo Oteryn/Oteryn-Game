@@ -1984,6 +1984,7 @@ pub(super) mod tests {
         assert_eq!(
             sites,
             [
+                "crates/gameplay/durability/src/durability/character_atelier/custody.rs",
                 "crates/gameplay/durability/src/durability/character_forge_dust.rs",
                 "crates/gameplay/durability/src/durability/character_inbox/reward_claim/mint.rs",
                 "crates/gameplay/durability/src/durability/house_interior.rs",
