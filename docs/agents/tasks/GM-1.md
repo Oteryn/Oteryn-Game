@@ -1,5 +1,33 @@
 # GM-1 — GM tools, mute, kick, staff audit and reports (consolidated task card)
 
+## GM-TOOLS-2 increment — 2026-10-27
+
+This increment uses reserved migration `0295` and extends the existing signed staff
+owner rather than creating a second moderation authority. Capability `0144` and
+command `0165` remain unused because the existing staff transport already provides
+the production dispatch boundary.
+
+| behaviour | Canary/Crystal ref | Oteryn | status |
+|---|---|---|---|
+| Signed kick moderation record | Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`; Crystal `201189f871d23597b82caf88fd611454a2ddefb8` (exact audit semantics: Not verified) | Existing signed, roster-authorized request dispatch atomically writes the immutable kick record and `STAFF_ACTION` outbox event; exact replay returns the retained outcome | Implemented |
+| Immediate target transport release | Not verified | No live target-session consumer yet | Remaining |
+| Ban and namelock | Not verified | Existing owner not identified on main | Remaining |
+| Teleport to player/position | Not verified | Not implemented | Remaining |
+| Ghost/invisible | Not verified | Not implemented | Remaining |
+| Broadcast | Not verified | Not implemented | Remaining |
+
+Validation:
+
+- `cargo fmt --all` — PASS.
+- `cargo test -p oteryn-gameplay-social-rules staff_rules_` — PASS.
+- `cargo test -p oteryn-gameplay-dispatch --all-features staff_pg_signed_wire_mute_receipt_replay_restart_and_fail_closed -- --nocapture` — see current task evidence.
+- `cargo clippy -p oteryn-gameplay-social-rules -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-features -- -D warnings` — see current task evidence.
+
+Remaining: connect committed kick records to the existing fenced logout owner, then
+implement ban/namelock through their accepted owner, teleport, ghost/invisible and
+broadcast. Qualify each through real dispatch, including replay and PostgreSQL
+restart cases.
+
 ```yaml
 task_id: GM-1
 title: "GM-1: signed staff requests with atomic STAFF_ACTION audit; mute, kick, inspect, item-text reports, restore replay"

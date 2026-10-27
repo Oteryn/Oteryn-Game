@@ -120,3 +120,25 @@ WHEEL-0 §4 on the CHAR-REV-SEQ-1 sequencer. No wire (W-2), no combat effect (W-
 
 Independent persistence review on the final frozen head; the control plane requests it. The W-R
 runtime carry (D484) is stated in the PR body for review.
+
+## 2026-10-27 — WHEEL-RT-1 stat-perk increment
+
+| behaviour | Canary/Crystal ref | Oteryn | status |
+|---|---|---|---|
+| Allocated dedication points project HP, mana, capacity and mitigation | Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`; Crystal `201189f871d23597b82caf88fd611454a2ddefb8` | Closed embedded vocation table, current allocation, and live eligibility facts | Implemented |
+| Ineligible allocation has no effects | Canary/Crystal pins above | Premium, promotion, level and ruleset currency fail closed | Implemented |
+| Exact live-server parity | TibiaWiki/tibia.com reading only | Not verified | Not verified |
+
+Validation:
+
+- `cargo fmt --all --check`: pass.
+- `cargo test -p oteryn-gameplay-progression wheel_effects`: pass.
+- `cargo test -p oteryn-gameplay-dispatch --all-features wheel`: pass.
+- `cargo clippy -p oteryn-gameplay-progression -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings`: pass.
+
+Remaining:
+
+- Apply the projection to the live vitals, inventory-capacity, and damage-mitigation owners.
+- Add the allocation command (reserved command 0164/capability 0143) and refresh the admitted
+  actor after its durable commit (reserved migration 0293 if persistence changes are required).
+- Revelation skill/heal/resistance bonuses and gems.

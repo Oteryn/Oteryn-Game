@@ -42,6 +42,9 @@ pub enum Action {
         character_id: String,
         sanction_id: String,
     },
+    Kick {
+        character_id: String,
+    },
 }
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -106,7 +109,7 @@ pub fn atom(value: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || b"-_.@".contains(&c))
 }
 impl Request {
-    pub fn valid(&self, _role: StaffRole) -> bool {
+    pub fn valid(&self, role: StaffRole) -> bool {
         let target = match &self.action {
             Action::Inspect { character_id } => character_id,
             Action::Mute {
@@ -123,6 +126,12 @@ impl Request {
                 sanction_id,
             } => {
                 if !hex(sanction_id, 16) {
+                    return false;
+                }
+                character_id
+            }
+            Action::Kick { character_id } => {
+                if !matches!(role, StaffRole::Gm | StaffRole::SeniorGm | StaffRole::Admin) {
                     return false;
                 }
                 character_id

@@ -56,4 +56,33 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             })
             .unwrap_or_default()
     }
+
+    /// Current dedication bonuses for stat/combat owners. Like stages, this is recomputed from
+    /// the session allocation on every read, so admission and a replaced allocation cannot
+    /// retain an old projection.
+    pub fn wheel_stat_bonuses(
+        &self,
+        session: GameSessionId,
+        vocation: &str,
+        level: u32,
+        promoted: bool,
+        premium: bool,
+    ) -> Option<oteryn_gameplay_progression::wheel_effects::WheelStatBonuses> {
+        let allocation = self
+            .states
+            .wheel_sessions
+            .lock()
+            .ok()?
+            .get(&session)?
+            .clone()?;
+        let data = oteryn_gameplay_progression::wheel_gem_data::WheelGemData::embedded().ok()?;
+        oteryn_gameplay_progression::wheel_effects::derive_stat_bonuses(
+            data.wheel(),
+            &allocation,
+            vocation,
+            level,
+            promoted,
+            premium,
+        )
+    }
 }

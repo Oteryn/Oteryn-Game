@@ -568,7 +568,7 @@ fn scenario() -> TestResult {
             )
             .fetch_one(&harness.pool)
             .await?,
-            19980
+            19975
         );
         let cancel = MarketRequest {
             action: 7,
