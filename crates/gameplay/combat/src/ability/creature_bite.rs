@@ -169,6 +169,18 @@ pub enum BiteRejection {
 /// The Channel owner's vitals of its present player actors (SPELL-D2). The vitals owner
 /// implements it; a bite reaches the player's health only through this one method.
 pub trait CreatureBiteVitals {
+    /// Evaluate the incoming occurrence before spending blocks or committing damage. A true
+    /// result cancels this hit; an unavailable Charm view returns false and combat proceeds.
+    fn dodge_creature_attack(
+        &mut self,
+        _runtime: &ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        _base_damage: u32,
+    ) -> bool {
+        false
+    }
+
     /// EQMOD2: the incoming source calls once after blocking and before HP/mana shield.
     /// The source stream's clock is strictly increasing; extension hits never enter here.
     #[allow(clippy::too_many_arguments)]
@@ -351,6 +363,17 @@ fn resolve_and_apply(
         }
         _ => return Err(BiteRejection::InvalidPlan),
     };
+    if vitals.dodge_creature_attack(runtime, intent.target, intent.target_session, magnitude) {
+        let hit = vitals
+            .apply_creature_damage(runtime, intent.target, intent.target_session, 0, now)
+            .ok_or(BiteRejection::StaleTarget)?;
+        return Ok(AppliedBite {
+            requested: magnitude,
+            damage: hit.damage,
+            vitals_revision: hit.vitals_revision,
+            death: hit.death,
+        });
+    }
     // ARMOR-MITIGATION-1 / SHIELD-DEFENCE-1: a blocked hit's defence, then worn armor, reduce
     // the hit before the vitals owner's reductions and mana shield (`game.cpp`
     // `combatBlockHit` precedes `combatChangeHealth`).

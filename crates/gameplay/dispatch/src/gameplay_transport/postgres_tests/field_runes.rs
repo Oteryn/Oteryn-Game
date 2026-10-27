@@ -965,6 +965,16 @@ async fn field_scenario_inner(
             }
         }
         if committed {
+            // Map publication has its own cadence: a command result does not
+            // guarantee that the client has received the field's session handle.
+            // Await that dependency before cooldown readers can discard its delta.
+            if matches!(output, 2128 | 2130) {
+                while field_handle.is_none() {
+                    let frame = read_frame(&mut client).await?;
+                    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                    field_handle = field_handle_from_wire(&envelope, &map_header, start)?;
+                }
+            }
             let delta = owner
                 .observe_world_map(actor, &mut map_view, &mut map_items)
                 .await
@@ -1769,15 +1779,28 @@ async fn qualify_creature_entry(
     start: MovementLocalPosition,
     output: u32,
 ) -> TestResult<crate::foundation::ExactActorRef> {
-    use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
     let creature = {
         let mut runtime = owner.runtime.lock().await;
-        owner
+        let native = owner
             .active_generation
             .and_then(|active| active.native_gameplay())
-            .ok_or("native content")?
-            .install_companion_policies(&mut runtime)
-            .map_err(debug)?;
+            .ok_or("native content")?;
+        // Keep damage/replay observations deterministic across the Forge population tick.
+        let mut policy = native
+            .policies()
+            .policies()
+            .iter()
+            .find(|policy| policy.definition_key == "oteryn:creature.cyclops")
+            .ok_or("target creature policy")?
+            .as_ref()
+            .clone();
+        policy.forge_difficulty = None;
+        let policies = crate::content::creature_policy::CompiledCreaturePolicies::from_active_artifact(
+            native.source_digest(),
+            vec![policy],
+        )
+        .map_err(debug)?;
+        runtime.install_companion_policies(policies).map_err(debug)?;
         let pin = runtime.content_pin().clone();
         runtime
             .realize_native_qualification_spawn(
@@ -2556,7 +2579,8 @@ async fn qualify_field_restart(
     };
     assert_eq!(*ownership_generation, generation);
     *ready = true;
-    let publisher = FieldReadiness(change);
+    let mut publisher = super::fresh_fixture::fresh::Source::new(now)?;
+    publisher.rows = vec![change];
     let publication = AdmissionAuthorityPublicationV1::prepare(&publisher, now).map_err(debug)?;
     assert_eq!(
         owner
@@ -2630,16 +2654,4 @@ async fn qualify_field_restart(
         "retrying the recovery pass never retires twice"
     );
     Ok(peer)
-}
-
-struct FieldReadiness(
-    crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationChangeV1,
-);
-impl crate::foundation::fnd04_verifier::fresh_source_sealed::Sealed for FieldReadiness {}
-impl crate::foundation::admission_authority_publication::AdmissionAuthorityOwningPublisherV1
-    for FieldReadiness
-{
-    fn resolve_publication(&self,_now:i64)->Result<Vec<crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationChangeV1>,crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1>{
-        Ok(vec![self.0.clone()])
-    }
 }
