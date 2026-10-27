@@ -76,3 +76,61 @@ fn a_sealed_use_carries_its_gate_message_id_only_under_capability_11() -> Result
         Ok(())
     })
 }
+
+#[test]
+fn prey_unoffered_command_is_refused_by_real_dispatch() -> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::prey::{self, CAPABILITY_PREY_V1, COMMAND_TYPE_PREY};
+    run(async {
+        for offered in [
+            super::super::super::capabilities::PRODUCTION_OFFERED_CAPABILITIES,
+            super::super::super::capabilities::ITEM_VIEW_OFFERED_CAPABILITIES,
+            super::super::super::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
+        ] {
+            let selected =
+                SelectedCapabilities::select(offered, &[CAPABILITY_PREY_V1]).ok_or("selection")?;
+            assert!(!selected.as_slice().contains(&CAPABILITY_PREY_V1));
+            assert!(!selected.command_selected(COMMAND_TYPE_PREY));
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
+                overlay: None,
+                watermark: None,
+                outcome: UseOutcome {
+                    disposition: UseDisposition::NothingToUse,
+                    committed: None,
+                    earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
+                    refusal_detail: None,
+                },
+            };
+            let admitted = AdmittedSession {
+                continuity: SessionContinuity {
+                    selected_capabilities: selected,
+                    ..SessionContinuity::FRESH
+                },
+                ..positioned()?
+            };
+            for payload in [
+                prey::encode_request(&prey::Request::Query).map_err(|e| format!("{e:?}"))?,
+                vec![255],
+            ] {
+                let mut command = Vec::new();
+                scalar(&mut command, 1, 1);
+                scalar(&mut command, 2, u64::from(COMMAND_TYPE_PREY));
+                bytes(&mut command, 4, &payload);
+                let command = envelope(7, ADMITTED_GENERATION, &command);
+                let (_, frames) = drive_session(&authority, admitted, &[command]).await?;
+                assert!(frames.contains(&encode_command_result(
+                    1,
+                    1,
+                    1,
+                    CommandStatus::Rejected,
+                    &[]
+                )?));
+                assert!(authority.uses.borrow().is_empty());
+                assert!(authority.commands.borrow().is_empty());
+            }
+        }
+        Ok(())
+    })
+}
