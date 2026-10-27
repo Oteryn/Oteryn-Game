@@ -8,7 +8,6 @@ use super::item_transfer::{
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
-use crate::domain::premium::PremiumGate;
 use crate::foundation::CommandRef;
 use oteryn_gameplay_content::content::ReferenceItemField::Known;
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
@@ -27,7 +26,6 @@ pub struct StashRequest {
     /// Current page membership. A durable replay precedes ephemeral view resolution.
     pub row_open: bool,
     pub access_refusal: Option<StashOutcome>,
-    pub premium: PremiumGate,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -207,9 +205,6 @@ async fn plan<C: ItemLoopContent>(
         StashAction::Stow(_) => {
             if !request.row_open {
                 refuse!(Stale);
-            }
-            if !request.premium.premium_current() {
-                refuse!(PremiumRequired);
             }
             let Some(source) = request.source else {
                 refuse!(Stale)

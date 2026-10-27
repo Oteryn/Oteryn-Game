@@ -36,5 +36,8 @@ message StashReplyV1 {
 // Receipt fields (transaction, outcome) are durable. Page rows are a fresh view
 // and are omitted outside reach, including on a historical receipt replay.
 // Existing domain 9/11/14 inventory refresh follows a committed conversion.
-// Native rules differ intentionally from Canary: Premium stow, whole main-bag
+// Stow and withdrawal are available to free and expired-Premium accounts
+// (Global news 8076); pinned Canary still requires Premium for stow.
+// Outcome 10 remains reserved for compatibility and historical receipts.
+// Native rules differ intentionally from Canary: whole main-bag
 // sources, 20 output stacks, atomic full withdrawal, no top-up/loot routing.

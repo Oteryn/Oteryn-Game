@@ -3,7 +3,7 @@
 **Status dokumentu: DRAFT — indeks planów, nie deklaracja gotowości produktu.**
 
 - Data zestawienia: 2026-10-23, Europe/Warsaw.
-- Zakres: cooking, mining, boss encounters i Store; nie jest to pełny katalog mechanik.
+- Zakres: cooking, mining, boss encounters, Store i Stash; nie jest to pełny katalog mechanik.
 - `docs/agents/MECHANICS_STATUS.md` nie istniał w bazowym drzewie. Format tabeli
   pochodzi z `docs/architecture/reviews/OTERYN_GAME_TIBIA_MECHANICS_STATUS_DRAFT_2026-10-16.md`;
   historyczne statusy klienta z tamtego audytu nie są tu aktualizowane.
@@ -23,6 +23,7 @@
 | Cooking / food crafting (COOK-1) | 🔵 Plan w [CRAFT-1](tasks/CRAFT-1.md) | Do weryfikacji przy alokacji | Składniki, przepisy, oven/fire i jedzenie z regen; rozszerzenie poniżej, bez nowej karty. |
 | Mining / gathering (MINING-1) | 🔵 [waiting](tasks/MINING-1.md) | Do weryfikacji przy alokacji | Pick na stone/ore, resource cooldown/respawn i drops; osobna decyzja o yields. |
 | In-game Store (STORE-1) | 🔵 [waiting](tasks/STORE-1.md) | Do weryfikacji przy alokacji | Balance, catalogue, durable fenced purchase i history przez kontrakt Platform; bez real payments. |
+| Stash — free accounts (NEWS-HIST-STASH-FREE-1) | Stow i withdraw dla Free i wygasłego Premium; istniejący fenced item owner i replay | Istniejące capability 62, command 79 i domain 27 | Walidacja lokalna i porównanie źródeł: [STASH-FINAL](../../STASH-FINAL.md). Bez migracji; pozostałe ograniczenia bez zmian. |
 
 ## COOK-1 — rozszerzenie istniejącego CRAFT-1
 

@@ -16,6 +16,7 @@ use crate::durability::item_mint::{
     GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest,
 };
 use crate::durability::item_transfer::{ItemTransferDestination, ItemTransferRequest};
+use crate::durability::premium_fence::EntitlementState;
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -31,7 +32,7 @@ use oteryn_protocol_oteryn::depot::*;
 fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false, false, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(None, false, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "depot e2e panicked")?
         .map_err(Into::into)
@@ -41,9 +42,38 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
 fn stash_session_dispatch_conserves_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true, false, false, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| {
+            scenario(Some(EntitlementState::Active), false, false, false, false)
+                .map_err(|e| e.to_string())
+        })?
         .join()
         .map_err(|_| "stash e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn stash_free_account_session_dispatch_conserves_and_replays() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario(Some(EntitlementState::None), false, false, false, false)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "free stash e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn stash_expired_premium_session_dispatch_conserves_and_replays() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario(Some(EntitlementState::Expired), false, false, false, false)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "expired Premium stash e2e panicked")?
         .map_err(Into::into)
 }
 
@@ -51,7 +81,7 @@ fn stash_session_dispatch_conserves_and_replays() -> TestResult {
 fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, true, false, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(None, true, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "ground container e2e panicked")?
         .map_err(Into::into)
@@ -61,7 +91,7 @@ fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> Tes
 fn write_text_ground_nested_container_real_dispatch_observes_ancestry_and_reach() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, true, true, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(None, true, true, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "nested Ground container e2e panicked")?
         .map_err(Into::into)
@@ -71,7 +101,7 @@ fn write_text_ground_nested_container_real_dispatch_observes_ancestry_and_reach(
 fn write_text_depot_real_dispatch_revalidates_session_after_page_wait() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false, false, true, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(None, false, false, true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "depot session e2e panicked")?
         .map_err(Into::into)
@@ -81,19 +111,20 @@ fn write_text_depot_real_dispatch_revalidates_session_after_page_wait() -> TestR
 fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, true, true, false, true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(None, true, true, false, true).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "Ground movement view e2e panicked")?
         .map_err(Into::into)
 }
 
 fn scenario(
-    stash: bool,
+    stash_account: Option<EntitlementState>,
     ground_container: bool,
     nested_ground: bool,
     depot_session: bool,
     ground_movement: bool,
 ) -> TestResult {
+    let stash = stash_account.is_some();
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
             .await
@@ -258,9 +289,14 @@ fn scenario(
             )
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let (consumer, clock, activation, _) =
+        let (consumer, clock, activation, mut proof) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
-        if stash {
+        if let Some(state) = stash_account {
+            proof.state = state;
+            if state == EntitlementState::Expired {
+                proof.effective_until_us = activation.switch_over_us;
+            }
+            consumer.prove_for_test(proof);
             harness
                 .root
                 .latch_premium_activation(
@@ -476,28 +512,13 @@ fn scenario(
             return harness.cleanup().await;
         }
         if stash {
-            use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
-            let free = owner
-                .stash(
-                    deps.actor,
-                    UseCommand {
-                        game_session_id: session,
-                        command_id: 900,
-                        item_fence: Some(fence),
-                    },
-                    StashIntent {
-                        page: 0,
-                        action: StashAction::Stow(handle),
-                    },
-                    Some(ItemKey::Instance(carried.ok_or("source")?)),
-                    true,
-                )
-                .await
-                .ok_or("free refusal")?;
-            assert_eq!(free.outcome, StashOutcome::PremiumRequired);
+            assert!(!owner.session_premium_gate(session).await.premium_current());
             owner.premium_coordinator = Some(&premium);
             owner.admit_premium(id(40), session);
-            assert!(owner.session_premium_gate(session).await.premium_current());
+            assert_eq!(
+                owner.session_premium_gate(session).await.premium_current(),
+                stash_account == Some(EntitlementState::Active)
+            );
             let other_handles = stacks
                 .iter()
                 .skip(1)
