@@ -108,3 +108,4 @@ crates/gameplay/world/src/map/floor/quest_callback.rs | source_step_seal::Sealed
 # same Movement proof boundary as BundleStepProof and SourceStepProof (CP review required).
 crates/gameplay/world/src/map/floor/rope.rs | source_step_seal::Sealed | RopeProof<'_>
 crates/gameplay/world/src/movement/source_floor_change.rs | source_step_seal::Sealed | SourceStepProof<'_>
+crates/gameplay/dispatch/src/gameplay_transport/kill_reward_postgres_fixture/summer_handoff.rs | fresh_source_sealed::Sealed | Ready
