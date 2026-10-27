@@ -11,7 +11,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     actor: ExactActorRef,
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
-    item_view: &Option<SessionItemView>,
+    item_view: &mut Option<SessionItemView>,
 ) -> Option<Dispatch> {
     Some({
         if let Ok(intent) = oteryn_protocol_oteryn::depot::decode_depot_intent(command.payload) {
@@ -21,6 +21,11 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 }
                 _ => None,
             };
+            // A new attempt replaces the connection's previous view, including when
+            // the owner cannot complete its read. Never retain stale access on `None`.
+            if let Some(view) = item_view.as_mut() {
+                view.open_depot = None;
+            }
             let reply = authority
                 .depot(
                     actor,
@@ -33,6 +38,21 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     item,
                 )
                 .await?;
+            // A historical MOVED receipt can arrive without a current town/page.
+            // Only a freshly opened, encodable view records owner-observed box data.
+            // This does not grant reach: the writer must still recheck under the lane.
+            if let Some(view) = item_view.as_mut()
+                && reply.box_number == intent.box_number
+                && reply.page == intent.page
+                && matches!(
+                    reply.outcome,
+                    oteryn_protocol_oteryn::depot::DepotOutcome::Opened
+                        | oteryn_protocol_oteryn::depot::DepotOutcome::Moved
+                )
+                && oteryn_protocol_oteryn::depot::encode_depot_reply(&reply).is_ok()
+            {
+                view.open_depot = reply.town.map(|town| (town, reply.box_number));
+            }
             Dispatch::Depot(reply)
         } else {
             Dispatch::Unregistered
