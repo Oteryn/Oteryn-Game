@@ -19,8 +19,10 @@
 
 | Mechanika / funkcja | Serwer | Klient | Co pozostaje |
 |---|---|---|---|
+| Critical-hit baseline (NEWS-HIST-CRIT-1) | Bazowe 5% / +10% gracza w auto-atakach i projekcji spell/rune; domyślne 1% auto-ataku potwora | Bez zmiany protokołu | [CRIT-FINAL](../../CRIT-FINAL.md): kwalifikacja obrażeń krytycznych potworów i istniejąca luka konsumpcji imbuementów w walce; Powerful Strike w katalogu 5% / +40%. |
 | Supply Stash — free accounts (DEPOT-FREE-STASH-1) | Stow i withdraw dostępne dla Free i expired Premium; istniejący fenced owner, ograniczenia i replay zachowane | Bez zmian protokołu | Lokalna kwalifikacja i parity: [FSTASH-FINAL](../../FSTASH-FINAL.md). |
 | Boss encounters / Bosstiary (BOSS-1) | 🔵 Plan w [MONSTER-META-1](tasks/MONSTER-META-1.md) | Do weryfikacji przy alokacji | Cooldown postaci, lever/room entry, kill credit, loot i Bosstiary; rozszerzenie poniżej, bez nowej karty. |
+| Container sort (NEWS-HIST-CONTAINER-SORT-1) | Worktree implementation: fenced item-loop ordinal permutation; name, total weight, expiry, stack size; both directions, bags first, recursive | Capability 146 / command 168 registered; native UI unsupported fragment | Auto-sort on insertion; native UI; exact-head independent review and CI before integration. |
 | Cooking / food crafting (COOK-1) | 🔵 Plan w [CRAFT-1](tasks/CRAFT-1.md) | Do weryfikacji przy alokacji | Składniki, przepisy, oven/fire i jedzenie z regen; rozszerzenie poniżej, bez nowej karty. |
 | Mining / gathering (MINING-1) | 🔵 [waiting](tasks/MINING-1.md) | Do weryfikacji przy alokacji | Pick na stone/ore, resource cooldown/respawn i drops; osobna decyzja o yields. |
 | In-game Store (STORE-1) | 🔵 [waiting](tasks/STORE-1.md) | Do weryfikacji przy alokacji | Balance, catalogue, durable fenced purchase i history przez kontrakt Platform; bez real payments. |

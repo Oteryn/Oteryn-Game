@@ -51,6 +51,9 @@ pub const ITEM_LOOP_CHANNEL_DROPS_MAX: i64 = 20_000;
 /// The prefix of every loop drop's Ground `corpse_ref` (0128 `game_item_loop_drop_ref`).
 pub const ITEM_LOOP_DROP_REF_PREFIX: &[u8] = b"OTERYN_ITEM_LOOP_DROP/v1:";
 
+#[path = "container_sort.rs"]
+pub mod container_sort;
+
 const KIND_NONE: i16 = 0;
 const KIND_MAIN: i16 = 1;
 const KIND_NESTED: i16 = 2;
@@ -324,6 +327,8 @@ async fn committed_loop_move(
     }
     let equipment: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_character_equipment_receipts \
+          WHERE game_session_id = encode($1,'hex')::uuid AND command_id = $2::text::numeric(20,0) \
+          UNION ALL SELECT 1 FROM game_item_container_sort_receipts \
           WHERE game_session_id = encode($1,'hex')::uuid AND command_id = $2::text::numeric(20,0))",
     )
     .bind(command.game_session_id().as_bytes().as_slice())

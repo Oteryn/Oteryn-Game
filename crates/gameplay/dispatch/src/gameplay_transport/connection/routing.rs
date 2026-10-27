@@ -29,6 +29,7 @@ pub(super) enum Dispatch {
     UseItem(OpenDecision, Option<ItemViewDelta>),
     /// BAGS-WIRE-1: command 21; the domain 14 delta follows the result.
     ContainerView(ContainerViewOutcome, Option<ItemViewDelta>),
+    ContainerSort(Vec<ItemViewDelta>),
     /// ITEM-MOVE-1: command 9; the domain 11 and domain 9 deltas follow the result.
     /// PARITY-REFUSAL-DETAIL-1: the refusal detail a folded outcome hides, if any.
     ItemMove(

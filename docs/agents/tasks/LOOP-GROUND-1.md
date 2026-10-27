@@ -601,3 +601,32 @@ component results retain their old exact source maps; this transfer alone does
 not qualify the published aggregate or the complete mechanic. The future D1096
 proposal changes the existing module's visibility rather than registering it
 twice, installs one aggregate case include, and deletes the disabled old target.
+## GROUND-CLEAN-1 increment — 2026-10-27
+
+This increment routes planned-server-save Ground cleanup through the existing
+world-reset/decay-retire owner while excluding durable `game_house_tiles`.
+Selection is derived again on every resumable one-item pass, so a restart does
+not turn an in-memory map view into custody authority. No migration is needed.
+
+| behaviour | Canary/Crystal ref | Oteryn | status |
+|---|---|---|---|
+| Planned-save cleanup removes ordinary Ground roots | Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`; Crystal `201189f871d23597b82caf88fd611454a2ddefb8` (exact implementation location Not verified) | Existing `retire_world_reset_ground` production boot path | retained |
+| House-tile Ground custody survives cleanup | Canary/Crystal exact parity: Not verified | Durable house-tile anti-join in the existing reset selector, covered through the mounted PostgreSQL authority dispatch | implemented |
+| Protection-zone Ground custody survives cleanup | Canary/Crystal exact parity: Not verified | No durable protection-tile cleanup classification yet | remaining |
+| Dropped non-corpse items expire between resets | Canary/Crystal exact lifetime: Not verified | No periodic ordinary-item deadline yet | remaining |
+
+Validation results:
+
+- `cargo fmt --all -- --check` — passed.
+- `cargo test -p oteryn-game-server --test character_authority_postgres world_reset_ground` — passed when `OTERYN_TEST_POSTGRES_ADMIN_URL` is configured; otherwise the mounted cases return `Ok(())` by contract.
+- `cargo test -p oteryn-gameplay-dispatch --all-features ground` — passed.
+- `cargo clippy -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --all-features -- -D warnings` — passed.
+
+Remaining:
+
+- Add a durable, authoritative protection-tile classification and exclude it
+  from planned-save cleanup.
+- Add durable deadlines and production scheduling for dropped non-corpse items,
+  without duplicating the decay-retire owner.
+- Qualify full bundle house metadata so the planned-reset composition root can
+  remove its current conservative bundle-world refusal.
