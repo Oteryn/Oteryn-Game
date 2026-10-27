@@ -1,6 +1,8 @@
 //! Ground storage qualification with explicit location/reach fixtures, not ingress.
 use super::*;
 
+mod tree_tests;
+
 fn ground() -> LoopGround {
     LoopGround {
         spatial_position: [

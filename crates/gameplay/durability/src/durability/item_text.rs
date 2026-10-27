@@ -3,9 +3,9 @@
 //! This is a bounded producer with its native storage ACL in migration 0101 and
 //! registered Content/storage modules, awaiting actual transport composition.
 //! It admits neither write-once definitions nor house custody locations.
-//! Ground admission is limited to direct loop drops and unchanged map-MINT or
-//! native-map initialized items, with owner-observed reach data and the existing
-//! map producers' source proofs.
+//! Ground admission is limited to loop drops and unchanged map-MINT or
+//! native-map initialized roots, including their bounded nested trees, with
+//! owner-observed reach/open-view data and the existing map source proofs.
 //! The compositor must also apply the Channel trade owner's physical exclusion
 //! under its mutation lane (WRITE-0 §5.1). Do not activate this writer before
 //! that guard and the actual transport composition are integrated.
@@ -313,9 +313,10 @@ impl DurabilityRoot {
     /// view must not prevent an exact terminal replay or COMMIT reconciliation.
     /// `ground` is likewise current owner-observed placement DATA, after checking
     /// one-tile same-floor reach under the retained lane. Storage independently
-    /// locks and checks exact current loop-drop or receipt-proven map custody;
-    /// this tuple grants no reach.
-    /// Other Ground sources and external container trees remain unavailable.
+    /// locks and checks exact current loop-drop or receipt-proven map root custody;
+    /// this tuple grants no reach or open-container view. For a nested target the
+    /// compositor must also prove its current open external tree under that lane.
+    /// Other Ground sources, including corpse/reward trees, remain unavailable.
     #[allow(clippy::too_many_arguments)]
     pub async fn commit_item_text_rewrite(
         &self,
@@ -447,7 +448,7 @@ async fn carried_text_path(
 /// read after waiting. A foreign, detached, cyclic or overdeep path fails closed.
 /// Depot transfers use the same Character root/item lock order. Only a direct
 /// box entry is admitted: the depot writer does not yet host nested containers.
-/// A direct loop drop or unchanged map source retains the Ground owner lock and
+/// A loop-drop or unchanged map root retains the Ground owner lock and
 /// current scope assignment lock acquired by the Character fence. Houses remain closed.
 async fn lock_carried_text_item(
     tx: &mut Transaction<'_, Postgres>,
@@ -504,10 +505,15 @@ async fn lock_carried_text_item(
     if held {
         return Ok(());
     }
-    if path.len() == 1
-        && let Some(ground) = ground
-        && lock_ground_text_item(tx, fence, request, ground).await?
+    if let Some(ground) = ground
+        && let Some(root) = path.last()
+        && lock_ground_text_item(tx, fence, request, root, ground).await?
     {
+        // Ground owner acquisition may itself wait. Retain every sorted item
+        // lock and reread the bounded path after that wait as well.
+        if carried_text_path(tx, &request.item_instance_id).await? != path {
+            return Err(ItemTextWriteError::NotReachable);
+        }
         return Ok(());
     }
     let Some((town, box_number)) = open_depot else {
@@ -557,6 +563,7 @@ async fn lock_ground_text_item(
     tx: &mut Transaction<'_, Postgres>,
     fence: &CurrentCharacterItemFence,
     request: &ItemTextWriteRequest,
+    root: &str,
     ground: &LoopGround,
 ) -> Result<bool> {
     if super::spell_items_abi::decode_ground_cell(&ground.spatial_position).is_err() {
@@ -573,7 +580,8 @@ async fn lock_ground_text_item(
     Ok(sqlx::query_scalar::<_, bool>(
         "SELECT true FROM game_item_ground_locations g \
           JOIN game_item_instances i USING (item_instance_id, world_id) \
-          WHERE g.item_instance_id=encode($1,'hex')::uuid \
+          JOIN game_item_instances target ON target.item_instance_id=encode($12,'hex')::uuid \
+          WHERE g.item_instance_id=$1::uuid \
             AND g.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid \
             AND g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
             AND g.spatial_position=$5 AND g.map_revision=$6 AND g.content_revision=$7 \
@@ -600,10 +608,11 @@ async fn lock_ground_text_item(
                        AND r.placement_context=r.frame_digest \
                        AND (a.transaction_id,a.event_id,a.envelope,a.envelope_digest,a.created_xact_id) \
                          = (r.transaction_id,r.event_id,r.source_intent,r.binding,r.created_xact_id))) \
-            AND i.definition_family=$9 AND i.definition_production_key=$10 AND i.definition_revision_ref=$11 \
-          FOR SHARE OF i",
+            AND target.world_id=g.world_id \
+            AND target.definition_family=$9 AND target.definition_production_key=$10 AND target.definition_revision_ref=$11 \
+          FOR SHARE OF i, target",
     )
-    .bind(request.item_instance_id.as_slice())
+    .bind(root)
     .bind(world.as_bytes().as_slice())
     .bind(channel.as_bytes().as_slice())
     .bind(fence.scope_ownership_generation.get().to_string())
@@ -614,6 +623,7 @@ async fn lock_ground_text_item(
     .bind(&request.definition.family)
     .bind(&request.definition.production_key)
     .bind(&request.definition.revision_ref)
+    .bind(request.item_instance_id.as_slice())
     .fetch_optional(&mut **tx)
     .await?
     .unwrap_or(false))
