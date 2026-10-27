@@ -66,7 +66,13 @@ impl DurabilityRoot {
                 super::super::spell_item_transaction::assert_spell_item_scope_with_recovery(&mut tx,permit,&record,&node,scope,generation)
                     .await.map_err(|_|DurabilityError::Unavailable)?;
                 let changed=port(&mut tx,&node,"advance",&p).await?;
-                if changed.as_bool()==Some(true) { audit::write(&mut tx,&node,&p,&operation).await?; }
+                if changed.as_bool()==Some(true) {
+                    audit::write(&mut tx,&node,&p,&operation).await?;
+                    sqlx::query_scalar::<_, bool>("SELECT game_house_move_out_release($1::uuid)")
+                        .bind(&operation)
+                        .fetch_one(&mut *tx)
+                        .await?;
+                }
                 commit_semantic_transaction(tx,deadline).await?;
                 Ok(())
             })).await;

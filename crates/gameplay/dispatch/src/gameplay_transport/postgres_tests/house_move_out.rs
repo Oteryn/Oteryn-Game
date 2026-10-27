@@ -292,7 +292,7 @@ fn scenario() -> TestResult {
         seed::overdue(&h).await?;
         seed::prepare_entrant(&h).await?;
         seed::assert_unproven_checkpoint_closed(&h).await?;
-        for (phase, count, state) in [(0, 0, 2), (1, 100, 2), (2, 101, 3), (3, 101, 3)] {
+        for (phase, count, state) in [(0, 0, 2), (1, 100, 2)] {
             // Fresh Root and composed owner after every committed boundary, including DRAINED.
             h.root = seed::runtime_root(&h, &admin).await?;
             let seal = h.recovery.seal_current().map_err(debug)?;
@@ -319,6 +319,17 @@ fn scenario() -> TestResult {
                 seed::blocked_steps_rollback(&h, &owner).await?;
             }
             commands = std::mem::take(&mut owner.states.command_ingress);
+        }
+        // The final bounded batch and owner release are one commit.  Rebuilding the
+        // Root afterwards proves the released terminal receipt is restart-safe.
+        h.root = seed::runtime_root(&h, &admin).await?;
+        {
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+            deps.owner(&h, &authority)
+                .drain_source_house_dispositions()
+                .await
+                .map_err(debug)?;
         }
         seed::assert_final(&h, *recipient.as_bytes()).await?;
         seed::assert_runtime_privileges(&h).await?;

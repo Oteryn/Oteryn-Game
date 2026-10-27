@@ -245,12 +245,12 @@ pub(super) async fn assert_final(h: &Harness, recipient: [u8; 16]) -> TestResult
             .fetch_one(&h.pool)
             .await?;
     assert_eq!(remaining, 0);
-    let retained: bool =
-        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_ownership WHERE house_key=$1)")
+    let released: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_house_ownership WHERE house_key=$1 AND owner_character_id IS NULL) AND EXISTS(SELECT 1 FROM game_house_properties WHERE house_key=$1 AND state=1 AND owner_character_id IS NULL AND owner_account_id IS NULL) AND NOT EXISTS(SELECT 1 FROM game_account_housing_slots WHERE house_key=$1) AND EXISTS(SELECT 1 FROM game_house_dispositions WHERE house_key=$1 AND released_at IS NOT NULL)")
             .bind(HOUSE)
             .fetch_one(&h.pool)
             .await?;
-    assert!(retained);
+    assert!(released);
     let events:i64=sqlx::query_scalar("SELECT count(*) FROM game_house_disposition_audit_outbox WHERE event_type_id=8 AND envelope_sha256=sha256(envelope)").fetch_one(&h.pool).await?;
     assert_eq!(events, 7); // notice/cancel twice, freeze, 100, 1
     assert!(
