@@ -39,18 +39,6 @@ pub struct Pushed {
 }
 
 impl Pushed {
-    pub(super) fn set_marker(&mut self, entry: WorldObjectOverlayEntry) {
-        if let Some(held) = self
-            .markers
-            .iter_mut()
-            .find(|held| held.placement == entry.placement)
-        {
-            *held = entry;
-        } else if self.markers.len() < MAX_PUSHED_MARKERS {
-            self.markers.push(entry);
-        }
-    }
-
     /// Folds `newer` over `self`: its position and entries win.
     fn absorb(&mut self, newer: Self) {
         self.own = newer.own.or(self.own);
