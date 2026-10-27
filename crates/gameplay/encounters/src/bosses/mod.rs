@@ -7,6 +7,7 @@ pub mod herald_of_fire;
 pub mod icicle;
 pub mod native_combat;
 pub mod resilience;
+pub mod rotten_blood;
 pub mod rum_barrel;
 pub mod seven_encounters;
 pub mod smelly_cheese;
