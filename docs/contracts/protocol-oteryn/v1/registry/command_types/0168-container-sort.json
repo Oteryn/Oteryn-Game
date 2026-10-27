@@ -1,0 +1,10 @@
+{
+  "id": 168,
+  "name": "CONTAINER_SORT",
+  "owner_decision": "NEWS-HIST-CONTAINER-SORT-1",
+  "capability": 146,
+  "payload_schema": "container-sort-v1.md#request",
+  "result_schema": "container-sort-v1.md#reply",
+  "max_payload_bytes": 4,
+  "max_result_payload_bytes": 1
+}

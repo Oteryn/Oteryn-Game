@@ -26,6 +26,17 @@ pub struct EquippedOffence {
 }
 
 impl EquippedOffence {
+    /// Global news 8421: intrinsic 5% chance and 10% extra damage, additive with
+    /// equipment/imbuements. Keep the equipment projection itself equipment-only.
+    /// Skill sums saturate at the existing u16 limit; rolls remain 1..=10000.
+    #[must_use]
+    pub const fn player_critical(&self) -> (u16, u16) {
+        (
+            self.critical_chance.saturating_add(500),
+            self.critical_damage.saturating_add(1000),
+        )
+    }
+
     /// Clamp signed per-skill sums into the skill range.
     #[must_use]
     pub fn from_sums(
@@ -44,20 +55,21 @@ impl EquippedOffence {
         }
     }
 
-    /// Whether a swing draws the critical roll at all (`combat.cpp:2724`: no chance, no roll).
+    /// Player swings always draw: Global's intrinsic chance survives empty equipment.
     #[must_use]
     pub const fn rolls_critical(&self) -> bool {
-        self.critical_chance != 0
+        self.player_critical().0 != 0
     }
 
     /// The damage after a critical hit check (`Combat::applyExtensions`, `combat.cpp:2724-2735`):
     /// a roll at most the chance multiplies by `1 + bonus / 10000`, truncated.
     #[must_use]
     pub fn critical(&self, damage: u32, roll: u64) -> u32 {
-        if !self.rolls_critical() || roll > u64::from(self.critical_chance) {
+        let (chance, extra) = self.player_critical();
+        if roll > u64::from(chance) {
             return damage;
         }
-        let multiplied = u64::from(damage) * (10_000 + u64::from(self.critical_damage)) / 10_000;
+        let multiplied = u64::from(damage) * (10_000 + u64::from(extra)) / 10_000;
         u32::try_from(multiplied).unwrap_or(u32::MAX)
     }
 
@@ -208,7 +220,10 @@ mod tests {
                 ..EquippedOffence::default()
             }
         );
-        assert!(!offence.rolls_critical());
+        assert!(
+            offence.rolls_critical(),
+            "the player retains the intrinsic chance"
+        );
     }
 
     #[test]
@@ -218,11 +233,48 @@ mod tests {
             critical_damage: 2500,
             ..EquippedOffence::default()
         };
-        assert_eq!(offence.critical(40, 500), 50, "the boundary roll is a hit");
-        assert_eq!(offence.critical(40, 1), 50);
-        assert_eq!(offence.critical(40, 501), 40);
-        assert_eq!(offence.critical(41, 1), 51, "the product is truncated");
-        assert_eq!(EquippedOffence::default().critical(40, 1), 40);
+        assert_eq!(offence.critical(40, 1000), 54, "the boundary roll is a hit");
+        assert_eq!(offence.critical(40, 1), 54);
+        assert_eq!(offence.critical(40, 1001), 40);
+        assert_eq!(offence.critical(41, 1), 55, "the product is truncated");
+        assert_eq!(EquippedOffence::default().critical(40, 1), 44);
+    }
+
+    #[test]
+    fn global_critical_baseline_item_strike_and_skill_cap_compose_once() {
+        let base = EquippedOffence::default();
+        assert_eq!(base.player_critical(), (500, 1000));
+        assert_eq!(base.critical(100, 500), 110);
+        assert_eq!(base.critical(100, 501), 100);
+        let item = EquippedOffence::from_sums(700, 2500, 0, 0);
+        assert_eq!(item.player_critical(), (1200, 3500));
+        // Powerful Strike's accepted catalogue constants stay 5% / 40%.
+        let strike = EquippedOffence::from_sums(500, 4000, 0, 0);
+        assert_eq!(strike.player_critical(), (1000, 5000));
+        assert_eq!(strike.critical(100, 1000), 150);
+        let capped = EquippedOffence::from_sums(i64::MAX, i64::MAX, 0, 0);
+        assert_eq!(capped.player_critical(), (u16::MAX, u16::MAX));
+        assert_eq!(capped.critical(10_000, 10_000), 75_535);
+        assert_eq!(capped.critical(u32::MAX, 1), u32::MAX);
+    }
+
+    #[test]
+    fn powerful_strike_catalogue_keeps_global_five_percent_forty_percent()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../rulesets/items/imbuements/catalogue.json"
+        ))?;
+        let strike = catalogue["definitions"]
+            .as_array()
+            .and_then(|definitions| definitions.iter().find(|d| d["name"] == "Strike"))
+            .ok_or("accepted Strike definition")?;
+        let powerful = strike["tiers"]
+            .as_array()
+            .and_then(|tiers| tiers.iter().find(|tier| tier["tier"] == 3))
+            .ok_or("accepted Powerful Strike")?;
+        assert_eq!(powerful["effect"]["chance_bps"], 500);
+        assert_eq!(powerful["effect"]["extra_damage_bps"], 4000);
+        Ok(())
     }
 
     #[test]

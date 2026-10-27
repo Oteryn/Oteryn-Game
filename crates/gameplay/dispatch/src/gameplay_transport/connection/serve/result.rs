@@ -131,6 +131,7 @@ pub(super) fn encode(
                 ),
             )
         }
+        Dispatch::ContainerSort(_) => (CommandStatus::Accepted, vec![1]),
         Dispatch::ContainerView(outcome, _) => (
             CommandStatus::Accepted,
             encode_container_view_result(*outcome),

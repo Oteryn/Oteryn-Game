@@ -762,6 +762,11 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 "game_item_loop_line_admit",
                 "game_item_loop_owner",
                 "game_item_transfer_consistency_guard",
+                // MAIL-1: the posting apply function is the one MAIL Inbox
+                // writer (fenced SECURITY DEFINER, 0271); completion only reads
+                // the delivered Inbox row back as its final-custody proof.
+                "game_mail_posting_apply",
+                "game_mail_posting_complete",
                 // MARKET-1: read-only final-custody proof of the Inbox output;
                 // delivery goes through game_character_inbox_deliver.
                 "game_market_complete",

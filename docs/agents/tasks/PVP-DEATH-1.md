@@ -276,3 +276,34 @@ OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test -p oteryn-game-server --test chara
 OTERYN_TEST_POSTGRES_ADMIN_URL=... cargo test -p oteryn-game-server --test character_authority_postgres pvp_state_postgres_cases::
 python3 tools/agents/validate_governance.py
 ```
+
+## 2026-10-27 — PVP-LETHAL-2 blessing disposition increment
+
+This delivery intentionally takes the common-rule small-slice option: it completes the
+production Twist-of-Fate/regular-blessing disposition on the existing dispatched death
+transaction. It does not claim the still-missing lethal attribution or item-custody work.
+Migration 0294 remains unused and reserved.
+
+| behaviour | Canary/Crystal ref | Oteryn | status |
+|---|---|---|---|
+| Ordinary PvP death with at least one regular blessing and Twist keeps the regular blessings and consumes Twist | Canary pin `47dfd51f45280a59a1d3e50ba7edd573d7234446`; Crystal pin `201189f871d23597b82caf88fd611454a2ddefb8`; exact source location **Not verified** | Pure disposition rule, real fenced death transaction, and dispatch PostgreSQL case | Implemented |
+| PvP death with Twist but no regular blessing keeps Twist | Same pins; exact source location **Not verified** | Pure disposition rule | Implemented |
+| Effective red/black skull prevents Twist protection; regular blessings are consumed and Twist remains | Same pins; exact source location **Not verified** | Death-transaction skull preimage read plus pure disposition rule | Implemented |
+| Adventurer protection consumes no blessing, including when presented conflicting skull facts | Accepted Oteryn decision D1105; upstream parity **Not verified** | Existing Adventurer decision remains highest precedence | Implemented |
+| PvE death consumes regular blessings but keeps Twist | Same pins; exact source location **Not verified** | Shared death transaction now excludes Twist from regular-blessing count and consumption | Implemented |
+
+### Validation
+
+- `cargo fmt --all -- --check` — passed.
+- `cargo test -p oteryn-gameplay-combat-rules pvp` — passed.
+- `cargo test -p oteryn-gameplay-dispatch pvp_death_dispatch_commits_points_marks_and_skull_state_together --all-features` — passed (the PostgreSQL case returns `Ok(())` when the admin URL is absent).
+- `cargo test -p oteryn-gameplay-entities --all-features` — passed (175 unit tests and 6 doctests).
+- `cargo clippy -p oteryn-gameplay-combat-rules -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings` — passed.
+
+### Remaining
+
+- Lethal-source attribution and the exact five-percent/final-blow classification.
+- Amulet of Loss and equipment/backpack custody outcomes, including forced red/black loss.
+- Receipt-pinned black-skull respawn vitals (40 HP / 0 mana).
+- Revenge-mark avenging closure and full delayed-settlement guard qualification.
+- Live player-target classification/wire qualification; expert-mode legality exists, while native-client controls are outside this server-only task.
