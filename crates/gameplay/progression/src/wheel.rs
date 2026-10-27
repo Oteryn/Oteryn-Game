@@ -21,7 +21,9 @@ pub const WHEEL_LEVEL_OFFSET: u32 = 50;
 pub const TEMPLE_REMOVAL_RADIUS: u32 = 10;
 
 /// The four domains, in the order `WheelStages` reports them.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub enum WheelDomain {
     Green,
     Red,

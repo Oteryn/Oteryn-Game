@@ -2,6 +2,7 @@
 
 pub mod account_achievement;
 pub mod achievement_catalogue;
+pub mod atelier;
 pub mod bestiary;
 pub mod charm_effects;
 pub mod daily_reward;
