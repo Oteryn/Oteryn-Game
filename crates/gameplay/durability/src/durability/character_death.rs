@@ -179,7 +179,7 @@ impl DurabilityRoot {
             fence,
             request,
             None,
-            promotion::DeathPremiumState::default(),
+            None,
         )
         .await
     }
@@ -201,7 +201,7 @@ impl DurabilityRoot {
             fence,
             request,
             Some(formula),
-            promotion::DeathPremiumState::default(),
+            None,
         )
         .await
     }

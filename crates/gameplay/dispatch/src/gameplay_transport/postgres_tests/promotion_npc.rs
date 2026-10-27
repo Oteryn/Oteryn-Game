@@ -247,6 +247,28 @@ fn scenario() -> TestResult {
         );
         // Display was admitted once; losing entitlement cannot erase permanent promotion.
         consumer.release(id(40));
+        assert_eq!(
+            owner
+                .states
+                .premium_sessions
+                .lock()
+                .map_err(debug)?
+                .1
+                .get(&session),
+            Some(&true)
+        );
+        // Re-admission projects the current entitlement rather than retaining the old display.
+        owner.admit_promotion(session).await;
+        assert_eq!(
+            owner
+                .states
+                .premium_sessions
+                .lock()
+                .map_err(debug)?
+                .1
+                .get(&session),
+            Some(&false)
+        );
         assert!(
             owner
                 .root
@@ -254,7 +276,18 @@ fn scenario() -> TestResult {
                 .await
                 .map_err(debug)?
         );
-        consumer.prove_for_test(proof);
+        consumer.prove_for_test(proof.clone());
+        owner.admit_promotion(session).await;
+        assert_eq!(
+            owner
+                .states
+                .premium_sessions
+                .lock()
+                .map_err(debug)?
+                .1
+                .get(&session),
+            Some(&true)
+        );
         // Fund the Bank through its existing production deposit writer before unequipping.
         let (gold, platinum, crystal) = {
             let runtime = dependencies.runtime.lock().await;
@@ -431,6 +464,71 @@ fn scenario() -> TestResult {
                 .1
                 .get(&session),
             Some(&true)
+        );
+
+        // A fresh death after lapse must ignore the still-promoted login display.
+        let lapsed_death = crate::gameplay_transport::actor_spell::PlayerDeath {
+            occurrence: crate::durability::character_death::PlayerDeathOccurrence::from_bytes(id(
+                221,
+            ))
+            .map_err(debug)?,
+            cell,
+        };
+        // Hold the death's transaction lock while Premium is still current, then revoke
+        // only after the writer is demonstrably waiting. A pre-transaction snapshot would
+        // incorrectly retain the reduction when this lock is released.
+        consumer.prove_for_test(proof);
+        let mut blocker = h.pool.begin().await?;
+        let blocker_pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+            .fetch_one(&mut *blocker)
+            .await?;
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:character-death:' || encode($1,'hex'),0))")
+            .bind(id(221).as_slice())
+            .execute(&mut *blocker)
+            .await?;
+        let monitor_pool = h.pool.clone();
+        let revoke_consumer = consumer.clone();
+        let revoke_when_blocked = tokio::spawn(async move {
+            tokio::time::timeout(std::time::Duration::from_secs(10), async {
+                loop {
+                    let waiting: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid)))",
+                    )
+                    .bind(blocker_pid)
+                    .fetch_one(&monitor_pool)
+                    .await?;
+                    if waiting {
+                        break Ok::<(), sqlx::Error>(());
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+            })
+            .await??;
+            revoke_consumer.release(id(40));
+            blocker.rollback().await?;
+            Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+        });
+        let (settled, _) = owner.commit_death(session, &progression, lapsed_death).await;
+        revoke_when_blocked.await?.map_err(debug)?;
+        assert_eq!(settled, crate::gameplay_transport::DeathCommit::Settled);
+        let (level, lost, held): (i64, i64, Vec<String>) = sqlx::query_as(
+            "SELECT level_before,experience_lost,blessings_before FROM game_character_death_receipts WHERE death_occurrence_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(221).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert!(held.is_empty());
+        assert_eq!(
+            u128::try_from(lost)?,
+            crate::domain::death::death_experience_loss(u32::try_from(level)?, 0, false)
+                .map_err(debug)?
+        );
+        assert!(
+            owner
+                .root
+                .read_promotion_for_session(&authority, &h.node, fence)
+                .await
+                .map_err(debug)?
         );
 
         drop(owner);

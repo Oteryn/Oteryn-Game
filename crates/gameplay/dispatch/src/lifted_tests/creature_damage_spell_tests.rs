@@ -25,6 +25,9 @@ struct CurrentWorld {
     blocked: bool,
     facing: Option<Facing>,
     extra: Vec<(ExactActorRef, GameSessionId, u32)>,
+    levels: std::collections::BTreeMap<[u8; 16], u32>,
+    party_area: Option<crate::content::ProjectV2ReferenceLevelOverride>,
+    party_members: Vec<ExactActorRef>,
 }
 impl SpellWorldReader for CurrentWorld {
     fn current_players(
@@ -75,16 +78,36 @@ impl SpellWorldReader for CurrentWorld {
             return None;
         }
         let mut facts = self.facts.clone();
-        if self.facts.attack.target == t && self.facts.attack.session == s {
-            return Some(facts);
+        if self.facts.attack.target != t || self.facts.attack.session != s {
+            let (_, _, m) = self
+                .extra
+                .iter()
+                .find(|(a, session, _)| *a == t && *session == s)?;
+            facts.attack.target = t;
+            facts.attack.session = s;
+            facts.multiplier_ppm = *m;
         }
-        let (_, _, m) = self
-            .extra
-            .iter()
-            .find(|(a, session, _)| *a == t && *session == s)?;
-        facts.attack.target = t;
-        facts.attack.session = s;
-        facts.multiplier_ppm = *m;
+        if let Some(level) = self.levels.get(&t.placement_identity()) {
+            facts.attack.player_level = *level;
+        }
+        facts.attack.reference_level_party_lowest = self.party_area.as_ref().and_then(|area| {
+            self.party_members
+                .contains(&t)
+                .then(|| {
+                    self.party_members
+                        .iter()
+                        .filter_map(|member| {
+                            let position = r.read_actor_position(*member).ok()?.position();
+                            crate::creature_auto_attack::reference_level_area_contains(
+                                area, position,
+                            )
+                            .then(|| self.levels.get(&member.placement_identity()).copied())
+                            .flatten()
+                        })
+                        .min()
+                })
+                .flatten()
+        });
         Some(facts)
     }
 }
@@ -341,6 +364,7 @@ fn setup_named(
             defense: 0,
             armor: 0,
             player_level: 1,
+            reference_level_party_lowest: None,
         },
         multiplier_ppm: 1_000_000,
         immune: false,
@@ -363,6 +387,9 @@ fn setup_named(
             blocked: false,
             facing: None,
             extra: vec![],
+            levels: Default::default(),
+            party_area: None,
+            party_members: vec![],
         },
         fence,
         stamp,
@@ -2683,4 +2710,216 @@ fn summer_current_templar_holy_target_uses_runtime_fence_and_replays_without_dam
 #[test]
 fn summer_current_templar_holy_target_lethal_hit_retains_the_existing_death_receipt() {
     qualify_current_spell_lethal("radiant_templar", 2);
+}
+
+#[test]
+fn reference_level_party_area_attack_shares_base_roll_and_scales_each_player() {
+    use crate::content::{
+        ProjectV2Bounds, ProjectV2ReferenceLevelOverride, ProjectV2ReferenceLevelPartyMode as Mode,
+    };
+    use crate::creature_auto_attack::{
+        DAMAGE_MULTIPLIER_SCALE, monster_reference_level_damage_multiplier,
+    };
+    for (mode, lookup, cap) in [
+        (Mode::PerPlayer, true, Some(790)),
+        (Mode::LowestMember, true, Some(790)),
+        (Mode::LowestMember, false, Some(790)),
+        (Mode::LowestMember, true, None),
+    ] {
+        let (mut runtime, _, mut source, proposal, mut world, fence, stamp) = setup();
+        let mut states = ChannelSpellStates::default();
+        let mut low_facts = FACTS;
+        low_facts.level = 300;
+        let mut high_facts = FACTS;
+        high_facts.level = 800;
+        states
+            .initialize(
+                &runtime,
+                proposal.target,
+                world.facts.attack.session,
+                low_facts,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .expect("low-level owned state");
+        source.minimum = 10;
+        source.maximum = 20;
+        source.armor = false;
+        source.reference_level = Some(900); // Explicit null area must override this default.
+        let area = ProjectV2ReferenceLevelOverride {
+            bounds: ProjectV2Bounds {
+                min_x: 90,
+                min_y: 90,
+                max_x_exclusive: 111,
+                max_y_exclusive: 111,
+            },
+            floor: 7,
+            reference_level: cap,
+            party_mode: mode,
+            curve: vec![],
+        };
+        source.reference_level_overrides = vec![area.clone()];
+        let session = GameSessionId::decode(&test_uuid(0x75)).expect("second session");
+        let reservation = runtime.reserve_fresh_session(session).expect("reserve");
+        let second = runtime.commit_fresh_session(reservation).expect("commit");
+        let at = runtime
+            .read_actor_position(proposal.target)
+            .expect("target position")
+            .position();
+        runtime
+            .initialize_source_pinned_lab_player_position(second, session, at)
+            .expect("second position");
+        states
+            .initialize(
+                &runtime,
+                second,
+                session,
+                high_facts,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .expect("second vitals");
+        world.extra.push((second, session, DAMAGE_MULTIPLIER_SCALE));
+        world
+            .levels
+            .insert(proposal.target.placement_identity(), low_facts.level);
+        world
+            .levels
+            .insert(second.placement_identity(), high_facts.level);
+        world.party_members = vec![proposal.target, second];
+        world.party_area = lookup.then_some(area);
+        let mut owner = DamageSpellOwner::default();
+        let hit = owner
+            .execute(
+                &mut runtime,
+                &fence,
+                stamp,
+                &mut states,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("party area hit");
+        assert_eq!(hit.targets.len(), 2);
+        for (actor, result) in &hit.targets {
+            let level = if *actor == proposal.target || mode == Mode::LowestMember && lookup {
+                300
+            } else {
+                800
+            };
+            let mut target_facts = world.facts.attack;
+            target_facts.player_level = level;
+            let multiplier = monster_reference_level_damage_multiplier(
+                cap,
+                &[],
+                runtime
+                    .read_actor_position(*actor)
+                    .expect("position")
+                    .position(),
+                &target_facts,
+            );
+            let applied = result
+                .as_ref()
+                .expect("hit")
+                .damage
+                .expect("HP receipt")
+                .applied;
+            assert_eq!(
+                u64::from(applied),
+                u64::from(hit.requested) * u64::from(multiplier)
+                    / u64::from(DAMAGE_MULTIPLIER_SCALE)
+            );
+        }
+        let replay = owner
+            .execute(
+                &mut runtime,
+                &fence,
+                stamp,
+                &mut states,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(3_000_000),
+            )
+            .expect("replay");
+        assert_eq!(hit, replay);
+    }
+}
+
+#[test]
+fn reference_level_observed_area_curves_reach_real_damage_dispatch() {
+    use crate::content::{ProjectV2Bounds, ProjectV2ReferenceLevelOverride};
+    let examples: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../docs/reference/monster-reference-level-observations.json"
+    )))
+    .expect("observed calibrations");
+    for example in examples.as_array().expect("areas") {
+        for observation in example["observations"].as_array().expect("observations") {
+            let (mut runtime, mut states, mut source, proposal, mut world, fence, stamp) = setup();
+            source.minimum = 100;
+            source.maximum = 100;
+            source.armor = false;
+            source.reference_level_overrides = vec![ProjectV2ReferenceLevelOverride {
+                bounds: ProjectV2Bounds {
+                    min_x: 90,
+                    min_y: 90,
+                    max_x_exclusive: 111,
+                    max_y_exclusive: 111,
+                },
+                floor: 7,
+                reference_level: Some(
+                    serde_json::from_value(example["reference_level"].clone()).expect("cap"),
+                ),
+                party_mode: Default::default(),
+                curve: serde_json::from_value(example["curve"].clone()).expect("curve"),
+            }];
+            let cap = source.reference_level_overrides[0]
+                .reference_level
+                .expect("cap");
+            let origin = runtime
+                .read_actor_position(proposal.issuer)
+                .expect("origin")
+                .position();
+            let at_deficit = |deficit| {
+                let mut facts = world.facts.attack;
+                facts.player_level = cap - deficit;
+                crate::creature_auto_attack::monster_reference_level_damage_multiplier(
+                    None,
+                    &source.reference_level_overrides,
+                    origin,
+                    &facts,
+                )
+            };
+            assert!(
+                at_deficit(101) - at_deficit(100) > 3 * (at_deficit(100) - at_deficit(99)),
+                "observed calibration accelerates at the soft-100 boundary"
+            );
+            world.facts.attack.player_level =
+                serde_json::from_value(observation[0].clone()).expect("level");
+            let hit = DamageSpellOwner::default()
+                .execute(
+                    &mut runtime,
+                    &fence,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(2_000_000),
+                )
+                .expect("calibrated hit");
+            assert_eq!(
+                hit.targets[0]
+                    .1
+                    .as_ref()
+                    .expect("hit")
+                    .damage
+                    .expect("HP receipt")
+                    .applied,
+                100 + observation[1].as_u64().expect("extra ppm") as u32 / 10_000
+            );
+        }
+    }
 }

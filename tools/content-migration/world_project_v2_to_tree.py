@@ -256,6 +256,9 @@ def main() -> int:
     ]
 
     profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])}
+    for key, profile in profiles.items():
+        if key[0] == "Creature":
+            profile["profile"]["details"].setdefault("reference_level", None)
     creature_shards: dict[str, list[str]] = {}
     creature_counts: dict[str, int] = {}
     for family, (node, stem) in CREATURE_FAMILIES.items():

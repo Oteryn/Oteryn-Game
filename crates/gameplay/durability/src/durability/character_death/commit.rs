@@ -8,8 +8,8 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         request: CharacterDeathRequest<N>,
-        mut formula: Option<&dyn BuildFormula>,
-        premium: promotion::DeathPremiumState,
+        formula: Option<&dyn BuildFormula>,
+        premium: Option<&dyn promotion::DeathPremiumOwner>,
     ) -> Result<CharacterDeathOutcome> {
         validate_request(&fence, &request)?;
         let binding = command_binding(&fence, &request)?;
@@ -20,11 +20,12 @@ impl DurabilityRoot {
         let node = node.clone();
         let durability = self.clone();
 
+        let mut owners = (formula, premium);
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut formula, move |holder, deadline, formula| {
+            .run_with_context(&mut owners, move |holder, deadline, owners| {
                 Box::pin(async move {
+                    let (formula, premium) = owners;
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    if let Err(error) = promotion::hold_delivery(&mut tx, premium).await? { return Ok(Err(error)); }
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
 
@@ -54,6 +55,13 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(CharacterDeathOutcome::AlreadyCommitted(committed)));
                     }
+
+                    // Resolve Premium in this transaction, before the Character row lock,
+                    // matching the promotion and Wheel latch-before-Character lock order.
+                    let premium = match *premium {
+                        Some(owner) => owner.current(&mut tx).await?,
+                        None => false,
+                    };
 
                     // The player died in the Channel that owns the session.
                     if fence.runtime_scope

@@ -1,6 +1,9 @@
 """Carry decision 22's donor limitation into the actual pinned Creature provider."""
+import copy
 import hashlib
 import json
+
+from bind_monster_source_definitions import explicit_reference_levels
 
 INPUT = "tools/content-schema/native-gameplay/summer-source-qualification.json"
 PROVIDER = "content/creatures/definitions/spell-native-profiles.json"
@@ -12,6 +15,7 @@ def attack_definitions(root, record):
     """Retain the canonical executable closure; never lower references into guessed bodies."""
     references = json.loads((root / "content/world/definitions/reference.json").read_bytes())
     declarations = json.loads((root / "content/world/definitions/declarations.json").read_bytes())
+    explicit_reference_levels(declarations)
     identity = lambda value: (value["family"], value["key"], value["revision"])
     records = {identity(row["identity"]): row for row in references["records"]}
     profiles = {identity(row["target"]): row for row in declarations["authoring_profiles"]}
@@ -34,7 +38,9 @@ def attack_definitions(root, record):
                     visit(child)
 
     visit(record["profile"]["target"])
-    if (profiles[identity(record["profile"]["target"])] != record["profile"]
+    creature_profile = copy.deepcopy(record["profile"])
+    explicit_reference_levels(creature_profile)
+    if (profiles[identity(record["profile"]["target"])] != creature_profile
             or profiles[identity(record["behavior"]["target"])] != record["behavior"]):
         raise ValueError("Summer attack closure differs from admitted Creature or Behavior")
     return {"records": [records[key] for key in sorted(selected)],

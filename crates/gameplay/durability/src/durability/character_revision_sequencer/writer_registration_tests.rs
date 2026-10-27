@@ -5,6 +5,7 @@
 #[rustfmt::skip]
 const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_bestiary_kill(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_atelier(", "durability/character_revision_sequencer/atelier.rs"),
     (".commit_character_build(", "durability/character_revision_sequencer.rs"),
     (".commit_character_death(", "durability/character_revision_sequencer.rs"),
     (".commit_character_experience(", "durability/character_revision_sequencer.rs"),

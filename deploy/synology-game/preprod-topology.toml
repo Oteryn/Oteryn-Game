@@ -43,7 +43,7 @@ route_revision = "rt.1.e96ce705077bfb6fc1c580175115b4c0"
 runtime_observation_revision = "obs.1"
 ruleset_revision = "game.<GAME_COMMIT_12HEX>"
 content_revision = "game.<GAME_COMMIT_12HEX>"
-map_revision = "0636b4c7307532d52166b674f73d62ee147178de2e7d53793eb9627aff57ae1a"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
+map_revision = "46c6901d3afda13f79038093a9ae76faac1e60717eb2fe54f768b885c6a69578"  # [world_bundle] enabled: the bare 64-hex bundle digest below (equals the pin digest)
 world_policy_revision = "wp.1"
 offer_revision = "offer.1"
 
@@ -55,7 +55,7 @@ offer_revision = "offer.1"
 # The file is the `world-bundle-*` artifact of the World bundle job, staged by the deploy workflow.
 enabled = true
 path = "<BASE>/world/world.otbundle"
-digest = "0636b4c7307532d52166b674f73d62ee147178de2e7d53793eb9627aff57ae1a"
+digest = "46c6901d3afda13f79038093a9ae76faac1e60717eb2fe54f768b885c6a69578"
 project_format_version = "OTERYN_WORLD_PROJECT_ROOT/v2"
 world_schema_version = "reference-schema-v1"
 content_revision = "tibia-news-bal-1-20261027-r1"
