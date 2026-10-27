@@ -965,6 +965,16 @@ async fn field_scenario_inner(
             }
         }
         if committed {
+            // Map publication has its own cadence: a command result does not
+            // guarantee that the client has received the field's session handle.
+            // Await that dependency before cooldown readers can discard its delta.
+            if matches!(output, 2128 | 2130) {
+                while field_handle.is_none() {
+                    let frame = read_frame(&mut client).await?;
+                    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                    field_handle = field_handle_from_wire(&envelope, &map_header, start)?;
+                }
+            }
             let delta = owner
                 .observe_world_map(actor, &mut map_view, &mut map_items)
                 .await
