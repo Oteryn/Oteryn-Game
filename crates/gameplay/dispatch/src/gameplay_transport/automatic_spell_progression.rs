@@ -2,7 +2,8 @@
 
 use std::collections::BTreeSet;
 
-use crate::domain::CharacterId;
+use crate::domain::{CharacterId, CharacterRevision};
+use crate::foundation::GameSessionId;
 use crate::spell::{SpellBook, Vocation};
 
 use super::ComposedFreshAdmission;
@@ -23,12 +24,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn reconcile_automatic_spells(
         &self,
         character: CharacterId,
+        session: GameSessionId,
+        revision: CharacterRevision,
         level: u32,
         vocation: Vocation,
     ) -> bool {
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return false;
+        };
+        if fence.character_id != character || fence.expected_character_revision != revision {
+            return false;
+        }
         let eligible = eligible_spell_keys(self.spells, level, vocation);
         self.root
-            .acquire_automatic_spells(character, &eligible)
+            .acquire_automatic_spells(self.character, self.holder, fence, &eligible)
             .await
             .is_ok()
     }

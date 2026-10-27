@@ -392,11 +392,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // an earlier level-up whose durable projection could not be written.
         if writes_after_progression(positioned, admitted.first_entry) {
             let facts = load_character_cast_facts(self.root, self.character, character_id).await;
-            let CastFactsLoad::Ready { facts, .. } = facts else {
-                return Err(AdmissionRefusal::Unavailable);
+            let (facts, character_revision) = match facts {
+                CastFactsLoad::Ready {
+                    facts,
+                    character_revision,
+                } => (facts, character_revision),
+                CastFactsLoad::NoVocation { .. } => return Ok(admitted),
+                CastFactsLoad::Unavailable => return Err(AdmissionRefusal::Unavailable),
             };
             if !self
-                .reconcile_automatic_spells(character_id, facts.level, facts.vocation)
+                .reconcile_automatic_spells(
+                    character_id,
+                    admitted.game_session_id,
+                    character_revision,
+                    facts.level,
+                    facts.vocation,
+                )
                 .await
             {
                 return Err(AdmissionRefusal::Unavailable);

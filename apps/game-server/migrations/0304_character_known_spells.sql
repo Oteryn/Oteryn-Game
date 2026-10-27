@@ -8,3 +8,7 @@ CREATE TABLE game_character_known_spells (
     learned_at timestamptz NOT NULL DEFAULT statement_timestamp(),
     PRIMARY KEY (character_id, spell_key)
 );
+
+-- Runtime reconciliation only appends identities; existing grants remain immutable.
+REVOKE ALL ON game_character_known_spells FROM PUBLIC, oteryn_game_control;
+GRANT SELECT, INSERT ON game_character_known_spells TO oteryn_game_runtime;
