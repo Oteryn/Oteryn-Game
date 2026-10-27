@@ -70,6 +70,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return;
         };
+        // The durable projection is reconciled before the live level becomes observable. A
+        // transient store failure keeps the level mark, so the ordinary cadence retries it.
+        if !self
+            .reconcile_automatic_spells(character, facts.level, facts.vocation)
+            .await
+        {
+            return;
+        }
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {

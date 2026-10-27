@@ -6,6 +6,7 @@ include!("core_modules.rs");
 pub mod bed_regen;
 pub mod bed_sleep;
 pub mod boss_encounter;
+pub mod character_known_spells;
 pub mod creature_source_items;
 pub mod daily_reward;
 pub mod daily_reward_claim;

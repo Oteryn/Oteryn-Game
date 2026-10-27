@@ -388,6 +388,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 state,
             );
         }
+        // Login is the repair path for characters created before automatic acquisition and for
+        // an earlier level-up whose durable projection could not be written.
+        if writes_after_progression(positioned, admitted.first_entry) {
+            let facts = load_character_cast_facts(self.root, self.character, character_id).await;
+            let CastFactsLoad::Ready { facts, .. } = facts else {
+                return Err(AdmissionRefusal::Unavailable);
+            };
+            if !self
+                .reconcile_automatic_spells(character_id, facts.level, facts.vocation)
+                .await
+            {
+                return Err(AdmissionRefusal::Unavailable);
+            }
+        }
         Ok(admitted)
     }
 
