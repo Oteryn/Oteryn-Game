@@ -3,8 +3,9 @@
 //! This is a bounded producer with its native storage ACL in migration 0101 and
 //! registered Content/storage modules, awaiting actual transport composition.
 //! It admits neither write-once definitions nor house custody locations.
-//! Ground admission is limited to direct loop drops and unchanged map-MINT items,
-//! with owner-observed reach data and the item-loop owner's source proof.
+//! Ground admission is limited to direct loop drops and unchanged map-MINT or
+//! native-map initialized items, with owner-observed reach data and the existing
+//! map producers' source proofs.
 //! The compositor must also apply the Channel trade owner's physical exclusion
 //! under its mutation lane (WRITE-0 §5.1). Do not activate this writer before
 //! that guard and the actual transport composition are integrated.
@@ -312,7 +313,7 @@ impl DurabilityRoot {
     /// view must not prevent an exact terminal replay or COMMIT reconciliation.
     /// `ground` is likewise current owner-observed placement DATA, after checking
     /// one-tile same-floor reach under the retained lane. Storage independently
-    /// locks and checks exact current loop-drop or receipt-proven map-MINT custody;
+    /// locks and checks exact current loop-drop or receipt-proven map custody;
     /// this tuple grants no reach.
     /// Other Ground sources and external container trees remain unavailable.
     #[allow(clippy::too_many_arguments)]
@@ -446,8 +447,8 @@ async fn carried_text_path(
 /// read after waiting. A foreign, detached, cyclic or overdeep path fails closed.
 /// Depot transfers use the same Character root/item lock order. Only a direct
 /// box entry is admitted: the depot writer does not yet host nested containers.
-/// A direct loop drop or unchanged map-MINT retains the Ground owner lock and current
-/// scope assignment lock acquired by the Character fence. Houses remain closed.
+/// A direct loop drop or unchanged map source retains the Ground owner lock and
+/// current scope assignment lock acquired by the Character fence. Houses remain closed.
 async fn lock_carried_text_item(
     tx: &mut Transaction<'_, Postgres>,
     fence: &CurrentCharacterItemFence,
@@ -549,6 +550,8 @@ async fn lock_carried_text_item(
 /// Read custody in a separate statement after this lock too. No census or move.
 /// Reuse the item-loop owner's map-MINT proof (0130): the exact original receipt,
 /// definition, quantity, instance state and Ground placement must still agree.
+/// Native-map initialization (0049) likewise needs its original receipt/audit,
+/// unchanged Item/placement, current reset epoch and proven scope adoption.
 /// Text changes neither the ItemInstance state revision nor that provenance.
 async fn lock_ground_text_item(
     tx: &mut Transaction<'_, Postgres>,
@@ -576,7 +579,27 @@ async fn lock_ground_text_item(
             AND g.spatial_position=$5 AND g.map_revision=$6 AND g.content_revision=$7 \
             AND g.native_room_placement_context=$8 \
             AND (game_item_loop_drop_ref(g.corpse_ref) \
-                 OR game_item_loop_map_mint_source(g.item_instance_id)) \
+                 OR game_item_loop_map_mint_source(g.item_instance_id) \
+                 OR EXISTS (SELECT 1 FROM game_native_map_item_receipts r \
+                     JOIN game_native_map_item_audit a USING (item_instance_id) \
+                     WHERE r.item_instance_id=i.item_instance_id \
+                       AND r.transaction_id=i.minted_transaction_id \
+                       AND i.state_revision=1 AND i.last_transaction_id IS NULL \
+                       AND (r.world_id,r.channel_id,r.definition_family,r.definition_key,r.definition_revision,r.quantity) \
+                         = (i.world_id,g.channel_id,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity) \
+                       AND (r.spatial_position,r.map_revision,r.content_revision,r.placement_context) \
+                         = (g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) \
+                       AND r.reset_epoch=coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=g.world_id),0) \
+                       AND (r.scope_generation=g.runtime_scope_ownership_generation \
+                         OR EXISTS (SELECT 1 FROM game_native_map_scope_adoptions ad \
+                             WHERE ad.source_transaction_id=r.transaction_id \
+                               AND ad.ownership_generation=g.runtime_scope_ownership_generation)) \
+                       AND (r.owner_kind IS NULL OR r.owner_kind='container') \
+                       AND r.map_revision='sha256:' || encode(r.map_digest,'hex') \
+                       AND r.content_revision='sha256:' || encode(r.content_digest,'hex') \
+                       AND r.placement_context=r.frame_digest \
+                       AND (a.transaction_id,a.event_id,a.envelope,a.envelope_digest,a.created_xact_id) \
+                         = (r.transaction_id,r.event_id,r.source_intent,r.binding,r.created_xact_id))) \
             AND i.definition_family=$9 AND i.definition_production_key=$10 AND i.definition_revision_ref=$11 \
           FOR SHARE OF i",
     )

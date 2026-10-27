@@ -4,6 +4,7 @@ use super::*;
 use crate::bestiary_postgres_harness::{self as native, Harness, configured_admin, runtime};
 
 mod ground_tests;
+mod native_ground_tests;
 
 fn carried_request(item: u8, command: u64, text: &str) -> TestResult<ItemTextWriteRequest> {
     Ok(ItemTextWriteRequest {
