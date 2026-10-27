@@ -96,9 +96,13 @@ fn world_reset_ground_preserves_house_tiles() -> TestResult {
         let item = harness.mint(&authority, "fixture:reset.house", 1).await?;
         let position: Vec<u8> = sqlx::query_scalar("SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
             .bind(item.as_slice()).fetch_one(&harness.pool).await?;
-        sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest) VALUES(encode($1,'hex')::uuid,'reset-house','private_house',1,0,$2)")
-            .bind(id(WORLD).as_slice()).bind(vec![7_u8;32]).execute(&harness.pool).await?;
-        sqlx::query("INSERT INTO game_house_tiles(world_id,house_key,spatial_position) VALUES(encode($1,'hex')::uuid,'reset-house',$2)")
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest) VALUES(encode($1,'hex')::uuid,'oteryn:content.house.reset_house','private_house',1,0,$2)")
+            .bind(id(WORLD).as_slice()).bind(vec![7_u8;32]).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES(encode($1,'hex')::uuid,'oteryn:content.house.reset_house',NULL,1,game_character_uuid_v7())")
+            .bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        sqlx::query("INSERT INTO game_house_tiles(world_id,house_key,spatial_position) VALUES(encode($1,'hex')::uuid,'oteryn:content.house.reset_house',$2)")
             .bind(id(WORLD).as_slice()).bind(position).execute(&harness.pool).await?;
         let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
         retiring_fixture::seed_retiring(&harness.pool, world).await?;
