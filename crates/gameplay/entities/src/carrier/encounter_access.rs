@@ -295,7 +295,7 @@ impl ChannelRuntimeV1 {
                 .carrier
                 .corpse_projections
                 .iter()
-                .any(|p| p.occurrence.death_key() == key)
+                .any(|p| p.occurrence.death_key() == Ok(key))
     }
 
     pub fn remove_encounter_actor(&mut self, actor: ExactActorRef) -> Result<(), CarrierError> {

@@ -787,6 +787,6 @@ impl crate::carrier::CombatDeathFixture {
         let actor = self.actor();
         let mut combat = self.borrow_combat_death();
         let projection = project_fixed_one_creature_death(&mut combat, actor)?;
-        Ok((projection.occurrence().death_key(), projection.position()))
+        Ok((projection.occurrence().death_key()?, projection.position()))
     }
 }

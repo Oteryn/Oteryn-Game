@@ -1,5 +1,6 @@
 //! Kernel qualification only. Synthetic scoped grants do not admit activity
-//! sessions, compose an InstanceRuntime or authorize Channel death/custody.
+//! sessions, compose an InstanceRuntime or authorize durable Channel custody.
+use super::encounter_access::{EncounterHealProjection, EncounterHooks};
 use super::*;
 
 fn id(seed: u8) -> [u8; 16] {
@@ -223,13 +224,28 @@ fn boss_activity_carrier_isolates_slots_positions_and_damage_by_typed_scope() {
                 let receipt = carrier
                     .committed_lethal_receipt_inner(owner, *actor)
                     .expect("Channel death");
-                assert_eq!(receipt.projection.occurrence.channel_id, channel_id);
+                assert_eq!(
+                    receipt
+                        .projection
+                        .occurrence
+                        .death_key()
+                        .expect("Channel key")
+                        .channel_id(),
+                    channel_id
+                );
             }
             RuntimeScopeRefV1::Instance { .. } => {
-                assert!(matches!(
-                    carrier.committed_lethal_receipt_inner(owner, *actor),
+                let receipt = carrier
+                    .committed_lethal_receipt_inner(owner, *actor)
+                    .expect("Instance runtime receipt");
+                assert_eq!(
+                    receipt.projection.occurrence.actor().runtime_scope(),
+                    actor.runtime_scope
+                );
+                assert_eq!(
+                    receipt.projection.occurrence.death_key(),
                     Err(CarrierError::WrongScope)
-                ));
+                );
                 assert!(carrier.corpse_projections.is_empty());
                 assert!(carrier.death_reward_occurrences.is_empty());
             }
@@ -284,5 +300,250 @@ fn boss_activity_carrier_continuity_claim_replacement_and_retirement_are_scope_e
             current.remove(&owner, successor),
             Err(CarrierError::WrongScope)
         );
+    }
+}
+
+fn copy_receipt(receipt: &CommittedLethalReceipt) -> CommittedLethalReceipt {
+    CommittedLethalReceipt {
+        projection: receipt.projection.clone(),
+    }
+}
+
+#[test]
+fn boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_custody() {
+    let mut kernels = scopes().map(|scope| {
+        let mut owner = NamespaceContinuityGuard::from_pre_production_grant(grant(scope, 1));
+        let mut carrier =
+            ChannelActorCarrier::bootstrap_pre_production(&mut owner, 1).expect("scoped kernel");
+        let actor = carrier
+            .admit_creature(&owner, ActorState(7), "boss:kernel", 10)
+            .expect("creature");
+        carrier
+            .initialize_position(
+                &owner,
+                actor,
+                context(&owner),
+                LocalPosition {
+                    x: 10,
+                    y: 20,
+                    floor: 7,
+                },
+            )
+            .expect("position");
+        assert_eq!(
+            carrier.committed_lethal_receipt_inner(&owner, actor),
+            Err(CarrierError::CommittedLethalUnavailable)
+        );
+        carrier
+            .commit_creature_damage_inner(
+                &owner,
+                actor,
+                OwnerDamageCommand {
+                    target: b"boss:kernel",
+                    occurrence: b"death",
+                    binding: b"death\0kernel",
+                    damage: 10,
+                },
+                None,
+                false,
+            )
+            .expect("lethal commit");
+        let receipt = carrier
+            .committed_lethal_receipt_inner(&owner, actor)
+            .expect("runtime receipt");
+        (owner, carrier, actor, receipt)
+    });
+    // Every local actor number, generation, position and binding is equal.
+    // Only exact World/scope identity distinguishes these lethal receipts.
+    for i in 0..kernels.len() {
+        for j in 0..kernels.len() {
+            if i == j {
+                continue;
+            }
+            let foreign = copy_receipt(&kernels[j].3);
+            let foreign_owner = &kernels[j].0;
+            assert_eq!(
+                kernels[i]
+                    .1
+                    .committed_lethal_receipt_inner(foreign_owner, kernels[i].2),
+                Err(CarrierError::WrongScope)
+            );
+            let (owner, carrier, _, _) = &mut kernels[i];
+            let before = carrier.clone();
+            assert_eq!(
+                carrier.project_committed_lethal_inner(owner, foreign, false, false),
+                Err(CarrierError::WrongScope)
+            );
+            assert_eq!(*carrier, before);
+        }
+    }
+    for (owner, carrier, actor, receipt) in &mut kernels {
+        if matches!(owner.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
+            carrier.encounter_hooks = Some(Box::new(ChannelKeyHook));
+            let before = carrier.clone();
+            assert_eq!(
+                carrier.project_committed_lethal_inner(owner, copy_receipt(receipt), false, false),
+                Err(CarrierError::WrongScope),
+                "a Channel-key hook refuses before retaining or cascading a death"
+            );
+            assert_eq!(*carrier, before);
+            carrier.encounter_hooks = None;
+        }
+        let before = carrier.clone();
+        let mut corrupt = copy_receipt(receipt);
+        corrupt.projection.occurrence.damage += 1;
+        assert_eq!(
+            carrier.project_committed_lethal_inner(owner, corrupt, false, false),
+            Err(CarrierError::CorpseReceiptMismatch)
+        );
+        assert_eq!(*carrier, before);
+        assert_eq!(
+            carrier.project_committed_lethal_inner(owner, copy_receipt(receipt), true, false),
+            Err(CarrierError::InjectedCorpseProjectionFailure)
+        );
+        assert_eq!(*carrier, before);
+        // A lost response retains exactly one projection and the captured position.
+        assert_eq!(
+            carrier.project_committed_lethal_inner(owner, copy_receipt(receipt), false, true),
+            Err(CarrierError::InjectedCorpseResponseFailure)
+        );
+        assert_eq!(carrier.corpse_projections.len(), 1);
+        let projected = receipt.projection.clone();
+        assert_eq!(
+            carrier.project_committed_lethal_inner(owner, copy_receipt(receipt), false, false),
+            Ok(&projected)
+        );
+        assert_eq!(carrier.corpse_projections, vec![projected.clone()]);
+        assert_eq!(
+            projected.occurrence.actor().runtime_scope(),
+            owner.runtime_scope
+        );
+        assert_eq!(
+            projected.position.context.scope.runtime_scope(),
+            Ok(owner.runtime_scope)
+        );
+        assert_eq!(projected.occurrence.commit_binding(), b"death\0kernel");
+        assert_eq!(projected.occurrence.damage(), 10);
+        assert_eq!(projected.occurrence.health_before(), 10);
+        let reread = carrier
+            .committed_lethal_receipt_inner(owner, *actor)
+            .expect("retained receipt");
+        assert_eq!(reread.projection, receipt.projection);
+        // A conflicting retry cannot replace the first projection.
+        let mut corrupt = copy_receipt(receipt);
+        corrupt.projection.position.position.x += 1;
+        assert_eq!(
+            carrier.project_committed_lethal_inner(owner, corrupt, false, false),
+            Err(CarrierError::CorpseProjectionConflict)
+        );
+        assert_eq!(carrier.corpse_projections, vec![projected.clone()]);
+        if matches!(owner.runtime_scope, RuntimeScopeRefV1::Instance { .. }) {
+            let before = carrier.clone();
+            assert_eq!(
+                projected.occurrence.death_key(),
+                Err(CarrierError::WrongScope)
+            );
+            assert_eq!(
+                carrier.reward_occurrence_inner(owner, *actor, id(9)),
+                Err(CarrierError::WrongScope)
+            );
+            assert_eq!(
+                carrier.bind_corpse_item_inner(
+                    ExactActorRef(*actor),
+                    RuntimeCorpseItem {
+                        item_instance_id: id(10),
+                        family: "Item".into(),
+                        production_key: "fixture:corpse".into(),
+                        revision_ref: "r1".into(),
+                    }
+                ),
+                Err(CarrierError::WrongScope)
+            );
+            assert_eq!(
+                *carrier, before,
+                "runtime death cannot mint Channel reward or custody"
+            );
+        } else {
+            let key = projected.occurrence.death_key().expect("Channel death key");
+            assert_eq!(key.world_id(), owner.runtime_scope.world_id());
+            assert_eq!(Some(key.channel_id()), ExactActorRef(*actor).channel_id());
+            let (occurrence, minted) = carrier
+                .reward_occurrence_inner(owner, *actor, id(9))
+                .expect("Channel reward occurrence");
+            assert!(minted);
+            assert_eq!(
+                carrier.reward_occurrence_inner(owner, *actor, id(9)),
+                Ok((occurrence, false))
+            );
+        }
+        // Reusing the slot cannot let an old receipt address its successor.
+        carrier.remove(owner, *actor).expect("retire dead slot");
+        let successor = carrier
+            .admit_creature(owner, ActorState(8), "boss:kernel", 10)
+            .expect("reuse slot");
+        assert_ne!(successor, *actor);
+        let before = carrier.clone();
+        assert_eq!(
+            carrier.project_committed_lethal_inner(owner, copy_receipt(receipt), false, false),
+            Ok(&projected),
+            "retained historical replay does not address the reused slot"
+        );
+        assert_eq!(*carrier, before);
+        assert_eq!(carrier.lookup(owner, successor), Ok(&ActorState(8)));
+        owner
+            .advance(grant(owner.runtime_scope, 2))
+            .expect("successor ownership");
+        assert_eq!(
+            carrier.project_committed_lethal_inner(owner, copy_receipt(receipt), false, false),
+            Err(CarrierError::WrongScope)
+        );
+        assert_eq!(*carrier, before);
+    }
+}
+
+// Tests only the existing Channel-key hook boundary; it never simulates an
+// Instance encounter or supplies admission/participant evidence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ChannelKeyHook;
+
+impl EncounterHooks for ChannelKeyHook {
+    fn clone_hooks(&self) -> Box<dyn EncounterHooks> {
+        Box::new(*self)
+    }
+    fn eq_hooks(&self, other: &dyn EncounterHooks) -> bool {
+        other.as_any().is::<Self>()
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+    fn contains(&self, _: ExactActorRef) -> bool {
+        false
+    }
+    fn damage(
+        &self,
+        _: &mut ChannelActorCarrier,
+        _: &NamespaceContinuityGuard,
+        _: ActorRef,
+        _: OwnerDamageCommand<'_>,
+        _: Option<AttackerCommand>,
+        _: bool,
+        _: Option<&ChannelContentPin>,
+        _: Option<u16>,
+        _: Option<u64>,
+    ) -> Option<Result<OwnerDamageResult, CarrierError>> {
+        None
+    }
+    fn projected_death(&mut self, _: ExactActorRef, _: CreatureDeathOccurrenceKey) {
+        unreachable!("Instance projection must refuse before a Channel-key callback");
+    }
+    fn expand_heals(
+        &self,
+        _: &ChannelRuntimeV1,
+        _: &[(ExactActorRef, String, u64, u64)],
+    ) -> Result<EncounterHealProjection, CarrierError> {
+        unreachable!("hook qualification does not heal actors");
     }
 }

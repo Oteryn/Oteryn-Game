@@ -693,7 +693,8 @@ fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
         project_fixed_one_creature_death(&mut carrier.current_owner_combat_death(&owner), actor)
             .expect("projection")
             .occurrence()
-            .death_key();
+            .death_key()
+            .expect("Channel death key");
     assert_eq!(
         format!("{first:?}"),
         format!("CreatureDeathOccurrenceKey({:?})", actor.0)
@@ -720,7 +721,8 @@ fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
         project_fixed_one_creature_death(&mut carrier.current_owner_combat_death(&owner), actor)
             .expect("idempotent projection")
             .occurrence()
-            .death_key();
+            .death_key()
+            .expect("Channel death key");
     assert_eq!(replayed, first);
 
     // The runtime MINT cause is the full typed tuple of that key (§4.2).

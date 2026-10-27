@@ -179,8 +179,8 @@ impl CurrentOwnerCombatDeath<'_> {
             .corpse_projections
             .iter()
             .find(|projection| projection.occurrence.actor == actor)
-            .map(|projection| (projection.occurrence.death_key(), projection.position()))
             .ok_or(CarrierError::CommittedLethalUnavailable)
+            .and_then(|projection| Ok((projection.occurrence.death_key()?, projection.position())))
     }
 
     /// P2 4180039074: the owner clock of the turn that committed `actor`'s lethal receipt, read

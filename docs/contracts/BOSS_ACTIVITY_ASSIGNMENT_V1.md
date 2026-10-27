@@ -221,9 +221,15 @@ and replay in synthetic Channel and Instance namespaces, including equal local
 slots/coordinates/UUIDs, a different World, generation replacement and retirement.
 These tests construct private synthetic grants; the only production grant issuer
 is still the existing committed Channel assignment facade. They are not accepted
-participant sessions or real-dispatch Instance gameplay. Channel death receipt
-and reward occurrence producers explicitly refuse an Instance namespace rather
-than derive a Channel from its identity or origin.
+participant sessions or real-dispatch Instance gameplay. Runtime lethal receipts
+and non-persistent corpse projections retain the exact actor and position scope
+for either namespace. The conversion `CreatureDeathOccurrenceRef::death_key`
+remains Channel-only and returns `WrongScope` for an Instance; its key layout and
+Channel Debug binding remain unchanged. Reward occurrence and committed corpse
+Item binding also refuse an Instance rather than deriving a Channel from its
+identity or origin. An installed encounter hook still requires the Channel death
+key: initial projection refuses before cascading children or retaining a corpse
+when that key cannot be obtained.
 
 This representation does not admit an Instance. Existing Channel spell/item
 writers reject Instance actors, and the committed creature-death/loot key remains
@@ -243,3 +249,17 @@ Instance and an Instance with the Channel's UUID bytes, before and after the
 Channel creates its pending obligation. Matching Channel reads verify that no
 refusal creates or changes that obligation. This is a consumer scope guard,
 not positive activity session or handoff qualification.
+
+
+`boss_activity_carrier_death_projection_replays_in_its_scope_without_channel_custody`
+qualifies synthetic runtime death receipts and projections in a Channel, an
+Instance with identical UUID bytes, another Instance and the same Instance UUID
+in another World. Foreign receipts and owners refuse without mutation. A failed
+projection leaves no projection; a lost response retains one exact projection
+and retries return it. Bound damage, HP and position facts cannot be replaced.
+Historical replay after slot reuse leaves the successor untouched; an ownership
+generation change fences even retained receipts. Instance runtime projections
+cannot yield a Channel death key, mint a reward occurrence or bind a corpse Item.
+These are kernel checks, not admitted Instance combat, durable Instance loot,
+Bosstiary credit, handoff or restart qualification. The production grant issuer
+and composed death/reward path remain Channel-only.

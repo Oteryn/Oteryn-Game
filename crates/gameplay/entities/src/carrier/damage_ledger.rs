@@ -841,7 +841,6 @@ impl ChannelActorCarrier {
         actor_ref: ActorRef,
     ) -> Result<CommittedLethalReceipt, CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
-        self.channel_id()?;
         if let Some(existing) = self
             .corpse_projections
             .iter()
@@ -851,7 +850,6 @@ impl ChannelActorCarrier {
                 projection: RuntimeCorpseProjection {
                     occurrence: CreatureDeathOccurrenceRef {
                         actor: existing.occurrence.actor,
-                        channel_id: existing.occurrence.channel_id,
                         commit_binding: copy_bounded_binding(&existing.occurrence.commit_binding)?,
                         damage: existing.occurrence.damage,
                         health_before: existing.occurrence.health_before,
@@ -884,7 +882,6 @@ impl ChannelActorCarrier {
             projection: RuntimeCorpseProjection {
                 occurrence: CreatureDeathOccurrenceRef {
                     actor: ExactActorRef(actor_ref),
-                    channel_id: self.channel_id()?,
                     commit_binding: copy_bounded_binding(&committed.binding)?,
                     damage: committed.damage,
                     health_before: committed.result.health_before,
@@ -952,12 +949,18 @@ impl ChannelActorCarrier {
         }
         self.validate_summon_actor(continuity, actor)?;
         self.validate_lethal_receipt(continuity, &receipt)?;
+        // The installed encounter hook still consumes a Channel-only durable
+        // key. Refuse that composition before cascading or retaining anything.
+        let captured_sealed_key = self
+            .encounter_hooks
+            .as_ref()
+            .map(|_| receipt.projection.occurrence.death_key())
+            .transpose()?;
         if fail_before_write {
             return Err(CarrierError::InjectedCorpseProjectionFailure);
         }
         self.cascade_native_summon_deaths(continuity, actor)?;
         let projected = receipt.projection;
-        let captured_sealed_key = projected.occurrence.death_key();
         // Bounded FIFO retention (`MAX_RETAINED_CORPSE_PROJECTIONS`): a retained projection
         // deliberately outlives its actor's slot (lost-response replay, above), so this Vec is
         // not otherwise pruned; evict the oldest unpinned entry rather than grow without bound
@@ -966,8 +969,8 @@ impl ChannelActorCarrier {
         // outlives, and is never evicted independently of, its projection, so a retained
         // projection can never re-mint a second occurrence for the same death.
         self.retain_corpse_projection(projected);
-        if let Some(hooks) = self.encounter_hooks.as_mut() {
-            hooks.projected_death(actor, captured_sealed_key);
+        if let (Some(hooks), Some(key)) = (self.encounter_hooks.as_mut(), captured_sealed_key) {
+            hooks.projected_death(actor, key);
         }
         if fail_after_write {
             return Err(CarrierError::InjectedCorpseResponseFailure);

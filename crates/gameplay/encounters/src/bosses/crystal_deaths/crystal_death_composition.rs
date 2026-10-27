@@ -483,7 +483,13 @@ impl CrystalDeathOwner {
             let mut owner = runtime.borrow_combat_death();
             let corpse = crate::combat::project_fixed_one_creature_death(&mut owner, actor)
                 .map_err(CrystalDeathCompositionError::Owner)?;
-            (corpse.occurrence().death_key(), corpse.position())
+            (
+                corpse
+                    .occurrence()
+                    .death_key()
+                    .map_err(CrystalDeathCompositionError::Owner)?,
+                corpse.position(),
+            )
         };
         let callback = self.registry.dispatch(
             runtime,
@@ -517,7 +523,13 @@ impl CrystalDeathOwner {
                             let corpse =
                                 crate::combat::project_fixed_one_creature_death(&mut owner, child)
                                     .map_err(CrystalDeathCompositionError::Owner)?;
-                            (corpse.occurrence().death_key(), corpse.position())
+                            (
+                                corpse
+                                    .occurrence()
+                                    .death_key()
+                                    .map_err(CrystalDeathCompositionError::Owner)?,
+                                corpse.position(),
+                            )
                         };
                         let lines = self
                             .speech

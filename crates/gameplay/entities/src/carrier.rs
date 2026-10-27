@@ -506,21 +506,18 @@ impl TopDamagePrincipal {
 }
 
 /// Stable identity of the one committed lethal occurrence. Construction stays
-/// private to the physical Channel owner; callers cannot supply occurrence
+/// private to the physical scope owner; callers cannot supply occurrence
 /// bytes, HP facts or actor generation.
 #[derive(Clone, PartialEq, Eq)]
 pub struct CreatureDeathOccurrenceRef {
     actor: ExactActorRef,
-    // Captured by the Channel owner after exact actor validation. The existing
-    // death/loot contract is Channel-only; a scoped actor does not widen it.
-    channel_id: ChannelId,
     pub commit_binding: Box<[u8]>,
     damage: i64,
     health_before: i64,
 }
 
-// Preserve the pre-scope owner-binding representation; channel_id is redundant
-// Channel-only metadata captured from the same validated owner as actor.
+// Preserve the pre-scope Channel owner-binding representation. The exact
+// actor retains the runtime scope, including an Instance identity.
 impl std::fmt::Debug for CreatureDeathOccurrenceRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CreatureDeathOccurrenceRef")
@@ -552,12 +549,16 @@ impl CreatureDeathOccurrenceRef {
     /// The durable, restart-stable death key of this committed lethal
     /// occurrence (`CREATURE-DEATH-OCCURRENCE-IDENTITY-V1`, DUR-03 decision
     /// §4.1): exactly the owner-issued actor reference. The commit binding,
-    /// damage and HP facts stay bound attributes, never key material.
-    pub const fn death_key(&self) -> CreatureDeathOccurrenceKey {
-        CreatureDeathOccurrenceKey {
+    /// damage and HP facts stay bound attributes, never key material. Instance
+    /// projections return `WrongScope`; their origin is never a Channel key.
+    pub fn death_key(&self) -> Result<CreatureDeathOccurrenceKey, CarrierError> {
+        // Runtime projections can belong to an Instance. The durable death,
+        // Ground custody and loot contracts still accept only Channel keys.
+        let channel_id = self.actor.channel_id().ok_or(CarrierError::WrongScope)?;
+        Ok(CreatureDeathOccurrenceKey {
             actor: self.actor.0,
-            channel_id: self.channel_id,
-        }
+            channel_id,
+        })
     }
 }
 
