@@ -1285,12 +1285,6 @@ async fn field_scenario_inner(
                 "durable removal emits the field leave through the existing map delta consumer"
             );
         }
-        if player_field && let Some(target) = target {
-            drive_player_field(
-                &owner, &harness, admitted, target, start, scenario, harmful, output,
-            )
-            .await?;
-        }
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(())
     };
@@ -1299,7 +1293,27 @@ async fn field_scenario_inner(
         async {
             let (served, result) = join_two(serving, casting).await;
             result?;
-            served
+            served?;
+            // The fixture root has one SQL holder. Finish the caster's wire
+            // phase before driving the victim: the caster's vitals cadence
+            // reads equipment outside the spell lane and can otherwise make
+            // STEP's fresh PvP read unavailable. Ending this wire driver does
+            // not end the Game session or its field ownership.
+            if player_field && let Some(target) = target {
+                if equipped(scenario) {
+                    assert!(
+                        owner.runtime.lock().await
+                            .player_control_facts(actor, session)
+                            .is_ok_and(|facts| facts.control_loss.is_none()),
+                        "the field caster remains controlled after its wire phase"
+                    );
+                }
+                drive_player_field(
+                    &owner, &harness, admitted, target, start, scenario, harmful, output,
+                )
+                .await?;
+            }
+            Ok::<_, Box<dyn std::error::Error>>(())
         },
     )
     .await??;
