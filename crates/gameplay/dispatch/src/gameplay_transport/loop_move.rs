@@ -552,19 +552,12 @@ pub(super) async fn observe_container(
     // Retain the Channel lane across current position and durable custody reads.
     // The resulting view is historical data, never permission for a later write.
     let _permit = admission.spell_lane_permit().await?;
-    let current = super::FreshAdmissionStore::from_root(admission.root.clone())
-        .current_session_at(fence.game_session_id)
+    if admission
+        .runtime
+        .lock()
         .await
-        .ok()?
-        .0;
-    if current.session_state() != super::GameSessionState::Active
-        || super::item_fence_of(current) != Some(fence)
-        || admission
-            .runtime
-            .lock()
-            .await
-            .player_control_facts(actor, fence.game_session_id)
-            .is_err()
+        .player_control_facts(actor, fence.game_session_id)
+        .is_err()
     {
         return Some(ContainerObservation::Gone);
     }
@@ -582,6 +575,19 @@ pub(super) async fn observe_container(
     let (read, reachable) = if let Some(read) = carried {
         (read, true)
     } else {
+        // Carried views use the Character owner's custody read, including for
+        // sessions admitted without a fresh-admission receipt. Only the new
+        // Ground path needs the fresh-session proof for external reach.
+        let current = super::FreshAdmissionStore::from_root(admission.root.clone())
+            .current_session_at(fence.game_session_id)
+            .await
+            .ok()?
+            .0;
+        if current.session_state() != super::GameSessionState::Active
+            || super::item_fence_of(current) != Some(fence)
+        {
+            return Some(ContainerObservation::Gone);
+        }
         let (base, at, content_revision, placement_context) = {
             let mut runtime = admission.runtime.lock().await;
             let pin = runtime.content_pin();
@@ -636,22 +642,26 @@ pub(super) async fn observe_container(
         };
         (read, reachable)
     };
-    // Custody reads can wait on physical item/location locks while reconnect
-    // advances the durable session. The pre-read check is historical after
-    // that await; never publish a new view to the displaced connection.
-    let current = super::FreshAdmissionStore::from_root(admission.root.clone())
-        .current_session_at(fence.game_session_id)
-        .await
-        .ok()?
-        .0;
-    if current.session_state() != super::GameSessionState::Active
-        || super::item_fence_of(current) != Some(fence)
-        || admission
-            .runtime
-            .lock()
+    // Ground custody reads can wait on physical item/location locks while
+    // reconnect advances the durable session. Recheck before publishing.
+    if !is_carried {
+        let current = super::FreshAdmissionStore::from_root(admission.root.clone())
+            .current_session_at(fence.game_session_id)
             .await
-            .player_control_facts(actor, fence.game_session_id)
-            .is_err()
+            .ok()?
+            .0;
+        if current.session_state() != super::GameSessionState::Active
+            || super::item_fence_of(current) != Some(fence)
+        {
+            return Some(ContainerObservation::Gone);
+        }
+    }
+    if admission
+        .runtime
+        .lock()
+        .await
+        .player_control_facts(actor, fence.game_session_id)
+        .is_err()
     {
         return Some(ContainerObservation::Gone);
     }
