@@ -334,3 +334,29 @@ suites belong to CI. No cargo manifests/lockfile/content were changed.
 - PREY0 §3–§12; DAILY_REWARD0 §4.5; BANK-0 §3 ledger pattern
 - Completion plan §4, §5 (Wave 4), §7; coordination #2131 (D1151, D1319, D1336, D1338,
   D1341, D1392, D1398, D1406)
+
+## PREY-RT-1 bounded wire increment — 2026-10-27
+
+This pass delivers the smallest complete increment allowed by the task packet: the closed,
+bounded `PREY_V1` wire contract and codecs. Capability **0140** and command **0160** are registered
+but deliberately unoffered until a fenced durable command owner can serve them. No migration was
+needed for this wire-only increment; reserved migration **0280** remains unused.
+
+| Behaviour | Canary / Crystal reference | Oteryn | Status |
+|---|---|---|---|
+| Query and slot selection/reroll intent shapes | Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`; Crystal `201189f871d23597b82caf88fd611454a2ddefb8` | Strict canonical request codec under command 0160 | Implemented (wire only) |
+| Three slots, nine candidates, 7,200 seconds and 52 wildcards | Same pins; precise client message layout: Not verified | Bounded reply projection with accepted PREY0 limits | Implemented (wire only) |
+| Runtime command execution and effects | Same pins; Oteryn semantics are governed by PREY0 | Capability remains unoffered and fails closed | Remaining |
+
+Validation:
+
+- `cargo fmt --all` — passed.
+- `cargo test -p oteryn-protocol-oteryn --all-features` — passed (478 tests).
+
+Remaining:
+
+- Production dispatch caller and fenced slot writer/receipts using migration 0280.
+- Admitted content-backed slot draw; free and paid/wildcard reroll execution.
+- Hunting checkpoint/expiry persistence across restart and session-generation change.
+- Damage, reduction, XP and loot effect consumers (the existing XP-only read is not full parity).
+- Dispatch `--all-features` PostgreSQL qualification through the auto-mounted cases.

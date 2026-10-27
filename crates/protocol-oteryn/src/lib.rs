@@ -60,6 +60,7 @@ pub mod party_skull;
 pub mod player_report;
 pub mod player_trade;
 pub mod presentation;
+pub mod prey;
 pub mod pvp_expert;
 pub mod quest_log;
 pub mod quick_loot;
