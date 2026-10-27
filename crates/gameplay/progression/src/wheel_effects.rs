@@ -12,6 +12,40 @@ pub struct WheelStatBonuses {
     pub mitigation_milli_percent: u32,
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct BattleInstinctBonuses {
+    pub melee: u32,
+    pub shielding: u32,
+}
+
+/// Recomputes Battle Instinct from the current adjacent-creature census. Values are read from
+/// the pinned Wheel catalogue rather than duplicated in the runtime owner.
+pub fn battle_instinct_bonuses(
+    catalogue: &Value,
+    adjacent_creatures: u32,
+) -> Option<BattleInstinctBonuses> {
+    let slots = catalogue["vocations"]["knight"]["slots"].as_array()?;
+    let conviction = slots
+        .iter()
+        .map(|slot| &slot["conviction"])
+        .find(|conviction| conviction["key"] == "battle_instinct")?;
+    let effects = conviction["unique_parameters"]["numeric_effects"].as_array()?;
+    let value = |kind: &str| {
+        effects.iter().find(|effect| effect["kind"] == kind)?["value"]
+            .as_u64()
+            .and_then(|value| u32::try_from(value).ok())
+    };
+    let threshold = value("adjacent_creature_threshold")?;
+    let cap = value("adjacent_creature_cap")?;
+    let counted = adjacent_creatures
+        .min(cap)
+        .saturating_sub(threshold.saturating_sub(1));
+    Some(BattleInstinctBonuses {
+        melee: counted.checked_mul(value("melee_skill_bonus_per_counted_creature")?)?,
+        shielding: counted.checked_mul(value("shielding_bonus_per_counted_creature")?)?,
+    })
+}
+
 /// Projects allocated points through the vocation's dedication table. Effects fail closed when
 /// the allocation or eligibility facts are not current. Convictions, revelations and gems are
 /// deliberately not interpreted here.
@@ -69,6 +103,40 @@ mod tests {
     use super::*;
     use crate::wheel::WheelSlots;
     use crate::wheel_gem_data::WheelGemData;
+
+    #[test]
+    fn news_9024_battle_instinct_is_recomputed_for_each_adjacent_census() {
+        let data = WheelGemData::embedded().expect("qualified embedded catalogue");
+        let read = |adjacent| battle_instinct_bonuses(data.wheel(), adjacent).expect("catalogue");
+        assert_eq!(read(4), BattleInstinctBonuses::default());
+        assert_eq!(
+            read(5),
+            BattleInstinctBonuses {
+                melee: 1,
+                shielding: 6
+            }
+        );
+        assert_eq!(
+            read(7),
+            BattleInstinctBonuses {
+                melee: 3,
+                shielding: 18
+            }
+        );
+        assert_eq!(
+            read(8),
+            BattleInstinctBonuses {
+                melee: 4,
+                shielding: 24
+            }
+        );
+        assert_eq!(read(9), read(8));
+        assert_eq!(
+            read(4),
+            BattleInstinctBonuses::default(),
+            "a later census removes the bonus"
+        );
+    }
 
     #[test]
     fn allocated_knight_dedications_project_and_eligibility_fails_closed() {

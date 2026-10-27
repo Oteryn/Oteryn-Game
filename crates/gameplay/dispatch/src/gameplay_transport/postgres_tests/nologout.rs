@@ -16,7 +16,7 @@ use oteryn_protocol_oteryn::{
 use tokio::io::AsyncWriteExt;
 
 #[test]
-fn nologout_bundle_logout_and_motd_real_dispatch_postgres() -> TestResult {
+fn news_9019_hive_style_underground_nologout_reaches_real_dispatch_postgres() -> TestResult {
     // The composed dispatch future needs the same stack as neighboring wire scenarios.
     std::thread::Builder::new()
         .stack_size(64 << 20)
