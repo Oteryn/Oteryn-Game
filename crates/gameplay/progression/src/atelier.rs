@@ -2,7 +2,7 @@
 //!
 //! Numeric policy is read from the pinned Wheel/Gem catalogue rather than duplicated here.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +40,7 @@ pub enum FragmentKind {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Gem {
+    #[serde(with = "gem_identity")]
     pub id: u128,
     pub quality: GemQuality,
     pub domain: WheelDomain,
@@ -52,12 +53,17 @@ pub struct Gem {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AtelierState {
     pub revision: u64,
+    /// Character vocation supplied by the owner, never by the reveal draw.
+    pub vocation: String,
     pub gold: u64,
     pub unrevealed: BTreeMap<GemQuality, u32>,
     pub fragments: BTreeMap<FragmentKind, u32>,
     pub gems: BTreeMap<u128, Gem>,
     /// Catalogue grade 0 is Grade I and 3 is Grade IV.
+    #[serde(with = "grade_entries")]
     pub grades: BTreeMap<(FragmentKind, u16), u8>,
+    /// Grade identities and values may only be read under the revision that wrote them.
+    pub grade_ruleset_revision: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -104,6 +110,7 @@ pub enum AtelierRefusal {
     InVessel,
     LastDomainGem,
     AlreadySocketed,
+    VesselOccupied,
     NotSocketed,
     InsufficientGold,
     InsufficientFragments,
@@ -131,9 +138,15 @@ impl AtelierState {
         let data = WheelGemData::embedded().map_err(|_| AtelierRefusal::InvalidDraw)?;
         let catalogue = &data.gems()["catalogue"];
         let current = data.revision();
+        let vocation =
+            crate::wheel::base_vocation(&self.vocation).ok_or(AtelierRefusal::InvalidDraw)?;
+        let family = &data.gems()["vocations"][vocation];
         let mut next = self.clone();
         match action {
-            AtelierAction::Drop { quality } => *next.unrevealed.entry(quality).or_default() += 1,
+            AtelierAction::Drop { quality } => {
+                let count = next.unrevealed.entry(quality).or_default();
+                *count = count.checked_add(1).ok_or(AtelierRefusal::InvalidDraw)?;
+            }
             AtelierAction::Reveal {
                 id,
                 quality,
@@ -156,18 +169,19 @@ impl AtelierState {
                 if mods.len() != quality.mod_count() || next.gems.contains_key(&id) {
                     return Err(AtelierRefusal::InvalidDraw);
                 }
-                let known: BTreeSet<u16> = catalogue["basic_mods"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .chain(catalogue["supreme_mods"].as_array().into_iter().flatten())
-                    .filter_map(|row| {
-                        row["source_id"]
-                            .as_u64()
-                            .and_then(|v| u16::try_from(v).ok())
-                    })
-                    .collect();
-                if mods.iter().any(|id| !known.contains(id)) {
+                // Basic and supreme ids overlap. Membership in their union would allow a
+                // supreme-only id in a basic slot, and ignores vocation/position restrictions.
+                let lists = [
+                    "basic_mods_position_1",
+                    "basic_mods_position_2",
+                    "supreme_mods",
+                ];
+                if mods
+                    .iter()
+                    .zip(lists)
+                    .any(|(id, list)| !contains_mod(family, list, *id))
+                    || (mods.len() >= 2 && mods[0] == mods[1])
+                {
                     return Err(AtelierRefusal::InvalidDraw);
                 }
                 let fee = catalogue["atelier"]["fees"]["reveal"][quality.key()]
@@ -196,7 +210,15 @@ impl AtelierState {
                 if gem.vessel {
                     return Err(AtelierRefusal::AlreadySocketed);
                 }
-                gem.vessel = true;
+                let domain = gem.domain;
+                if next
+                    .gems
+                    .values()
+                    .any(|other| other.vessel && other.domain == domain)
+                {
+                    return Err(AtelierRefusal::VesselOccupied);
+                }
+                current_gem(&mut next, id, current)?.vessel = true;
             }
             AtelierAction::Remove { id } => {
                 let gem = current_gem(&mut next, id, current)?;
@@ -270,9 +292,27 @@ impl AtelierState {
                     FragmentKind::Supreme
                 };
                 next.gems.remove(&id);
-                *next.fragments.entry(kind).or_default() += yield_amount;
+                let held = next.fragments.entry(kind).or_default();
+                *held = held
+                    .checked_add(yield_amount)
+                    .ok_or(AtelierRefusal::InvalidDraw)?;
             }
             AtelierAction::GradeUp { kind, mod_id } => {
+                if !next.grades.is_empty()
+                    && next.grade_ruleset_revision.as_deref() != Some(current)
+                {
+                    return Err(AtelierRefusal::RulesetMigrationPending);
+                }
+                let known = match kind {
+                    FragmentKind::Basic => {
+                        contains_mod(family, "basic_mods_position_1", mod_id)
+                            || contains_mod(family, "basic_mods_position_2", mod_id)
+                    }
+                    FragmentKind::Supreme => contains_mod(family, "supreme_mods", mod_id),
+                };
+                if !known {
+                    return Err(AtelierRefusal::InvalidDraw);
+                }
                 let grade = next.grades.get(&(kind, mod_id)).copied().unwrap_or(0);
                 if grade >= 3 {
                     return Err(AtelierRefusal::MaxGrade);
@@ -298,15 +338,76 @@ impl AtelierState {
                     .checked_sub(fragments)
                     .ok_or(AtelierRefusal::InsufficientFragments)?;
                 next.grades.insert((kind, mod_id), grade + 1);
+                next.grade_ruleset_revision = Some(current.to_owned());
             }
         }
-        next.revision += 1;
-        let promotion_points = next.grades.values().filter(|grade| **grade == 3).count() as u32;
+        next.revision = next
+            .revision
+            .checked_add(1)
+            .ok_or(AtelierRefusal::InvalidDraw)?;
+        let promotion_points = if next.grade_ruleset_revision.as_deref() == Some(current) {
+            next.grades.values().filter(|grade| **grade == 3).count() as u32
+        } else {
+            0
+        };
         *self = next;
         Ok(AtelierCommit {
             revision: self.revision,
             promotion_points,
         })
+    }
+}
+
+fn contains_mod(family: &serde_json::Value, list: &str, id: u16) -> bool {
+    family[list].as_array().is_some_and(|ids| {
+        ids.iter()
+            .any(|entry| entry.as_u64() == Some(u64::from(id)))
+    })
+}
+
+// UUIDv7-sized identities exceed JSON's native u64 number range. The gem map already uses
+// string keys; encode the identity inside each gem as a string too.
+mod gem_identity {
+    use serde::{Deserialize, Deserializer, Serializer, de::Error};
+
+    pub(super) fn serialize<S: Serializer>(id: &u128, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.collect_str(id)
+    }
+
+    pub(super) fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<u128, D::Error> {
+        String::deserialize(deserializer)?
+            .parse()
+            .map_err(D::Error::custom)
+    }
+}
+
+// JSON objects cannot have tuple keys. Keep the in-memory typed key, with a deterministic
+// sequence on disk; reject duplicates instead of silently losing a paid grade on reload.
+mod grade_entries {
+    use super::FragmentKind;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
+    use std::collections::BTreeMap;
+
+    pub(super) fn serialize<S: Serializer>(
+        grades: &BTreeMap<(FragmentKind, u16), u8>,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        grades.iter().collect::<Vec<_>>().serialize(serializer)
+    }
+
+    pub(super) fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<BTreeMap<(FragmentKind, u16), u8>, D::Error> {
+        let entries = Vec::<((FragmentKind, u16), u8)>::deserialize(deserializer)?;
+        let mut grades = BTreeMap::new();
+        for (key, grade) in entries {
+            if grade > 3 || grades.insert(key, grade).is_some() {
+                return Err(D::Error::custom("invalid or duplicate atelier grade"));
+            }
+        }
+        Ok(grades)
     }
 }
 

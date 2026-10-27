@@ -14,10 +14,13 @@ CREATE TABLE game_character_atelier_receipts (
     character_id UUID NOT NULL,
     occurrence UUID NOT NULL,
     request_sha256 BYTEA NOT NULL CHECK (octet_length(request_sha256) = 32),
-    before_revision BIGINT NOT NULL,
+    before_revision BIGINT NOT NULL CHECK (before_revision >= 0),
     after_revision BIGINT NOT NULL CHECK (after_revision = before_revision + 1),
     outcome_json JSONB NOT NULL,
     PRIMARY KEY (character_id, occurrence),
     CONSTRAINT game_character_atelier_receipts_character_fk
         FOREIGN KEY (character_id) REFERENCES game_character_roots(character_id) ON DELETE CASCADE
 );
+
+GRANT SELECT, INSERT, UPDATE ON game_character_atelier_state TO oteryn_game_runtime;
+GRANT SELECT, INSERT ON game_character_atelier_receipts TO oteryn_game_runtime;
