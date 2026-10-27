@@ -66,11 +66,11 @@ fn the_largest_entry_and_payloads_are_measured() {
 
     let full = encode_open_container(&OpenContainer {
         container_handle: Some(handle(u64::MAX)),
-        entries: (1..=16).map(worst).collect(),
+        entries: (1..=30).map(worst).collect(),
     })
-    .expect("16 entries");
+    .expect("30 entries");
     assert_eq!(full.len(), MAX_OPEN_CONTAINER_BYTES);
-    assert_eq!(MAX_OPEN_CONTAINER_BYTES, 507);
+    assert_eq!(MAX_OPEN_CONTAINER_BYTES, 941);
 
     let intent = encode_item_move_intent(&ItemMoveIntent {
         source: handle(u64::MAX),
@@ -129,11 +129,11 @@ fn character_inventory_round_trips_at_30_items_and_refuses_31_both_ways() {
 }
 
 #[test]
-fn open_container_round_trips_at_16_entries_and_refuses_17_both_ways() {
+fn open_corpse_round_trips_at_30_entries_and_refuses_31_both_ways() {
     for view in [
         OpenContainer::default(),
         container(0, small),
-        container(16, worst),
+        container(30, worst),
     ] {
         let bytes = encode_open_container(&view).expect("encode");
         assert_eq!(decode_open_container(&bytes), Ok(view));
@@ -144,11 +144,11 @@ fn open_container_round_trips_at_16_entries_and_refuses_17_both_ways() {
             .is_empty()
     );
     assert_eq!(
-        encode_open_container(&container(17, small)),
+        encode_open_container(&container(31, small)),
         Err(ItemViewWireError::LimitExceeded)
     );
     let raw = with_raw_entries(
-        encode_open_container(&container(16, small)).expect("16"),
+        encode_open_container(&container(30, small)).expect("30"),
         100,
         1,
     );
@@ -437,7 +437,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
     // item view still has its separate ITEMV0-RL-02 limit of 16 entries.
     assert_eq!(limit("GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX"), Some(30));
     assert_eq!(limit("ITEMV0-RL-03"), Some(MAX_LIVE_ITEM_HANDLES as u64));
-    assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_325);
+    assert_eq!(MAX_LIVE_ITEM_HANDLES_MAP_VIEW, 1_339);
     assert_eq!(
         limit("ITEMV0-RL-03-MAP-VIEW"),
         Some(MAX_LIVE_ITEM_HANDLES_MAP_VIEW as u64)
@@ -445,7 +445,7 @@ fn registries_bind_the_item_view_ids_and_limits() {
     assert_eq!(
         crate::container_tree::MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE
             + crate::world_map::MAX_MAP_VIEW_HANDLES,
-        1_661
+        1_675
     );
 }
 

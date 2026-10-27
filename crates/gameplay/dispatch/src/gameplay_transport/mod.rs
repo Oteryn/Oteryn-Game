@@ -113,6 +113,7 @@ mod quest_callbacks;
 mod quest_log_source;
 mod resume;
 mod reward_bag_use;
+pub mod rotten_blood_dispatch;
 mod rune_use_bridge;
 mod seam_rooms;
 pub mod server_save_countdown;
@@ -142,6 +143,7 @@ mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
 mod vocation_choice;
+pub mod weapon_proficiency;
 mod world_event;
 mod world_map;
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).

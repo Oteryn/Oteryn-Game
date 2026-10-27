@@ -13,8 +13,8 @@
 //!   influence, a Bosstiary boss the points for its category.
 //!
 //! Selection/clear planning is pure: it validates supplied committed snapshots
-//! without saving or activating a perk. Kill-credit accrual, durable selection
-//! application and effects still wait for PROF-1 and their owning runtime paths.
+//! without saving or activating a perk. The dispatch owner supplies live actor,
+//! weapon and contributor facts; this module only decides bounded credit.
 
 use super::CharacterRevision;
 
@@ -418,6 +418,48 @@ pub fn boss_points(category: BossCategory) -> u32 {
         BossCategory::Archfoe => 5_000,
         BossCategory::Nemesis => 15_000,
     }
+}
+
+/// PROF-EFFECT-0's damage-contributor window, in semantic milliseconds.
+pub const PROFICIENCY_KILL_CREDIT_WINDOW_MS: u64 = 5 * 60 * 1_000;
+
+/// Facts frozen by the death owner for one damage contributor. Party membership
+/// is deliberately absent: proficiency awards every contributor full credit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProficiencyKillContributor<'a> {
+    pub character_in_channel: bool,
+    pub last_damage_at_ms: u64,
+    pub equipped_weapon_item_key: Option<&'a str>,
+    pub weapon_has_promoted_proficiency: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ProficiencyKillCredit<'a> {
+    pub weapon_item_key: &'a str,
+    pub points: u32,
+}
+
+/// Decide one contributor's full, non-divided credit. Unsupported creature and
+/// weapon classifications fail closed.
+pub fn proficiency_kill_credit<'a>(
+    death_at_ms: u64,
+    creature_is_summon: bool,
+    points: Option<u32>,
+    contributor: ProficiencyKillContributor<'a>,
+) -> Option<ProficiencyKillCredit<'a>> {
+    let points = points.filter(|points| *points > 0)?;
+    if creature_is_summon
+        || !contributor.character_in_channel
+        || !contributor.weapon_has_promoted_proficiency
+        || contributor.last_damage_at_ms > death_at_ms
+        || death_at_ms - contributor.last_damage_at_ms > PROFICIENCY_KILL_CREDIT_WINDOW_MS
+    {
+        return None;
+    }
+    Some(ProficiencyKillCredit {
+        weapon_item_key: contributor.equipped_weapon_item_key?,
+        points,
+    })
 }
 
 // PROFICIENCY-1B perk modification (PROF-SHAPE-1a): pure admission, planning, draws and the
