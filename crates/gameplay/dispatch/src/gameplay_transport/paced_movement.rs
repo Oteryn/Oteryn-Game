@@ -129,7 +129,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 drop(runtime);
                 let snapshot = match origin {
                     Some(origin) => {
-                        self.step_quest_callback(actor, session, origin, snapshot)
+                        self.step_quest_callback(&permit, actor, session, origin, snapshot)
                             .await
                     }
                     None => snapshot,
