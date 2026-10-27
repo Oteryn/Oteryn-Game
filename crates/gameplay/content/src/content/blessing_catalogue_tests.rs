@@ -2,6 +2,30 @@
 use super::*;
 
 #[test]
+fn henricus_quotes_the_sum_for_only_missing_regular_blessings() {
+    let catalogue = BlessingCatalogue::load().expect("catalogue");
+    let held = vec!["oteryn:blessing.the_spiritual_shielding".to_owned()];
+    let (price, missing) = catalogue
+        .henricus_quote(30, &held)
+        .expect("missing blessings");
+    assert_eq!(missing.len(), 4);
+    assert_eq!(price, 8_000);
+    assert!(
+        missing
+            .iter()
+            .all(|blessing| blessing.price_family == PriceFamily::Regular)
+    );
+
+    let all = catalogue
+        .blessings
+        .iter()
+        .filter(|blessing| blessing.price_family == PriceFamily::Regular)
+        .map(|blessing| blessing.storage_key.clone())
+        .collect::<Vec<_>>();
+    assert_eq!(catalogue.henricus_quote(30, &all), None);
+}
+
+#[test]
 fn blessing_owner_prices_cover_every_boundary_and_promotion_has_no_discount() {
     let catalogue = BlessingCatalogue::load().expect("admitted data");
     for blessing in catalogue.blessings {

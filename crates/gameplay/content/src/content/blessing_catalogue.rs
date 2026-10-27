@@ -84,6 +84,25 @@ impl BlessingCatalogue {
         }
         Ok(catalogue)
     }
+
+    /// Henricus' Inquisition offer contains the five regular Pilgrimage blessings and charges
+    /// only for blessings not currently held. The caller keeps quoting and granting in its one
+    /// durable purchase transaction.
+    pub fn henricus_quote(&self, level: u32, held: &[String]) -> Option<(u64, Vec<&Blessing>)> {
+        let missing = self
+            .blessings
+            .iter()
+            .filter(|blessing| {
+                blessing.price_family == PriceFamily::Regular
+                    && !held.iter().any(|key| key == &blessing.storage_key)
+            })
+            .collect::<Vec<_>>();
+        if missing.is_empty() {
+            return None;
+        }
+        let price = missing.iter().map(|blessing| blessing.price(level)).sum();
+        Some((price, missing))
+    }
 }
 
 #[cfg(test)]
