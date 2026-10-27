@@ -88,6 +88,7 @@ enum HistoryProbe {
     AssignmentGap,
     SessionIncomplete,
     SessionGap,
+    FreshOriginUnlinked,
     ReadinessHistoryAhead,
     CharacterHistoryAhead,
     AccountHistoryAhead,
@@ -274,7 +275,29 @@ async fn qualify_fence_changes(
         // fact unchanged. Each disposable database gets exactly one monotonic
         // history fault, with no history rewrite or high-water/completeness reset.
         if !matches!(history_probe, HistoryProbe::None) {
-            let original = participant_binding(h, before).await?;
+            let excluded_session_fields: &[&str] = if matches!(history_probe, HistoryProbe::FreshOriginUnlinked) {
+                // Exercise the same-session retained-origin shape too. This is
+                // an administrative projection control, not a committed loss or
+                // reconnect. Its live participant and transport stay unchanged.
+                let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET initial_fresh_replay_key=fresh_replay_key,fresh_replay_key=NULL,control_loss_epoch=1,original_grace_deadline=0,predecessor_generation=current_generation WHERE game_session_id=encode($1,'hex')::uuid AND fresh_replay_key IS NOT NULL")
+                    .bind(fence.game_session_id.as_bytes().as_slice()).execute(pool).await?;
+                assert_eq!(updated.rows_affected(), 1);
+                let (status, payload) = query(&mut client, generation, command_id).await?;
+                assert_eq!(status, CommandStatus::Accepted);
+                let (_, entries, next) = page(&payload)?;
+                assert_eq!(entries, expected_entries);
+                assert_eq!(next, expected_next);
+                command_id += 1;
+                &["initial_fresh_replay_key"]
+            } else {
+                &[]
+            };
+            let original = participant_binding_except(h, before, excluded_session_fields).await?;
+            let issuance_before = if matches!(history_probe, HistoryProbe::FreshOriginUnlinked) {
+                Some(fresh_issuance_binding(h, before).await?)
+            } else {
+                None
+            };
             let runtime_facts = || async {
                 sqlx::query_as::<_, (bool, String)>(
                     "SELECT g.ready,g.ownership_generation::text FROM game_durability_admission_runtime_guards g \
@@ -309,6 +332,10 @@ async fn qualify_fence_changes(
                 HistoryProbe::SessionGap => (
                     "UPDATE game_durability_session_use_ledgers SET revision=revision+1,revision_floor=revision_floor+1 WHERE character_id=encode($1,'hex')::uuid",
                     "partial session-use history",
+                ),
+                HistoryProbe::FreshOriginUnlinked => (
+                    "UPDATE game_durability_reconnect_sessions SET initial_fresh_replay_key=NULL WHERE character_id=encode($1,'hex')::uuid AND session_state=2 AND fresh_replay_key IS NULL AND initial_fresh_replay_key IS NOT NULL",
+                    "fresh origin missing from live session projection",
                 ),
                 HistoryProbe::ReadinessHistoryAhead => (
                     "INSERT INTO game_durability_admission_guard_history(guard_key,publication_revision,source_authority,source_revision,decision_identity,change_json) SELECT decode('03','hex')||scope_key,publication_revision+1,source_authority,source_revision+1,decision_identity||':restore-probe',change_json FROM game_durability_admission_runtime_guards WHERE scope_key=decode('01','hex')||uuid_send(encode($1,'hex')::uuid)||uuid_send(encode($2,'hex')::uuid)",
@@ -369,7 +396,13 @@ async fn qualify_fence_changes(
                     .is_none(),
                 "{label} must refuse durable gameplay"
             );
-            assert_eq!(participant_binding(h, before).await?, original);
+            assert_eq!(
+                participant_binding_except(h, before, excluded_session_fields).await?,
+                original
+            );
+            if let Some(issuance_before) = issuance_before {
+                assert_eq!(fresh_issuance_binding(h, before).await?, issuance_before);
+            }
         }
         client.shutdown().await?;
         Ok(())
@@ -451,8 +484,29 @@ async fn prepare_unadmitted_activity(
 // Hash the exact bounded participant rows rather than print account/session
 // data in assertion failures. No query scans other Characters or their history.
 async fn participant_binding(h: &Harness, admitted: AdmittedSession) -> TestResult<String> {
+    participant_binding_except(h, admitted, &[]).await
+}
+
+async fn fresh_issuance_binding(h: &Harness, admitted: AdmittedSession) -> TestResult<String> {
     Ok(sqlx::query_scalar(
-        "SELECT md5(jsonb_build_array(to_jsonb(s),to_jsonb(c),to_jsonb(a),to_jsonb(r))::text) \
+        "SELECT md5(jsonb_build_array(to_jsonb(r),to_jsonb(m),to_jsonb(l))::text) \
+         FROM game_durability_fresh_admission_receipts r \
+         JOIN game_durability_session_use_memberships m USING (game_session_id) \
+         JOIN game_durability_session_use_ledgers l ON l.character_id=m.character_id \
+         WHERE r.game_session_id=encode($1,'hex')::uuid",
+    )
+    .bind(admitted.game_session_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?)
+}
+
+async fn participant_binding_except(
+    h: &Harness,
+    admitted: AdmittedSession,
+    excluded_session_fields: &[&str],
+) -> TestResult<String> {
+    Ok(sqlx::query_scalar(
+        "SELECT md5(jsonb_build_array(to_jsonb(s)-$2::text[],to_jsonb(c),to_jsonb(a),to_jsonb(r))::text) \
          FROM game_durability_reconnect_sessions s \
          JOIN game_durability_admission_character_guards c ON c.character_id=s.character_id \
          JOIN game_durability_admission_account_guards a ON a.account_id=s.account_id \
@@ -460,6 +514,7 @@ async fn participant_binding(h: &Harness, admitted: AdmittedSession) -> TestResu
          WHERE s.game_session_id=encode($1,'hex')::uuid",
     )
     .bind(admitted.game_session_id.as_bytes().as_slice())
+    .bind(excluded_session_fields)
     .fetch_one(&h.pool)
     .await?)
 }
@@ -718,6 +773,11 @@ fn boss_cooldown_list_postgres_real_dispatch_session_history_incomplete() -> Tes
 #[test]
 fn boss_cooldown_list_postgres_real_dispatch_session_history_gap() -> TestResult {
     cooldown_scenario(HistoryProbe::SessionGap)
+}
+
+#[test]
+fn boss_cooldown_list_postgres_real_dispatch_fresh_origin_unlinked() -> TestResult {
+    cooldown_scenario(HistoryProbe::FreshOriginUnlinked)
 }
 
 #[test]

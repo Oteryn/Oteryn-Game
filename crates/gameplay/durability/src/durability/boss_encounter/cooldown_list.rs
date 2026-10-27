@@ -34,6 +34,8 @@ impl super::super::DurabilityRoot {
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
         let guards = AdmissionGuardStore::from_root(self.clone());
+        let admissions =
+            super::super::fresh_admission::FreshAdmissionStore::from_root(self.clone());
         self.try_issue_semantic_pass()?
             .run(move |holder, deadline| {
                 Box::pin(async move {
@@ -46,12 +48,9 @@ impl super::super::DurabilityRoot {
                     // A materialized live session is insufficient after a partial
                     // restore loses issuance history. Prove retained identity use
                     // before the independent participant/root/runtime checks.
-                    if !super::super::fresh_admission::committed_session_use(
-                        &mut tx,
-                        character_id,
-                        fence.game_session_id,
-                    )
-                    .await?
+                    if !admissions
+                        .committed_session_use(&mut tx, character_id, fence.game_session_id)
+                        .await?
                     {
                         return Ok(None);
                     }

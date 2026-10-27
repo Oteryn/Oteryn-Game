@@ -622,7 +622,7 @@ async fn seed_participant_publications(h: &fixture::Harness) -> TestResult {
 // transaction each; no immutable membership is edited or deleted for restoration.
 async fn qualify_session_provenance(h: &fixture::Harness) -> TestResult {
     use crate::durability::db::lock_admission_relations;
-    use crate::durability::fresh_admission::committed_session_use;
+    use crate::durability::fresh_admission::FreshAdmissionStore;
     use crate::foundation::{CharacterId, GameSessionId};
 
     let character = CharacterId::decode(&id(fixture::CHARACTER)).map_err(fixture::debug)?;
@@ -731,7 +731,9 @@ async fn qualify_session_provenance(h: &fixture::Harness) -> TestResult {
                 .bind(id(90).as_slice()).execute(&mut *tx).await?;
         }
         assert_eq!(
-            committed_session_use(&mut tx, character, session).await?,
+            FreshAdmissionStore::from_root(h.root.clone())
+                .committed_session_use(&mut tx, character, session)
+                .await?,
             expected,
             "{label}"
         );

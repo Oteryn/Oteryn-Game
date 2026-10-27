@@ -193,6 +193,28 @@ Character's membership, or a legacy/unbound observation refuses the page.
 The existing 65,536-entry per-Character ledger bound limits this history check;
 it is not a scan of every participant or session in the World.
 
+For an original fresh-admission session, that owner also finds its immutable
+admission receipt by the uniquely indexed session identity, independently of the
+live projection's origin pointers. It validates the receipt with its existing
+bounded payload/mirror and historical-operation decoder, compares the exact
+Character/session and membership's operation binding to the original transport,
+and requires the projection to retain that origin. When both origin pointers
+are present they must agree. A same-session retained initial-origin pointer is
+accepted without requiring the original connection generation to remain current.
+Legacy and replacement sessions without an original fresh receipt for their own
+identity retain the identity-use check; this addition does not prove their full
+admission lineage. Current participant/runtime/root checks remain independent.
+
+`boss_cooldown_list_postgres_real_dispatch_fresh_origin_unlinked` first accepts
+the ordinary fresh session, then an administrative same-session projection with
+only its retained initial-origin pointer. Removing exactly that pointer must
+refuse a new command 133 with an empty payload and the direct durable read.
+Every other session, Character, lease, presence and root fact remains unchanged;
+readiness and valid assignment history stay intact. The retained admission
+receipt, session-use membership and ledger are not rewritten. The projection
+control is not a committed control loss or reconnect, and this refusal does not
+qualify a production activity handoff, return or restart recovery.
+
 `boss_cooldown_list_postgres_real_dispatch_session_history_incomplete` and
 `boss_cooldown_list_postgres_real_dispatch_session_history_gap` first pass the
 same real Channel connection controls as the original cooldown scenario. Each
