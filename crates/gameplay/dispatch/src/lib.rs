@@ -245,6 +245,9 @@ mod monster_owner_cycle_tests;
 mod smelly_damage_tests;
 
 #[cfg(test)]
+#[path = "../../encounters/src/bosses/rotten_blood/dispatch_tests.rs"]
+mod rotten_blood_dispatch_tests;
+#[cfg(test)]
 #[path = "../../encounters/src/bosses/smelly_cheese/smelly_encounter_dispatch_tests.rs"]
 mod smelly_encounter_dispatch_tests;
 

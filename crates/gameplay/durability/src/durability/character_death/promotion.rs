@@ -1,47 +1,24 @@
-//! Per-death Premium input is evaluated inside the revision slot, never at login.
+//! Per-death Premium is evaluated in the fenced death transaction, never at login.
 use super::*;
 use std::{future::Future, pin::Pin};
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct DeathPremiumState {
-    pub current: bool,
-    pub before_delivery: bool,
-}
-
 pub trait DeathPremiumOwner: Sync {
-    fn current(&self) -> Pin<Box<dyn Future<Output = DeathPremiumState> + Send + '_>>;
-}
-
-pub(super) async fn hold_delivery(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    premium: DeathPremiumState,
-) -> std::result::Result<Result<()>, DurabilityError> {
-    if premium.before_delivery {
-        sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
-            .bind(crate::durability::premium_activation_latch::PREMIUM_ACTIVATION_LOCK_KEY)
-            .execute(&mut **tx)
-            .await?;
-        let delivered: bool =
-            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_premium_activation_latch)")
-                .fetch_one(&mut **tx)
-                .await?;
-        if delivered {
-            return Ok(Err(CharacterProgressionError::AuthorityRejected));
-        }
-    }
-    Ok(Ok(()))
+    fn current<'a>(
+        &'a self,
+        tx: &'a mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> Pin<Box<dyn Future<Output = std::result::Result<bool, DurabilityError>> + Send + 'a>>;
 }
 
 pub(super) async fn benefit(
     tx: &mut sqlx::PgConnection,
     character: CharacterId,
-    premium: DeathPremiumState,
+    premium: bool,
 ) -> std::result::Result<bool, DurabilityError> {
     let promoted =
         crate::durability::character_promotion::read_durable_promotion(tx, character).await?;
     Ok(crate::domain::premium::promotion_benefit_current(
         promoted,
-        premium.current,
+        premium,
     ))
 }
 

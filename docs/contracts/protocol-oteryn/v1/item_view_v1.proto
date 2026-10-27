@@ -83,8 +83,8 @@ message EquippedItemV1 {
 
 // StateDomainSnapshot.payload of domain 11, snapshot type 1, and StateDelta.payload of domain 11,
 // delta type 1. A delta carries the whole view. The one open corpse, by the handle it has in domain 1,
-// and its entries in display order; an empty payload means nothing is open. At most 16 entries
-// (ITEMV0-RL-02) and 507 bytes.
+// and its entries in display order; an empty payload means nothing is open. At most 30 entries
+// (GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX) and 941 bytes.
 message OpenContainerV1 {
   uint64 container_handle = 1;
   repeated ItemEntryV1 entries = 2;

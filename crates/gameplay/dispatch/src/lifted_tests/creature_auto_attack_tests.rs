@@ -198,6 +198,8 @@ fn setup(
         target_protected: false,
         defense: 0,
         armor: 0,
+        player_level: 1,
+        reference_level_party_lowest: None,
     };
     (runtime, states, source, facts, root)
 }
@@ -668,6 +670,8 @@ fn shield_budget_65_session_turnovers_purge_stale_and_preserve_live_other_tokens
         target_protected: false,
         defense: 10000,
         armor: 0,
+        player_level: 1,
+        reference_level_party_lowest: None,
     };
     let mut owner = owner(&runtime, &source, facts);
     owner
@@ -1004,4 +1008,75 @@ fn native_cat_zero_damage_is_legal_noop_without_vital_or_death_commit() {
             .health_after,
         184
     );
+}
+
+#[test]
+fn reference_level_melee_native_source_scales_only_in_the_overridden_area() {
+    use crate::content::{ProjectV2Bounds, ProjectV2ReferenceLevelOverride};
+    let mut neutral = None;
+    for (level, in_area) in [(800, true), (300, true), (300, false)] {
+        let (mut runtime, mut states, old_source, mut facts, root) =
+            setup("1st_mate_ratticus", false);
+        let (records, mut profiles) = native_data();
+        for profile in &mut profiles {
+            if profile.target.key == "oteryn:creature.1st_mate_ratticus"
+                && let Data::Creature(creature) = &mut profile.data
+            {
+                let details = creature.details.as_mut().expect("creature details");
+                details.reference_level = None;
+                details.reference_level_overrides = vec![ProjectV2ReferenceLevelOverride {
+                    bounds: ProjectV2Bounds {
+                        min_x: if in_area { 90 } else { 200 },
+                        min_y: 90,
+                        max_x_exclusive: 300,
+                        max_y_exclusive: 110,
+                    },
+                    floor: 7,
+                    reference_level: Some(790),
+                    party_mode: Default::default(),
+                    curve: vec![],
+                }];
+            }
+        }
+        let source = MeleeSource::from_native(
+            &Ref {
+                family: ProjectV2Family::Creature,
+                key: "oteryn:creature.1st_mate_ratticus".into(),
+                revision: "definition-r1".into(),
+            },
+            old_source.entry_index,
+            &records,
+            &profiles,
+            runtime.content_pin().server_artifact_digest(),
+        )
+        .expect("native MRL melee source");
+        facts.player_level = level;
+        let hit = owner(&runtime, &source, facts)
+            .fixture_swing(
+                &mut runtime,
+                &mut states,
+                &source,
+                facts,
+                1,
+                revisions(),
+                &root,
+                clock(2_000_000),
+            )
+            .expect("melee dispatch");
+        let base = *neutral.get_or_insert(hit.requested);
+        let multiplier = monster_reference_level_damage_multiplier(
+            in_area.then_some(790),
+            &[],
+            runtime
+                .read_actor_position(facts.target)
+                .expect("position")
+                .position(),
+            &facts,
+        );
+        assert_eq!(
+            u64::from(hit.requested),
+            u64::from(base) * u64::from(multiplier) / u64::from(DAMAGE_MULTIPLIER_SCALE)
+        );
+        assert!(hit.damage.is_some());
+    }
 }

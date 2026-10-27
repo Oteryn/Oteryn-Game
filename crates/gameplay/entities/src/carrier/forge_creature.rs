@@ -2,7 +2,7 @@
 use super::*;
 use oteryn_gameplay_domain::domain::forge_creature::{
     FIENDISH_RESPAWN_MICROS, FIENDISH_SIMULTANEOUS_MAX, ForgeCreature, ForgeSpawnCandidate,
-    plan_fiendish_tick,
+    INFLUENCED_SIMULTANEOUS_MAX, plan_fiendish_tick,
 };
 use sha2::{Digest, Sha256};
 
@@ -57,7 +57,7 @@ impl ChannelRuntimeV1 {
     }
 
     pub(super) fn drive_forge_population(&mut self, now: u64) -> Result<(), CarrierError> {
-        // Observe only the four retained incarnations on ordinary owner turns. A dead
+        // Observe only the three retained incarnations on ordinary owner turns. A dead
         // fiend holds its population slot until its own replacement deadline.
         for index in 0..self.forge_fiends.len() {
             let (actor, due) = self.forge_fiends[index];
@@ -117,8 +117,8 @@ impl ChannelRuntimeV1 {
                 selected += 1;
             }
         }
-        // Influenced creatures share the timed, eligible native population. Keep its
-        // influenced population bounded to one third, rather than rolling on every spawn.
+        // The pinned engines add one influenced creature per maintenance interval until the
+        // configured population ceiling, rather than converting a fraction of every spawn set.
         let influenced_count = actors
             .iter()
             .filter(|(_, actor)| {
@@ -126,8 +126,6 @@ impl ChannelRuntimeV1 {
                     .is_ok_and(|s| matches!(s.forge, Some(ForgeCreature::Influenced(_))))
             })
             .count();
-        let influenced_limit =
-            (candidates.iter().filter(|c| c.eligible).count() + influenced_count) / 3;
         let mut influenced: Vec<_> = actors
             .iter()
             .filter(|(_, actor)| {
@@ -140,10 +138,11 @@ impl ChannelRuntimeV1 {
             .map(|(_, actor)| (self.forge_roll(*actor), *actor))
             .collect();
         influenced.sort_unstable_by_key(|(roll, _)| *roll);
-        for (roll, actor) in influenced
-            .into_iter()
-            .take(influenced_limit.saturating_sub(influenced_count))
-        {
+        for (roll, actor) in influenced.into_iter().take(
+            usize::from(INFLUENCED_SIMULTANEOUS_MAX)
+                .saturating_sub(influenced_count)
+                .min(1),
+        ) {
             if let Some(kind) = ForgeCreature::new_influenced(1 + (roll % 5) as u8) {
                 self.apply_forge_classification(actor, kind)?;
             }
@@ -261,7 +260,7 @@ mod tests {
                 current.companion_snapshot(*a).unwrap().forge == Some(ForgeCreature::Fiendish)
             })
             .collect();
-        assert_eq!(fiends.len(), 4);
+        assert_eq!(fiends.len(), 3);
         let influenced: Vec<_> = current
             .spawn_point_creatures()
             .into_iter()
@@ -269,7 +268,11 @@ mod tests {
             .filter_map(|actor| current.companion_snapshot(actor).ok())
             .filter(|snapshot| matches!(snapshot.forge, Some(ForgeCreature::Influenced(_))))
             .collect();
-        assert_eq!(influenced.len(), 2, "one third of six eligible creatures");
+        assert_eq!(
+            influenced.len(),
+            1,
+            "one influenced creature per owner interval"
+        );
         for snapshot in influenced {
             let kind = snapshot.forge.unwrap();
             assert_eq!(snapshot.maximum_health, i64::from(kind.health_percent()));
@@ -358,7 +361,7 @@ mod tests {
                 .filter(|a| current.companion_snapshot(*a).unwrap().forge
                     == Some(ForgeCreature::Fiendish))
                 .count(),
-            3
+            2
         );
         current.drive_forge_population(280_001_000).unwrap();
         assert_eq!(
@@ -369,7 +372,7 @@ mod tests {
                 .filter(|a| current.companion_snapshot(*a).unwrap().forge
                     == Some(ForgeCreature::Fiendish))
                 .count(),
-            4
+            3
         );
     }
 }

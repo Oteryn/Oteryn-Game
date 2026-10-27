@@ -28,6 +28,12 @@ pub struct ProjectV2CreatureDetails {
     pub inspection: String,
     pub defense: u32,
     pub critical_chance_ppm: u32,
+    /// Optional level cap for creature-to-player damage scaling. No scaling is applied when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reference_level: Option<u32>,
+    /// Spatial spawn-area overrides; disjoint boxes in the current world coordinate frame.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reference_level_overrides: Vec<ProjectV2ReferenceLevelOverride>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub condition_immunities: Vec<String>,
     pub flags: ProjectV2CreatureFlags,
@@ -52,6 +58,37 @@ pub struct ProjectV2CreatureDetails {
     pub healing_from_damage: Vec<ProjectV2DamageResponse>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reward_encounter: Option<ProjectV2DefinitionRef>,
+}
+
+/// Oteryn's optional anti-carry mode. Tibia observations use `PerPlayer`.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectV2ReferenceLevelPartyMode {
+    #[default]
+    PerPlayer,
+    LowestMember,
+}
+
+/// Observed calibration point, indexed by levels below the area's cap.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ReferenceLevelPoint {
+    pub levels_below: u32,
+    pub extra_damage_ppm: u32,
+}
+
+/// A spatial spawn override. An explicit null cap disables MRL in this box.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2ReferenceLevelOverride {
+    pub bounds: super::ProjectV2Bounds,
+    pub floor: i16,
+    pub reference_level: Option<u32>,
+    #[serde(default)]
+    pub party_mode: ProjectV2ReferenceLevelPartyMode,
+    /// Empty uses the generic soft-100 approximation; otherwise interpolate these observations.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub curve: Vec<ProjectV2ReferenceLevelPoint>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -845,6 +882,50 @@ pub(super) fn validate_creature_details(
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
     limits: ProjectEvidenceLimits,
 ) -> Result<(), ProjectError> {
+    if details.reference_level == Some(0) {
+        return Err(ProjectError::InvalidProject("MRL cap must be positive"));
+    }
+    limits.check(
+        "MRL areas",
+        details.reference_level_overrides.len(),
+        limits.max_reference_records,
+    )?;
+    for (index, area) in details.reference_level_overrides.iter().enumerate() {
+        let b = &area.bounds;
+        if area.reference_level == Some(0)
+            || b.min_x >= b.max_x_exclusive
+            || b.min_y >= b.max_y_exclusive
+        {
+            return Err(ProjectError::InvalidProject("invalid MRL area or cap"));
+        }
+        limits.check("MRL curve", area.curve.len(), limits.max_reference_records)?;
+        if area
+            .curve
+            .first()
+            .is_some_and(|point| point.levels_below == 0 || point.extra_damage_ppm == 0)
+            || area.curve.windows(2).any(|pair| {
+                pair[0].levels_below >= pair[1].levels_below
+                    || pair[0].extra_damage_ppm > pair[1].extra_damage_ppm
+            })
+        {
+            return Err(ProjectError::InvalidProject(
+                "MRL curve must be positive, sorted and monotonic",
+            ));
+        }
+        if details.reference_level_overrides[..index]
+            .iter()
+            .any(|other| {
+                let a = &other.bounds;
+                other.floor == area.floor
+                    && a.min_x < b.max_x_exclusive
+                    && b.min_x < a.max_x_exclusive
+                    && a.min_y < b.max_y_exclusive
+                    && b.min_y < a.max_y_exclusive
+            })
+        {
+            return Err(ProjectError::InvalidProject("overlapping MRL areas"));
+        }
+    }
     validate_v2_source_text("v2 Creature display name", &details.display_name, limits)?;
     if let Some(article) = &details.article {
         limits.check(

@@ -70,6 +70,87 @@ impl SpellWorldReader for CurrentTarget {
     }
 }
 
+// Same-transaction strong World membership; never authorize party membership from the actor cache.
+type ReferenceParties = BTreeMap<[u8; 16], Vec<(MovementLocalPosition, u32)>>;
+pub(crate) async fn read_reference_parties(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    authority: &crate::durability::spell_item_transaction::SpellItemScopeAuthority,
+    root: &crate::durability::DurabilityRoot,
+    runtime: &ChannelRuntimeV1,
+    states: &ChannelSpellStates,
+    enabled: bool,
+) -> ReferenceParties {
+    let mut parties = BTreeMap::new();
+    if !enabled {
+        return parties;
+    }
+    let Ok(census) = runtime.positioned_actor_census() else {
+        return parties;
+    };
+    // Resolve each actor's Character from the journal once. Membership never comes from a cache.
+    let mut views = Vec::new();
+    let mut physical = BTreeMap::new();
+    for (actor, position, session) in census {
+        let Some(session) = session else {
+            continue;
+        };
+        let Ok(view) =
+            crate::durability::world_party::read_world_party_for_scope_actor_in_transaction(
+                tx, root, authority, runtime, actor, session,
+            )
+            .await
+        else {
+            return BTreeMap::new();
+        };
+        physical.insert(
+            view.character,
+            (
+                position.position(),
+                states
+                    .get(runtime, actor, session)
+                    .map(|state| state.character_facts().level),
+            ),
+        );
+        views.push((actor, view));
+    }
+    for (actor, view) in views {
+        if view.party_id.is_none() {
+            continue;
+        }
+        let mut members = Vec::new();
+        let mut available = true;
+        // World membership is bounded to 50 principals. Physical data is joined once per member,
+        // rather than rescanning all local actors or issuing another query for each pair.
+        for member in &view.members {
+            match physical.get(&member.character) {
+                Some((position, Some(level)))
+                    if member.presence != crate::foundation::PartyPresence::Offline
+                        && (member.presence != crate::foundation::PartyPresence::Channel
+                            || member.channel
+                                == Some(*runtime.binding().channel_id().as_bytes())) =>
+                {
+                    members.push((*position, *level));
+                }
+                Some(_) => {
+                    available = false;
+                    break;
+                }
+                None if member.presence == crate::foundation::PartyPresence::Channel
+                    && member.channel == Some(*runtime.binding().channel_id().as_bytes()) =>
+                {
+                    available = false;
+                    break;
+                }
+                None => {}
+            }
+        }
+        if available {
+            parties.insert(actor.placement_identity(), members);
+        }
+    }
+    parties
+}
+
 // Runtime, Item transaction and player states stay locked from these independent reads
 // through execution. Only qualified target damage and Summer ice/fire/energy circles enter.
 #[allow(clippy::too_many_arguments)]
@@ -81,6 +162,7 @@ pub(super) async fn execute(
     native: &NativeGameplayState,
     map: &mut CurrentMonsterMap<'_, '_>,
     proposals: &[ProfileAbilityProposal],
+    parties: &ReferenceParties,
     now: u64,
 ) {
     for proposal in proposals {
@@ -317,6 +399,13 @@ pub(super) async fn execute(
                     target_protected: protected,
                     defense: 0,
                     armor: state.equipped_armor(),
+                    player_level: state.character_facts().level,
+                    reference_level_party_lowest: source.reference_level_overrides.iter()
+                        .find(|area| crate::creature_auto_attack::reference_level_area_contains(area, from) && crate::creature_auto_attack::reference_level_area_contains(area, to))
+                        .and_then(|area| parties.get(&target.placement_identity())
+                            .and_then(|members| members.iter()
+                                .filter(|(position, _)| crate::creature_auto_attack::reference_level_area_contains(area, *position))
+                                .map(|(_, level)| *level).min())),
                 },
                 multiplier_ppm,
                 immune: false,

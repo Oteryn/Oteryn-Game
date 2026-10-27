@@ -26,6 +26,149 @@ use std::collections::BTreeMap;
 pub type ProfileAbilityProposal =
     crate::foundation::profile_schedule::ProfileAbilityProposal<Ref, ProjectV2Magnitude>;
 
+/// Damage scale in parts per million.
+pub const DAMAGE_MULTIPLIER_SCALE: u32 = 1_000_000;
+
+/// Observed approximation (no official formula; Canary/Crystal UNKNOWN).
+/// Generic fallback: +0.2% per level for the first 100, then +1% per level.
+/// Area-specific observed points may calibrate this approximation independently.
+const fn generic_reference_level_damage_multiplier(
+    reference_level: Option<u32>,
+    player_level: u32,
+) -> u32 {
+    let Some(cap) = reference_level else {
+        return DAMAGE_MULTIPLIER_SCALE;
+    };
+    let deficit = cap.saturating_sub(player_level);
+    let soft = if deficit < 100 { deficit } else { 100 };
+    DAMAGE_MULTIPLIER_SCALE
+        .saturating_add(soft.saturating_mul(2_000))
+        .saturating_add(deficit.saturating_sub(100).saturating_mul(10_000))
+}
+
+/// Resolve an authored spatial spawn override, then scale only this hit's player's damage.
+/// The independent reader supplies a same-area party minimum, or None when unavailable.
+pub fn monster_reference_level_damage_multiplier(
+    reference_level: Option<u32>,
+    areas: &[crate::content::ProjectV2ReferenceLevelOverride],
+    origin: crate::foundation::MovementLocalPosition,
+    facts: &AttackFacts,
+) -> u32 {
+    use crate::content::ProjectV2ReferenceLevelPartyMode;
+    let Some(area) = areas
+        .iter()
+        .find(|area| reference_level_area_contains(area, origin))
+    else {
+        return generic_reference_level_damage_multiplier(reference_level, facts.player_level);
+    };
+    let level = match area.party_mode {
+        ProjectV2ReferenceLevelPartyMode::PerPlayer => facts.player_level,
+        ProjectV2ReferenceLevelPartyMode::LowestMember => facts
+            .reference_level_party_lowest
+            .map_or(facts.player_level, |lowest| lowest.min(facts.player_level)),
+    };
+    let Some(cap) = area.reference_level else {
+        return DAMAGE_MULTIPLIER_SCALE;
+    };
+    let deficit = cap.saturating_sub(level);
+    if deficit == 0 {
+        return DAMAGE_MULTIPLIER_SCALE;
+    }
+    let mut previous = crate::content::ProjectV2ReferenceLevelPoint {
+        levels_below: 0,
+        extra_damage_ppm: 0,
+    };
+    for point in &area.curve {
+        if deficit <= point.levels_below {
+            let width = point.levels_below.saturating_sub(previous.levels_below);
+            if width == 0 {
+                return DAMAGE_MULTIPLIER_SCALE;
+            }
+            let extra = u64::from(previous.extra_damage_ppm)
+                + u64::from(
+                    point
+                        .extra_damage_ppm
+                        .saturating_sub(previous.extra_damage_ppm),
+                ) * u64::from(deficit.saturating_sub(previous.levels_below))
+                    / u64::from(width);
+            return DAMAGE_MULTIPLIER_SCALE
+                .saturating_add(u32::try_from(extra).unwrap_or(u32::MAX).max(1));
+        }
+        previous = *point;
+    }
+    if area.curve.is_empty() {
+        return generic_reference_level_damage_multiplier(Some(cap), level);
+    }
+    // Beyond the observations retain their last value and use the faster tail slope.
+    DAMAGE_MULTIPLIER_SCALE
+        .saturating_add(previous.extra_damage_ppm)
+        .saturating_add(
+            deficit
+                .saturating_sub(previous.levels_below)
+                .saturating_mul(10_000),
+        )
+}
+
+/// Test a current world position against a half-open authored spawn-area box.
+pub fn reference_level_area_contains(
+    area: &crate::content::ProjectV2ReferenceLevelOverride,
+    at: crate::foundation::MovementLocalPosition,
+) -> bool {
+    let b = &area.bounds;
+    at.floor == area.floor
+        && i64::from(at.x) >= b.min_x
+        && i64::from(at.x) < b.max_x_exclusive
+        && i64::from(at.y) >= b.min_y
+        && i64::from(at.y) < b.max_y_exclusive
+}
+
+#[cfg(test)]
+mod reference_level_tests {
+    use super::{DAMAGE_MULTIPLIER_SCALE, generic_reference_level_damage_multiplier};
+
+    #[test]
+    fn requested_reference_level_boundaries_use_the_observed_approximation() {
+        // MRL-3 supersedes below-cap neutrality; see docs/reference/monster-reference-level.md.
+        for (level, extra) in [
+            (601, 0),
+            (600, 0),
+            (599, 2_000),
+            (500, 200_000),
+            (499, 210_000),
+        ] {
+            assert_eq!(
+                generic_reference_level_damage_multiplier(Some(600), level),
+                DAMAGE_MULTIPLIER_SCALE + extra
+            );
+        }
+    }
+
+    #[test]
+    fn approximation_is_neutral_at_cap_and_accelerates_after_one_hundred_levels() {
+        let reference = 600;
+        for (player_level, extra) in [
+            (reference + 1, 0),
+            (reference, 0),
+            (reference - 1, 2_000),
+            (reference - 100, 200_000),
+            (reference - 101, 210_000),
+        ] {
+            assert_eq!(
+                generic_reference_level_damage_multiplier(Some(reference), player_level),
+                DAMAGE_MULTIPLIER_SCALE + extra
+            );
+        }
+    }
+
+    #[test]
+    fn creature_without_reference_level_is_unchanged() {
+        assert_eq!(
+            generic_reference_level_damage_multiplier(None, 1),
+            DAMAGE_MULTIPLIER_SCALE
+        );
+    }
+}
+
 /// Existing main formula evaluator and checked ATTACK constants are the only arithmetic owner.
 pub fn canonical_melee_bounds(attack: u32, skill: u32) -> Result<(u64, u64), AttackError> {
     let constants = AttackConstants::checked_in().ok_or(AttackError::InvalidSource)?;
@@ -84,6 +227,8 @@ pub struct MeleeSource {
     chance_ppm: u32,
     pub minimum: u32,
     pub maximum: u32,
+    reference_level: Option<u32>,
+    reference_level_overrides: Vec<crate::content::ProjectV2ReferenceLevelOverride>,
     critical: Option<crate::source_critical_baseline::SourceCriticalBaseline>,
     conditions: Vec<ConditionDefinition>,
     formula_revision: String,
@@ -278,6 +423,13 @@ impl MeleeSource {
             chance_ppm: e.chance_ppm,
             minimum,
             maximum,
+            reference_level: cp
+                .details
+                .as_ref()
+                .and_then(|details| details.reference_level),
+            reference_level_overrides: cp.details.as_ref().map_or_else(Vec::new, |details| {
+                details.reference_level_overrides.clone()
+            }),
             critical,
             conditions,
             formula_revision: fref.revision.clone(),
@@ -306,6 +458,11 @@ pub struct AttackFacts {
     /// Owner-evaluated defence maximum from accepted player-expression/equipment facts.
     pub defense: u32,
     pub armor: u32,
+    /// Current level from the player owner, used only by creature reference-level scaling.
+    pub player_level: u32,
+    /// Independently current lowest party level in the selected issuer spawn area.
+    /// None means the party lookup is unavailable; the hit player remains the fallback.
+    pub reference_level_party_lowest: Option<u32>,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SwingOutcome {
@@ -955,6 +1112,19 @@ impl AutoAttackOwner {
             });
         }
         let requested = draw("damage_draw", source.minimum, source.maximum)?;
+        let multiplier = monster_reference_level_damage_multiplier(
+            source.reference_level,
+            &source.reference_level_overrides,
+            from.position(),
+            &facts,
+        );
+        let requested = u32::try_from(
+            u64::from(requested)
+                .checked_mul(u64::from(multiplier))
+                .ok_or(AttackError::NumericOverflow)?
+                / u64::from(DAMAGE_MULTIPLIER_SCALE),
+        )
+        .map_err(|_| AttackError::NumericOverflow)?;
         let source_critical = source
             .critical
             .map(|policy| {

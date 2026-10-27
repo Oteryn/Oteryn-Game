@@ -8,7 +8,8 @@ pub enum ForgeCreature {
 }
 
 pub const FIENDISH_RESPAWN_SECONDS: u16 = 270;
-pub const FIENDISH_SIMULTANEOUS_MAX: u8 = 4;
+pub const FIENDISH_SIMULTANEOUS_MAX: u8 = 3;
+pub const INFLUENCED_SIMULTANEOUS_MAX: u16 = 300;
 pub const SHARED_XP_RANGE_XY: u16 = 30;
 pub const FIENDISH_RESPAWN_MICROS: u64 = FIENDISH_RESPAWN_SECONDS as u64 * 1_000_000;
 
@@ -30,7 +31,7 @@ pub struct FiendishTickPlan {
     pub next_tick_micros: u64,
 }
 
-/// Select enough eligible live spawns to restore the Global four-fiend population. Existing
+/// Select enough eligible live spawns to restore the pinned three-fiend population. Existing
 /// fiends are retained first and candidates are then ordered by a deterministic per-tick draw, so
 /// replicas produce the same plan without random or wall-clock authority.
 #[must_use]
@@ -96,18 +97,10 @@ pub const fn eligible_dust_recipient(facts: ForgeRecipientFacts) -> bool {
         && facts.floor_delta <= 1
 }
 
-/// Difficulty-qualified sliver quantity. The caller supplies the creature's
-/// admitted difficulty and deterministic roll; no global min/max economy roll
-/// is used.
+/// Pinned fiendish sliver quantity from a deterministic roll.
 #[must_use]
-pub const fn slivers(difficulty: u8, roll: u8) -> u16 {
-    match difficulty {
-        0 => 0,
-        1 => 1,
-        2..=3 => 1 + (roll % 2) as u16,
-        4..=5 => 2 + (roll % 3) as u16,
-        _ => 3 + (roll % 4) as u16,
-    }
+pub const fn slivers(roll: u8) -> u16 {
+    3 + (roll % 5) as u16
 }
 
 impl ForgeCreature {
@@ -129,6 +122,18 @@ impl ForgeCreature {
     #[must_use]
     pub const fn health_percent(self) -> u16 {
         135 + self.reward_stacks() as u16 * 15
+    }
+
+    /// Exact pinned OTS arithmetic. Both operands of `(stack + 10) / 10` are integers there,
+    /// so influenced stacks retain the base award and the fiendish stack doubles it.
+    #[must_use]
+    pub const fn experience_multiplier(self) -> u8 {
+        (self.reward_stacks() + 10) / 10
+    }
+
+    #[must_use]
+    pub fn experience(self, base: i64) -> Option<i64> {
+        base.checked_mul(self.experience_multiplier() as i64)
     }
 
     /// One through three dust per reward stack; randomness belongs to the simulation owner.
@@ -162,6 +167,9 @@ mod tests {
             }
         }
         assert_eq!(ForgeCreature::Fiendish.health_percent(), 360);
+        assert_eq!(ForgeCreature::Influenced(1).experience(100), Some(100));
+        assert_eq!(ForgeCreature::Influenced(5).experience(100), Some(100));
+        assert_eq!(ForgeCreature::Fiendish.experience(5), Some(10));
         assert_eq!(ForgeCreature::Fiendish.dust(0), 15);
         assert_eq!(ForgeCreature::Fiendish.dust(30), 45);
     }
@@ -199,19 +207,14 @@ mod tests {
     }
 
     #[test]
-    fn slivers_are_difficulty_qualified() {
-        assert_eq!(super::slivers(0, 255), 0);
-        assert_eq!(super::slivers(1, 255), 1);
-        assert_eq!(super::slivers(2, 0), 1);
-        assert_eq!(super::slivers(4, 2), 4);
-        assert_eq!(super::slivers(6, 3), 6);
-        // The deterministic roll is reduced within the difficulty band; hostile input cannot
-        // escape the admitted Global quantity range.
-        assert_eq!(super::slivers(6, u8::MAX), 6);
+    fn fiendish_slivers_stay_in_the_pinned_range() {
+        assert_eq!(super::slivers(0), 3);
+        assert_eq!(super::slivers(4), 7);
+        assert_eq!(super::slivers(u8::MAX), 3);
     }
 
     #[test]
-    fn tick_retains_live_fiends_and_refills_to_four() {
+    fn tick_retains_live_fiends_and_refills_to_three() {
         use super::{FIENDISH_RESPAWN_MICROS, ForgeSpawnCandidate};
         let candidates: Vec<_> = (1..=7)
             .map(|spawn_identity| ForgeSpawnCandidate {
@@ -221,14 +224,14 @@ mod tests {
             })
             .collect();
         let plan = super::plan_fiendish_tick(9, 3, &[2, 7, 99], &candidates);
-        assert_eq!(plan.selected, vec![2, 4, 1, 5]);
+        assert_eq!(plan.selected, vec![2, 4, 1]);
         assert_eq!(
             plan,
             super::plan_fiendish_tick(9, 3, &[2, 7, 99], &candidates)
         );
         assert_eq!(
             super::plan_fiendish_tick(10, 3, &[2, 7, 99], &candidates).selected,
-            vec![2, 5, 4, 1]
+            vec![2, 5, 4]
         );
         assert_eq!(plan.next_tick_micros, 9 + FIENDISH_RESPAWN_MICROS);
     }

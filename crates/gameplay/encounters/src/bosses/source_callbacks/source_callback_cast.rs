@@ -287,6 +287,16 @@ impl SourceCallbackCast {
                     entry_index: index,
                     minimum,
                     maximum,
+                    reference_level: cp
+                        .details
+                        .as_ref()
+                        .and_then(|details| details.reference_level),
+                    reference_level_overrides: cp
+                        .details
+                        .as_ref()
+                        .map_or_else(Vec::new, |details| {
+                            details.reference_level_overrides.clone()
+                        }),
                     critical,
                     conditions: Vec::new(),
                     formula_revision: None,

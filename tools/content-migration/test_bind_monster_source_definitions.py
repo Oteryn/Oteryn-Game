@@ -32,6 +32,18 @@ class DefinitionBindingTests(unittest.TestCase):
             self.assertEqual(json.loads(bound[CREATURES])["source_definitions_sha256"], definition_digest(root))
             self.assertEqual(json.loads(bound[MANIFEST])["creature_profiles"]["sha256"], hashlib.sha256(bound[CREATURES]).hexdigest())
 
+    def test_every_native_creature_and_attack_closure_emits_reference_level(self):
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as directory:
+            root = Path(directory)
+            self.fixture(root)
+            creature = {"kind": "Creature", "profile": {"details": {"display_name": "rat"}}}
+            original = {CREATURES: canonical({"records": [{"profile": {"data": creature},
+                "attack_definitions": {"profiles": [{"data": creature}]}}]}),
+                MANIFEST: canonical({"creature_profiles": {"sha256": "old"}})}
+            records = json.loads(bind_definitions(root, original)[CREATURES])["records"]
+            self.assertIsNone(records[0]["profile"]["data"]["profile"]["details"]["reference_level"])
+            self.assertIsNone(records[0]["attack_definitions"]["profiles"][0]["data"]["profile"]["details"]["reference_level"])
+
     def test_each_definition_or_provenance_substitution_changes_membership(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -96,6 +96,8 @@ impl SpellWorldReader for World {
                 target_protected: false,
                 defense: 0,
                 armor: 0,
+                player_level: 1,
+                reference_level_party_lowest: None,
             },
             multiplier_ppm: 1_000_000,
             immune: false,

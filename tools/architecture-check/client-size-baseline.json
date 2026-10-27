@@ -15,8 +15,8 @@
     "central_registrations": 0
   },
   "apps/client/src/play.rs": {
-    "lines": 1466,
-    "bytes": 53450,
+    "lines": 469,
+    "bytes": 17322,
     "central_registrations": 3
   },
   "apps/client/src/scene.rs": {
