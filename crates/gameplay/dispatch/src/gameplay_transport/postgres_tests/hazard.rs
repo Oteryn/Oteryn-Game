@@ -2776,10 +2776,47 @@ async fn outgoing_cleave_checks(
             original,
         )
     };
+    let original_vitals = owner
+        .observe_actor_vitals(actor, session)
+        .await
+        .ok_or("cleave original vitals")?
+        .1;
     let mut next_id = 1_000_000;
-    for (primary_dodge, flank_dodge) in [(true, false), (false, true), (true, true), (false, false)]
+    // Keep the original independent-recipient cases, then qualify extensions with
+    // both fatal outcomes. These explicit fixture coefficients claim no item parity.
+    let cases = [(true, false), (false, true), (true, true), (false, false)];
+    for (primary_dodge, flank_dodge, fatal) in
+        cases
+            .into_iter()
+            .map(|(p, f)| (p, f, None))
+            .chain([false, true].into_iter().flat_map(|fatal| {
+                [(true, false), (false, true)]
+                    .into_iter()
+                    .map(move |(p, f)| (p, f, Some(fatal)))
+            }))
     {
         owner.clock_origin -= Duration::from_secs(3);
+        let offence = resolution::equipped_offence::EquippedOffence {
+            cleave: 10_000,
+            critical_chance: if fatal.is_some() { 10_000 } else { 0 },
+            critical_damage: if fatal.is_some() { 10_000 } else { 0 },
+            weapon_tier: if fatal.is_some() { 10 } else { 0 },
+            life_leech: if fatal.is_some() { 10_000 } else { 0 },
+            mana_leech: if fatal.is_some() { 10_000 } else { 0 },
+            ..Default::default()
+        };
+        let vitals_before = {
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states
+                .get_mut(&runtime, actor, session)
+                .ok_or("extension state")?;
+            state.install_equipped_offence(offence.clone());
+            if fatal.is_some() {
+                state.restore_saved_vitals(1, 0);
+            }
+            (state.vitals(), state.revision())
+        };
         let (command, expected) = {
             let mut runtime = owner.runtime.lock().await;
             runtime
@@ -2822,6 +2859,29 @@ async fn outgoing_cleave_checks(
                             bounds.0,
                             bounds.1,
                         )?;
+                        let raw = if i == 0
+                            && let Some(should_fatal) = fatal
+                        {
+                            let roll = resolution::swing_draw(
+                                &root,
+                                actor.placement_identity(),
+                                (*session.as_bytes(), command),
+                                0,
+                                b"fatal-hit",
+                                "attack.fatal-hit",
+                                0,
+                                10_000,
+                            )?;
+                            let critical = offence.critical(u32::try_from(raw).ok()?, 1);
+                            let extended = offence.fatal(critical, u64::try_from(roll).ok()?);
+                            if (extended > critical) != should_fatal {
+                                return None;
+                            }
+                            i64::from(extended)
+                        } else {
+                            // Cleave is an extension: it never crits, fatals or leeches.
+                            raw
+                        };
                         let damage = resolution::creature_mitigated(
                             &root,
                             constants,
@@ -2874,6 +2934,42 @@ async fn outgoing_cleave_checks(
             );
         }
         owner.drain_auto_attacks().await;
+        let vitals_after = {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let state = states
+                .get(&runtime, actor, session)
+                .ok_or("extension vitals")?;
+            (state.vitals(), state.revision())
+        };
+        let leeched = if fatal.is_some() {
+            u32::try_from(expected[0])?
+        } else {
+            0
+        };
+        assert_eq!(
+            vitals_after.0.health,
+            vitals_before
+                .0
+                .health
+                .saturating_add(leeched)
+                .min(vitals_before.0.max_health),
+            "only committed primary damage heals; dodge={primary_dodge}, fatal={fatal:?}"
+        );
+        assert_eq!(
+            vitals_after.0.mana,
+            vitals_before
+                .0
+                .mana
+                .saturating_add(leeched)
+                .min(vitals_before.0.max_mana),
+            "a dodged primary cannot leech from a landed flank"
+        );
+        assert_eq!(
+            vitals_after.1,
+            vitals_before.1 + u64::from(vitals_after.0 != vitals_before.0),
+            "leech changes both pools in exactly one revision"
+        );
         for (target, damage) in [(primary, expected[0]), (flank, expected[1])] {
             assert_eq!(
                 10_000
@@ -2885,10 +2981,22 @@ async fn outgoing_cleave_checks(
                         .map_err(debug)?
                         .health,
                 damage,
-                "independent cleave primary={primary_dodge} flank={flank_dodge}"
+                "independent cleave primary={primary_dodge} flank={flank_dodge} fatal={fatal:?}"
             );
         }
         owner.drain_auto_attacks().await;
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let state = states
+                .get(&runtime, actor, session)
+                .ok_or("extension retry vitals")?;
+            assert_eq!(
+                (state.vitals(), state.revision()),
+                vitals_after,
+                "retry duplicates neither leech nor its revision"
+            );
+        }
         for (target, damage) in [(primary, expected[0]), (flank, expected[1])] {
             assert_eq!(
                 10_000
@@ -2912,14 +3020,12 @@ async fn outgoing_cleave_checks(
         runtime
             .set_test_creature_health(flank, before_flank)
             .map_err(debug)?;
-        owner
-            .states
-            .spell_states
-            .lock()
-            .await
+        let mut states = owner.states.spell_states.lock().await;
+        let state = states
             .get_mut(&runtime, actor, session)
-            .ok_or("restore cleave offence")?
-            .install_equipped_offence(original_offence);
+            .ok_or("restore cleave offence")?;
+        state.install_equipped_offence(original_offence);
+        state.restore_saved_vitals(original_vitals.health, original_vitals.mana);
     }
     owner
         .states
