@@ -126,7 +126,7 @@ pub(super) async fn retained_key_across_revisions(
             .fetch_one(&h.pool)
             .await?;
     let activation = rules::Activation {
-        control_seq: "11".into(),
+        control_seq: "13".into(),
         environment: signing.config.environment.clone(),
         previous_link_sha256: previous,
         roster_sha256: sha(roster.as_bytes()),
@@ -146,11 +146,11 @@ pub(super) async fn retained_key_across_revisions(
     sqlx::query("INSERT INTO game_staff_rosters(environment,activation_sha256,roster_sha256,principal,key_fingerprint,role) VALUES($1,$2,$3,'operator',$4,'ADMIN')")
         .bind(&activation.environment).bind(&digest).bind(&activation.roster_sha256)
         .bind(&signing.fingerprint).execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_staff_control_links(environment,control_seq,kind,link_sha256,previous_link_sha256,activation_sha256,roster_sha256,principal,key_fingerprint,canonical,signature) VALUES($1,11,'ACTIVATION',$2,$3,$2,$4,'operator',$5,$6,$7)")
+    sqlx::query("INSERT INTO game_staff_control_links(environment,control_seq,kind,link_sha256,previous_link_sha256,activation_sha256,roster_sha256,principal,key_fingerprint,canonical,signature) VALUES($1,13,'ACTIVATION',$2,$3,$2,$4,'operator',$5,$6,$7)")
         .bind(&activation.environment).bind(&digest).bind(&activation.previous_link_sha256)
         .bind(&activation.roster_sha256).bind(&signing.fingerprint)
         .bind(&signed.canonical).bind(&signed.signature).execute(&mut *tx).await?;
-    sqlx::query("UPDATE game_staff_control_heads SET control_seq=11,link_sha256=$2,activation_sha256=$2 WHERE environment=$1")
+    sqlx::query("UPDATE game_staff_control_heads SET control_seq=13,link_sha256=$2,activation_sha256=$2 WHERE environment=$1")
         .bind(&activation.environment).bind(&digest).execute(&mut *tx).await?;
     tx.commit().await?;
     signing.config.allowed_signers_sha256 = activation.roster_sha256;
@@ -176,7 +176,7 @@ pub(super) async fn retained_key_across_revisions(
         Some(old_outcome)
     );
     let next = signing.request(
-        12,
+        14,
         &signing.config.newest_activation_sha256,
         97,
         now,
@@ -191,7 +191,7 @@ pub(super) async fn retained_key_across_revisions(
             .is_some()
     );
     let unmute = signing.request(
-        13,
+        15,
         &sha(&signed_next.canonical),
         98,
         now,

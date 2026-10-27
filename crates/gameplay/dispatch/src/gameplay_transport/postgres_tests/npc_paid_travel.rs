@@ -14,6 +14,7 @@ use crate::gameplay_transport::spell_premium_coordinator::{
     SpellPremiumCoordinator, purchase_fixture,
 };
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTalkIntent};
+use oteryn_protocol_oteryn::world_spatial::StepDirection;
 use oteryn_protocol_oteryn::world_spatial_entities::EntityRef;
 use std::sync::Arc;
 
@@ -521,6 +522,17 @@ fn scenario() -> TestResult {
             .map_err(debug)?
             .position();
         assert_eq!((position.x, position.y, position.floor), (33270, 32441, 6));
+        // Arrival consumption releases the travel hold back to the ordinary Movement owner.
+        // Exercise that production handoff rather than only inspecting the relocated snapshot.
+        tokio::time::sleep(std::time::Duration::from_millis(2100)).await;
+        let (walked, _) = owner
+            .tutorial_paced_step(dependencies.actor, session, StepDirection::North)
+            .await;
+        let walked = walked.moved_to.ok_or("post-travel walk handoff")?;
+        assert_eq!(
+            (walked.actor_position.x, walked.actor_position.y, walked.actor_position.floor),
+            (33270, 32440, 6)
+        );
         // Exhaustion is checked before attempting a fee, unlike the donor's debit-first order.
         dependencies
             .runtime
@@ -667,6 +679,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
         (32954, 32022, -6),
         (33175, 31764, -6),
         (32734, 31668, -6),
+        (33270, 32440, -6),
         (33270, 32441, -6),
     ];
     let mut grouped = std::collections::BTreeMap::<_, Vec<Tile>>::new();

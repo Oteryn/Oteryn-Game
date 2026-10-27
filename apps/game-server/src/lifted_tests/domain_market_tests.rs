@@ -83,9 +83,11 @@ fn market_checked_total_and_fee_limits() {
         assert!(offer_total(amount, price).is_err());
     }
     assert_eq!(placement_fee(1, 1), Ok(20));
-    assert_eq!(placement_fee(1, 1049), Ok(20));
-    assert_eq!(placement_fee(1, 1050), Ok(21));
-    assert_eq!(placement_fee(1, MAX_TOTAL), Ok(1_000_000));
+    assert_eq!(placement_fee(1, 839), Ok(20));
+    assert_eq!(placement_fee(1, 840), Ok(21));
+    assert_eq!(placement_fee(3, 500), Ok(37));
+    assert_eq!(placement_fee(1, 100_000_000), Ok(2_500_000));
+    assert_eq!(placement_fee(1, MAX_TOTAL), Ok(2_500_000));
 }
 #[test]
 fn market_state_custody_guards_fail_closed() {

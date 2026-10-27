@@ -16,6 +16,7 @@ pub mod ranking;
 pub mod regeneration;
 pub mod spell_wheel;
 pub mod wheel;
+pub mod wheel_effects;
 pub mod wheel_gem_data;
 pub mod wheel_read;
 

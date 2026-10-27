@@ -85,3 +85,45 @@ fn world_reset_ground_retires_entries_before_roots_and_resumes_each_item() -> Te
         drop(authority);drop(seal);harness.cleanup().await
     })
 }
+
+#[test]
+fn world_reset_ground_preserves_house_tiles() -> TestResult {
+    let Some(admin) = configured_admin() else { return Ok(()); };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "reset_ground_house").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness.root.open_character_authority(&seal).await.map_err(debug)?;
+        let item = harness.mint(&authority, "fixture:reset.house", 1).await?;
+        let position: Vec<u8> = sqlx::query_scalar("SELECT spatial_position FROM game_item_ground_locations WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).fetch_one(&harness.pool).await?;
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("INSERT INTO game_house_properties(world_id,house_key,kind,state,rent_gold,content_digest) VALUES(encode($1,'hex')::uuid,'oteryn:content.house.reset_house','private_house',1,0,$2)")
+            .bind(id(WORLD).as_slice()).bind(vec![7_u8;32]).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_house_ownership(world_id,house_key,owner_character_id,ownership_revision,acquisition_receipt_ref) VALUES(encode($1,'hex')::uuid,'oteryn:content.house.reset_house',NULL,1,game_character_uuid_v7())")
+            .bind(id(WORLD).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        sqlx::query("INSERT INTO game_house_tiles(world_id,house_key,spatial_position) VALUES(encode($1,'hex')::uuid,'oteryn:content.house.reset_house',$2)")
+            .bind(id(WORLD).as_slice()).bind(position).execute(&harness.pool).await?;
+        let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+        retiring_fixture::seed_retiring(&harness.pool, world).await?;
+        let reset = harness.root.retiring_world_reset(world).await?.ok_or("reset")?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3").execute(&harness.pool).await?;
+        // Even an all-house Ground phase requires the reset's fresh-generation drain.
+        sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2)")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&harness.pool).await?;
+        let writer = RuntimeScopeAssignmentWriter::open(harness.root.clone(),"item-transfer-writer").await.map_err(debug)?;
+        let predecessor = harness.root.read_runtime_scope_predecessor(scope()?).await.map_err(debug)?.ok_or("predecessor")?;
+        let result = writer.submit(&AssignmentRequest {
+            operation_key: OperationKey::from_bytes([9;32]),
+            actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+            command: AssignmentCommand::Replace {scope:scope()?,predecessor,target:harness.node.fact()},
+        }).await.map_err(debug)?;
+        assert!(matches!(result,AssignmentOutcome::Committed(_)));
+        assert!(harness.root.retire_world_reset_ground(&authority, &harness.node, &reset).await.map_err(debug)?);
+        let state: (i16,i64) = sqlx::query_as("SELECT lifecycle,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(state, (1,1));
+        assert_eq!(harness.count("game_item_decay_retire_receipts").await?, 0);
+        drop(authority); drop(seal); harness.cleanup().await
+    })
+}
