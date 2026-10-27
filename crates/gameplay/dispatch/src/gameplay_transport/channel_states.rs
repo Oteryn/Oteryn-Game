@@ -67,6 +67,13 @@ pub struct ChannelSessionStates {
     pub(super) timed_items: super::timed_item::TimedRuntime,
     pub(super) training: super::loop_training::TrainingRuntime,
     pub(super) tutorial_sessions: tutorial_session::TutorialSessions,
+    /// Committed Atelier gems and grades, with the current Wheel vessel overlay.
+    pub atelier_sessions: std::sync::Mutex<
+        std::collections::HashMap<
+            GameSessionId,
+            Option<oteryn_gameplay_progression::atelier::AtelierState>,
+        >,
+    >,
     /// The Wheel allocation of each admitted session (WHEEL-0 §4 "Load"), after the admission
     /// Wheel reset; `None` when the load failed. The allocation only, never an eligibility
     /// result. Never held across an await.
@@ -92,6 +99,9 @@ impl ChannelSessionStates {
         self.inspection_permissions.forget(session);
         self.npc_conversations.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
+            sessions.remove(&session);
+        }
+        if let Ok(mut sessions) = self.atelier_sessions.lock() {
             sessions.remove(&session);
         }
         if let Ok(mut sessions) = self.wheel_sessions.lock() {

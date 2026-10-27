@@ -129,3 +129,95 @@ pub(super) async fn prepare(h: &Harness) -> TestResult<NpcPurchaseRequest> {
         occurred_at_unix_ms: 1_790_000_000_000,
     })
 }
+
+pub(super) struct MechanicContent;
+impl crate::durability::item_transfer::ItemWeightLookup for MechanicContent {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0; 32]
+    }
+    fn weight_of(
+        &self,
+        _: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        Ok(1)
+    }
+}
+impl crate::durability::item_loop_move::ItemLoopContent for MechanicContent {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        [0; 32]
+    }
+    fn loop_facts(
+        &self,
+        d: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Option<crate::durability::item_transfer::ItemDefinitionFacts> {
+        use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
+        if d.family != "Item" || d.revision_ref != "rev-1" {
+            return None;
+        }
+        let bag = d.production_key == "oteryn:item.tibia.i2854";
+        Some(ItemDefinitionFacts {
+            definition: d.clone(),
+            weight: Some(1),
+            stack: if bag {
+                ItemStackClass::NonStackable
+            } else {
+                ItemStackClass::Stackable {
+                    proven_maximum: Some(100),
+                }
+            },
+            container_capacity: bag.then_some(20),
+            container_slot_equip_pattern: bag,
+        })
+    }
+}
+
+pub(super) async fn paid_assets(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (seed, key, count, ordinal) in [
+        (220, "oteryn:item.tibia.i44608", 2, 2),
+        (223, "oteryn:item.tibia.i44609", 2, 3),
+        (226, "oteryn:item.tibia.i44610", 2, 4),
+        (229, "oteryn:item.tibia.i46625", 100, 5),
+        (232, "oteryn:item.tibia.i46626", 100, 6),
+        (235, "oteryn:item.tibia.i3043", 100, 7),
+    ] {
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("{} INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES({},{},{},{},{ordinal},{});",item(seed,key,"rev-1",count),uuid(seed),uuid(42),uuid(41),uuid(210),uuid(seed+2)))).execute(&mut *tx).await?;
+    }
+    sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
+        "INSERT INTO game_account_bank_operations(operation_occurrence_id,transaction_id,event_id,kind,request_binding,acting_character_id,account_id,world_id,channel_id,runtime_scope_ownership_generation,amount,outcome,occurred_at,envelope_sha256,committed_at,planned_platinum_item_instance_id,planned_gold_item_instance_id,backpack_item_instance_id) VALUES({occ},{operation},{event},1,sha256('seed'),{character},{account},{world},{channel},1,1,0,1,sha256('seed'),0,{p},{g},{bag}); INSERT INTO game_account_bank_entries(entry_id,transaction_id,account_id,world_id,kind,amount,balance_before,balance_after,acting_character_id) VALUES({entry},{operation},{account},{world},1,1000000000,0,1000000000,{character}); INSERT INTO game_account_bank_balances VALUES({account},{world},1000000000,{entry});",
+        occ=uuid(240),operation=uuid(241),event=uuid(242),character=uuid(41),account=uuid(40),world=uuid(42),channel=uuid(43),p=uuid(243),g=uuid(244),bag=uuid(210),entry=uuid(245)
+    ))).execute(&mut *tx).await?;
+    tx.commit().await?;
+    sqlx::query("INSERT INTO game_type2_audit_activation VALUES(1,now()) ON CONFLICT DO NOTHING")
+        .execute(&h.pool)
+        .await?;
+    Ok(())
+}
+
+pub(super) async fn higher_level(h: &Harness) -> TestResult {
+    let revision:String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    sqlx::raw_sql(sqlx::AssertSqlSafe(award(
+        246,
+        revision.parse()?,
+        (LEVEL, EXPERIENCE),
+        (2000, 6000),
+    )))
+    .execute(&h.pool)
+    .await?;
+    Ok(())
+}
+
+pub(super) async fn small_fragment_stacks(h: &Harness) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for (seed, ordinal) in [(148, 100), (151, 101), (154, 102)] {
+        sqlx::raw_sql(sqlx::AssertSqlSafe(format!("{} INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES({},{},{},{},{ordinal},{});",item(seed,"oteryn:item.tibia.i46625","rev-1",2),uuid(seed),uuid(42),uuid(41),uuid(210),uuid(seed+2)))).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}

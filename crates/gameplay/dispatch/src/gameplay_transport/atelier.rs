@@ -14,6 +14,97 @@ pub fn dispatch_atelier(
     state.commit(expected_revision, action)
 }
 
+/// Server commands on the admitted Character owner. Wire allocation remains a separate task.
+pub enum GemBuildCommand<'a> {
+    Atelier(crate::durability::character_atelier::AtelierRequest<'a>),
+    Wheel(crate::durability::character_wheel::WheelChangeRequest),
+}
+#[derive(Debug)]
+pub enum GemBuildOutcome {
+    Atelier(crate::durability::character_atelier::AtelierOutcome),
+    Wheel(Box<crate::durability::character_wheel::WheelCommitOutcome>),
+}
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    pub async fn commit_gem_build(
+        &self,
+        session: crate::foundation::GameSessionId,
+        command: GemBuildCommand<'_>,
+    ) -> Result<GemBuildOutcome, crate::durability::character_progression::CharacterProgressionError>
+    {
+        use crate::durability::character_progression::CharacterProgressionError as Error;
+        let ruleset = self.wheel_ruleset.as_ref().ok_or(Error::InvalidInput)?;
+        let gate = self.premium_coordinator.ok_or(Error::InvalidInput)?;
+        let fence = self
+            .current_quest_fence(session)
+            .await
+            .map_err(|_| Error::AuthorityRejected)?
+            .ok_or(Error::AuthorityRejected)?;
+        let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+        // A failed or unknown commit must not leave a usable stale actor projection.
+        self.states
+            .wheel_sessions
+            .lock()
+            .map_err(|_| Error::InvalidInput)?
+            .insert(session, None);
+        self.states
+            .atelier_sessions
+            .lock()
+            .map_err(|_| Error::InvalidInput)?
+            .insert(session, None);
+        let outcome = match command {
+            GemBuildCommand::Atelier(request) => GemBuildOutcome::Atelier(
+                slot.atelier(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    std::sync::Arc::clone(ruleset),
+                    gate,
+                )
+                .await?,
+            ),
+            GemBuildCommand::Wheel(request) => GemBuildOutcome::Wheel(Box::new(
+                slot.commit_wheel(
+                    self.root,
+                    self.character,
+                    self.holder,
+                    fence,
+                    request,
+                    std::sync::Arc::clone(ruleset),
+                    crate::durability::character_wheel::WheelChangeFacts { at_temple: false },
+                    gate,
+                )
+                .await?,
+            )),
+        };
+        // Reload current committed rows, including on receipt replay after a lost acknowledgement.
+        let allocation = self
+            .root
+            .read_character_wheel(
+                self.character,
+                fence.character_id,
+                std::sync::Arc::clone(ruleset),
+            )
+            .await?;
+        let atelier = self
+            .root
+            .read_character_atelier(self.character, fence.character_id)
+            .await?;
+        self.states
+            .atelier_sessions
+            .lock()
+            .map_err(|_| Error::InvalidInput)?
+            .insert(session, atelier);
+        self.states
+            .wheel_sessions
+            .lock()
+            .map_err(|_| Error::InvalidInput)?
+            .insert(session, Some(allocation));
+        Ok(outcome)
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, reason = "test fixtures")]
 mod tests {

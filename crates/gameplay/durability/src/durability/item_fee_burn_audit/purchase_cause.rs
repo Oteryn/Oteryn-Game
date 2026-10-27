@@ -7,9 +7,21 @@ pub struct OneItemNpcPurchaseV1 {
     pub service_key: String,
     #[prost(bytes = "vec", tag = "2")]
     pub occurrence: Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub atelier_proof: Vec<u8>,
 }
 
 pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
+    if let Some(
+        FeeBurnCauseV1::PromotionPurchase(cause)
+        | FeeBurnCauseV1::BlessingPurchase(cause)
+        | FeeBurnCauseV1::NpcTravel(cause)
+        | FeeBurnCauseV1::GemSwitchDomain(cause),
+    ) = value.cause.as_ref().and_then(|v| v.cause.as_ref())
+        && !cause.atelier_proof.is_empty()
+    {
+        return Err(AuditError::InvalidInput);
+    }
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
         Some(FeeBurnCauseV1::MarketFee(cause))
             if (20..=1_000_000).contains(&value.fee_gold_units)
@@ -102,6 +114,50 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
             check_content_key(&cause.service_key)?;
             check_uuid_v7(&cause.occurrence)
         }
+        Some(FeeBurnCauseV1::GemReveal(cause))
+            if cause.service_key == "oteryn:atelier.reveal" && [125_000, 1_000_000, 6_000_000].contains(&value.fee_gold_units) => check_atelier(cause,value,"Reveal"),
+        Some(FeeBurnCauseV1::GemSwitchDomain(cause))
+            if cause.service_key == "oteryn:atelier.switch_domain" && [125_000, 250_000, 500_000].contains(&value.fee_gold_units) => check_uuid_v7(&cause.occurrence),
+        Some(FeeBurnCauseV1::GemGradeUp(cause))
+            if cause.service_key == "oteryn:atelier.grade_up" && [2_000_000, 5_000_000, 30_000_000, 12_000_000, 75_000_000].contains(&value.fee_gold_units) => check_atelier(cause,value,"GradeUp"),
         _ => Err(AuditError::InvalidInput),
+    }
+}
+
+fn check_atelier(
+    cause: &OneItemNpcPurchaseV1,
+    value: &OneItemFeeBurnV1,
+    action: &str,
+) -> Result<(), AuditError> {
+    check_uuid_v7(&cause.occurrence)?;
+    let proof: serde_json::Value =
+        serde_json::from_slice(&cause.atelier_proof).map_err(|_| AuditError::InvalidInput)?;
+    if proof["occurrence"] != serde_json::json!(cause.occurrence)
+        || proof["character"] != serde_json::json!(value.character_id)
+        || proof["mutation"].get(action).is_none()
+        || proof["outputs"].as_array().is_none_or(|v| !v.is_empty())
+        || proof["inputs"]
+            .as_array()
+            .is_none_or(|v| v.is_empty() || v.len() > 20)
+    {
+        return Err(AuditError::InvalidInput);
+    }
+    Ok(())
+}
+
+pub(super) fn atelier_usage(cause: &OneItemNpcPurchaseV1) -> TransactionResourceUsage {
+    let count = serde_json::from_slice::<serde_json::Value>(&cause.atelier_proof)
+        .ok()
+        .and_then(|p| p["inputs"].as_array().map(|a| a.len() as u64))
+        .unwrap_or(0);
+    TransactionResourceUsage {
+        touched_item_instances: count,
+        location_custody_lines: count,
+        value_lines: 0,
+        transform_lines: 0,
+        container_expansion: 0,
+        participants: count,
+        effect_work_units: 3 * count,
+        events: 0,
     }
 }
