@@ -70,7 +70,7 @@
     49040,
     49041
   ],
-  "unresolved_reason": "Both pinned XMLs prove core identity and physical facts but not Creature/Bestiary taxonomy. No matching canonical Creature identity exists for these 13 names. Pinned Crystal contains Cake Golem Bestiary metadata (Construct, easy) but admitting that Creature requires the owning Creature import and its dependent profiles; the other 12 have no matching pinned monster Lua file. No fabricated Creature aliases or inferred difficulty tiers were added.",
+  "unresolved_reason": "All 13 core Item identities and transformation tiers are qualified by both pinned XMLs and pinned TibiaWiki observations. Canonical Creature admission and its dependent gameplay profiles are still missing; no Creature aliases are fabricated. The Item-only taxonomy is executable for transformations, not Creature spawning or acquisition.",
   "excluded_47899": "Canary XML, appearances and Falcon Knight Creature exist, but pinned Crystal XML and the owning canonical Item binding table have no 47899. Existing Item admission requires an owning identity binding; do not bypass that proof with a numeric alias.",
   "metadata_without_canonical_identity": [
     {
@@ -80,7 +80,550 @@
       "class": "Construct",
       "difficulty": "easy",
       "global_evidence": "not verified against Global",
-      "status": "Requires owning canonical Creature identity/import; not an executable species row"
+      "status": "Transformation tier qualified and executable as Item metadata; canonical Creature import remains outstanding"
     }
-  ]
+  ],
+  "qualified_core_taxonomy": [
+    {
+      "core": 47654,
+      "class": "Human",
+      "difficulty": "medium",
+      "name": "Nightslayer",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 78890,
+          "name": "nightslayer soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 79571,
+          "name": "nightslayer soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Nightslayer",
+        "source_revision_id": 441384,
+        "source_revision_timestamp": "2026-07-25T13:02:17Z",
+        "source_raw_utf8_sha256": "d263c28f6a9862bf6e2ed60be9a1e5ab13460c04e08701172f73e9e96f5ff7b6",
+        "path": "imports/tibiawiki/facts/creatures/creatures-00000-00499.json",
+        "line": 1,
+        "observation_file_sha256": "3b51421af93e4d0f322147f6c5bdfb54a87061266f0bb7dddcc113fb714e7f23",
+        "class_category": "Categoria:Humanos do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Medianas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "line": 1,
+        "source_id": 579,
+        "raw_f4": 3,
+        "staticdata_sha256": "a552dd9215df3db70317f2c5645c96e628e34ac691329464f493490bc5fb9135",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 47691,
+      "class": "Construct",
+      "difficulty": "easy",
+      "name": "Cake Golem",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 79045,
+          "name": "cake golem soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 79736,
+          "name": "cake golem soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Cake Golem",
+        "source_revision_id": 435808,
+        "source_revision_timestamp": "2026-06-11T00:20:55Z",
+        "source_raw_utf8_sha256": "b5353ef61a4ab33a9f48983c585c1639c7c6f18059344c407545ce69c1e0f852",
+        "path": "imports/tibiawiki/facts/creatures/creatures-00000-00499.json",
+        "line": 1,
+        "observation_file_sha256": "3b51421af93e4d0f322147f6c5bdfb54a87061266f0bb7dddcc113fb714e7f23",
+        "class_category": "Categoria:Constructos do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Fáceis"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "line": 1,
+        "source_id": 680,
+        "raw_f4": 2,
+        "staticdata_sha256": "a41b7c4ea3a6adce9389c4978df7e42114170ca5581c80527c612c635142d46d",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 47697,
+      "class": "Vermin",
+      "difficulty": "harmless",
+      "name": "Berrypest",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 79050,
+          "name": "berrypest soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 79741,
+          "name": "berrypest soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Berrypest",
+        "source_revision_id": 398928,
+        "source_revision_timestamp": "2023-07-21T01:41:10Z",
+        "source_raw_utf8_sha256": "b62d66879cb163807abc0697ac31851a228b8f10192fa279df14c207cef3a576",
+        "path": "imports/tibiawiki/facts/creatures/creatures-00500-00999.json",
+        "line": 1,
+        "observation_file_sha256": "43ab3eea195785519453c84a6f262e558cb6780c20d16d5e1450afc88db1d6b1",
+        "class_category": "Categoria:Vermes do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Inofensivas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "line": 1,
+        "source_id": 691,
+        "raw_f4": 0,
+        "staticdata_sha256": "1026bbbcc3bfe19e2f2c484778b6c10aced97f1aa6b228aa355dc6fb56bdd576",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 47773,
+      "class": "Elemental",
+      "difficulty": "medium",
+      "name": "Furious Fire Elemental",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 79345,
+          "name": "furious fire elemental soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 80101,
+          "name": "furious fire elemental soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Furious Fire Elemental",
+        "source_revision_id": 441304,
+        "source_revision_timestamp": "2026-07-25T11:50:09Z",
+        "source_raw_utf8_sha256": "93c0352cf00cc7b62c13dcca32d3db43b951d729704d7a560f77ef59ddd5e1de",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01000-01499.json",
+        "line": 1,
+        "observation_file_sha256": "c71df69d8ab7f248fd6a5afa1b59cb766f4447c59866be03bdea3fa4da0bd247",
+        "class_category": "Categoria:Elementais do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Medianas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "line": 1,
+        "source_id": 1000,
+        "raw_f4": 3,
+        "staticdata_sha256": "b263e776b1705dc84a27a0000d10e751759202307c0e6bf618901a19c45c9b2e",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 48089,
+      "class": "Dragon",
+      "difficulty": "medium",
+      "name": "Albino Dragon",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 80420,
+          "name": "albino dragon soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 81371,
+          "name": "albino dragon soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Albino Dragon",
+        "source_revision_id": 441264,
+        "source_revision_timestamp": "2026-07-25T10:11:00Z",
+        "source_raw_utf8_sha256": "917618fae21ea21ecf8aef3d7e20433453872ea473400dce5c0b8ba031342a82",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01500-01999.json",
+        "line": 1,
+        "observation_file_sha256": "0210bed186de346575b45db4505a29bdd2105a2a79aca6c6a80b0a16b24e1a59",
+        "class_category": "Categoria:Dragões do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Medianas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+        "line": 1,
+        "source_id": 2416,
+        "raw_f4": 3,
+        "staticdata_sha256": "811a7fa8e046b2a868e16ca4dbd5967adbcd9d3d6c665b919ad1ec3f58e6075e",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 49007,
+      "class": "Magical",
+      "difficulty": "medium",
+      "name": "Elder Forest Fury",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 81265,
+          "name": "elder forest fury soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 82303,
+          "name": "elder forest fury soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Elder Forest Fury",
+        "source_revision_id": 441194,
+        "source_revision_timestamp": "2026-07-25T09:41:16Z",
+        "source_raw_utf8_sha256": "aa050bf5e2333514515d1f943ed3d8a688e324cae356dd27db830405c2837b37",
+        "path": "imports/tibiawiki/facts/creatures/creatures-00500-00999.json",
+        "line": 1,
+        "observation_file_sha256": "43ab3eea195785519453c84a6f262e558cb6780c20d16d5e1450afc88db1d6b1",
+        "class_category": "Categoria:Criaturas Mágicas do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Medianas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00250-00499.json",
+        "line": 1,
+        "source_id": 1157,
+        "raw_f4": 3,
+        "staticdata_sha256": "d86cb7551987c4ce566ed2993b70b1ce1a0a98200f61c831f29db456c0cab6cf",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 49033,
+      "class": "Giant",
+      "difficulty": "medium",
+      "name": "Orger",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 81395,
+          "name": "orger soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 82433,
+          "name": "orger soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Orger",
+        "source_revision_id": 441433,
+        "source_revision_timestamp": "2026-07-25T13:25:29Z",
+        "source_raw_utf8_sha256": "2d40045dd503e39f251caff6a9e38d7431dd2b78e01c0cf2e163156a0c05cc0f",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01000-01499.json",
+        "line": 1,
+        "observation_file_sha256": "c71df69d8ab7f248fd6a5afa1b59cb766f4447c59866be03bdea3fa4da0bd247",
+        "class_category": "Categoria:Gigantes do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Medianas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+        "line": 1,
+        "source_id": 1841,
+        "raw_f4": 3,
+        "staticdata_sha256": "ef78c0168fb85cdb161e2987305ffd4a942a6489ceffe638440c8827f9c28f25",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 49034,
+      "class": "Mammal",
+      "difficulty": "medium",
+      "name": "Roast Pork",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 81400,
+          "name": "roast pork soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 82438,
+          "name": "roast pork soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Roast Pork",
+        "source_revision_id": 441015,
+        "source_revision_timestamp": "2026-07-25T07:57:57Z",
+        "source_raw_utf8_sha256": "bdbc01eac185bb81195770c1ebb48efe0c5d2ebbf24c6b6893dbd92c3fc41758",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01000-01499.json",
+        "line": 1,
+        "observation_file_sha256": "c71df69d8ab7f248fd6a5afa1b59cb766f4447c59866be03bdea3fa4da0bd247",
+        "class_category": "Categoria:Mamíferos do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Medianas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+        "line": 1,
+        "source_id": 1855,
+        "raw_f4": 3,
+        "staticdata_sha256": "fa33592a2d32b9eb3b5613f75ab93f310bb413fb273dfce4c2766d39cd734c03",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 49035,
+      "class": "Mammal",
+      "difficulty": "medium",
+      "name": "Cow",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 81405,
+          "name": "cow soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 82443,
+          "name": "cow soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Cow",
+        "source_revision_id": 441010,
+        "source_revision_timestamp": "2026-07-25T07:56:28Z",
+        "source_raw_utf8_sha256": "e5b4d28c362d6cfda91f0f1d6f858966cf98cc5d8ee3a8c1756bddfac5a8b546",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01000-01499.json",
+        "line": 1,
+        "observation_file_sha256": "c71df69d8ab7f248fd6a5afa1b59cb766f4447c59866be03bdea3fa4da0bd247",
+        "class_category": "Categoria:Mamíferos do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Medianas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+        "line": 1,
+        "source_id": 1856,
+        "raw_f4": 3,
+        "staticdata_sha256": "db5952f12314576b8175baf362475fe16e96378d20ba2b4f4a176cc9eddd0215",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 49036,
+      "class": "Giant",
+      "difficulty": "medium",
+      "name": "Loricate Orger",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 81410,
+          "name": "loricate orger soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 82448,
+          "name": "loricate orger soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Loricate Orger",
+        "source_revision_id": 441430,
+        "source_revision_timestamp": "2026-07-25T13:24:26Z",
+        "source_raw_utf8_sha256": "6a1f7a240cd882b57b796d1c1fe6fde5839d8f7bd4051b96bef1998c23a578e4",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01000-01499.json",
+        "line": 1,
+        "observation_file_sha256": "c71df69d8ab7f248fd6a5afa1b59cb766f4447c59866be03bdea3fa4da0bd247",
+        "class_category": "Categoria:Gigantes do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Medianas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+        "line": 1,
+        "source_id": 1857,
+        "raw_f4": 3,
+        "staticdata_sha256": "b85e04dc99591b87f07e4e90f2ed0948117970edeeb38ff0801630f3c6a3eeda",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 49037,
+      "class": "Giant",
+      "difficulty": "medium",
+      "name": "Bellicose Orger",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 81415,
+          "name": "bellicose orger soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 82453,
+          "name": "bellicose orger soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Bellicose Orger",
+        "source_revision_id": 441426,
+        "source_revision_timestamp": "2026-07-25T13:23:22Z",
+        "source_raw_utf8_sha256": "2dde52c01f04d7888010ef848d767183d9b67f5f8f57fb817ad2bd4e6e723381",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01000-01499.json",
+        "line": 1,
+        "observation_file_sha256": "c71df69d8ab7f248fd6a5afa1b59cb766f4447c59866be03bdea3fa4da0bd247",
+        "class_category": "Categoria:Gigantes do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Medianas"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+        "line": 1,
+        "source_id": 1858,
+        "raw_f4": 3,
+        "staticdata_sha256": "8efefba4d6d4d6b0094617f44ccae5cc076a96ff4f2d676e8266dfcb900f8a47",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 49040,
+      "class": "Mammal",
+      "difficulty": "easy",
+      "name": "Rabid Wolf",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 81425,
+          "name": "rabid wolf soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 82468,
+          "name": "rabid wolf soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Rabid Wolf",
+        "source_revision_id": 442967,
+        "source_revision_timestamp": "2026-08-09T18:06:42Z",
+        "source_raw_utf8_sha256": "73d6d38210bb06a9674563b7cc3f9797e4963691a51cb9cbee508eacd65dfda5",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01500-01999.json",
+        "line": 1,
+        "observation_file_sha256": "0210bed186de346575b45db4505a29bdd2105a2a79aca6c6a80b0a16b24e1a59",
+        "class_category": "Categoria:Mamíferos do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Fáceis"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+        "line": 1,
+        "source_id": 2417,
+        "raw_f4": 2,
+        "staticdata_sha256": "7d489d27262aeb0d7237e8ae27528e364e4dc8756ba4bc75d05d71e4943eb754",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    },
+    {
+      "core": 49041,
+      "class": "Mammal",
+      "difficulty": "easy",
+      "name": "Ragged Rabid Wolf",
+      "item_sources": [
+        {
+          "source": "canary",
+          "path": "data/items/items.xml",
+          "line": 81430,
+          "name": "ragged rabid wolf soul core"
+        },
+        {
+          "source": "crystal",
+          "path": "data/items/items.xml",
+          "line": 82473,
+          "name": "ragged rabid wolf soul core"
+        }
+      ],
+      "wiki": {
+        "source_title": "Ragged Rabid Wolf",
+        "source_revision_id": 442966,
+        "source_revision_timestamp": "2026-08-09T18:05:53Z",
+        "source_raw_utf8_sha256": "ca0c29318bf0aae94533513458662b71c0f1cd8d18dfb229aed3dd27303f3fac",
+        "path": "imports/tibiawiki/facts/creatures/creatures-01500-01999.json",
+        "line": 1,
+        "observation_file_sha256": "0210bed186de346575b45db4505a29bdd2105a2a79aca6c6a80b0a16b24e1a59",
+        "class_category": "Categoria:Mamíferos do Bestiário",
+        "difficulty_category": "Categoria:Criaturas Fáceis"
+      },
+      "global_evidence": "Pinned community wiki observation; not verified against Global",
+      "canonical_creature_admitted": false,
+      "client_cross_check": {
+        "path": "imports/cipsoft-staticdata/creatures/creatures-00500-00749.json",
+        "line": 1,
+        "source_id": 2418,
+        "raw_f4": 2,
+        "staticdata_sha256": "9041bc494e0c5782bd2ff6ad5f1bed915e0a0be64ee900a9ad0fe6e957995936",
+        "authority": "DERIVED cross-check only; not Bestiary membership or canonical Creature identity"
+      }
+    }
+  ],
+  "tier_identity_conflict": {
+    "core": 47783,
+    "selected": "Feversleep / medium, matching admitted Canary Item profile name",
+    "canary": "data/items/items.xml:79385",
+    "crystal": "data/items/items.xml:80146",
+    "limitation": "Crystal calls 47783 Terrorsleep (hard); the existing Creature source projection contains both interpretations. Transformation uses one admitted Item interpretation, never two tiers. Creature link reconciliation remains with identity admission."
+  },
+  "scope": "Item transformation metadata only. Pinned BR wiki categories explicitly record class and difficulty and agree with client raw tiers. This is not MONSTER-D15-BESTIARY Creature admission: its English reference-date field capture, identity join and dependent gameplay profiles remain outstanding."
 }

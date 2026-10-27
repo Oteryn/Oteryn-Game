@@ -28,6 +28,85 @@ VARIANT_CORES = {
 }
 
 OUTPUT = ROOT / 'crates/gameplay/items/src/soulpit_species.json'
+CORE_OUTPUT = ROOT / 'crates/gameplay/items/src/soul_core_metadata.json'
+# Exact core names in both pinned Item XMLs. These wiki observations qualify Item
+# transformation tiers; they do not allocate Creature identities or spawn profiles.
+WIKI_CORES = {
+    47654: 'Nightslayer',
+    47691: 'Cake Golem',
+    47697: 'Berrypest',
+    47773: 'Furious Fire Elemental',
+    48089: 'Albino Dragon',
+    49007: 'Elder Forest Fury',
+    49033: 'Orger',
+    49034: 'Roast Pork',
+    49035: 'Cow',
+    49036: 'Loricate Orger',
+    49037: 'Bellicose Orger',
+    49040: 'Rabid Wolf',
+    49041: 'Ragged Rabid Wolf',
+}
+WIKI_CLASSES = {
+    'Humanos': 'Human', 'Constructos': 'Construct', 'Vermes': 'Vermin',
+    'Elementais': 'Elemental', 'Dragões': 'Dragon', 'Criaturas Mágicas': 'Magical',
+    'Gigantes': 'Giant', 'Mamíferos': 'Mammal',
+}
+WIKI_DIFFICULTIES = {
+    'Inofensivas': 'harmless', 'Fáceis': 'easy', 'Medianas': 'medium',
+}
+
+
+def core_metadata(rows, ids):
+    cores = {}
+    profiles = json.loads((ROOT / 'content/items/definitions/spell-native-profiles.json').read_text())
+    names = {int(row['production_binding']['external_id']):
+             row['semantics']['presentation']['value']['name']['value']
+             for row in profiles['records']
+             if int(row['production_binding']['external_id']) in ids}
+    for row in rows:
+        metadata = {key: row[key] for key in ('core', 'class', 'difficulty')}
+        if cores.setdefault(row['core'], metadata) != metadata:
+            # The admitted Item name selects Canary's Feversleep interpretation of
+            # 47783; Crystal instead calls it Terrorsleep. Never put one core in two tiers.
+            candidates = [candidate for candidate in rows if candidate['core'] == row['core']
+                          and candidate['creature'].removeprefix('oteryn:creature.').replace('_', ' ')
+                          + ' soul core' == names[row['core']]]
+            if len(candidates) != 1:
+                raise ValueError(f'conflicting core taxonomy: {row["core"]}')
+            cores[row['core']] = {key: candidates[0][key]
+                                 for key in ('core', 'class', 'difficulty')}
+    observations = {}
+    for path in sorted((ROOT / 'imports/tibiawiki/facts/creatures').glob('creatures-*.json')):
+        for record in json.loads(path.read_text())['records']:
+            title = record['source_title']
+            if title in WIKI_CORES.values():
+                if title in observations:
+                    raise ValueError(f'duplicate wiki observation: {title}')
+                observations[title] = record
+    # Cross-check only, as in MONSTER-D15-BESTIARY §2: raw client fields
+    # do not establish membership, class or canonical Creature identity.
+    client_rows = []
+    for path in sorted((ROOT / 'imports/cipsoft-staticdata/creatures').glob('creatures-*.json')):
+        client_rows.extend(json.loads(path.read_text())['records'])
+    tiers = ['harmless', 'trivial', 'easy', 'medium', 'hard', 'challenging']
+    for core, title in WIKI_CORES.items():
+        record = observations[title]
+        categories = set(record['observed_categories'])
+        classes = [value for name, value in WIKI_CLASSES.items()
+                   if f'Categoria:{name} do Bestiário' in categories]
+        difficulties = [value for name, value in WIKI_DIFFICULTIES.items()
+                        if f'Categoria:Criaturas {name}' in categories]
+        if (core in cores or core not in ids or len(classes) != 1
+                or len(difficulties) != 1 or record['observed_fields']['name'] != title
+                or names.get(core, '').casefold() != title.casefold() + ' soul core'):
+            raise ValueError(f'unqualified core taxonomy: {core} / {title}')
+        client = [row for row in client_rows if row['name'].casefold() == title.casefold()]
+        if len(client) != 1 or client[0]['f4'] != tiers.index(difficulties[0]):
+            raise ValueError(f'client tier conflict: {core} / {title}')
+        cores[core] = {'core': core, 'class': classes[0], 'difficulty': difficulties[0]}
+    if set(cores) != ids:
+        raise ValueError('incomplete admitted core taxonomy')
+    return [cores[core] for core in sorted(cores)]
 
 
 def generate(check=False):
@@ -57,12 +136,13 @@ def generate(check=False):
     rows.sort(key=lambda row: row['creature'])
     if len({row['creature'] for row in rows}) != len(rows):
         raise ValueError('duplicate creature')
-    encoded = json.dumps(rows, indent=2, ensure_ascii=False) + '\n'
-    if check:
-        if OUTPUT.read_text() != encoded:
-            raise ValueError('stale Soulpit species projection')
-    else:
-        OUTPUT.write_text(encoded)
+    for path, records in [(OUTPUT, rows), (CORE_OUTPUT, core_metadata(rows, ids))]:
+        encoded = json.dumps(records, indent=2, ensure_ascii=False) + '\n'
+        if check:
+            if path.read_text() != encoded:
+                raise ValueError(f'stale Soulpit projection: {path.name}')
+        else:
+            path.write_text(encoded)
     print(f'Soulpit: {len(rows)} species, {len(set(row["core"] for row in rows))} bound cores')
 
 

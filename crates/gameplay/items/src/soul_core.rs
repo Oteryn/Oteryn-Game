@@ -74,6 +74,27 @@ mod tests {
         }
         Ok(())
     }
+
+    #[test]
+    fn soulpit_transform_metadata_covers_each_admitted_core_once() -> Result<(), &'static str> {
+        let ids = catalogue().ok_or("catalogue must parse")?;
+        let metadata = core_metadata();
+        assert_eq!(metadata.len(), ids.len());
+        for (row, id) in metadata.iter().zip(ids) {
+            assert_eq!(row.core, *id);
+            assert!(difficulty(&row.difficulty).is_some());
+        }
+        // Crystal's conflicting Terrorsleep link must not make this admitted
+        // Feversleep Item both a medium and a hard transformation candidate.
+        assert_eq!(
+            metadata
+                .iter()
+                .find(|row| row.core == 47783)
+                .map(|row| row.difficulty.as_str()),
+            Some("medium")
+        );
+        Ok(())
+    }
 }
 
 #[derive(serde::Deserialize)]
@@ -82,7 +103,6 @@ struct Species {
     revision: String,
     core: u32,
     class: String,
-    difficulty: String,
     #[serde(rename = "occurrence")]
     _occurrence: String,
 }
@@ -91,6 +111,19 @@ fn species() -> &'static [Species] {
     static SPECIES: OnceLock<Vec<Species>> = OnceLock::new();
     SPECIES.get_or_init(|| {
         serde_json::from_str(include_str!("soulpit_species.json")).unwrap_or_default()
+    })
+}
+
+#[derive(serde::Deserialize)]
+struct CoreMetadata {
+    core: u32,
+    difficulty: String,
+}
+
+fn core_metadata() -> &'static [CoreMetadata] {
+    static CORES: OnceLock<Vec<CoreMetadata>> = OnceLock::new();
+    CORES.get_or_init(|| {
+        serde_json::from_str(include_str!("soul_core_metadata.json")).unwrap_or_default()
     })
 }
 
@@ -175,7 +208,7 @@ pub fn soulpit_transformation(
         return None;
     };
     species_core(native, target)?;
-    let own = species()
+    let own = core_metadata()
         .iter()
         .find(|s| format!("oteryn:item.tibia.i{}", s.core) == target.production_key)?;
     let current = difficulty(&own.difficulty)?;
@@ -184,7 +217,7 @@ pub fn soulpit_transformation(
     } else {
         current.saturating_sub(1)
     };
-    let mut candidates: Vec<_> = species()
+    let mut candidates: Vec<_> = core_metadata()
         .iter()
         .filter(|s| difficulty(&s.difficulty) == Some(desired))
         .map(|s| s.core)

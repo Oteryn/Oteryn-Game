@@ -784,8 +784,9 @@ async fn transformation_cases(
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     native: &crate::content::native_gameplay::NativeGameplayState,
 ) -> TestResult {
-    let species: Vec<serde_json::Value> =
-        serde_json::from_str(include_str!("../../../../items/src/soulpit_species.json"))?;
+    let species: Vec<serde_json::Value> = serde_json::from_str(include_str!(
+        "../../../../items/src/soul_core_metadata.json"
+    ))?;
     let reference = |key: &str| {
         native
             .item_index()
@@ -799,8 +800,17 @@ async fn transformation_cases(
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18, 114])
             .ok_or("transformation capabilities")?;
+    sqlx::raw_sql(
+        "CREATE TABLE soulpit_test_entropy (draw bytea NOT NULL); \
+         INSERT INTO soulpit_test_entropy VALUES (decode('0000000000000000ffffffffffffffff', 'hex')); \
+         GRANT SELECT ON soulpit_test_entropy TO oteryn_game_runtime; \
+         CREATE OR REPLACE FUNCTION game_soulpit_entropy() RETURNS bytea LANGUAGE SQL VOLATILE \
+         AS $$ SELECT draw FROM soulpit_test_entropy $$",
+    )
+    .execute(&harness.pool)
+    .await?;
     // Fixed server entropy is a database fixture, never a client-controlled draw.
-    for (index, (tool, difficulty, ominous, desired, exact_core)) in [
+    let mut cases = vec![
         (49164, "easy", false, "medium", None),
         (49164, "challenging", false, "challenging", None),
         (37110, "medium", false, "easy", None),
@@ -811,7 +821,69 @@ async fn transformation_cases(
         (49164, "medium", false, "hard", Some(47662)),
     ]
     .into_iter()
-    .enumerate()
+    .map(|(tool, difficulty, ominous, desired, core)| {
+        (tool, difficulty, ominous, desired, core, 0_u64, None)
+    })
+    .collect::<Vec<_>>();
+    let tiers = [
+        "harmless",
+        "trivial",
+        "easy",
+        "medium",
+        "hard",
+        "challenging",
+    ];
+    // Every newly qualified Item is exercised as both tools' input and an exact
+    // output through serve_admitted. No synthetic Creature identity is registered.
+    for core in [
+        47654_u64, 47691, 47697, 47773, 48089, 49007, 49033, 49034, 49035, 49036, 49037, 49040,
+        49041,
+    ] {
+        let own = species
+            .iter()
+            .find(|s| s["core"].as_u64() == Some(core))
+            .ok_or("qualified core metadata")?;
+        let difficulty = own["difficulty"].as_str().ok_or("difficulty")?;
+        let tier = tiers
+            .iter()
+            .position(|name| *name == difficulty)
+            .ok_or("tier")?;
+        cases.push((
+            49164,
+            difficulty,
+            false,
+            tiers[(tier + 1).min(5)],
+            Some(core),
+            0,
+            None,
+        ));
+        cases.push((
+            37110,
+            difficulty,
+            false,
+            tiers[tier.saturating_sub(1)],
+            Some(core),
+            0,
+            None,
+        ));
+        let candidates = species
+            .iter()
+            .filter(|s| s["difficulty"] == difficulty)
+            .collect::<Vec<_>>();
+        let position = candidates
+            .iter()
+            .position(|s| s["core"].as_u64() == Some(core))
+            .ok_or("candidate")?;
+        let draw = u64::try_from(((position as u128 * 2 + 1) << 63) / candidates.len() as u128)?;
+        let (tool, input) = if tier == 0 {
+            (37110, "trivial")
+        } else {
+            (49164, tiers[tier - 1])
+        };
+        cases.push((tool, input, false, difficulty, None, draw, Some(core)));
+    }
+    for (index, (tool, difficulty, ominous, desired, exact_core, draw, exact_output)) in
+        cases.into_iter().enumerate()
     {
         let command = u64::try_from(index)? + 1;
         let own = species
@@ -837,12 +909,11 @@ async fn transformation_cases(
                 .bind(id(seed).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(ordinal).execute(&mut *tx).await?;
         }
         tx.commit().await?;
-        let entropy_sql = if ominous {
-            "CREATE OR REPLACE FUNCTION game_soulpit_entropy() RETURNS bytea LANGUAGE SQL VOLATILE AS $$ SELECT decode('00000000000000000000000000000000','hex') $$"
-        } else {
-            "CREATE OR REPLACE FUNCTION game_soulpit_entropy() RETURNS bytea LANGUAGE SQL VOLATILE AS $$ SELECT decode('0000000000000000ffffffffffffffff','hex') $$"
-        };
-        sqlx::raw_sql(entropy_sql).execute(&harness.pool).await?;
+        let ominous_draw = if ominous { 0 } else { u64::MAX };
+        sqlx::query("UPDATE soulpit_test_entropy SET draw=$1")
+            .bind([draw.to_be_bytes(), ominous_draw.to_be_bytes()].concat())
+            .execute(&harness.pool)
+            .await?;
         let (next, result) = exchange_pair(
             owner,
             admitted,
@@ -875,6 +946,9 @@ async fn transformation_cases(
             assert_eq!(outputs[1]["key"], core_key);
         } else {
             let output = outputs[0]["key"].as_str().ok_or("output key")?;
+            if let Some(core) = exact_output {
+                assert_eq!(output, format!("oteryn:item.tibia.i{core}"));
+            }
             assert!(species.iter().any(|s| s["difficulty"] == desired
                 && output == format!("oteryn:item.tibia.i{}", s["core"])));
         }

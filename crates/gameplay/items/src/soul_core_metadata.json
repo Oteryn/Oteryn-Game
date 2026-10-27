@@ -1,0 +1,3402 @@
+[
+  {
+    "core": 47381,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47383,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47384,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47385,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47386,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47387,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47388,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47390,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47392,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47394,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47395,
+    "class": "Magical",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47396,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47397,
+    "class": "Slime",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47398,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47399,
+    "class": "Giant",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47400,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47401,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47402,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47403,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47405,
+    "class": "Reptile",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47406,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47407,
+    "class": "Vermin",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47408,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47409,
+    "class": "Mammal",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 47410,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47411,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47412,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47413,
+    "class": "Vermin",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47414,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47415,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47416,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47417,
+    "class": "Demon",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47418,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47419,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47420,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47422,
+    "class": "Vermin",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47424,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47425,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47426,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47427,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47429,
+    "class": "Humanoid",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47431,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47432,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47433,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47434,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47435,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47436,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47437,
+    "class": "Humanoid",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47438,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47439,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47440,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47441,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47442,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47443,
+    "class": "Construct",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47445,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47446,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47447,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47448,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47449,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47450,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47451,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47452,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47453,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47454,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47455,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47456,
+    "class": "Reptile",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47457,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47458,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47459,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47460,
+    "class": "Magical",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47461,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47462,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47463,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47465,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47466,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47467,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47468,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47470,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47471,
+    "class": "Magical",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47473,
+    "class": "Bird",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47474,
+    "class": "Aquatic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47475,
+    "class": "Reptile",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47476,
+    "class": "Reptile",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47477,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47478,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47479,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47480,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47481,
+    "class": "Reptile",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47482,
+    "class": "Plant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47483,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47484,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47485,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47486,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47488,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47489,
+    "class": "Bird",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47490,
+    "class": "Vermin",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 47491,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47492,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47493,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47494,
+    "class": "Bird",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47496,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47497,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47498,
+    "class": "Plant",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47499,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47500,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47501,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47502,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47503,
+    "class": "Vermin",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 47504,
+    "class": "Vermin",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 47506,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47507,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47508,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47509,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47510,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47511,
+    "class": "Aquatic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47512,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47513,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47514,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47515,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47516,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47517,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47518,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47519,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47520,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47521,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47522,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47523,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47524,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47525,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47526,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47529,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47530,
+    "class": "Aquatic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47532,
+    "class": "Bird",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47533,
+    "class": "Slime",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47534,
+    "class": "Amphibic",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47535,
+    "class": "Amphibic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47536,
+    "class": "Amphibic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47537,
+    "class": "Amphibic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47538,
+    "class": "Amphibic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47539,
+    "class": "Humanoid",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47540,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47541,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47543,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47544,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47545,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47546,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47547,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47548,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47549,
+    "class": "Slime",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47551,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47552,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47553,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47554,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47555,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47556,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47557,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47558,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47559,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47560,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47561,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47562,
+    "class": "Bird",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47563,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47564,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47565,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47566,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47567,
+    "class": "Giant",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47568,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47569,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47570,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47571,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47572,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47573,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47574,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47575,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47576,
+    "class": "Giant",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47577,
+    "class": "Bird",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47578,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47579,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47580,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47581,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47582,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47583,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47584,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47585,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47586,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47587,
+    "class": "Mammal",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 47589,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47590,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47592,
+    "class": "Humanoid",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47593,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47594,
+    "class": "Aquatic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47595,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47598,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47600,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47601,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47602,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47603,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47606,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47607,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47608,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47619,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47622,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47624,
+    "class": "Plant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47626,
+    "class": "Slime",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47627,
+    "class": "Slime",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47628,
+    "class": "Slime",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47629,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47631,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47632,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47633,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47634,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47635,
+    "class": "Demon",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47636,
+    "class": "Construct",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47637,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47638,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47639,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47640,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47641,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47643,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47645,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47646,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47653,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47654,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47655,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47656,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47657,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47658,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47659,
+    "class": "Slime",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47660,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47661,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47662,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47667,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47668,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47669,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47670,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47671,
+    "class": "Dragon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47672,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47673,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47674,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47675,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47676,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47677,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47678,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47681,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47682,
+    "class": "Vermin",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47683,
+    "class": "Dragon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47684,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47685,
+    "class": "Reptile",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47686,
+    "class": "Dragon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47687,
+    "class": "Dragon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47688,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47689,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47690,
+    "class": "Plant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47691,
+    "class": "Construct",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47697,
+    "class": "Vermin",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 47698,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47699,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47700,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47702,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47703,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47704,
+    "class": "Construct",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47705,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47706,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47707,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47709,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47710,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47712,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47713,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47714,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47715,
+    "class": "Amphibic",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47717,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47718,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47722,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47723,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47724,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47725,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47726,
+    "class": "Aquatic",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47727,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47729,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47730,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47732,
+    "class": "Aquatic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47733,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47734,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47735,
+    "class": "Mammal",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 47738,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47739,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47740,
+    "class": "Plant",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47741,
+    "class": "Construct",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47742,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47743,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47744,
+    "class": "Plant",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47747,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47748,
+    "class": "Amphibic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47749,
+    "class": "Bird",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47750,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47751,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47752,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47753,
+    "class": "Plant",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47754,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47755,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47756,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47757,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47760,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47761,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47763,
+    "class": "Dragon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47764,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47765,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47766,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47767,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47768,
+    "class": "Magical",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47769,
+    "class": "Plant",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47770,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47771,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47773,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47774,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47775,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47776,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47777,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47778,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47780,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47781,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47783,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47784,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47786,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47787,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47788,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47789,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47790,
+    "class": "Plant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47791,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47792,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47793,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47794,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47795,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47797,
+    "class": "Slime",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47798,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47799,
+    "class": "Slime",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47810,
+    "class": "Aquatic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47812,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47813,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47814,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47815,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47816,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47817,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47818,
+    "class": "Magical",
+    "difficulty": "easy"
+  },
+  {
+    "core": 47819,
+    "class": "Plant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47824,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47826,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47827,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47828,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47829,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47830,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47832,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47838,
+    "class": "Extra Dimensional",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47839,
+    "class": "Extra Dimensional",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47840,
+    "class": "Extra Dimensional",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47842,
+    "class": "Extra Dimensional",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47844,
+    "class": "Extra Dimensional",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47845,
+    "class": "Extra Dimensional",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47846,
+    "class": "Extra Dimensional",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47847,
+    "class": "Extra Dimensional",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47848,
+    "class": "Bird",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47849,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47850,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47851,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47853,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47854,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47855,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47856,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47857,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47858,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47859,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47861,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47862,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47864,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47865,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47866,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47867,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47868,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47869,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47870,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47871,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47872,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47873,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47874,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47875,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47876,
+    "class": "Reptile",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47877,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47878,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47879,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47880,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47882,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47883,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47886,
+    "class": "Elemental",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47888,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47890,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47896,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47900,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47901,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47902,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47903,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47904,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47905,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47906,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47907,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47908,
+    "class": "Aquatic",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47909,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47910,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47911,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47913,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47915,
+    "class": "Aquatic",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47916,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47917,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47918,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47919,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47920,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47921,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47923,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47924,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47925,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47926,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47927,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47928,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47929,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47930,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47931,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47933,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47934,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47935,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47936,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47937,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47938,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47939,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47940,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47942,
+    "class": "Reptile",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47943,
+    "class": "Giant",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47944,
+    "class": "Giant",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47945,
+    "class": "Giant",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47946,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47947,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47948,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47949,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47950,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47951,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47952,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47953,
+    "class": "Demon",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47954,
+    "class": "Plant",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47956,
+    "class": "Demon",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47957,
+    "class": "Plant",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47958,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47959,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47961,
+    "class": "Demon",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47962,
+    "class": "Construct",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47964,
+    "class": "Extra Dimensional",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47965,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47966,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47967,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47968,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47969,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47973,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 47981,
+    "class": "Bird",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 47984,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47985,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47986,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47987,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47988,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47989,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47990,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 47991,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47994,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47995,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47996,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47997,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47998,
+    "class": "Plant",
+    "difficulty": "hard"
+  },
+  {
+    "core": 47999,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48001,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48002,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48003,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48004,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48005,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48006,
+    "class": "Human",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48032,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48033,
+    "class": "Bird",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48035,
+    "class": "Elemental",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48036,
+    "class": "Reptile",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48037,
+    "class": "Reptile",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48038,
+    "class": "Amphibic",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48039,
+    "class": "Vermin",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48040,
+    "class": "Elemental",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48041,
+    "class": "Mammal",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48042,
+    "class": "Mammal",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48043,
+    "class": "Reptile",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48045,
+    "class": "Mammal",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48046,
+    "class": "Giant",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48047,
+    "class": "Plant",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48048,
+    "class": "Reptile",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48049,
+    "class": "Bird",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48050,
+    "class": "Reptile",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48051,
+    "class": "Mammal",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48052,
+    "class": "Construct",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48053,
+    "class": "Reptile",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48054,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48055,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48056,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48057,
+    "class": "Bird",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48058,
+    "class": "Bird",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48059,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48060,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48061,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48062,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48063,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48064,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48065,
+    "class": "Vermin",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48066,
+    "class": "Slime",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48067,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48068,
+    "class": "Magical",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48069,
+    "class": "Elemental",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48070,
+    "class": "Slime",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48071,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48072,
+    "class": "Magical",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48076,
+    "class": "Lycanthrope",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48079,
+    "class": "Vermin",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48080,
+    "class": "Vermin",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48083,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48084,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48085,
+    "class": "Magical",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48086,
+    "class": "Magical",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 48087,
+    "class": "Lycanthrope",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48089,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48091,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48092,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48093,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48094,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48095,
+    "class": "Dragon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48097,
+    "class": "Dragon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48098,
+    "class": "Extra Dimensional",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48099,
+    "class": "Extra Dimensional",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48929,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 48930,
+    "class": "Slime",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48931,
+    "class": "Mammal",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 48932,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48933,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48934,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48936,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48937,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48938,
+    "class": "Bird",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48939,
+    "class": "Bird",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48940,
+    "class": "Amphibic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48943,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48944,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48945,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48947,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48948,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48949,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48950,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48951,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48953,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48954,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48955,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48956,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48957,
+    "class": "Demon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48958,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48959,
+    "class": "Amphibic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48960,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48961,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 48962,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 48963,
+    "class": "Mammal",
+    "difficulty": "trivial"
+  },
+  {
+    "core": 48965,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48966,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48967,
+    "class": "Vermin",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48968,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48969,
+    "class": "Aquatic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48970,
+    "class": "Aquatic",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48971,
+    "class": "Aquatic",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 48972,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48973,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48974,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48975,
+    "class": "Vermin",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48976,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48977,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48978,
+    "class": "Aquatic",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48979,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48980,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48981,
+    "class": "Human",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48982,
+    "class": "Construct",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48983,
+    "class": "Mammal",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 48984,
+    "class": "Construct",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48985,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48987,
+    "class": "Construct",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48988,
+    "class": "Construct",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48989,
+    "class": "Elemental",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48990,
+    "class": "Elemental",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48991,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48992,
+    "class": "Construct",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48993,
+    "class": "Bird",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 48994,
+    "class": "Humanoid",
+    "difficulty": "easy"
+  },
+  {
+    "core": 48996,
+    "class": "Reptile",
+    "difficulty": "hard"
+  },
+  {
+    "core": 48997,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48998,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 48999,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49000,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49001,
+    "class": "Aquatic",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49002,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49003,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49004,
+    "class": "Magical",
+    "difficulty": "easy"
+  },
+  {
+    "core": 49005,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 49006,
+    "class": "Undead",
+    "difficulty": "easy"
+  },
+  {
+    "core": 49007,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49008,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49009,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49010,
+    "class": "Dragon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49011,
+    "class": "Dragon",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49012,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49013,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49014,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49015,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49016,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49017,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49018,
+    "class": "Humanoid",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49019,
+    "class": "Human",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49020,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 49021,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49022,
+    "class": "Inkborn",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49023,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49024,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49025,
+    "class": "Elemental",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49026,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49027,
+    "class": "Vermin",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49028,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49029,
+    "class": "Fey",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49030,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49031,
+    "class": "Construct",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49032,
+    "class": "Magical",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49033,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49034,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49035,
+    "class": "Mammal",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49036,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49037,
+    "class": "Giant",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49039,
+    "class": "Undead",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49040,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 49041,
+    "class": "Mammal",
+    "difficulty": "easy"
+  },
+  {
+    "core": 49073,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49074,
+    "class": "Elemental",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49075,
+    "class": "Construct",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49076,
+    "class": "Magical",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49077,
+    "class": "Plant",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49078,
+    "class": "Plant",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49079,
+    "class": "Plant",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49080,
+    "class": "Aquatic",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49081,
+    "class": "Aquatic",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49082,
+    "class": "Aquatic",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49085,
+    "class": "Fey",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 49086,
+    "class": "Construct",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 49087,
+    "class": "Slime",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 49088,
+    "class": "Elemental",
+    "difficulty": "medium"
+  },
+  {
+    "core": 49089,
+    "class": "Fey",
+    "difficulty": "hard"
+  },
+  {
+    "core": 49092,
+    "class": "Fey",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 49094,
+    "class": "Fey",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 49095,
+    "class": "Fey",
+    "difficulty": "harmless"
+  },
+  {
+    "core": 50103,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 50104,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 50105,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 50106,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 50107,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 50108,
+    "class": "Demon",
+    "difficulty": "hard"
+  },
+  {
+    "core": 50330,
+    "class": "Undead",
+    "difficulty": "challenging"
+  },
+  {
+    "core": 51641,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51642,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51643,
+    "class": "Humanoid",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51644,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51645,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51646,
+    "class": "Undead",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51647,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51648,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51649,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51650,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51651,
+    "class": "Inkborn",
+    "difficulty": "medium"
+  },
+  {
+    "core": 51652,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51653,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51654,
+    "class": "Inkborn",
+    "difficulty": "hard"
+  },
+  {
+    "core": 51721,
+    "class": "Inkborn",
+    "difficulty": "medium"
+  }
+]
