@@ -27,6 +27,12 @@ fn pvp_death_dispatch_commits_points_marks_and_skull_state_together() -> TestRes
         pvp_source_death_fixture::seed_ledger(&harness.pool, 41, 60, true, Some(1), "0 seconds")
             .await?;
         let mut request = death_request(90)?;
+        sqlx::query("INSERT INTO game_character_blessings(character_id, blessing_key, provenance) VALUES (encode($1,'hex')::uuid, 'oteryn:blessing.spiritual_shielding', 'fixture'), (encode($1,'hex')::uuid, 'oteryn:blessing.twist_of_fate', 'fixture')")
+            .bind(id(41).as_slice()).execute(&harness.pool).await?;
+        request.held_blessings = vec![
+            "oteryn:blessing.spiritual_shielding".into(),
+            "oteryn:blessing.twist_of_fate".into(),
+        ];
         request.pvp_contributors = vec![PvpDeathContributor {
             character_id: CharacterId::from_bytes(id(60)).map_err(debug)?,
             kind: PvpContributorKind::Damage,
@@ -49,6 +55,14 @@ fn pvp_death_dispatch_commits_points_marks_and_skull_state_together() -> TestRes
              (SELECT count(*) FROM game_character_pvp_state WHERE white_skull_until >= kill_block_until)",
         ).fetch_one(&harness.pool).await?;
         assert_eq!(consequences, (1, 1, 0, 1));
+        let blessings: Vec<String> = sqlx::query_scalar(
+            "SELECT blessing_key FROM game_character_blessings \
+             WHERE character_id = encode($1,'hex')::uuid ORDER BY blessing_key",
+        )
+        .bind(id(41).as_slice())
+        .fetch_all(&harness.pool)
+        .await?;
+        assert_eq!(blessings, ["oteryn:blessing.spiritual_shielding"]);
         eprintln!(
             "PVP_POSTGRES_EVIDENCE: dispatch death committed on PostgreSQL 18.6 with migration 0142"
         );
