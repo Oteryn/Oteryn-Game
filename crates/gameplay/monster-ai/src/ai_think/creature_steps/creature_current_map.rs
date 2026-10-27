@@ -11,6 +11,7 @@ struct PathRead<'a, 'tx, 'db> {
     start: MovementLocalPosition,
     target: MovementLocalPosition,
     exact: bool,
+    walks_on_fields: [bool; 3],
 }
 impl PathTileReader for PathRead<'_, '_, '_> {
     async fn cost(&mut self, at: MovementLocalPosition) -> Option<u32> {
@@ -18,7 +19,9 @@ impl PathTileReader for PathRead<'_, '_, '_> {
         {
             return None;
         }
-        Some(self.occupancy.extra_cost(at, self.start))
+        self.occupancy
+            .extra_cost(at, self.start)
+            .checked_add(self.map.view().field_path_cost(at, self.walks_on_fields)?)
     }
 }
 impl CreatureAiTable {
@@ -131,6 +134,7 @@ impl CreatureAiTable {
                 _ => continue,
             };
             let start = runtime.read_actor_position(actor).ok()?.position();
+            let movement = &entry.state.profile.behavior().movement;
             let mut reader = PathRead {
                 map,
                 runtime,
@@ -138,6 +142,11 @@ impl CreatureAiTable {
                 start,
                 target,
                 exact,
+                walks_on_fields: [
+                    movement.walks_on_fire,
+                    movement.walks_on_energy,
+                    movement.walks_on_poison,
+                ],
             };
             let (route, work) =
                 measured_current_route(start, target, exact, &mut reader, budget).await;

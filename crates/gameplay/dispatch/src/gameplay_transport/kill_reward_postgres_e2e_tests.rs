@@ -60,7 +60,58 @@ fn scenario() -> TestResult {
 }
 
 pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
-    scenario_with_capacity(reconcile, false)
+    scenario_with_charms(reconcile, None)
+}
+
+type CharmSamples = Vec<(i64, u32)>;
+
+#[test]
+fn charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_and_dodge()
+-> TestResult {
+    scenario_thread::run("charm-wire-combat", || {
+        let mut plain = Vec::new();
+        let mut wound = Vec::new();
+        let mut dodge = Vec::new();
+        let mut parry = Vec::new();
+        scenario_with_charms(None, Some(("", &mut plain)))?;
+        scenario_with_charms(None, Some(("wound", &mut wound)))?;
+        scenario_with_charms(None, Some(("dodge", &mut dodge)))?;
+        scenario_with_charms(None, Some(("parry", &mut parry)))?;
+        // Route-less execution is handled by the shared harness; it supplies no samples.
+        if plain.is_empty() {
+            return Ok(());
+        }
+        assert!(
+            plain.iter().any(|(outgoing, _)| *outgoing > 0),
+            "no snapshot still deals damage: {plain:?}"
+        );
+        assert!(
+            plain.iter().any(|(_, incoming)| *incoming > 0),
+            "no snapshot still takes damage: {plain:?}"
+        );
+        assert!(
+            wound.iter().zip(&plain).any(|(a, b)| a.0 > b.0),
+            "assigned Wound adds damage"
+        );
+        assert!(
+            dodge.iter().zip(&plain).any(|(a, b)| a.1 < b.1),
+            "assigned Dodge cancels damage"
+        );
+        assert!(
+            parry.iter().zip(&plain).any(|(a, b)| a.0 > b.0),
+            "assigned Parry reflects creature damage"
+        );
+        assert!(wound.iter().zip(&plain).all(|(a, b)| a.0 >= b.0));
+        assert!(dodge.iter().zip(&plain).all(|(a, b)| a.1 <= b.1));
+        Ok(())
+    })
+}
+
+fn scenario_with_charms(
+    reconcile: Option<bool>,
+    charm: Option<(&str, &mut CharmSamples)>,
+) -> TestResult {
+    scenario_with_creature_charmed(reconcile, false, None, false, false, false, charm)
 }
 
 pub(super) fn scenario_with_capacity(reconcile: Option<bool>, capacity: bool) -> TestResult {
@@ -167,6 +218,26 @@ fn scenario_with_creature_at_range(
     ranged_spell: bool,
     elemental_area: bool,
 ) -> TestResult {
+    scenario_with_creature_charmed(
+        reconcile,
+        capacity,
+        radiant,
+        settle_radiant,
+        ranged_spell,
+        elemental_area,
+        None,
+    )
+}
+
+fn scenario_with_creature_charmed(
+    reconcile: Option<bool>,
+    capacity: bool,
+    radiant: Option<&str>,
+    settle_radiant: bool,
+    ranged_spell: bool,
+    elemental_area: bool,
+    charm: Option<(&str, &mut CharmSamples)>,
+) -> TestResult {
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
     run(async |admin| {
@@ -259,7 +330,14 @@ fn scenario_with_creature_at_range(
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
         let creature_key = radiant.map_or_else(
-            || "oteryn:creature.rat".to_owned(),
+            || {
+                if charm.is_some() {
+                    "oteryn:creature.cave_rat"
+                } else {
+                    "oteryn:creature.rat"
+                }
+                .to_owned()
+            },
             |name| format!("oteryn:creature.radiant_{name}"),
         );
         let expected_xp = if settle_radiant {
@@ -450,7 +528,13 @@ fn scenario_with_creature_at_range(
                             // Level 50 overcomes the rat's defence and armor. A high-level
                             // attacker kills the real Radiant in bounded swings;
                             // its native HP, defence, loot and corpse facts stay unchanged.
-                            level: if settle_radiant { 1_000_000 } else { 50 },
+                            level: if settle_radiant {
+                                1_000_000
+                            } else if charm.is_some() {
+                                30
+                            } else {
+                                50
+                            },
                             max_health: if ranged_spell {
                                 // The first unblocked source cast is lethal, so this same
                                 // real dispatch case also qualifies the death-owner handoff.
@@ -924,6 +1008,86 @@ fn scenario_with_creature_at_range(
                 ),
                 AttackIntentDisposition::Ok
             );
+        }
+        if let Some((charm, samples)) = charm {
+            eprintln!("POSTGRES_STARTED CHARM-WIRE-1 combat assignment={charm}");
+            use crate::domain::charm::{BestiaryRaceKey, CharmKey, CharmStage};
+            use crate::durability::charm_state::{CharacterCharmState, CombatCharmState};
+            let (rat_actor, maximum) = {
+                let runtime = owner.runtime.lock().await;
+                let rat_actor = runtime.visible_entities().creatures[0].actor;
+                (
+                    rat_actor,
+                    runtime
+                        .companion_snapshot(rat_actor)
+                        .map_err(debug)?
+                        .maximum_health,
+                )
+            };
+            if charm.is_empty() {
+                let runtime = owner.runtime.lock().await;
+                assert!(
+                    owner
+                        .states
+                        .spell_states
+                        .lock()
+                        .await
+                        .charm_state(&runtime, actor, session)
+                        .is_none(),
+                    "regression requires a missing snapshot"
+                );
+            }
+            if !charm.is_empty() {
+                let key = CharmKey::new(format!("oteryn:charm.{charm}")).map_err(debug)?;
+                let state = CharacterCharmState {
+                    unlocks: [(key.clone(), CharmStage::new(3).map_err(debug)?)].into(),
+                    assignments: [(
+                        key,
+                        BestiaryRaceKey::new("oteryn:creature.cave_rat").map_err(debug)?,
+                    )]
+                    .into(),
+                };
+                let runtime = owner.runtime.lock().await;
+                assert!(owner.states.spell_states.lock().await.install_charm_state(
+                    &runtime,
+                    actor,
+                    session,
+                    CombatCharmState::new(
+                        crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?,
+                        state
+                    )
+                ));
+            }
+            for _ in 0..64 {
+                {
+                    let mut runtime = owner.runtime.lock().await;
+                    // Keep the real rat alive so the same attack lineage exercises many draws.
+                    runtime
+                        .set_test_creature_health(rat_actor, maximum)
+                        .map_err(debug)?;
+                    let mut states = owner.states.spell_states.lock().await;
+                    let state = states
+                        .get_mut(&runtime, actor, session)
+                        .ok_or("player state")?;
+                    state.restore_saved_vitals(state.facts.max_health, state.facts.max_mana);
+                }
+                owner.refresh_attack_weapon(actor, session).await;
+                owner.drain_auto_attacks().await;
+                owner.drain_monster_melee().await;
+                let runtime = owner.runtime.lock().await;
+                let outgoing =
+                    maximum - i64::try_from(runtime.live_creature_health(rat_actor).unwrap_or(0))?;
+                let states = owner.states.spell_states.lock().await;
+                let player = states.get(&runtime, actor, session).ok_or("player state")?;
+                samples.push((outgoing, player.facts.max_health - player.vitals().health));
+                drop(states);
+                drop(runtime);
+                owner.clock_origin = owner.clock_origin.checked_sub(PASS).expect("advance clock");
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
         }
         let mut swings = 0;
         loop {

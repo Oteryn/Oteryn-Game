@@ -212,29 +212,15 @@ fn malformed_shapes_nonmonotonic_epoch_and_chance_fail_closed() {
 
 // Private schema qualification. Native assignment/recovery APIs provide the independent owner
 // facts; these fixture clock INSERTs never create authority and do not install an actor.
-const CLOCK_SCHEMA: &str = r#"
-CREATE TABLE game_boss_spawn_clocks (
- world_id UUID NOT NULL,channel_id UUID NOT NULL,spawn_key TEXT NOT NULL CHECK(octet_length(spawn_key)>0),
- cycle NUMERIC(20,0) NOT NULL CHECK(cycle BETWEEN 0 AND 18446744073709551615),
- state SMALLINT NOT NULL CHECK(state IN (1,2,3)),
- reset_epoch NUMERIC(20,0) NOT NULL CHECK(reset_epoch BETWEEN 0 AND 18446744073709551615),
- due_at BIGINT NULL CHECK(due_at>=0),
- owner_generation NUMERIC(20,0) NULL CHECK(owner_generation BETWEEN 1 AND 18446744073709551615),
- PRIMARY KEY(world_id,channel_id,spawn_key),
- CHECK((state=1 AND due_at IS NOT NULL AND owner_generation IS NULL)
-    OR (state=2 AND due_at IS NULL AND owner_generation IS NOT NULL)
-    OR (state=3 AND due_at IS NULL AND owner_generation IS NULL))
-);
-"#;
 
 use crate::bestiary_postgres_harness as native_fixture;
 
 type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
 
 async fn qualify_clock_storage(fixture: &native_fixture::Harness) -> TestResult {
-    use super::super::runtime_scope_assignment::{BootstrapSecret, NodeRegistrationFact};
     use crate::durability::runtime_scope_assignment as native;
-    use sqlx::{Connection, Executor};
+    use crate::durability::runtime_scope_assignment::{BootstrapSecret, NodeRegistrationFact};
+    use sqlx::Connection;
     let root = fixture.root.clone();
     let writer = &fixture.writer;
     let pool = fixture.pool.clone();
@@ -248,7 +234,6 @@ async fn qualify_clock_storage(fixture: &native_fixture::Harness) -> TestResult 
     let recovery = seal.record().clone();
     let native_proof = fixture.node.clone();
     let proof = native_proof.clone();
-    pool.execute(sqlx::raw_sql(CLOCK_SCHEMA)).await?;
     sqlx::query("INSERT INTO game_boss_spawn_clocks VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,7,1,10,0,NULL)").bind(clock_key.world.as_bytes().as_slice()).bind(clock_key.channel.as_bytes().as_slice()).bind(&clock_key.spawn).execute(&pool).await?;
     let expected = BossClock {
         due_at_unix_ms: Some(0),
@@ -537,37 +522,17 @@ fn boss_clock_native_owner_cas_and_restart_storage_postgres() -> TestResult {
     };
     native_fixture::runtime()?.block_on(async move {
         let fixture = native_fixture::Harness::create(admin, "boss_clocks", false).await?;
-        eprintln!("Canonical PostgreSQL 18.6; genuine native Root/node/assignment/recovery fixture");
+        eprintln!(
+            "Canonical PostgreSQL 18.6; genuine native Root/node/assignment/recovery fixture"
+        );
         let result = qualify_clock_storage(&fixture).await;
         fixture.cleanup().await?;
         result
     })
 }
 
-// Proposed private physical encoding of the accepted §6.3/§9 logical rows. These
-// tables are installed only after real native migrations in a disposable PG18.6 DB.
-// Production migration number/grants/guards and actual death/admission composition
-// remain CP work. No fixture row certifies a current reset, boost or admission.
-const REWARD_STATE_SCHEMA: &str = r#"
-CREATE TABLE game_character_boss_cooldowns (
- character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
- boss_key TEXT NOT NULL CHECK(octet_length(boss_key) BETWEEN 1 AND 512),
- available_at BIGINT NOT NULL CHECK(available_at>=0),
- admission UUID NOT NULL CHECK(game_character_is_uuid_v7(admission)),
- reset_epoch NUMERIC(20,0) NOT NULL CHECK(reset_epoch BETWEEN 0 AND 18446744073709551615),
- PRIMARY KEY(character_id,boss_key));
-CREATE TABLE game_character_boss_eligibility (
- character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
- boss_key TEXT NOT NULL CHECK(octet_length(boss_key) BETWEEN 1 AND 512),
- eligibility_ref UUID NOT NULL CHECK(game_character_is_uuid_v7(eligibility_ref)),
- PRIMARY KEY(character_id,boss_key,eligibility_ref));
-CREATE TABLE game_character_boss_open_world_eligibility (
- character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
- boss_key TEXT NOT NULL CHECK(octet_length(boss_key) BETWEEN 1 AND 512),
- next_eligible_at BIGINT NOT NULL CHECK(next_eligible_at>=0),
- last_credited_epoch NUMERIC(20,0) NULL CHECK(last_credited_epoch BETWEEN 0 AND 18446744073709551615),
- PRIMARY KEY(character_id,boss_key));
-"#;
+// Migration 0246 supplies the actual shared schema. Fixture rows are not proof
+// of a current reset, boosted boss, admission or committed boss death.
 
 fn reward_key(boss: &str) -> BossRewardKey {
     BossRewardKey::new(
@@ -601,11 +566,6 @@ fn boss_reward_storage_rejects_unqualified_keys_and_time_overflow() {
 }
 
 async fn qualify_reward_claims(fixture: &native_fixture::Harness) -> TestResult {
-    use sqlx::Executor;
-    fixture
-        .pool
-        .execute(sqlx::raw_sql(REWARD_STATE_SCHEMA))
-        .await?;
     let seal = fixture
         .recovery
         .seal_current()
@@ -748,11 +708,11 @@ async fn qualify_reward_claims(fixture: &native_fixture::Harness) -> TestResult 
     }
     let fact = fixture.node.fact();
     let wrong_secret = NodeIncarnationProof::new(
-        super::super::runtime_scope_assignment::NodeRegistrationFact::new(
+        crate::durability::runtime_scope_assignment::NodeRegistrationFact::new(
             fact.node_id(),
             fact.registration_revision(),
         ),
-        super::super::runtime_scope_assignment::BootstrapSecret::from_bytes([2; 32]),
+        crate::durability::runtime_scope_assignment::BootstrapSecret::from_bytes([2; 32]),
     );
     let mut tx = fixture.pool.begin().await?;
     assert!(matches!(
@@ -851,11 +811,6 @@ async fn qualify_reward_claims(fixture: &native_fixture::Harness) -> TestResult 
 }
 
 async fn qualify_reward_boundaries(fixture: &native_fixture::Harness) -> TestResult {
-    use sqlx::Executor;
-    fixture
-        .pool
-        .execute(sqlx::raw_sql(REWARD_STATE_SCHEMA))
-        .await?;
     let key = reward_key("oteryn:boss.respawn_boundary");
     let mut tx = fixture.pool.begin().await?;
     assert_eq!(
@@ -931,11 +886,6 @@ async fn qualify_reward_boundaries(fixture: &native_fixture::Harness) -> TestRes
 }
 
 async fn qualify_boss_cooldowns(fixture: &native_fixture::Harness) -> TestResult {
-    use sqlx::Executor;
-    fixture
-        .pool
-        .execute(sqlx::raw_sql(REWARD_STATE_SCHEMA))
-        .await?;
     // A second genuine Character root, still at bootstrap revision one. It is only
     // a row-lock participant in these PRIVATE DATA tests, never a fabricated session.
     sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) \

@@ -702,7 +702,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             UseDisposition::Committed
         };
         let result = owner
-            .use_rune(actor, command, original.clone(), None, true)
+            .use_rune(actor, command, original.clone(), None, true, false)
             .await
             .ok_or("owner reconciles its retained original")?;
         assert_eq!(result.disposition, expected);
@@ -713,7 +713,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                 .await
                 .live_creature_health(victim_actor);
             let replay = owner
-                .use_rune(actor, command, original, None, true)
+                .use_rune(actor, command, original, None, true, false)
                 .await
                 .ok_or("owner retains its reconciled original")?;
             assert_eq!(replay.disposition, UseDisposition::Committed);

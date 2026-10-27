@@ -195,9 +195,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if !reader.map.validate_transaction(runtime).await {
                     return Err(crate::durability::DurabilityError::Unavailable);
                 }
-                let next_due = table.earliest_due().into_iter().chain(next_step).min();
                 // Transaction is read-only. Keep its scope lock until every synchronous consumer ends.
                 drop(reader);
+                let next_due = table.earliest_due().into_iter().chain(next_step).min();
+                owner
+                    .tick_creature_fields(&mut tx, &authority, runtime, states, room, native, now)
+                    .await?;
                 let mut map =
                     CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
                 physical_spell::execute(

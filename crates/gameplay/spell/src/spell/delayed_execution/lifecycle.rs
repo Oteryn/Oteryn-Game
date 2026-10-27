@@ -87,10 +87,7 @@ impl SpellTimerOwner {
                 || request.saved.lifecycle_epoch == 0
                 || !fence.accepts_stamp(binding.stamp())
                 || request.due < binding.at()
-                || RuntimeScopeRefV1::channel(
-                    binding.owner().world_id(),
-                    binding.owner().channel_id(),
-                ) != self.scope()
+                || binding.owner().runtime_scope() != self.scope()
                 || binding.owner().scope_generation() != self.generation()
             {
                 return Err(Error::InvalidPayload);

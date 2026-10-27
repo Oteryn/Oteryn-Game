@@ -61,11 +61,18 @@ fn qualified_safe_context_keeps_source_conversion_and_decay_ids() {
 }
 
 #[test]
-fn losing_safe_tile_or_changing_world_context_cannot_admit_pvp_creation() {
+fn changing_world_context_selects_the_harmful_source_identity() {
     for source in [2123, 2121, 2126] {
         assert!(select_safe_field(source, FieldWorldType::Pvp, Some(true)).is_ok());
-        assert!(select_safe_field(source, FieldWorldType::Pvp, Some(false)).is_err());
-        assert!(select_safe_field(source, FieldWorldType::PvpEnforced, Some(false)).is_err());
+        let expected = field_rules::select_source_field_id(source, true, false, false);
+        assert_eq!(
+            select_safe_field(source, FieldWorldType::Pvp, Some(false)).unwrap(),
+            expected
+        );
+        assert_eq!(
+            select_safe_field(source, FieldWorldType::PvpEnforced, Some(false)).unwrap(),
+            expected
+        );
         assert!(select_safe_field(source, FieldWorldType::NoPvp, Some(false)).is_ok());
     }
 }

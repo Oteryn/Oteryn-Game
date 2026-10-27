@@ -147,6 +147,8 @@ pub struct LoopContainer {
 /// One live loop drop or map-MINT Ground item with its persisted append ordinal, for the overlay.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LoopGroundItem {
+    /// Spell fields use the runtime floor axis; the map projection converts it once.
+    pub field_collision: Option<(bool, bool)>,
     pub stack_ordinal: u64,
     pub item: GroundItemInstance,
 }
@@ -1617,25 +1619,30 @@ impl DurabilityRoot {
                                 i.minted_transaction_id::text, \
                                 g.runtime_scope_ownership_generation::text, g.spatial_position, \
                                 g.corpse_ref, g.map_revision, g.content_revision, \
-                                g.native_room_placement_context, g.stack_ordinal \
+                                g.native_room_placement_context, g.stack_ordinal, \
+                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_movement,fl.blocks_movement) END AS field_blocks_movement, \
+                                CASE WHEN fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL THEN COALESCE(fc.blocks_projectile,fl.blocks_projectile) END AS field_blocks_projectile \
                            FROM game_item_ground_locations g \
                            JOIN game_item_instances i USING (item_instance_id, world_id) \
+                           LEFT JOIN game_spell_item_lines fl ON fl.item_instance_id=i.item_instance_id AND fl.transaction_id=i.minted_transaction_id AND fl.operation_kind=1 \
+                           LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) \
                           WHERE g.world_id = encode($1,'hex')::uuid \
                             AND g.channel_id = encode($2,'hex')::uuid AND i.lifecycle = 1 \
                             AND (game_item_loop_drop_ref(g.corpse_ref) \
-                                 OR game_item_loop_map_mint_source(i.item_instance_id)) \
+                                 OR game_item_loop_map_mint_source(i.item_instance_id) \
+                                 OR (fl.transaction_id IS NOT NULL AND (fl.expires_at_unix_ms IS NOT NULL OR fc.item_instance_id IS NOT NULL))) \
                           ORDER BY g.stack_ordinal, i.item_instance_id \
                           LIMIT $3",
                     )
                     .bind(world.as_bytes().as_slice())
                     .bind(channel.as_bytes().as_slice())
-                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + 1)
+                    .bind(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX + 1)
                     .fetch_all(&mut *tx)
                     .await?;
                     // Keep the bounded Ground read fail-closed, including pending map pickups.
                     // A MINT uses the same positive Ground INSERT ordinal as a loop drop;
                     // never substitute the base placement ordinal or invent a missing one.
-                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX)
+                    let bound = usize::try_from(ITEM_LOOP_CHANNEL_DROPS_MAX + super::field_removal::CHANNEL_FIELDS_MAX)
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     if rows.len() > bound {
                         return Err(DurabilityError::InvalidStoredState);
@@ -1648,6 +1655,7 @@ impl DurabilityRoot {
                             .and_then(|ordinal| u64::try_from(ordinal).ok())
                             .ok_or(DurabilityError::InvalidStoredState)?;
                         items.push(LoopGroundItem {
+                            field_collision:row.try_get::<Option<bool>,_>("field_blocks_movement")?.zip(row.try_get("field_blocks_projectile")?),
                             stack_ordinal,
                             item: GroundItemInstance {
                                 item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,

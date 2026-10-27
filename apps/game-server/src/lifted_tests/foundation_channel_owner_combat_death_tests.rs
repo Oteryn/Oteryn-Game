@@ -61,7 +61,7 @@ fn grant(seed: u64, generation: u64) -> PreProductionContinuityGrant {
 fn position_context(owner: &NamespaceContinuityGuard) -> PreProductionPositionContext {
     PreProductionPositionContext::for_test(
         owner.world_id(),
-        owner.channel_id(),
+        owner.channel_id().expect("Channel fixture"),
         owner.current_generation(),
         31,
         32,
@@ -670,7 +670,7 @@ fn d1_fixture(seed: u64) -> CombatDeathFixture {
     let scope = grant(seed, 1);
     CombatDeathFixture::new(
         scope.world_id(),
-        scope.channel_id(),
+        scope.channel_id().expect("Channel fixture"),
         scope.scope_generation(),
     )
     .expect("fixture creature")
@@ -693,12 +693,17 @@ fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
         project_fixed_one_creature_death(&mut carrier.current_owner_combat_death(&owner), actor)
             .expect("projection")
             .occurrence()
-            .death_key();
+            .death_key()
+            .expect("Channel death key");
+    assert_eq!(
+        format!("{first:?}"),
+        format!("CreatureDeathOccurrenceKey({:?})", actor.0)
+    );
     assert_eq!(
         key_fields(first),
         (
-            actor.0.world_id,
-            actor.0.channel_id,
+            actor.world_id(),
+            actor.channel_id().expect("Channel death"),
             actor.scope_generation(),
             actor.0.actor_local_id.0,
             actor.0.actor_local_generation.0,
@@ -716,7 +721,8 @@ fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
         project_fixed_one_creature_death(&mut carrier.current_owner_combat_death(&owner), actor)
             .expect("idempotent projection")
             .occurrence()
-            .death_key();
+            .death_key()
+            .expect("Channel death key");
     assert_eq!(replayed, first);
 
     // The runtime MINT cause is the full typed tuple of that key (§4.2).

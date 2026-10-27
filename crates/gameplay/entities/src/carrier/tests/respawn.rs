@@ -202,7 +202,10 @@ fn respawn_timer_lane_binding_items_and_deadline_state_never_collapses_distinct_
         VirtualOwnerClock,
     };
 
-    let scope = RuntimeScopeRefV1::channel(continuity.world_id, continuity.channel_id);
+    let scope = RuntimeScopeRefV1::channel(
+        continuity.runtime_scope.world_id(),
+        continuity.channel_id().expect("Channel fixture"),
+    );
     let generation = continuity.current_generation;
     let mut lane: OwnerTimerLane<RespawnFamily, RespawnOccurrence> =
         OwnerTimerLane::for_generation(

@@ -79,7 +79,7 @@ use super::item_transfer_audit::{
     OneItemContainerEntryV1, OneItemCorpseSourceV1, OneItemInventoryV1, OneItemReceiverV1,
     OneItemTransferCauseV1, OneItemTransferV1, TransferEventIdentity,
 };
-use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
+use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
@@ -879,7 +879,8 @@ pub fn scope_of(fence: &CurrentCharacterItemFence) -> Result<(WorldId, ChannelId
 /// GameSession, the cause is keyed to the fenced Character and the fenced
 /// scope is the reserved one; then the reconnect-session row, the
 /// runtime-scope assignment and current node incarnation, the admission
-/// guards, and finally the `character_root` row lock (never an UPDATE, so
+/// guards, and finally the live `character_root` and current interpretation proof
+/// (with a row lock, never an UPDATE, so
 /// CharacterRevision stays unchanged). `false` means the fence rejected.
 /// Writes nothing.
 pub async fn character_item_fence_is_current(
@@ -891,41 +892,23 @@ pub async fn character_item_fence_is_current(
     reserved_world_id: [u8; 16],
     reserved_channel_id: [u8; 16],
 ) -> std::result::Result<bool, DurabilityError> {
-    if !character_item_fence_without_root(
-        tx,
-        node,
+    if !character_item_command_matches(
         fence,
         command,
         reserved_character_id,
         reserved_world_id,
         reserved_channel_id,
-    )
-    .await?
-    {
+    ) {
         return Ok(false);
     }
-    let (world_id, _) = scope_of(fence).map_err(|_| DurabilityError::InvalidStoredState)?;
-    let account_text: String = sqlx::query_scalar(
-        "SELECT account_id::text FROM game_durability_reconnect_sessions WHERE game_session_id=encode($1,'hex')::uuid",
-    ).bind(fence.game_session_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
-    // Per-Character serialization: a row lock, never an UPDATE, so the 0009
-    // revision guard does not fire and CharacterRevision stays unchanged.
-    let root = sqlx::query(
-        "SELECT account_id::text, world_id::text FROM game_character_roots \
-          WHERE character_id = encode($1,'hex')::uuid AND lifecycle = 1 FOR UPDATE",
+    // Use the same live root and interpretation proof as gameplay and command
+    // 133. An item-only command does not compare CharacterRevision, but cannot
+    // keep mutating a Character under a superseded interpretation.
+    Ok(
+        super::character_progression::assert_item_only_fence(tx, fence, node)
+            .await?
+            .is_ok(),
     )
-    .bind(fence.character_id.as_bytes().as_slice())
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(root) = root else {
-        return Ok(false);
-    };
-    if root.try_get::<String, _>("account_id")? != account_text
-        || uuid_text(root.try_get("world_id")?)? != *world_id.as_bytes()
-    {
-        return Ok(false);
-    }
-    Ok(true)
 }
 
 pub(super) async fn character_item_fence_without_root(
@@ -937,101 +920,38 @@ pub(super) async fn character_item_fence_without_root(
     reserved_world_id: [u8; 16],
     reserved_channel_id: [u8; 16],
 ) -> std::result::Result<bool, DurabilityError> {
+    if !character_item_command_matches(
+        fence,
+        command,
+        reserved_character_id,
+        reserved_world_id,
+        reserved_channel_id,
+    ) {
+        return Ok(false);
+    }
+    Ok(
+        super::character_progression::assert_session_fence(tx, fence, node)
+            .await?
+            .is_ok(),
+    )
+}
+
+fn character_item_command_matches(
+    fence: &CurrentCharacterItemFence,
+    command: CommandRef,
+    reserved_character_id: CharacterId,
+    reserved_world_id: [u8; 16],
+    reserved_channel_id: [u8; 16],
+) -> bool {
     let Ok((world_id, channel_id)) = scope_of(fence) else {
-        return Ok(false);
+        return false;
     };
-    // Binding: the CommandRef belongs to the fenced GameSession, the cause is
-    // keyed to the fenced Character and the fenced scope is the reserved one.
-    if command.game_session_id() != fence.game_session_id
-        || reserved_character_id != fence.character_id
-        || reserved_world_id != *world_id.as_bytes()
-        || reserved_channel_id != *channel_id.as_bytes()
-    {
-        return Ok(false);
-    }
-    let session = sqlx::query(
-        "SELECT account_id::text FROM game_durability_reconnect_sessions \
-         WHERE game_session_id = encode($1,'hex')::uuid \
-           AND character_id = encode($2,'hex')::uuid \
-           AND world_id = encode($3,'hex')::uuid \
-           AND runtime_scope_kind = 1 \
-           AND runtime_scope_world_id = encode($3,'hex')::uuid \
-           AND runtime_scope_channel_id = encode($4,'hex')::uuid \
-           AND runtime_scope_instance_id IS NULL \
-           AND current_generation = $5::text::numeric(20,0) \
-           AND character_lease_generation = $6::text::numeric(20,0) \
-           AND scope_ownership_generation = $7::text::numeric(20,0) \
-           AND session_state IN (1,2) FOR SHARE",
-    )
-    .bind(fence.game_session_id.as_bytes().as_slice())
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
-    .bind(fence.connection_generation.get().to_string())
-    .bind(fence.character_lease_generation.to_string())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .fetch_optional(&mut **tx)
-    .await?;
-    let Some(session) = session else {
-        return Ok(false);
-    };
-    let account_text: String = session.try_get("account_id")?;
-
-    let key = scope_key(world_id, channel_id);
-    let fact = node.fact();
-    let assignment = sqlx::query(
-        "SELECT 1 FROM game_runtime_scope_assignments \
-         WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
-           AND channel_id = encode($3,'hex')::uuid AND state = 1 \
-           AND ownership_generation = $4::text::numeric(20,0) \
-           AND holder_node_id = encode($5,'hex')::uuid \
-           AND holder_registration_revision = $6::text::numeric(20,0) \
-         FOR SHARE",
-    )
-    .bind(key.as_slice())
-    .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .bind(fact.node_id().as_bytes().as_slice())
-    .bind(fact.registration_revision().to_string())
-    .fetch_optional(&mut **tx)
-    .await?;
-    if assignment.is_none() || !prove_current_incarnation(tx, node).await? {
-        return Ok(false);
-    }
-
-    let guards_ok: bool = sqlx::query_scalar(
-        "SELECT EXISTS (SELECT 1 \
-           FROM game_durability_admission_character_guards c \
-           JOIN game_durability_admission_account_guards a \
-             ON a.account_id = c.account_id \
-           JOIN game_durability_admission_runtime_guards g \
-             ON g.scope_key = $1 \
-          WHERE c.character_id = encode($2,'hex')::uuid \
-            AND c.account_id = $3::uuid \
-            AND c.world_id = encode($4,'hex')::uuid \
-            AND c.eligible \
-            AND c.lease_generation = $5::text::numeric(20,0) \
-            AND c.holder_game_session_id = encode($6,'hex')::uuid \
-            AND a.presence_character_id = c.character_id \
-            AND a.holder_game_session_id = c.holder_game_session_id \
-            AND g.ready \
-            AND g.ownership_generation = $7::text::numeric(20,0))",
-    )
-    .bind(key.as_slice())
-    .bind(fence.character_id.as_bytes().as_slice())
-    .bind(&account_text)
-    .bind(world_id.as_bytes().as_slice())
-    .bind(fence.character_lease_generation.to_string())
-    .bind(fence.game_session_id.as_bytes().as_slice())
-    .bind(fence.scope_ownership_generation.get().to_string())
-    .fetch_one(&mut **tx)
-    .await?;
-    if !guards_ok {
-        return Ok(false);
-    }
-
-    Ok(true)
+    // These consumers still own Channel reservations and Channel-ground
+    // receipts. A shared session proof must not widen their scope to Instance.
+    command.game_session_id() == fence.game_session_id
+        && reserved_character_id == fence.character_id
+        && reserved_world_id == *world_id.as_bytes()
+        && reserved_channel_id == *channel_id.as_bytes()
 }
 
 /// The complete current fence, the binding checks, the `character_root` row

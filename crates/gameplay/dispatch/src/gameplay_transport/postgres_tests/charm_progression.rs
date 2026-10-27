@@ -11,12 +11,12 @@ use crate::gameplay_transport::capabilities::{
 use crate::gameplay_transport::connection::{
     AdmittedSession, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
 };
+use oteryn_protocol_oteryn::CommandStatus;
 use oteryn_protocol_oteryn::charm::{CharmAssignDisposition, CharmUnlockDisposition};
 use oteryn_protocol_oteryn::charm_progression::{
     self as wire, CharmProgressionAction, CharmProgressionOutcome, CharmProgressionReply,
     CharmRemoveDisposition,
 };
-use oteryn_protocol_oteryn::CommandStatus;
 use std::num::NonZeroU32;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
@@ -210,7 +210,6 @@ async fn seed(h: &Harness, races: &[&BestiaryRace]) -> TestResult {
     Ok(())
 }
 
-
 #[test]
 fn charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
@@ -312,10 +311,18 @@ fn scenario() -> TestResult {
             .ok_or("dodge")?
             .charm;
 
-        let removed = reply(&owner, &mut admitted, CharmProgressionAction::Remove { charm }).await?;
+        let removed = reply(
+            &owner,
+            &mut admitted,
+            CharmProgressionAction::Remove { charm },
+        )
+        .await?;
         assert_eq!(
             (removed.outcome, removed.fee_gold),
-            (CharmProgressionOutcome::Remove(CharmRemoveDisposition::NotAssigned), 0)
+            (
+                CharmProgressionOutcome::Remove(CharmRemoveDisposition::NotAssigned),
+                0
+            )
         );
         let unlocked = reply(
             &owner,
@@ -349,12 +356,32 @@ fn scenario() -> TestResult {
                 .map(|c| c.assigned_race)
         };
         assert_eq!(state(&assigned), Some(Some(first)));
+        {
+            use oteryn_gameplay_progression::charm_effects::CharmStateRead;
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let snapshot = states
+                .charm_state(&runtime, dependencies.actor, admitted.game_session_id)
+                .ok_or("combat snapshot after assignment")?;
+            let assignments = snapshot
+                .assignments_for_race(completed[0].key())
+                .map_err(debug)?;
+            assert_eq!(assignments.len(), 1);
+            assert_eq!(
+                assignments[0].unlocked_stage, 1,
+                "unlock and assignment are live without reconnect"
+            );
+        }
 
-        let level: i64 =
-            sqlx::query_scalar("SELECT level FROM game_character_progression_state")
-                .fetch_one(&harness.pool)
-                .await?;
-        let removed = reply(&owner, &mut admitted, CharmProgressionAction::Remove { charm }).await?;
+        let level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state")
+            .fetch_one(&harness.pool)
+            .await?;
+        let removed = reply(
+            &owner,
+            &mut admitted,
+            CharmProgressionAction::Remove { charm },
+        )
+        .await?;
         assert_eq!(
             (removed.outcome, removed.fee_gold),
             (
@@ -363,6 +390,20 @@ fn scenario() -> TestResult {
             )
         );
         assert_eq!(state(&removed), Some(None), "the race is free again");
+        {
+            use oteryn_gameplay_progression::charm_effects::CharmStateRead;
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert!(
+                states
+                    .charm_state(&runtime, dependencies.actor, admitted.game_session_id)
+                    .ok_or("combat snapshot after remove")?
+                    .assignments_for_race(completed[0].key())
+                    .map_err(debug)?
+                    .is_empty()
+            );
+        }
+
         let durable: (i64, i64, i64) = sqlx::query_as(
             "SELECT (SELECT count(*) FROM game_character_charm_assignments), \
                     (SELECT count(*) FROM game_character_charm_receipts WHERE command_kind = 3), \
@@ -373,7 +414,12 @@ fn scenario() -> TestResult {
         .await?;
         assert_eq!(durable, (0, 1, level * 100));
         // A second remove has nothing to free and pays nothing.
-        let again = reply(&owner, &mut admitted, CharmProgressionAction::Remove { charm }).await?;
+        let again = reply(
+            &owner,
+            &mut admitted,
+            CharmProgressionAction::Remove { charm },
+        )
+        .await?;
         assert_eq!(
             again.outcome,
             CharmProgressionOutcome::Remove(CharmRemoveDisposition::NotAssigned)

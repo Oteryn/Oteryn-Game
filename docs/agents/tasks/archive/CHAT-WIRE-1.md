@@ -88,3 +88,38 @@ Recorded in the PR checks of the frozen head.
 
 - changed-file review: within owned paths
 - merge commit/result: squash merge of #1953
+
+## 2026-10-27 — CHAT-MUTE-1 verification
+
+The current server already contains the requested end-to-end staff-mute slice under the existing
+staff and chat owners, so this pass did not allocate migration 0292, capability 0145 or command
+0167. Migration 0170 stores signed, duration-bound character sanctions; the composed dispatch
+owner reads that durable truth through the current session/item fence on every chat and spell
+attempt. The shared chat entry covers local speech, private messages, rooms and private-channel
+commands, while the guild-room entry applies the same gate. Storage, fence or trusted-clock
+uncertainty fails closed. Expired or explicitly lifted sanctions stop gating without deleting the
+immutable sanction evidence. The existing PostgreSQL dispatch qualification executes a signed
+mute through command 60, sends command 13 and command 3 through real connection dispatch, rebuilds
+the owner against the same database, verifies enforcement on a node without operator trust, then
+executes and verifies an unmute.
+
+### Parity
+
+| behaviour | Canary/Crystal ref | Oteryn | status |
+|---|---|---|---|
+| A muted player cannot speak; spam mutes and staff mutes use the same muted refusal semantics | Canary pin `47dfd51f45280a59a1d3e50ba7edd573d7234446`; CHAT-0 manual-derived rule. Crystal pin `201189f871d23597b82caf88fd611454a2ddefb8`: Not verified. | All `CHAT_INTENT` speak paths return `MUTED {seconds}` before delivery; guild chat uses the same durable gate. | Complete |
+| A muted player cannot cast an instant spell | Canary pin `47dfd51f45280a59a1d3e50ba7edd573d7234446`; CHAT-0 manual-derived rule. Crystal: Not verified. | Actor-spell dispatch checks the durable staff sanction before all cast dispatchers and returns the existing rejected disposition. | Complete |
+| Mute survives relog, process restart and channel transfer | Canary/Crystal persistence implementation: Not verified. | Sanction truth is character-scoped PostgreSQL state, read with the current session-generation/item fence on every attempt and independently of `ChannelId`. | Complete |
+| Mute ends at its duration or explicit staff unmute | Canary/Crystal exact staff-duration policy: Not verified. | Trusted time compares the persisted end; expiry opens the gate and a signed unmute lifts the sanction atomically. | Complete |
+
+### Validation
+
+- `cargo fmt --all --check`: pass.
+- `cargo clippy -p oteryn-gameplay-entities -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings`: pass.
+- `cargo test -p oteryn-gameplay-entities --all-features`: pass.
+- `cargo test -p oteryn-gameplay-dispatch --all-features staff`: pass (the PostgreSQL case returns
+  `Ok(())` when `OTERYN_TEST_POSTGRES_ADMIN_URL` is absent, via the existing mounted-case guard).
+
+### Remaining
+
+- Richer native-client channel UI parity remains outside this server-only slice.

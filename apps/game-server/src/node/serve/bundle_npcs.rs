@@ -424,7 +424,7 @@ mod tests {
             .iter()
             .map(|entry| {
                 assert_eq!(entry.actor.world_id(), binding.world_id());
-                assert_eq!(entry.actor.channel_id(), binding.channel_id());
+                assert_eq!(entry.actor.channel_id(), Some(binding.channel_id()));
                 assert_eq!(entry.actor.scope_generation(), binding.scope_generation());
                 (
                     runtime.npc_key(entry.actor).expect("npc key").to_owned(),

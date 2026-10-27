@@ -499,7 +499,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             .borrow_combat_death()
             .projected_death(dead)
             .map_err(debug)?;
-        assert_eq!(historical.0, projection.occurrence().death_key());
+        assert_eq!(Ok(historical.0), projection.occurrence().death_key());
         assert!(
             crate::spell::companion_lifecycle::commit_lifecycle_familiar(
                 &mut physical,

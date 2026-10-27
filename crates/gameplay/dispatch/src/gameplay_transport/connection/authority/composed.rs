@@ -540,6 +540,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         target: Option<item_view::ItemKey>,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self
+            .use_machete_impl(actor, command, &intent, source, target)
+            .await
+        {
+            return outcome;
+        }
         self.use_pick_impl(actor, command, intent, source, target)
             .await
     }
@@ -599,8 +605,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         intent: oteryn_protocol_oteryn::world_object::UseIntent,
         key: Option<item_view::ItemKey>,
         visible: bool,
+        field_runes: bool,
     ) -> Option<UseOutcome> {
-        self.use_legacy_rune(actor, command, intent, key, visible)
+        self.use_legacy_rune(actor, command, intent, key, visible, field_runes)
             .await
     }
 
