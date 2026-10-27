@@ -2238,7 +2238,12 @@ async fn drive_player_field(
             (2, StepDirection::North, false),
         ] {
             if id == 2 {
-                wait_field_client(&mut client, std::time::Duration::from_millis(600)).await?;
+                // Drive the actor-owned pacing clock instead of guessing its deadline. If the
+                // fixed sleep wakes just before the deadline, the connection buffers this step
+                // and its cadence can race the field owner for the next semantic pass.
+                if let Some(due) = owner.actor_step_deadline_now(target).await {
+                    tokio::time::sleep_until(due).await;
+                }
             }
             let frame = test_command(
                 id,
