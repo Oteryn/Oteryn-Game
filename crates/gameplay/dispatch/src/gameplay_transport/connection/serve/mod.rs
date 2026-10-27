@@ -8,6 +8,7 @@ mod creature_push;
 mod house_transfer;
 mod idle;
 mod inbound;
+mod integrity;
 mod party_skull;
 mod player_trade;
 mod poll;
@@ -26,6 +27,7 @@ mod use_effects;
 // Fields drop in the reverse order of the original connection locals. In particular,
 // release the pacing claim before dropping the session command stream (which locks ingress).
 struct ServeState {
+    integrity: integrity::Integrity,
     target_walk: Option<target_move::PendingWalk>,
     target_move_window: crate::gameplay_transport::attack::IntentWindow,
     push_window: crate::gameplay_transport::attack::IntentWindow,
@@ -113,6 +115,7 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let mut integrity = integrity::Integrity::default();
     loop {
         if !authority.prepare_quest_callback_resume(&mut admitted).await {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
@@ -123,12 +126,14 @@ where
                 crate::foundation::RuntimeScopeRefV1::Instance { .. }
             )
         }) {
-            admitted = match house_transfer::serve(stream, admitted, authority, policy).await {
-                Ok(next) => next,
-                Err(end) => return *end,
-            };
+            admitted =
+                match house_transfer::serve(stream, admitted, authority, policy, &mut integrity)
+                    .await
+                {
+                    Ok(next) => next,
+                    Err(end) => return *end,
+                };
         }
-        let generation = admitted.continuity.connection_generation;
         let playable = matches!(
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
@@ -139,7 +144,6 @@ where
         let Some(baseline) = authority.observe(actor).await else {
             return hold_refused(stream, admitted, policy).await;
         };
-        let revision = admitted.continuity.spatial_revision;
         let mut session = match setup::prepare(
             stream,
             &mut admitted,
@@ -147,7 +151,7 @@ where
             policy,
             actor,
             baseline,
-            (generation, revision),
+            integrity,
         )
         .await
         {
@@ -167,6 +171,7 @@ where
             if let Err(end) = command::execute(stream, authority, &mut session, input).await {
                 if let ServeEnd::Transferred(next) = end {
                     admitted = *next;
+                    integrity = std::mem::take(&mut session.integrity);
                     break;
                 }
                 authority.player_trade_disconnected(session.admitted.game_session_id);
