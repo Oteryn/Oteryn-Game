@@ -521,6 +521,8 @@ impl ChannelSpellStates {
         self.actors.retain(|(present, session, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
         });
+        self.charm_states
+            .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
         self.prune_source_memos(runtime);
         let actors = &self.actors;
         self.deaths.retain(|(dead, session, _)| {

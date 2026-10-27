@@ -7,8 +7,8 @@ use oteryn_gameplay_progression::charm_effects::{
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 /// Evaluate one Charm hook against the durable assignment view supplied by the dispatch owner.
-/// The result cannot be silently discarded by this boundary: dispatch must apply it or fail the
-/// event closed.
+/// Dispatch applies supported outcomes. Missing state or an evaluation error suppresses only
+/// Charm effects; the underlying combat event must still run.
 pub fn run_charm_hook(
     catalogue: &dyn CharmCatalogueRead,
     state: &dyn CharmStateRead,

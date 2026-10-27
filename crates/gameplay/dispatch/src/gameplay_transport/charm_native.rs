@@ -210,6 +210,7 @@ impl CharmConnectionContent {
         encode_bestiary_view(&bestiary).map_err(|_| CharmPortUnavailable)?;
         encode_charm_view(&charms).map_err(|_| CharmPortUnavailable)?;
         Ok(CharmConnectionViews {
+            combat_state: snapshot.state,
             revision: snapshot.character_revision,
             bestiary,
             charms,
@@ -245,6 +246,8 @@ fn indexed<T>(entries: &[T], index: NonZeroU32) -> Option<&T> {
 /// Both snapshots have the same durable revision, ready for connection domain envelopes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CharmConnectionViews {
+    pub(in crate::gameplay_transport) combat_state:
+        crate::durability::charm_state::CharacterCharmState,
     pub revision: CharacterRevision,
     pub bestiary: Vec<BestiaryRaceProgress>,
     pub charms: CharmView,

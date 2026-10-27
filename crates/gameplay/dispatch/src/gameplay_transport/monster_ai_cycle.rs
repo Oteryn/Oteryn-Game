@@ -18,7 +18,6 @@ use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
-use oteryn_gameplay_progression::charm_effects::CharmHookEvent;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -316,6 +315,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let dispatch = melee_owner.think(
                 &mut runtime,
                 &mut super::attack::player_block::PlayerBiteVitals {
+                    charm: Some(super::attack::player_block::IncomingCharm {
+                        catalogue: self.imported_charms,
+                        root: decision_root,
+                        occurrence: decision_occurrence,
+                        sequence,
+                        race: race_key,
+                        base_damage: 0,
+                    }),
                     states: &mut states,
                     attack: &mut attack,
                     formula: content.training_formula(),
@@ -352,48 +359,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
                 continue;
             };
-            let base_damage = match dispatch {
+            match dispatch {
                 Dispatch::Bite(Ok(applied)) => {
                     if applied.damage.applied > 0 {
                         states.hunting_activity(&runtime, player, session, now.get());
                     }
-                    Some(u64::from(applied.requested))
                 }
-                Dispatch::ZeroDamage => None,
+                Dispatch::ZeroDamage => {}
                 Dispatch::Bite(Err(_)) | Dispatch::Decision(_) => continue,
-            };
-            if let Ok(lease) = runtime.bound_attacker_lease(player, session) {
-                let character = *lease.character_id().as_bytes();
-                let Some(charm_state) = states.charm_state(&runtime, player, session) else {
-                    continue;
-                };
-                if super::attack::run_charm_hook(
-                    self.imported_charms,
-                    charm_state,
-                    character,
-                    race_key,
-                    &decision_root,
-                    decision_occurrence,
-                    CharmHookEvent::IncomingCreatureAttack,
-                )
-                .is_err()
-                {
-                    continue;
-                }
-                if let Some(base_damage) = base_damage
-                    && super::attack::run_charm_hook(
-                        self.imported_charms,
-                        charm_state,
-                        character,
-                        race_key,
-                        &decision_root,
-                        decision_occurrence,
-                        CharmHookEvent::IncomingCreatureHit { base_damage },
-                    )
-                    .is_err()
-                {
-                    continue;
-                }
             }
             attack.record_hit_taken(&runtime, player, session, semantic_now);
         }
