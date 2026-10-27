@@ -85,6 +85,13 @@ fn summer_radiant_all_six_execute_attacks_through_the_production_owner() -> Test
 }
 
 #[test]
+fn summer_acolyte_physical_spell_hits_at_range_through_the_production_owner() -> TestResult {
+    scenario_thread::run("summer-acolyte-physical-spell", || {
+        scenario_with_creature_at_range(None, false, Some("acolyte"), false, true)
+    })
+}
+
+#[test]
 fn summer_radiant_all_six_kills_settle_and_decay_on_postgres() -> TestResult {
     scenario_thread::run("summer-radiant-settlements", || {
         for name in [
@@ -113,6 +120,16 @@ fn scenario_with_creature(
     capacity: bool,
     radiant: Option<&str>,
     settle_radiant: bool,
+) -> TestResult {
+    scenario_with_creature_at_range(reconcile, capacity, radiant, settle_radiant, false)
+}
+
+fn scenario_with_creature_at_range(
+    reconcile: Option<bool>,
+    capacity: bool,
+    radiant: Option<&str>,
+    settle_radiant: bool,
+    ranged_spell: bool,
 ) -> TestResult {
     run(async |admin| {
         let harness =
@@ -177,7 +194,7 @@ fn scenario_with_creature(
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            if ranged_spell { 66 } else { 2 },
             channel_pin.clone(),
         )
         .map_err(debug)?;
@@ -265,6 +282,20 @@ fn scenario_with_creature(
         runtime
             .realize_native_qualification_spawn(channel_pin, &creature_key, OPEN_RAT)
             .map_err(debug)?;
+        if ranged_spell {
+            // Unrelated committed sessions must not turn the single target cast into
+            // an oversized area roster. They have no spell state or attack eligibility.
+            for tag in 100..164 {
+                let extra_session = GameSessionId::decode(&id(tag)).map_err(debug)?;
+                let reservation = runtime
+                    .reserve_fresh_session(extra_session)
+                    .map_err(debug)?;
+                let extra = runtime.commit_fresh_session(reservation).map_err(debug)?;
+                runtime
+                    .initialize_first_entry_position(extra)
+                    .map_err(debug)?;
+            }
+        }
         let rat = {
             let creature = runtime
                 .visible_entities()
@@ -382,7 +413,15 @@ fn scenario_with_creature(
                             // attacker kills the real Radiant in bounded swings;
                             // its native HP, defence, loot and corpse facts stay unchanged.
                             level: if settle_radiant { 1_000_000 } else { 50 },
-                            max_health: if radiant.is_some() { 1_000_000 } else { 185 },
+                            max_health: if ranged_spell {
+                                // The first unblocked source cast is lethal, so this same
+                                // real dispatch case also qualifies the death-owner handoff.
+                                500
+                            } else if radiant.is_some() {
+                                1_000_000
+                            } else {
+                                185
+                            },
                             ..crate::gameplay_transport::actor_spell::tests::FACTS
                         },
                         (3, 7_000_000),
@@ -406,15 +445,108 @@ fn scenario_with_creature(
                     .health
             };
             let mut damaged = false;
-            for _ in 0..32 {
+            let mut gated_casts = 0;
+            let mut last_sequence = None;
+            if ranged_spell {
+                let runtime = owner.runtime.lock().await;
+                owner
+                    .states
+                    .spell_states
+                    .lock()
+                    .await
+                    .get_mut(&runtime, actor, session)
+                    .ok_or("player spell state")?
+                    .install_equipped_armor(5_000);
+            }
+            for _ in 0..if ranged_spell { 128 } else { 32 } {
+                if ranged_spell {
+                    // A current position input to the real owner. Reposition before each
+                    // pass so that native chase cannot turn this into a melee proof.
+                    let mut runtime = owner.runtime.lock().await;
+                    let target = runtime.visible_entities().creatures[0].actor;
+                    let before = runtime.read_actor_position(target).map_err(debug)?;
+                    runtime
+                        .borrow_movement_position()
+                        .commit_creature_relocation(
+                            target,
+                            before,
+                            MovementLocalPosition { x: -2, ..OPEN_RAT },
+                        )
+                        .map_err(debug)?;
+                }
                 owner.drain_monster_melee().await;
                 let runtime = owner.runtime.lock().await;
                 let states = owner.states.spell_states.lock().await;
                 let state = states
                     .get(&runtime, actor, session)
                     .ok_or("player spell state")?;
+                let spell_sequence = states
+                    .monster_spells
+                    .casts
+                    .first()
+                    .map(|cast| cast.sequence);
+                if ranged_spell
+                    && gated_casts < 2
+                    && spell_sequence.is_some()
+                    && spell_sequence != last_sequence
+                {
+                    assert_eq!(
+                        state.vitals().health,
+                        initial,
+                        "the real spell must meet current armor, then physical protection"
+                    );
+                    last_sequence = spell_sequence;
+                    drop(states);
+                    drop(runtime);
+                    let runtime = owner.runtime.lock().await;
+                    let mut states = owner.states.spell_states.lock().await;
+                    let state = states
+                        .get_mut(&runtime, actor, session)
+                        .ok_or("player spell state")?;
+                    state.install_equipped_armor(0);
+                    state.install_equipped_physical_protection((gated_casts == 0).then_some(
+                        crate::content::ReferenceRationalPercent {
+                            numerator: 100,
+                            denominator: 1,
+                        },
+                    ));
+                    gated_casts += 1;
+                    drop(states);
+                    drop(runtime);
+                    owner.clock_origin =
+                        owner.clock_origin.checked_sub(PASS).ok_or("attack clock")?;
+                    continue;
+                }
                 if state.vitals().health < initial {
                     damaged = true;
+                    if ranged_spell {
+                        assert_eq!(
+                            gated_casts, 2,
+                            "both equipment gates precede the positive cast"
+                        );
+                        assert_eq!(state.vitals().health, 0, "the source cast is lethal");
+                        assert!(
+                            states.player_death(&runtime, actor, session).is_some(),
+                            "the real player death owner retains its occurrence"
+                        );
+                        let target = runtime.visible_entities().creatures[0].actor;
+                        let from = runtime
+                            .read_actor_position(target)
+                            .map_err(debug)?
+                            .position();
+                        let to = runtime
+                            .read_actor_position(actor)
+                            .map_err(debug)?
+                            .position();
+                        assert!(
+                            from.x.abs_diff(to.x).max(from.y.abs_diff(to.y)) > 1,
+                            "the damaging automatic cast must land outside melee range"
+                        );
+                        assert!(
+                            !states.monster_spells.casts.is_empty(),
+                            "the existing damage-spell owner consumed an actual scheduled proposal"
+                        );
+                    }
                     // A repeated owner call inside the same think window cannot apply the
                     // source attack twice. All content and attack schedules are unmodified.
                     let after = state.vitals();

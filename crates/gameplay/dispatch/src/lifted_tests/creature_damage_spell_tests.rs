@@ -164,7 +164,21 @@ fn setup_named(
         },
     )
     .expect("qualified fixture");
-    let (records, profiles) = if name == "bony_sea_devil" {
+    let (records, profiles) = if name == "radiant_acolyte" {
+        let document: crate::content::native_gameplay::CreatureProfilesDocument =
+            serde_json::from_slice(include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../../content/creatures/definitions/spell-native-profiles.json"
+            )))
+            .expect("actual native profiles");
+        let definitions = document
+            .records
+            .into_iter()
+            .find(|record| record.profile.target.key == "oteryn:creature.radiant_acolyte")
+            .and_then(|record| record.attack_definitions)
+            .expect("actual Acolyte closure");
+        (definitions.records, definitions.profiles)
+    } else if name == "bony_sea_devil" {
         let packet = native_windup_packet();
         (
             serde_json::from_value(packet["records"].clone()).expect("qualified fixture"),
@@ -1524,6 +1538,141 @@ fn actual_source_inline_energy_condition_has_no_fake_primary_hp() {
         .expect("real HP store")
         .health_after,
         184
+    );
+}
+
+#[test]
+fn summer_current_physical_spell_uses_runtime_fence_and_replays_without_damage() {
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("radiant_acolyte", 2);
+    let stamp = runtime.issue_owner_work().expect("current owner work");
+    let mut spells = DamageSpellOwner::default();
+    let first = spells
+        .execute_current_physical(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("physical source under the runtime's fence");
+    assert!(
+        first.targets[0]
+            .1
+            .as_ref()
+            .expect("target")
+            .damage
+            .is_some()
+    );
+    let after = crate::gameplay_transport::actor_spell::observe_vitals(
+        &runtime,
+        &vitals,
+        proposal.target,
+        world.facts.attack.session,
+    )
+    .expect("current player");
+    assert_eq!(
+        spells
+            .execute_current_physical(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(9_000_000),
+            )
+            .expect("same occurrence"),
+        first
+    );
+    assert_eq!(
+        crate::gameplay_transport::actor_spell::observe_vitals(
+            &runtime,
+            &vitals,
+            proposal.target,
+            world.facts.attack.session,
+        )
+        .expect("current player"),
+        after
+    );
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        spells.execute_current_physical(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(10_000_000),
+        ),
+        Err(AttackError::StaleOwner)
+    );
+}
+
+#[test]
+fn summer_current_physical_spell_lethal_hit_retains_the_existing_death_receipt() {
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("radiant_acolyte", 2);
+    let stamp = runtime.issue_owner_work().expect("current owner work");
+    vitals
+        .apply_attack_damage(
+            &mut runtime,
+            proposal.target,
+            world.facts.attack.session,
+            184,
+            "pre-spell-hit",
+            SemanticTimeMicros::from_micros(1_000_000),
+        )
+        .expect("one HP remains");
+    let mut spells = DamageSpellOwner::default();
+    let first = spells
+        .execute_current_physical(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("physical source");
+    let damage = first.targets[0]
+        .1
+        .as_ref()
+        .expect("target")
+        .damage
+        .as_ref()
+        .expect("damage");
+    assert_eq!(damage.health_after, 0);
+    assert!(damage.death.is_some());
+    assert!(vitals.is_dead(proposal.target));
+    assert!(
+        vitals
+            .player_death(&runtime, proposal.target, world.facts.attack.session)
+            .is_some()
+    );
+    assert_eq!(
+        spells
+            .execute_current_physical(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(3_000_000),
+            )
+            .expect("lethal replay"),
+        first
+    );
+    assert!(vitals.is_dead(proposal.target));
+    assert!(
+        vitals
+            .player_death(&runtime, proposal.target, world.facts.attack.session)
+            .is_some()
     );
 }
 

@@ -8,6 +8,39 @@ MANIFEST = "content/spells.manifest.json"
 NOTE = "not verified against Global"
 
 
+def attack_definitions(root, record):
+    """Retain the canonical executable closure; never lower references into guessed bodies."""
+    references = json.loads((root / "content/world/definitions/reference.json").read_bytes())
+    declarations = json.loads((root / "content/world/definitions/declarations.json").read_bytes())
+    identity = lambda value: (value["family"], value["key"], value["revision"])
+    records = {identity(row["identity"]): row for row in references["records"]}
+    profiles = {identity(row["target"]): row for row in declarations["authoring_profiles"]}
+    selected = set()
+
+    def visit(value):
+        if isinstance(value, list):
+            for child in value:
+                visit(child)
+        elif isinstance(value, dict):
+            if (set(value) == {"family", "key", "revision"}
+                    and value["family"] in {"Creature", "Behavior", "Ability", "Effect", "Formula"}):
+                key = identity(value)
+                if key not in selected:
+                    selected.add(key)
+                    visit(records[key])
+                    visit(profiles[key])
+            else:
+                for child in value.values():
+                    visit(child)
+
+    visit(record["profile"]["target"])
+    if (profiles[identity(record["profile"]["target"])] != record["profile"]
+            or profiles[identity(record["behavior"]["target"])] != record["behavior"]):
+        raise ValueError("Summer attack closure differs from admitted Creature or Behavior")
+    return {"records": [records[key] for key in sorted(selected)],
+            "profiles": [profiles[key] for key in sorted(selected)]}
+
+
 def apply_native(root, generated, encode):
     document = json.loads((root / INPUT).read_bytes())
     if document["schema"] != "OTERYN_SUMMER_SOURCE_QUALIFICATION/v1":
@@ -23,6 +56,8 @@ def apply_native(root, generated, encode):
         if key in by_key:
             row = by_key[key]
             record["source_qualification"] = row["qualification"]
+            if key == "oteryn:creature.radiant_acolyte":
+                record["attack_definitions"] = attack_definitions(root, record)
             if "attacks" in row:
                 melee = [(index, attack["fields"]) for index, attack in
                          enumerate(row["attacks"]["entries"], 1)
