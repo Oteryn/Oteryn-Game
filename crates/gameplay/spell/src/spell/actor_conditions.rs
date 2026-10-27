@@ -782,6 +782,26 @@ mod tests {
         .unwrap()
     }
     #[test]
+    fn news_8933_death_keeps_every_standard_stance_and_its_durable_key() {
+        use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
+        for stance in [
+            StandardStance::BloodRage,
+            StandardStance::Protector,
+            StandardStance::Sharpshooter,
+            StandardStance::Harmony,
+            StandardStance::Justice,
+            StandardStance::Sustain,
+        ] {
+            let mut state = actor();
+            state.stance = Some(stance);
+            state.stance_key = Some(stance.key().into());
+            clear_on_lifecycle(&mut state);
+            assert_eq!(state.standard_stance(), Some(stance));
+            assert_eq!(state.durable_stance_key(), Some(stance.key()));
+        }
+    }
+
+    #[test]
     fn cancel_mana_shield_requires_active_capacity_and_removes_it() {
         let mut state = actor();
         apply_combat_change(

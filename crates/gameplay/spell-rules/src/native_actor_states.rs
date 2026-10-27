@@ -984,15 +984,19 @@ pub fn focus_healing_target(
     members: &[PartyMemberFacts],
 ) -> Result<u64, ActorPlanError> {
     let window = required(required(parameters, "harmony_gain_healing")?, "visibility")?;
-    let mut target = caster;
+    let mut target: Option<PartyMemberFacts> = None;
     // Caller supplies party order as owned input. Equal HP retains the earlier
     // choice, as in the source; percentage deficits are not substituted.
     for member in members {
-        if visible(&caster, member, window)? && member.health < target.health {
-            target = *member;
+        if visible(&caster, member, window)?
+            && target.is_none_or(|target| member.health < target.health)
+        {
+            target = Some(*member);
         }
     }
-    Ok(target.id)
+    // News 8944: the monk is healed independently, even when its HP is lower
+    // than every ally's. Solo casts still have exactly one healing target.
+    Ok(target.unwrap_or(caster).id)
 }
 
 fn base_vocation(vocation: Vocation) -> Vocation {
@@ -1577,6 +1581,18 @@ mod tests {
         assert_eq!(
             focus_healing_target(&profile("focus harmony"), caster, &members),
             Ok(2)
+        );
+        let wounded_monk = PartyMemberFacts {
+            health: 1,
+            ..caster
+        };
+        assert_eq!(
+            focus_healing_target(&profile("focus harmony"), wounded_monk, &members),
+            Ok(2)
+        );
+        assert_eq!(
+            focus_healing_target(&profile("focus harmony"), wounded_monk, &[hidden, dead]),
+            Ok(caster.id)
         );
         let p = profile("virtue of harmony");
         let normal = plan_party_bonuses(&p, caster, &members, true, false).expect("normal party");

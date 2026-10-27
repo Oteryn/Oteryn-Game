@@ -1358,6 +1358,19 @@ fn genuine_two_fresh_players_require_target_consent_and_block_policy_before_invi
         assert_eq!(view.source().members.len(), 2);
         assert_eq!(view.member_facts().len(), 2);
         assert_eq!(view.caster_facts().vocation, crate::spell::Vocation::Monk);
+        // News 8944: Virtue Healing selects the ally independently of the
+        // monk's health, from the actual transaction-qualified party view.
+        let profile = crate::spell::actor_execution::harmony_gain_profile().map_err(debug)?;
+        let selected = oteryn_gameplay_spell_rules::native_actor_states::focus_healing_target(
+            profile,
+            view.caster_facts(),
+            view.member_facts(),
+        )
+        .map_err(debug)?;
+        assert_eq!(
+            view.actor_for_id(selected),
+            Some((target_actor, target_session))
+        );
         assert!(
             view.member_facts()
                 .iter()
