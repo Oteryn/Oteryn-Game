@@ -1392,6 +1392,36 @@ fn actual_source_schedule_area_damage_real_hp_and_replay() {
         Err(AttackError::OccurrenceConflict)
     );
 }
+
+#[test]
+fn reference_level_spell_uses_player_level_through_damage_dispatch() {
+    let (mut runtime, mut states, mut source, proposal, mut world, fence, stamp) = setup();
+    source.reference_level = Some(600);
+    world.facts.attack.player_level = 499;
+
+    let outcome = DamageSpellOwner::default()
+        .execute(
+            &mut runtime,
+            &fence,
+            stamp,
+            &mut states,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("reference-level source follows the creature spell dispatch");
+
+    let receipt = outcome.targets[0]
+        .1
+        .as_ref()
+        .expect("target is damaged")
+        .damage
+        .expect("HP damage receipt");
+    assert!(receipt.applied > 0);
+    assert_eq!(source.reference_level, Some(600));
+    assert_eq!(world.facts.attack.player_level, 499);
+}
 #[test]
 fn independently_missing_los_policy_refuses_entire_cast_no_buffer() {
     let (mut r, mut v, s, p, mut w, f, stamp) = setup();

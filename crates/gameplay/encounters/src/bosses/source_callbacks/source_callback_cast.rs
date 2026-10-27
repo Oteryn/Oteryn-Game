@@ -287,6 +287,10 @@ impl SourceCallbackCast {
                     entry_index: index,
                     minimum,
                     maximum,
+                    reference_level: cp
+                        .details
+                        .as_ref()
+                        .and_then(|details| details.reference_level),
                     critical,
                     conditions: Vec::new(),
                     formula_revision: None,
