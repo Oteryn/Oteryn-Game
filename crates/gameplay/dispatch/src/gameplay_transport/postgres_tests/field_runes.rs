@@ -12,7 +12,7 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::capabilities::{OfferedCapability, test_command};
 use crate::gameplay_transport::connection::{
-    ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+    ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, LivenessPolicy, serve_admitted,
 };
 use crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities;
 use crate::gameplay_transport::{SeamRooms, item_fence_of};
@@ -508,6 +508,15 @@ async fn read_field_setup_fence(
     .map_err(debug)
 }
 
+/// These scenarios run long owner-side checks (SQL, map observation, fixture moves) while
+/// the test client is not reading the wire. Under CI load that exceeds the idle cadence and
+/// ends the session mid-scenario. Liveness is not under test here (`idle_kick` and the
+/// connection tests own it), so the probe interval outlasts the 180-second scenario timeout.
+const FIELD_SCENARIO_LIVENESS: LivenessPolicy = LivenessPolicy {
+    interval: std::time::Duration::from_secs(600),
+    missed_limit: 3,
+};
+
 async fn field_case(
     admin: String,
     rune: u32,
@@ -845,7 +854,7 @@ async fn field_scenario_inner(
     };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
-        let end = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
+        let end = serve_admitted(&mut server, admitted, &owner, FIELD_SCENARIO_LIVENESS).await;
         drop(server);
         match end {
             ConnectionEnd::AdmittedThenDisconnected(_) => {}
@@ -2190,7 +2199,7 @@ async fn drive_player_field(
         0
     };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let serving = async { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
+    let serving = async { serve_admitted(&mut server, admitted, owner, FIELD_SCENARIO_LIVENESS).await };
     let driving = async {
         loop {
             let frame = read_frame(&mut client).await?;
