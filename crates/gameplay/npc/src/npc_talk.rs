@@ -576,7 +576,25 @@ mod summer_dialogue_tests {
                     .any(|admitted| admitted.key == keyword.key)
             );
         }
-        // This task does not activate the other Summer NPCs' dialogue consumers.
-        assert!(book.get("oteryn:npc.captain_corsarah").is_none());
+        // NPC-TRAVEL-1 already exposes Corsarah's passage service. That talk entry
+        // must not admit her authored Dialogue through the Mayor's lore consumer.
+        let corsarah = book
+            .get("oteryn:npc.captain_corsarah")
+            .expect("existing travel service");
+        assert!(!corsarah.admitted_dialogue);
+        assert!(corsarah.dialogue_keywords.is_empty());
+        assert!(corsarah.offers.is_empty());
+        assert_eq!(
+            corsarah.topic_reply.as_deref(),
+            Some("Ask me for a passage to your destination.")
+        );
+        assert_eq!(
+            corsarah
+                .travel_routes
+                .iter()
+                .map(|route| route.keyword.as_str())
+                .collect::<Vec<_>>(),
+            ["venore"]
+        );
     }
 }
