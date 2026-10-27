@@ -106,3 +106,6 @@ fn duplicate_events_invalid_symbols_and_unknown_mechanics_are_rejected() -> Resu
     );
     Ok(())
 }
+
+#[path = "../src/features/0016-quest-log/tests/recorded.rs"]
+mod quest_log;

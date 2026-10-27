@@ -7,6 +7,7 @@ fn derived_gated_routes_match_previous_table() {
     // Frozen contents of the former GATED_ROUTES table. Compare sets because the
     // protocol registry generates its entries in capability order.
     let expected: &[(u32, &[u32], &[u32])] = &[
+        (16, &[22], &[16]),
         (18, &[], &[17]),
         (37, &[36], &[]),
         (31, &[], &[23]),

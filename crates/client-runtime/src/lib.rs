@@ -111,6 +111,9 @@ pub mod cyclopedia_protocol {
 pub mod attack;
 /// Session-owned combat command vocabulary and routing.
 pub mod combat;
+/// Quest log state and selected-capability command construction.
+#[path = "features/0016-quest-log/mod.rs"]
+pub mod quest_log;
 /// Spell command execution and feedback.
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell;
