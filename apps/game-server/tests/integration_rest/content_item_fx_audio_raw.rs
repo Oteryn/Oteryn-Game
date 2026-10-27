@@ -80,7 +80,8 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
         serde_json::from_value(value["batches"].clone()).expect("typed repository imports");
     batches.retain(|b| b.batch_id != raw::BATCH_ID);
     // #1807 adds 4 monster-full-mechanics batches and 4 crystal reimport states, measured.
-    assert_eq!(batches.len(), 30);
+    // #2546 adds the official creature-balance batch without reimport states.
+    assert_eq!(batches.len(), 31);
     assert_eq!(
         batches
             .iter()
@@ -90,7 +91,7 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     );
     let prior = batches.clone();
     assert_eq!(raw::append(&mut batches), Ok(296));
-    assert_eq!(&batches[..30], prior.as_slice());
+    assert_eq!(&batches[..31], prior.as_slice());
     let once = batches.clone();
     assert_eq!(raw::append(&mut batches), Ok(0));
     assert_eq!(batches, once);
