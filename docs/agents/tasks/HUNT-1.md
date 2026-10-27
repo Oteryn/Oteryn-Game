@@ -345,17 +345,27 @@ needed for this wire-only increment; reserved migration **0280** remains unused.
 | Behaviour | Canary / Crystal reference | Oteryn | Status |
 |---|---|---|---|
 | Query and slot selection/reroll intent shapes | Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`; Crystal `201189f871d23597b82caf88fd611454a2ddefb8` | Strict canonical request codec under command 0160 | Implemented (wire only) |
-| Three slots, nine candidates, 7,200 seconds and 52 wildcards | Same pins; precise client message layout: Not verified | Bounded reply projection with accepted PREY0 limits | Implemented (wire only) |
+| Three slots, nine candidates, 7,200 seconds and 52 wildcards | PREY0 §§3–4/§12; Canary `47dfd51f` `src/io/ioprey.hpp` slots, `src/io/ioprey.cpp::reloadMonsterGrid` candidates | Matching bounds; timestamp capped at nonnegative BIGINT Unix seconds | Verified against accepted native limits |
+| Bonus ≤4, grade ≤10, percent ≤40, option ≤2 | Canary `47dfd51f` `src/io/ioprey.hpp` bonus/option enums, `src/io/ioprey.cpp::reloadBonusValue`; PREY0 §§3–4 | Four kinds plus None sentinel; native state 0–2 follows PREY0 §4.1 rather than Canary UI states 0–6 | Verified ceilings; zero grade/percent are inactive wire placeholders |
+| Status ≤8, byte budgets, exact numeric native state/bonus mapping | PREY0 and Canary do not define this Oteryn wire numbering or byte layout | Status 0–8 retained as a reservation; request budget corrected from 260 to 263 for a 256-byte SelectAny key; reply budget 8192 | Not verified (runtime mapping and precise client layout) |
+| Reply round trip and malformed input refusal | Native wire contract | Strict canonical bounded decoder; duplicate/unknown fields, counts, ordering and scalar/timestamp bounds tested | Implemented (wire only) |
+| Client registration and router refusal | Native capability fragments | Unsupported command 160 client registration; unoffered in all three offer sets; real connection dispatch refuses valid and malformed payloads | Validation pass added |
 | Runtime command execution and effects | Same pins; Oteryn semantics are governed by PREY0 | Capability remains unoffered and fails closed | Remaining |
 
 Validation:
 
-- `cargo fmt --all` — passed.
-- `cargo test -p oteryn-protocol-oteryn --all-features` — passed (478 tests).
+- Original wire pass: `cargo fmt --all`; protocol tests passed (478 tests).
+- Targeted validation pass commands and final counts: `PREY-VAL-FINAL.md` at the worktree root.
+- Protocol tests passed (482 tests), including capability/registry golden and strict reply tests; client registration tests passed (2 tests); contract-fragment unit tests passed (7 tests).
+- Final `cargo fmt --all --check` and clippy `--locked --all-features --all-targets -- -D warnings` passed for protocol, client-ui and dispatch.
+- Dispatch `world_map`: 30 passed, 3 existing measurement tests ignored; `prey_unoffered_command`: 1 passed through real connection dispatch.
+- Game-server `--all-features --lib prey_storage`: 2 PostgreSQL tests passed using the absolute cargo wrapper; PostgreSQL 18.6 execution marker observed. Governance validator and 129 governance tests passed.
 
 Remaining:
 
 - Production dispatch caller and fenced slot writer/receipts using migration 0280.
+- Production client consumer for `decode_reply` and success-path dispatch E2E remain absent while PREY_V1 is unoffered. This pass proves refusal through real dispatch; it does not qualify runtime execution.
+- Status 0–8 meanings, native numeric state/bonus mapping and inactive placeholders require the runtime contract owner; Not verified against PREY0 or Canary wire layouts.
 - Admitted content-backed slot draw; free and paid/wildcard reroll execution.
 - Hunting checkpoint/expiry persistence across restart and session-generation change.
 - Damage, reduction, XP and loot effect consumers (the existing XP-only read is not full parity).

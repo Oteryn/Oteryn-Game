@@ -5,6 +5,6 @@
   "capability": 140,
   "payload_schema": "docs/contracts/protocol-oteryn/v1/prey_v1.proto#PreyRequestV1",
   "result_schema": "docs/contracts/protocol-oteryn/v1/prey_v1.proto#PreyReplyV1",
-  "max_payload_bytes": 260,
+  "max_payload_bytes": 263,
   "max_result_payload_bytes": 8192
 }

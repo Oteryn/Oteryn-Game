@@ -6,8 +6,11 @@ use crate::charm_wire::{
 
 pub const CAPABILITY_PREY_V1: u32 = 140;
 pub const COMMAND_TYPE_PREY: u32 = 160;
-pub const MAX_REQUEST_BYTES: usize = 260;
+// Oteryn wire budgets (not Canary packet sizes); the longest SelectAny needs 263 bytes.
+pub const MAX_REQUEST_BYTES: usize = 263;
 pub const MAX_REPLY_BYTES: usize = 8192;
+// PREY0 §§3–4: three slots and nine candidates. Creature key bytes follow
+// the existing progression/prey.rs::CREATURE_KEY_BYTES and migration 0152.
 pub const MAX_SLOTS: usize = 3;
 pub const MAX_CREATURES: usize = 9;
 
@@ -31,6 +34,7 @@ pub struct Slot {
     pub percent: u8,
     pub hunting_seconds: u32,
     pub option: u8,
+    /// Unix seconds, bounded by the existing durable nonnegative BIGINT timestamp.
     pub free_reroll_at: u64,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -136,15 +140,20 @@ pub fn decode_request(bytes: &[u8]) -> Result<Request, Error> {
 
 fn encode_slot(slot: &Slot) -> Result<Vec<u8>, Error> {
     if !valid_slot(slot.slot)
+        // PREY0 §4.1: native LOCKED/SELECTION/ACTIVE, not Canary UI states 0–6.
         || slot.state > 2
         || slot.creatures.len() > MAX_CREATURES
         || slot.creatures.iter().any(|v| !valid_key(v))
         || (!slot.selected.is_empty() && !valid_key(&slot.selected))
+        // Canary 47dfd51f src/io/ioprey.hpp: four bonus kinds plus None, options 0–2.
         || slot.bonus > 4
+        // PREY0 §3; Canary 47dfd51f src/io/ioprey.cpp::reloadBonusValue (max 40%).
         || slot.grade > 10
         || slot.percent > 40
+        // PREY0 §3: two hours of hunting time.
         || slot.hunting_seconds > 7200
         || slot.option > 2
+        || slot.free_reroll_at > i64::MAX as u64
     {
         return Err(Error::Malformed);
     }
@@ -166,7 +175,9 @@ fn encode_slot(slot: &Slot) -> Result<Vec<u8>, Error> {
     Ok(out)
 }
 pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>, Error> {
+    // Status codes are an Oteryn wire reservation; PREY0/Canary do not define 0–8.
     if reply.status > 8
+        // PREY0 §4.1 / PREY0-RL-05 (Account + World balance).
         || reply.wildcard_balance > 52
         || reply.slots.len() > MAX_SLOTS
         || !reply.slots.windows(2).all(|p| p[0].slot < p[1].slot)
@@ -183,6 +194,87 @@ pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>, Error> {
         return Err(Error::LimitExceeded);
     }
     Ok(out)
+}
+
+fn decode_slot(bytes: &[u8]) -> Result<Slot, Error> {
+    let mut scalars = [None; 10];
+    let mut creatures = Vec::new();
+    let mut selected = None;
+    let mut at = 0;
+    while at < bytes.len() {
+        let key = read_varint(bytes, &mut at)?;
+        match key {
+            8 | 16 | 40 | 48 | 56 | 64 | 72 | 80 => {
+                let index = (key >> 3) as usize - 1;
+                set_once(&mut scalars[index], read_varint(bytes, &mut at)?)?;
+            }
+            26 => {
+                if creatures.len() == MAX_CREATURES {
+                    return Err(Error::LimitExceeded);
+                }
+                creatures.push(read_key(bytes, &mut at)?);
+            }
+            34 => set_once(&mut selected, read_key(bytes, &mut at)?)?,
+            _ => return Err(Error::Malformed),
+        }
+    }
+    let byte = |index: usize| {
+        u8::try_from(scalars[index].ok_or(Error::Malformed)?).map_err(|_| Error::Malformed)
+    };
+    Ok(Slot {
+        slot: byte(0)?,
+        state: byte(1)?,
+        creatures,
+        selected: selected.unwrap_or_default(),
+        bonus: byte(4)?,
+        grade: byte(5)?,
+        percent: byte(6)?,
+        hunting_seconds: u32::try_from(scalars[7].ok_or(Error::Malformed)?)
+            .map_err(|_| Error::Malformed)?,
+        option: byte(8)?,
+        free_reroll_at: scalars[9].ok_or(Error::Malformed)?,
+    })
+}
+
+fn read_key(bytes: &[u8], at: &mut usize) -> Result<String, Error> {
+    let key = std::str::from_utf8(read_bytes(bytes, at)?).map_err(|_| Error::Malformed)?;
+    if !valid_key(key) {
+        return Err(Error::Malformed);
+    }
+    Ok(key.to_owned())
+}
+
+/// Decodes only the bounded canonical projection emitted by `encode_reply`.
+pub fn decode_reply(bytes: &[u8]) -> Result<Reply, Error> {
+    if bytes.len() > MAX_REPLY_BYTES {
+        return Err(Error::LimitExceeded);
+    }
+    let (mut status, mut wildcard_balance) = (None, None);
+    let mut slots = Vec::new();
+    let mut at = 0;
+    while at < bytes.len() {
+        match read_varint(bytes, &mut at)? {
+            8 => set_once(&mut status, read_varint(bytes, &mut at)?)?,
+            16 => set_once(&mut wildcard_balance, read_varint(bytes, &mut at)?)?,
+            26 => {
+                if slots.len() == MAX_SLOTS {
+                    return Err(Error::LimitExceeded);
+                }
+                slots.push(decode_slot(read_bytes(bytes, &mut at)?)?);
+            }
+            _ => return Err(Error::Malformed),
+        }
+    }
+    let reply = Reply {
+        status: u8::try_from(status.ok_or(Error::Malformed)?).map_err(|_| Error::Malformed)?,
+        wildcard_balance: u8::try_from(wildcard_balance.ok_or(Error::Malformed)?)
+            .map_err(|_| Error::Malformed)?,
+        slots,
+    };
+    if encode_reply(&reply)? != bytes {
+        return Err(Error::Malformed);
+    }
+    Ok(reply)
 }
 
 #[cfg(test)]
