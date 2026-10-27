@@ -86,6 +86,9 @@ crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recover
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | RecoveryCompletion
 crates/gameplay/foundation/src/foundation/post_grace_recovery_tests.rs | recovery_source_sealed::Sealed | RecoverySource
 crates/gameplay/entities/src/carrier/continuity.rs | owner_cycle_grant_seal::Sealed | CommittedAssignmentOwnerCycle
+# House custody owns instance cycles after independently fenced committed transfer/recovery;
+# same owner-grant boundary as CommittedAssignmentOwnerCycle (CP review required).
+crates/gameplay/entities/src/carrier/house_custody.rs | owner_cycle_grant_seal::Sealed | HouseOwnerGrant
 crates/gameplay/entities/src/carrier/native_summon_reconciliation_tests.rs | source_reservation_seal::Sealed | Proof
 crates/gameplay/entities/src/carrier/runtime_actor_source_reservation.rs | source_reservation_seal::Sealed | Proof
 crates/gameplay/entities/src/carrier/runtime_actor_spell_tests.rs | relocation_seal::Sealed | Proof
@@ -97,4 +100,8 @@ apps/game-server/src/lifted_tests/auto/bed_sleep_postgres_cases.rs | house_prese
 crates/gameplay/spell/src/spell/source_map_initialization.rs | map_initializer_seal::Sealed | CurrentNativeMapInitialization<'_>
 crates/gameplay/spell/src/spell/world_execution.rs | relocation_seal::Sealed | SpellRelocationProof<'_, '_>
 crates/gameplay/world/src/map/floor.rs | source_step_seal::Sealed | BundleStepProof<'_>
+crates/gameplay/world/src/map/floor/quest_callback.rs | source_step_seal::Sealed | CallbackTeleport<'_>
+# World qualifies rope origin and landing and revalidates them at commit;
+# same Movement proof boundary as BundleStepProof and SourceStepProof (CP review required).
+crates/gameplay/world/src/map/floor/rope.rs | source_step_seal::Sealed | RopeProof<'_>
 crates/gameplay/world/src/movement/source_floor_change.rs | source_step_seal::Sealed | SourceStepProof<'_>

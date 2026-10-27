@@ -407,6 +407,29 @@ pub async fn apply_world_party_command_with_logout_in_transaction(
 ) -> Result<PreparedWorldPartyReceipt> {
     apply_world_party_command_inner(tx, authority, action, visible, Some(eligibility)).await
 }
+// The World party lock is also held by live harm. Recheck at acceptance: an invitation
+// issued before an attack must not turn that attack into a party exemption.
+async fn party_aggression_conflict(
+    tx: &mut Transaction<'_, Postgres>,
+    character: [u8; 16],
+    peer: [u8; 16],
+    party: Option<[u8; 16]>,
+) -> Result<bool> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_pvp_aggression a \
+         WHERE a.until_at>clock_timestamp() AND (\
+         (a.attacker=encode($1,'hex')::uuid AND (a.target=encode($2,'hex')::uuid OR \
+          a.target IN(SELECT character_id FROM game_party_members WHERE party_id=encode($3,'hex')::uuid))) OR \
+         (a.target=encode($1,'hex')::uuid AND (a.attacker=encode($2,'hex')::uuid OR \
+          a.attacker IN(SELECT character_id FROM game_party_members WHERE party_id=encode($3,'hex')::uuid)))))",
+    )
+    .bind(character.as_slice())
+    .bind(peer.as_slice())
+    .bind(party.map(|id| id.to_vec()))
+    .fetch_one(&mut **tx)
+    .await?)
+}
+
 async fn apply_world_party_command_inner(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
@@ -493,6 +516,8 @@ async fn apply_world_party_command_inner(
                     || count >= 20
                 {
                     disposition = "NOT_VISIBLE"
+                } else if party_aggression_conflict(tx, target, character, party).await? {
+                    disposition = "AGGRESSION_CONFLICT"
                 } else if party.is_some() && snapshot.leader != Some(character) {
                     disposition = "NOT_LEADER"
                 } else {
@@ -524,13 +549,17 @@ async fn apply_world_party_command_inner(
             if party.is_some() {
                 disposition = "ALREADY_MEMBER"
             } else {
-                let row=sqlx::query("SELECT p.world_id::text,i.seq::text,(SELECT count(*) FROM game_party_members m WHERE m.party_id=p.party_id) AS member_count FROM game_party_invitations i JOIN game_parties p USING(party_id) WHERE i.party_id=encode($1,'hex')::uuid AND i.invitee=encode($2,'hex')::uuid AND i.expires_at>clock_timestamp() FOR UPDATE OF p,i")
+                let row=sqlx::query("SELECT p.world_id::text,p.leader_character_id::text,i.seq::text,(SELECT count(*) FROM game_party_members m WHERE m.party_id=p.party_id) AS member_count FROM game_party_invitations i JOIN game_parties p USING(party_id) WHERE i.party_id=encode($1,'hex')::uuid AND i.invitee=encode($2,'hex')::uuid AND i.expires_at>clock_timestamp() FOR UPDATE OF p,i")
      .bind(requested.as_slice()).bind(character.as_slice()).fetch_optional(&mut **tx).await?;
                 if let Some(r) = row {
                     if uuid(r.try_get("world_id")?)? != world
                         || r.try_get::<i64, _>("member_count")? >= 50
                     {
                         disposition = "NOT_INVITED"
+                    } else if party_aggression_conflict(
+                        tx, character, uuid(r.try_get("leader_character_id")?)?, Some(requested),
+                    ).await? {
+                        disposition = "AGGRESSION_CONFLICT"
                     } else {
                         let (presence, presence_channel) =
                             initial_member_presence(tx, character, channel).await?;
@@ -706,6 +735,28 @@ async fn close_leader_only_party_without_invitations(
         .bind(party.as_slice()).execute(&mut **tx).await?.rows_affected();
     Ok(changed != 0)
 }
+/// The terminal-release owner calls this in its deciding transaction, after fencing the
+/// exact session terminal and before releasing its claims. Disconnect grace is not logout.
+pub(super) async fn remove_terminal_member_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    session: crate::foundation::GameSessionId,
+) -> Result<()> {
+    let row = sqlx::query("SELECT r.world_id::text,r.character_id::text FROM game_durability_reconnect_sessions s JOIN game_character_roots r USING(character_id) JOIN game_party_members m USING(character_id) WHERE s.game_session_id=encode($1,'hex')::uuid AND s.session_state=3 FOR SHARE OF s,r")
+        .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let Some(row) = row else { return Ok(()) };
+    let world = uuid(row.try_get("world_id")?)?;
+    let character = uuid(row.try_get("character_id")?)?;
+    sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))")
+        .bind(world.iter().map(|b| format!("{b:02x}")).collect::<String>())
+        .execute(&mut **tx).await?;
+    let party: Option<String> = sqlx::query_scalar("SELECT party_id::text FROM game_party_members WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
+        .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
+    if let Some(party) = party {
+        remove_member_with_succession(tx, uuid(party)?, character).await?;
+    }
+    Ok(())
+}
+
 async fn remove_member_with_succession(
     tx: &mut Transaction<'_, Postgres>,
     party: [u8; 16],

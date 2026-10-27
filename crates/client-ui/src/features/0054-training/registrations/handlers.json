@@ -1,0 +1,18 @@
+{
+  "mechanic": "0054-training",
+  "kind": "handlers",
+  "id": "0054-training-unsupported",
+  "status": "unsupported",
+  "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+  "commands": [
+    66,
+    67
+  ],
+  "not_applicable": {
+    "state": "Unsupported until the owning mechanic migration.",
+    "protocol": "Unsupported until the owning mechanic migration.",
+    "view": "Unsupported until the owning mechanic migration.",
+    "input": "Unsupported until the owning mechanic migration.",
+    "settings": "Unsupported until the owning mechanic migration."
+  }
+}

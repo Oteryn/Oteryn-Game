@@ -19,6 +19,7 @@
 pub mod loader;
 pub mod log;
 pub mod task_board;
+pub mod world_callbacks;
 
 use std::collections::{BTreeMap, BTreeSet};
 

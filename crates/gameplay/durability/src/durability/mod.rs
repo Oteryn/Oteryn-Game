@@ -17,8 +17,10 @@ pub mod guild_chat;
 #[cfg(feature = "test-support")]
 pub mod guild_chat_fixture;
 pub mod house_management;
+pub mod house_transfer;
 pub mod hunting_stamina;
 pub mod hunting_xp;
+pub mod inspection;
 pub mod mail_text_policy;
 #[allow(dead_code)]
 pub mod native_world_items;
@@ -27,6 +29,7 @@ pub mod native_world_read;
 pub mod party_kill_xp;
 pub mod player_report;
 pub mod prey;
+pub mod quest_world_callback;
 pub mod raid_schedule;
 pub mod staff;
 pub mod vip;

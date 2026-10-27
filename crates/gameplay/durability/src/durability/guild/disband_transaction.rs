@@ -41,7 +41,7 @@ impl GuildDisbandTransaction {
     }
 }
 
-pub(super) async fn assert_guild_job_world(
+pub(crate) async fn assert_guild_job_world(
     tx: &mut Transaction<'_, Postgres>,
     node: &NodeIncarnationProof,
     world: crate::foundation::WorldId,

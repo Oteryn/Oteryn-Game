@@ -41,6 +41,7 @@ fn fixture_with_phase(
         definition_revision: "test-source-1".into(),
         display_name: "source healing target".into(),
         maximum_health: 20,
+        forge_difficulty: None,
         base_speed: 100,
         outfit_look_type: 1,
         object_look_type: None,

@@ -4,6 +4,7 @@
 
 mod bid;
 pub(super) mod eligibility;
+mod guildhall;
 mod premium;
 mod settlement;
 pub(super) mod value;
@@ -24,6 +25,7 @@ pub enum HouseOwnershipError {
     AuctionClosed,
     AuctionFull,
     Ineligible,
+    Guildhall(oteryn_gameplay_housing::guildhall::GuildhallRefusal),
     BidConflict,
     RequestConflict,
     ConcurrentChange,
@@ -95,7 +97,7 @@ async fn lock_property(
     world: &[u8; 16],
     house: &str,
 ) -> Result<sqlx::postgres::PgRow> {
-    sqlx::query("SELECT state,revision::text,ownership_generation::text,content_digest FROM game_house_property_lock(encode($1,'hex')::uuid,$2)")
+    sqlx::query("SELECT kind,state,revision::text,ownership_generation::text,content_digest FROM game_house_property_lock(encode($1,'hex')::uuid,$2)")
         .bind(world.as_slice()).bind(house).fetch_optional(&mut **tx).await?
         .ok_or(HouseOwnershipError::CatalogueUnavailable)
 }

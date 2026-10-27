@@ -231,6 +231,9 @@ pub(super) async fn qualify(
     // mana shield absorbs the player's damage. No player auto-attacks run in this phase.
     let (primary_maximum, flank_maximum) = {
         let mut runtime = owner.runtime.lock().await;
+        // Monster dispatch runs due spawn-owner maintenance before melee. Drive it before
+        // taking the maxima too: Forge classification can raise a creature's maximum health.
+        crate::gameplay_transport::drive_owner_spawns(&mut runtime, owner.owner_now().get());
         let mut states = owner.states.spell_states.lock().await;
         // The shared fixture supplies two players. Retire the unused player's vitals
         // through the real owner so monster target selection has one eligible player.

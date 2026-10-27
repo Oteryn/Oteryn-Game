@@ -40,6 +40,9 @@ impl DurabilityRoot {
                 .bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
             super::super::character_progression::uuid_text(&text)
         })).await?;
+        if request.kind == "guildhall" {
+            return run(self,None,&recovery,node,Work::Bid(fence,request),&[account],&BTreeSet::new()).await;
+        }
         let root = self.clone();
         let node = node.clone();
         gate.with_premium_gate(account, move |status, tx| {

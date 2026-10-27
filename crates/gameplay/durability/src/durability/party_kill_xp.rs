@@ -19,6 +19,8 @@ pub struct PartyKillXpMember<const N: usize> {
     pub fence: CurrentCharacterGameplayFence,
     pub request: ExperienceAwardRequest<N>,
     pub premium: bool,
+    /// Full dust award, independent of the member's XP share and stamina.
+    pub forge_dust: Option<u32>,
     /// Current runtime stamina; durable stamina remains the upper bound.
     pub live_stamina: Option<u16>,
     pub shared: bool,
@@ -46,6 +48,7 @@ pub struct PartyKillXpAward {
     pub character: CharacterId,
     /// Zero stamina can remove an award without redistributing it.
     pub xp: Option<ExperienceCommitOutcome>,
+    pub forge_dust: Option<super::character_forge_dust::ForgeDustEntry>,
 }
 
 /// Holds the death lock through planning; an existing receipt is terminal data, never a grant.
@@ -137,7 +140,18 @@ pub async fn reconcile_in_transaction(
         } else {
             None
         };
-        result.push(PartyKillXpAward { character, xp });
+        let forge_dust = super::character_forge_dust::read_creature_gain(
+            tx,
+            character,
+            forge_id(death, character, 0),
+        )
+        .await
+        .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
+        result.push(PartyKillXpAward {
+            character,
+            xp,
+            forge_dust,
+        });
     }
     Ok(Some(result))
 }
@@ -210,6 +224,32 @@ pub async fn commit_in_transaction<const N: usize>(
         .execute(&mut **tx).await.map_err(DurabilityError::from)?;
     let mut awards = Vec::with_capacity(input.members.len());
     for member in input.members {
+        let forge_dust = if let Some(amount) = member.forge_dust {
+            use super::character_forge_dust::{
+                ForgeDustGainCause, ForgeDustOutcome, ForgeDustWriteIds,
+                gain_forge_dust_in_transaction,
+            };
+            let character = member.fence.character_id;
+            let outcome = gain_forge_dust_in_transaction(
+                tx,
+                &member.fence,
+                ForgeDustGainCause::CreatureKill {
+                    occurrence: forge_id(&input.death_key, character, 0),
+                },
+                amount,
+                ForgeDustWriteIds {
+                    entry_id: forge_id(&input.death_key, character, 1),
+                    transaction_id: forge_id(&input.death_key, character, 2),
+                },
+            )
+            .await
+            .map_err(|_| CharacterProgressionError::Unavailable(DurabilityError::Unavailable))?;
+            Some(match outcome {
+                ForgeDustOutcome::Written(entry) | ForgeDustOutcome::AlreadyWritten(entry) => entry,
+            })
+        } else {
+            None
+        };
         let mut modifiers =
             hunting_xp::read_in_transaction(tx, &member.fence, &input.creature, member.premium)
                 .await?;
@@ -258,6 +298,7 @@ pub async fn commit_in_transaction<const N: usize>(
         awards.push(PartyKillXpAward {
             character: member.fence.character_id,
             xp,
+            forge_dust,
         });
     }
     Ok(awards)
@@ -284,4 +325,20 @@ fn hunting_binding(
     binding.extend_from_slice(&modifiers.xp_boost_percent.to_be_bytes());
     binding.extend_from_slice(&modifiers.stamina_minutes.to_be_bytes());
     Sha256::digest(binding).into()
+}
+
+// The full scope/death/Character tuple is the source identity. Tags separate the ledger
+// occurrence, entry and transaction; UUIDv7 shape is required by the existing ledger owner.
+fn forge_id(death: &[u8; 52], character: CharacterId, tag: u8) -> [u8; 16] {
+    let hash = Sha256::new()
+        .chain_update(b"FORGECREATURE/dust/v1")
+        .chain_update(death)
+        .chain_update(character.as_bytes())
+        .chain_update([tag])
+        .finalize();
+    let mut id = [0; 16];
+    id.copy_from_slice(&hash[..16]);
+    id[6] = (id[6] & 15) | 0x70;
+    id[8] = (id[8] & 63) | 0x80;
+    id
 }

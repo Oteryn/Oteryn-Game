@@ -171,6 +171,7 @@ class LootTablesTests(unittest.TestCase):
         self.assertEqual(16, items['oteryn:item.tibia.i5964']['container_capacity'])
         self.assertTrue(items['oteryn:item.tibia.i3031']['materializable'])
         self.assertTrue(items['oteryn:item.tibia.i3607']['materializable'])
+        self.assertTrue(items['oteryn:item.tibia.i37109']['materializable'])
 
     def write(self, directory, creatures, loot, items):
         base = Path(directory)

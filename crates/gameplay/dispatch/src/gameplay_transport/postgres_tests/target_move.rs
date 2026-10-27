@@ -281,14 +281,14 @@ pub(super) async fn client_scenario(
             .map_err(debug)?;
         runtime
             .borrow_movement_position()
-            .commit_spell_relocation(Relocation(
+            .commit_creature_relocation(
                 rat,
                 old,
                 MovementLocalPosition {
                     floor: 8,
                     ..old.position()
                 },
-            ))
+            )
             .map_err(debug)?;
         old.position()
     };
@@ -302,7 +302,7 @@ pub(super) async fn client_scenario(
             .map_err(debug)?;
         runtime
             .borrow_movement_position()
-            .commit_spell_relocation(Relocation(rat, now, at(old.x, 1)))
+            .commit_creature_relocation(rat, now, at(old.x, 1))
             .map_err(debug)?;
     }
     tokio::time::sleep(Duration::from_millis(350)).await;
@@ -338,23 +338,6 @@ pub(super) async fn client_scenario(
     Ok(())
 }
 
-struct Relocation(
-    ExactActorRef,
-    crate::foundation::MovementPositionSnapshot,
-    MovementLocalPosition,
-);
-impl crate::foundation::relocation_seal::Sealed for Relocation {}
-impl crate::foundation::SpellRelocationProof for Relocation {
-    fn parts(
-        &self,
-    ) -> (
-        ExactActorRef,
-        crate::foundation::MovementPositionSnapshot,
-        MovementLocalPosition,
-    ) {
-        (self.0, self.1, self.2)
-    }
-}
 pub(super) async fn without_capability(client: &mut DuplexStream) -> TestResult {
     loop {
         let frame = read(client).await?;

@@ -15,6 +15,7 @@ pub mod direction;
 pub mod equipment;
 pub mod equipment_policy_abi;
 pub mod forge;
+pub mod forge_creature;
 pub mod forge_dust;
 pub mod interaction;
 pub mod item_definition;

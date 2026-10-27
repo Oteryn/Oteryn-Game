@@ -150,6 +150,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // Filled from the current runtime under the final transaction's guards.
                 live_stamina: None,
                 premium: member.premium,
+                forge_dust: None,
                 shared: member.shared,
                 party_id: member.party_id,
                 party_revision: member.party_revision,
@@ -233,6 +234,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             oteryn_simulation_determinism::ExactI64::new(current.share);
                         request.live_stamina = states.live_stamina(current.actor, current.session);
                         request.premium = current.premium;
+                        request.forge_dust = forge_dust_for_member(entry, states, _attack, current);
                         request.shared = current.shared;
                         request.party_id = current.party_id;
                         request.party_revision = current.party_revision;
@@ -342,4 +344,32 @@ async fn initialize(
         )
         .await?;
     Ok(())
+}
+
+fn forge_dust_for_member(
+    entry: &PendingKillSettlement,
+    states: &super::actor_spell::ChannelSpellStates,
+    attack: &super::attack::ChannelAttackStates,
+    member: &super::party_xp::XpParticipant,
+) -> Option<u32> {
+    use crate::domain::forge_creature::{ForgeRecipientFacts, eligible_dust_recipient};
+    let forge = entry.forge.as_ref()?;
+    let now = entry.activity_observed_at?;
+    let (_, _, position) = forge
+        .recipients
+        .iter()
+        .find(|(actor, session, _)| *actor == member.actor && *session == member.session)?;
+    let blocked = !states.is_dead(member.actor)
+        && (attack
+            .in_fight_until(member.actor, member.session, now)
+            .is_some()
+            || super::pvp_live::logout_blocked(states, member.actor, member.session, now));
+    let eligible = eligible_dust_recipient(ForgeRecipientFacts {
+        premium: member.premium,
+        logout_blocked: blocked,
+        delta_x: u16::try_from(position.x.abs_diff(forge.origin.x)).unwrap_or(u16::MAX),
+        delta_y: u16::try_from(position.y.abs_diff(forge.origin.y)).unwrap_or(u16::MAX),
+        floor_delta: u8::try_from(position.floor.abs_diff(forge.origin.floor)).unwrap_or(u8::MAX),
+    });
+    eligible.then(|| forge.kind.dust(forge.roll))
 }

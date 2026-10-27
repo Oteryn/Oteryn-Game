@@ -14,6 +14,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("CRAFT-1", 22),
     // ENERGY-RING-1 admits the inactive 3051 and active 3088 through the timed pipeline.
     ("ENERGY-RING-1", 2),
+    // The sliver 37109 (tools/content-migration/forge_creature_profiles.py), speed_bonus=0.
+    ("FORGECREATURE", 1),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
     // The wooden chairs 2358..=2361 (tools/content-migration/item_transform_profiles.py).
@@ -24,6 +26,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("LOOP-TRAIN-1", 23),
     // The pick 3456, shiny stone 10310 and small diamond 3028.
     ("MINING-1", 3),
+    // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
+    // All have speed_bonus=0.
+    ("QUICKLOOT-1", 9),
+    // Skull 3114 (tools/content-migration/quest_callback_profiles.py), from Canary
+    // 47dfd51f items.xml and exact Crystal ff7ede59 bindings. speed_bonus=0.
+    ("QUESTCB2", 1),
     // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
     // None of them is equipment.

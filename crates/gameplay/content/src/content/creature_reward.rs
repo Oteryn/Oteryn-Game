@@ -71,9 +71,14 @@ impl NoSettlementReason {
 #[derive(Debug, Clone, Default)]
 pub struct CreatureRewardTable {
     rows: HashMap<String, Result<Arc<CreatureRewardRow>, NoSettlementReason>>,
+    forge_sliver: Option<LootDefinitionRef>,
 }
 
 impl CreatureRewardTable {
+    /// The existing corpse loot admission owns the materializable Forge resource too.
+    pub fn forge_sliver(&self) -> Option<&LootDefinitionRef> {
+        self.forge_sliver.as_ref()
+    }
     #[cfg(any(test, feature = "test-support"))]
     pub fn insert(
         &mut self,
@@ -320,7 +325,12 @@ impl CreatureRewardTable {
                 (target.key.clone(), row)
             })
             .collect();
-        Self { rows }
+        let forge_sliver = section
+            .items
+            .iter()
+            .find(|facts| facts.item.key == "oteryn:item.tibia.i37109" && facts.materializable)
+            .map(|facts| facts.item.lower());
+        Self { rows, forge_sliver }
     }
 }
 

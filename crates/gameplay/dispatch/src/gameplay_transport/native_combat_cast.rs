@@ -8,6 +8,7 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+use super::super::item_spell_augments;
 use super::super::rune_use_bridge::LegacyRuneUse;
 use super::{
     ChannelSpellStates, check_owner_batch, commit_owner_batch, install_owner_batch,
@@ -471,6 +472,7 @@ impl ChannelSpellStates {
 
 #[derive(Debug)]
 pub struct PreparedNativeCombatCast {
+    item_spell_leech: (u32, u32),
     corpse_companion: Option<native_companion_item_cast::PreparedCorpseCompanionState>,
     direct_companion: Option<native_companion_item_cast::PreparedDirectCompanionState>,
     field_policy_revision: Option<String>,
@@ -489,7 +491,8 @@ pub struct PreparedNativeCombatCast {
     )>,
     training: PreparedPlayerTraining,
     timers: Option<ValidatedTimerInstall>,
-    magnitude: Option<PreparedMagnitudeOwner>,
+    // Keep the expanded numerical owner out of every cast/reconciliation future frame.
+    magnitude: Option<Box<PreparedMagnitudeOwner>>,
     facts_binding: crate::spell::owned_cast_facts::CastFactsBinding,
     creatures: Vec<crate::foundation::CompanionSnapshot>,
     players: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
@@ -628,6 +631,7 @@ impl PreparedNativeCombatCast {
         let mut physical = runtime.stage_spell_batch(&self.batch)?;
         let mut player = stage_player_batch(runtime, states, &self.batch, Some(self.paid.clone()))
             .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
+        player.stage_item_spell_leech(&physical, self.item_spell_leech)?;
         // A committed-but-uninstalled attempt retains its original legality grant and death
         // identity. A new-write verdict may replace the grant after fresh qualification.
         if let Some(original) = self.installation.as_ref() {
@@ -1222,7 +1226,7 @@ async fn prepare_source_self_from_owners(
                 "paid_successor":format!("{:?}",paid.next),"selected_variant":format!("{:?}",paid.ability_variant),
                 "source_party":party.as_ref().map(|p|format!("{:?}",p.source()))})).map_err(|_|SpellCastDisposition::Rejected)? })
     };
-    let preview = prepare_paid_self(
+    let mut preview = prepare_paid_self(
         runtime,
         room,
         owned,
@@ -1239,6 +1243,7 @@ async fn prepare_source_self_from_owners(
         now,
         &mut |minimum, _| minimum,
     )?;
+    item_spell_augments::cooldown(owned, spell, &mut preview.next, &mut preview.anchor, now)?;
     // Source reentry protection suppresses outgoing ally healing; self healing
     // remains eligible. This selection preview consumes no live random stream.
     if preview
@@ -1288,7 +1293,7 @@ async fn prepare_source_self_from_owners(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     #[cfg(test)]
     eprintln!("SEAM_EVIDENCE source_self_prepare stage=preview_training_qualified");
-    let paid = prepare_paid_self(
+    let mut paid = prepare_paid_self(
         runtime,
         room,
         owned,
@@ -1305,6 +1310,7 @@ async fn prepare_source_self_from_owners(
         now,
         draw,
     )?;
+    item_spell_augments::cooldown(owned, spell, &mut paid.next, &mut paid.anchor, now)?;
     let mut selected_cues = BTreeSet::new();
     if let Some(p) = &profile.header.presentation {
         selected_cues.extend(
@@ -1397,6 +1403,7 @@ async fn prepare_source_self_from_owners(
         .as_ref()
         .map_or_else(Vec::new, |p| p.player_predecessors());
     Ok(PreparedNativeCombatCast {
+        item_spell_leech: (0, 0),
         corpse_companion: None,
         direct_companion: None,
         field_policy_revision: None,
@@ -1909,6 +1916,7 @@ async fn prepare_named_failure(
         .positioned_actor_census()
         .map_err(|_| SpellCastDisposition::Rejected)?;
     Ok(PreparedNativeCombatCast {
+        item_spell_leech: (0, 0),
         corpse_companion: None,
         direct_companion: None,
         field_policy_revision: None,
@@ -2534,7 +2542,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     } else if native_world_item_cast::applicable(spell) {
                         native_world_item_cast::prepare(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
-                    } else if is_source_self(spell) {
+                    } else if is_source_self(spell) && !item_spell_augments::alters_base(&owned,spell) {
                         // Simple self effects use their existing whole-player owner.
                         // The broad ordinary predicate also includes these Effects;
                         // target/area/chain spells retain the magnitude-owner route.

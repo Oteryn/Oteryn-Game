@@ -57,6 +57,7 @@ pub struct ActorCombatState {
     pub(super) party: super::runtime_actor_party::PartyActorState,
     /// Only creature slots use this field; player maxima belong to PlayerSpellState.
     pub maximum_health: i64,
+    pub forge: Option<oteryn_gameplay_domain::domain::forge_creature::ForgeCreature>,
     pub monster_ai: Option<MonsterAiState>,
     pub paralysed: bool,
     records: Vec<BatchRecord>,
@@ -175,6 +176,11 @@ impl QualifiedCompanionTouches {
 }
 
 impl StagedSpellBatch {
+    /// Read-only staged physical HP transitions, before the common atomic install.
+    pub fn preview_effect_receipts(&self) -> &[super::runtime_actor_spell_types::EffectReceipt] {
+        &self.receipt.effects
+    }
+
     pub fn batch(&self) -> &OwnerCombatBatch {
         &self.batch
     }

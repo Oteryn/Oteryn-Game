@@ -7,9 +7,9 @@
 
 use crate::combat_input::{CombatCommand, CombatReport, PlayCommand, run_combat};
 use crate::input::{ClickWalk, StepDir, StepResult, TargetKind, Targetable};
+use crate::map::World;
 use crate::scene::Scene;
 use crate::spell::{SPELL_SLOTS, SpellFeedback};
-use crate::world::World;
 use oteryn_platform_client::native_login::PublicClass;
 use oteryn_renderer::{BatchError, TileCoord};
 use oteryn_session::{
@@ -993,14 +993,14 @@ mod tests {
         let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let world = Arc::new(World::load(&root)?);
         let mut view = view().map_err(|e| e.to_string())?;
-        view.apply(&moved_to(crate::world::START.0, crate::world::START.1, 7))
+        view.apply(&moved_to(crate::map::START.0, crate::map::START.1, 7))
             .map_err(|e| e.to_string())?;
         view.set_world(world).map_err(|e| e.to_string())?;
         let on_floor = view.scene().sprites().len();
         view.apply(&moved_to(100, 200, -1))
             .map_err(|e| e.to_string())?;
         let off_floor = view.scene().sprites().len();
-        view.apply(&moved_to(crate::world::START.0, crate::world::START.1, 7))
+        view.apply(&moved_to(crate::map::START.0, crate::map::START.1, 7))
             .map_err(|e| e.to_string())?;
         assert!(off_floor < on_floor / 10, "{off_floor} of {on_floor}");
         assert_eq!(view.scene().sprites().len(), on_floor);

@@ -1185,6 +1185,13 @@ async fn check_transfer_capacity(
             .checked_add(u64::from(unit) * u64::from(quantity))
             .ok_or(DurabilityError::InvalidStoredState)?;
     }
+    let pouch = match super::item_loop_move::pouch_weight(tx, character, *world, weights).await? {
+        Ok(weight) => weight,
+        Err(error) => return Ok(Err(weight_refusal(error))),
+    };
+    total = total
+        .checked_add(pouch)
+        .ok_or(DurabilityError::InvalidStoredState)?;
     use oteryn_gameplay_items::item_capacity::{
         CapacityMove, CapacityRefusal, IncomingWeight, plan_capacity,
     };

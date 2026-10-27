@@ -1,0 +1,20 @@
+[
+  {
+    "mechanic": "0033-spectate",
+    "kind": "handlers",
+    "id": "0033-spectate-unsupported",
+    "status": "unsupported",
+    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "commands": [
+      34,
+      35
+    ],
+    "not_applicable": {
+      "state": "Unsupported until the owning mechanic migration.",
+      "protocol": "Unsupported until the owning mechanic migration.",
+      "view": "Unsupported until the owning mechanic migration.",
+      "input": "Unsupported until the owning mechanic migration.",
+      "settings": "Unsupported until the owning mechanic migration."
+    }
+  }
+]

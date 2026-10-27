@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Executable subset checked by client_fragments/schema.rs; kind requirements are applied after the common schema.",
+  "type": "object",
+  "required": [
+    "mechanic",
+    "kind",
+    "id",
+    "status"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "mechanic": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "handlers",
+        "panels",
+        "keybindings",
+        "settings-pages",
+        "cyclopedia-pages",
+        "assets"
+      ]
+    },
+    "id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "supported",
+        "unsupported",
+        "not_applicable"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "entry": {
+      "type": "string"
+    },
+    "parent": {
+      "type": "string"
+    },
+    "direction": {
+      "type": "string"
+    },
+    "context": {
+      "type": "string"
+    },
+    "chord": {
+      "type": "string"
+    },
+    "key": {
+      "type": "string"
+    },
+    "setting_type": {
+      "type": "string"
+    },
+    "asset": {
+      "type": "string"
+    },
+    "digest": {
+      "type": "string"
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "capability": {
+      "type": "integer"
+    },
+    "version": {
+      "type": "integer"
+    },
+    "precedence": {
+      "type": "integer"
+    },
+    "not_applicable": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "settings_envelope": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "handlers": {
+      "required": [
+        "commands",
+        "direction",
+        "capability",
+        "entry"
+      ]
+    },
+    "panels": {
+      "required": [
+        "entry"
+      ]
+    },
+    "keybindings": {
+      "required": [
+        "context",
+        "chord",
+        "entry"
+      ]
+    },
+    "settings-pages": {
+      "required": [
+        "entry",
+        "key",
+        "setting_type",
+        "version",
+        "settings_envelope"
+      ]
+    },
+    "cyclopedia-pages": {
+      "required": [
+        "entry",
+        "parent"
+      ]
+    },
+    "assets": {
+      "required": [
+        "asset",
+        "digest"
+      ]
+    }
+  }
+}

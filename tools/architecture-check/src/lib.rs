@@ -1,5 +1,8 @@
 //! Machine validation for workspace membership, roles and internal edges.
 
+mod client_fragments;
+pub mod client_layering;
+pub mod client_structure;
 mod gameplay;
 mod sources;
 
@@ -60,6 +63,10 @@ pub fn validate_workspace(root: &Path) -> Result<(), String> {
     validate_production_closure(&policy)?;
     gameplay::validate(root, &policy, &metadata)?;
     validate_restricted_calls(root)?;
+    client_layering::validate(root, &metadata)?;
+    if root.join("crates/client-ui").is_dir() {
+        client_structure::validate(root)?;
+    }
     for member in &policy.members {
         if policy
             .forbidden_fragments
@@ -731,16 +738,27 @@ mod tests {
     #[test]
     fn client_edge_to_canary_synthetic_tool_or_dev_client_still_fails_closure() -> Result<(), String>
     {
+        let policy = checked_in_policy()?;
+        assert!(policy.production.contains("oteryn-client-simulation"));
+        assert!(policy.edges["oteryn-client"].contains("oteryn-client-simulation"));
+        assert!(policy.production.contains("oteryn-client-domain"));
+        assert!(policy.edges["oteryn-client"].contains("oteryn-client-domain"));
         for target in [
             "oteryn-synthetic-assets",
             "oteryn-dev-client",
             "oteryn-synthetic-client-harness",
-            "oteryn-client-domain",
+            "oteryn-client-simulation",
             "oteryn-architecture-check",
             "oteryn-test-support",
         ] {
             let mut policy = checked_in_policy()?;
             assert!(policy.members.contains(target), "{target} missing");
+            // Simulation now has a production caller. Retain the negative fixture for
+            // a synthetic simulation package rather than rejecting its real owner.
+            if target == "oteryn-client-simulation" {
+                policy.production.remove(target);
+                policy.synthetic.insert(target.to_owned());
+            }
             if let Some(edges) = policy.edges.get_mut("oteryn-client") {
                 edges.insert(target.to_owned());
             }

@@ -64,6 +64,8 @@ mod damage_contributors_tests;
 
 mod damage_ledger;
 
+pub mod house_custody;
+
 #[path = "carrier/encounter_access.rs"]
 pub mod encounter_access;
 
@@ -71,6 +73,8 @@ mod equipment_reflection;
 
 #[cfg(any(test, feature = "test-support"))]
 mod fixtures;
+
+mod forge_creature;
 
 #[path = "carrier/monster_summon_admission.rs"]
 mod monster_summon_admission;
@@ -899,6 +903,8 @@ pub struct ChannelActorCarrier {
     /// evicted ([`ChannelRuntimeV1::pin_corpse_projection`]); at most
     /// `MAX_PINNED_CORPSE_PROJECTIONS`, each naming a retained projection.
     corpse_projection_pins: Vec<ExactActorRef>,
+    /// HOUSE-TRANSFER-1 custody metadata only; all actor state stays in `slots`.
+    house_custody: Vec<house_custody::HouseResident>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1055,6 +1061,8 @@ pub struct ChannelRuntimeV1 {
     owner_cycle: oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
+    forge_next_tick_micros: u64,
+    forge_fiends: Vec<(ExactActorRef, Option<u64>)>,
     /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
     /// point), written with every schedule write, so a drive reads only the occurrences it runs
     /// (`O(log n)` each) instead of collecting and sorting every due occurrence.
@@ -1068,6 +1076,7 @@ pub struct ChannelRuntimeV1 {
     /// SPAWN-CEILINGS-1: the owner window of the last gone scan and its remaining step budget,
     /// so the scan runs once per Channel window, not once per drive.
     spawn_drive_window: Option<SpawnDriveWindow>,
+    house_owners: std::collections::BTreeMap<String, house_custody::HouseScopeOwner>,
     /// Test only: the spawn records the respawn drives read (gone-scan points and deadline
     /// entries), to prove the work per owner window is bounded.
     #[cfg(any(test, feature = "test-support"))]
@@ -1165,6 +1174,8 @@ impl ChannelRuntimeV1 {
                     },
                 ),
             spawn_schedule: spawn::RespawnSchedule::default(),
+            forge_next_tick_micros: 0,
+            forge_fiends: Vec::new(),
             spawn_deadlines: BTreeSet::new(),
             spawn_scan_cursor: spawn::SpawnPoint {
                 source: 0,
@@ -1172,6 +1183,7 @@ impl ChannelRuntimeV1 {
             },
             spawn_activation: None,
             spawn_drive_window: None,
+            house_owners: std::collections::BTreeMap::new(),
             #[cfg(any(test, feature = "test-support"))]
             spawn_drive_visits: 0,
         })
@@ -1295,6 +1307,11 @@ impl ChannelRuntimeV1 {
                 if activation.remaining_points > 0 {
                     self.spawn_activation = Some(activation);
                 }
+                if progress.remaining == 0 {
+                    // Forge selects from an activated population on a later owner turn.
+                    self.forge_next_tick_micros =
+                        now_micros.saturating_add(forge_creature::POPULATION_TICK_MICROS);
+                }
                 Ok(progress)
             }
             Err(error) => {
@@ -1353,6 +1370,7 @@ impl ChannelRuntimeV1 {
         if self.carrier.spawns.is_empty() || self.spawn_activation.is_some() {
             return Ok(report);
         }
+        self.drive_forge_population(now_micros)?;
         let window = now_micros / spawn::OWNER_WINDOW_MICROS;
         if self
             .spawn_drive_window
@@ -1575,6 +1593,7 @@ impl ChannelActorCarrier {
             occupied,
             corpse_item_bindings: Vec::new(),
             corpse_projection_pins: Vec::new(),
+            house_custody: Vec::new(),
         })
     }
 
@@ -1960,6 +1979,13 @@ impl ChannelActorCarrier {
             .ok_or(CarrierError::InvalidActorIdentity)?;
         if index >= self.slots.len() || actor_ref.actor_local_generation.0 == 0 {
             return Err(CarrierError::InvalidActorIdentity);
+        }
+        if self
+            .house_custody
+            .iter()
+            .any(|resident| resident.actor.0 == actor_ref)
+        {
+            return Err(CarrierError::WrongScope);
         }
         Ok(index)
     }
