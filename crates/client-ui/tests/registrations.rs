@@ -20,3 +20,19 @@ fn build_output_equals_discovered_fragments_and_mechanic_coverage() -> Result<()
     assert_eq!(coverage.len(), client_fragments::mechanics(&root)?.len());
     Ok(())
 }
+
+#[test]
+fn cyclopedia_navigation_is_collected_from_feature_fragments() {
+    let pages = oteryn_client_ui::cyclopedia_pages();
+    assert_eq!(
+        pages
+            .iter()
+            .map(|page| (page.mechanic, page.id, page.parent))
+            .collect::<Vec<_>>(),
+        [
+            ("0001-bestiary-charms", "cyclopedia-bestiary", "root"),
+            ("0001-bestiary-charms", "cyclopedia-charms", "root"),
+            ("0057-cyclopedia-map", "cyclopedia-map", "root"),
+        ]
+    );
+}

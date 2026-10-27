@@ -4,7 +4,7 @@
 task_id: TEST-PROP-1
 title: "TEST-PROP-1: property tests for pure gameplay rules"
 mode: IMPLEMENT
-status: IN_PROGRESS
+status: COMPLETE
 local_status: VALIDATED
 repository: Oteryn/Oteryn-Game
 base_branch: main
@@ -125,7 +125,8 @@ unchanged. Cargo.lock changes contain only those seven internal dependency edges
 
 ## Validation
 
-All **577 library tests** pass across the seven touched crates. The exact filter
+All **700 library tests** pass across the seven touched crates on the current
+`main` baseline. The exact filter
 for all 23 new tests is `property_`; all also pass with
 `OTERYN_PROPERTY_CASES=4096 OTERYN_PROPERTY_SEED=1466`. Default property times per
 crate were below 0.25 seconds; heavier runs were below one second per crate.
@@ -133,13 +134,13 @@ New files range from 55 to 217 lines, each well below the 600-line limit.
 
 | Package | Full `--lib` result | Exact property reproduction |
 |---|---|---|
-| economy | pass, 14 tests | `cargo test --locked -p oteryn-gameplay-economy --lib property_ --quiet` |
-| items | pass, 41 tests | `cargo test --locked -p oteryn-gameplay-items --lib property_ --quiet` |
-| combat-rules | pass, 53 tests | `cargo test --locked -p oteryn-gameplay-combat-rules --lib property_ --quiet` |
-| domain | pass, 121 tests | `cargo test --locked -p oteryn-gameplay-domain --lib property_ --quiet` |
-| progression | pass, 64 tests | `cargo test --locked -p oteryn-gameplay-progression --lib property_ --quiet` |
-| spell-rules | pass, 61 tests | `cargo test --locked -p oteryn-gameplay-spell-rules --lib property_ --quiet` |
-| spell | pass, 223 tests | `cargo test --locked -p oteryn-gameplay-spell --lib property_ --quiet` |
+| economy | pass, 27 tests | `cargo test --locked -p oteryn-gameplay-economy --lib property_ --quiet` |
+| items | pass, 82 tests | `cargo test --locked -p oteryn-gameplay-items --lib property_ --quiet` |
+| combat-rules | pass, 73 tests | `cargo test --locked -p oteryn-gameplay-combat-rules --lib property_ --quiet` |
+| domain | pass, 132 tests | `cargo test --locked -p oteryn-gameplay-domain --lib property_ --quiet` |
+| progression | pass, 74 tests | `cargo test --locked -p oteryn-gameplay-progression --lib property_ --quiet` |
+| spell-rules | pass, 62 tests | `cargo test --locked -p oteryn-gameplay-spell-rules --lib property_ --quiet` |
+| spell | pass, 250 tests | `cargo test --locked -p oteryn-gameplay-spell --lib property_ --quiet` |
 
 Packages were passed together with repeated `-p` arguments for execution;
 economy/items/domain/progression were rerun after the final test refinements.
@@ -161,6 +162,7 @@ owned paths exactly match all 31 changed files.
 
 ## Unfinished
 
-No implementation or local validation work remains. Publication, review and
-lifecycle closeout belong to the control plane; the record stays active until
-that closeout. This worker makes local edits only and does not commit or push.
+Nothing. The four previously merged item and combat property-test files remain
+unchanged, and every other row in the invariants table is present, registered,
+and passing on `main`. No production bug was found, so no production code was
+changed.
