@@ -36,5 +36,8 @@ message StashReplyV1 {
 // Receipt fields (transaction, outcome) are durable. Page rows are a fresh view
 // and are omitted outside reach, including on a historical receipt replay.
 // Existing domain 9/11/14 inventory refresh follows a committed conversion.
-// Native rules differ intentionally from Canary: Premium stow, whole main-bag
-// sources, 20 output stacks, atomic full withdrawal, no top-up/loot routing.
+// Native rules follow tibia.com news 8076: Free, current Premium and expired
+// Premium accounts may stow and withdraw. They otherwise differ intentionally
+// from the pinned OTS implementations: whole main-bag sources, 20 output
+// stacks, atomic full withdrawal, no top-up/loot routing. Historical durable
+// PremiumRequired receipts remain decodable but are never produced anew.

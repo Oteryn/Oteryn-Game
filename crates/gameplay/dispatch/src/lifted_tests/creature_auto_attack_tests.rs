@@ -198,6 +198,7 @@ fn setup(
         target_protected: false,
         defense: 0,
         armor: 0,
+        player_level: 1,
     };
     (runtime, states, source, facts, root)
 }
@@ -668,6 +669,7 @@ fn shield_budget_65_session_turnovers_purge_stale_and_preserve_live_other_tokens
         target_protected: false,
         defense: 10000,
         armor: 0,
+        player_level: 1,
     };
     let mut owner = owner(&runtime, &source, facts);
     owner
