@@ -47,7 +47,7 @@ use super::{ComposedFreshAdmission, operator_event};
 pub const KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX: usize = 64;
 
 /// One captured kill awaiting its settle.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PendingKillSettlement {
     pub facts: ProjectedCreatureDeathFacts,
     pub creature: String,
@@ -60,8 +60,22 @@ pub struct PendingKillSettlement {
     pub activity_at_death:
         Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
     pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
+    pub(super) forge: Option<ForgeDeath>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
+}
+
+/// Immutable classification and bounded recipient positions captured with the lethal event.
+#[derive(Debug, Clone)]
+pub(super) struct ForgeDeath {
+    pub kind: crate::domain::forge_creature::ForgeCreature,
+    pub roll: u8,
+    pub origin: crate::foundation::MovementLocalPosition,
+    pub recipients: Vec<(
+        ExactActorRef,
+        GameSessionId,
+        crate::foundation::MovementLocalPosition,
+    )>,
 }
 
 /// A principal identity: the captured session and its Character lease generation.
@@ -574,9 +588,13 @@ pub fn record_creature_kill(
     now_ms: u64,
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
-    let creature = runtime
-        .companion_snapshot_including_dead(target)
-        .map(|snapshot| snapshot.state.policy.definition_key.clone());
+    let snapshot = runtime.companion_snapshot_including_dead(target);
+    let forge_kind = snapshot
+        .as_ref()
+        .ok()
+        .filter(|s| s.state.master.is_none())
+        .and_then(|s| s.forge.zip(s.state.policy.forge_difficulty));
+    let creature = snapshot.map(|s| s.state.policy.definition_key.clone());
     let pin = runtime.content_pin();
     let hex = |bytes: [u8; 32]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
     let ground = DeathGroundContext {
@@ -614,7 +632,7 @@ pub fn record_creature_kill(
         ),
         None => (lethal, None, true),
     };
-    let row = match sink.rewards.row(&creature) {
+    let mut row = match sink.rewards.row(&creature) {
         Ok(row) => row,
         Err(reason) => {
             refuse(reason.as_str(), &creature);
@@ -629,6 +647,27 @@ pub fn record_creature_kill(
     if untracked {
         // The lethal hit is the untracked principal's own clocked damage.
         facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
+    }
+    if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, difficulty)) = forge_kind {
+        let Some(item) = sink.rewards.forge_sliver() else {
+            refuse("forge_sliver_inadmissible", &creature);
+            return;
+        };
+        let count = u32::from(crate::domain::forge_creature::slivers(
+            difficulty,
+            facts.occurrence[14],
+        ));
+        if count > 0 {
+            Arc::make_mut(&mut row)
+                .loot_table
+                .entries
+                .push(crate::combat::LootTableEntry {
+                    item: item.clone(),
+                    min_count: count,
+                    max_count: count,
+                    probability_ppm: Some(1_000_000),
+                });
+        }
     }
     let Ok(damage_shares) = owner.reward_damage_shares(target) else {
         refuse("damage_shares_unavailable", &creature);
@@ -646,7 +685,46 @@ pub fn record_creature_kill(
             return;
         }
     };
+    let forge = forge_kind.and_then(|(kind, _difficulty)| {
+        let origin = runtime.read_actor_position(target).ok()?.position();
+        let census = runtime.positioned_actor_census().ok()?;
+        let mut involved = std::collections::BTreeSet::new();
+        involved.insert(*principal.character.as_bytes());
+        involved.extend(damage_shares.iter().map(|d| *d.character.as_bytes()));
+        for (actor, _, session) in &census {
+            let Some(session) = session else { continue };
+            if runtime
+                .bound_attacker_lease(*actor, *session)
+                .is_ok_and(|lease| involved.contains(lease.character_id().as_bytes()))
+                && let Ok(Some(party)) = runtime.cached_world_party(*actor, *session)
+                && party.is_well_formed()
+            {
+                involved.extend(party.members.iter().map(|m| m.character));
+            }
+        }
+        let recipients: Vec<_> = census
+            .into_iter()
+            .filter_map(|(actor, at, session)| {
+                let session = session?;
+                let lease = runtime.bound_attacker_lease(actor, session).ok()?;
+                involved
+                    .contains(lease.character_id().as_bytes())
+                    .then_some((actor, session, at.position()))
+            })
+            .take(51)
+            .collect();
+        if recipients.len() > 50 {
+            return None;
+        }
+        Some(ForgeDeath {
+            kind,
+            roll: facts.occurrence[15],
+            origin,
+            recipients,
+        })
+    });
     let entry = PendingKillSettlement {
+        forge,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,

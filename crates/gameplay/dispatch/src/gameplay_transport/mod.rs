@@ -48,15 +48,18 @@ pub mod fresh_evidence;
 pub mod gameplay_drain;
 mod guild_bank;
 mod guild_chat;
+mod guild_war;
 mod highscores;
 mod house_query;
 mod house_transfer;
 mod hunting_stamina;
+mod imbuement_clock;
 mod input_gate;
 mod item_craft;
 mod item_look;
 mod item_move;
 mod item_ref_admission;
+mod item_spell_augments;
 mod item_transform;
 mod item_use;
 mod item_view;
@@ -92,6 +95,7 @@ mod npc_voice;
 mod paced_movement;
 pub mod party_command;
 mod party_kill_settlement;
+mod party_skull;
 mod party_spell_feedback;
 mod party_spell_owner;
 mod party_xp;
@@ -102,6 +106,7 @@ mod pvp_death;
 mod pvp_expert;
 mod pvp_live;
 mod quest_admission;
+mod quest_callbacks;
 mod quest_log_source;
 mod resume;
 mod reward_bag_use;
@@ -147,7 +152,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
-pub use connection::quest_log;
+pub use connection::{GameplayIdlePolicy, quest_log};
 pub use last_position::LastPositionFlush;
 pub use npc_talk::NpcTalkBook;
 pub use paced_movement::{AutoWalkRoute, AutoWalkTarget};
@@ -290,6 +295,7 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    pub gameplay_idle_policy: connection::GameplayIdlePolicy,
     /// The composition root's leveled diagnostic writer.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
     pub root: &'a DurabilityRoot,

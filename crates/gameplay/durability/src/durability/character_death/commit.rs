@@ -303,6 +303,14 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(error));
                     }
+                    super::super::guild_war::attribute_guild_war_frag_in_transaction(
+                        &mut tx,
+                        fence.character_id,
+                        request.death_cell.world_id,
+                        request.occurrence.as_bytes(),
+                        contributors,
+                    )
+                    .await?;
                     let consumed = sqlx::query(
                         "DELETE FROM game_character_blessings \
                           WHERE character_id = encode($1,'hex')::uuid AND NOT $2",

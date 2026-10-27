@@ -50,6 +50,7 @@ mod fixture;
 pub mod item_abilities;
 mod item_family;
 pub mod item_ref;
+pub mod item_spell_augments;
 mod model;
 pub mod native_cell_lookup;
 pub mod native_gameplay;
@@ -179,3 +180,6 @@ pub use cw2_b1_import::*;
 #[cfg(test)]
 #[path = "../../../content-promotion/src/content/item_identity.rs"]
 pub mod item_identity;
+
+/// Protocol-neutral Forge creature arithmetic.
+pub use oteryn_gameplay_domain::domain::forge_creature;

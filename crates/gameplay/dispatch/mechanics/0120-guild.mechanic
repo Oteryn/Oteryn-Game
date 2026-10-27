@@ -1,5 +1,5 @@
 name=guild
-commands=40,41,68,69
+commands=40,41,68,69,119
 transport=guild_intent
 composed=guild_intent
 authority=guild_intent

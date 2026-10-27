@@ -32,7 +32,7 @@ fn guild_wire_postgres_real_dispatch() -> TestResult {
     Ok(())
 }
 
-async fn exchange(
+pub(super) async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,

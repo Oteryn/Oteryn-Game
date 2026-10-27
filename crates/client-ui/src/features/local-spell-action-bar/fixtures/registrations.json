@@ -1,0 +1,44 @@
+[
+  {
+    "mechanic": "local-spell-action-bar",
+    "kind": "keybindings",
+    "id": "local-spell-action-bar-spell-1",
+    "status": "supported",
+    "context": "spell-gameplay",
+    "chord": "1",
+    "entry": "input.rs::default_spell_binding",
+    "not_applicable": {
+      "state": "Local hotkey routing has no state concern.",
+      "protocol": "Local hotkey routing has no protocol concern.",
+      "view": "Local hotkey routing has no view concern.",
+      "settings": "Local hotkey routing has no settings concern."
+    }
+  },
+  {
+    "mechanic": "local-spell-action-bar",
+    "kind": "keybindings",
+    "id": "local-spell-action-bar-spell-2",
+    "status": "supported",
+    "context": "spell-gameplay",
+    "chord": "2",
+    "entry": "input.rs::default_spell_binding"
+  },
+  {
+    "mechanic": "local-spell-action-bar",
+    "kind": "keybindings",
+    "id": "local-spell-action-bar-spell-3",
+    "status": "supported",
+    "context": "spell-gameplay",
+    "chord": "3",
+    "entry": "input.rs::default_spell_binding"
+  },
+  {
+    "mechanic": "local-spell-action-bar",
+    "kind": "keybindings",
+    "id": "local-spell-action-bar-spell-4",
+    "status": "supported",
+    "context": "spell-gameplay",
+    "chord": "4",
+    "entry": "input.rs::default_spell_binding"
+  }
+]

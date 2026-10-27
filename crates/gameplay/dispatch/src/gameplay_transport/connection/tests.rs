@@ -2,6 +2,9 @@
 #[path = "tests/capability_tests.rs"]
 mod capability_tests;
 
+#[path = "tests/idle_kick.rs"]
+mod idle_kick;
+
 mod bed_sleep_dispatch_tests {
     include!("../bed_sleep_dispatch_tests.rs");
 }

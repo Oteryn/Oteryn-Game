@@ -6,6 +6,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         query: GuildBankQuery,
+        include_guildhall: bool,
     ) -> Result<GuildBankReply> {
         wire::encode_guild_bank_query(&query).map_err(|_| GuildError::InvalidInput)?;
         let recovery = authority
@@ -20,7 +21,7 @@ impl DurabilityRoot {
                         assert_recovery_fence(&mut tx, &recovery).await?;
                         lock_admission_relations(&mut tx).await?;
                         let account = lock_actor(&mut tx, &node, &fence).await?;
-                        answer(&mut tx, &fence, account, query).await
+                        answer(&mut tx, &fence, account, query, include_guildhall).await
                     }
                     .await;
                     match result {
@@ -41,6 +42,7 @@ async fn answer(
     fence: &CurrentCharacterItemFence,
     account: [u8; 16],
     query: GuildBankQuery,
+    include_guildhall: bool,
 ) -> Result<GuildBankReply> {
     let Some(guild) = query.guild else {
         return claims(tx, fence, account, query.after_claim).await;
@@ -90,8 +92,8 @@ async fn answer(
         next_claim: None,
     };
     if member {
-        let rows=sqlx::query("SELECT e.ordinal,e.kind,e.amount,e.balance_before,e.balance_after,o.actor::text FROM game_guild_bank_entries e JOIN game_guild_bank_operations o USING(operation_id) WHERE e.guild_id=encode($1,'hex')::uuid AND ($2::bigint IS NULL OR e.ordinal<$2) AND o.occurred_at>=floor(extract(epoch FROM transaction_timestamp())*1000)::bigint-2592000000 ORDER BY e.ordinal DESC LIMIT 101")
-            .bind(guild.as_slice()).bind(query.before.map(i64::try_from).transpose().map_err(|_|GuildError::InvalidInput)?).fetch_all(&mut **tx).await?;
+        let rows=sqlx::query("SELECT e.ordinal,e.kind,e.amount,e.balance_before,e.balance_after,o.actor::text FROM game_guild_bank_entries e JOIN game_guild_bank_operations o USING(operation_id) WHERE e.guild_id=encode($1,'hex')::uuid AND ($2::bigint IS NULL OR e.ordinal<$2) AND ($3 OR e.kind NOT LIKE 'GUILDHALL_%') AND o.occurred_at>=floor(extract(epoch FROM transaction_timestamp())*1000)::bigint-2592000000 ORDER BY e.ordinal DESC LIMIT 101")
+            .bind(guild.as_slice()).bind(query.before.map(i64::try_from).transpose().map_err(|_|GuildError::InvalidInput)?).bind(include_guildhall).fetch_all(&mut **tx).await?;
         let more = rows.len() > wire::MAX_LEDGER_ENTRIES;
         for row in rows.into_iter().take(wire::MAX_LEDGER_ENTRIES) {
             reply.entries.push(wire::GuildBankEntry {
@@ -100,6 +102,9 @@ async fn answer(
                     audit::DEPOSIT => 1,
                     audit::WITHDRAW => 2,
                     audit::PAYOUT => 3,
+                    "GUILDHALL_BID_RESERVE" => 4,
+                    "GUILDHALL_BID_REFUND" => 5,
+                    "GUILDHALL_PAYMENT" => 6,
                     _ => return Err(invalid()),
                 },
                 amount: nonnegative(row.try_get("amount")?)?,

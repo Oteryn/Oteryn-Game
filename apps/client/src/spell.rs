@@ -4,11 +4,8 @@
 //! (N3 `InputRouter`). While the server gate is closed every cast is `Rejected`, shown as
 //! "spells unavailable"; no vitals arrive either, so no bar is drawn.
 
-use oteryn_input_actions::{
-    ActionId, ActionPhase, Binding, BindingMap, ContextDefinition, ContextId, ContextKind,
-    InputAtom, InputChord, InputError, InputRouter, KeyCode, Modifiers, NormalizedInputEvent,
-    RepeatPolicy,
-};
+#[cfg(test)]
+use oteryn_input_actions::{InputError, KeyCode, Modifiers, NormalizedInputEvent};
 use oteryn_renderer::{AtlasImage, BatchError, QuadInstance};
 use oteryn_session::{
     ActorVitals, CastOutcome, Session, SessionError, SessionStream, SpellCastDisposition,
@@ -16,10 +13,7 @@ use oteryn_session::{
 };
 use std::num::NonZeroU32;
 
-/// Hotkeys `1` to `SPELL_SLOTS` cast spell-book index 1 to `SPELL_SLOTS` (USB HID codes 30..).
-pub const SPELL_SLOTS: u16 = 4;
-const FIRST_DIGIT_KEY: u16 = 30;
-const ACTION_PREFIX: &str = "client.spell.";
+pub use oteryn_client_ui::spell_action_bar::{SPELL_SLOTS, SpellHotkeys};
 
 /// Player-facing line for one cast result.
 #[must_use]
@@ -35,60 +29,6 @@ pub const fn feedback_text(disposition: SpellCastDisposition) -> &'static str {
         SpellCastDisposition::TargetRequired => "Select a target first",
         SpellCastDisposition::TargetIllegal => "Illegal target",
         SpellCastDisposition::Rejected => "Spells unavailable",
-    }
-}
-
-/// Spell hotkeys routed through `InputRouter`; a text context suppresses them.
-#[derive(Debug)]
-pub struct SpellHotkeys {
-    router: InputRouter,
-    text: ContextId,
-}
-
-impl SpellHotkeys {
-    pub fn new() -> Result<Self, InputError> {
-        let gameplay = ContextId::new("spell-gameplay".to_owned())?;
-        let text = ContextId::new("spell-text".to_owned())?;
-        let mut bindings = Vec::new();
-        for slot in 1..=SPELL_SLOTS {
-            bindings.push(Binding::new(
-                gameplay.clone(),
-                InputChord::new(
-                    Modifiers::NONE,
-                    vec![InputAtom::Key(KeyCode::new(FIRST_DIGIT_KEY + slot - 1)?)],
-                )?,
-                ActionId::new(format!("{ACTION_PREFIX}{slot}"))?,
-                RepeatPolicy::Ignore,
-            ));
-        }
-        let map = BindingMap::new(
-            vec![
-                ContextDefinition::new(gameplay.clone(), ContextKind::Gameplay, 0),
-                ContextDefinition::new(text.clone(), ContextKind::Text, 10),
-            ],
-            bindings,
-            &[],
-        )?;
-        let mut router = InputRouter::new(map);
-        router.set_context_active(&gameplay, true)?;
-        Ok(Self { router, text })
-    }
-
-    pub fn set_text_active(&mut self, active: bool) -> Result<(), InputError> {
-        self.router.set_context_active(&self.text, active).map(drop)
-    }
-
-    /// Spell-book indices whose hotkey started in `events`.
-    pub fn route(&mut self, events: &[NormalizedInputEvent]) -> Vec<NonZeroU32> {
-        events
-            .iter()
-            .flat_map(|event| self.router.process(event))
-            .filter(|action| action.phase() == ActionPhase::Started)
-            .filter_map(|action| {
-                let slot = action.action().as_str().strip_prefix(ACTION_PREFIX)?;
-                slot.parse().ok()
-            })
-            .collect()
     }
 }
 

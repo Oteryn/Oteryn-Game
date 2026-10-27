@@ -53,7 +53,40 @@ pub(in crate::gameplay_transport) async fn observe(
             actor.placement_identity() == entity.identity
                 && actor.actor_local_generation() == entity.generation
         })?;
-        let target_session = (*target_session)?;
+        let Some(target_session) = *target_session else {
+            let creature = runtime.companion_snapshot(*actor).ok()?;
+            let look = if let Some(look_type) = creature.state.policy.outfit_appearance() {
+                wire::Look::Outfit {
+                    look_type,
+                    colours: [0; 4],
+                    addons: 0,
+                }
+            } else {
+                let native = admission.active_generation?.native_gameplay()?;
+                let item = &native
+                    .item_policy_for_source_id(creature.state.object_look_type?)?
+                    .record()
+                    .production_definition;
+                wire::Look::Item {
+                    definition_ref: native
+                        .item_index()?
+                        .definition_ref("Item", &item.production_key, &item.revision_ref)?
+                        .get(),
+                }
+            };
+            bindings.push(wire::Binding {
+                context,
+                appearance_ref: 1,
+                entity,
+                root_revision: 1,
+                condition_revision: creature.state.lifecycle_epoch,
+                owner_time_us: now,
+                look,
+                selection_revision: None,
+                forge_stacks: creature.forge.map(|f| f.reward_stacks()),
+            });
+            continue;
+        };
         let fence =
             super::super::character_gameplay_fence::current(admission, target_session, true)
                 .await?;
@@ -147,6 +180,7 @@ pub(in crate::gameplay_transport) async fn observe(
             owner_time_us: now,
             look,
             selection_revision,
+            forge_stacks: None,
         });
     }
     Some(Observation {

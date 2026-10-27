@@ -21,7 +21,10 @@ path = "src/bin/oteryn-launcher.rs"
 
 [dependencies]
 oteryn-client-assets = { version = "=0.1.0", path = "../../crates/client-assets" }
+oteryn-client-domain = { version = "=0.1.0", path = "../../crates/client-domain" }
 oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
+oteryn-client-simulation = { version = "=0.1.0", path = "../../crates/client-simulation" }
+oteryn-client-ui = { version = "=0.1.0", path = "../../crates/client-ui" }
 oteryn-diagnostics = { version = "=0.1.0", path = "../../crates/diagnostics" }
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-identity = { version = "=0.1.0", path = "../../crates/identity" }
@@ -32,13 +35,11 @@ oteryn-platform-contracts = { version = "=0.1.0", path = "../../crates/platform-
 oteryn-renderer = { version = "=0.1.0", path = "../../crates/renderer" }
 oteryn-session = { version = "=0.1.0", path = "../../crates/session" }
 oteryn-session-tcp = { version = "=0.1.0", path = "../../crates/session-tcp" }
-oteryn-world-bundle = { version = "=0.1.0", path = "../../crates/world-bundle" }
 rustls.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
 tokio.workspace = true
-zstd.workspace = true
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Security_Authorization", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging"] }

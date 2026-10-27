@@ -5,6 +5,8 @@
 pub(super) mod appearance_change;
 mod authority;
 pub use authority::{DepotObservation, FreshAdmissionAuthority};
+mod gameplay_idle;
+pub use gameplay_idle::{GameplayIdlePolicy, GameplayIdleState};
 mod moved_step;
 mod routing;
 mod serve;
@@ -221,6 +223,8 @@ pub struct SessionContinuity {
     /// Domain 57 revision and once-per-login MOTD receipt; both survive reconnect/transfer.
     pub server_message_revision: u64,
     pub server_motd_sent: bool,
+    /// IDLEKICK: transport traffic and same-session reconnects are not gameplay input.
+    pub gameplay_idle: GameplayIdleState,
     pub connection_generation: u64,
     pub next_command_id: u64,
     pub server_sequence: u64,
@@ -287,6 +291,7 @@ impl SessionContinuity {
     pub const FRESH: Self = Self {
         server_message_revision: 0,
         server_motd_sent: false,
+        gameplay_idle: GameplayIdleState::FRESH,
         connection_generation: ADMITTED_GENERATION,
         next_command_id: 1,
         server_sequence: 0,

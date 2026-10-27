@@ -1,5 +1,7 @@
 //! Protocol-neutral, non-authoritative client projection model.
 
+pub mod world;
+
 use oteryn_foundation::ClientSessionEpoch;
 use std::collections::BTreeMap;
 
@@ -49,4 +51,20 @@ impl ClientWorldProjection {
 pub enum ProjectionEvent {
     Upsert(EntityProjection),
     Remove(ClientEntityRef),
+}
+
+/// Movement action vocabulary, independent of input devices and protocol types.
+pub mod movement;
+
+/// Signed tile coordinate used by domain, simulation and rendering.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct TileCoord {
+    pub x: i32,
+    pub y: i32,
+}
+impl TileCoord {
+    #[must_use]
+    pub const fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
 }

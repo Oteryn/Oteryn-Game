@@ -36,6 +36,8 @@ impl FreshAdmissionStore {
             let updated = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 3, current_transport_ref = NULL, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND current_generation = $2::text::numeric(20,0) AND character_lease_generation = $3::text::numeric(20,0) AND scope_ownership_generation = $4::text::numeric(20,0)")
                 .bind(session_id.as_bytes().as_slice()).bind(current.current_connection_generation().get().to_string()).bind(current.current_character_lease().generation().to_string()).bind(current.current_scope_generation().get().to_string()).execute(&mut *tx).await?;
             if updated.rows_affected() != 1 { return Err(DurabilityError::Unavailable); }
+            super::super::world_party::remove_terminal_member_in_transaction(&mut tx, session_id)
+                .await.map_err(|_| DurabilityError::Unavailable)?;
             sqlx::query("UPDATE game_durability_reconnect_attempts SET state = 4 WHERE game_session_id = encode($1,'hex')::uuid AND state IN (1,5)")
                 .bind(session_id.as_bytes().as_slice()).execute(&mut *tx).await?;
             store.guards.persist_locked(&mut tx, successors, &rows, &encoded_successors).await?;

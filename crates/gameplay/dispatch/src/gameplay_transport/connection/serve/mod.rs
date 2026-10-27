@@ -6,7 +6,9 @@ mod autowalk;
 mod command;
 mod creature_push;
 mod house_transfer;
+mod idle;
 mod inbound;
+mod party_skull;
 mod player_trade;
 mod poll;
 mod pvp_expert;
@@ -60,6 +62,7 @@ struct ServeState {
     item_view: Option<SessionItemView>,
     stash_rows: Option<Vec<[u8; 16]>>,
     stash_revision: u64,
+    party_icons: Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,
     market_revision: u64,
     notices_selected: bool,
@@ -111,6 +114,9 @@ where
     A: FreshAdmissionAuthority,
 {
     loop {
+        if !authority.prepare_quest_callback_resume(&mut admitted).await {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
         if admitted.item_fence.is_some_and(|fence| {
             matches!(
                 fence.runtime_scope,

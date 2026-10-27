@@ -50,6 +50,7 @@ fn target_fixture(
         definition_revision: "test-1".into(),
         display_name: "test direct".into(),
         maximum_health: 812,
+        forge_difficulty: None,
         base_speed: 220,
         outfit_look_type: 991,
         object_look_type: None,

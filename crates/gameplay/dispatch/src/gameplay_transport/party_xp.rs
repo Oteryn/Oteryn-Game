@@ -255,6 +255,11 @@ async fn plan_group(
                 .iter()
                 .find(|d| d.character.as_bytes() == member.character.as_bytes())
             else {
+                // Dust uses the party roster and its own Premium/combat/range gates.
+                // It does not require shared XP to be enabled or an XP contribution.
+                if entry.forge.is_some() {
+                    members.push(member);
+                }
                 continue;
             };
             let lease = runtime
@@ -273,6 +278,9 @@ async fn plan_group(
             .map_err(|_| SpellItemError::Rejected("XP damage overflow"))?
         } else {
             if member.character.as_bytes() != entry.facts.principal.character.as_bytes() {
+                if entry.forge.is_some() {
+                    members.push(member);
+                }
                 continue;
             }
             base

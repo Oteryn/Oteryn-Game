@@ -3,6 +3,7 @@ use super::*;
 #[derive(Debug, Clone)]
 pub struct HouseManagementSummary {
     pub house: String,
+    pub kind: String,
     pub state: u8,
     pub rent: u64,
     pub revision: u64,
@@ -21,15 +22,18 @@ impl DurabilityRoot {
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
-        houses: Vec<String>,
+        houses: Vec<QualifiedHouse>,
         cursor: Option<String>,
         content_digest: [u8; 32],
     ) -> Result<Vec<HouseManagementSummary>> {
         if houses.len() > 1024
-            || houses
-                .iter()
-                .any(|key| HouseId::new(fence.runtime_scope.world_id(), key).is_none())
-            || cursor.as_ref().is_some_and(|key| !houses.contains(key))
+            || houses.iter().any(|house| {
+                HouseId::new(fence.runtime_scope.world_id(), &house.key).is_none()
+                    || !matches!(house.kind, "private_house" | "shop" | "guildhall")
+            })
+            || cursor
+                .as_ref()
+                .is_some_and(|key| !houses.iter().any(|house| &house.key == key))
         {
             return Err(HouseManagementError::Rejected);
         }
@@ -49,12 +53,15 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(HouseManagementError::Rejected));
                     }
+                    let keys: Vec<_> = houses.iter().map(|house| house.key.as_str()).collect();
+                    let kinds: Vec<_> = houses.iter().map(|house| house.kind).collect();
                     let rows = sqlx::query(PAGE_SQL)
                         .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
-                        .bind(&houses)
+                        .bind(&keys)
                         .bind(cursor)
                         .bind(fence.character_id.as_bytes().as_slice())
                         .bind(content_digest.as_slice())
+                        .bind(&kinds)
                         .fetch_all(&mut *tx)
                         .await?;
                     let rows = rows
@@ -81,6 +88,7 @@ fn summary(
     };
     Ok(HouseManagementSummary {
         house: row.try_get("house_key")?,
+        kind: row.try_get("kind")?,
         state: u8::try_from(row.try_get::<i16, _>("state")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?,
         rent: unsigned("rent_gold")?,
@@ -94,12 +102,14 @@ fn summary(
     })
 }
 const PAGE_SQL: &str = r#"
-SELECT p.house_key,p.state,p.rent_gold,p.revision::text,p.acl_revision::text,
+SELECT p.house_key,p.kind,p.state,p.rent_gold,p.revision::text,p.acl_revision::text,
  (SELECT CASE count(*) WHEN 0 THEN 0 WHEN 1 THEN 0 ELSE least(max(maximum),min(maximum)+1) END FROM (SELECT maximum FROM game_house_bids b WHERE b.auction_id=a.auction_id AND b.state=1 ORDER BY maximum DESC,reached_order LIMIT 2) bids) AS price,(extract(epoch FROM a.ends_at)*1000)::bigint AS ends,
- (SELECT maximum FROM game_house_bids b WHERE b.auction_id=a.auction_id AND b.character_id=encode($4,'hex')::uuid AND b.state=1 LIMIT 1) AS own_maximum,p.owner_character_id=encode($4,'hex')::uuid AS owned,CASE WHEN p.owner_character_id=encode($4,'hex')::uuid AND n.ownership_revision=p.ownership_generation THEN n.due_at_unix_ms END AS due
+ (SELECT maximum FROM game_house_bids b WHERE b.auction_id=a.auction_id AND (b.guild_id IS NULL AND b.character_id=encode($4,'hex')::uuid OR b.guild_id=(SELECT guild_id FROM game_guild_members WHERE character_id=encode($4,'hex')::uuid AND rank_level=1)) AND b.state=1 LIMIT 1) AS own_maximum,game_house_effective_owner(p.world_id,p.house_key)=encode($4,'hex')::uuid AS owned,CASE WHEN game_house_effective_owner(p.world_id,p.house_key)=encode($4,'hex')::uuid AND n.ownership_revision=p.ownership_generation THEN n.due_at_unix_ms END AS due
  FROM game_house_properties p
  LEFT JOIN game_house_move_out_notices n USING(world_id,house_key)
  LEFT JOIN game_house_auctions a ON a.world_id=p.world_id AND a.house_key=p.house_key AND NOT a.settled
- WHERE p.world_id=encode($1,'hex')::uuid AND p.house_key=ANY($2) AND p.house_key>coalesce($3,'') AND p.content_digest=$5
+ WHERE p.world_id=encode($1,'hex')::uuid AND (p.house_key,p.kind) IN
+  (SELECT * FROM unnest($2::text[],$6::text[]))
+  AND p.house_key>coalesce($3,'') AND p.content_digest=$5
  ORDER BY p.house_key LIMIT 21
 "#;
