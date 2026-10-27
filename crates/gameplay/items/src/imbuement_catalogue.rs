@@ -15,7 +15,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.strike",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_11444, 20)],
     },
     ImbuementRecipe {
@@ -23,7 +23,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.strike",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_11444, 20), (MATERIAL_10311, 25)],
     },
     ImbuementRecipe {
@@ -31,7 +31,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.strike",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_11444, 20),
             (MATERIAL_10311, 25),
@@ -43,7 +43,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.lich_shroud",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_11466, 25)],
     },
     ImbuementRecipe {
@@ -51,7 +51,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.lich_shroud",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_11466, 25), (MATERIAL_22007, 20)],
     },
     ImbuementRecipe {
@@ -59,7 +59,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.lich_shroud",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_11466, 25),
             (MATERIAL_22007, 20),
@@ -71,7 +71,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.snake_skin",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_17823, 25)],
     },
     ImbuementRecipe {
@@ -79,7 +79,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.snake_skin",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_17823, 25), (MATERIAL_9694, 20)],
     },
     ImbuementRecipe {
@@ -87,7 +87,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.snake_skin",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_17823, 25),
             (MATERIAL_9694, 20),
@@ -99,7 +99,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.cloud_fabric",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_9644, 20)],
     },
     ImbuementRecipe {
@@ -107,7 +107,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.cloud_fabric",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_9644, 20), (MATERIAL_14079, 15)],
     },
     ImbuementRecipe {
@@ -115,7 +115,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.cloud_fabric",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_9644, 20),
             (MATERIAL_14079, 15),
@@ -127,7 +127,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.dragon_hide",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_5877, 20)],
     },
     ImbuementRecipe {
@@ -135,7 +135,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.dragon_hide",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_5877, 20), (MATERIAL_16131, 10)],
     },
     ImbuementRecipe {
@@ -143,7 +143,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.dragon_hide",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_5877, 20),
             (MATERIAL_16131, 10),
@@ -155,7 +155,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.demon_presence",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_9639, 25)],
     },
     ImbuementRecipe {
@@ -163,7 +163,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.demon_presence",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_9639, 25), (MATERIAL_9638, 25)],
     },
     ImbuementRecipe {
@@ -171,7 +171,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.demon_presence",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_9639, 25),
             (MATERIAL_9638, 25),
@@ -183,7 +183,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.quara_scale",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_10295, 25)],
     },
     ImbuementRecipe {
@@ -191,7 +191,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.quara_scale",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_10295, 25), (MATERIAL_10307, 15)],
     },
     ImbuementRecipe {
@@ -199,7 +199,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.quara_scale",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_10295, 25),
             (MATERIAL_10307, 15),
@@ -211,7 +211,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.featherweight",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_25694, 20)],
     },
     ImbuementRecipe {
@@ -219,7 +219,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.featherweight",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_25694, 20), (MATERIAL_25702, 10)],
     },
     ImbuementRecipe {
@@ -227,7 +227,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.featherweight",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_25694, 20),
             (MATERIAL_25702, 10),
@@ -239,7 +239,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.swiftness",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_17458, 15)],
     },
     ImbuementRecipe {
@@ -247,7 +247,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.swiftness",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_17458, 15), (MATERIAL_10302, 25)],
     },
     ImbuementRecipe {
@@ -255,7 +255,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.swiftness",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_17458, 15),
             (MATERIAL_10302, 25),
@@ -267,7 +267,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.vampirism",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_9685, 25)],
     },
     ImbuementRecipe {
@@ -275,7 +275,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.vampirism",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_9685, 25), (MATERIAL_9633, 15)],
     },
     ImbuementRecipe {
@@ -283,7 +283,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.vampirism",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[(MATERIAL_9685, 25), (MATERIAL_9633, 15), (MATERIAL_9663, 5)],
     },
     ImbuementRecipe {
@@ -291,7 +291,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.void",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_11492, 25)],
     },
     ImbuementRecipe {
@@ -299,7 +299,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.void",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_11492, 25), (MATERIAL_20200, 25)],
     },
     ImbuementRecipe {
@@ -307,7 +307,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.void",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_11492, 25),
             (MATERIAL_20200, 25),
@@ -319,7 +319,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.vibrancy",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_22053, 20)],
     },
     ImbuementRecipe {
@@ -327,7 +327,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.vibrancy",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_22053, 20), (MATERIAL_23507, 15)],
     },
     ImbuementRecipe {
@@ -335,7 +335,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.vibrancy",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_22053, 20),
             (MATERIAL_23507, 15),
@@ -347,7 +347,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.chop",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_10196, 20)],
     },
     ImbuementRecipe {
@@ -355,7 +355,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.chop",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_10196, 20), (MATERIAL_11447, 25)],
     },
     ImbuementRecipe {
@@ -363,7 +363,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.chop",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_10196, 20),
             (MATERIAL_11447, 25),
@@ -375,7 +375,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.bash",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_9657, 20)],
     },
     ImbuementRecipe {
@@ -383,7 +383,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.bash",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_9657, 20), (MATERIAL_22189, 15)],
     },
     ImbuementRecipe {
@@ -391,7 +391,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.bash",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_9657, 20),
             (MATERIAL_22189, 15),
@@ -403,7 +403,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.precision",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_11464, 25)],
     },
     ImbuementRecipe {
@@ -411,7 +411,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.precision",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_11464, 25), (MATERIAL_18994, 20)],
     },
     ImbuementRecipe {
@@ -419,7 +419,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.precision",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_11464, 25),
             (MATERIAL_18994, 20),
@@ -431,7 +431,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.punch",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_9690, 20)],
     },
     ImbuementRecipe {
@@ -439,7 +439,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.punch",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_10281, 25), (MATERIAL_11489, 20)],
     },
     ImbuementRecipe {
@@ -447,7 +447,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.punch",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_10281, 25),
             (MATERIAL_11489, 20),
@@ -459,7 +459,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.epiphany",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_9635, 25)],
     },
     ImbuementRecipe {
@@ -467,7 +467,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.epiphany",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_9635, 25), (MATERIAL_11452, 15)],
     },
     ImbuementRecipe {
@@ -475,7 +475,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.epiphany",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_9635, 25),
             (MATERIAL_11452, 15),
@@ -487,7 +487,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.blockade",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_9641, 20)],
     },
     ImbuementRecipe {
@@ -495,7 +495,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.blockade",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_9641, 20), (MATERIAL_11703, 25)],
     },
     ImbuementRecipe {
@@ -503,7 +503,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.blockade",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_9641, 20),
             (MATERIAL_11703, 25),
@@ -515,7 +515,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 1,
         key: "oteryn:imbuement.slash",
         requires_premium: false,
-        apply_gold: 5000,
+        apply_gold: 7500,
         materials: &[(MATERIAL_9691, 25)],
     },
     ImbuementRecipe {
@@ -523,7 +523,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 2,
         key: "oteryn:imbuement.slash",
         requires_premium: true,
-        apply_gold: 30000,
+        apply_gold: 60000,
         materials: &[(MATERIAL_9691, 25), (MATERIAL_21202, 25)],
     },
     ImbuementRecipe {
@@ -531,7 +531,7 @@ pub const IMBUEMENT_RECIPES: [ImbuementRecipe; 57] = [
         tier: 3,
         key: "oteryn:imbuement.slash",
         requires_premium: true,
-        apply_gold: 200000,
+        apply_gold: 250000,
         materials: &[
             (MATERIAL_9691, 25),
             (MATERIAL_21202, 25),

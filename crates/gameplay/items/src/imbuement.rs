@@ -19,8 +19,8 @@ pub const IMBUEMENT_CHECKPOINT_INTERVAL_MS: u64 = 60_000;
 pub fn consumes_elapsed(category: u8, in_combat: bool) -> bool {
     matches!(category, 8 | 9 | 12) || in_combat
 }
-// Reference: https://github.com/opentibiabr/canary/blob/04b83b51/data/XML/imbuements.xml
-pub const IMBUEMENT_CLEAR_GOLD: u64 = 15_000;
+// Reference: tibia.com news 8442 (imbuement cleansing fee).
+pub const IMBUEMENT_CLEAR_GOLD: u64 = 30_000;
 
 /// Global item ids used by the item lifecycle.  These are deliberately kept beside the
 /// recipe catalogue: callers must not infer scroll meaning from a contiguous id range (the
@@ -281,26 +281,26 @@ pub struct ImbuementTierRules {
     pub success_percent: u8,
 }
 
-// Prices: https://github.com/opentibiabr/canary/blob/04b83b51/data/XML/imbuements.xml
+// Prices: tibia.com news 7907/8396 (current application fees).
 // Success: IMBUE-FORGE0 §3, architect ruling R2: always succeeds, no protection.
 // Canary's XML percent=90/70/50 is unused by Player::onApplyImbuement:
 // https://github.com/opentibiabr/canary/blob/04b83b51/src/creatures/players/player.cpp
 pub const IMBUEMENT_TIER_RULES: [ImbuementTierRules; 3] = [
     ImbuementTierRules {
         tier: ImbuementTier::Basic,
-        apply_gold: 5_000,
+        apply_gold: 7_500,
         requires_premium: false,
         success_percent: 100,
     },
     ImbuementTierRules {
         tier: ImbuementTier::Intricate,
-        apply_gold: 30_000,
+        apply_gold: 60_000,
         requires_premium: true,
         success_percent: 100,
     },
     ImbuementTierRules {
         tier: ImbuementTier::Powerful,
-        apply_gold: 200_000,
+        apply_gold: 250_000,
         requires_premium: true,
         success_percent: 100,
     },

@@ -30,6 +30,7 @@ FAMILY = {1: 11, 2: 12, 3: 1, 4: 3, 5: 4, 6: 6, 7: 8, 8: 5, 9: 7, 10: 10, 11: 14
           13: 15, 14: 19, 15: 16, 16: 18, 17: 9, 18: 17, 19: 13}
 # Declared Canary/Crystal differences; Canary values are used.
 BASE_PRICE_DIFFERS = True
+APPLY_FEE_GOLD = {1: 7500, 2: 60000, 3: 250000}
 CATEGORY_NAME_DIFFERS = {19}
 MATERIALS_DIFFER = {('Punch', 1)}
 
@@ -105,7 +106,7 @@ def rust(canary):
         if not 1 <= len(materials) <= 3 or bases[tier]['removecost'] != 15000 or bases[tier]['duration'] != 72000:
             raise ValueError(f'IMBUEMENT_CATALOGUE_SHAPE {name} {tier}')
         key = 'oteryn:imbuement.' + name.lower().replace(' ', '_').replace("'", '')
-        rows.append((FAMILY[category], tier, key, premium, bases[tier]['price'], materials))
+        rows.append((FAMILY[category], tier, key, premium, APPLY_FEE_GOLD[tier], materials))
     rows.sort()
     if [(r[0], r[1]) for r in rows] != [(f, t) for f in sorted(FAMILY.values()) for t in (1, 2, 3)]:
         raise ValueError('IMBUEMENT_CATALOGUE_FAMILIES')

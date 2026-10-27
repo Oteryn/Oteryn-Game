@@ -189,7 +189,7 @@ fn scenario(shrine: bool, elapsed: bool) -> TestResult {
         if shrine {
             super::item_look::seed_main_backpack(
                 &harness,
-                &[(SWORD, 1), (CHARM, 25), (CRYSTAL, 3), (ETCHER, 1)],
+                &[(SWORD, 1), (CHARM, 25), (CRYSTAL, 4), (ETCHER, 1)],
             )
             .await?;
         } else {
@@ -274,8 +274,8 @@ async fn out_of_reach(
     Ok(())
 }
 
-/// Beside a shrine: the item gates, one apply that consumes the charms and burns 5,000 gold,
-/// its replay, a clear that burns 15,000 gold, and refusals that roll back.
+/// Beside a shrine: the item gates, one apply that consumes the charms and burns 7,500 gold,
+/// its replay, a clear that burns 30,000 gold, and refusals that roll back.
 async fn at_the_shrine(
     harness: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -286,7 +286,7 @@ async fn at_the_shrine(
     let mut next = admitted;
     let apply = |slot, imbuement| ImbuementAction::Apply { slot, imbuement };
     let initial = snapshot(harness).await?;
-    assert_eq!(coin_value(harness).await?, 30_000);
+    assert_eq!(coin_value(harness).await?, 40_000);
     // The sword's offers run Critical Hit (family 1), Elemental Damage (2), Life Leech (11),
     // Mana Leech (12) and Skill Sword (20), three tiers each. The fixture row is Life Leech
     // in slot 0.
@@ -302,7 +302,7 @@ async fn at_the_shrine(
         "one new Strike row"
     );
     assert_eq!(charms(harness).await?, 5);
-    assert_eq!(coin_value(harness).await?, 25_000);
+    assert_eq!(coin_value(harness).await?, 32_500);
     let (key, revision): (String, String) = sqlx::query_as(
         "SELECT imbuement_key, imbuement_revision FROM game_item_imbuements WHERE slot=1",
     )
@@ -339,14 +339,14 @@ async fn at_the_shrine(
         assert_eq!(replayed, expected, "command {command}");
     }
     assert_eq!(snapshot(harness).await?, applied);
-    // Clear the fixture row in slot 0: 15,000 gold.
+    // Clear the fixture row in slot 0: 30,000 gold.
     step(owner, sword_ref, &mut next, 4, ImbuementAction::Clear { slot: 0 }, ImbuementResult::Ok).await?;
     assert_eq!(snapshot(harness).await?.0, [(1, 1, 72_000_000)]);
-    assert_eq!(coin_value(harness).await?, 10_000);
+    assert_eq!(coin_value(harness).await?, 2_500);
     let cleared = snapshot(harness).await?;
     // Elemental Damage has no single recipe (declared difference); Vampirism tier 1 needs
-    // materials the bag does not hold; tier 2 needs Premium; a second clear needs 15,000 of
-    // the 10,000 gold left. Each rolls back.
+    // materials the bag does not hold; tier 2 needs Premium; a second clear needs 30,000 of
+    // the 2,500 gold left. Each rolls back.
     step(owner, sword_ref, &mut next, 5, apply(0, 3), ImbuementResult::NotAllowed).await?;
     step(owner, sword_ref, &mut next, 6, apply(0, 6), ImbuementResult::MaterialsMissing).await?;
     step(owner, sword_ref, &mut next, 7, apply(0, 7), ImbuementResult::RequirementNotMet).await?;
@@ -360,7 +360,7 @@ async fn at_the_shrine(
     )
     .await?;
     assert_eq!(snapshot(harness).await?, cleared);
-    assert_eq!(coin_value(harness).await?, 10_000);
+    assert_eq!(coin_value(harness).await?, 2_500);
     let (records, burns): (i64, i64) = sqlx::query_as(
         "SELECT (SELECT count(*) FROM game_item_imbuement_records), \
                 (SELECT count(*) FROM game_item_fee_burns)",

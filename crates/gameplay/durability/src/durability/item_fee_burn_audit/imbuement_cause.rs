@@ -5,9 +5,9 @@ use crate::durability::item_mint_audit::check_content_key;
 
 pub const IMBUEMENT_ACTION_APPLY: u32 = 1;
 pub const IMBUEMENT_ACTION_CLEAR: u32 = 2;
-/// Canary `imbuements.xml` base prices by tier and `removecost`.
-pub const IMBUEMENT_APPLY_GOLD: [u64; 3] = [5_000, 30_000, 200_000];
-pub const IMBUEMENT_CLEAR_GOLD: u64 = 15_000;
+/// Current Global application and cleansing fees (tibia.com news 7907/8396/8442).
+pub const IMBUEMENT_APPLY_GOLD: [u64; 3] = [7_500, 60_000, 250_000];
+pub const IMBUEMENT_CLEAR_GOLD: u64 = 30_000;
 /// Coin inputs of an imbuement fee: with the item, three materials and the change it stays
 /// within the fee rows `FEE_RL01`/`RL02`/`RL06` and the `FEE_RL07` payload.
 pub const IMBUEMENT_FEE_INPUTS_MAX: usize = 15;

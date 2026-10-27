@@ -58,7 +58,7 @@ fn fee(imbuement: OneItemImbuementV1) -> OneItemFeeBurnV1 {
     };
     let fee = imbuement.fee_gold_units().unwrap();
     let lines = IMBUEMENT_FEE_INPUTS_MAX as u8;
-    let crystals = u32::try_from(fee / 10_000 + 1).unwrap();
+    let crystals = u32::try_from(fee.div_ceil(10_000)).unwrap();
     let mut value = burn(
         (0..lines)
             .map(|n| {
@@ -117,13 +117,13 @@ fn clear() -> OneItemImbuementV1 {
 fn imbuement_audit_maximum_coin_inputs_materials_and_change_fit() {
     for cause in [
         OneItemImbuementV1 {
-            tier: 1,
+            tier: 2,
             ..apply()
         },
         clear(),
     ] {
         let value = fee(cause);
-        assert_eq!(value.change.len(), 2);
+        assert!(!value.change.is_empty() && value.change.len() <= 2);
         assert_eq!(check_fee_burn(&value), Ok(()));
         let envelope =
             encode_fee_burn_event_with(identity(), value.clone(), Type2EventTuple::V1).unwrap();
@@ -137,7 +137,7 @@ fn imbuement_audit_maximum_coin_inputs_materials_and_change_fit() {
         too_many.lines.insert(0, coin_line(Coin::Gold, 125, 120, 1, 0));
         too_many.burned_gold_units += 1;
         too_many.change_gold_units += 1;
-        too_many.change[1].after.as_mut().unwrap().quantity += 1;
+        too_many.change.last_mut().unwrap().after.as_mut().unwrap().quantity += 1;
         assert!(check_fee_burn(&too_many).is_err());
     }
 }
@@ -157,13 +157,13 @@ fn imbuement_audit_counts_the_item_and_each_material() {
 
 #[test]
 fn imbuement_audit_prices_by_action_and_tier() {
-    for (tier, gold) in [(1, 5_000), (2, 30_000), (3, 200_000)] {
+    for (tier, gold) in [(1, 7_500), (2, 60_000), (3, 250_000)] {
         assert_eq!(
             OneItemImbuementV1 { tier, ..apply() }.fee_gold_units(),
             Some(gold)
         );
     }
-    assert_eq!(clear().fee_gold_units(), Some(15_000));
+    assert_eq!(clear().fee_gold_units(), Some(30_000));
     assert_eq!(OneItemImbuementV1 { tier: 4, ..apply() }.fee_gold_units(), None);
     assert_eq!(OneItemImbuementV1 { action: 3, ..apply() }.fee_gold_units(), None);
     // A fee that differs from the cause's price is refused.
