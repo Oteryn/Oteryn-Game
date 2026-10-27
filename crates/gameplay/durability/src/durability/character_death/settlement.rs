@@ -37,7 +37,7 @@ impl DurabilityRoot {
             request,
             original,
             None,
-            promotion::DeathPremiumState::default(),
+            None,
         )
         .await
     }
@@ -149,15 +149,13 @@ impl DurabilityRoot {
         let original = retained
             .as_ref()
             .map(|death| death.original_character_revision);
-        let premium = if let Some(owner) = premium {
+        if premium.is_some() {
             request.held_blessings = match retained {
                 Some(death) => death.blessings_before,
                 None => promotion::held_blessings(self, authority, node, fence).await?,
             };
-            owner.current().await
-        } else {
-            promotion::DeathPremiumState::default()
-        };
+        }
+
         if original.is_none()
             && let Some(training) = training
         {
@@ -223,7 +221,7 @@ impl DurabilityRoot {
         request: CharacterDeathRequest<N>,
         original: Option<CharacterRevision>,
         formula: Option<&dyn BuildFormula>,
-        premium: promotion::DeathPremiumState,
+        premium: Option<&dyn promotion::DeathPremiumOwner>,
     ) -> Result<CommittedCharacterDeath> {
         let outcome = match self
             .commit_death_in_slot(
@@ -299,7 +297,7 @@ impl DurabilityRoot {
         request: CharacterDeathRequest<N>,
         original: Option<CharacterRevision>,
         formula: Option<&dyn BuildFormula>,
-        premium: promotion::DeathPremiumState,
+        premium: Option<&dyn promotion::DeathPremiumOwner>,
     ) -> Result<CharacterDeathOutcome> {
         slot.commit_premium_death(
             self, authority, node, fence, request, formula, original, premium,
