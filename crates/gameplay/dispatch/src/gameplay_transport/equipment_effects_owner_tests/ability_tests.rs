@@ -32,6 +32,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Skull 3114 (tools/content-migration/quest_callback_profiles.py), from Canary
     // 47dfd51f items.xml and exact Crystal ff7ede59 bindings. speed_bonus=0.
     ("QUESTCB2", 1),
+    // Item 7934 used by a world callback's item-on-target step
+    // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
+    ("QUESTCB3", 1),
     // 19 read-only readable profiles (tools/content-migration/readable_item_profiles.py):
     // 2012..=2017, 2021..=2024, 2597, 2598, 2602, 2605, 6121, 6122, 10322, 12782, 12783.
     // None of them is equipment.
