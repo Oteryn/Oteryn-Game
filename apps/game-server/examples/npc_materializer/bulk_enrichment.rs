@@ -668,14 +668,13 @@ pub(super) fn apply(
     Ok(npc_count)
 }
 
-/// Restore an exact chain using one complete predecessor validation, not one per wave.
+/// Restore the pinned NPC chain while preserving the current catalog's unrelated content.
 #[cfg(test)]
 pub(super) fn reverse_for_fixture(
     draft: &mut ProjectV2Draft,
     bytes: &[u8],
     packet_sha256: &str,
-    predecessor_sha256: &str,
-) -> Result<()> {
+) -> Result<String> {
     let chain = if bytes == NPC_ENRICH {
         vec![
             (NPC_QUEST_DIALOGUE, NPC_QUEST_DIALOGUE_SHA256),
@@ -736,6 +735,43 @@ pub(super) fn reverse_for_fixture(
         vec![(bytes, packet_sha256)]
     };
     let mut next = draft.clone();
+    let mut declarations = BTreeMap::new();
+    for (index, declaration) in next.state.declarations.iter().enumerate() {
+        let identity = serde_json::to_string(&serde_json::to_value(declaration)?["identity"])?;
+        if declarations.insert(identity, index).is_some() {
+            return Err("fixture duplicate NPC declaration".into());
+        }
+    }
+    // Later content revisions legitimately change the complete tree and attach services
+    // to these actors. Seed only this chain's objects from the immutable packet snapshots,
+    // then reverse with the same exact before/after checks as the historical fixture.
+    for (bytes, sha) in chain.iter().rev() {
+        if hex_sha256(bytes) != *sha {
+            return Err("fixture packet digest drifted".into());
+        }
+        let p: Packet = serde_json::from_slice(bytes)?;
+        for repair in p.repairs {
+            let identity =
+                serde_json::to_string(&serde_json::to_value(&repair.after)?["identity"])?;
+            let index = declarations
+                .get(&identity)
+                .ok_or("fixture missing NPC declaration")?;
+            next.state.declarations[*index] = repair.after;
+        }
+        for repair in p.profile_repairs {
+            let mut matches = next
+                .state
+                .authoring_profiles
+                .iter_mut()
+                .filter(|profile| profile.target == repair.after.target);
+            let profile = matches.next().ok_or("fixture missing NPC profile")?;
+            if matches.next().is_some() {
+                return Err("fixture duplicate NPC profile".into());
+            }
+            *profile = repair.after;
+        }
+        next.core.project_revision = p.project_revision;
+    }
     for (bytes, sha) in chain {
         if hex_sha256(bytes) != sha {
             return Err("fixture packet digest drifted".into());
@@ -780,55 +816,51 @@ pub(super) fn reverse_for_fixture(
         next.core.project_revision = p.from_project_revision;
     }
     let documents = CanonicalProjectDocuments::from_v2_draft(next.clone(), limits())?;
-    if document_tree_digest(&documents) != predecessor_sha256 {
-        return Err("fixture reverse tree drifted".into());
-    }
+    let predecessor_sha256 = document_tree_digest(&documents);
+    // Prove that negative cases start from an admissible native predecessor and
+    // reach their intended guard, rather than rejecting an unrelated later revision.
+    let mut successor = next.clone();
+    apply(&mut successor, bytes, packet_sha256, &predecessor_sha256)?;
     *draft = next;
-    Ok(())
+    Ok(predecessor_sha256)
 }
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
-    fn fixture() -> ProjectV2Draft {
-        let content = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
-        let fs_limits = ProjectFilesystemLimits {
-            project: limits(),
-            max_entries_per_directory_scan: 32,
-            max_total_directory_entries_scanned: 201,
-        };
-        let mut draft = capture_world_project(&content, std::ffi::OsStr::new("world"), fs_limits)
-            .expect("repository native project")
-            .migrate_to_v2();
-        reverse_for_fixture(
-            &mut draft,
-            NPC_ENRICH,
-            NPC_ENRICH_SHA256,
-            NPC_ENRICH_PREDECESSOR,
-        )
-        .expect("exact enrichment predecessor");
-        draft
+    fn fixture() -> (ProjectV2Draft, String) {
+        static FIXTURE: std::sync::OnceLock<(ProjectV2Draft, String)> = std::sync::OnceLock::new();
+        FIXTURE
+            .get_or_init(|| {
+                let content = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
+                let fs_limits = ProjectFilesystemLimits {
+                    project: limits(),
+                    max_entries_per_directory_scan: 32,
+                    // Repository capture: 31 parent + 11 * 17 root + 14 nested entries.
+                    max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1,
+                };
+                let mut draft =
+                    capture_world_project(&content, std::ffi::OsStr::new("world"), fs_limits)
+                        .expect("repository native project")
+                        .migrate_to_v2();
+                let predecessor = reverse_for_fixture(&mut draft, NPC_ENRICH, NPC_ENRICH_SHA256)
+                    .expect("exact enrichment predecessor");
+                (draft, predecessor)
+            })
+            .clone()
     }
     fn rejects(value: Value) {
         let bytes = serde_json::to_vec(&value).unwrap();
-        let mut draft = fixture();
+        let (mut draft, predecessor) = fixture();
         let before = draft.clone();
-        assert!(
-            apply(
-                &mut draft,
-                &bytes,
-                &hex_sha256(&bytes),
-                NPC_ENRICH_PREDECESSOR
-            )
-            .is_err()
-        );
+        assert!(apply(&mut draft, &bytes, &hex_sha256(&bytes), &predecessor).is_err());
         assert_eq!(draft, before);
     }
     #[test]
     fn packet_and_complete_predecessor_fences_are_atomic() {
         for wrong_packet in [true, false] {
-            let mut draft = fixture();
+            let (mut draft, predecessor) = fixture();
             let before = draft.clone();
             assert!(
                 apply(
@@ -839,11 +871,7 @@ mod tests {
                     } else {
                         NPC_ENRICH_SHA256
                     },
-                    if wrong_packet {
-                        NPC_ENRICH_PREDECESSOR
-                    } else {
-                        "wrong"
-                    }
+                    if wrong_packet { &predecessor } else { "wrong" }
                 )
                 .is_err()
             );
@@ -898,18 +926,14 @@ mod tests {
         let fs_limits = ProjectFilesystemLimits {
             project: limits(),
             max_entries_per_directory_scan: 32,
-            max_total_directory_entries_scanned: 201,
+            // Repository capture: 31 parent + 11 * 17 root + 14 nested entries.
+            max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1,
         };
         let mut draft = capture_world_project(&content, std::ffi::OsStr::new("world"), fs_limits)
             .expect("repository native project")
             .migrate_to_v2();
-        reverse_for_fixture(
-            &mut draft,
-            NPC_ENRICH_MORE,
-            NPC_ENRICH_MORE_SHA256,
-            NPC_ENRICH_MORE_PREDECESSOR,
-        )
-        .expect("R21 predecessor");
+        let predecessor = reverse_for_fixture(&mut draft, NPC_ENRICH_MORE, NPC_ENRICH_MORE_SHA256)
+            .expect("R21 predecessor");
         let before = draft.clone();
         let mut value: Value = serde_json::from_slice(NPC_ENRICH_MORE).unwrap();
         let row = value["repairs"]
@@ -920,15 +944,7 @@ mod tests {
             .unwrap();
         row["after"]["keywords"][0]["triggers"] = serde_json::json!(["changed"]);
         let bytes = serde_json::to_vec(&value).unwrap();
-        assert!(
-            apply(
-                &mut draft,
-                &bytes,
-                &hex_sha256(&bytes),
-                NPC_ENRICH_MORE_PREDECESSOR
-            )
-            .is_err()
-        );
+        assert!(apply(&mut draft, &bytes, &hex_sha256(&bytes), &predecessor).is_err());
         assert_eq!(draft, before);
     }
     #[test]
@@ -937,19 +953,16 @@ mod tests {
         let fs_limits = ProjectFilesystemLimits {
             project: limits(),
             max_entries_per_directory_scan: 32,
-            max_total_directory_entries_scanned: 201,
+            // Repository capture: 31 parent + 11 * 17 root + 14 nested entries.
+            max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1,
         };
         let mut predecessor =
             capture_world_project(&content, std::ffi::OsStr::new("world"), fs_limits)
                 .expect("repository native project")
                 .migrate_to_v2();
-        reverse_for_fixture(
-            &mut predecessor,
-            NPC_ENRICH_FINAL,
-            NPC_ENRICH_FINAL_SHA256,
-            NPC_ENRICH_FINAL_PREDECESSOR,
-        )
-        .expect("R22 predecessor");
+        let predecessor_sha256 =
+            reverse_for_fixture(&mut predecessor, NPC_ENRICH_FINAL, NPC_ENRICH_FINAL_SHA256)
+                .expect("R22 predecessor");
         let placeholders = placeholder_presentations().unwrap();
         let actors = actors().unwrap();
         let donor = predecessor
@@ -977,15 +990,7 @@ mod tests {
                 .push(serde_json::json!({"before": profile.clone(), "after": profile}));
             let bytes = serde_json::to_vec(&packet).unwrap();
             let mut draft = predecessor.clone();
-            assert!(
-                apply(
-                    &mut draft,
-                    &bytes,
-                    &hex_sha256(&bytes),
-                    NPC_ENRICH_FINAL_PREDECESSOR
-                )
-                .is_err()
-            );
+            assert!(apply(&mut draft, &bytes, &hex_sha256(&bytes), &predecessor_sha256).is_err());
             assert_eq!(draft, predecessor);
         }
     }
