@@ -424,6 +424,7 @@ mod tests {
             definition_revision: "fixture:1".into(),
             display_name: "fixture Rat".into(),
             maximum_health: 20,
+            forge_difficulty: None,
             base_speed: 110,
             outfit_look_type: 21,
             object_look_type: None,

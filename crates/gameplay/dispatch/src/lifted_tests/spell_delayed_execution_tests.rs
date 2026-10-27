@@ -495,6 +495,7 @@ fn due_familiar_expiry_is_handed_to_the_owner_cadence_without_a_despawn() {
                     definition_revision: "r20".into(),
                     display_name: "Knight familiar".into(),
                     maximum_health: 812,
+                    forge_difficulty: None,
                     base_speed: 220,
                     outfit_look_type: 991,
                     object_look_type: None,

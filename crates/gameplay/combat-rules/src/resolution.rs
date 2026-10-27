@@ -430,6 +430,7 @@ mod tests {
             definition_revision: "1".into(),
             display_name: "creature".into(),
             maximum_health: 100,
+            forge_difficulty: None,
             base_speed: 100,
             outfit_look_type: 1,
             object_look_type: None,

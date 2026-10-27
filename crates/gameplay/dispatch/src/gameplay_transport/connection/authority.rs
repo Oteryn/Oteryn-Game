@@ -108,6 +108,7 @@ pub trait FreshAdmissionAuthority {
                 content_generation: own.content_generation,
                 observer: identity,
                 entities: vec![ChannelEntity {
+                    health_percent: 100,
                     direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
                     kind: VisibleKind::Player,
                     identity,

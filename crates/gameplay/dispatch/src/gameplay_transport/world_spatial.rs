@@ -135,6 +135,7 @@ pub enum VisibleKind {
 /// VIS-3: one entity of the session's Channel, before the interest query.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ChannelEntity {
+    pub health_percent: u8,
     pub direction: StepDirection,
     pub kind: VisibleKind,
     pub identity: [u8; ENTITY_IDENTITY_BYTES],
@@ -162,7 +163,7 @@ fn wire_entity(entity: &ChannelEntity) -> WorldSpatialEntity {
     let actor = EntityDetail::Actor {
         direction: entity.direction,
         appearance_ref: PLACEHOLDER_APPEARANCE_REF,
-        health_percent: PLACEHOLDER_HEALTH_PERCENT,
+        health_percent: entity.health_percent,
     };
     let (kind, detail) = match entity.kind {
         VisibleKind::Player => (EntityKind::Player, actor),
@@ -465,6 +466,31 @@ impl SessionVisibility {
                 ),
             }
         }
+        // HP changes do not advance a creature's position revision. Keep the same
+        // interest selection, but publish stationary HP through the existing actor detail.
+        for entity in &selected {
+            let identity = entity.entity.identity;
+            let Some(prior) = self.entities.get(&identity) else {
+                continue;
+            };
+            let health_changed = matches!((&prior.detail, &entity.detail),
+                (EntityDetail::Actor { health_percent: before, .. }, EntityDetail::Actor { health_percent: after, .. }) if before != after);
+            if health_changed
+                && !delta
+                    .enter
+                    .iter()
+                    .chain(&delta.update)
+                    .any(|shown| shown.entity.identity == identity)
+            {
+                if delta.enter.len() + delta.update.len() + delta.leave.len() == MAX_DELTA_ENTRIES {
+                    let snapshot = Self::snapshot_of(channel, &selected)?;
+                    self.show_lights(channel, &selected);
+                    self.show(query, selected);
+                    return Ok(VisibilityUpdate::Snapshot(snapshot));
+                }
+                delta.update.push(*entity);
+            }
+        }
         // CLOCK-1: an entered entity shows its current light; a moved one its current light if
         // due, else the light last sent; any other shown entity whose light changed is updated
         // once due, within the delta ceiling (a deferred one follows on a later refresh).
@@ -483,7 +509,8 @@ impl SessionVisibility {
                 self.send_light(identity, light, now);
             }
         }
-        let mut room = MAX_DELTA_ENTRIES.saturating_sub(changes.len());
+        let mut room = MAX_DELTA_ENTRIES
+            .saturating_sub(delta.enter.len() + delta.update.len() + delta.leave.len());
         for entity in &selected {
             let identity = entity.entity.identity;
             let light = self.current_light(channel, &identity);
@@ -799,6 +826,7 @@ mod tests {
 
     fn at(n: u32, kind: VisibleKind, x: i32, y: i32, floor: i16) -> ChannelEntity {
         ChannelEntity {
+            health_percent: 100,
             direction: oteryn_protocol_oteryn::world_spatial::StepDirection::South,
             kind,
             identity: id(n),
@@ -966,6 +994,65 @@ mod tests {
 
     fn no_handles(_: &mut [WorldSpatialEntity]) -> Result<(), WorldSpatialError> {
         Ok(())
+    }
+
+    #[test]
+    fn forge_creature_stationary_health_is_sent_once_without_a_position_revision() {
+        let mut view = SessionVisibility::default();
+        let mut creature = at(1, VisibleKind::Creature, 101, 100, 7);
+        view.snapshot(&channel([creature]), &mut no_handles)
+            .expect("snapshot");
+        creature.health_percent = 37;
+        let changed = view
+            .refresh(&channel([creature]), &mut no_handles)
+            .expect("health update");
+        assert_eq!(update_ids(&changed), [id(1)]);
+        let VisibilityUpdate::Delta(delta) = changed else {
+            panic!("health delta")
+        };
+        assert!(matches!(
+            delta.update[0].detail,
+            EntityDetail::Actor {
+                health_percent: 37,
+                ..
+            }
+        ));
+        assert_eq!(creature.revision, 0);
+        assert_eq!(
+            view.refresh(&channel([creature]), &mut no_handles)
+                .expect("unchanged"),
+            VisibilityUpdate::Unchanged
+        );
+    }
+
+    #[test]
+    fn forge_creature_health_updates_resync_at_the_existing_delta_ceiling() {
+        let mut view = SessionVisibility::default();
+        let mut creatures: Vec<_> = (1..MAX_DELTA_ENTRIES as u32)
+            .map(|id| at(id, VisibleKind::Creature, 101, 100, 7))
+            .collect();
+        view.snapshot(&channel(creatures.clone()), &mut no_handles)
+            .expect("snapshot");
+        // A full view: half its creatures leave/enter while the retained half loses HP.
+        // Membership alone fits the ceiling; including the HP changes needs a snapshot.
+        for (index, creature) in creatures.iter_mut().enumerate() {
+            creature.health_percent = 50;
+            if index < MAX_DELTA_ENTRIES / 2 {
+                creature.identity = id(1_000 + index as u32);
+            }
+        }
+        let update = view
+            .refresh(&channel(creatures.clone()), &mut no_handles)
+            .expect("resync");
+        let VisibilityUpdate::Snapshot(snapshot) = update else {
+            panic!("health resync")
+        };
+        assert_eq!(snapshot.entities.len(), MAX_DELTA_ENTRIES);
+        assert_eq!(
+            view.refresh(&channel(creatures), &mut no_handles)
+                .expect("unchanged"),
+            VisibilityUpdate::Unchanged
+        );
     }
 
     fn identities(entities: &[WorldSpatialEntity]) -> Vec<[u8; ENTITY_IDENTITY_BYTES]> {

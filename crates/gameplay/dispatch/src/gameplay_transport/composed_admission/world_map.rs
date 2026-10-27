@@ -57,6 +57,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         )
         .chain(visible.npcs.iter().map(|entry| (VisibleKind::Npc, entry)))
         .map(|(kind, entry)| world_spatial::ChannelEntity {
+            health_percent: runtime
+                .companion_snapshot(entry.actor)
+                .ok()
+                .map_or(100, |s| {
+                    u8::try_from(
+                        (i128::from(s.health) * 100 / i128::from(s.maximum_health)).clamp(1, 100),
+                    )
+                    .unwrap_or(100)
+                }),
             direction: match runtime
                 .read_actor_position(entry.actor)
                 .ok()

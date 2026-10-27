@@ -26,6 +26,8 @@ pub struct CompiledCreaturePolicy {
     pub definition_revision: String,
     pub display_name: String,
     pub maximum_health: i64,
+    /// Explicitly admitted normal, hostile, lootable Forge creature; Bestiary difficulty.
+    pub forge_difficulty: Option<u8>,
     pub base_speed: i32,
     pub outfit_look_type: u32,
     /// Source lookTypeEx is an Object appearance, never an Outfit or an invisible actor.
@@ -122,6 +124,12 @@ impl CompiledCreaturePolicies {
                 || record.display_name.trim().is_empty()
                 || record.maximum_health <= 0
                 || record.base_speed < 0
+                || record.forge_difficulty.is_some_and(|difficulty| {
+                    !matches!(difficulty, 1 | 2 | 4 | 6 | 8)
+                        || record.is_familiar
+                        || !record.flags.attackable
+                        || record.reward_boss == Some(true)
+                })
                 || record.object_look_type.is_some_and(|look| {
                     look == 0 || record.outfit_look_type != 0 || record.is_familiar
                 })

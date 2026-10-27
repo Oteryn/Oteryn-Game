@@ -49,8 +49,8 @@ impl SessionAppearance {
             return Some((to_sequence, to_revision));
         }
         let mut candidate = self.clone();
-        let visible = staged_view.appearance_players();
-        let player_refs = Self::players(&visible);
+        let visible = staged_view.appearance_actors(self.forge);
+        let player_refs = self.players(&visible);
         let observation = authority
             .appearance_observation(actor, admitted.game_session_id, player_refs.clone())
             .await?;

@@ -70,6 +70,7 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
         definition_revision: "fixture:1".into(),
         display_name: "fixture creature".into(),
         maximum_health: 20,
+        forge_difficulty: None,
         base_speed: 110,
         outfit_look_type: 1,
         object_look_type: None,

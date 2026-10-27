@@ -121,6 +121,7 @@ mod tests {
             definition_revision: record["creature_revision"].as_str().unwrap().into(),
             display_name: "Knight Familiar".into(),
             maximum_health: record["maximum_health"].as_i64().unwrap(),
+            forge_difficulty: None,
             base_speed: i32::try_from(record["base_speed"].as_i64().unwrap()).unwrap(),
             outfit_look_type: 991,
             object_look_type: None,

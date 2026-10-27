@@ -180,3 +180,6 @@ pub use cw2_b1_import::*;
 #[cfg(test)]
 #[path = "../../../content-promotion/src/content/item_identity.rs"]
 pub mod item_identity;
+
+/// Protocol-neutral Forge creature arithmetic.
+pub use oteryn_gameplay_domain::domain::forge_creature;
