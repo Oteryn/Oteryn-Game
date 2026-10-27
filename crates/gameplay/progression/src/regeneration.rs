@@ -1,4 +1,4 @@
-//! Pure food regeneration rates and Premium vocation eligibility.
+//! Native regeneration clocks, legacy vocation amounts and Premium eligibility.
 use oteryn_gameplay_content::content::spell_data::Vocation;
 
 /// The fixed tick of the food condition; every vocation period is a multiple of it.
@@ -104,10 +104,10 @@ pub fn credit_second(
     }
 }
 
-/// Holds one fed tick inside a protection zone (Canary `ConditionRegeneration`): the fed time
+/// Holds one tick inside a protection zone under the existing native policy: progress
 /// accumulates but credits nothing, and stops one tick short of each period so the first
 /// tick outside credits the due period once and starts the next one from zero.
-pub fn hold_fed_second(state: &mut RegenerationState, _rate: RegenerationRate) {
+pub fn hold_fed_second(state: &mut RegenerationState, rate: RegenerationRate) {
     if state.health == 0 {
         return;
     }
@@ -117,8 +117,8 @@ pub fn hold_fed_second(state: &mut RegenerationState, _rate: RegenerationRate) {
             .min(period.saturating_sub(FOOD_TICK_MS))
             .max(progress)
     };
-    state.regen_health_ms = hold(state.regen_health_ms, FED_HEALTH_PERIOD_MS);
-    state.regen_mana_ms = hold(state.regen_mana_ms, FED_MANA_PERIOD_MS);
+    state.regen_health_ms = hold(state.regen_health_ms, rate.health_period_ms);
+    state.regen_mana_ms = hold(state.regen_mana_ms, rate.mana_period_ms);
 }
 
 #[cfg(test)]

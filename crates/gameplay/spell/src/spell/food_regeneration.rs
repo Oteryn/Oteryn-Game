@@ -1,8 +1,6 @@
-//! FOOD-REGEN-1: fed-time regeneration of a player's health and mana. While the
-//! `FoodRegeneration` condition runs, each one-second tick credits fed time toward the
-//! vocation's health and mana periods; a completed period credits its amount once.
-//! Protection-zone ticks accumulate fed time but credit nothing; the first tick outside
-//! credits the due period once (Canary `ConditionRegeneration`).
+//! Always-on player health/mana regeneration. Food selects the faster clocks;
+//! the existing vocation table supplies the amount credited per completed period.
+//! Protection zones hold progress without credits for both hungry and fed actors.
 #[cfg(test)]
 use super::Vocation;
 use super::cast::PlayerSpellState;
@@ -37,9 +35,17 @@ pub fn credit_second(state: &mut PlayerSpellState, fed: bool) {
     });
 }
 
-/// Holds one fed tick of a living actor standing in a protection zone.
-pub fn hold_fed_second(state: &mut PlayerSpellState) {
-    apply(state, |regeneration, rate, _, _| {
+/// Holds one native tick in a protection zone. The historical helper also serves hungry actors.
+pub fn hold_fed_second(state: &mut PlayerSpellState, fed: bool) {
+    apply(state, |regeneration, mut rate, _, _| {
+        use oteryn_gameplay_progression::regeneration::{
+            FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS, UNFED_HEALTH_PERIOD_MS, UNFED_MANA_PERIOD_MS,
+        };
+        (rate.health_period_ms, rate.mana_period_ms) = if fed {
+            (FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS)
+        } else {
+            (UNFED_HEALTH_PERIOD_MS, UNFED_MANA_PERIOD_MS)
+        };
         oteryn_gameplay_progression::regeneration::hold_fed_second(regeneration, rate);
     });
 }
@@ -148,6 +154,7 @@ mod tests {
         assert_eq!(state.regen_health_ms, 2_000);
         super::super::actor_conditions::clear_on_lifecycle(&mut state);
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+        assert_eq!(state.regeneration_next_tick_us, None);
     }
 
     #[test]
@@ -221,6 +228,8 @@ mod tests {
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
         run(&mut state, 11, 16, TickFacts::default());
         assert_eq!((state.health, state.mana), (102, 104));
+        run(&mut state, 16, 17, TickFacts::default());
+        assert_eq!((state.health, state.mana), (103, 104));
     }
 
     #[test]
@@ -236,6 +245,8 @@ mod tests {
         assert_eq!(state.regen_health_ms, 2_000);
         run(&mut state, 4, 5, TickFacts::default());
         assert_eq!(state.health, 101);
+        run(&mut state, 5, 6, TickFacts::default());
+        assert_eq!(state.health, 101);
     }
 
     #[test]
@@ -249,8 +260,39 @@ mod tests {
         let mut dead = actor(Vocation::Sorcerer);
         dead.health = 0;
         credit_fed_second(&mut dead);
-        hold_fed_second(&mut dead);
+        hold_fed_second(&mut dead, true);
         assert_eq!((dead.health, dead.regen_health_ms), (0, 0));
+    }
+
+    #[test]
+    fn hungry_protection_zone_ticks_hold_progress_without_credits() {
+        let mut state = actor(Vocation::Knight);
+        let pz = TickFacts {
+            in_protection_zone: true,
+            standing_on_field: None,
+        };
+        run(&mut state, 0, 10, pz);
+        assert_eq!((state.health, state.mana), (100, 100));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (3_000, 5_000));
+        run(&mut state, 10, 11, TickFacts::default());
+        assert_eq!((state.health, state.mana), (101, 102));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+    }
+
+    #[test]
+    fn delayed_clock_pass_cannot_be_replayed_to_credit_extra_seconds() {
+        let mut state = actor(Vocation::Knight);
+        run(&mut state, 0, 1, TickFacts::default());
+        tick(&mut state, 60_000, TickFacts::default()).expect("delayed pass");
+        let before = state.clone();
+        for now_ms in [
+            60_000, 60_000, 60_000, 60_100, 60_200, 60_300, 60_400, 60_500,
+        ] {
+            tick(&mut state, now_ms, TickFacts::default()).expect("repeated or subsecond pass");
+            assert_eq!((state.health, state.mana), (before.health, before.mana));
+            assert_eq!(state.regen_health_ms, before.regen_health_ms);
+            assert_eq!(state.regen_mana_ms, before.regen_mana_ms);
+        }
     }
 
     #[test]

@@ -533,15 +533,13 @@ fn tick_inner(
         .is_some();
     let regeneration_due = staged.regeneration_next_tick_us.unwrap_or(now);
     if regeneration_due <= now {
-        if facts.in_protection_zone && fed {
-            super::food_regeneration::hold_fed_second(&mut staged);
+        if facts.in_protection_zone {
+            super::food_regeneration::hold_fed_second(&mut staged, fed);
         } else {
             super::food_regeneration::credit_second(&mut staged, fed);
         }
-        staged.regeneration_next_tick_us = Some(
-            regeneration_due
-                .saturating_add(u64::from(super::food_regeneration::FOOD_TICK_MS) * 1_000),
-        );
+        staged.regeneration_next_tick_us =
+            Some(now.saturating_add(u64::from(super::food_regeneration::FOOD_TICK_MS) * 1_000));
     }
     let mut combat = Vec::new();
     let ticks = if damage {
