@@ -105,3 +105,12 @@ pub mod cyclopedia_protocol {
         CharmUnlockDisposition, CharmUnlockStageIntent, CharmView,
     };
 }
+
+/// Attack command execution and disposition mapping.
+#[path = "features/0017-attack/protocol.rs"]
+pub mod attack;
+/// Session-owned combat command vocabulary and routing.
+pub mod combat;
+/// Spell command execution and feedback.
+#[path = "features/local-spell-action-bar/mod.rs"]
+pub mod spell;

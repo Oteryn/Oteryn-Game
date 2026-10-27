@@ -1,9 +1,11 @@
 use super::mailbox::MAX_PUSHED_MARKERS;
 use super::*;
+use crate::combat_input::{CombatCommand, CombatReport};
 use oteryn_client_runtime::ClientRuntime;
 use oteryn_session::{
-    ActorPosition, AppliedDelta, AttackIntentDisposition, CommandStatus, MAX_QUEUED_EVENTS,
-    SessionEvent, SpellCastDisposition, WorldSpatialObservation,
+    ActorPosition, AppliedDelta, AttackIntentDisposition, CommandStatus, LogoutResult,
+    MAX_QUEUED_EVENTS, SessionEvent, SpellCastDisposition, StepDirection, StepDisposition,
+    StepOutcome, WorldSpatialObservation,
 };
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -57,50 +59,6 @@ fn view() -> Result<PlayView, BatchError> {
 }
 
 #[test]
-fn snapshot_builds_a_view_centred_on_the_own_position_with_overlay_markers()
--> Result<(), BatchError> {
-    let view = view()?;
-    // Only the marker on the own floor and with a decodable placement is drawn.
-    assert_eq!(view.marker_count(), 1);
-    assert_eq!(view.markers.len(), 2);
-    let scene = view.scene();
-    assert_eq!(scene.sprites().len(), 2);
-    let [x, y] = scene.view().tile_to_screen(TileCoord::new(100, 200));
-    assert_eq!(
-        scene.view().screen_to_tile(x + 1.0, y + 1.0),
-        Some(TileCoord::new(100, 200))
-    );
-    assert_eq!(scene.view().origin(), TileCoord::new(93, 195));
-    Ok(())
-}
-
-#[test]
-fn click_on_empty_ground_becomes_a_step_toward_it() -> Result<(), BatchError> {
-    let mut view = view()?;
-    view.click(TileCoord::new(98, 200))?;
-    assert_eq!(view.next_step(), Some(StepDir::West));
-    // One outstanding step: nothing more until its outcome.
-    assert_eq!(view.next_step(), None);
-    // A click on the marker selects it and sets no goal.
-    let mut other = self::view()?;
-    other.click(TileCoord::new(102, 199))?;
-    assert_eq!(other.next_step(), None);
-    Ok(())
-}
-
-#[test]
-fn arrow_key_steps_without_a_goal() -> Result<(), BatchError> {
-    let mut view = view()?;
-    assert_eq!(view.facing(), StepDir::South);
-    view.arrow(StepDir::North);
-    assert_eq!(view.next_step(), Some(StepDir::North));
-    assert_eq!(view.next_step(), None);
-    // The player turns to the step sent, moved or not.
-    assert_eq!(view.facing(), StepDir::North);
-    Ok(())
-}
-
-#[test]
 fn inputs_keep_their_order_and_a_repeated_cast_is_one() -> Result<(), BatchError> {
     let mut view = view()?;
     let one = NonZeroU32::MIN;
@@ -123,134 +81,9 @@ fn inputs_keep_their_order_and_a_repeated_cast_is_one() -> Result<(), BatchError
 }
 
 #[test]
-fn only_a_creature_click_queues_an_attack() -> Result<(), BatchError> {
-    let actor = |kind, x, id: u8| WorldSpatialEntity {
-        kind,
-        entity: EntityRef {
-            identity: [id; 16],
-            generation: 1,
-        },
-        position: ActorPosition {
-            x,
-            y: 200,
-            floor: 0,
-        },
-        detail: oteryn_session::EntityDetail::Actor {
-            direction: StepDirection::South,
-            appearance_ref: 1,
-            health_percent: 100,
-        },
-    };
-    let creature = actor(EntityKind::Creature, 101, 1);
-    let mut view = view()?.with_entities(vec![creature, actor(EntityKind::Npc, 99, 2)])?;
-    // The NPC is still drawn: player plus one glyph per visible entity.
-    assert_eq!(view.scene().sprites().len(), 2 + 2);
-    view.click(TileCoord::new(99, 200))?;
-    assert!(view.inputs.is_empty());
-    view.click(TileCoord::new(101, 200))?;
-    assert_eq!(
-        view.inputs.iter().copied().collect::<Vec<_>>(),
-        vec![Input::Attack(creature.entity)]
-    );
-    Ok(())
-}
-
-#[test]
-fn sending_a_step_redraws_the_new_facing() -> Result<(), BatchError> {
-    let mut view = view()?;
-    view.click(view.own())?;
-    let target = view.scene().target();
-    assert!(target.is_some());
-    view.arrow(StepDir::North);
-    assert_eq!(view.send_step()?, Some(StepDir::North));
-    assert_eq!(view.scene().facing(), StepDir::North);
-    // Turning keeps the selection.
-    assert_eq!(view.scene().target(), target);
-    Ok(())
-}
-
-#[test]
-fn step_outcome_moves_the_view_and_a_refusal_ends_the_walk() -> Result<(), BatchError> {
-    let mut view = view()?;
-    view.click(TileCoord::new(98, 200))?;
-    assert_eq!(view.next_step(), Some(StepDir::West));
-    view.apply(&moved_to(99, 200, 0))?;
-    assert_eq!(view.own(), TileCoord::new(99, 200));
-    assert_eq!(view.scene().view().origin(), TileCoord::new(92, 195));
-    assert_eq!(view.next_step(), Some(StepDir::West));
-    let mut blocked = moved_to(99, 200, 0);
-    blocked.disposition = StepDisposition::Blocked;
-    blocked.world_spatial_delta = None;
-    view.apply(&blocked)?;
-    assert_eq!(view.own(), TileCoord::new(99, 200));
-    assert_eq!(view.next_step(), None);
-    Ok(())
-}
-
-#[test]
-fn overlay_delta_adds_a_marker() -> Result<(), BatchError> {
-    let mut view = view()?;
-    let mut outcome = moved_to(100, 199, 0);
-    outcome.world_object_overlay_delta = Some(AppliedDelta {
-        server_sequence: 3,
-        base_revision: 1,
-        new_revision: 2,
-        value: entry(key(101, 199, 0, 1)),
-    });
-    view.apply(&outcome)?;
-    assert_eq!(view.marker_count(), 2);
-    Ok(())
-}
-
-#[test]
 fn any_session_error_returns_to_login_with_its_public_class() {
     let error = SessionError::SessionUnusable;
     assert_eq!(public_class(&error), PublicClass::SessionUnavailable);
-}
-
-#[test]
-fn markers_are_refiltered_when_the_floor_changes() -> Result<(), BatchError> {
-    let mut view = view()?;
-    assert_eq!(view.marker_count(), 1);
-    view.apply(&moved_to(5, 5, -3))?;
-    assert_eq!(view.marker_count(), 1);
-    assert_eq!(view.scene().sprites().len(), 2);
-    view.apply(&moved_to(100, 200, 0))?;
-    assert_eq!(view.marker_count(), 1);
-    view.apply(&moved_to(100, 200, -7))?;
-    assert_eq!(view.marker_count(), 0);
-    Ok(())
-}
-
-#[test]
-fn the_map_is_drawn_only_on_the_join_floor() -> Result<(), String> {
-    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let world = Arc::new(World::load(&root)?);
-    let mut view = view().map_err(|e| e.to_string())?;
-    view.apply(&moved_to(crate::map::START.0, crate::map::START.1, 7))
-        .map_err(|e| e.to_string())?;
-    view.set_world(world).map_err(|e| e.to_string())?;
-    let on_floor = view.scene().sprites().len();
-    view.apply(&moved_to(100, 200, -1))
-        .map_err(|e| e.to_string())?;
-    let off_floor = view.scene().sprites().len();
-    view.apply(&moved_to(crate::map::START.0, crate::map::START.1, 7))
-        .map_err(|e| e.to_string())?;
-    assert!(off_floor < on_floor / 10, "{off_floor} of {on_floor}");
-    assert_eq!(view.scene().sprites().len(), on_floor);
-    Ok(())
-}
-
-#[test]
-fn one_step_is_in_flight_until_its_outcome() -> Result<(), BatchError> {
-    let mut view = view()?;
-    view.arrow(StepDir::North);
-    assert_eq!(view.next_step(), Some(StepDir::North));
-    view.arrow(StepDir::East);
-    assert_eq!(view.next_step(), None);
-    view.apply(&moved_to(100, 199, 0))?;
-    assert_eq!(view.next_step(), Some(StepDir::East));
-    Ok(())
 }
 
 struct Fake {
@@ -504,23 +337,6 @@ fn a_refused_logout_shows_its_line_and_an_accepted_one_ends_play() -> Result<(),
     Ok(())
 }
 
-#[test]
-fn the_in_fight_line_rounds_the_wait_up_to_whole_seconds() {
-    let in_fight = |retry_after_ms| Some(LogoutResult::InFight { retry_after_ms });
-    assert_eq!(
-        logout_refusal_text(in_fight(1)),
-        "You may not logout during a fight (1 s)"
-    );
-    assert_eq!(
-        logout_refusal_text(in_fight(60_000)),
-        "You may not logout during a fight (60 s)"
-    );
-    assert_eq!(
-        logout_refusal_text(Some(LogoutResult::Busy)),
-        "You cannot logout now, try again"
-    );
-}
-
 /// Queues pushed events like `Session` does: past the cap, the session fails closed.
 struct Pushing {
     queue: Vec<SessionEvent>,
@@ -633,31 +449,6 @@ fn overlay_event(sequence: u64, placement: Vec<u8>) -> SessionEvent {
 }
 
 #[test]
-fn pushed_domain_1_and_2_deltas_move_the_view() -> Result<(), BatchError> {
-    let mut view = view()?;
-    let mut pushed = Pushed::default();
-    pushed.set_marker(entry(key(101, 200, 0, 0)));
-    pushed.own = Some(ActorPosition {
-        x: 101,
-        y: 200,
-        floor: 0,
-    });
-    view.apply_pushed(&pushed)?;
-    assert_eq!(view.own(), TileCoord::new(101, 200));
-    assert_eq!(view.marker_count(), 2);
-    Ok(())
-}
-
-#[test]
-fn the_entry_door_semantic_placement_draws_a_marker() -> Result<(), BatchError> {
-    let door = entry(b"oteryn:cell/entry-door".to_vec());
-    let view = PlayView::new(TileCoord::new(1, 0), 0, &[door])?;
-    assert_eq!(view.marker_count(), 1);
-    assert_eq!(view.scene().sprites().len(), 2);
-    Ok(())
-}
-
-#[test]
 fn an_undrained_mailbox_stays_bounded_and_keeps_the_latest_state() {
     let (link, _commands, outbox) = play_channel();
     for n in 0..5_000u64 {
@@ -695,3 +486,6 @@ fn pushes_older_than_a_step_outcome_are_delivered_before_it() {
     ));
     assert!(link.poll().is_none());
 }
+
+// Feature test mounts follow the same directory discovery as production adapters.
+include!(concat!(env!("OUT_DIR"), "/play_feature_tests.rs"));

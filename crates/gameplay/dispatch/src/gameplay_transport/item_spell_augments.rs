@@ -85,18 +85,16 @@ pub(super) fn leech(
     spell: &SpellDefinition,
     before: &PlayerSpellState,
 ) -> (u32, u32) {
-    let mut rates = (0u32, 0u32);
+    // Equipment leeches on ordinary damage spells
+    // even when this spell has no spell-specific leech augment.
+    let base = before.equipped_offence();
+    let mut rates = (u32::from(base.life_leech), u32::from(base.mana_leech));
     for a in selected(owned, spell) {
         match a.kind {
             K::LifeLeech => rates.0 = rates.0.saturating_add(a.value),
             K::ManaLeech => rates.1 = rates.1.saturating_add(a.value),
             _ => {}
         }
-    }
-    if rates != (0, 0) {
-        let base = before.equipped_offence();
-        rates.0 = rates.0.saturating_add(u32::from(base.life_leech));
-        rates.1 = rates.1.saturating_add(u32::from(base.mana_leech));
     }
     rates
 }

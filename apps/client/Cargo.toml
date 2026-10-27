@@ -49,6 +49,9 @@ winit.workspace = true
 rcgen.workspace = true
 tokio-rustls.workspace = true
 
+[build-dependencies]
+serde_json.workspace = true
+
 # The workspace lints with one change: `unsafe_code` is `deny` instead of `forbid`, so the
 # Windows mutex FFI in `src/win_mutex.rs` alone can allow it (CP D901).
 [lints.rust]
