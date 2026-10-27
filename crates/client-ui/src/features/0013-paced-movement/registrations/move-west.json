@@ -1,0 +1,9 @@
+{
+  "mechanic": "0013-paced-movement",
+  "kind": "keybindings",
+  "id": "0013-paced-movement-move-west",
+  "status": "supported",
+  "context": "gameplay",
+  "chord": "ARROWLEFT",
+  "entry": "input.rs::default_arrow_binding"
+}

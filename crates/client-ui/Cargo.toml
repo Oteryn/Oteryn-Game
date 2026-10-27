@@ -11,6 +11,11 @@ publish.workspace = true
 category = "client-ui"
 release-role = "production"
 
+[dependencies]
+oteryn-client-domain = { version = "=0.1.0", path = "../client-domain" }
+oteryn-input-actions = { version = "=0.1.0", path = "../input-actions" }
+oteryn-renderer = { version = "=0.1.0", path = "../renderer" }
+
 [build-dependencies]
 serde_json.workspace = true
 sha2.workspace = true

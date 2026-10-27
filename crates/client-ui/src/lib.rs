@@ -1,3 +1,32 @@
 //! Native client UI composition seam. Feature behavior arrives in later migration steps.
 
 include!(concat!(env!("OUT_DIR"), "/client_registrations.rs"));
+
+/// World-interaction click intent mapping.
+pub mod world_interaction {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/features/0011-world-interaction/input.rs"
+    ));
+}
+/// Paced-movement key intent mapping.
+pub mod paced_movement {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/features/0013-paced-movement/input.rs"
+    ));
+}
+/// Logout key intent mapping.
+pub mod logout {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/features/0021-logout/input.rs"
+    ));
+}
+/// Local spell action-bar key intent mapping.
+pub mod spell_action_bar {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/src/features/local-spell-action-bar/input.rs"
+    ));
+}

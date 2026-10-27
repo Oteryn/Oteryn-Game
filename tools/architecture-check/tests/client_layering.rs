@@ -29,6 +29,7 @@ fn forbidden_edge_classes_fail_with_real_cargo_metadata() -> Result<(), String> 
         ("client-assets", "client-ui"),
         ("input-platform", "client-ui"),
         ("platform-client", "client-ui"),
+        ("client-ui", "session"),
         ("client-ui", "session-tcp"),
         ("client-ui", "protocol-oteryn"),
         ("client-ui", "platform-client"),

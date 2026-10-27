@@ -1881,6 +1881,7 @@ dependencies = [
  "oteryn-client-domain",
  "oteryn-client-runtime",
  "oteryn-client-simulation",
+ "oteryn-client-ui",
  "oteryn-diagnostics",
  "oteryn-foundation",
  "oteryn-identity",
@@ -1944,6 +1945,9 @@ dependencies = [
 name = "oteryn-client-ui"
 version = "0.1.0"
 dependencies = [
+ "oteryn-client-domain",
+ "oteryn-input-actions",
+ "oteryn-renderer",
  "serde_json",
  "sha2 0.11.1",
  "syn 3.0.9",
