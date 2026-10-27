@@ -157,6 +157,7 @@ impl SourceCallbackCast {
         let critical = crate::source_critical_baseline::SourceCriticalBaseline::qualify(
             &creature.key,
             cp.details.as_ref().map_or(0, |c| c.critical_chance_ppm),
+            false,
         )
         .map_err(|_| AttackError::UnsupportedShape)?;
         for stage in &c.casts {

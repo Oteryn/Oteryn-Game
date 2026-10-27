@@ -1,4 +1,5 @@
-//! Closed four-actor SOURCE-DEFAULT baseline. Not global critical parity or dynamic SoulPit support.
+//! Source critical owner: Global 1% monster auto-attack floor and closed source overrides.
+//! Global monster extra damage and dynamic SoulPit boosts remain unqualified.
 #![allow(
     dead_code,
     reason = "Private source-qualified monster owner ABI is native-tested; shipping gameplay loop activation remains a separate integration gate"
@@ -7,7 +8,7 @@ use oteryn_simulation_determinism::{
     DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
 };
 pub const CRITICAL_BASELINE_QUALIFICATION: &str =
-    "PROJECT_SOURCE_DEFAULT_CRITICAL_BONUS_ZERO(GlobalUnverifiedDynamicCritical)";
+    "PROJECT_SOURCE_CRITICAL_BONUS_ZERO(GlobalAutoAttackChanceQualifiedDynamicCriticalUnverified)";
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SourceCriticalBaseline {
     chance_ppm: u32,
@@ -20,14 +21,15 @@ pub struct SourceCriticalEvent {
 }
 impl SourceCriticalBaseline {
     /// Native source profiles must originate from the current owning artifact loader. Closed
-    /// keys/chances qualify the cached pinned source default, not arbitrary Lua setters.
+    /// keys/chances qualify source overrides; a zero source chance gets the Global 1%
+    /// default only for auto-attacks. Spell/callback source defaults remain unchanged.
     #[allow(
         clippy::result_unit_err,
         reason = "mechanical crate extraction preserves the existing unit-error API"
     )]
-    pub fn qualify(key: &str, chance_ppm: u32) -> Result<Option<Self>, ()> {
+    pub fn qualify(key: &str, chance_ppm: u32, auto_attack: bool) -> Result<Option<Self>, ()> {
         if chance_ppm == 0 {
-            return Ok(None);
+            return Ok(auto_attack.then_some(Self { chance_ppm: 10_000 }));
         }
         let expected = match key {
             "oteryn:creature.doctor_marrow" | "oteryn:creature.the_monster" => 100_000,
@@ -70,13 +72,18 @@ mod tests {
     use super::*;
     #[test]
     fn source_default_is_closed_and_deterministic_without_invented_damage_bonus() {
-        let policy = SourceCriticalBaseline::qualify("oteryn:creature.doctor_marrow", 100_000)
-            .expect("qualified fixture")
-            .expect("qualified fixture");
-        assert!(SourceCriticalBaseline::qualify("oteryn:creature.doctor_marrow", 500_000).is_err());
-        assert!(SourceCriticalBaseline::qualify("oteryn:creature.cat", 100_000).is_err());
+        let policy =
+            SourceCriticalBaseline::qualify("oteryn:creature.doctor_marrow", 100_000, false)
+                .expect("qualified fixture")
+                .expect("qualified fixture");
+        assert!(
+            SourceCriticalBaseline::qualify("oteryn:creature.doctor_marrow", 500_000, false)
+                .is_err()
+        );
+        assert!(SourceCriticalBaseline::qualify("oteryn:creature.cat", 100_000, false).is_err());
         assert_eq!(
-            SourceCriticalBaseline::qualify("oteryn:creature.cat", 0).expect("qualified fixture"),
+            SourceCriticalBaseline::qualify("oteryn:creature.cat", 0, false)
+                .expect("qualified fixture"),
             None
         );
         let root = GameplayDecisionRoot::from_bytes([1; 32]);
@@ -92,5 +99,29 @@ mod tests {
             passed += usize::from(first.critical);
         }
         assert!((50..150).contains(&passed));
+    }
+
+    #[test]
+    fn global_monster_auto_attack_has_one_percent_without_changing_source_overrides() {
+        let base = SourceCriticalBaseline::qualify("oteryn:creature.cat", 0, true)
+            .expect("global default")
+            .expect("auto attack baseline");
+        assert_eq!(base.fingerprint_parts().0, 10_000);
+        let special = SourceCriticalBaseline::qualify("oteryn:creature.mitmah_scout", 30_000, true)
+            .expect("source override")
+            .expect("source critical");
+        assert_eq!(special.fingerprint_parts().0, 30_000);
+        let root = GameplayDecisionRoot::from_bytes([1; 32]);
+        let mut hits = 0;
+        for sequence in 1u64..=10_000 {
+            let mut bytes = [0; 16];
+            bytes[..8].copy_from_slice(&sequence.to_be_bytes());
+            let id = DecisionOccurrenceId::from_bytes(bytes);
+            let event = base.draw(&root, id, 0).expect("deterministic draw");
+            assert_eq!(event, base.draw(&root, id, 0).expect("replay"));
+            assert_eq!(event.bonus_basis_points, 0);
+            hits += usize::from(event.critical);
+        }
+        assert!((50..150).contains(&hits));
     }
 }

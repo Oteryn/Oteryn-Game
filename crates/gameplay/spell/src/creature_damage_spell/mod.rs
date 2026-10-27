@@ -570,6 +570,7 @@ impl SpellSource {
         let critical = crate::source_critical_baseline::SourceCriticalBaseline::qualify(
             &creature.key,
             cp.details.as_ref().map_or(0, |d| d.critical_chance_ppm),
+            false,
         )
         .map_err(|_| AttackError::UnsupportedShape)?;
         if !cp.abilities.contains(&e.ability) {
