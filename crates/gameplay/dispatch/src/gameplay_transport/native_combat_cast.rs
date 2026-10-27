@@ -2735,7 +2735,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         }
                     };
                     #[cfg(test)]
-                    if legacy.is_some() && super::super::rune_use_bridge::test_faults::take(
+                    if super::super::rune_use_bridge::test_faults::take(
                         super::super::rune_use_bridge::test_faults::Point::BeforeCommit) {
                         // Every real SQL write ran. A proven rollback retains the original
                         // prepared attempt for retry and cannot install any runtime effect.
@@ -2775,7 +2775,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             };
             let (committed,window)=committed;
             #[cfg(test)]
-            if legacy.is_some() && super::super::rune_use_bridge::test_faults::take(
+            if super::super::rune_use_bridge::test_faults::take(
                 super::super::rune_use_bridge::test_faults::Point::AfterCommit) {
                 return Err(DurabilityError::Unavailable);
             }

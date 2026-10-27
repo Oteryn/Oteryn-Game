@@ -2,6 +2,13 @@
 //! router, with durable qualification, selection, replay, restart and session fence checks.
 use super::fixture::{Harness, debug, id, run};
 use super::{TestResult, prepare_current_session};
+use crate::foundation::admission_authority_publication::{
+    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+    AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
+    AdmissionAuthorityPublicationErrorV1, AdmissionAuthorityPublicationV1,
+    AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
+    AdmissionPublicationSourceV1,
+};
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, GameSessionId, MessageType, MovementLocalPosition, NodeId,
     WorldId, decode_wire_envelope,
@@ -372,6 +379,7 @@ fn scenario() -> TestResult {
             database_now,
         )
         .await?;
+        assign_remote_hazard_channel(&harness).await?;
         let remote = crate::world_party_runtime_postgres_cases::committed_fresh_player_on_channel_from_owners(
             &harness.root, &harness.recovery, &harness.node, 61, 63, 71, 44, database_now,
         ).await?;
@@ -1030,6 +1038,95 @@ fn scenario() -> TestResult {
     })
 }
 
+// The remote party member's admission is not itself a Channel assignment. Its
+// real Leave writer also needs the actual assignment/readiness owner, just as
+// this scenario's local Channel does. These are isolated database fixtures.
+async fn assign_remote_hazard_channel(harness: &Harness) -> TestResult {
+    use crate::durability::admission_authority_guards::GuardPublicationDisposition;
+    use crate::durability::runtime_scope_assignment::{
+        AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
+        RuntimeScopeAssignmentWriter,
+    };
+    let world = WorldId::decode(&id(42)).map_err(debug)?;
+    let channel = ChannelId::decode(&id(44)).map_err(debug)?;
+    let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+    sqlx::query("INSERT INTO game_control_scope_grants(control_role,world_id,channel_id,operation) VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)")
+        .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+        .execute(&harness.pool).await?;
+    let writer = RuntimeScopeAssignmentWriter::open(harness.root.clone(), "sequencer-writer")
+        .await
+        .map_err(debug)?;
+    let assignment = writer
+        .submit(&AssignmentRequest {
+            operation_key: OperationKey::from_bytes([199; 32]),
+            actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+            command: AssignmentCommand::Assign {
+                scope,
+                target: harness.node.fact(),
+            },
+        })
+        .await
+        .map_err(debug)?;
+    let AssignmentOutcome::Committed(receipt) = assignment else {
+        return Err(format!("remote hazard assignment: {assignment:?}").into());
+    };
+    let now = sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+        .fetch_one(&harness.pool)
+        .await?;
+    let change = AdmissionAuthorityPublicationChangeV1 {
+        key: AdmissionAuthorityGuardKeyV1::Runtime(scope),
+        source: AdmissionPublicationSourceV1 {
+            authority: "game-runtime-publisher".into(),
+            purpose: AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness,
+            source_revision: 1,
+            decision_identity: "hazard-remote-runtime-ready-1".into(),
+            source_observed_at: now,
+            clock_uncertainty_seconds: 0,
+        },
+        precondition: AdmissionPublicationPreconditionV1::Bootstrap {
+            restored_publication_high_water: Some(0),
+        },
+        publication_revision: 1,
+        state: AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation: receipt.assignment.ownership_generation,
+            ready: true,
+            route_revision: "route-1".into(),
+            runtime_observation_revision: "runtime-1".into(),
+            protocol_major: 1,
+            transport_profile: 1,
+            ruleset_revision: "ruleset-1".into(),
+            content_revision: "content-1".into(),
+            map_revision: "map-1".into(),
+            world_policy_revision: "world-policy-1".into(),
+            offer_revision: "offer-1".into(),
+        },
+    };
+    let publication =
+        AdmissionAuthorityPublicationV1::prepare(&HazardRuntimeReadiness(change), now)
+            .map_err(debug)?;
+    assert_eq!(
+        harness
+            .root
+            .publish_runtime_readiness(&harness.node, &publication)
+            .await
+            .map_err(debug)?,
+        GuardPublicationDisposition::Applied
+    );
+    Ok(())
+}
+
+struct HazardRuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
+impl crate::foundation::fnd04_verifier::fresh_source_sealed::Sealed for HazardRuntimeReadiness {}
+impl AdmissionAuthorityOwningPublisherV1 for HazardRuntimeReadiness {
+    fn resolve_publication(
+        &self,
+        _now: i64,
+    ) -> Result<Vec<AdmissionAuthorityPublicationChangeV1>, AdmissionAuthorityPublicationErrorV1>
+    {
+        Ok(vec![self.0.clone()])
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn party_checks(
     harness: &Harness,
@@ -1159,6 +1256,13 @@ async fn party_checks(
             .any(|l| l.contains("hazard level is 2") && l.contains("active area level is 1")),
         "{lines:?}"
     );
+    outgoing_party_retry_checks(harness, owner, actor, session, other, other_session, remote)
+        .await?;
+    // Restore only the remote fixture predecessor removed by its real Leave command below.
+    sqlx::query("INSERT INTO game_party_members(character_id,party_id,seq,presence_state,presence_channel_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,5,1,encode($3,'hex')::uuid)")
+        .bind(remote.current_character_lease().character_id().as_bytes().as_slice())
+        .bind(party.ok_or("party")?.as_slice()).bind(owner.channel_id.as_bytes().as_slice())
+        .execute(&harness.pool).await?;
     let mut runtime = owner.runtime.lock().await;
     let at = runtime.read_actor_position(other).map_err(debug)?;
     runtime
@@ -1316,6 +1420,442 @@ async fn party_checks(
         after < before,
         "cross-Channel membership must not block real monster combat"
     );
+    Ok(())
+}
+
+// A retained cast must distinguish proven rollback from a committed payment when the
+// party's current area level changes. The remote member can also leave through its
+// independently admitted Channel while this Channel's spell lane is unresolved.
+async fn outgoing_party_retry_checks(
+    harness: &Harness,
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: GameSessionId,
+    other: crate::foundation::ExactActorRef,
+    other_session: GameSessionId,
+    remote: &crate::foundation::GameSessionAuthoritySnapshot<
+        crate::foundation::AuthenticatedTransportRefV1,
+    >,
+) -> TestResult {
+    use crate::durability::spell_item_transaction as item_tx;
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::actor_spell::{
+        SpellCastDisposition, SpellCastIntent, SpellTarget,
+    };
+    use crate::gameplay_transport::{hazard::combat, rune_use_bridge::test_faults};
+    // Native spells additionally consume the ordinary party/vitals owner. Install
+    // only its fixture prerequisites here; the later hazard-only census checks still
+    // exercise a member that has never dealt damage and deliberately stale presence.
+    {
+        let runtime = owner.runtime.lock().await;
+        assert!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .initialize(
+                    &runtime,
+                    other,
+                    other_session,
+                    crate::gameplay_transport::actor_spell::tests::FACTS,
+                    (0, 0),
+                    owner.owner_now(),
+                )
+                .is_some()
+        );
+    }
+    sqlx::query("UPDATE game_party_members SET presence_state=2,presence_channel_id=NULL WHERE character_id=encode($1,'hex')::uuid")
+        .bind(remote.current_character_lease().character_id().as_bytes().as_slice())
+        .execute(&harness.pool).await?;
+    let original_book = owner.spells;
+    owner.spells = owner
+        .active_generation
+        .ok_or("retry generation")?
+        .native_gameplay()
+        .ok_or("retry content")?
+        .spell_book();
+    let index = (1..=owner.spells.source_len())
+        .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
+        .find(|i| {
+            owner
+                .spells
+                .indexed(*i)
+                .is_some_and(|s| s.key == "candidate:spell/energy_strike")
+        })
+        .ok_or("retry Energy Strike")?;
+    let (target, target_position, original_health, original_position, other_position) = {
+        let runtime = owner.runtime.lock().await;
+        let target = runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .find(|c| {
+                combat::eligible(&runtime, c.actor)
+                    && runtime
+                        .creature_combat_facts(c.actor, 0)
+                        .is_ok_and(|f| f.health > 0)
+            })
+            .ok_or("living hazard retry target")?
+            .actor;
+        (
+            target,
+            runtime
+                .read_actor_position(target)
+                .map_err(debug)?
+                .position(),
+            runtime
+                .creature_combat_facts(target, 0)
+                .map_err(debug)?
+                .health,
+            runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position(),
+            runtime
+                .read_actor_position(other)
+                .map_err(debug)?
+                .position(),
+        )
+    };
+    {
+        let mut runtime = owner.runtime.lock().await;
+        let mut movement = runtime.borrow_movement_position();
+        let at = movement.read(actor).map_err(debug)?;
+        let x = if hazard::contains(
+            target_position.x - 1,
+            target_position.y,
+            target_position.floor,
+        ) {
+            target_position.x - 1
+        } else {
+            target_position.x + 1
+        };
+        let desired = MovementLocalPosition {
+            x,
+            ..target_position
+        };
+        if at.position() != desired {
+            movement.commit_cardinal(at, desired).map_err(debug)?;
+        }
+        assert!(
+            combat::in_area(&runtime, actor),
+            "the caster must consume the party hazard level"
+        );
+    }
+    let intent = SpellCastIntent {
+        spell: index,
+        target: SpellTarget::Position(oteryn_protocol_oteryn::actor_spell::SpellTargetPosition {
+            x: target_position.x,
+            y: target_position.y,
+            floor: target_position.floor,
+        }),
+        aim_at_target: false,
+    };
+    // Earlier combat batches start at 1,000,000. Stay beyond their bounded searches;
+    // the real physical owner rejects fresh commands below its retained high-water mark.
+    let mut next_id = 10_000_000;
+    for (committed, should_dodge) in [(false, false), (true, true), (true, false)] {
+        owner.clock_origin -= Duration::from_secs(5);
+        let command_id = {
+            let mut runtime = owner.runtime.lock().await;
+            runtime
+                .set_test_creature_health(target, 10_000)
+                .map_err(debug)?;
+            // Force both original outcomes at the party's effective level 1. A
+            // retained dodge must remain zero even after the current level becomes 0.
+            (next_id..next_id + 100_000)
+                .find(|id| {
+                    let command = CommandRef::new(session, CommandId::new(*id).expect("nonzero"));
+                    combat::spell_dodge_roll(&runtime, actor, target, command, 0)
+                        .is_some_and(|roll| combat::dodges(1, roll) == should_dodge)
+                })
+                .ok_or("party retry forced dodge outcome")?
+        };
+        next_id = command_id + 1;
+        let mana_before = owner
+            .observe_actor_vitals(actor, session)
+            .await
+            .ok_or("retry mana before")?
+            .1
+            .mana;
+        test_faults::arm(if committed {
+            test_faults::Point::AfterCommit
+        } else {
+            test_faults::Point::BeforeCommit
+        });
+        let interrupted = owner
+            .cast_spell_dispatch(actor, session, command_id, intent)
+            .await;
+        assert!(
+            interrupted.is_none(),
+            "the real commit boundary must interrupt the native cast: {interrupted:?}"
+        );
+        assert!(
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .has_pending_native(actor, session)
+        );
+        assert_eq!(
+            owner
+                .observe_actor_vitals(actor, session)
+                .await
+                .ok_or("interrupted mana")?
+                .1
+                .mana,
+            mana_before
+        );
+        {
+            let mut runtime = owner.runtime.lock().await;
+            assert_eq!(
+                runtime
+                    .creature_combat_facts(target, 0)
+                    .map_err(debug)?
+                    .health,
+                10_000,
+                "interrupted SQL never installs a physical hit"
+            );
+            let mut movement = runtime.borrow_movement_position();
+            let at = movement.read(other).map_err(debug)?;
+            movement
+                .commit_cardinal(
+                    at,
+                    MovementLocalPosition {
+                        x: 33501,
+                        ..other_position
+                    },
+                )
+                .map_err(debug)?;
+        }
+        let receipt_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
+            .bind(session.as_bytes().as_slice()).bind(command_id.to_string()).fetch_one(&harness.pool).await?;
+        assert_eq!(
+            receipt_count,
+            i64::from(committed),
+            "only a committed write has a payment receipt"
+        );
+        if committed && should_dodge {
+            let fence = crate::durability::item_transfer::CurrentCharacterItemFence {
+                character_id: crate::domain::CharacterId::from_bytes(
+                    *remote.current_character_lease().character_id().as_bytes(),
+                )
+                .map_err(debug)?,
+                game_session_id: remote.current_game_session_id(),
+                connection_generation: remote.current_connection_generation(),
+                character_lease_generation: remote.current_character_lease().generation(),
+                runtime_scope: remote.current_runtime_scope(),
+                scope_ownership_generation: remote.current_scope_generation(),
+            };
+            // This is the independently admitted remote Channel's fixture lane, not a
+            // second writer in the unresolved local Channel. World mutation stays real.
+            let permit = crate::durability::spell_owner_commit::SpellLanePermit::of_fresh_scope(
+                fence.runtime_scope,
+            )
+            .await
+            .map_err(debug)?;
+            let mut tx = harness.pool.begin().await?;
+            let authority = item_tx::assert_spell_item_authority_in_transaction(
+                &mut tx,
+                &permit,
+                owner.root,
+                owner.character,
+                owner.holder,
+                &fence,
+                CommandRef::new(fence.game_session_id, CommandId::new(70004).map_err(debug)?),
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .content_pin()
+                    .server_artifact_digest(),
+            )
+            .await
+            .map_err(debug)?;
+            let assignment = owner
+                .root
+                .read_runtime_scope_assignment(fence.runtime_scope)
+                .await
+                .map_err(debug)?
+                .ok_or("remote Channel assignment")?;
+            let holder = assignment.holder.ok_or("remote Channel holder")?;
+            let crate::foundation::RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } = assignment.scope
+            else {
+                return Err("remote party member requires a Channel".into());
+            };
+            let mut remote_runtime = ChannelRuntimeV1::from_committed_assignment(
+                world_id,
+                channel_id,
+                holder.node_id(),
+                holder.registration_revision(),
+                assignment.ownership_generation,
+                assignment.source_revision,
+                &assignment.decision_identity,
+                16,
+                owner.runtime.lock().await.content_pin().clone(),
+            )
+            .map_err(debug)?;
+            let reservation = remote_runtime
+                .reserve_fresh_session(fence.game_session_id)
+                .map_err(debug)?;
+            let remote_actor = remote_runtime
+                .commit_fresh_session(reservation)
+                .map_err(debug)?;
+            remote_runtime
+                .bind_attacker_lease(
+                    remote_actor,
+                    fence.game_session_id,
+                    remote.current_character_lease(),
+                )
+                .map_err(debug)?;
+            remote_runtime
+                .initialize_first_entry_position(remote_actor)
+                .map_err(debug)?;
+            let remote_attack = crate::gameplay_transport::attack::ChannelAttackStates::default();
+            // Leave requires the same-transaction sealed logout proof from the actual
+            // independently assigned remote runtime and its attack owner, even here.
+            let receipt = crate::durability::world_party::ingress::leave_in_transaction(
+                &mut tx,
+                &authority,
+                &remote_runtime,
+                remote_actor,
+                remote_attack.party_attack_state(remote_actor, fence.game_session_id),
+                owner.owner_now(),
+            )
+            .await
+            .map_err(debug)?;
+            assert_eq!(receipt.disposition, "APPLIED");
+            tx.commit().await?;
+        }
+        let result = owner
+            .cast_spell_dispatch(actor, session, command_id, intent)
+            .await
+            .ok_or("party retry must settle")?;
+        assert_eq!(
+            result.disposition,
+            if committed {
+                SpellCastDisposition::Cast
+            } else {
+                SpellCastDisposition::Rejected
+            }
+        );
+        assert!(
+            !owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .has_pending_native(actor, session)
+        );
+        let health_after = owner
+            .runtime
+            .lock()
+            .await
+            .creature_combat_facts(target, 0)
+            .map_err(debug)?
+            .health;
+        let mana_after = owner
+            .observe_actor_vitals(actor, session)
+            .await
+            .ok_or("retry mana after")?
+            .1
+            .mana;
+        if committed {
+            if should_dodge {
+                assert_eq!(
+                    health_after, 10_000,
+                    "the original dodge survives current level 0 and a changed party"
+                );
+            } else {
+                assert!(
+                    health_after < 10_000,
+                    "the original positive hit is installed despite changed party facts"
+                );
+            }
+            assert_eq!(
+                mana_before - mana_after,
+                20,
+                "one source payment on reconciliation"
+            );
+            let replay = owner
+                .cast_spell_dispatch(actor, session, command_id, intent)
+                .await
+                .ok_or("party replay")?;
+            assert_eq!(replay.disposition, SpellCastDisposition::Cast);
+            assert_eq!(
+                owner
+                    .runtime
+                    .lock()
+                    .await
+                    .creature_combat_facts(target, 0)
+                    .map_err(debug)?
+                    .health,
+                health_after
+            );
+            assert_eq!(
+                owner
+                    .observe_actor_vitals(actor, session)
+                    .await
+                    .ok_or("party replay mana")?
+                    .1
+                    .mana,
+                mana_after
+            );
+        } else {
+            assert_eq!(
+                health_after, 10_000,
+                "changed hazard level refuses an uncommitted plan"
+            );
+            assert_eq!(
+                mana_after, mana_before,
+                "rollback and refusal spend nothing"
+            );
+        }
+        let after_count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric(20,0)")
+            .bind(session.as_bytes().as_slice()).bind(command_id.to_string()).fetch_one(&harness.pool).await?;
+        assert_eq!(
+            after_count, receipt_count,
+            "retry never creates a replacement payment"
+        );
+        let mut runtime = owner.runtime.lock().await;
+        let mut movement = runtime.borrow_movement_position();
+        let at = movement.read(other).map_err(debug)?;
+        movement
+            .commit_cardinal(at, other_position)
+            .map_err(debug)?;
+    }
+    {
+        let mut runtime = owner.runtime.lock().await;
+        runtime
+            .set_test_creature_health(target, original_health)
+            .map_err(debug)?;
+        let mut movement = runtime.borrow_movement_position();
+        let at = movement.read(actor).map_err(debug)?;
+        if at.position() != original_position {
+            movement
+                .commit_cardinal(at, original_position)
+                .map_err(debug)?;
+        }
+    }
+    owner.spells = original_book;
+    // Remove only the temporary party spell-state fixture. The inherited census
+    // qualification below must still work without any combat state for this member.
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .actors
+        .retain(|(a, s, _)| (*a, *s) != (other, other_session));
+    let mut tx = harness.pool.begin().await?;
+    item_tx::verify_spell_item_chain(&mut tx)
+        .await
+        .map_err(debug)?;
     Ok(())
 }
 
