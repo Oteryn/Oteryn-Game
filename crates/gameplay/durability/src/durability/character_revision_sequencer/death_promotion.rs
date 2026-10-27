@@ -15,7 +15,7 @@ impl RevisionSlot {
         request: CharacterDeathRequest<N>,
         formula: Option<&dyn BuildFormula>,
         original: Option<CharacterRevision>,
-        premium: crate::durability::character_death::promotion::DeathPremiumState,
+        premium: Option<&dyn crate::durability::character_death::promotion::DeathPremiumOwner>,
     ) -> Result<CharacterDeathOutcome, CharacterProgressionError> {
         self.sequenced(
             root_revision(root, authority),
