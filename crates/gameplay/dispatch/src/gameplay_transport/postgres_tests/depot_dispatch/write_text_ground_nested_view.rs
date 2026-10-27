@@ -15,6 +15,7 @@ pub(super) async fn exercise(
     pool: &sqlx::PgPool,
     root: [u8; 16],
     child: [u8; 16],
+    movement: bool,
     definition: std::num::NonZeroU32,
 ) -> TestResult {
     let actor = admitted.runtime_actor.ok_or("actor")?;
@@ -98,7 +99,11 @@ pub(super) async fn exercise(
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 12, 14, 18])
             .ok_or("capabilities")?;
-    dispatch_ground(owner, admitted, definition, Some((pool, root, child))).await?;
+    if movement {
+        super::write_text_ground_movement::dispatch(owner, admitted, definition).await?;
+    } else {
+        dispatch_ground(owner, admitted, definition, Some((pool, root, child))).await?;
+    }
 
     // Each corrupt ancestry class fails closed; restore each fixture before the
     // next assertion. No production constraint or runtime test is disabled.
@@ -255,7 +260,7 @@ async fn fixture(pool: &sqlx::PgPool, sql: &'static str, ids: &[[u8; 16]]) -> Te
     Ok(())
 }
 
-fn open(command_id: u64, handle: ItemHandle) -> TestResult<Vec<u8>> {
+pub(super) fn open(command_id: u64, handle: ItemHandle) -> TestResult<Vec<u8>> {
     let payload = encode_container_view_intent(&ContainerViewIntent::Open {
         handle,
         replace_view: None,
@@ -553,7 +558,7 @@ async fn wait_for_blocker(pool: &sqlx::PgPool, pid: i32) -> TestResult {
     Ok(())
 }
 
-async fn read_frame(client: &mut tokio::io::DuplexStream) -> TestResult<Vec<u8>> {
+pub(super) async fn read_frame(client: &mut tokio::io::DuplexStream) -> TestResult<Vec<u8>> {
     use tokio::io::AsyncReadExt;
     let length = usize::try_from(client.read_u32().await?)?;
     assert!(length <= 1 << 20);
@@ -562,7 +567,7 @@ async fn read_frame(client: &mut tokio::io::DuplexStream) -> TestResult<Vec<u8>>
     Ok(frame)
 }
 
-async fn read_views(
+pub(super) async fn read_views(
     client: &mut tokio::io::DuplexStream,
     command_id: u64,
     expected: usize,
@@ -619,7 +624,7 @@ async fn move_actor(
     Ok(())
 }
 
-async fn read_outcome(
+pub(super) async fn read_outcome(
     client: &mut tokio::io::DuplexStream,
     command_id: u64,
     expected: ContainerViewOutcome,

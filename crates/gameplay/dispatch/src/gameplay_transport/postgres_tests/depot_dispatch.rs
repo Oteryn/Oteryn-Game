@@ -3,6 +3,8 @@
 mod stash_cases;
 #[path = "depot_dispatch/write_text_depot_session.rs"]
 mod write_text_depot_session;
+#[path = "depot_dispatch/write_text_ground_movement.rs"]
+mod write_text_ground_movement;
 #[path = "depot_dispatch/write_text_ground_nested_view.rs"]
 mod write_text_ground_nested_view;
 #[path = "depot_dispatch/write_text_ground_view.rs"]
@@ -29,7 +31,7 @@ use oteryn_protocol_oteryn::depot::*;
 fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "depot e2e panicked")?
         .map_err(Into::into)
@@ -39,7 +41,7 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
 fn stash_session_dispatch_conserves_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true, false, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(true, false, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "stash e2e panicked")?
         .map_err(Into::into)
@@ -49,7 +51,7 @@ fn stash_session_dispatch_conserves_and_replays() -> TestResult {
 fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, true, false, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, true, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "ground container e2e panicked")?
         .map_err(Into::into)
@@ -59,7 +61,7 @@ fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> Tes
 fn write_text_ground_nested_container_real_dispatch_observes_ancestry_and_reach() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, true, true, false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, true, true, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "nested Ground container e2e panicked")?
         .map_err(Into::into)
@@ -69,9 +71,19 @@ fn write_text_ground_nested_container_real_dispatch_observes_ancestry_and_reach(
 fn write_text_depot_real_dispatch_revalidates_session_after_page_wait() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false, false, false, true).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false, false, true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "depot session e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, true, true, false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "Ground movement view e2e panicked")?
         .map_err(Into::into)
 }
 
@@ -80,6 +92,7 @@ fn scenario(
     ground_container: bool,
     nested_ground: bool,
     depot_session: bool,
+    ground_movement: bool,
 ) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
@@ -101,6 +114,9 @@ fn scenario(
                 deps.admitted.world_id,
                 "content-1",
             )?;
+        if ground_movement {
+            deps.room = activated_pin.qualified_room().clone();
+        }
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("item index")?;
@@ -158,6 +174,20 @@ fn scenario(
             .find(|t| t.x == 6)
             .ok_or("locker tile")?;
         locker.items.get_mut(1).ok_or("locker item")?.attrs.depot = Some(0);
+        if ground_movement {
+            let sector = bundle.sectors.first_mut().ok_or("sector")?;
+            let mut tile = sector
+                .tiles
+                .iter()
+                .find(|tile| tile.x == 7)
+                .ok_or("start")?
+                .clone();
+            tile.items.truncate(1);
+            for x in [8, 9] {
+                tile.x = x;
+                sector.tiles.push(tile.clone());
+            }
+        }
         let bytes =
             oteryn_world_bundle::writer::write(&bundle.manifest, &bundle.sectors, &bundle.spawns)
                 .map_err(debug)?;
@@ -429,6 +459,7 @@ fn scenario(
                     &harness.pool,
                     carried.ok_or("Ground root")?,
                     *stacks.get(1).ok_or("nested Ground container")?,
+                    ground_movement,
                     index
                         .definition_ref(
                             "Item",
