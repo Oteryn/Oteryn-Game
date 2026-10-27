@@ -6,6 +6,7 @@ fn promotion_and_blessing_fee_causes_round_trip_under_the_registered_tags() {
     for (cause, tag) in [
         (
             FeeBurnCauseV1::PromotionPurchase(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
                 service_key: "oteryn:service.promotion.eremo".into(),
                 occurrence: uuid(70),
             }),
@@ -13,6 +14,7 @@ fn promotion_and_blessing_fee_causes_round_trip_under_the_registered_tags() {
         ),
         (
             FeeBurnCauseV1::BlessingPurchase(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
                 service_key: "oteryn:service.blessing.the_wisdom_of_solitude".into(),
                 occurrence: uuid(70),
             }),
@@ -34,6 +36,7 @@ fn promotion_audit_refuses_a_bank_part_and_wrong_service_family() {
     let mut value = coins_then_bank();
     value.cause = Some(OneItemFeeBurnCauseV1 {
         cause: Some(FeeBurnCauseV1::PromotionPurchase(OneItemNpcPurchaseV1 {
+            atelier_proof: Vec::new(),
             service_key: "oteryn:service.promotion.eremo".into(),
             occurrence: uuid(70),
         })),
@@ -42,6 +45,7 @@ fn promotion_audit_refuses_a_bank_part_and_wrong_service_family() {
     value.bank_debit = None;
     value.cause = Some(OneItemFeeBurnCauseV1 {
         cause: Some(FeeBurnCauseV1::BlessingPurchase(OneItemNpcPurchaseV1 {
+            atelier_proof: Vec::new(),
             service_key: "oteryn:service.promotion.eremo".into(),
             occurrence: uuid(70),
         })),

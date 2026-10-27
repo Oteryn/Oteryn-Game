@@ -349,6 +349,8 @@ pub enum OneItemOperationV1 {
     PlayerTrade(super::player_trade::audit::OneItemPlayerTradeV1),
     #[prost(message, tag = "15")]
     Craft(super::item_craft::audit::OneItemCraftV1),
+    #[prost(message, tag = "16")]
+    Atelier(super::character_atelier::custody::OneItemAtelierV1),
     // End tag-sorted variants.
 }
 
@@ -373,6 +375,7 @@ pub struct OneItemTransactionV1 {
             13, // ForgeDustLimit
             14, // PlayerTrade
             15, // Craft
+            16, // Atelier
         )
     )]
     pub operation: Option<OneItemOperationV1>,
