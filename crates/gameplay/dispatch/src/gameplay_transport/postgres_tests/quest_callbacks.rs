@@ -15,6 +15,7 @@ const CLAIM: &str = "oteryn:reward-claim.kv.steelhelmet1";
 const CHEST: (u16, u16, i8) = (32460, 31951, -5);
 
 fn source_world(
+    chest: (u16, u16, i8),
     unique: u16,
     appearance: u16,
     offset: u16,
@@ -23,11 +24,11 @@ fn source_world(
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
     let mut data = bundle::read(&bytes)?;
     data.manifest.world = bundle::Extent {
-        min_x: 32448,
-        min_y: 31936,
-        max_x: 32480,
-        max_y: 31968,
-        floors: vec![-5],
+        min_x: chest.0 / 32 * 32,
+        min_y: chest.1 / 32 * 32,
+        max_x: (chest.0 / 32 + 1) * 32,
+        max_y: (chest.1 / 32 + 1) * 32,
+        floors: vec![chest.2],
     };
     // A terrain carrier is legal for a placed chest (the binder also validates
     // Item carriers). Its appearance and unique id must both match the shard.
@@ -47,14 +48,14 @@ fn source_world(
         depth: 0,
         attrs: sector::Attrs::default(),
     };
-    let tiles = (CHEST.0 - 2..=CHEST.0 + offset)
+    let tiles = (chest.0 - 2..=chest.0 + offset)
         .map(|x| sector::Tile {
             x,
-            y: CHEST.1,
+            y: chest.1,
             flags: 0,
             house: 0,
             zones: Vec::new(),
-            items: if x == CHEST.0 + offset {
+            items: if x == chest.0 + offset {
                 vec![
                     ground(),
                     sector::Item {
@@ -74,9 +75,9 @@ fn source_world(
     let bytes = oteryn_world_bundle::writer::write(
         &data.manifest,
         &[bundle::Sector {
-            floor: CHEST.2,
-            sx: CHEST.0 / 32,
-            sy: CHEST.1 / 32,
+            floor: chest.2,
+            sx: chest.0 / 32,
+            sy: chest.1 / 32,
             tiles,
         }],
         &Default::default(),
@@ -89,9 +90,9 @@ fn source_world(
             map_revision: crate::map::overlay::map_revision(&base),
             bundle: pins,
             start: crate::map::overlay::TilePos {
-                x: CHEST.0 - 1,
-                y: CHEST.1,
-                floor: CHEST.2,
+                x: chest.0 - 1,
+                y: chest.1,
+                floor: chest.2,
             },
         },
         crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
@@ -123,7 +124,7 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
         (6176, 2435, 0, false),
         (6176, 2434, 1, false),
     ] {
-        let world = source_world(unique, appearance, offset)?;
+        let world = source_world(CHEST, unique, appearance, offset)?;
         let report = bind_embedded_reward_claims(world.base().as_ref(), &|_| true)?;
         assert_eq!(
             report
@@ -198,15 +199,19 @@ async fn wire_uses(
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>(results)
     };
-    let (_, results) = tokio::time::timeout(
+    let (end, results) = tokio::time::timeout(
         std::time::Duration::from_secs(30),
         super::fixture::join_two(
-            serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS),
+            async {
+                let end = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await;
+                drop(server);
+                end
+            },
             peer,
         ),
     )
     .await?;
-    results
+    results.map_err(|error| format!("{end:?}: {error}").into())
 }
 
 #[test]
@@ -216,16 +221,53 @@ fn quest_callbacks_source_chest_use_once_replay_and_second_use_refused() -> Test
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(|| scenario(false).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "quest callbacks e2e panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn quest_callbacks_bundle_chest_advances_quest_once_after_catalogue_admission() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "quest chest e2e panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario(quest: bool) -> TestResult {
+    let (claim, chest, unique, appearance, reward, quantity) = if quest {
+        (
+            "oteryn:reward-claim.quest.u8_4.the_hidden_city_of_beregar.firewalker_boots",
+            (32582, 31405, -15),
+            6284,
+            2472,
+            "oteryn:item.tibia.i9019",
+            1,
+        )
+    } else {
+        (CLAIM, CHEST, 6176, 2434, "oteryn:item.tibia.i3031", 56)
+    };
+    let transition =
+        "oteryn:quest-transition/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots/chest";
+    let track = "oteryn:quest-progress/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots";
     run(async |admin| {
-        let harness =
-            Harness::create_with_admission_seed(admin, "quest_callbacks", false, false).await?;
+        let harness = Harness::create_with_admission_seed(
+            admin,
+            if quest {
+                "quest_bundle_chest"
+            } else {
+                "quest_callbacks"
+            },
+            false,
+            false,
+        )
+        .await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -241,7 +283,38 @@ fn scenario() -> TestResult {
             )?;
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
-        let world = source_world(6176, 2434, 0)?;
+        let world = source_world(chest, unique, appearance, 0)?;
+        if quest {
+            let facts = crate::gameplay_transport::item_ref_admission::generation_item_facts(
+                native,
+                &TypedDefinitionRef {
+                    family: "Item".into(),
+                    production_key: reward.into(),
+                    revision_ref: "definition-r1".into(),
+                },
+            )
+            .map_err(debug)?;
+            assert_ne!(
+                facts.stack,
+                crate::durability::item_transfer::ItemStackClass::Unknown
+            );
+            let report = crate::content::world_reward_claims::bind_embedded_reward_claims(
+                world.base().as_ref(),
+                &|_| true,
+            )?;
+            assert!(
+                report
+                    .served
+                    .iter()
+                    .any(|entry| entry.key.as_str() == claim),
+                "source claim did not bind: {:?}",
+                report
+                    .unbound
+                    .iter()
+                    .filter(|entry| entry.claim == claim)
+                    .collect::<Vec<_>>()
+            );
+        }
         let cells = world
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
@@ -253,9 +326,9 @@ fn scenario() -> TestResult {
             activated_pin.frame_binding().digest(),
             world.map_revision_digest(),
             (
-                i32::from(CHEST.0) - 1,
-                i32::from(CHEST.1),
-                -i16::from(CHEST.2),
+                i32::from(chest.0) - 1,
+                i32::from(chest.1),
+                -i16::from(chest.2),
             ),
         );
         let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -278,9 +351,9 @@ fn scenario() -> TestResult {
             .initialize_pinned_test_position(
                 deps.actor,
                 MovementLocalPosition {
-                    x: i32::from(CHEST.0) - 1,
-                    y: i32::from(CHEST.1),
-                    floor: -i16::from(CHEST.2),
+                    x: i32::from(chest.0) - 1,
+                    y: i32::from(chest.1),
+                    floor: -i16::from(chest.2),
                 },
             )
             .map_err(debug)?;
@@ -326,7 +399,7 @@ fn scenario() -> TestResult {
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        let key = oteryn_world_bundle::bundle::placement_key(CHEST.2, CHEST.0, CHEST.1, 1)
+        let key = oteryn_world_bundle::bundle::placement_key(chest.2, chest.0, chest.1, 1)
             .ok_or("key")?;
         let mut placement = world.base().digest().to_vec();
         placement.extend_from_slice(&key.to_be_bytes());
@@ -334,6 +407,46 @@ fn scenario() -> TestResult {
             placement,
             expected_revision: 0,
         };
+        if quest {
+            let lowered =
+                oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                    .map_err(debug)?;
+            let mounted = std::sync::Arc::new(lowered.catalogue().clone());
+            for (catalogue, stale) in [
+                (None, false),
+                (Some(super::quest_runtime_fixture::catalogue()?), false),
+                (Some(mounted), true),
+            ] {
+                let mut owner = deps.owner(&harness, &authority);
+                owner.active_generation = Some(generation);
+                owner.movement_cells = &cells;
+                owner.quest_catalogue = catalogue;
+                owner.admit_progression_session(&mut admitted).await;
+                deps.initialize(&owner).await;
+                let mut attempt = admitted;
+                if stale {
+                    let mut stale_fence = fence;
+                    stale_fence.character_lease_generation += 1;
+                    attempt.item_fence = Some(stale_fence);
+                }
+                // Invalid catalogue or current authority refuses before minting. Each
+                // attempt has its own owner and command stream, as does a fresh admission.
+                assert_eq!(
+                    wire_uses(&owner, attempt, &[1], &target)
+                        .await
+                        .map_err(|e| format!("catalogue/fence refusal: {e}"))?,
+                    [UseDisposition::Rejected]
+                );
+                let counts: (i64, i64, i64) = sqlx::query_as(
+                    "SELECT (SELECT count(*) FROM game_reward_claim_mint_receipts), \
+                    (SELECT count(*) FROM game_character_quest_obligations), \
+                    (SELECT count(*) FROM game_character_quest_receipts)",
+                )
+                .fetch_one(&harness.pool)
+                .await?;
+                assert_eq!(counts, (0, 0, 0));
+            }
+        }
         // The second USE is a new command on the live connection. Rebuild the owner
         // for the replay so no Foundation command-result cache can satisfy it.
         for (commands, expected) in [
@@ -348,8 +461,17 @@ fn scenario() -> TestResult {
             owner.movement_cells = &cells;
             owner.admit_progression_session(&mut admitted).await;
             deps.initialize(&owner).await;
+            if quest {
+                let lowered =
+                    oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
+                        .map_err(debug)?;
+                owner.quest_catalogue = Some(std::sync::Arc::new(lowered.catalogue().clone()));
+                owner.admit_quest_session(&admitted).await;
+            }
             assert_eq!(
-                wire_uses(&owner, admitted, commands, &target).await?,
+                wire_uses(&owner, admitted, commands, &target)
+                    .await
+                    .map_err(|e| format!("quest={quest} commands={commands:?}: {e}"))?,
                 expected
             );
             let bag = harness
@@ -359,14 +481,33 @@ fn scenario() -> TestResult {
                 .map_err(debug)?
                 .ok_or("bag")?;
             assert_eq!(bag.entries.len(), 1);
-            assert_eq!(bag.entries[0].item.quantity, 56);
-            assert_eq!(
-                bag.entries[0].item.definition.production_key,
-                "oteryn:item.tibia.i3031"
-            );
+            assert_eq!(bag.entries[0].item.quantity, quantity);
+            assert_eq!(bag.entries[0].item.definition.production_key, reward);
+            if quest {
+                let sessions = owner.states.quest_sessions.lock().map_err(debug)?;
+                let copy = sessions
+                    .get(&admitted.game_session_id)
+                    .and_then(|session| session.copy.as_ref())
+                    .ok_or("refreshed quest copy")?;
+                assert_eq!(copy.tracks().get(track), Some(&1));
+            }
+        }
+        if quest {
+            let copy = harness
+                .root
+                .read_character_quest_state(&authority, fence.character_id)
+                .await
+                .map_err(debug)?;
+            assert_eq!(copy.tracks().get(track), Some(&1));
+            let outcome: (i64, i64, i64) = sqlx::query_as(
+                "SELECT (SELECT count(*) FROM game_character_quest_receipts WHERE transition_key=$1), \
+                (SELECT count(*) FROM game_character_quest_obligations WHERE transition_key=$1 AND state='CONSUMED'), \
+                (SELECT count(*) FROM game_character_quest_obligations WHERE transition_key=$1 AND state <> 'CONSUMED')")
+                .bind(transition).fetch_one(&harness.pool).await?;
+            assert_eq!(outcome, (1, 1, 0));
         }
         let claims: (i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_reward_claims WHERE character_id=encode($1,'hex')::uuid AND claim_production_key=$2), (SELECT count(*) FROM game_reward_claim_mint_receipts)")
-            .bind(fence.character_id.as_bytes().as_slice()).bind(CLAIM).fetch_one(&harness.pool).await?;
+            .bind(fence.character_id.as_bytes().as_slice()).bind(claim).fetch_one(&harness.pool).await?;
         assert_eq!(claims, (1, 1));
         drop(authority);
         drop(seal);
