@@ -367,6 +367,7 @@ fn setup_named(
             reference_level_party_lowest: None,
         },
         multiplier_ppm: 1_000_000,
+        equipment_protection: None,
         immune: false,
         condition_policy: None,
     };
@@ -1624,7 +1625,7 @@ fn summer_current_holy_target_lethal_hit_retains_the_existing_death_receipt() {
 
 fn qualify_current_spell_replay(name: &str, index: usize) {
     let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
-    let execute = if index == 1 {
+    let execute = if source.area.is_some() {
         DamageSpellOwner::execute_current_elemental_area
     } else {
         DamageSpellOwner::execute_current_target_damage
@@ -1709,7 +1710,7 @@ fn summer_current_ice_area_lethal_hit_retains_the_existing_death_receipt() {
 
 fn qualify_current_spell_lethal(name: &str, index: usize) {
     let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
-    let execute = if index == 1 {
+    let execute = if source.area.is_some() {
         DamageSpellOwner::execute_current_elemental_area
     } else {
         DamageSpellOwner::execute_current_target_damage
@@ -2921,5 +2922,73 @@ fn reference_level_observed_area_curves_reach_real_damage_dispatch() {
                 100 + observation[1].as_u64().expect("extra ppm") as u32 / 10_000
             );
         }
+    }
+}
+
+#[test]
+fn dmg3_earth_death_target_sources_read_protection_and_replay() {
+    use crate::content::{ReferenceRationalPercent, ReferenceResistanceKind as Kind};
+    for (name, index, element) in [
+        ("branchy_crawler", 1, Kind::Earth),
+        ("brachiodemon", 3, Kind::Death),
+    ] {
+        qualify_current_spell_replay(name, index);
+        let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
+        let mut state = vitals
+            .read_owned_player_state_test_snapshot(
+                &runtime,
+                proposal.target,
+                world.facts.attack.session,
+            )
+            .expect("state")
+            .clone();
+        state.install_equipped_element_protection(
+            element,
+            Some(ReferenceRationalPercent {
+                numerator: 100,
+                denominator: 1,
+            }),
+        );
+        world.facts.equipment_protection = Some(ReferenceRationalPercent {
+            numerator: 3,
+            denominator: 1,
+        });
+        assert_eq!(
+            world.facts.mitigate_damage(11),
+            Some(11),
+            "truncate absorbed damage once"
+        );
+        assert_eq!(world.facts.mitigate_damage(101), Some(98));
+        world.facts.equipment_protection = state.equipped_element_protection(element);
+        let stamp = runtime.issue_owner_work().expect("work");
+        let mut spells = DamageSpellOwner::default();
+        let before = crate::gameplay_transport::actor_spell::observe_vitals(
+            &runtime,
+            &vitals,
+            proposal.target,
+            world.facts.attack.session,
+        )
+        .expect("state");
+        spells
+            .execute_current_target_damage(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("protected source");
+        assert_eq!(
+            crate::gameplay_transport::actor_spell::observe_vitals(
+                &runtime,
+                &vitals,
+                proposal.target,
+                world.facts.attack.session
+            )
+            .expect("state"),
+            before
+        );
     }
 }

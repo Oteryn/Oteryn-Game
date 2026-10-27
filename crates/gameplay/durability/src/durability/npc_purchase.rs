@@ -59,6 +59,7 @@ pub struct NpcPurchaseRequest {
 pub enum PurchaseRefusal {
     NotEligible,
     AlreadyHeld,
+    PartialOwnership,
     PremiumRequired,
     InsufficientFunds,
 }
@@ -148,7 +149,7 @@ impl DurabilityRoot {
                 }
                 let level = u32::try_from(state.try_get::<i64,_>("level")?).map_err(|_| DurabilityError::InvalidStoredState)?;
                 let quote = match &request.service {
-                    PurchaseService::Promotion(_) => super::promotion_purchase::quote(&mut tx,fence.character_id,&request.npc_key,&request.service,level).await?,
+                    PurchaseService::Promotion(_) => super::promotion_purchase::quote(&mut tx,fence.character_id,&request.npc_key,&request.service,level).await?.map(|(price, _)| (price, Vec::new())),
                     PurchaseService::Blessing(_) => super::blessing_purchase::quote(&mut tx,fence.character_id,&request.npc_key,&request.service,level).await?,
                 };
                 let (price,blessing) = match quote {
@@ -173,10 +174,13 @@ impl DurabilityRoot {
                 }
                 let current_xid: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text").fetch_one(&mut **tx).await?;
                 if xid != current_xid { return Err(DurabilityError::InvalidStoredState); }
-                receipt::insert(&mut tx,&fence,&request,&fee,blessing.as_deref(),&binding).await?;
-                match blessing {
-                    Some(key) => super::blessing_purchase::grant(&mut tx,fence.character_id,&key,occurrence).await?,
-                    None => super::promotion_purchase::grant(&mut tx,fence.character_id,occurrence).await?,
+                receipt::insert(&mut tx,&fence,&request,&fee,&blessing,&binding).await?;
+                if blessing.is_empty() {
+                    super::promotion_purchase::grant(&mut tx,fence.character_id,occurrence).await?;
+                } else {
+                    for key in blessing {
+                        super::blessing_purchase::grant(&mut tx,fence.character_id,&key,occurrence).await?;
+                    }
                 }
                 let receipt = load_by_command(&mut tx,fence.character_id,request.command).await?.ok_or(DurabilityError::InvalidStoredState)?.1;
                 tx.commit(deadline).await?;

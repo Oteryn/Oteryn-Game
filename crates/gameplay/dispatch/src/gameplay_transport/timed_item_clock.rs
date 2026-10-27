@@ -140,6 +140,23 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .checkpoint_imbuement_equipment(actor, session, fence)
             .await
         {
+            // IMBUE-FORGE0 §4.3: an unknown checkpoint suspends installed effects.
+            // Keep only the independently fenced equipment projection until replay succeeds.
+            use super::equipment_move::equipment_effects_owner as effects;
+            if let Some(base) = (|| {
+                Some((
+                    effects::equipment_effects(&equipment, native)?,
+                    effects::equipped_armor(&equipment, native)?,
+                    effects::equipped_defence(&equipment, native)?,
+                    effects::equipped_mana_shield(&equipment, native)?,
+                    effects::equipped_offence(&equipment, native)?,
+                ))
+            })() {
+                let runtime = self.runtime.lock().await;
+                let _ = self
+                    .install_admission_suppressions(&runtime, actor, session, Some(base))
+                    .await;
+            }
             return false;
         }
         let now = u64::try_from(self.clock_origin.elapsed().as_millis()).unwrap_or(u64::MAX);

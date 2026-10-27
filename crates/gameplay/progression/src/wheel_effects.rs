@@ -8,6 +8,11 @@ use std::collections::{BTreeMap, BTreeSet};
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct WheelSocketSeam {
     pub resonance_stages: BTreeMap<String, u8>,
+    /// Active positions only, after the preceding-position grade cap.
+    pub effective_grades: BTreeMap<u128, Vec<u8>>,
+    pub grade_iv_points: u32,
+    /// Signed catalogue values in thousandths, including resistance penalties.
+    pub gem_values_milli: BTreeMap<(String, String), i64>,
 }
 
 /// Contributions consumed by the existing stat, spell and combat owners.
@@ -117,6 +122,148 @@ pub fn derive_stat_bonuses(
     premium: bool,
 ) -> Option<WheelStatBonuses> {
     derive_runtime_effects(catalogue, allocation, vocation, level, promoted, premium)
+}
+
+impl WheelRuntimeEffects {
+    /// Apply the Character's committed vessel projection to the existing Wheel contribution.
+    pub fn contribute_gems(
+        &mut self,
+        state: &crate::atelier::AtelierState,
+        data: &crate::wheel_gem_data::WheelGemData,
+        allocation: &WheelAllocation,
+    ) -> Option<()> {
+        use crate::atelier::FragmentKind;
+        let current = data.revision();
+        let vocation = crate::wheel::base_vocation(&state.vocation)?;
+        let family = &data.wheel()["vocations"][vocation];
+        let mut domain_points = BTreeMap::<&str, u32>::new();
+        for (slot, points) in data.wheel()["topology"]
+            .as_array()?
+            .iter()
+            .zip(allocation.slots.points())
+        {
+            *domain_points.entry(slot["domain"].as_str()?).or_default() += u32::from(*points);
+        }
+        let grades_current = state.grade_ruleset_revision.as_deref() == Some(current);
+        self.sockets.grade_iv_points = if grades_current {
+            state.grades.values().filter(|grade| **grade == 3).count() as u32
+        } else {
+            0
+        };
+        for gem in state
+            .gems
+            .values()
+            .filter(|gem| gem.vessel && gem.ruleset_revision == current)
+        {
+            let resonance_key = match gem.domain {
+                crate::wheel::WheelDomain::Green => "vessel_resonance_top_left",
+                crate::wheel::WheelDomain::Red => "vessel_resonance_top_right",
+                crate::wheel::WheelDomain::Purple => "vessel_resonance_bottom_right",
+                crate::wheel::WheelDomain::Blue => "vessel_resonance_bottom_left",
+            };
+            let active = usize::from(
+                *self
+                    .sockets
+                    .resonance_stages
+                    .get(resonance_key)
+                    .unwrap_or(&0),
+            )
+            .min(gem.mods.len());
+            let mut cap = 3;
+            let mut effective = Vec::new();
+            for (position, id) in gem.mods.iter().copied().take(active).enumerate() {
+                let kind = if position == 2 {
+                    FragmentKind::Supreme
+                } else {
+                    FragmentKind::Basic
+                };
+                let grade = if grades_current {
+                    state.grades.get(&(kind, id)).copied().unwrap_or(0)
+                } else {
+                    0
+                };
+                cap = cap.min(grade);
+                effective.push(cap);
+                let catalogue = &data.gems()["catalogue"];
+                if kind == FragmentKind::Basic {
+                    let row = catalogue["basic_mods"]
+                        .as_array()?
+                        .iter()
+                        .find(|row| row["source_id"].as_u64() == Some(u64::from(id)))?;
+                    for effect in row["effects"].as_array()? {
+                        let name = effect["name"].as_str()?;
+                        let value =
+                            effect["values_by_vocation"][vocation][usize::from(cap)].as_f64()?;
+                        let entry = self
+                            .sockets
+                            .gem_values_milli
+                            .entry((name.into(), String::new()))
+                            .or_default();
+                        *entry = entry.checked_add((value * 1000.0).round() as i64)?;
+                        match name {
+                            "Hit Points" => {
+                                self.max_health = self.max_health.checked_add(value as u32)?
+                            }
+                            "Mana" => self.max_mana = self.max_mana.checked_add(value as u32)?,
+                            "Capacity" => {
+                                self.capacity = self.capacity.checked_add(value as u32)?
+                            }
+                            "Mitigation Multiplier" => {
+                                self.mitigation_milli_percent = self
+                                    .mitigation_milli_percent
+                                    .checked_add((value * 1000.0).round() as u32)?
+                            }
+                            _ => (),
+                        }
+                    }
+                } else {
+                    let row = catalogue["supreme_mods"]
+                        .as_array()?
+                        .iter()
+                        .find(|row| row["source_id"].as_u64() == Some(u64::from(id)))?;
+                    for effect in row["grades"][usize::from(cap)]["numeric_effects"].as_array()? {
+                        let name = effect["kind"].as_str()?;
+                        let value = effect["value"].as_f64()?;
+                        let entry = self
+                            .sockets
+                            .gem_values_milli
+                            .entry((name.into(), effect["target"].as_str()?.into()))
+                            .or_default();
+                        *entry = entry.checked_add((value * 1000.0).round() as i64)?;
+                        match name {
+                            "revelation_mastery_points" => {
+                                let target = effect["target"].as_str()?;
+                                let revelation = family["revelations"]
+                                    .as_array()?
+                                    .iter()
+                                    .find(|row| row["name"].as_str() == Some(target))?;
+                                let points = domain_points
+                                    .entry(revelation["domain"].as_str()?)
+                                    .or_default();
+                                *points = points.checked_add(value as u32)?;
+                            }
+                            "life_leech" => {
+                                self.life_leech_hundredths_percent = self
+                                    .life_leech_hundredths_percent
+                                    .checked_add((value * 100.0).round() as u32)?
+                            }
+                            "mana_leech" => {
+                                self.mana_leech_hundredths_percent = self
+                                    .mana_leech_hundredths_percent
+                                    .checked_add((value * 100.0).round() as u32)?
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+            }
+            self.sockets.effective_grades.insert(gem.id, effective);
+        }
+        self.revelation_stages.clear();
+        self.revelation_numeric_effects.clear();
+        project_revelations(family, &domain_points, self)?;
+        Some(())
+    }
 }
 
 fn project_dedication(slot: &Value, points: u32, out: &mut WheelRuntimeEffects) -> Option<()> {
@@ -294,5 +441,88 @@ mod tests {
             ),
             Some(WheelRuntimeEffects::default())
         );
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod atelier_tests {
+    use super::*;
+    use crate::atelier::{AtelierState, FragmentKind, Gem, GemQuality};
+    use crate::wheel::{WheelDomain, WheelSlots};
+    use crate::wheel_gem_data::WheelGemData;
+
+    #[test]
+    fn atelier_resonance_caps_shared_grades_and_revelation_mastery() {
+        let data = WheelGemData::embedded().expect("catalogue");
+        let mut points = [0; 36];
+        let mut reduced = false;
+        for (index, slot) in data.wheel()["topology"]
+            .as_array()
+            .expect("topology")
+            .iter()
+            .enumerate()
+        {
+            if slot["domain"] == "green" {
+                points[index] =
+                    u16::try_from(slot["capacity"].as_u64().expect("capacity")).expect("bounded");
+                if points[index] == 200 && !reduced {
+                    points[index] = 50;
+                    reduced = true;
+                }
+            }
+        }
+        let allocation = WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::new(points).expect("slots"),
+            current: true,
+        };
+        let mut state = AtelierState {
+            vocation: "knight".into(),
+            grade_ruleset_revision: Some(data.revision().into()),
+            ..Default::default()
+        };
+        state.gems.insert(
+            1,
+            Gem {
+                id: 1,
+                quality: GemQuality::Greater,
+                domain: WheelDomain::Green,
+                mods: vec![31, 0, 5],
+                locked: false,
+                vessel: true,
+                ruleset_revision: data.revision().into(),
+            },
+        );
+        for (kind, id, grade) in [
+            (FragmentKind::Basic, 31, 1),
+            (FragmentKind::Basic, 0, 3),
+            (FragmentKind::Supreme, 5, 3),
+        ] {
+            state.grades.insert((kind, id), grade);
+        }
+        let mut effects =
+            derive_runtime_effects(data.wheel(), &allocation, "knight", 2000, true, true)
+                .expect("effects");
+        assert_eq!(effects.revelation_stages.get("gift_of_life"), Some(&2));
+        effects
+            .contribute_gems(&state, &data, &allocation)
+            .expect("contribution");
+        assert_eq!(
+            effects.sockets.effective_grades.get(&1),
+            Some(&vec![1, 1, 1])
+        );
+        assert_eq!(effects.sockets.grade_iv_points, 2);
+        assert_eq!(effects.revelation_stages.get("gift_of_life"), Some(&3));
+        state.gems.get_mut(&1).expect("gem").ruleset_revision = "old".into();
+        let mut dormant =
+            derive_runtime_effects(data.wheel(), &allocation, "knight", 2000, true, true)
+                .expect("effects");
+        dormant
+            .contribute_gems(&state, &data, &allocation)
+            .expect("dormant");
+        assert!(dormant.sockets.effective_grades.is_empty());
+        assert_eq!(dormant.revelation_stages.get("gift_of_life"), Some(&2));
     }
 }

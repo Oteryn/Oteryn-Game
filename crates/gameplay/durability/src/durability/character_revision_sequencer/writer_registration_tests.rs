@@ -26,6 +26,7 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
 // Revision-advancing fees run inside their sequenced Character source.
 // ITEM-TIMED-1 is the accepted item-only exception under the same locked root.
 const FEE_WRITERS: &[&str] = &[
+    "durability/character_atelier/actions.rs",
     "durability/character_cyclopedia.rs",
     "durability/charm_state.rs",
     "durability/item_imbuement.rs",

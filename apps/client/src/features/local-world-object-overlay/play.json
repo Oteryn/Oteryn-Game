@@ -1,0 +1,9 @@
+{
+  "concerns": [
+    "protocol",
+    "state"
+  ],
+  "events": {
+    "WorldObjectOverlay": "overlay"
+  }
+}

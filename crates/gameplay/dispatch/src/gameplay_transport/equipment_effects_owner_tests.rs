@@ -132,3 +132,149 @@ mod first_entry_tests;
 mod offence_tests;
 #[path = "equipment_effects_owner_tests/postgres_scenario.rs"]
 mod postgres_scenario;
+
+#[test]
+fn dmg3_installed_protection_tiers_expiry_custody_and_catalogue() -> TestResult {
+    use crate::content::ReferenceResistanceKind as Kind;
+    use crate::durability::imbuement::EquippedImbuement;
+    let content = native(&input()?)?;
+    let mut equipment = snapshot(&content, "oteryn:item.tibia.i2854", 9);
+    let catalogue: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../rulesets/items/imbuements/catalogue.json"
+    ))?;
+    for (category, element, name) in [
+        (2, Kind::Death, "Lich Shroud"),
+        (3, Kind::Earth, "Snake Skin"),
+        (4, Kind::Energy, "Cloud Fabric"),
+        (5, Kind::Fire, "Dragon Hide"),
+        (6, Kind::Holy, "Demon Presence"),
+        (7, Kind::Ice, "Quara Scale"),
+    ] {
+        for tier in 1..=3 {
+            let mut installed = EquippedImbuement {
+                item: [2; 16],
+                slot: 0,
+                category,
+                tier,
+                remaining_ms: 1,
+                occurrence: [3; 16],
+            };
+            let effects = equipment_effects_inner(
+                &equipment,
+                &content,
+                false,
+                std::slice::from_ref(&installed),
+            )
+            .ok_or("effects")?;
+            let expected = catalogue["definitions"]
+                .as_array()
+                .ok_or("definitions")?
+                .iter()
+                .find(|d| d["name"] == name)
+                .ok_or("definition")?["tiers"][usize::from(tier - 1)]["effect"]["absorb_bps"]
+                .as_i64()
+                .ok_or("absorb")?
+                / 100;
+            assert_eq!(effects.protections[&element].numerator, expected);
+            installed.remaining_ms = 0;
+            assert!(
+                !equipment_effects_inner(
+                    &equipment,
+                    &content,
+                    false,
+                    std::slice::from_ref(&installed)
+                )
+                .ok_or("expired")?
+                .protections
+                .contains_key(&element)
+            );
+            installed.remaining_ms = 1;
+            installed.item = [99; 16];
+            assert!(
+                !equipment_effects_inner(
+                    &equipment,
+                    &content,
+                    false,
+                    std::slice::from_ref(&installed)
+                )
+                .ok_or("custody")?
+                .protections
+                .contains_key(&element)
+            );
+        }
+    }
+    equipment.items[0].slot = 10;
+    let installed = EquippedImbuement {
+        item: [2; 16],
+        slot: 0,
+        category: 3,
+        tier: 3,
+        remaining_ms: 100,
+        occurrence: [3; 16],
+    };
+    assert!(
+        equipment_effects_inner(&equipment, &content, false, &[installed])
+            .ok_or("wrong slot")?
+            .protections
+            .is_empty()
+    );
+    Ok(())
+}
+
+#[test]
+fn dmg3_installed_offence_tiers_add_before_clamp_and_expired_rows_do_not_contribute() -> TestResult
+{
+    use crate::durability::imbuement::EquippedImbuement;
+    let modifier = |kind| {
+        serde_json::json!({"kind":kind,
+        "parameter":{"state":"KNOWN","value":{"kind":"RATIONAL_PERCENT","value":{"numerator":-1,"denominator":1}}},
+        "evaluation_phase":{"state":"UNKNOWN"},"priority":{"state":"UNKNOWN"},"target_domain":{"state":"UNKNOWN"}})
+    };
+    let content = native(&fixture_input(
+        serde_json::json!([
+            modifier("CRITICAL_HIT_CHANCE"),
+            modifier("CRITICAL_HIT_DAMAGE"),
+            modifier("LIFE_LEECH_AMOUNT"),
+            modifier("MANA_LEECH_AMOUNT")
+        ]),
+        Some(0),
+    )?)?;
+    let equipment = snapshot(&content, "oteryn:item.tibia.i2854", 9);
+    for tier in 1..=3 {
+        let mut installed: Vec<_> = [(0, 0), (1, 10), (2, 11)]
+            .into_iter()
+            .map(|(slot, category)| EquippedImbuement {
+                item: [2; 16],
+                slot,
+                category,
+                tier,
+                remaining_ms: 1,
+                occurrence: [3; 16],
+            })
+            .collect();
+        let result = equipped_offence_inner(&equipment, &content, &installed).ok_or("offence")?;
+        let index = usize::from(tier - 1);
+        assert_eq!(
+            (
+                result.critical_chance,
+                result.critical_damage,
+                result.life_leech,
+                result.mana_leech
+            ),
+            (
+                400,
+                [400, 1400, 3900][index],
+                [400, 900, 2400][index],
+                [200, 400, 700][index]
+            )
+        );
+        for row in &mut installed {
+            row.remaining_ms = 0;
+        }
+        assert_eq!(
+            equipped_offence_inner(&equipment, &content, &installed),
+            Some(EquippedOffence::default())
+        );
+    }
+    Ok(())
+}

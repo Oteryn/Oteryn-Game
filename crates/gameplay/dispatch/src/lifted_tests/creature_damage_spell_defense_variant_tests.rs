@@ -100,6 +100,7 @@ impl SpellWorldReader for World {
                 reference_level_party_lowest: None,
             },
             multiplier_ppm: 1_000_000,
+            equipment_protection: None,
             immune: false,
             condition_policy: Some(CurrentConditionPolicy {
                 immunities: vec![],

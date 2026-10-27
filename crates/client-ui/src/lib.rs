@@ -16,6 +16,9 @@ pub mod paced_movement {
         "/src/features/0013-paced-movement/input.rs"
     ));
 }
+/// Quest log panel and input bindings.
+#[path = "features/0016-quest-log/mod.rs"]
+pub mod quest_log;
 /// Logout key intent mapping.
 pub mod logout {
     include!(concat!(
@@ -24,12 +27,8 @@ pub mod logout {
     ));
 }
 /// Local spell action-bar key intent mapping.
-pub mod spell_action_bar {
-    include!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/src/features/local-spell-action-bar/input.rs"
-    ));
-}
+#[path = "features/local-spell-action-bar/mod.rs"]
+pub mod spell_action_bar;
 
 /// Bestiary and Charms page state, protocol mapping, views, and settings.
 #[path = "features/0001-bestiary-charms/mod.rs"]

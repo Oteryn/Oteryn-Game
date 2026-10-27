@@ -35,13 +35,14 @@ pub(in crate::gameplay_transport) fn equipment_effects(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
 ) -> Option<EquipmentEffects> {
-    equipment_effects_inner(equipment, content, false)
+    equipment_effects_inner(equipment, content, false, &[])
 }
 
 fn equipment_effects_inner(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
     require_known_speed: bool,
+    imbuements: &[crate::durability::imbuement::EquippedImbuement],
 ) -> Option<EquipmentEffects> {
     if equipment.content_digest != content.source_digest() {
         return None;
@@ -60,7 +61,7 @@ fn equipment_effects_inner(
             )?;
             let semantics = &policy.record().semantics;
             let in_own_slot = in_own_slot(semantics, semantic_slot);
-            let input = EquipmentEffectInput {
+            let mut input = EquipmentEffectInput {
                 slot,
                 definition_key: (
                     &policy.record().production_definition.production_key,
@@ -69,6 +70,38 @@ fn equipment_effects_inner(
                 in_own_slot,
                 profile: item_ability_profile(semantics).ok()?,
             };
+            for installed in imbuements
+                .iter()
+                .filter(|b| b.item == item.item_instance_id && b.remaining_ms > 0)
+            {
+                use crate::content::ReferenceResistanceKind as Kind;
+                use oteryn_gameplay_content::content::item_abilities::ItemAbility;
+                // Durable categories are the native catalogue family minus one, not Canary's
+                // XML category ids. Only the six admitted protection families contribute.
+                let element = match installed.category {
+                    2 => Kind::Death,
+                    3 => Kind::Earth,
+                    4 => Kind::Energy,
+                    5 => Kind::Fire,
+                    6 => Kind::Holy,
+                    7 => Kind::Ice,
+                    _ => continue,
+                };
+                let tier = usize::from(installed.tier.checked_sub(1)?);
+                let amounts = if element == Kind::Death {
+                    [2, 5, 10]
+                } else {
+                    [3, 8, 15]
+                };
+                input.profile.abilities.push(ItemAbility::Protection {
+                    element,
+                    percent: crate::content::ReferenceRationalPercent {
+                        numerator: *amounts.get(tier)?,
+                        denominator: 1,
+                    },
+                    field_only: false,
+                });
+            }
             if require_known_speed && input.contributes_speed() {
                 policy.record().attributes.speed_bonus?;
             }
@@ -190,6 +223,14 @@ pub(in crate::gameplay_transport) fn equipped_offence(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
 ) -> Option<EquippedOffence> {
+    equipped_offence_inner(equipment, content, &[])
+}
+
+fn equipped_offence_inner(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+    imbuements: &[crate::durability::imbuement::EquippedImbuement],
+) -> Option<EquippedOffence> {
     if equipment.content_digest != content.source_digest() {
         return None;
     }
@@ -235,6 +276,21 @@ pub(in crate::gameplay_transport) fn equipped_offence(
         {
             continue;
         }
+        for installed in imbuements
+            .iter()
+            .filter(|b| b.item == item.item_instance_id && b.remaining_ms > 0)
+        {
+            let tier = usize::from(installed.tier.checked_sub(1)?);
+            let values = match installed.category {
+                0 => [500, *[500, 1500, 4000].get(tier)?, 0, 0],
+                10 => [0, 0, *[500, 1000, 2500].get(tier)?, 0],
+                11 => [0, 0, 0, *[300, 500, 800].get(tier)?],
+                _ => continue,
+            };
+            for (sum, value) in sums.iter_mut().zip(values) {
+                *sum = sum.saturating_add(value);
+            }
+        }
         let offence = item_offence_modifiers(semantics);
         for (sum, value) in sums.iter_mut().zip([
             offence.critical_chance,
@@ -269,7 +325,7 @@ pub(in crate::gameplay_transport) fn speed_term(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
 ) -> Option<i32> {
-    i32::try_from(equipment_effects_inner(equipment, content, true)?.speed).ok()
+    i32::try_from(equipment_effects_inner(equipment, content, true, &[])?.speed).ok()
 }
 
 /// The suppressions, worn armor, hands' defence, mana shield and offence one admission installs.
@@ -296,11 +352,32 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let equipment = super::read_current_equipment(self, session)
             .await
             .ok_or(())?;
-        let effects = equipment_effects(&equipment, native).ok_or(())?;
+        let fence = self
+            .current_quest_fence(session)
+            .await
+            .map_err(|_| ())?
+            .ok_or(())?;
+        let mut imbuements = self
+            .root
+            .read_worn_imbuements(self.character, self.holder, fence)
+            .await
+            .map_err(|_| ())?;
+        if self
+            .states
+            .timed_items
+            .imbuements
+            .lock()
+            .await
+            .get(&session)
+            .is_some_and(|clock| clock.pending.is_some())
+        {
+            imbuements.clear();
+        }
+        let effects = equipment_effects_inner(&equipment, native, false, &imbuements).ok_or(())?;
         let armor = equipped_armor(&equipment, native).ok_or(())?;
         let defence = equipped_defence(&equipment, native).ok_or(())?;
         let mana_shield = equipped_mana_shield(&equipment, native).ok_or(())?;
-        let offence = equipped_offence(&equipment, native).ok_or(())?;
+        let offence = equipped_offence_inner(&equipment, native, &imbuements).ok_or(())?;
         Ok(Some((effects, armor, defence, mana_shield, offence)))
     }
 
@@ -316,30 +393,20 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             state.install_equipped_physical_protection(physical_protection(&effects));
-            state.install_equipped_ice_protection(
-                effects
-                    .protections
-                    .get(&crate::content::ReferenceResistanceKind::Ice)
-                    .copied(),
-            );
-            state.install_equipped_energy_protection(
-                effects
-                    .protections
-                    .get(&crate::content::ReferenceResistanceKind::Energy)
-                    .copied(),
-            );
-            state.install_equipped_fire_protection(
-                effects
-                    .protections
-                    .get(&crate::content::ReferenceResistanceKind::Fire)
-                    .copied(),
-            );
-            state.install_equipped_holy_protection(
-                effects
-                    .protections
-                    .get(&crate::content::ReferenceResistanceKind::Holy)
-                    .copied(),
-            );
+            use crate::content::ReferenceResistanceKind as Kind;
+            for kind in [
+                Kind::Ice,
+                Kind::Energy,
+                Kind::Fire,
+                Kind::Holy,
+                Kind::Earth,
+                Kind::Death,
+            ] {
+                state.install_equipped_element_protection(
+                    kind,
+                    effects.protections.get(&kind).copied(),
+                );
+            }
             install_suppressions(state, effects);
             state.install_equipped_armor(armor);
             state.install_equipped_defence(defence);

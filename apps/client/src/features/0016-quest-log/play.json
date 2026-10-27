@@ -1,0 +1,10 @@
+{
+  "concerns": [
+    "protocol",
+    "input",
+    "view"
+  ],
+  "events": {
+    "QuestLog": "quest_log"
+  }
+}

@@ -171,3 +171,29 @@ fn worn_physical_protection_counts_untimed_own_slot_items_without_field_protecti
     );
     Ok(())
 }
+
+#[test]
+fn dmg3_equipment_earth_death_absorbs_compose_with_installed_protection_before_clamp() -> TestResult
+{
+    use crate::content::ReferenceResistanceKind as Kind;
+    use crate::durability::imbuement::EquippedImbuement;
+    let input = protected_input(&[(UNTIMED_FEET, resisting(&[("DEATH", -5), ("EARTH", 95)]))])?;
+    let content = native(&input)?;
+    let equipment = snapshot(&content, UNTIMED_FEET, 4);
+    let installed: Vec<_> = [(0, 3), (1, 2)]
+        .into_iter()
+        .map(|(slot, category)| EquippedImbuement {
+            item: [2; 16],
+            slot,
+            category,
+            tier: 3,
+            remaining_ms: 1,
+            occurrence: [3; 16],
+        })
+        .collect();
+    let effects =
+        equipment_effects_inner(&equipment, &content, false, &installed).ok_or("effects")?;
+    assert_eq!(effects.protections[&Kind::Earth].numerator, 100);
+    assert_eq!(effects.protections[&Kind::Death].numerator, 5);
+    Ok(())
+}

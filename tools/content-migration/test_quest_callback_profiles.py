@@ -20,12 +20,14 @@ class QuestCallbackProfiles(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / 'content/quests').mkdir(parents=True)
+        (self.root / 'content/interactions').symlink_to(ROOT / 'content/interactions', target_is_directory=True)
         (self.root / 'content/items').symlink_to(ROOT / 'content/items', target_is_directory=True)
         (self.root / 'imports').symlink_to(ROOT / 'imports', target_is_directory=True)
         self.callbacks = json.loads((ROOT / 'content/quests/world-callbacks.json').read_bytes())
         self.document = json.loads((ROOT / PROFILE).read_bytes())
         self.document['records'] = [r for r in self.document['records']
-                                    if r['production_definition']['production_key'] != KEY]
+                                    if r['production_definition']['production_key'] not in
+                                    (KEY, 'oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019')]
         self.generated = {PROFILE: json.dumps(self.document).encode(),
                           MANIFEST: b'{"item_profiles":{"sha256":"pending"}}'}
 
@@ -45,6 +47,20 @@ class QuestCallbackProfiles(unittest.TestCase):
                          'legal_destinations': ['CharacterInventory', 'Ground']})
         self.assertEqual(json.loads(self.generated[MANIFEST])['item_profiles']['sha256'],
                          hashlib.sha256(self.generated[PROFILE]).hexdigest())
+
+    def test_quest_chest_rewards_preserve_canonical_item_admission(self):
+        self.admit()
+        rows = {r['production_definition']['production_key']: r
+                for r in json.loads(self.generated[PROFILE])['records']}
+        for key in ('oteryn:item.tibia.i6120', 'oteryn:item.tibia.i9019'):
+            row = rows[key]
+            self.assertEqual(row['admission'], {'materializable': True,
+                             'stack_class': 'NonStackable',
+                             'legal_destinations': ['CharacterInventory', 'Ground']})
+            self.assertEqual(row['production_binding']['disposition'], 'EXACT')
+            self.assertEqual(row['production_binding']['target']['key'], key)
+            self.assertEqual(row['semantics']['physical']['value']['pickupable'],
+                             {'state': 'KNOWN', 'value': True})
 
     def test_unadmitted_replacement_refuses_instead_of_manufacturing_a_profile(self):
         callback = next(c for c in self.callbacks['callbacks'] if c.get('item_on_target'))

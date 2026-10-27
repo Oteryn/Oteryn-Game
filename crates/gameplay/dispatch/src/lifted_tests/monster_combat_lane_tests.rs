@@ -149,6 +149,7 @@ mod tests {
             Some(SpellCombatFacts {
                 attack: self.facts(r, i, t, s)?,
                 multiplier_ppm: 1_000_000,
+                equipment_protection: None,
                 immune: false,
                 condition_policy: Some(CurrentConditionPolicy {
                     immunities: Vec::new(),

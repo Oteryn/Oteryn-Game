@@ -1,19 +1,33 @@
 [
   {
     "mechanic": "0016-quest-log",
+    "kind": "keybindings",
+    "id": "0016-quest-log-open",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "CTRL+J",
+    "entry": "input.rs::open_key"
+  },
+  {
+    "mechanic": "0016-quest-log",
+    "kind": "panels",
+    "id": "0016-quest-log-panel",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  },
+  {
+    "mechanic": "0016-quest-log",
     "kind": "handlers",
-    "id": "0016-quest-log-unsupported",
-    "status": "unsupported",
-    "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
+    "id": "0016-quest-log-query",
+    "status": "supported",
     "commands": [
       22
     ],
+    "direction": "client_to_server",
+    "capability": 16,
+    "entry": "protocol.rs::request",
     "not_applicable": {
-      "state": "Unsupported until the owning mechanic migration.",
-      "protocol": "Unsupported until the owning mechanic migration.",
-      "view": "Unsupported until the owning mechanic migration.",
-      "input": "Unsupported until the owning mechanic migration.",
-      "settings": "Unsupported until the owning mechanic migration."
+      "settings": "No persistent quest settings; tracking is session-owned."
     }
   }
 ]

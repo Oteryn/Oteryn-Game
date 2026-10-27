@@ -17,6 +17,15 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
+        oteryn_client_runtime::quest_log::QuestState::default()
+    }
+    fn quest_log(
+        &mut self,
+        _payload: &[u8],
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 16 }) }
+    }
     fn step(
         &mut self,
         direction: StepDirection,
@@ -44,6 +53,15 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn quest_state(&self) -> oteryn_client_runtime::quest_log::QuestState {
+        super::feature_0016_quest_log::protocol::initial(self)
+    }
+    async fn quest_log(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        super::feature_0016_quest_log::protocol::send(self, payload).await
+    }
     fn step(
         &mut self,
         direction: StepDirection,
@@ -93,9 +111,18 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.quest_initialize(session.quest_state());
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::QuestLog(payload)) => match session.quest_log(&payload).await {
+                Ok(result) => {
+                    outbox.quest_result(&result);
+                    publish(&mut session, &outbox, &mut held);
+                    continue;
+                }
+                Err(error) => error,
+            },
             Ok(PlayCommand::Step(direction)) => {
                 match session.step(step_direction(direction)).await {
                     Ok(outcome) => {

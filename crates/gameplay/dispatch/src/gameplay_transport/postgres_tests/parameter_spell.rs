@@ -70,7 +70,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
     eprintln!("PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}");
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
-    if !matches!(case, 1 | 5) {
+    if !matches!(case, 1 | 5 | 6) {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -80,8 +80,8 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         .await
         .map_err(debug)?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let (controller, pin) = if matches!(case, 4 | 5) {
-        super::item_spell_augments::activate(world)?
+    let (controller, pin) = if matches!(case, 4..=6) {
+        super::item_spell_augments::activate(world, case == 6)?
     } else {
         production_generation_with_source(
             world,
@@ -108,7 +108,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         cp,
         room.clone(),
         native.spell_book().clone(),
-        if case == 5 { 4 } else { 2 },
+        if matches!(case, 5 | 6) { 4 } else { 2 },
     )?;
     deps.combat_room = Some(room);
     let mut owner = deps.owner(&h, &authority);
@@ -169,7 +169,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
                 .map_err(debug)?,
             )
             .map_err(debug)?;
-        if case == 5 {
+        if matches!(case, 5 | 6) {
             let p = runtime
                 .read_actor_position(actor)
                 .map_err(debug)?
@@ -227,20 +227,20 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    if !matches!(case, 1 | 5) {
+    if !matches!(case, 1 | 5 | 6) {
         observer::initialize(&deps, &owner).await?;
     }
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1),(encode($2,'hex')::uuid,1)").bind(id(41).as_slice()).bind(id(101).as_slice()).execute(&h.pool).await?;
-    if matches!(case, 4 | 5) {
+    if matches!(case, 4..=6) {
         let mut tx = h.pool.begin().await?;
         // Fixture custody only; tested equipment reads use the production fences.
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
-        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item','oteryn:item.tibia.i2854','definition-r1',1,1,encode($1,'hex')::uuid)")
-            .bind(id(112).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,3,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
-            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(id(112).as_slice()).bind(id(42).as_slice()).bind(if case == 6 { "oteryn:item.tibia.i6529" } else { "oteryn:item.tibia.i2854" }).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$4,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(112).as_slice()).bind(if case == 6 { 4_i16 } else { 3 }).execute(&mut *tx).await?;
         tx.commit().await?;
         let mut states = owner.states.spell_states.lock().await;
         crate::gameplay_transport::actor_spell::tests::wound(&mut states, actor, session, 1);
@@ -249,7 +249,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
     for current_session in [
         Some(session),
-        (!matches!(case, 1 | 5)).then_some(target_session),
+        (!matches!(case, 1 | 5 | 6)).then_some(target_session),
     ]
     .into_iter()
     .flatten()
@@ -272,6 +272,20 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
             .await?
             .0;
     admitted.item_fence = item_fence_of(current);
+    if case == 6 {
+        // The fixture seeds custody after admission; install its derived abilities through
+        // the same fenced reader and installer as a real equipment-bearing admission.
+        let _permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
+        let effects = owner
+            .read_admission_effects(session)
+            .await
+            .map_err(|_| "equipment effects")?;
+        let runtime = deps.runtime.lock().await;
+        owner
+            .install_admission_suppressions(&runtime, actor, session, effects)
+            .await
+            .ok_or("install equipment effects")?;
+    }
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
@@ -282,7 +296,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         .ok_or("before vitals")?
         .1
         .mana;
-    let words = if case == 5 {
+    let words = if matches!(case, 5 | 6) {
         "exori vis"
     } else if matches!(case, 2 | 4) {
         "exura"
@@ -332,7 +346,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         &mut admitted,
         &commands,
         true,
-        !matches!(case, 2 | 4 | 5),
+        !matches!(case, 2 | 4 | 5 | 6),
     )
     .await?;
     assert_eq!(results[1].0, CommandStatus::DuplicateReplay);
@@ -359,6 +373,24 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
             i64::from(vitals.mana),
             (i64::from(before) - 20 + real).min(i64::from(vitals.max_mana))
         );
+        drop(runtime);
+        if case == 6 {
+            // Mana training checkpoints below its advance threshold; flush through the
+            // production save owner, then prove the duplicate did not train twice.
+            assert_eq!(
+                owner.save_spell_training(actor, session, true).await,
+                crate::gameplay_transport::actor_spell::TrainingSave::Saved
+            );
+            let durable = h
+                .root
+                .read_character_build_state(
+                    &authority,
+                    crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(durable.magic(), (0, 20));
+        }
         return Ok(());
     }
     let result = chat::decode_chat_intent_result(&results[0].1).map_err(debug)?;

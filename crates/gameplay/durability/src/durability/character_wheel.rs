@@ -124,12 +124,17 @@ impl WheelOccurrence {
     }
 }
 
+/// Green, red, purple, blue; at most one revealed gem per domain.
+pub type WheelVessels = [Option<[u8; 16]>; 4];
+
 /// `WHEEL_INTENT set_allocation` (§7.1): a full replacement.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WheelChangeRequest {
     pub occurrence: WheelOccurrence,
     pub expected_wheel_revision: u64,
     pub slots: WheelSlots,
+    /// None preserves the current vessels; Some replaces all four atomically.
+    pub vessels: Option<WheelVessels>,
 }
 
 /// Runtime position fact; permanent promotion is read under the writer's own fence.
@@ -172,6 +177,8 @@ pub struct CommittedWheelChange {
     pub committed_character_revision: CharacterRevision,
     pub before_wheel_revision: u64,
     pub after_wheel_revision: u64,
+    pub vessels_before: WheelVessels,
+    pub vessels_after: WheelVessels,
     pub before: WheelSlots,
     pub after: WheelSlots,
     pub before_wheel_ruleset_revision: String,
@@ -258,7 +265,8 @@ impl DurabilityRoot {
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
                     .fetch_optional(&mut *tx)
-                    .await? else {
+                    .await?
+                    else {
                         return Ok(Err(CharacterProgressionError::AuthorityRejected));
                     };
                     let premium_permitted = gate
@@ -316,7 +324,9 @@ impl DurabilityRoot {
                     if request.expected_wheel_revision != before_revision {
                         return refuse(WheelRefusal::StaleRevision);
                     }
-                    if request.slots == before {
+                    let vessels_before = read_vessels(&mut tx, fence.character_id).await?;
+                    let vessels_after = request.vessels.unwrap_or(vessels_before);
+                    if request.slots == before && vessels_after == vessels_before {
                         return refuse(WheelRefusal::NoChange);
                     }
                     let vocation = read_vocation(&mut tx, fence.character_id).await?;
@@ -333,10 +343,25 @@ impl DurabilityRoot {
                     ) {
                         return refuse(WheelRefusal::NotEligible(reason));
                     }
+                    let atelier =
+                        super::character_atelier::load_in_transaction(&mut tx, fence.character_id)
+                            .await?;
+                    if let Some(vessels) = request.vessels
+                        && !valid_vessels(&vessels, atelier.as_ref(), ruleset.revision())
+                    {
+                        return refuse(WheelRefusal::RulesetNotCurrent);
+                    }
+                    let gem_points = atelier.as_ref().map_or(0, |state| {
+                        if state.grade_ruleset_revision.as_deref() == Some(ruleset.revision()) {
+                            state.grades.values().filter(|grade| **grade == 3).count() as u32
+                        } else {
+                            0
+                        }
+                    });
                     if let Err(refusal) = ruleset.validate(
                         &before,
                         &request.slots,
-                        available_points(level),
+                        available_points(level).saturating_add(gem_points),
                         facts.at_temple,
                     ) {
                         return refuse(refusal);
@@ -357,6 +382,7 @@ impl DurabilityRoot {
                         before_ruleset: pinned.clone(),
                         after_ruleset: pinned,
                         first: stored.is_none(),
+                        vessels: request.vessels,
                     };
                     let committed = write_change(&mut tx, fence.character_id, &change).await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -427,6 +453,7 @@ impl DurabilityRoot {
                                 let change = PlannedChange {
                                     occurrence,
                                     kind: WheelReceiptKind::RulesetReset,
+                                    vessels: None,
                                     binding: reset_binding(
                                         fence.character_id,
                                         &stored.wheel_ruleset_revision,
@@ -556,6 +583,7 @@ struct PlannedChange {
     before_ruleset: String,
     after_ruleset: String,
     first: bool,
+    vessels: Option<WheelVessels>,
 }
 
 async fn lock_occurrence(
@@ -762,6 +790,8 @@ async fn write_change(
     character_id: CharacterId,
     change: &PlannedChange,
 ) -> std::result::Result<CommittedWheelChange, DurabilityError> {
+    let vessels_before = read_vessels(tx, character_id).await?;
+    let vessels_after = change.vessels.unwrap_or(vessels_before);
     let character = character_id.as_bytes().as_slice();
     let committed_revision = change
         .original
@@ -802,14 +832,14 @@ async fn write_change(
            wheel_ruleset_revision, original_character_revision, committed_character_revision, \
            level_before, level_after, experience_before, experience_after, profile_revision, \
            ruleset_revision, content_revision, simulation_revision, evidence_revision, \
-           declaration_revision, policy_revision, reward_revision, committed_at) \
+           declaration_revision, policy_revision, reward_revision, committed_at, vessels_before, vessels_after) \
          SELECT s.character_id, encode($2,'hex')::uuid, $3, $4, $5::text::numeric(20,0), \
            $6::text::numeric(20,0), $7, $8, $9, $10, $11::text::numeric(20,0), \
            $12::text::numeric(20,0), s.level, s.level, s.total_experience, \
            s.total_experience, s.profile_revision, s.ruleset_revision, s.content_revision, \
            s.simulation_revision, s.evidence_revision, s.declaration_revision, \
            s.policy_revision, s.reward_revision, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint \
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $13, $14 \
            FROM game_character_progression_state s \
           WHERE s.character_id = encode($1,'hex')::uuid",
     )
@@ -825,11 +855,15 @@ async fn write_change(
     .bind(&change.after_ruleset)
     .bind(change.original.to_string())
     .bind(committed_revision.to_string())
+    .bind(serde_json::to_value(vessels_before).map_err(|_|DurabilityError::InvalidStoredState)?)
+    .bind(serde_json::to_value(vessels_after).map_err(|_|DurabilityError::InvalidStoredState)?)
     .execute(&mut **tx)
     .await?;
     if receipt.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
     }
+    sqlx::query("INSERT INTO game_character_wheel_vessels(character_id,vessels,last_wheel_occurrence_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET vessels=excluded.vessels,last_wheel_occurrence_id=excluded.last_wheel_occurrence_id")
+        .bind(character).bind(serde_json::to_value(vessels_after).map_err(|_|DurabilityError::InvalidStoredState)?).bind(change.occurrence.as_slice()).execute(&mut **tx).await?;
     let total =
         i32::try_from(change.after.total()).map_err(|_| DurabilityError::InvalidStoredState)?;
     let row = if change.first {
@@ -893,6 +927,8 @@ async fn write_change(
         |value| CharacterRevision::new(value).map_err(|_| DurabilityError::InvalidStoredState);
     Ok(CommittedWheelChange {
         occurrence: change.occurrence,
+        vessels_before,
+        vessels_after,
         kind: change.kind,
         character_id,
         original_character_revision: revision(change.original)?,
@@ -923,6 +959,15 @@ fn request_binding(character: CharacterId, request: &WheelChangeRequest) -> Vec<
     semantic.extend_from_slice(&request.expected_wheel_revision.to_be_bytes());
     for points in *request.slots.points() {
         semantic.extend_from_slice(&points.to_be_bytes());
+    }
+    if let Some(vessels) = request.vessels {
+        semantic.extend_from_slice(b"vessels");
+        for vessel in vessels {
+            semantic.push(u8::from(vessel.is_some()));
+            if let Some(id) = vessel {
+                semantic.extend_from_slice(&id);
+            }
+        }
     }
     bound(&semantic)
 }
@@ -962,7 +1007,7 @@ async fn load_receipt(
         "SELECT wheel_occurrence_id::text, kind, request_binding, character_id::text, \
                 original_character_revision::text, committed_character_revision::text, \
                 before_wheel_revision::text, after_wheel_revision::text, slots_before, \
-                slots_after, before_wheel_ruleset_revision, wheel_ruleset_revision \
+                slots_after, vessels_before, vessels_after, before_wheel_ruleset_revision, wheel_ruleset_revision \
            FROM game_character_wheel_receipts \
           WHERE character_id = encode($1,'hex')::uuid \
             AND wheel_occurrence_id = encode($2,'hex')::uuid",
@@ -984,6 +1029,10 @@ fn decode_receipt(
     };
     Ok(CommittedWheelChange {
         occurrence: uuid_text(row.try_get("wheel_occurrence_id")?)?,
+        vessels_before: serde_json::from_value(row.try_get("vessels_before")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+        vessels_after: serde_json::from_value(row.try_get("vessels_after")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
         kind,
         character_id: CharacterId::from_bytes(uuid_text(row.try_get("character_id")?)?)
             .map_err(invalid)?,
@@ -1003,6 +1052,37 @@ fn decode_receipt(
         after: stored_slots(&row.try_get::<Vec<i16>, _>("slots_after")?)?,
         before_wheel_ruleset_revision: row.try_get("before_wheel_ruleset_revision")?,
         wheel_ruleset_revision: row.try_get("wheel_ruleset_revision")?,
+    })
+}
+
+pub(super) async fn read_vessels(
+    tx: &mut Transaction<'_>,
+    character: CharacterId,
+) -> std::result::Result<WheelVessels, DurabilityError> {
+    let value: Option<serde_json::Value> = sqlx::query_scalar("SELECT vessels FROM game_character_wheel_vessels WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    value
+        .map(|json| serde_json::from_value(json).map_err(|_| DurabilityError::InvalidStoredState))
+        .transpose()
+        .map(|v| v.unwrap_or([None; 4]))
+}
+fn valid_vessels(
+    vessels: &WheelVessels,
+    state: Option<&oteryn_gameplay_progression::atelier::AtelierState>,
+    revision: &str,
+) -> bool {
+    let domains = [
+        WheelDomain::Green,
+        WheelDomain::Red,
+        WheelDomain::Purple,
+        WheelDomain::Blue,
+    ];
+    vessels.iter().zip(domains).all(|(id, domain)| {
+        id.is_none_or(|id| {
+            state
+                .and_then(|s| s.gems.get(&u128::from_be_bytes(id)))
+                .is_some_and(|gem| gem.domain == domain && gem.ruleset_revision == revision)
+        })
     })
 }
 

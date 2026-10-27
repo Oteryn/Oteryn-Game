@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         400,
-        "53b4d57a6d0d07012ff138105ecf15c4a0ed14bf2a26abb54f8773db3424364c",
+        "cca9a6e0864e16128407e711f5ba04853f849eb784813f8adab523018d2d9e57",
     ),
     (
         "definitions/declarations.json",
-        27_600_058,
-        "f8ed5ec659d0e5340fcd4a3164a5d7f25fe8a8fae54ed5ea3712263766e18827",
+        27_600_259,
+        "520b20b1f1d62e1882570b1899f9013dcfcecefa4562a867effee7204784e63c",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1951,
-        "c7e6530ad553ca4fe5b8bf94156f34610e29ef99d18ddcdbc2bb12f9d0d43e8f",
+        "d202bdbc630d48f52fbc8407de4385d729cf9beb71629e67ad59616f410d50b1",
     ),
     (
         "presentations/bindings.json",
@@ -48,7 +48,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         402,
-        "aa8776ab83aab6dfb658a829729a3daa51739a5df484d5401a3685758075479f",
+        "f6c484a8c8bf3181bf91cd85245a67b45c17c10c745dc6cc29bca266056c5298",
     ),
     (
         "provenance/imports.json",
@@ -138,7 +138,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "83c785a1cf024acdfe7d1d3270318752543444bd7c7ac3e06cdbec68b4cc7737";
+const TREE_SHA256: &str = "219b7b7882b8a8b3c259b0e4e79c0fc05c6711c6cbaf21a34bd1f75e97452234";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -153,7 +153,8 @@ const CREATURE_PROFILES: usize = 25_052;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2564;
-const NPC_DECLARATIONS: usize = 2506;
+// Includes BANK-3's Henricus blessing Service.
+const NPC_DECLARATIONS: usize = 2507;
 const NPC_DIALOGUES: usize = 836;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).

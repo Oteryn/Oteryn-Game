@@ -21,7 +21,10 @@ mod depot;
 mod domain_dispatch;
 mod gated_command;
 mod map_transport;
+mod quest_log_transport;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
+/// Quest log wire values consumed by the client feature adapter.
+pub use oteryn_protocol_oteryn::quest_log;
 mod guild_chat;
 pub use appearance_state::{AppearanceItemDictionary, AppearanceUpdate};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};
@@ -123,51 +126,9 @@ pub trait SessionStream: AsyncRead + AsyncWrite + Unpin {}
 
 impl<T: AsyncRead + AsyncWrite + Unpin> SessionStream for T {}
 
-/// The capabilities this client implements and advertises by default: 4 `ITEM_VIEW_MOVE_V1`
-/// (domains 9 and 11, command 9, the USE item target and the item handle on domain-1 entities),
-/// 6 `WORLD_SPATIAL_ENTITIES` (the domain-1 type 2 snapshot and delta with every visible entity), 7 `CHAT_V1` (command 13 and
-/// domain 12), 13 `PACED_MOVEMENT_V1` (the step result `TOO_EARLY`) and 17 `ATTACK_V1` (command
-/// types 11 and 12, domain 10; requires 6) and 21 `LOGOUT_V1` (command type 23). Add an ID here only
-/// together with its routing, and keep the set closed under the registry's `requires`.
-pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
-    CAPABILITY_ITEM_VIEW_MOVE_V1,
-    CAPABILITY_WORLD_SPATIAL_ENTITIES,
-    CAPABILITY_CHAT_V1,
-    CAPABILITY_PACED_MOVEMENT_V1,
-    CAPABILITY_ATTACK_V1,
-    oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
-    logout::CAPABILITY_LOGOUT_V1,
-    oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
-    oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
-    chat::guild_room::CAPABILITY_CHAT_GUILD_ROOM_V1,
-    oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
-];
-
-/// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
-/// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
-const CLIENT_GATED_CAPABILITIES: &[u32] = &[
-    oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
-    oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
-    oteryn_protocol_oteryn::tutorial_notices::CAPABILITY_TUTORIAL_NOTICES_V1,
-    oteryn_protocol_oteryn::appearance::CAPABILITY_APPEARANCE_V1,
-    CAPABILITY_BESTIARY_CHARMS_V1,
-    CAPABILITY_ACHIEVEMENT_NOTICES_V1,
-    CAPABILITY_ANALYSER_V1,
-    CAPABILITY_CONTAINER_TREE_V1,
-];
-
-fn gated_routes() -> impl Iterator<Item = (u32, &'static [u32], &'static [u32])> {
-    oteryn_protocol_oteryn::capability_tables::GATED
-        .iter()
-        .copied()
-        .filter(|(capability, _, _)| CLIENT_GATED_CAPABILITIES.contains(capability))
-}
-
-fn capability_of_domain(domain_id: u32) -> Option<u32> {
-    gated_routes()
-        .find(|(_, _, domains)| domains.contains(&domain_id))
-        .map(|(capability, _, _)| capability)
-}
+mod capability_support;
+pub use capability_support::CLIENT_SUPPORTED_CAPABILITIES;
+use capability_support::{capability_of_domain, gated_routes};
 
 /// Total `step_retrying` attempts and the first backoff (doubled after each `TOO_EARLY`).
 pub const STEP_RETRY_ATTEMPTS: u32 = 4;
@@ -665,6 +626,8 @@ pub const MAX_QUEUED_EVENTS: usize = 256;
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    /// Domain 16: the requested view and tracked lines, replaced whole.
+    QuestLog(AppliedDelta<quest_log::QuestLog>),
     Appearance(AppliedDelta<AppearanceUpdate>),
     TutorialNotice(AppliedDelta<oteryn_protocol_oteryn::tutorial_notices::TutorialNotice>),
     /// Domain 1 `WORLD_SPATIAL_VISIBILITY`.
@@ -697,6 +660,7 @@ impl SessionEvent {
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
+            Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
             Self::WorldSpatial(_) | Self::WorldSpatialEntities(_) => {
@@ -1317,6 +1281,7 @@ impl<S: SessionStream> Session<S> {
                 attack::STATE_DOMAIN_ACTOR_COMBAT_STATE,
             ));
         }
+        quest_log_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
         tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
         let map_header = map_transport::validate_join(
             &selected_capabilities,
