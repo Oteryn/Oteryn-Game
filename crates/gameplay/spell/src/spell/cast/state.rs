@@ -146,10 +146,17 @@ impl PlayerSpellState {
     /// playable: a fresh admission, a same-GameSession reconnect or FND-04B §21 recovery. No
     /// command of a monk is accepted before it.
     pub fn make_playable(&mut self, now: SemanticTimeMicros) -> Result<(), MonkStateError> {
+        let regeneration_due = now
+            .get()
+            .checked_add(u64::from(crate::spell::food_regeneration::FOOD_TICK_MS) * 1_000)
+            .ok_or(MonkStateError::TimeOverflow)?;
         match &mut self.monk {
             Some(monk) => monk.initialize(now, &solo()),
             None => Ok(()),
-        }
+        }?;
+        self.regeneration_next_tick_us
+            .get_or_insert(regeneration_due);
+        Ok(())
     }
 
     /// The session left the actor: Harmony and the forced time are kept, and commands wait for

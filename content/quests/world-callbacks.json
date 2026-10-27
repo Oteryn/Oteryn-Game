@@ -261,6 +261,111 @@
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/others/actions_hellgate_lever.lua:1-34",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_hellgate_lever.lua:1-34"
       ]
+    },
+    {
+      "key": "oteryn:quest-callback/outlaw-camp-door",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 1108,
+        "appearance": 1642
+      },
+      "lever": [
+        1642,
+        1643
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/the_travelling_trader/mission02",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The door seems to be sealed against unwanted intruders.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_travelling_trader/actions_outlaw_camp_door.lua:1-15",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_travelling_trader/actions_outlaw_camp_door.lua:1-15"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/fish-napping-key",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 51394,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32359,
+        "y": 32788,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7934",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/travelling-trader-delivery",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": 3020,
+        "action": null,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/the_travelling_trader/mission02",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 4
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/actions/other/others/quest_system2.lua:21-27,359-433"
+      ]
     }
   ]
 }

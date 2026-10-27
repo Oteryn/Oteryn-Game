@@ -94,6 +94,8 @@ pub struct PlayerSpellState {
     /// Runtime-only; a fresh actor starts at zero.
     pub(super) regen_health_ms: u32,
     pub(super) regen_mana_ms: u32,
+    /// Runtime-only clock, anchored when admission makes this actor playable.
+    pub(super) regeneration_next_tick_us: Option<u64>,
     pub(super) soul: u32,
     /// VITALS-SOUL-1: the running soul kill window, if any. Runtime-only.
     pub(super) soul_window: Option<super::soul_window::SoulWindow>,
@@ -169,6 +171,7 @@ impl PlayerSpellState {
                 mana: facts.max_mana,
                 regen_health_ms: 0,
                 regen_mana_ms: 0,
+                regeneration_next_tick_us: None,
                 premium_current: false,
                 premium_valid_until_micros: None,
                 soul: facts.max_soul,

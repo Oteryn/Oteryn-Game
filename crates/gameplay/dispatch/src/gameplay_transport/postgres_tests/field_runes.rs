@@ -12,7 +12,7 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::capabilities::{OfferedCapability, test_command};
 use crate::gameplay_transport::connection::{
-    ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+    ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, LivenessPolicy, serve_admitted,
 };
 use crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities;
 use crate::gameplay_transport::{SeamRooms, item_fence_of};
@@ -508,6 +508,15 @@ async fn read_field_setup_fence(
     .map_err(debug)
 }
 
+/// These scenarios run long owner-side checks (SQL, map observation, fixture moves) while
+/// the test client is not reading the wire. Under CI load that exceeds the idle cadence and
+/// ends the session mid-scenario. Liveness is not under test here (`idle_kick` and the
+/// connection tests own it), so the probe interval outlasts the 180-second scenario timeout.
+const FIELD_SCENARIO_LIVENESS: LivenessPolicy = LivenessPolicy {
+    interval: std::time::Duration::from_secs(600),
+    missed_limit: 3,
+};
+
 async fn field_case(
     admin: String,
     rune: u32,
@@ -771,6 +780,15 @@ async fn field_scenario_inner(
             let state = states
                 .get_mut(&runtime, target, target_session)
                 .ok_or("target state")?;
+            // These assertions isolate field damage. Unfed actors now regenerate too;
+            // keep this fresh fixture's regeneration deadline beyond the 180-second
+            // scenario timeout and its 11-second clock advance. Preserve Monk state.
+            let monk = state.monk.take();
+            crate::spell::actor_conditions::clear_on_lifecycle(state);
+            state
+                .make_playable(owner.owner_now().checked_add(3_600_000_000).map_err(debug)?)
+                .map_err(debug)?;
+            state.monk = monk;
             if scenario == Scenario::Death {
                 state.health = 8;
             }
@@ -845,7 +863,7 @@ async fn field_scenario_inner(
     };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async {
-        let end = serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await;
+        let end = serve_admitted(&mut server, admitted, &owner, FIELD_SCENARIO_LIVENESS).await;
         drop(server);
         match end {
             ConnectionEnd::AdmittedThenDisconnected(_) => {}
@@ -972,6 +990,16 @@ async fn field_scenario_inner(
                 while field_handle.is_none() {
                     let frame = read_frame(&mut client).await?;
                     let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                    // The wait can span idle probes; an unanswered probe ends the session.
+                    if envelope.message_type() == MessageType::LivenessProbe {
+                        let probe = oteryn_protocol_oteryn::decode_liveness_probe(envelope.payload())
+                            .map_err(debug)?;
+                        let ack = oteryn_protocol_oteryn::encode_liveness_ack(1, probe, 0)
+                            .map_err(debug)?;
+                        client.write_u32(u32::try_from(ack.len())?).await?;
+                        client.write_all(&ack).await?;
+                        continue;
+                    }
                     field_handle = field_handle_from_wire(&envelope, &map_header, start)?;
                 }
             }
@@ -2180,7 +2208,7 @@ async fn drive_player_field(
         0
     };
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let serving = async { serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS).await };
+    let serving = async { serve_admitted(&mut server, admitted, owner, FIELD_SCENARIO_LIVENESS).await };
     let driving = async {
         loop {
             let frame = read_frame(&mut client).await?;

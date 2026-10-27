@@ -12,6 +12,12 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
+    for callback in callbacks['callbacks']:
+        item = callback.get('item_on_target')
+        if item:
+            keys.add(item['item'])
+            if item.get('replacement'):
+                keys.add(item['replacement'])
     document = json.loads(generated[profile_path])
     present = {row['production_definition']['production_key'] for row in document['records']}
     missing = keys - present

@@ -1731,7 +1731,12 @@ impl ChannelSpellStates {
                     damage = damage.checked_add(hit.applied)?;
                     next = successor;
                 }
-                TickKind::Damage { refused: true, .. }
+                // Food duration is consumed here; source_take_due already stepped its clock.
+                TickKind::Regeneration {
+                    key: oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
+                    ..
+                }
+                | TickKind::Damage { refused: true, .. }
                 | TickKind::Regeneration {
                     suppressed: true, ..
                 } => {}
