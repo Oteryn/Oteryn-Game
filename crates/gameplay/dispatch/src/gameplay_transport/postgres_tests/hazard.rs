@@ -3354,14 +3354,60 @@ async fn outgoing_condition_checks(
     use crate::foundation::{ConditionValues, DotElement};
     use crate::gameplay_transport::hazard::combat;
     use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
-    for (agony, should_dodge, moved_outside, historical) in [
-        (false, true, false, false),
-        (false, false, false, false),
-        (true, true, false, false),
-        (true, false, false, false),
-        (false, true, true, false),
-        (false, true, false, true),
-    ] {
+    // The boss is immune to earth. Use an existing native rat for the added
+    // element cases so every landed tick must take HP, rather than passing on
+    // an unrelated immunity. Preserve the boss target for all original cases.
+    let (elemental_target, elemental_health) = {
+        let runtime = owner.runtime.lock().await;
+        runtime
+            .visible_entities()
+            .creatures
+            .iter()
+            .find_map(|creature| {
+                let snapshot = runtime.companion_snapshot(creature.actor).ok()?;
+                (snapshot.state.policy.definition_key == "canary:creature/rat"
+                    && snapshot.health > 10
+                    && combat::eligible(&runtime, creature.actor))
+                .then_some((creature.actor, snapshot.health))
+            })
+            .ok_or("hazard elemental condition rat")?
+    };
+    // Retain the original energy/agony and source-fence cases, then exercise
+    // every other condition element through the same real scheduler.
+    let cases = [
+        (Some(DotElement::Energy), true, false, false),
+        (Some(DotElement::Energy), false, false, false),
+        (None, true, false, false),
+        (None, false, false, false),
+        (Some(DotElement::Energy), true, true, false),
+        (Some(DotElement::Energy), true, false, true),
+    ];
+    for (element, should_dodge, moved_outside, historical) in cases.into_iter().chain(
+        [
+            DotElement::Poison,
+            DotElement::Fire,
+            DotElement::Bleeding,
+            DotElement::Drown,
+            DotElement::Freezing,
+            DotElement::Dazzled,
+            DotElement::Cursed,
+        ]
+        .into_iter()
+        .flat_map(|element| {
+            [true, false]
+                .into_iter()
+                .map(move |dodge| (Some(element), dodge, false, false))
+        }),
+    ) {
+        let target = if element.is_some_and(|element| element != DotElement::Energy) {
+            elemental_target
+        } else {
+            target
+        };
+        // Keep the small rat alive within its real maximum HP. Periodic turns
+        // clamp HP to that maximum even when the incoming tick is dodged. Ten
+        // points also survive the native mitigation/resistance rounding.
+        let amount = if target == elemental_target { 10 } else { 100 };
         let (before_health, due) = {
             let mut runtime = owner.runtime.lock().await;
             let before = runtime.companion_snapshot(target).map_err(debug)?;
@@ -3387,17 +3433,17 @@ async fn outgoing_condition_checks(
             let definition = ConditionDefinition::new(
                 "test.hazard.outgoing.condition",
                 1,
-                if agony {
-                    ConditionValues::Agony {
-                        total_min: 100,
-                        total_max: 100,
-                        per_tick: 100,
+                if let Some(element) = element {
+                    ConditionValues::DamageOverTime {
+                        element,
+                        total_min: amount,
+                        total_max: amount,
+                        per_tick: amount,
                         interval_ms: 1000,
                         delayed: true,
                     }
                 } else {
-                    ConditionValues::DamageOverTime {
-                        element: DotElement::Energy,
+                    ConditionValues::Agony {
                         total_min: 100,
                         total_max: 100,
                         per_tick: 100,
@@ -3493,9 +3539,15 @@ async fn outgoing_condition_checks(
                 "real scheduler consumes DOT"
             );
             if should_dodge && !moved_outside && !historical {
-                assert_eq!(after.health, before_health, "forced condition dodge");
+                assert_eq!(
+                    after.health, before_health,
+                    "forced condition dodge: {element:?}"
+                );
             } else {
-                assert!(after.health < before_health, "forced condition non-dodge");
+                assert!(
+                    after.health < before_health,
+                    "forced condition non-dodge: {element:?}"
+                );
             }
             after.health
         };
@@ -3516,6 +3568,14 @@ async fn outgoing_condition_checks(
             let mut movement = runtime.borrow_movement_position();
             let before = movement.read(actor).map_err(debug)?;
             movement.commit_cardinal(before, original).map_err(debug)?;
+        }
+        if target == elemental_target {
+            owner
+                .runtime
+                .lock()
+                .await
+                .set_test_creature_health(elemental_target, elemental_health)
+                .map_err(debug)?;
         }
     }
     Ok(())
