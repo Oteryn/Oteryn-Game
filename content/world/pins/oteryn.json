@@ -1,9 +1,9 @@
 {
   "schema": "OTERYN_WORLD_PIN/v2",
-  "digest": "453b1dd80b892df91f10bdba467dd0363ef27be6fb238cdec1edf78b37653b5b",
+  "digest": "8a8307d008e3fdd10b694bfcfb61c0716f57a43781e5828509f649b88f6207d3",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "npc-premium-services-20261022-r1",
+  "content_revision": "tibia-news-bal-1-20261027-r1",
   "production": false,
   "entry_start": {
     "x": 32534,

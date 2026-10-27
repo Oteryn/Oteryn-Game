@@ -2786,11 +2786,102 @@ fn validate_ranged_profiles() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Official field overrides follow the immutable creature import. Identity bindings
+/// retain the base source; the authored ledger cites the news for each changed field.
+fn apply_official_creature_balance(
+    draft: &mut ProjectV2Draft,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = include_bytes!("../../../content/creatures/official-balance.json");
+    let ledger: Value = serde_json::from_slice(bytes)?;
+    for row in ledger["overrides"]
+        .as_array()
+        .ok_or("balance overrides missing")?
+    {
+        let key = format!(
+            "oteryn:creature.{}",
+            row["creature"].as_str().ok_or("creature missing")?
+        );
+        let authoring = draft
+            .state
+            .authoring_profiles
+            .iter_mut()
+            .find(|profile| profile.target.key == key)
+            .ok_or("balance creature missing")?;
+        let mut data = serde_json::to_value(&authoring.data)?;
+        let field = row["field"].as_str().ok_or("balance field missing")?;
+        let before = row["before"].as_i64().ok_or("balance before missing")?;
+        let after = row["after"].as_i64().ok_or("balance after missing")?;
+        let (value, expected, replacement) = if field == "experience" {
+            (
+                &mut data["profile"]["experience"],
+                Value::from(before),
+                Value::from(after),
+            )
+        } else {
+            let element = field
+                .strip_suffix("_sensitivity")
+                .ok_or("unknown balance field")?;
+            let resistance = data["profile"]["resistances"]
+                .as_array_mut()
+                .ok_or("resistances missing")?
+                .iter_mut()
+                .find(|resistance| resistance["damage_type"] == element)
+                .ok_or("element missing")?;
+            (
+                &mut resistance["percent"],
+                serde_json::json!({"numerator": 100 - before, "denominator": 1}),
+                serde_json::json!({"numerator": 100 - after, "denominator": 1}),
+            )
+        };
+        if *value != expected {
+            return Err(format!("official balance baseline drift: {key} {field}").into());
+        }
+        *value = replacement;
+        authoring.data = serde_json::from_value(data)?;
+    }
+    let revision = "tibia-news-bal-1-20261027-r1";
+    let batch_id = "official-creature-balance-8918-8935-9024-9039";
+    let digest = hex_sha256(bytes);
+    draft.core.imports.push(ImportBatch {
+        batch_id: batch_id.to_owned(),
+        source_repository: "https://www.tibia.com/news/?subtopic=newsarchive".to_owned(),
+        source_revision: "8918,8935,9024,9039".to_owned(),
+        source_artifact_sha256: digest,
+        access_disposition: "OWNER_SUPPLIED_OFFICIAL_NEWS_TEXT".to_owned(),
+        source_generation_profile: "OTERYN_OFFICIAL_CREATURE_BALANCE/v1".to_owned(),
+        importer: "materialize_content_world_project_v2".to_owned(),
+        mapper: "official-creature-balance".to_owned(),
+        mapper_revision: revision.to_owned(),
+        mapper_sha256: hex_sha256(include_bytes!("materialize_content_world_project_v2.rs")),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    });
+    draft.core.project_revision = revision.to_owned();
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (root, predecessor) = authoring_roots()?;
     validate_ranged_profiles()?;
     if let Some(source) = predecessor {
-        return materialize_from_predecessor(&source, &root);
+        materialize_from_predecessor(&source, &root)?;
+        let captured = capture_world_project(
+            root.parent().ok_or("output parent missing")?,
+            root.file_name().ok_or("output basename missing")?,
+            ProjectFilesystemLimits {
+                project: reconciled_limits(),
+                max_entries_per_directory_scan: 32,
+                max_total_directory_entries_scanned: 144 + 56 + 32,
+            },
+        )?;
+        let mut draft = captured.migrate_to_v2();
+        apply_official_creature_balance(&mut draft)?;
+        let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
+        // This fresh output contains only the base package just materialized above.
+        // The canonical writer requires an absent root for the successor package.
+        fs::remove_dir_all(&root)?;
+        write_documents(&root, &documents)?;
+        return Ok(());
     }
     let promoted = protected_r7_p04_gold_coin_item_family_import(
         B1_EVIDENCE,
@@ -3092,6 +3183,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // BED-CONTENT-1: after the NPC chain, whose stages pin the complete reference.json digest of
     // their predecessor; a bed group added earlier would drift every one of those pins.
     promote_beds(&mut draft)?;
+    apply_official_creature_balance(&mut draft)?;
     let documents = CanonicalProjectDocuments::from_v2_draft(draft, limits())?;
     if documents.documents().len() != DOCUMENT_COUNT {
         return Err("canonical WorldProject/v2 document count drifted".into());
@@ -3222,6 +3314,79 @@ mod ranged_revision_tests {
 #[cfg(test)]
 mod creature_snapshot_tests {
     use super::*;
+
+    #[test]
+    fn official_creature_balance_applies_once_and_preserves_identity()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let packet: Value = serde_json::from_slice(CREATURE_STAGED)?;
+        let mut draft = ProjectV2Draft {
+            core: ProjectDraft {
+                project_revision: "base".to_owned(),
+                package_key: String::new(),
+                semantic_schema_version: String::new(),
+                licensing_metadata: String::new(),
+                world_id: String::new(),
+                coordinate_frame: String::new(),
+                records: Vec::new(),
+                imports: Vec::new(),
+                metadata: Vec::new(),
+            },
+            state: Default::default(),
+        };
+        draft.state.authoring_profiles =
+            serde_json::from_value(packet["authoring_profiles"].clone())?;
+        let targets: Vec<_> = draft
+            .state
+            .authoring_profiles
+            .iter()
+            .map(|row| row.target.clone())
+            .collect();
+        apply_official_creature_balance(&mut draft)?;
+        assert_eq!(draft.core.project_revision, "tibia-news-bal-1-20261027-r1");
+        assert_eq!(
+            draft
+                .state
+                .authoring_profiles
+                .iter()
+                .map(|row| row.target.clone())
+                .collect::<Vec<_>>(),
+            targets
+        );
+        let profile = |key: &str| -> Result<Value, Box<dyn std::error::Error>> {
+            let row = draft
+                .state
+                .authoring_profiles
+                .iter()
+                .find(|row| row.target.key == key)
+                .ok_or("test profile missing")?;
+            Ok(serde_json::to_value(&row.data)?["profile"].clone())
+        };
+        assert_eq!(
+            profile("oteryn:creature.true_dawnfire_asura")?["experience"],
+            8100
+        );
+        assert_eq!(
+            profile("oteryn:creature.radiant_acolyte")?["experience"],
+            37245
+        );
+        assert_eq!(
+            profile("oteryn:creature.darklight_source")?["experience"],
+            19409
+        );
+        let striker = profile("oteryn:creature.darklight_striker")?;
+        let fire = striker["resistances"]
+            .as_array()
+            .ok_or("test resistances missing")?
+            .iter()
+            .find(|row| row["damage_type"] == "fire")
+            .ok_or("test fire missing")?;
+        assert_eq!(fire["percent"]["numerator"], -15);
+        assert!(
+            apply_official_creature_balance(&mut draft).is_err(),
+            "double application must reject baseline drift"
+        );
+        Ok(())
+    }
 
     #[test]
     fn current_creature_header_and_typed_declarations_are_admitted()
