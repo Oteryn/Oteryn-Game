@@ -80,7 +80,7 @@ pub(super) async fn exercise(
     assert!(
         owner
             .root
-            .read_item_loop_ground_container(owner.character, fence, item, ground.clone())
+            .read_item_loop_ground_container(owner.character, fence, item, item, ground.clone())
             .await?
             .is_some()
     );
@@ -95,7 +95,7 @@ pub(super) async fn exercise(
         assert!(
             owner
                 .root
-                .read_item_loop_ground_container(owner.character, fence, item, invalid)
+                .read_item_loop_ground_container(owner.character, fence, item, item, invalid)
                 .await?
                 .is_none()
         );
@@ -281,7 +281,7 @@ pub(super) async fn exercise(
     assert!(
         owner
             .root
-            .read_item_loop_ground_container(owner.character, fence, item, ground)
+            .read_item_loop_ground_container(owner.character, fence, item, item, ground)
             .await?
             .is_none()
     );

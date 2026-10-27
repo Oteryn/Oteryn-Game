@@ -12,7 +12,7 @@
 //!   `map_revision` is not the bundle's, or whose definition the pinned index does not name, is
 //!   not shown. A failed durable read fails the map view closed.
 //! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
-//!   direct Ground containers within one tile on the actor's floor, under the Channel lane.
+//!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
@@ -533,9 +533,9 @@ fn drop_cell(
     Ok(ground_cell(to.x, to.y, to.floor))
 }
 
-/// A carried container or proven direct Ground container with its direct entries.
+/// A carried container or a container below a proven Ground root, with direct entries.
 /// Ground reach uses the actor's current same-floor position under the Channel lane.
-/// Other external roots and nested Ground containers remain unavailable.
+/// Reach follows the current Ground root; other external sources remain unavailable.
 pub(super) async fn observe_container(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -593,7 +593,15 @@ pub(super) async fn observe_container(
             )
         };
         let overlay = loop_ground(admission, &base, Some(index)).await?;
-        let Some((cell, _)) = overlay.ground_entry(&container) else {
+        let Some(root) = admission
+            .root
+            .read_item_loop_ground_container_root(admission.character, fence, container)
+            .await
+            .ok()?
+        else {
+            return Some(ContainerObservation::Gone);
+        };
+        let Some((cell, _)) = overlay.ground_entry(&root) else {
             return Some(ContainerObservation::Gone);
         };
         let reachable = in_reach(
@@ -606,6 +614,7 @@ pub(super) async fn observe_container(
                 admission.character,
                 fence,
                 container,
+                root,
                 LoopGround {
                     spatial_position: ground_cell(
                         i32::from(cell.x),

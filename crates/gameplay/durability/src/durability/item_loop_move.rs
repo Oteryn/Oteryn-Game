@@ -363,6 +363,46 @@ async fn loop_subtree(
     ))
 }
 
+/// A historical nested-container ancestry hint, target first. The extra row
+/// detects overdeep paths; repeated identities detect cycles. Never authorize a
+/// view from this hint without locking and rereading the same path.
+async fn ground_container_path(
+    tx: &mut Transaction<'_, Postgres>,
+    world: WorldId,
+    container: [u8; 16],
+) -> std::result::Result<Option<Vec<[u8; 16]>>, DurabilityError> {
+    let rows = sqlx::query(
+        "WITH RECURSIVE path(item, depth) AS ( \
+           SELECT encode($1,'hex')::uuid, 0 \
+           UNION ALL \
+           SELECT n.parent_item_instance_id, p.depth+1 FROM path p \
+             JOIN game_item_nested_entries n ON n.item_instance_id=p.item \
+            WHERE p.depth <= $2 \
+         ) SELECT p.item::text, COALESCE(i.world_id=encode($3,'hex')::uuid \
+                    AND i.lifecycle=1 AND i.quantity=1, false) AS live \
+             FROM path p LEFT JOIN game_item_instances i ON i.item_instance_id=p.item \
+            ORDER BY p.depth LIMIT $4",
+    )
+    .bind(container.as_slice())
+    .bind(ITEM_LOOP_DEPTH_MAX)
+    .bind(world.as_bytes().as_slice())
+    .bind(i64::from(ITEM_LOOP_DEPTH_MAX) + 2)
+    .fetch_all(&mut **tx)
+    .await?;
+    if rows.is_empty() || rows.len() > ITEM_LOOP_DEPTH_MAX as usize + 1 {
+        return Ok(None);
+    }
+    let mut path = Vec::with_capacity(rows.len());
+    for row in rows {
+        let item = uuid_text(row.try_get("item")?)?;
+        if !row.try_get::<bool, _>("live")? || path.contains(&item) {
+            return Ok(None);
+        }
+        path.push(item);
+    }
+    Ok(Some(path))
+}
+
 /// Direct nested entries of `parent`, newest first, bounded by the container ceiling.
 async fn load_nested_entries(
     tx: &mut Transaction<'_, Postgres>,
@@ -1599,15 +1639,39 @@ impl DurabilityRoot {
             .await
     }
 
-    /// Direct proven Ground container at the exact owner-observed placement. This
+    /// Historical root hint for a bounded external container path. The view
+    /// reader must revalidate this exact root and placement under its locks.
+    pub async fn read_item_loop_ground_container_root(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        fence: CurrentCharacterItemFence,
+        container: [u8; 16],
+    ) -> std::result::Result<Option<[u8; 16]>, DurabilityError> {
+        let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
+        let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
+            Box::pin(async move {
+                let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+                assert_recovery_fence(&mut tx, &record).await?;
+                let root = ground_container_path(&mut tx, world, container).await?
+                    .and_then(|path| path.last().copied());
+                super::db::commit_semantic_transaction(tx, deadline).await?;
+                Ok(root)
+            })
+        }).await
+    }
+
+    /// Container below a proven Ground root at the exact owner-observed placement. This
     /// is view data only: the caller checks current session and reach under its
     /// Channel lane; a subsequent text write must reacquire every custody fence.
-    /// Nested Ground containers, houses and corpse/reward roots remain unavailable.
+    /// Ancestry is bounded, locked in UUID order and reread after lock waits.
+    /// Houses and corpse/reward roots remain unavailable.
     pub async fn read_item_loop_ground_container(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
         fence: CurrentCharacterItemFence,
         container: [u8; 16],
+        root: [u8; 16],
         ground: LoopGround,
     ) -> std::result::Result<Option<LoopContainer>, DurabilityError> {
         let record = recovery.record_for(self).map_err(|_| DurabilityError::Unavailable)?;
@@ -1616,11 +1680,34 @@ impl DurabilityRoot {
             Box::pin(async move {
                 let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
                 assert_recovery_fence(&mut tx, &record).await?;
+                let Some(path) = ground_container_path(&mut tx, world, container).await? else {
+                    return Ok(None);
+                };
+                if path.last() != Some(&root) {
+                    return Ok(None);
+                }
+                let mut sorted = path.clone();
+                sorted.sort_unstable();
+                // A concurrent move must finish before we read custody. All
+                // item locks precede the Ground owner lock, as in the text owner.
+                for item in sorted {
+                    sqlx::query("SELECT item_instance_id FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid FOR SHARE")
+                        .bind(item.as_slice()).fetch_one(&mut *tx).await?;
+                }
+                // Ground rows have no runtime UPDATE grant: retain the existing
+                // location-owner lock rather than FOR SHARE on the Ground table.
+                sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'),33))")
+                    .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice())
+                    .execute(&mut *tx).await?;
+                if ground_container_path(&mut tx, world, container).await?.as_ref() != Some(&path) {
+                    return Ok(None);
+                }
                 let row = sqlx::query(
-                    "SELECT i.definition_family, i.definition_production_key, \
-                            i.definition_revision_ref, i.quantity \
+                    "SELECT target.definition_family, target.definition_production_key, \
+                            target.definition_revision_ref, target.quantity \
                        FROM game_item_instances i JOIN game_item_ground_locations g \
                          USING (item_instance_id, world_id) \
+                       JOIN game_item_instances target ON target.item_instance_id=encode($9,'hex')::uuid \
                       WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.lifecycle=1 \
                         AND i.world_id=encode($2,'hex')::uuid AND g.channel_id=encode($3,'hex')::uuid \
                         AND g.runtime_scope_ownership_generation=$4::text::numeric(20,0) \
@@ -1628,12 +1715,12 @@ impl DurabilityRoot {
                             = ($5,$6,$7,$8) \
                         AND (game_item_loop_drop_ref(g.corpse_ref) \
                              OR game_item_loop_map_mint_source(i.item_instance_id)) \
-                      FOR SHARE OF i, g",
+                      FOR SHARE OF i, target",
                 )
-                .bind(container.as_slice()).bind(world.as_bytes().as_slice())
+                .bind(root.as_slice()).bind(world.as_bytes().as_slice())
                 .bind(channel.as_bytes().as_slice()).bind(fence.scope_ownership_generation.get().to_string())
                 .bind(&ground.spatial_position).bind(&ground.map_revision)
-                .bind(&ground.content_revision).bind(&ground.placement_context)
+                .bind(&ground.content_revision).bind(&ground.placement_context).bind(container.as_slice())
                 .fetch_optional(&mut *tx).await?;
                 let read = match row {
                     None => None,
@@ -1650,7 +1737,7 @@ impl DurabilityRoot {
                                 definition: definition_of(&row).map_err(|_| DurabilityError::InvalidStoredState)?,
                                 quantity: stored_u32(row.try_get("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,
                             },
-                            parent: None,
+                            parent: path.get(1).copied(),
                             entries,
                         })
                     }
