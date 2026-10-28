@@ -2787,6 +2787,71 @@ fn validate_ranged_profiles() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// PAR-M10: the diving helmets that stop underwater drowning (TibiaWiki Diving Equipment; Crystal
+/// `drowning.lua` head-slot check) carry the same Known SUPPRESS_DROWN as 11585. Each override
+/// fills an Unknown `skill_modifiers` group only; any other baseline fails closed.
+fn apply_item_drown_protection(
+    draft: &mut ProjectV2Draft,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = include_bytes!("../../../content/items/drown-protection.json");
+    let ledger: Value = serde_json::from_slice(bytes)?;
+    let suppression = serde_json::json!({"state": "KNOWN", "value": {"modifiers": {"state": "KNOWN", "value": [{
+        "kind": "SUPPRESS_DROWN",
+        "target_domain": {"state": "UNKNOWN"},
+        "evaluation_phase": {"state": "UNKNOWN"},
+        "priority": {"state": "UNKNOWN"},
+        "parameter": {"state": "KNOWN", "value": {"kind": "BOOLEAN", "value": true}},
+    }]}}});
+    for row in ledger["overrides"]
+        .as_array()
+        .ok_or("drown protection overrides missing")?
+    {
+        if row["modifier"] != "SUPPRESS_DROWN" {
+            return Err("unknown drown protection modifier".into());
+        }
+        let key = format!(
+            "oteryn:item.tibia.i{}",
+            row["item"]
+                .as_u64()
+                .ok_or("drown protection item missing")?
+        );
+        let semantics = draft
+            .core
+            .records
+            .iter_mut()
+            .find_map(|record| match record {
+                ProjectReferenceRecord::Item {
+                    identity,
+                    semantics,
+                    ..
+                } if identity.key == key => Some(semantics),
+                _ => None,
+            })
+            .ok_or("drown protection item missing")?;
+        if !semantics.skill_modifiers.is_unknown() {
+            return Err(format!("drown protection baseline drift: {key}").into());
+        }
+        semantics.skill_modifiers = serde_json::from_value(suppression.clone())?;
+    }
+    let revision = "par-m10-drown-protection-20261028-r1";
+    draft.core.imports.push(ImportBatch {
+        batch_id: "item-drown-protection-5460-13995".to_owned(),
+        source_repository: "https://tibia.fandom.com/wiki/Diving_Equipment".to_owned(),
+        source_revision: "1148766,1148776".to_owned(),
+        source_artifact_sha256: hex_sha256(bytes),
+        access_disposition: "PUBLIC_WIKI_REVISION_TEXT".to_owned(),
+        source_generation_profile: "OTERYN_ITEM_DROWN_PROTECTION/v1".to_owned(),
+        importer: "materialize_content_world_project_v2".to_owned(),
+        mapper: "item-drown-protection".to_owned(),
+        mapper_revision: revision.to_owned(),
+        mapper_sha256: hex_sha256(include_bytes!("materialize_content_world_project_v2.rs")),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    });
+    draft.core.project_revision = revision.to_owned();
+    Ok(())
+}
+
 /// Official field overrides follow the immutable creature import. Identity bindings
 /// retain the base source; the authored ledger cites the news for each changed field.
 fn apply_official_creature_balance(
@@ -2877,6 +2942,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
         let mut draft = captured.migrate_to_v2();
         apply_official_creature_balance(&mut draft)?;
+        apply_item_drown_protection(&mut draft)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
         // The canonical writer requires an absent root for the successor package.

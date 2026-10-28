@@ -902,7 +902,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#CreatureProfilesDocument"
           },
-          "sha256": "9e7bcb8bf7e381f9e7a13170abc64ca5ca1379754623e15cf7ad5474e3220954"
+          "sha256": "cb92bbdc01502ab1cdaa57c62a21dbcfde34bb6250853ce74abb430802661bac"
         },
         {
           "creates_canonical_identities": false,

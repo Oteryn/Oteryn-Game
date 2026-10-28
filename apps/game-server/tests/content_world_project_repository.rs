@@ -17,8 +17,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        400,
-        "cca9a6e0864e16128407e711f5ba04853f849eb784813f8adab523018d2d9e57",
+        424,
+        "2d3f35a8a9c3d91f3dcb120b1e0d4ceee94a445cc9933bc0877667426c7c2b8a",
     ),
     (
         "definitions/declarations.json",
@@ -27,8 +27,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        27_270_299,
-        "2a49ef4b92c0f893d30d8de0b6c4e032547e4dfa8dbdd1b0242e86d7748117c5",
+        27_270_799,
+        "7bc0cbf41590fa5d5da47102735e5444f0e1b49ea976e3c2a89189c81da0758c",
     ),
     (
         "editor/author.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1951,
-        "d202bdbc630d48f52fbc8407de4385d729cf9beb71629e67ad59616f410d50b1",
+        1959,
+        "92b13fafaadc6af7a9fcc8ec90734973a8ff68576116c2f07e1399cd266ac639",
     ),
     (
         "presentations/bindings.json",
@@ -47,13 +47,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        402,
-        "f6c484a8c8bf3181bf91cd85245a67b45c17c10c745dc6cc29bca266056c5298",
+        410,
+        "6b890582418820d389ab4bbe851ce589e43252d51d422d35ffcc2511ca2e7eb9",
     ),
     (
         "provenance/imports.json",
-        6_771_443,
-        "d8026c56aa5251f77c000450cab3d26ca4ebcd46ac1f31921cd7e775a02b7d9f",
+        6_772_059,
+        "287864829f8c03e3a316b97c811d96a6e1aee873f850089b23346783428669d2",
     ),
     (
         "provenance/sources.json",
@@ -138,7 +138,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "219b7b7882b8a8b3c259b0e4e79c0fc05c6711c6cbaf21a34bd1f75e97452234";
+const TREE_SHA256: &str = "fe8b6e934de8999b10fb59bf86c5c3d031f8db97872b7b10c9f5bda695fd1ea8";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -388,8 +388,11 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "tibia-news-bal-1-20261027-r1");
-    assert_eq!(project.imports().len(), 32);
+    assert_eq!(
+        project.project_revision(),
+        "par-m10-drown-protection-20261028-r1"
+    );
+    assert_eq!(project.imports().len(), 33);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -398,6 +401,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "g4-item-forge289-br-r1"
                 && b.batch_id != "g4-item-fx-audio295-raw-evidence-r1"
                 && b.batch_id != "official-creature-balance-8918-8935-9024-9039"
+                && b.batch_id != "item-drown-protection-5460-13995"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
@@ -2320,9 +2324,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(mantra_keys.len(), 49);
     // EQUIP-CONTENT-1 adds the Canary fallback rows: 21 modifier lists (28 atoms) and 11
     // resistance lists (19 atoms) on Items whose every wiki page is silent on the group.
+    // PAR-M10 adds the SUPPRESS_DROWN lists of 5460 and 13995 (2 lists, 2 atoms).
     assert_eq!(
         (modifier_vectors, modifier_atoms),
-        (419 + 26 + 49 + 17 + 21, 619 + 63 + 114 + 50 + 28)
+        (419 + 26 + 49 + 17 + 21 + 2, 619 + 63 + 114 + 50 + 28 + 2)
     );
     assert_eq!(resistance_vectors, 391 + 11);
     assert_eq!(resistance_atoms, 625 + 19);
