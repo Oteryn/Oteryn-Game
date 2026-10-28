@@ -264,11 +264,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     );
                     charm_combat::bonuses(&mut offence, &outcomes);
                 }
-                let Some((damage, revision)) =
+                let Some((mut damage, revision)) =
                     draw_swing_damage(entry, &runtime, &selected, constants, &root, &offence)
                 else {
                     continue;
                 };
+                if let Some(item_key) = selected.weapon.item_key.as_deref()
+                    && let Ok(sessions) = self.states.proficiencies.lock()
+                    && let Some(proficiency) = sessions.get(&entry.session)
+                    && let Ok(target) = runtime.companion_snapshot(selected.target)
+                {
+                    damage = proficiency.dispatch_attack(
+                        item_key,
+                        damage,
+                        u64::try_from(target.health).unwrap_or(0),
+                        u64::try_from(target.maximum_health).unwrap_or(0),
+                    );
+                }
                 if damage < 0 {
                     ranged::train_distance(
                         &mut states,

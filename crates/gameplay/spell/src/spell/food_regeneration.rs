@@ -55,6 +55,38 @@ pub fn credit_second(state: &mut PlayerSpellState, fed: bool) {
     });
 }
 
+/// Credit the daily-reward resting-area clocks. The streak unlocks health at two,
+/// mana at three, and a second health/mana credit at five/six respectively.
+pub fn credit_resting_second(state: &mut PlayerSpellState, streak: u32) -> Option<()> {
+    if streak < 2 || state.health == 0 {
+        return Some(());
+    }
+    let before = state.clone();
+    let fed = state
+        .conditions
+        .active_at(
+            oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
+            state
+                .regeneration_next_tick_us
+                .unwrap_or(0)
+                .saturating_sub(1),
+        )
+        .is_some();
+    credit_second(state, fed);
+    if streak < 3 {
+        state.mana = before.mana;
+        state.regen_mana_ms = before.regen_mana_ms;
+    }
+    if streak >= 5 {
+        let mana = (state.mana, state.regen_mana_ms);
+        credit_second(state, fed);
+        if streak < 6 {
+            (state.mana, state.regen_mana_ms) = mana;
+        }
+    }
+    Some(())
+}
+
 /// Holds one native tick in a protection zone. The historical helper also serves hungry actors.
 pub fn hold_fed_second(state: &mut PlayerSpellState, fed: bool) {
     apply(state, |regeneration, mut rate, _, _| {
@@ -117,6 +149,29 @@ mod tests {
         state.health = 100;
         state.mana = 100;
         state
+    }
+
+    #[test]
+    fn resting_streak_tiers_unlock_and_double_only_the_named_pool() {
+        let mut tier_one = actor(Vocation::Druid);
+        let before = tier_one.clone();
+        credit_resting_second(&mut tier_one, 1).expect("tier");
+        assert_eq!(tier_one, before);
+
+        let mut tier_two = actor(Vocation::Druid);
+        let mut tier_three = tier_two.clone();
+        let mut tier_five = tier_two.clone();
+        let mut tier_six = tier_two.clone();
+        for _ in 0..12 {
+            credit_resting_second(&mut tier_two, 2).expect("tier 2");
+            credit_resting_second(&mut tier_three, 3).expect("tier 3");
+            credit_resting_second(&mut tier_five, 5).expect("tier 5");
+            credit_resting_second(&mut tier_six, 6).expect("tier 6");
+        }
+        assert_eq!(tier_two.mana, 100, "tier 2 has no mana bonus");
+        assert!(tier_three.mana > tier_two.mana);
+        assert!(tier_five.health > tier_three.health);
+        assert!(tier_six.mana > tier_five.mana);
     }
 
     /// Ticks seconds `from + 1 ..= to` (time stays monotonic across calls).

@@ -64,6 +64,10 @@ pub mod newhaven_tutorial_land;
 pub mod npc_catalogue;
 mod production;
 mod project;
+pub use project::{
+    ImportedWeaponProficiencyData, ProjectV2ProficiencyThresholdClass,
+    import_committed_weapon_proficiency_data,
+};
 mod project_fs;
 mod reference_artifact;
 mod reference_playable;

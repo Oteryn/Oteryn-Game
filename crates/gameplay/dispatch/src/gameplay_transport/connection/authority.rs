@@ -17,6 +17,16 @@ pub struct DepotObservation {
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
     mechanic_authority_methods!();
+    /// KEYDOOR-1: use a resolved carried/map key on a non-movable map door.
+    fn use_key_on_door(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _key: ItemKey,
+        _door: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
     fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }
     }
