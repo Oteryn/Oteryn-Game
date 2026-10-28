@@ -10,6 +10,7 @@ pub mod creature_chain_attack;
 pub mod creature_condition_content;
 pub mod creature_defense_presentation;
 pub mod creature_spell_facts;
+pub mod hazard;
 
 #[allow(unused_imports, reason = "preserve the former server module path")]
 use oteryn_gameplay_content::content;
