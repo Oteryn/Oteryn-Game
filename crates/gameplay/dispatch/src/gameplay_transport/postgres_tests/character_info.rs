@@ -85,7 +85,7 @@ fn character_title_unlock_and_selection_are_durable_and_referential() -> TestRes
                     &authority,
                     &harness.node,
                     stale,
-                    CharacterTitle::Cartographer,
+                    CharacterTitle::Globetrotter,
                     100,
                     None
                 )
@@ -288,6 +288,47 @@ fn dispatch_scenario() -> TestResult {
         let revoked: bool = sqlx::query_scalar("SELECT NOT EXISTS(SELECT 1 FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=2)")
             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert!(revoked);
+        // PAR-P12: Global Globetrotter and Reigning Drome Champion are not permanent. Without
+        // their native facts the wire unlock is refused before any title write.
+        for (command, title) in [(13, 3), (14, 4)] {
+            assert_eq!(
+                exchange(&owner, &mut admitted, command, 113, &[2, title])
+                    .await?
+                    .0,
+                CommandStatus::Rejected,
+                "unqualified non-permanent title {title}"
+            );
+        }
+        // A stored Globetrotter row (earned while every map area was explored) and its
+        // selection are revoked together once the map predicate no longer holds.
+        assert!(
+            h.root
+                .unlock_character_title(
+                    &authority,
+                    &h.node,
+                    admitted.item_fence.ok_or("current fence")?,
+                    CharacterTitle::Globetrotter,
+                    100,
+                    None,
+                )
+                .await
+                .map_err(debug)?
+        );
+        assert_eq!(
+            exchange(&owner, &mut admitted, 15, 113, &[3, 3]).await?.0,
+            CommandStatus::Accepted
+        );
+        let (status, payload) = exchange(&owner, &mut admitted, 16, 113, &[0, 0, 0, 1]).await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert_eq!(
+            &payload[payload.len() - 3..],
+            &[1, 1, 0],
+            "Globetrotter and its selection are revoked like Global"
+        );
+        let (globetrotter, selected): (bool, Option<i16>) = sqlx::query_as("SELECT EXISTS(SELECT 1 FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=3),(SELECT title FROM game_character_title_selection WHERE character_id=encode($1,'hex')::uuid)")
+            .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+        assert!(!globetrotter);
+        assert_eq!(selected, None);
         drop(owner);
         drop(authority);
         drop(seal);

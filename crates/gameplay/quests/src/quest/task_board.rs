@@ -22,6 +22,7 @@ pub const TALISMAN_DAMAGE: &str = "oteryn:taskboard/bounty/talisman/damage";
 pub const TALISMAN_LIFE_LEECH: &str = "oteryn:taskboard/bounty/talisman/life-leech";
 pub const TALISMAN_LOOT: &str = "oteryn:taskboard/bounty/talisman/loot";
 pub const TALISMAN_BESTIARY: &str = "oteryn:taskboard/bounty/talisman/bestiary";
+pub const TALISMAN_ITEM: &str = "oteryn:item.tibia.i51978";
 /// The weekly lockout of a claimed task, in database seconds.
 pub const LOCKOUT_SECONDS: i64 = 604_800;
 /// The experience of one claim: the shared Beginner formula `25L²-75L+100` at level 10.
@@ -272,6 +273,28 @@ pub fn kill_credit(tracks: &BTreeMap<String, i64>, race: &str) -> Option<String>
     let state = state(tracks);
     let task = task(state.selected)?;
     (task.race == race && state.kills < task.required).then(|| kill_transition(state.selected))
+}
+
+/// Returns a live path bonus only while the Talisman is equipped and the affected creature is
+/// the character's active Bounty Task creature.
+#[must_use]
+pub fn active_talisman_bonus(
+    tracks: &BTreeMap<String, i64>,
+    race: &str,
+    equipped: bool,
+    path: usize,
+) -> i64 {
+    if !equipped {
+        return 0;
+    }
+    let state = state(tracks);
+    let Some(active) = task(state.selected) else {
+        return 0;
+    };
+    if active.race != race {
+        return 0;
+    }
+    talisman_bonus(path, state.talisman_levels.get(path).copied().unwrap_or(0))
 }
 
 #[cfg(test)]

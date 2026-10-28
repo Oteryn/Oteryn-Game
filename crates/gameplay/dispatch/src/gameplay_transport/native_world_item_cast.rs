@@ -1201,7 +1201,7 @@ mod tests {
             use sqlx::Connection;
             let options: sqlx::postgres::PgConnectOptions = admin.parse()?;
             if options.get_host() != "127.0.0.1"
-                || ![5432, 55432].contains(&options.get_port())
+                || options.get_port() == 0
                 || options.get_database() != Some("postgres")
             {
                 return Err("SQL read regression requires the local test PostgreSQL admin".into());
