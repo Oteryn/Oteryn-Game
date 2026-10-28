@@ -168,7 +168,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &map.facts,
             runtime.content_pin().client_artifact_digest(),
             actor_tile,
-            |door| map_door::doorway_occupied(&runtime, actor, actor_tile, door),
+            |door| {
+                map.overlay.has_added_item(door)
+                    || map_door::doorway_occupied(&runtime, actor, actor_tile, door)
+            },
             actor_level,
             target,
         )

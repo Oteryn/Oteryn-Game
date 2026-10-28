@@ -103,7 +103,7 @@ pub(super) fn doorway_occupied(
 }
 
 /// Decides one `USE` of `target` by an actor on `actor`. `occupied` says whether an actor stands
-/// on a tile; it is read under the same lock as the toggle.
+/// on a tile or a movable item occupies it; it is read under the same lock as the toggle.
 pub(super) fn use_door(
     overlay: &ChannelOverlay,
     facts: &BundleFacts,
@@ -311,6 +311,43 @@ mod tests {
         let bad = run(&world, at(7), &[], &short);
         assert_eq!(bad.disposition, UseDisposition::NothingToUse);
         assert!(bad.committed.is_none());
+    }
+
+    #[test]
+    fn a_movable_item_census_keeps_an_open_door_open() {
+        let world = door_world().expect("world");
+        let digest = world.base().digest();
+        let key = door_key();
+        let target = |revision| target(digest, key, revision);
+
+        assert_eq!(
+            use_door(
+                world.overlay(),
+                world.facts(),
+                GENERATION,
+                at(7),
+                |_| false,
+                u32::MAX,
+                &target(0),
+            )
+            .disposition,
+            UseDisposition::Committed
+        );
+        assert_eq!(
+            use_door(
+                world.overlay(),
+                world.facts(),
+                GENERATION,
+                at(7),
+                // Production supplies the overlay's movable-item census through this callback.
+                |_| true,
+                u32::MAX,
+                &target(1),
+            )
+            .disposition,
+            UseDisposition::Occupied
+        );
+        assert!(world.enterable(DOOR_AT));
     }
 
     /// The client path at the wire level: two sessions join and see the closed door, one reads
