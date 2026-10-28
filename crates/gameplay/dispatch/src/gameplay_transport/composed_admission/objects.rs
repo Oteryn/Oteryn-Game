@@ -116,6 +116,32 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let actor_level = spell_states
             .get(&runtime, actor, session)
             .map_or(0, |state| state.character_facts().level);
+        // Quest doors read only this admitted session's copy of the durable quest owner. A
+        // missing/failed copy cannot grant access. The action id is authored in the bundle.
+        let quest_storage_met = map
+            .facts
+            .action_at(
+                target
+                    .placement
+                    .get(32..40)
+                    .and_then(|bytes| {
+                        let bytes: [u8; 8] = bytes.try_into().ok()?;
+                        Some(u64::from_be_bytes(bytes))
+                    })
+                    .unwrap_or_default(),
+            )
+            .is_some_and(|action| {
+                self.states
+                    .quest_sessions
+                    .lock()
+                    .ok()
+                    .is_some_and(|sessions| {
+                        sessions
+                            .get(&session)
+                            .and_then(|quest| quest.copy.as_ref())
+                            .is_some_and(|copy| copy.meets_door_storage(action))
+                    })
+            });
         // Admission is taken under the owner lock that also covers the commit below, and the
         // owner pass resets the turn cap under the same lock, so an act is counted in the turn
         // that commits it and its order is the owner lock's.
@@ -173,6 +199,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     || map_door::doorway_occupied(&runtime, actor, actor_tile, door)
             },
             actor_level,
+            quest_storage_met,
             target,
         )
     }

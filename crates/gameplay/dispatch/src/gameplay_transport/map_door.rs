@@ -104,6 +104,7 @@ pub(super) fn doorway_occupied(
 
 /// Decides one `USE` of `target` by an actor on `actor`. `occupied` says whether an actor stands
 /// on a tile or a movable item occupies it; it is read under the same lock as the toggle.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn use_door(
     overlay: &ChannelOverlay,
     facts: &BundleFacts,
@@ -111,6 +112,7 @@ pub(super) fn use_door(
     actor: TilePos,
     occupied: impl FnOnce(TilePos) -> bool,
     actor_level: u32,
+    quest_storage_met: bool,
     target: &WorldObjectTarget,
 ) -> UseOutcome {
     let source = MapViewSource {
@@ -146,6 +148,7 @@ pub(super) fn use_door(
         target.expected_revision,
         occupied,
         actor_level,
+        quest_storage_met,
     ) {
         Some(DoorUse::Toggled { .. }) => outcome(UseDisposition::Committed),
         Some(DoorUse::Locked) => outcome(UseDisposition::Locked),
@@ -232,6 +235,7 @@ mod tests {
             actor,
             |pos| others.contains(&pos),
             u32::MAX,
+            true,
             t,
         )
     }
@@ -328,6 +332,7 @@ mod tests {
                 at(7),
                 |_| false,
                 u32::MAX,
+                true,
                 &target(0),
             )
             .disposition,
@@ -342,6 +347,7 @@ mod tests {
                 // Production supplies the overlay's movable-item census through this callback.
                 |_| true,
                 u32::MAX,
+                true,
                 &target(1),
             )
             .disposition,
@@ -572,6 +578,7 @@ mod tests {
                 actor_tile,
                 |door| doorway_occupied(runtime, actor, actor_tile, door),
                 u32::MAX,
+                true,
                 &target(digest, key, revision),
             )
             .disposition
