@@ -67,7 +67,7 @@ fn item_conversion_committed_family_round_trips_through_content_dispatch() {
         serde_json::from_str(include_str!("../../../content/craft/recipes.json"))
             .expect("catalogue");
     let rows = catalogue["records"].as_array().expect("recipes").clone();
-    assert_eq!(rows.len(), 125);
+    assert_eq!(rows.len(), 129);
     let mechanical = rows
         .iter()
         .find(|r| r["identity"]["key"] == "oteryn:item-conversion.corpse-mechanical")
@@ -90,7 +90,7 @@ fn item_conversion_committed_family_round_trips_through_content_dispatch() {
         .expect("snapshot")
         .parse(wide)
         .expect("dispatch v2 parser");
-    assert_eq!(parsed.v2().expect("v2").declarations.len(), 125);
+    assert_eq!(parsed.v2().expect("v2").declarations.len(), 129);
     assert_eq!(
         parsed
             .canonical_documents(wide)

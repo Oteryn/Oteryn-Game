@@ -100,7 +100,7 @@
     },
     "item_conversion": {
       "index": "content/craft/index.json",
-      "records": 125
+      "records": 129
     }
   },
   "managed_files": [
@@ -973,7 +973,7 @@
         {
           "creates_canonical_identities": false,
           "path": "content/items/definitions/spell-native-profiles.json",
-          "record_count": 678,
+          "record_count": 680,
           "representation": "native_profile_overlay",
           "runtime_activation": false,
           "schema": "OTERYN_NATIVE_ITEM_PROFILES/v1",
@@ -981,7 +981,7 @@
             "kind": "rust_serde",
             "path": "apps/game-server/src/content/native_gameplay.rs#ItemProfilesDocument"
           },
-          "sha256": "7604d5792023a92cab8ad59b1576da8b56a226207c4680b727e1b64876714bbe"
+          "sha256": "a8d5adeceb696f98af0cbca266bed847c7a82080fe18d878cb7900427adf38bb"
         }
       ],
       "Presentation": [

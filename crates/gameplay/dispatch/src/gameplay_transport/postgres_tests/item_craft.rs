@@ -179,6 +179,10 @@ fn scenario() -> TestResult {
         let cookies = oteryn_gameplay_items::item_craft::cooking_conversion(native, &typed("oteryn:item.tibia.i8198")?, &station_definition).ok_or("cookies recipe")?;
         assert_eq!(cookies.outputs.len(), 2);
         assert_eq!(cookies.outputs[1].1, 12);
+        let tray = oteryn_gameplay_items::item_craft::cooking_conversion(native, &typed("oteryn:item.tibia.i8020")?, &station_definition).ok_or("cookie tray recipe")?;
+        assert_eq!(tray.outputs.len(), 2);
+        assert_eq!(tray.outputs[0].0.production_key, "oteryn:item.tibia.i3464");
+        assert_eq!((tray.outputs[1].0.production_key.as_str(), tray.outputs[1].1), ("oteryn:item.tibia.i3598", 12));
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
         let (end, result, payload) = exchange(&owner, admitted, 1, &payload, reference(dough)).await?;
         assert_eq!(result, UseDisposition::Committed);
