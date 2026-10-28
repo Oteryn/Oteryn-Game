@@ -20,6 +20,18 @@ message BossCooldownListV1 {
   // Empty if exhausted; otherwise the last key returned. Live keyset pagination:
   // concurrent admissions may appear on later queries, no snapshot is promised.
   string next_after_boss_key = 3;
+  // Bosstiary progress of the same Character, read in the same transaction as the
+  // cooldown page. At most 64 rows, strictly ascending by boss_key, paged with the
+  // same next_after_boss_key cursor as the request.
+  repeated BosstiaryProgressEntryV1 progress = 4;
+  // Sum of the Character's earned boss points.
+  uint64 boss_points = 5;
+  // Empty if exhausted; otherwise the last progress key returned.
+  string next_after_progress_key = 6;
+}
+message BosstiaryProgressEntryV1 {
+  string boss_key = 1;
+  uint64 kill_count = 2;
 }
 
 // Command 340. Identity and World come exclusively from the admitted session.

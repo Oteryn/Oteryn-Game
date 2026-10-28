@@ -1,0 +1,13 @@
+{
+  "id": 168,
+  "name": "ANIMUS_MASTERY_V1",
+  "owner_decision": "ANIMUS-1; Crystal re-audit W08",
+  "owner": "Game Character Animus Mastery owner",
+  "requires": [],
+  "command_types": [
+    232
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "ANIMUS-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 232 returns the admitted Character's own server-owned, immutable Animus Mastery completions; without the capability selected, command type 232 is refused as unsupported."
+}

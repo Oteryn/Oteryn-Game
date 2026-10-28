@@ -23,6 +23,13 @@ pub struct BossCooldownEntry {
     pub available_at_unix_ms: u64,
 }
 
+/// Durable per-character progress shown by the Cyclopedia Bosstiary window.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BosstiaryProgressEntry {
+    pub boss_key: String,
+    pub kill_count: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BossRewardChestEntry {
     pub death: [u8; 16],
@@ -110,6 +117,19 @@ pub fn encode_cooldown_list(
     entries: &[BossCooldownEntry],
     more: bool,
 ) -> Result<Vec<u8>, Error> {
+    encode_bosstiary_list(now_unix_ms, entries, more, &[], 0, false)
+}
+
+/// Encode cooldowns and Bosstiary progress in one bounded snapshot. Fields 1-3 retain the
+/// original cooldown wire contract; progress is field 4 and earned boss points are field 5.
+pub fn encode_bosstiary_list(
+    now_unix_ms: u64,
+    entries: &[BossCooldownEntry],
+    more: bool,
+    progress: &[BosstiaryProgressEntry],
+    boss_points: u64,
+    progress_more: bool,
+) -> Result<Vec<u8>, Error> {
     if entries.len() > COOLDOWN_PAGE_SIZE || (more && entries.len() != COOLDOWN_PAGE_SIZE) {
         return Err(Error::LimitExceeded);
     }
@@ -132,6 +152,29 @@ pub fn encode_cooldown_list(
     if more {
         let last = entries.last().ok_or(Error::Malformed)?;
         push_message_field(&mut out, 3, last.boss_key.as_bytes());
+    }
+    if progress.len() > COOLDOWN_PAGE_SIZE
+        || (progress_more && progress.len() != COOLDOWN_PAGE_SIZE)
+        || progress.iter().any(|entry| !valid_key(&entry.boss_key))
+        || progress
+            .windows(2)
+            .any(|pair| pair[0].boss_key >= pair[1].boss_key)
+    {
+        return Err(Error::LimitExceeded);
+    }
+    for entry in progress {
+        let mut value = Vec::new();
+        push_message_field(&mut value, 1, entry.boss_key.as_bytes());
+        push_varint_field(&mut value, 2, entry.kill_count);
+        push_message_field(&mut out, 4, &value);
+    }
+    push_varint_field(&mut out, 5, boss_points);
+    if progress_more {
+        push_message_field(
+            &mut out,
+            6,
+            progress.last().ok_or(Error::Malformed)?.boss_key.as_bytes(),
+        );
     }
     if out.len() > MAX_RESULT_BYTES {
         return Err(Error::LimitExceeded);
