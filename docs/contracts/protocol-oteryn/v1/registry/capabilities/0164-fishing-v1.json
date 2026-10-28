@@ -9,5 +9,5 @@
   "command_types": [],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Server fishing uses the existing admitted USE-with-map route; client support remains explicitly unsupported."
+  "offer_gate": "FISHING-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Server fishing uses the existing admitted USE-with-map route (command type 31); client support remains explicitly unsupported."
 }
