@@ -63,6 +63,9 @@ async fn quote(
     if level.is_none_or(|level| level < i64::from(route.route.min_level.unwrap_or(0))) {
         return Ok(Err(TravelRefusal::UnavailableRoute));
     }
+    if !route_accessible(tx, fence, route).await? {
+        return Ok(Err(TravelRefusal::UnavailableRoute));
+    }
     let blocked = crate::durability::pvp_state::load_pvp_state(tx, fence.character_id)
         .await?
         .is_some_and(|row| {
@@ -93,6 +96,30 @@ async fn quote(
     } else {
         0
     })))
+}
+
+/// Captain Seagull only offers Yalahar while the Ab'Dendriel sea-route mark has not been
+/// collected and fewer than five route towns have been visited. The check belongs in the
+/// durability transaction so a stale conversation cannot bypass a quest transition.
+async fn route_accessible(
+    tx: &mut Type2Transaction<'_>,
+    fence: CurrentCharacterGameplayFence,
+    route: &TravelRoute,
+) -> Result<bool, DurabilityError> {
+    if (route.service.as_str(), route.route.key.as_str())
+        != ("oteryn:service.travel.captain_seagull", "yalahar")
+    {
+        return Ok(true);
+    }
+    let (ab_dendriel, towns): (Option<i64>, Option<i64>) = sqlx::query_as(
+        "SELECT max(value) FILTER (WHERE track_key=$2),max(value) FILTER (WHERE track_key=$3) FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key IN ($2,$3)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/ab_dendriel")
+    .bind("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/towns_counter")
+    .fetch_one(&mut ***tx)
+    .await?;
+    Ok(ab_dendriel != Some(1) && towns.unwrap_or_default() < 5)
 }
 
 impl DurabilityRoot {
@@ -149,6 +176,9 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             let permitted = premium(&mut tx, fence, &request.route, *gate).await?;
             if let Err(error) = assert_gameplay_fence(&mut tx, &fence, &node).await? {return Ok(Err(error));}
+            if !route_accessible(&mut tx, fence, &request.route).await? {
+                return Ok(Ok(Err(TravelRefusal::UnavailableRoute)));
+            }
             let arrival = request.arrival;
             let route = &request.route;
             let key = format!("{}/{}", route.service, route.route.key);

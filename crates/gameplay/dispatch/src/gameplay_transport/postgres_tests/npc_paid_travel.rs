@@ -123,7 +123,7 @@ fn scenario() -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            4,
+            6,
             channel_pin,
         )
         .map_err(debug)?;
@@ -176,7 +176,7 @@ fn scenario() -> TestResult {
             .chat
             .admit(session, "Fixture Hero", owner.owner_now());
         owner.states.chat.set_npc_service(session);
-        let npc = {
+        let (npc, seagull, kendra) = {
             let mut runtime = dependencies.runtime.lock().await;
             runtime
                 .initialize_first_entry_position(dependencies.actor)
@@ -207,18 +207,64 @@ fn scenario() -> TestResult {
                                     direction: MovementFacing::South,
                                 }],
                             },
+                            NpcPlacements {
+                                key: "oteryn:npc.captain_seagull".into(),
+                                placements: vec![NpcPlacement {
+                                    floor: -i8::try_from(spot.floor)?,
+                                    x: u16::try_from(spot.x)?,
+                                    y: u16::try_from(spot.y + 1)?,
+                                    direction: MovementFacing::South,
+                                }],
+                            },
+                            NpcPlacements {
+                                key: "oteryn:npc.kendra".into(),
+                                placements: vec![NpcPlacement {
+                                    floor: -i8::try_from(spot.floor)?,
+                                    x: u16::try_from(spot.x + 1)?,
+                                    y: u16::try_from(spot.y + 1)?,
+                                    direction: MovementFacing::South,
+                                }],
+                            },
                         ],
                     },
                     |_| true,
                     true,
                 )
                 .map_err(debug)?;
-            let placed = runtime.visible_entities().npcs[0];
-            EntityRef {
-                identity: placed.actor.placement_identity(),
-                generation: placed.generation,
-            }
+            let placed = runtime.visible_entities().npcs;
+            (
+                EntityRef {
+                    identity: placed[0].actor.placement_identity(),
+                    generation: placed[0].generation,
+                },
+                EntityRef {
+                    identity: placed[2].actor.placement_identity(),
+                    generation: placed[2].generation,
+                },
+                EntityRef {
+                    identity: placed[3].actor.placement_identity(),
+                    generation: placed[3].generation,
+                },
+            )
         };
+        // The real NPC_TALK owner reaches the durable quest and Premium gates. Seagull's
+        // ordinary routes are free-account routes, Yalahar is available only before this
+        // character completes enough sea routes, and Kendra retains her Premium requirement.
+        talk(&owner, &dependencies, seagull, 100, "hi").await?;
+        owner.premium_coordinator = Some(&free);
+        assert!(line(&talk(&owner, &dependencies, seagull, 101, "edron").await?).contains("70 gold"));
+        assert!(line(&talk(&owner, &dependencies, seagull, 102, "yalahar").await?).contains("160 gold"));
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,'oteryn:quest.in_service_of_yalahar_quest',5,2)")
+            .bind(id(41).as_slice())
+            .bind("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/towns_counter")
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
+        assert!(line(&talk(&owner, &dependencies, seagull, 103, "yalahar").await?).contains("don't sail there"));
+        talk(&owner, &dependencies, kendra, 104, "hi").await?;
+        assert!(line(&talk(&owner, &dependencies, kendra, 105, "thais").await?).contains("premium account"));
+        owner.premium_coordinator = Some(&coordinator);
         talk(&owner, &dependencies, npc, 1, "hi").await?;
         assert!(line(&talk(&owner, &dependencies, npc, 2, "venore").await?).contains("170 gold"));
         let refused = talk(&owner, &dependencies, npc, 3, "yes").await?;

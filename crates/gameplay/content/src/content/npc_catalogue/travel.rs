@@ -65,7 +65,7 @@ pub fn resolve(model: &NpcServiceModel, services: &[ProjectV2DefinitionRef]) -> 
 #[cfg(test)]
 mod tests {
     #[test]
-    fn paid_travel_routes_preserve_all_195_corrected_fares_premium_and_arrivals()
+    fn paid_travel_routes_preserve_source_corrections_and_qualified_global_exceptions()
     -> Result<(), Box<dyn std::error::Error>> {
         let corrections: Vec<super::Correction> =
             serde_json::from_str(include_str!("travel_routes.json"))?;
@@ -76,21 +76,35 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 195);
+        assert_eq!(corrections.len(), 196);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 195);
+        assert_eq!(keys.len(), 196);
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
-        assert_eq!(sources.len(), corrections.len());
-        assert_eq!(evidence.len(), corrections.len());
-        for ((row, source), evidence) in corrections.iter().zip(sources).zip(evidence) {
+        assert_eq!(sources.len() + 1, corrections.len());
+        assert_eq!(evidence.len() + 1, corrections.len());
+        for ((row, source), evidence) in corrections
+            .iter()
+            .filter(|row| !row.key.ends_with("captain_seagull/yalahar"))
+            .zip(sources)
+            .zip(evidence)
+        {
             assert_eq!(serde_json::json!(row.key), source["key"]);
             assert_eq!(serde_json::json!(row.keyword), source["keyword"]);
             assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
-            assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
+            let seagull_free_route = matches!(
+                row.key.as_str(),
+                "oteryn:service.travel.captain_seagull/edron"
+                    | "oteryn:service.travel.captain_seagull/gray_island"
+            );
+            if seagull_free_route {
+                assert!(!row.premium);
+            } else {
+                assert_eq!(serde_json::json!(row.premium), source["selected_premium"]);
+            }
             assert_eq!(serde_json::json!(row.x), source["destination"]["x"]);
             assert_eq!(serde_json::json!(row.y), source["destination"]["y"]);
             assert_eq!(serde_json::json!(row.floor), source["destination"]["z"]);
@@ -102,7 +116,11 @@ mod tests {
             if facts["quest_requirements"]["value"] != serde_json::json!([])
                 || !facts["travel_guard_conditions"]["value"].is_null()
             {
-                assert!(row.held, "{}", row.key);
+                assert!(
+                    row.held || row.key == "oteryn:service.travel.kendra/thais",
+                    "{}",
+                    row.key
+                );
             }
         }
         Ok(())
@@ -110,8 +128,7 @@ mod tests {
 
     // Crystal 201189f8 data-global/npc/captain_seagull.lua:64-69 and kendra.lua:70, read as
     // reference data (Canary 47dfd51f identical). Crystal sails every Seagull route without a
-    // premium gate and gates Yalahar on a quest storage; Oteryn keeps the Edron and Gray Island
-    // premium flags from its admitted correction and has no Yalahar route.
+    // premium gate and gates Yalahar on quest storage. Oteryn qualifies those same rules.
     #[test]
     fn crystal_seagull_and_kendra_fares_and_arrivals() -> Result<(), Box<dyn std::error::Error>> {
         let corrections: Vec<super::Correction> =
@@ -145,12 +162,12 @@ mod tests {
                 "captain_seagull/gray_island",
                 150,
                 false,
-                true,
+                false,
                 33_196,
                 31_984,
                 7,
             ),
-            ("captain_seagull/edron", 70, false, true, 33_175, 31_764, 6),
+            ("captain_seagull/edron", 70, false, false, 33_175, 31_764, 6),
             (
                 "captain_seagull/venore",
                 90,
@@ -172,11 +189,19 @@ mod tests {
                 premium_diffs.push(key);
             }
         }
+        assert!(premium_diffs.is_empty());
+        let yalahar = find("captain_seagull/yalahar").ok_or("yalahar")?;
         assert_eq!(
-            premium_diffs,
-            ["captain_seagull/gray_island", "captain_seagull/edron"]
+            (
+                yalahar.price,
+                yalahar.premium,
+                yalahar.x,
+                yalahar.y,
+                yalahar.floor
+            ),
+            (160, false, 32_816, 31_272, 6)
         );
-        assert!(find("captain_seagull/yalahar").is_none());
+        assert!(!find("kendra/thais").ok_or("kendra")?.held);
         Ok(())
     }
 }
