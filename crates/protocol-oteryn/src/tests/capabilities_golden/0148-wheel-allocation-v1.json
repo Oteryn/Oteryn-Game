@@ -1,0 +1,11 @@
+{
+  "id": 148,
+  "name": "WHEEL_ALLOCATION_V1",
+  "constant": "wheel::CAPABILITY_WHEEL_ALLOCATION_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [161],
+  "domains": [],
+  "supersedes": [],
+  "offers": {"production": true, "item_view": true, "bundle_world": true}
+}

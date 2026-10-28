@@ -79,9 +79,11 @@ impl ChannelSpellStates {
             .iter_mut()
             .find(|s| s.actor == actor && s.session == session)
         {
-            let (spent, next) = state.clock.activity(now, state.minutes);
+            let (hunting_minutes, next) = state.clock.activity(now, u16::MAX);
+            let spent = hunting_minutes.min(state.minutes);
             state.clock = next;
             state.minutes -= spent;
+            self.prey_hunting_tick(actor, session, u32::from(hunting_minutes) * 60);
         }
     }
     pub(super) fn live_stamina(&self, actor: ExactActorRef, session: GameSessionId) -> Option<u16> {
@@ -122,6 +124,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> TrainingSave {
+        if !self.flush_prey(session).await {
+            return TrainingSave::Unknown;
+        }
         {
             let states = self.states.spell_states.lock().await;
             if !states.stamina_to_flush(actor, session) {

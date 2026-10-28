@@ -621,7 +621,9 @@ fn no_cast_writer_awaits_after_its_window_gives_up_the_attempt() {
         .find("letmutattempt=window.install();")
         .expect("native installs");
     let record = text
-        .find("owner.record_spell_kills_locked(&attack,&mutruntime,std::iter::once(&batch));")
+        .find(
+            "owner.record_spell_kills_locked(&attack,&states,&mutruntime,std::iter::once(&batch));",
+        )
         .expect("native records its kills under the guard");
     assert!(
         lock < install && install < record,
