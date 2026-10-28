@@ -319,7 +319,7 @@ mod key_tests {
 
     fn open_facts() -> EntryFacts {
         EntryFacts {
-            definition: MapDefinition::Item(std::num::NonZeroU32::new(1).expect("nonzero")),
+            definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
             terrain_kind: None,
             appearance_id: 1630,
             blocks_projectile: false,
