@@ -584,4 +584,58 @@ mod tests {
         assert_eq!(seen, 571);
         Ok(())
     }
+
+    /// PAR-P11: the displayed grade, points and secret flag of the embedded catalogue, read
+    /// through the production page, against the Crystal `register_achievements.lua` table
+    /// (201189f8). 541 of Crystal's 556 named records match by name; the 13 below differ and
+    /// stay as the catalogue (TibiaWiki-sourced) has them. Each row is
+    /// `(key, Crystal (grade, points, secret), Oteryn (grade, points, secret))`.
+    #[test]
+    fn p11_crystal_achievement_display_parity() -> TestResult {
+        let catalogue = AchievementCatalogue::embedded().map_err(|error| format!("{error:?}"))?;
+        type Display = (u32, u32, bool);
+        let rows: [(&str, Display, Display); 16] = [
+            ("annihilator", (2, 5, false), (2, 5, false)),
+            ("widely_travelled", (3, 7, false), (3, 7, false)),
+            ("gnomish_art_of_war", (1, 3, false), (1, 3, false)),
+            ("soul_mender", (4, 10, false), (4, 10, true)),
+            ("king_s_council", (1, 0, false), (1, 2, false)),
+            ("hope_of_the_merudri", (2, 7, false), (1, 2, false)),
+            ("hell_rider", (1, 0, false), (1, 2, false)),
+            ("alpha_rider", (1, 0, false), (1, 3, false)),
+            ("feral_trapper", (2, 4, false), (1, 2, false)),
+            ("pest_control", (3, 6, false), (3, 7, false)),
+            ("razor_s_edge", (2, 5, true), (2, 4, true)),
+            ("taskaholic", (3, 6, false), (3, 7, false)),
+            ("workhorse", (2, 4, false), (2, 5, false)),
+            ("castle_crasher", (1, 1, false), (1, 1, true)),
+            ("measuring_the_world", (1, 2, false), (1, 2, false)),
+            ("running_the_rift", (1, 3, false), (1, 3, false)),
+        ];
+        let facts: Vec<EarnedAchievement> = rows
+            .iter()
+            .map(|(slug, _, _)| EarnedAchievement {
+                achievement_key: format!("oteryn:achievement/{slug}"),
+                earned_at_unix_ms: 1,
+            })
+            .collect();
+        let page = catalogue
+            .account_achievements_page(&facts, 0)
+            .map_err(|error| format!("{error:?}"))?;
+        let mut matches = 0;
+        for (slug, crystal, oteryn) in rows {
+            let key = format!("oteryn:achievement/{slug}");
+            let row = page
+                .rows
+                .iter()
+                .find(|row| row.key == key)
+                .ok_or_else(|| format!("{key} not displayed"))?;
+            assert_eq!((row.grade, row.points, row.secret), oteryn, "{key}");
+            matches += usize::from(crystal == oteryn);
+        }
+        assert_eq!(matches, 5);
+        let oteryn_total: u32 = rows.iter().map(|(_, _, (_, points, _))| points).sum();
+        assert_eq!(page.total_points, oteryn_total);
+        Ok(())
+    }
 }

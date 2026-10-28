@@ -1,8 +1,19 @@
 //! Production delegation to the existing mechanic owners.
 
+use crate::gameplay_transport::connection::UseCommand;
+use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn use_key_on_door(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        key: ItemKey,
+        door: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        self.use_bundle_key(actor, command, key, &door).await
+    }
     mechanic_composed_methods!();
     async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
         if !admitted
