@@ -7,8 +7,13 @@ use crate::durability::item_craft::ItemCraftRequest;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use crate::map::view::{self, MapEntryKey};
+use oteryn_gameplay_progression::hit_training::{FISHING_TRIES_PER_USE, SkillFamily};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
+use oteryn_simulation_determinism::{
+    DecisionOccurrenceId, GameplayDecisionRoot, deterministic_decision_u64,
+};
+use sha2::{Digest, Sha256};
 
 mod rope;
 mod terrain;
@@ -71,6 +76,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut request = ItemCraftRequest {
             command: CommandRef::new(command.game_session_id, id),
             source: [0; 16],
+            tool: None,
             station: None,
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).ok()?,
         };
@@ -144,6 +150,87 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             };
             super::item_look::typed_definition(index, reference)?
         });
+        // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
+        // consumes a worm only after the skill-scaled catch succeeds.
+        if request
+            .station
+            .as_ref()
+            .is_some_and(|s| oteryn_gameplay_items::fishing::is_water(&s.production_key))
+        {
+            let inventory = self
+                .root
+                .read_item_use_inventory(self.character, self.holder, fence)
+                .await
+                .ok()?;
+            let entries = inventory
+                .backpack
+                .iter()
+                .flat_map(|b| &b.entries)
+                .chain(inventory.nested.iter().map(|(_, entry)| entry));
+            let rod = entries
+                .clone()
+                .find(|entry| {
+                    entry.item.item_instance_id == source
+                        && entry.item.definition.production_key
+                            == oteryn_gameplay_items::fishing::FISHING_ROD
+                })?
+                .item
+                .item_instance_id;
+            let worm = entries
+                .clone()
+                .find(|entry| {
+                    entry.item.definition.production_key == oteryn_gameplay_items::fishing::WORM
+                })
+                .map(|entry| entry.item.item_instance_id);
+            let now = u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
+            let skill = {
+                let runtime = self.runtime.lock().await;
+                let states = self.states.spell_states.lock().await;
+                states
+                    .get(&runtime, actor, command.game_session_id)
+                    .and_then(|state| state.live_skill(SkillFamily::Fishing.index(), now))
+                    .and_then(|value| u16::try_from(value).ok())
+                    .unwrap_or(10)
+            };
+            let digest = Sha256::new()
+                .chain_update(b"oteryn.fishing.catch.v1")
+                .chain_update(command.game_session_id.as_bytes())
+                .chain_update(command.command_id.to_be_bytes())
+                .chain_update(&request.intent)
+                .finalize();
+            let mut occurrence = [0; 16];
+            occurrence.copy_from_slice(&digest[..16]);
+            let draw = deterministic_decision_u64(
+                &GameplayDecisionRoot::from_bytes(native.source_digest()),
+                DecisionOccurrenceId::from_bytes(occurrence),
+                "fishing.catch",
+                0,
+            )
+            .ok()?;
+            let roll = u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()?;
+            let mut due = Vec::new();
+            {
+                let runtime = self.runtime.lock().await;
+                let mut states = self.states.spell_states.lock().await;
+                super::attack::skill_training::train_hit(
+                    &mut states,
+                    &runtime,
+                    native.training_formula(),
+                    actor,
+                    command.game_session_id,
+                    SkillFamily::Fishing,
+                    now,
+                    |_| FISHING_TRIES_PER_USE,
+                    &mut due,
+                );
+            }
+            self.save_trained_levels(due).await;
+            if !oteryn_gameplay_items::fishing::catches(skill, roll) || worm.is_none() {
+                return disposition(UseDisposition::NothingToUse);
+            }
+            request.tool = Some(rod);
+            request.source = worm?;
+        }
         if !self
             .states
             .player_trades

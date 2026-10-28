@@ -197,8 +197,44 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 trained.push((entry.actor, entry.session));
             }
-            let offence =
+            let mut offence =
                 equipped_offence::attacker_offence(&states, &runtime, entry.actor, entry.session);
+            // Conviction leech is part of the same primary-hit projection as equipment leech.
+            // Recompute it for every due swing from the session's latest committed allocation;
+            // the live spell-state Premium deadline prevents expired Premium from retaining it.
+            if let Some(state) = states.get(&runtime, entry.actor, entry.session) {
+                let vocation = match selected.character_facts.vocation {
+                    crate::spell::Vocation::None => "none",
+                    crate::spell::Vocation::Druid => "druid",
+                    crate::spell::Vocation::ElderDruid => "elder_druid",
+                    crate::spell::Vocation::Sorcerer => "sorcerer",
+                    crate::spell::Vocation::MasterSorcerer => "master_sorcerer",
+                    crate::spell::Vocation::Knight => "knight",
+                    crate::spell::Vocation::EliteKnight => "elite_knight",
+                    crate::spell::Vocation::Paladin => "paladin",
+                    crate::spell::Vocation::RoyalPaladin => "royal_paladin",
+                    crate::spell::Vocation::Monk => "monk",
+                    crate::spell::Vocation::ExaltedMonk => "exalted_monk",
+                };
+                let promoted = !matches!(
+                    selected.character_facts.vocation,
+                    crate::spell::Vocation::None
+                        | crate::spell::Vocation::Druid
+                        | crate::spell::Vocation::Sorcerer
+                        | crate::spell::Vocation::Knight
+                        | crate::spell::Vocation::Paladin
+                        | crate::spell::Vocation::Monk
+                );
+                if let Some(wheel) = self.wheel_stat_bonuses(
+                    entry.session,
+                    vocation,
+                    selected.character_facts.level,
+                    promoted,
+                    state.hunting_premium_current(now.get()),
+                ) {
+                    apply_wheel_leech(&mut offence, &wheel);
+                }
+            }
             let cleaves = if offence.cleave > 0 {
                 equipped_offence::cleave_targets(entry, &selected, &runtime, room, now)
             } else {
@@ -713,6 +749,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         drop(runtime);
         drop(pvp_permit);
         self.save_trained_levels(trained).await;
+    }
+}
+
+fn apply_wheel_leech(
+    offence: &mut oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
+    wheel: &oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects,
+) {
+    offence.life_leech = offence
+        .life_leech
+        .saturating_add(u16::try_from(wheel.life_leech_hundredths_percent).unwrap_or(u16::MAX));
+    offence.mana_leech = offence
+        .mana_leech
+        .saturating_add(u16::try_from(wheel.mana_leech_hundredths_percent).unwrap_or(u16::MAX));
+}
+
+#[cfg(test)]
+mod wheel_leech_tests {
+    use super::*;
+
+    #[test]
+    fn conviction_leech_joins_equipment_without_wrapping() {
+        let mut offence =
+            oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence {
+                life_leech: 1_000,
+                mana_leech: u16::MAX - 5,
+                ..Default::default()
+            };
+        let wheel = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects {
+            life_leech_hundredths_percent: 250,
+            mana_leech_hundredths_percent: 10,
+            ..Default::default()
+        };
+
+        apply_wheel_leech(&mut offence, &wheel);
+
+        assert_eq!(offence.life_leech, 1_250);
+        assert_eq!(offence.mana_leech, u16::MAX);
     }
 }
 

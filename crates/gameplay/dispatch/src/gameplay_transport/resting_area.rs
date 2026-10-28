@@ -41,6 +41,7 @@ impl RestingAreaSessions {
         session: GameSessionId,
         actor: ExactActorRef,
         inside: bool,
+        premium: bool,
         stamina: u16,
         soul_interval: u16,
     ) -> (bool, bool) {
@@ -55,7 +56,10 @@ impl RestingAreaSessions {
             p.soul_seconds = 0;
             return (false, false);
         }
-        let stamina_due = if p.streak >= 4 && stamina < 2520 {
+        // Global unlocks tiers four through seven only for Premium characters.  Keep the
+        // streak projection independent of Premium so an expiry immediately closes these
+        // cadences without weakening the durable daily-reward owner.
+        let stamina_due = if premium && p.streak >= 4 && stamina < 2520 {
             p.stamina_seconds = p.stamina_seconds.saturating_add(1);
             let interval = if stamina > 2340 { 360 } else { 180 };
             if p.stamina_seconds >= interval {
@@ -67,7 +71,7 @@ impl RestingAreaSessions {
         } else {
             false
         };
-        let soul_due = if p.streak >= 7 {
+        let soul_due = if premium && p.streak >= 7 {
             p.soul_seconds = p.soul_seconds.saturating_add(1);
             if p.soul_seconds >= soul_interval {
                 p.soul_seconds = 0;
@@ -106,15 +110,31 @@ mod tests {
         let owner = RestingAreaSessions::default();
         owner.install(session(), actor(), 7);
         for _ in 0..179 {
-            owner.cadence(session(), actor(), true, 1000, 120);
+            owner.cadence(session(), actor(), true, true, 1000, 120);
         }
         assert_eq!(
-            owner.cadence(session(), actor(), false, 1000, 120),
+            owner.cadence(session(), actor(), false, true, 1000, 120),
             (false, false)
         );
         for _ in 0..179 {
-            owner.cadence(session(), actor(), true, 1000, 120);
+            owner.cadence(session(), actor(), true, true, 1000, 120);
         }
-        assert!(owner.cadence(session(), actor(), true, 1000, 120).0);
+        assert!(owner.cadence(session(), actor(), true, true, 1000, 120).0);
+    }
+
+    #[test]
+    fn premium_is_required_for_stamina_and_soul_tiers() {
+        let owner = RestingAreaSessions::default();
+        owner.install(session(), actor(), 7);
+        for _ in 0..360 {
+            assert_eq!(
+                owner.cadence(session(), actor(), true, false, 1000, 1),
+                (false, false)
+            );
+        }
+        assert_eq!(
+            owner.cadence(session(), actor(), true, true, 1000, 1),
+            (false, true)
+        );
     }
 }
