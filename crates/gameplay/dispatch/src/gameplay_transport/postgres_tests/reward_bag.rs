@@ -12,18 +12,32 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, UseIntent, UseTarget,
 
 #[test]
 fn reward_bag_use_wire_atomic_replay_and_capacity_refusal() -> TestResult {
+    run_scenario("oteryn:item.tibia.i43895", None)
+}
+
+#[test]
+fn reward_bag_desire_use_wire_atomic_replay_and_stale_generation() -> TestResult {
+    run_scenario("oteryn:item.tibia.i34109", None)
+}
+
+#[test]
+fn reward_bag_primal_quiver_use_wire_atomic_replay_and_stale_generation() -> TestResult {
+    run_scenario("oteryn:item.tibia.i39546", Some("oteryn:item.tibia.i39150"))
+}
+
+fn run_scenario(bag_key: &'static str, forced_reward: Option<&'static str>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(move || scenario(bag_key, forced_reward).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "reward bag e2e panic")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn scenario(bag_key: &str, forced_reward: Option<&str>) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "reward_bag", true, false).await?;
         super::reset();
@@ -130,8 +144,7 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        let covet = "oteryn:item.tibia.i43895";
-        super::item_look::seed_main_backpack(&harness, &[(covet, 1)]).await?;
+        super::item_look::seed_main_backpack(&harness, &[(bag_key, 1)]).await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -139,8 +152,25 @@ fn scenario() -> TestResult {
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 11, 15, 18])
                 .ok_or("reward bag offer selectable")?;
-        let bag_definition = crate::gameplay_transport::item_look::typed_definition(index, reference(covet).ok_or("bag reference")?).ok_or("bag definition")?;
-        let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), 1, id(71));
+        let bag_definition = crate::gameplay_transport::item_look::typed_definition(index, reference(bag_key).ok_or("bag reference")?).ok_or("bag definition")?;
+        let command_id = 1;
+        let source = (0..=u16::MAX).find_map(|nonce| {
+            let mut source = id(71);
+            source[14..].copy_from_slice(&nonce.to_be_bytes());
+            let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), command_id, source);
+            reward_bag_conversion(native, &bag_definition, draw).and_then(|conversion| {
+                forced_reward.is_none_or(|key| conversion.outputs[0].0.production_key == key)
+                    .then_some(source)
+            })
+        }).ok_or("reachable reward draw")?;
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_item_instances SET item_instance_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(id(71).as_slice()).bind(source.as_slice()).execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_item_container_entries SET item_instance_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(id(71).as_slice()).bind(source.as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), command_id, source);
         let expected = reward_bag_conversion(native, &bag_definition, draw).ok_or("admitted reward bag")?;
         let reward = expected.outputs[0].0.production_key.clone();
         let intent = UseIntent {
@@ -151,11 +181,27 @@ fn scenario() -> TestResult {
         };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
         let craft_count = async || sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records").fetch_one(&harness.pool).await;
-        let (end, result, _) = exchange(&owner, admitted, 1, &payload, reference(covet)).await?;
+        // A stale session generation cannot consume the still-carried bag.
+        let mut stale = fence;
+        stale.connection_generation = crate::foundation::ConnectionGeneration::new(
+            fence.connection_generation.get() + 1,
+        ).map_err(debug)?;
+        let refused = owner.use_item_completion(deps.actor, UseCommand {
+            game_session_id: deps.admitted.game_session_id,
+            command_id,
+            item_fence: Some(stale),
+        }, ItemKey::Instance(source)).await.ok_or("stale outcome")?;
+        assert_eq!(refused.disposition, UseDisposition::Rejected);
+        assert_eq!(craft_count().await?, 0);
+        let still_carried: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(source.as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(still_carried, (1, 1));
+        admitted.continuity.next_command_id = command_id;
+        let (end, result, _) = exchange(&owner, admitted, command_id, &payload, reference(bag_key)).await?;
         assert_eq!(result, UseDisposition::Committed);
         assert_eq!(craft_count().await?, 1);
         // The used bag is retired and its slot holds exactly the drawn reward.
-        let retired: (i64, i16, i64) = sqlx::query_as("SELECT quantity,lifecycle,(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+        let retired: (i64, i16, i64) = sqlx::query_as("SELECT quantity,lifecycle,(SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=i.item_instance_id) FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&harness.pool).await?;
         assert_eq!(retired, (0, 2, 0));
         let durable = harness.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("durable backpack")?;
         let keys: Vec<_> = durable.entries.iter().map(|e| (e.item.definition.production_key.as_str(), e.item.quantity)).collect();
@@ -163,7 +209,9 @@ fn scenario() -> TestResult {
         let (recipe, outputs, hash_matches): (String, serde_json::Value, bool) = sqlx::query_as(
             "SELECT r.recipe,r.outputs,a.envelope_sha256=sha256(a.envelope) AND a.envelope_sha256=r.envelope_sha256 FROM game_item_craft_records r JOIN game_item_audit_outbox a USING(event_id)",
         ).fetch_one(&harness.pool).await?;
-        assert_eq!(recipe, "oteryn:reward-bag.bag_you_covet");
+        let constant = oteryn_gameplay_items::reward_bag::reward_bags()
+            .ok_or("bags")?.iter().find(|b| b.bag == bag_key).ok_or("bag")?;
+        assert_eq!(recipe, format!("oteryn:reward-bag.{}", constant.constant.to_ascii_lowercase()));
         assert_eq!(outputs[0]["key"], reward.as_str());
         assert!(hash_matches);
         // Over capacity: a second bag stays carried and nothing is minted or recorded.
@@ -172,14 +220,14 @@ fn scenario() -> TestResult {
         let levelled = sqlx::query("UPDATE game_character_progression_state SET level=1 WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).execute(&mut *tx).await?;
         assert_eq!(levelled.rows_affected(), 1);
         let mut seeded = Vec::new();
-        for (n, key) in std::iter::once(covet).chain(std::iter::repeat_n("oteryn:item.tibia.i43872", 7)).enumerate() {
+        for (n, key) in std::iter::once(bag_key).chain(std::iter::repeat_n("oteryn:item.tibia.i43872", 7)).enumerate() {
             seeded.push(sqlx::query_scalar::<_, String>("WITH i AS (INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,'Item',$2,'definition-r1',1,1,game_character_uuid_v7()) RETURNING item_instance_id) INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) SELECT item_instance_id,encode($1,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,game_character_uuid_v7() FROM i RETURNING item_instance_id::text")
                 .bind(id(42).as_slice()).bind(key).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(100_i64 + i64::try_from(n)?).fetch_one(&mut *tx).await?);
         }
         tx.commit().await?;
         let mut next = end;
-        next.continuity.next_command_id = 2;
-        let (_, result, _) = exchange(&owner, next, 2, &payload, reference(covet)).await?;
+        next.continuity.next_command_id = command_id + 1;
+        let (_, result, _) = exchange(&owner, next, command_id + 1, &payload, reference(bag_key)).await?;
         assert_eq!(result, UseDisposition::NotPossible);
         assert_eq!(craft_count().await?, 1);
         let kept: (i64, i16) = sqlx::query_as("SELECT quantity,lifecycle FROM game_item_instances WHERE item_instance_id=$1::uuid").bind(&seeded[0]).fetch_one(&harness.pool).await?;
@@ -192,18 +240,24 @@ fn scenario() -> TestResult {
         restarted.movement_cells = &cells;
         deps.initialize(&restarted).await;
         let replayed = restarted
-            .use_item_completion(deps.actor, UseCommand { game_session_id: deps.admitted.game_session_id, command_id: 1, item_fence: Some(fence) }, ItemKey::Instance(id(71)))
+            .use_item_completion(deps.actor, UseCommand { game_session_id: deps.admitted.game_session_id, command_id, item_fence: Some(fence) }, ItemKey::Instance(source))
             .await
             .ok_or("replay outcome")?;
         assert_eq!(replayed.disposition, UseDisposition::Committed);
         let refused = restarted
-            .use_item_completion(deps.actor, UseCommand { game_session_id: deps.admitted.game_session_id, command_id: 2, item_fence: Some(fence) }, ItemKey::Instance(bag_two))
+            .use_item_completion(deps.actor, UseCommand { game_session_id: deps.admitted.game_session_id, command_id: command_id + 1, item_fence: Some(fence) }, ItemKey::Instance(bag_two))
             .await
             .ok_or("refused outcome")?;
         assert_eq!(refused.disposition, UseDisposition::NotPossible);
         assert_eq!(craft_count().await?, 1);
         let minted: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE definition_production_key=$1 AND item_instance_id::text<>ALL($2)").bind(&reward).bind(&seeded).fetch_one(&harness.pool).await?;
         assert_eq!(minted, 1);
+        if let Some(key) = forced_reward {
+            assert_eq!(reward, key);
+            let children: i64 = sqlx::query_scalar("SELECT (SELECT count(*) FROM game_item_nested_entries e JOIN game_item_instances i ON i.item_instance_id=e.parent_item_instance_id WHERE i.definition_production_key=$1) + (SELECT count(*) FROM game_item_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.parent_item_instance_id WHERE i.definition_production_key=$1)")
+                .bind(key).fetch_one(&harness.pool).await?;
+            assert_eq!(children, 0, "minted quiver remains empty after replay");
+        }
         drop(restarted);
         drop(authority);
         drop(seal);

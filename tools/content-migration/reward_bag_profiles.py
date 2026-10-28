@@ -3,8 +3,8 @@
 Canary 47dfd51f `data/scripts/actions/items/reward_bags.lua` owns the lists and the
 relative weights; Crystal ff7ede59 carries the same bag ids and lists without weights
 (a uniform draw), so the id lists must match exactly. Weights are scaled to integers
-(1e-5 units) and must convert exactly. BAG_YOU_DESIRE is a Soul War reward: its list is
-recorded, but its Items are not admitted here and the bag stays unplayable.
+(1e-5 units) and must convert exactly. Rewards are single non-stackable items;
+the alicorn quiver is minted empty through the same receipt owner.
 """
 import argparse
 import hashlib
@@ -25,7 +25,6 @@ PATH = 'tools/content-schema/native-gameplay/reward-bag-profiles.json'
 SCRIPT = 'data/scripts/actions/items/reward_bags.lua'
 CONSTANTS = 'data/libs/functions/constants.lua'
 BAGS = ('BAG_YOU_DESIRE', 'PRIMAL_BAG', 'BAG_YOU_COVET')
-EXCLUDED = {'BAG_YOU_DESIRE': 'SOUL_WAR_LANE'}
 WEIGHT_SCALE = Decimal(100000)
 ELEMENTAL_MODIFIER_POINTS = {name.replace(' magic level', 'magiclevelpoints'): kind
                             for name, kind in ALIASES.items()}
@@ -69,8 +68,8 @@ def capture(canary, crystal):
         raise ValueError('REWARD_BAG_CONSTANT_DRIFT')
     xml = source.xml_index(xml_raw)
     objects = source.engine_items.load_appearance_objects(appearance_raw)
-    candidates = {ids[name] for name in BAGS if name not in EXCLUDED} | {
-        r['id'] for name in BAGS if name not in EXCLUDED for r in lists[name][1]}
+    candidates = {ids[name] for name in BAGS} | {
+        r['id'] for name in BAGS for r in lists[name][1]}
     physical = {r['server_item_id']: r for r in source.policies(appearance_raw, xml_raw, candidates)}
     bindings = binding_index(BINDINGS.read_bytes())
     profiles = {i: source.profile(i, xml[i], objects[i], physical[i], bindings, None) for i in sorted(candidates)}
@@ -95,11 +94,12 @@ def capture(canary, crystal):
             record['semantics']['skill_modifiers'] = source.K({
                 'modifiers': source.K(sorted(modifiers, key=lambda m: m['kind']))})
 
-    def leaf(i):
-        # The CRAFT-1 owner mints exactly one non-stackable, non-container leaf per Use.
+    def mintable_reward(i):
+        # The receipt owner mints one item with no children. Only the accepted
+        # alicorn quiver extends the ordinary leaf path.
         record = profiles[i]
         return (record['admission']['stack_class'] == 'NonStackable'
-                and record['semantics']['container'] == source.NA
+                and (record['semantics']['container'] == source.NA or i == 39150)
                 and 'CharacterInventory' in record['admission']['legal_destinations'])
 
     bags = []
@@ -116,11 +116,8 @@ def capture(canary, crystal):
             if weight != weight.to_integral_value() or weight <= 0:
                 raise ValueError('REWARD_BAG_WEIGHT_SCALE')
             rewards.append({'item': key(row['id']), 'name': row['name'], 'weight': int(weight)})
-        reason = EXCLUDED.get(name)
-        if reason is None:
-            blocked = [r['id'] for r in rows if not leaf(r['id'])]
-            if blocked:
-                reason = 'NON_LEAF_REWARD:' + ','.join(map(str, blocked))
+        blocked = [r['id'] for r in rows if not mintable_reward(r['id'])]
+        reason = 'NON_LEAF_REWARD:' + ','.join(map(str, blocked)) if blocked else None
         if reason is None:
             admitted |= {ids[name]} | {r['id'] for r in rows}
         bags.append({'constant': name, 'bag': key(ids[name]), 'source_line': line,
@@ -153,9 +150,27 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             or [r['production_definition']['production_key'] for r in records] != expected):
         raise ValueError('REWARD_BAG_PROFILE_SET')
     document = json.loads(generated[profile_path])
-    if set(expected) & {r['production_definition']['production_key'] for r in document['records']}:
-        raise ValueError('REWARD_BAG_PROFILE_DUPLICATE')
-    document['records'] = sorted(document['records'] + records, key=order)
+    present = {r['production_definition']['production_key']: r for r in document['records']}
+    additions = []
+    for record in records:
+        item = record['production_definition']['production_key']
+        existing = present.get(item)
+        if existing is None:
+            # QUICKLOOT admits this shared quiver later in registration, including
+            # its equip patterns. Keep one native policy for the shared identity.
+            if item != key(39150):
+                additions.append(record)
+            continue
+        # The equipment path already admits the alicorn quiver, with its equip
+        # patterns and modifiers. Reuse it only with identical mint/custody facts;
+        # reward-bag admission must not replace those richer semantics.
+        if (item != key(39150)
+                or any(existing[field] != record[field] for field in
+                       ('production_definition', 'production_binding', 'admission'))
+                or any(existing['semantics'][field] != record['semantics'][field]
+                       for field in ('physical', 'stack', 'container'))):
+            raise ValueError('REWARD_BAG_PROFILE_DUPLICATE')
+    document['records'] = sorted(document['records'] + additions, key=order)
     raw = (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode()
     generated[profile_path] = raw
     manifest = json.loads(generated[manifest_path])

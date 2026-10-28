@@ -48,15 +48,15 @@ def world_successor_files(dirs: list[dict])->list[str]:
     files|=set(npc_placement_family_files())
     return sorted(files)
 def spawn_family_files()->list[str]:
-    """The spawn family index and shards, relative to the legacy root; the index must match the directory."""
+    """The spawn family index, held boss file and shards, relative to the legacy root; the index must match the directory."""
     path=ROOT/SPAWN_FAMILY
     payload=json.loads((path/"index.json").read_text(encoding="utf-8"))
     req(payload.get("schema")==FAMILY_INDEX and payload.get("family")=="Spawn.Source","SPAWN_FAMILY_INDEX")
     req(payload.get("population_state")=="POPULATED","SPAWN_FAMILY_STATE")
     shards=payload.get("shards",[])
     req(shards and all(s.startswith(SPAWN_FAMILY) and "/" not in s[len(SPAWN_FAMILY):] for s in shards),"SPAWN_SHARD_OUTSIDE")
-    req({f.name for f in path.iterdir()}=={"index.json",*(s[len(SPAWN_FAMILY):] for s in shards)},"SPAWN_STRAY_FILE")
-    return ["spawns/index.json",*(s[len(LEGACY_ROOT):] for s in shards)]
+    req({f.name for f in path.iterdir()}=={"index.json","held-bosses.json",*(s[len(SPAWN_FAMILY):] for s in shards)},"SPAWN_STRAY_FILE")
+    return ["spawns/index.json","spawns/held-bosses.json",*(s[len(LEGACY_ROOT):] for s in shards)]
 def npc_placement_family_files()->list[str]:
     """The NPC placement family index, held file and shards, relative to the legacy root; the index must match the directory."""
     path=ROOT/NPC_PLACEMENT_FAMILY
