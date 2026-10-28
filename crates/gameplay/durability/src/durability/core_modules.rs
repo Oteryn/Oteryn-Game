@@ -9,6 +9,7 @@ pub mod account_achievement;
 pub mod account_characters_projection;
 pub mod admission_authority_guards;
 pub mod admission_journal;
+pub mod animus_mastery;
 pub mod bank;
 pub mod bank_audit;
 mod bank_credit_headroom;
