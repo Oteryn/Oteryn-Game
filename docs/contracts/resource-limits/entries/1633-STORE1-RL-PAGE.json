@@ -1,0 +1,21 @@
+{
+  "id": "STORE1-RL-PAGE",
+  "owner_contract": "protocol-oteryn/v1/store-v1.md",
+  "resource": "Store rows per page",
+  "unit": "rows",
+  "hard_maximum": 32,
+  "configurable_range": {
+    "minimum": 32,
+    "maximum": 32
+  },
+  "failure_category": "CAPACITY_EXCEEDED",
+  "allocation_impact": "Reject before allocating variable-length decoded values; no durable mutation.",
+  "client_visible": true,
+  "boundary_tests": [
+    "store_decoders_reject_bounds_before_allocating"
+  ],
+  "consumers": [
+    "crates/protocol-oteryn/src/store/"
+  ],
+  "notes": "STORE-WIRE-1 next-free resource ordinal 1633."
+}
