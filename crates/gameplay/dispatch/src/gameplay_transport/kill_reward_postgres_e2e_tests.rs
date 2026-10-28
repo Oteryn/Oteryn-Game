@@ -1327,9 +1327,28 @@ fn scenario_with_creature_charmed(
                 (
                     "boss",
                     crate::combat::LootSelectionAlgorithm::DailyBoosted {
-                        extra_rolls: 2 | 3, ..
+                        extra_rolls: 2 | 3,
+                        boosted_entries,
                     },
-                ) => {}
+                ) => {
+                    assert!(
+                        boosted_entries > 0,
+                        "the boosted boss has equipment eligible for its extra rolls"
+                    );
+                    assert!(
+                        boosted_entries < entry.row.loot_table.entries.len(),
+                        "non-equipment remains in the boss's single base roll"
+                    );
+                    for (ordinal, loot) in entry.row.loot_table.entries.iter().enumerate() {
+                        assert_eq!(
+                            native
+                                .reward_table()
+                                .is_daily_boss_equipment(&loot.item.production_key),
+                            ordinal < boosted_entries,
+                            "only the stable equipment prefix receives boss extra rolls"
+                        );
+                    }
+                }
                 ("other", crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm) => {}
                 _ => return Err("daily boost affected wrong race".into()),
             }
@@ -1421,7 +1440,7 @@ fn scenario_with_creature_charmed(
         );
 
         if let Some(expected) = daily_expected_loot {
-            let actual: Vec<(String,i64)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_corpse_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id ORDER BY r.draw_ordinal LIMIT 17").fetch_all(&harness.pool).await?;
+            let actual: Vec<(String,i64)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_corpse_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id ORDER BY r.draw_ordinal").fetch_all(&harness.pool).await?;
             assert_eq!(
                 actual, expected,
                 "daily loot rolls reach durable Item quantities"
@@ -1593,7 +1612,7 @@ fn boss_spawn1_at_reset_death_and_replay_through_real_dispatch_postgres() -> Tes
 #[test]
 fn daily_boost_real_kill_xp_loot_and_unselected_race_postgres() -> TestResult {
     scenario_thread::run("daily-boost-rewards", || {
-        for target in ["creature", "boss", "other"] {
+        for target in ["creature", "other"] {
             scenario_with_creature_charmed(
                 None,
                 false,
@@ -1604,6 +1623,18 @@ fn daily_boost_real_kill_xp_loot_and_unselected_race_postgres() -> TestResult {
                 (None, None, Some(target)),
             )?;
         }
+        // The production rat proves selection and ordinary loot, but has no equipment. Kill a
+        // production Summer boss as the selected daily boss as well: its mixed loot table proves
+        // that only equipment extra rolls survive the complete dispatch -> corpse durability path.
+        scenario_with_creature_charmed(
+            None,
+            false,
+            Some("acolyte"),
+            true,
+            false,
+            false,
+            (None, None, Some("boss")),
+        )?;
         Ok(())
     })
 }
