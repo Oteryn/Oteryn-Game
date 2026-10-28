@@ -7,3 +7,6 @@ pub mod stamina;
 pub mod vitals;
 
 pub mod hunting_experience;
+
+#[cfg(test)]
+mod crystal_parity_tests;
