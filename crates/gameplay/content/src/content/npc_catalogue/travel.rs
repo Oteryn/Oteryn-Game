@@ -107,4 +107,76 @@ mod tests {
         }
         Ok(())
     }
+
+    // Crystal 201189f8 data-global/npc/captain_seagull.lua:64-69 and kendra.lua:70, read as
+    // reference data (Canary 47dfd51f identical). Crystal sails every Seagull route without a
+    // premium gate and gates Yalahar on a quest storage; Oteryn keeps the Edron and Gray Island
+    // premium flags from its admitted correction and has no Yalahar route.
+    #[test]
+    fn crystal_seagull_and_kendra_fares_and_arrivals() -> Result<(), Box<dyn std::error::Error>> {
+        let corrections: Vec<super::Correction> =
+            serde_json::from_str(include_str!("travel_routes.json"))?;
+        let find = |key: &str| {
+            corrections
+                .iter()
+                .find(|row| row.key == format!("oteryn:service.travel.{key}"))
+        };
+        let mut premium_diffs = Vec::new();
+        for (key, price, crystal_premium, oteryn_premium, x, y, floor) in [
+            (
+                "captain_seagull/thais",
+                130,
+                false,
+                false,
+                32_310,
+                32_210,
+                6,
+            ),
+            (
+                "captain_seagull/carlin",
+                80,
+                false,
+                false,
+                32_387,
+                31_820,
+                6,
+            ),
+            (
+                "captain_seagull/gray_island",
+                150,
+                false,
+                true,
+                33_196,
+                31_984,
+                7,
+            ),
+            ("captain_seagull/edron", 70, false, true, 33_175, 31_764, 6),
+            (
+                "captain_seagull/venore",
+                90,
+                false,
+                false,
+                32_954,
+                32_022,
+                6,
+            ),
+            ("kendra/thais", 180, true, true, 32_259, 32_262, 7),
+        ] {
+            let row = find(key).ok_or(key)?;
+            assert_eq!(
+                (row.price, row.premium, row.x, row.y, row.floor, row.postman),
+                (price, oteryn_premium, x, y, floor, true),
+                "{key}"
+            );
+            if row.premium != crystal_premium {
+                premium_diffs.push(key);
+            }
+        }
+        assert_eq!(
+            premium_diffs,
+            ["captain_seagull/gray_island", "captain_seagull/edron"]
+        );
+        assert!(find("captain_seagull/yalahar").is_none());
+        Ok(())
+    }
 }

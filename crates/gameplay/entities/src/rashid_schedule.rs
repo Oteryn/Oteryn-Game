@@ -95,6 +95,34 @@ mod tests {
         }
     }
 
+    // Crystal 201189f8 data-global/scripts/globalevents/spawn/rashid.lua:2-8 (Canary 47dfd51f
+    // identical) teleports Rashid to the weekday destination, so trading follows his position.
+    // Crystal rotates at host-local 00:01; Oteryn rotates at UTC 00:00.
+    #[test]
+    fn crystal_trade_follows_the_weekday_destination() {
+        let thursday = 0;
+        let position = |x: i32, y: i32, floor: i16| MovementLocalPosition { x, y, floor };
+        let ankrahmun = position(33_066, 32_879, 6);
+        assert!(trade_available(RASHID_NPC_KEY, ankrahmun, thursday));
+        assert!(trade_available(RASHID_NPC_KEY, ankrahmun, 86_400_000 - 1));
+        assert!(!trade_available(RASHID_NPC_KEY, ankrahmun, 86_400_000));
+        assert!(trade_available(
+            RASHID_NPC_KEY,
+            position(33_235, 32_483, 7),
+            86_400_000
+        ));
+        assert!(!trade_available(
+            RASHID_NPC_KEY,
+            position(33_066, 32_879, 7),
+            thursday
+        ));
+        assert!(trade_available(
+            "oteryn:npc.alice",
+            position(0, 0, 0),
+            thursday
+        ));
+    }
+
     #[test]
     fn rotation_selects_today_and_leaves_other_npcs_untouched() {
         let all = (0..7)
