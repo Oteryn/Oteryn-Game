@@ -34,7 +34,7 @@ impl DurabilityRoot {
     ) -> Result<Option<CommittedRaidAction>, DurabilityError> {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let current: Option<String> = sqlx::query_scalar("SELECT ownership_generation::text FROM game_runtime_scope_assignments WHERE world_id=(SELECT world_id FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid) AND channel_id=encode($2,'hex')::uuid AND assignment_state=2")
+            let current: Option<String> = sqlx::query_scalar("SELECT ownership_generation::text FROM game_runtime_scope_assignments WHERE world_id=(SELECT world_id FROM game_world_raid_firings WHERE firing_id=encode($1,'hex')::uuid) AND channel_id=encode($2,'hex')::uuid AND state=1")
                 .bind(firing_id.as_slice()).bind(channel.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             if current.as_deref() != Some(&generation.get().to_string()) {
                 commit_semantic_transaction(tx, deadline).await?;
@@ -106,7 +106,7 @@ impl DurabilityRoot {
     ) -> Result<Vec<([u8; 16], ProductionKey)>, DurabilityError> {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let rows = sqlx::query("SELECT decode(replace(f.firing_id::text,'-',''),'hex'),f.raid_key FROM game_world_raid_firings f JOIN game_runtime_scope_assignments a ON a.world_id=f.world_id AND a.channel_id=encode($1,'hex')::uuid AND a.assignment_state=2 WHERE f.state=1 ORDER BY f.fired_at_ms,f.firing_id LIMIT 32")
+            let rows = sqlx::query("SELECT decode(replace(f.firing_id::text,'-',''),'hex'),f.raid_key FROM game_world_raid_firings f JOIN game_runtime_scope_assignments a ON a.world_id=f.world_id AND a.channel_id=encode($1,'hex')::uuid AND a.state=1 WHERE f.state=1 ORDER BY f.fired_at_ms,f.firing_id LIMIT 32")
                 .bind(channel.as_bytes().as_slice()).fetch_all(&mut *tx).await?;
             let mut out=Vec::with_capacity(rows.len());
             for row in rows {

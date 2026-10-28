@@ -75,22 +75,44 @@ fn serve(arguments: &[std::ffi::OsString]) -> ExitCode {
         );
         return ExitCode::from(2);
     }
+    // `block_on` keeps the future it polls on the calling thread's stack. The node's
+    // supervision future (gameplay, control and every scheduler loop pinned side by side) is
+    // large in a debug build and overflowed the 8 MiB main thread at admission. Box the future
+    // and poll it on a dedicated thread, and run the workers, with an explicit stack.
+    const NODE_STACK_BYTES: usize = 64 << 20;
     let runtime = match tokio::runtime::Builder::new_multi_thread()
         .enable_all()
+        .thread_stack_size(NODE_STACK_BYTES)
         .build()
     {
         Ok(runtime) => runtime,
         Err(_) => return ExitCode::from(19),
     };
-    match runtime.block_on(oteryn_game_server::node::serve::run_with_npc_data_project(
-        std::path::Path::new(path),
-        npc_data,
-    )) {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(error) => {
+    let path = std::path::PathBuf::from(path);
+    let npc_data = npc_data.map(|(project, digest)| (project.to_path_buf(), digest.to_owned()));
+    let served = std::thread::Builder::new()
+        .name("game-node".into())
+        .stack_size(NODE_STACK_BYTES)
+        .spawn(move || {
+            runtime.block_on(Box::pin(
+                oteryn_game_server::node::serve::run_with_npc_data_project(
+                    &path,
+                    npc_data
+                        .as_ref()
+                        .map(|(project, digest)| (project.as_path(), digest.as_str())),
+                ),
+            ))
+        });
+    let Ok(served) = served.map(std::thread::JoinHandle::join) else {
+        return ExitCode::from(19);
+    };
+    match served {
+        Ok(Ok(())) => ExitCode::SUCCESS,
+        Ok(Err(error)) => {
             oteryn_game_server::node::serve::report_boot_failure(&error);
             ExitCode::from(error.exit_code())
         }
+        Err(_) => ExitCode::from(19),
     }
 }
 

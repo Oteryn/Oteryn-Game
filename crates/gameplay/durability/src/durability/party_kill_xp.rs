@@ -263,6 +263,7 @@ pub async fn commit_in_transaction<const N: usize>(
             modifiers.xp_boost_percent,
             modifiers.stamina_minutes,
             member.premium,
+            modifiers.level,
         )
         .map_err(|_| CharacterProgressionError::InvalidInput)?;
         let mut request = member.request;
@@ -324,6 +325,10 @@ fn hunting_binding(
     binding.extend_from_slice(&modifiers.prey_percent.to_be_bytes());
     binding.extend_from_slice(&modifiers.xp_boost_percent.to_be_bytes());
     binding.extend_from_slice(&modifiers.stamina_minutes.to_be_bytes());
+    // Appended only while the bonus applies, so level-50+ bindings stay as before PAR-C14.
+    if modifiers.level < 50 {
+        binding.extend_from_slice(&modifiers.level.to_be_bytes());
+    }
     Sha256::digest(binding).into()
 }
 
