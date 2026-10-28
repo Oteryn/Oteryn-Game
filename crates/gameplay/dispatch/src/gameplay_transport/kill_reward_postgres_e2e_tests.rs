@@ -368,6 +368,8 @@ fn scenario_with_creature_charmed(
             };
             assert_eq!(expected_xp, exact, "{creature_key} exact native XP");
         }
+        // The fresh Character is level 1: the Global low-level bonus adds 100%.
+        let expected_xp = 2 * expected_xp;
         if settle_radiant {
             // Select a positive real occurrence without changing a drop probability.
             // Roll back unused player reservations to advance the reusable creature
