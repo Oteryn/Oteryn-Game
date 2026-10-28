@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         424,
-        "2d3f35a8a9c3d91f3dcb120b1e0d4ceee94a445cc9933bc0877667426c7c2b8a",
+        "a1322d2db427abda1034a35e77d2785c934c44112e418e75ebfb40ec2f6a877e",
     ),
     (
         "definitions/declarations.json",
         27_600_259,
-        "520b20b1f1d62e1882570b1899f9013dcfcecefa4562a867effee7204784e63c",
+        "949746ad0a2d1304ca5a1ec75ae4cd707650c1e24d4017a0733af52ca4fa5809",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1959,
-        "92b13fafaadc6af7a9fcc8ec90734973a8ff68576116c2f07e1399cd266ac639",
+        "308c915e6253366e9665fff01863f0dc7ce2eee9c07993eb9e40e6ca1e7024c8",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         410,
-        "6b890582418820d389ab4bbe851ce589e43252d51d422d35ffcc2511ca2e7eb9",
+        "e66276d196d4ef62f89344b75b055688476160bd33c8784a8a0e27cf583be8ff",
     ),
     (
         "provenance/imports.json",
         6_772_059,
-        "287864829f8c03e3a316b97c811d96a6e1aee873f850089b23346783428669d2",
+        "f77768854859918be07eda199f6b9ce3a641de69ab80976d83a2271cdeab72b9",
     ),
     (
         "provenance/sources.json",
@@ -107,13 +107,15 @@ fn is_npc_placement_family_file(locator: &str) -> bool {
             || (name.starts_with("placements-") && name.ends_with(".json"))
     })
 }
-/// The `Spawn.Source` family (SPAWN-CONTENT-1; CREATURE-AI-0 section 6.1): its index and shards
+/// The `Spawn.Source` family (SPAWN-CONTENT-1; CREATURE-AI-0 section 6.1): its index, shards and `held-bosses.json`
 /// sit in `spawns/`, a successor directory that is not a contract tree node and holds no legacy
 /// locator. `convert_spawns.py --check` pins their bytes and
 /// `validate_materialized_game_tree.py` pins the index against the files on disk.
 fn is_spawn_family_file(locator: &str) -> bool {
     locator.strip_prefix("spawns/").is_some_and(|name| {
-        name == "index.json" || (name.starts_with("spawns-") && name.ends_with(".json"))
+        name == "index.json"
+            || name == "held-bosses.json"
+            || (name.starts_with("spawns-") && name.ends_with(".json"))
     })
 }
 fn is_unshared_successor_shard(locator: &str) -> bool {
@@ -138,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "fe8b6e934de8999b10fb59bf86c5c3d031f8db97872b7b10c9f5bda695fd1ea8";
+const TREE_SHA256: &str = "83d31d649df8311845177a275a7c528dc9cbcc6c3d9c4b7b04187b9b2a403d45";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;

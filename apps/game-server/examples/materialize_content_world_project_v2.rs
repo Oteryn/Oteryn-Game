@@ -2905,6 +2905,31 @@ fn apply_official_creature_balance(
         *value = replacement;
         authoring.data = serde_json::from_value(data)?;
     }
+    // Reference-sourced health corrections; each row cites its TibiaWiki revision.
+    for row in ledger["reference_overrides"]
+        .as_array()
+        .ok_or("reference overrides missing")?
+    {
+        let key = format!(
+            "oteryn:creature.{}",
+            row["creature"].as_str().ok_or("creature missing")?
+        );
+        if row["field"] != "health" || row["source"].as_str().is_none() {
+            return Err(format!("unsupported reference override: {key}").into());
+        }
+        let authoring = draft
+            .state
+            .authoring_profiles
+            .iter_mut()
+            .find(|profile| profile.target.key == key)
+            .ok_or("reference creature missing")?;
+        let mut data = serde_json::to_value(&authoring.data)?;
+        if data["profile"]["health"] != row["before"] {
+            return Err(format!("reference override baseline drift: {key} health").into());
+        }
+        data["profile"]["health"] = row["after"].clone();
+        authoring.data = serde_json::from_value(data)?;
+    }
     let revision = "tibia-news-bal-1-20261027-r1";
     let batch_id = "official-creature-balance-8918-8935-9024-9039";
     let digest = hex_sha256(bytes);

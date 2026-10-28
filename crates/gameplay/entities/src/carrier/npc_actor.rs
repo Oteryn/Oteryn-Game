@@ -140,6 +140,62 @@ impl NpcPlacementTable {
 }
 
 impl ChannelRuntimeV1 {
+    /// Adds one service NPC after boot. Used by durable, house-scoped hirelings only.
+    pub fn place_dynamic_npc(
+        &mut self,
+        key: &str,
+        placement: NpcPlacement,
+    ) -> Result<ExactActorRef, NpcPlacementError> {
+        self.carrier
+            .validate_current_continuity(&self.continuity)
+            .map_err(NpcPlacementError::Carrier)?;
+        self.owner_fence().map_err(NpcPlacementError::Carrier)?;
+        if !key.starts_with(NPC_KEY_PREFIX)
+            || key.len() > MAX_NPC_KEY_BYTES
+            || !key.bytes().all(|b| (0x21..=0x7e).contains(&b))
+        {
+            return Err(NpcPlacementError::InvalidKey);
+        }
+        let context = self.pinned_position_context();
+        if self.carrier.cell_occupied(context, cell(placement)?) {
+            return Err(NpcPlacementError::CellOccupied);
+        }
+        self.admit_npc(Arc::from(key), placement, context)
+    }
+
+    /// Removes the current dynamic NPC with `key`; an absent actor is an idempotent success.
+    pub fn remove_dynamic_npc(&mut self, key: &str) -> Result<(), NpcPlacementError> {
+        self.carrier
+            .validate_current_continuity(&self.continuity)
+            .map_err(NpcPlacementError::Carrier)?;
+        self.owner_fence().map_err(NpcPlacementError::Carrier)?;
+        let found = self
+            .carrier
+            .slots
+            .iter()
+            .enumerate()
+            .find_map(|(index, slot)| match slot {
+                Slot::NpcOccupied {
+                    key: held,
+                    generation,
+                    ..
+                } if held.as_ref() == key => Some((index, *generation)),
+                _ => None,
+            });
+        let Some((index, generation)) = found else {
+            return Ok(());
+        };
+        let free = u32::try_from(index)
+            .map_err(|_| NpcPlacementError::Carrier(CarrierError::CapacityArithmeticOverflow))?;
+        self.carrier.slots[index] = Slot::VacantReusable {
+            generation,
+            next_free: self.carrier.free_head,
+        };
+        self.carrier.free_head = Some(free);
+        self.carrier.occupied.retain(|held| *held != free);
+        Ok(())
+    }
+
     /// NPC-BEHAVIOUR-0 §3.1: one actor per placement, allocated in frame order under the pinned
     /// Movement context, once, at Channel start. `admitted` answers whether the loaded NPC
     /// catalogue has the key and does not hold it (§7). In a `production` World an NPC it

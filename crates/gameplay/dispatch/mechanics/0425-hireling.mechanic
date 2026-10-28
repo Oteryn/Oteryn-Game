@@ -1,0 +1,8 @@
+name=hireling
+commands=220
+transport=hireling
+composed=hireling
+authority=hireling
+offer=49,hireling::offered,hireling_available
+[route]
+match routing::hireling::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }
