@@ -8,19 +8,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
+        // Without a current allocation there are no Wheel effects to qualify. In particular,
+        // observing vitals must not take the root's sole holder away from death reconciliation.
+        // Still apply zero bonuses below so a removed/stale allocation clears old maxima.
+        let current_allocation = self
+            .states
+            .wheel_sessions
+            .lock()
+            .ok()
+            .is_some_and(|sessions| {
+                sessions
+                    .get(&session)
+                    .and_then(Option::as_ref)
+                    .is_some_and(|allocation| allocation.current)
+            });
         // Allocation checks this session's Premium owner too. The spell state's Premium
         // cache can still be unset at entry or stale until the next spell-access refresh.
-        let premium = self.session_premium_gate(session).await.premium_current();
+        let premium =
+            current_allocation && self.session_premium_gate(session).await.premium_current();
         // Promotion is a separate permanent Character fact. Buying it does not replace
         // the base vocation stored in the build or in the live spell state.
-        let promoted = match self.current_quest_fence(session).await {
-            Ok(Some(fence)) => self
-                .root
-                .read_promotion_for_session(self.character, self.holder, fence.item_fence())
-                .await
-                .unwrap_or(false),
-            _ => false,
-        };
+        let promoted = current_allocation
+            && match self.current_quest_fence(session).await {
+                Ok(Some(fence)) => self
+                    .root
+                    .read_promotion_for_session(self.character, self.holder, fence.item_fence())
+                    .await
+                    .unwrap_or(false),
+                _ => false,
+            };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let Some(state) = states.get(&runtime, actor, session) else {

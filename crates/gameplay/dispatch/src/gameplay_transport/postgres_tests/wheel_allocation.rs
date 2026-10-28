@@ -231,6 +231,17 @@ fn scenario() -> TestResult {
                     .is_some()
             );
         }
+        // A session without an allocation must not compete with death reconciliation for
+        // the root's single holder. No durable read may even request a replacement holder.
+        h.root.maintain_ready_once().await?;
+        let pass = h.root.try_issue_semantic_pass()?;
+        assert!(!h.root.has_ready_demand());
+        assert!(owner.refresh_wheel_vitals(deps.actor, session).await);
+        assert!(
+            !h.root.has_ready_demand(),
+            "unallocated Wheel vitals refresh must not attempt a durable read"
+        );
+        pass.run(|_, _| Box::pin(async { Ok(()) })).await?;
         owner.admit_wheel_session(session).await;
         let (current, _) =
             crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
