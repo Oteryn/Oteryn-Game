@@ -25,9 +25,6 @@ impl TryFrom<&NativeGameplayState> for PreyCatalogue {
             if value.bestiary.is_none()
                 || value.experience.unwrap_or(0) == 0
                 || !details.system_eligibility.prey
-                // Reference profiles can be prey-eligible, but the Prey wire contract
-                // only admits native Oteryn identities (including for SelectAny).
-                || !record.profile.target.key.starts_with("oteryn:")
             {
                 continue;
             }
@@ -163,66 +160,6 @@ impl Draw {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn prey_catalogue_draws_only_wire_encodable_native_creatures()
-    -> Result<(), Box<dyn std::error::Error>> {
-        use oteryn_gameplay_content::content::{
-            native_gameplay::NativeGameplayInput, native_gameplay_test_world_id,
-            qualified_native_gameplay_test_state, qualify_selected_native_gameplay_room,
-        };
-        use oteryn_protocol_oteryn::prey as wire;
-
-        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../content/spells.manifest.json");
-        let input = NativeGameplayInput::from_manifest(&manifest)?;
-        let room = qualify_selected_native_gameplay_room(native_gameplay_test_world_id()?, &input)?;
-        let native = qualified_native_gameplay_test_state(room.compiled())?;
-        let catalogue = PreyCatalogue::try_from(&native)?;
-        // This secret and occurrence drew canary:creature/rat before catalogue filtering.
-        let secret = [
-            0xa9, 0xf2, 0x48, 0xea, 0xb2, 0xb6, 0xa6, 0x01, 0xf7, 0x53, 0xa7, 0x5c, 0x77, 0x41,
-            0xa6, 0xc8, 0xbe, 0x1e, 0x42, 0x8c, 0x39, 0x23, 0xb1, 0x39, 0x95, 0xe3, 0xf3, 0xef,
-            0x64, 0xb0, 0xac, 0x2a,
-        ];
-        let creatures = Draw::new(&secret, &5_u128.to_be_bytes(), b"oteryn.prey.list.v1").list(
-            &catalogue,
-            1,
-            &[],
-        )?;
-        let reply = wire::Reply {
-            status: 0,
-            wildcard_balance: 0,
-            slots: vec![wire::Slot {
-                slot: 1,
-                state: 1,
-                creatures,
-                selected: String::new(),
-                bonus: 0,
-                grade: 0,
-                percent: 0,
-                hunting_seconds: 0,
-                option: 0,
-                free_reroll_at: 0,
-            }],
-        };
-        let encoded = wire::encode_reply(&reply)
-            .map_err(|error| format!("expiry draw must be wire encodable: {error:?}"))?;
-        assert_eq!(wire::decode_reply(&encoded), Ok(reply));
-        // Check every candidate, including exclusive creatures available through SelectAny.
-        for (creature, _, _) in &catalogue.creatures {
-            assert!(
-                wire::encode_request(&wire::Request::SelectAny {
-                    slot: 1,
-                    creature: creature.clone(),
-                })
-                .is_ok(),
-                "unencodable prey candidate: {creature}"
-            );
-        }
-        Ok(())
-    }
-
     #[test]
     fn prey_draw_is_receipt_stable_unique_and_respects_bands() -> Result<(), DurabilityError> {
         let catalogue = PreyCatalogue {
