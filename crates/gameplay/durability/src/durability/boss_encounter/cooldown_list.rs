@@ -9,7 +9,8 @@ use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
 };
 use oteryn_protocol_oteryn::boss_encounter::{
-    BossCooldownEntry, COOLDOWN_PAGE_SIZE, decode_cooldown_query, encode_cooldown_list,
+    BossCooldownEntry, BosstiaryProgressEntry, COOLDOWN_PAGE_SIZE, decode_cooldown_query,
+    encode_bosstiary_list,
 };
 
 impl super::super::DurabilityRoot {
@@ -100,7 +101,7 @@ impl super::super::DurabilityRoot {
                  ORDER BY boss_key LIMIT 65",
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
-                    .bind(after)
+                    .bind(&after)
                     .fetch_all(&mut *tx)
                     .await?;
                     let now: i64 = sqlx::query_scalar(
@@ -120,10 +121,45 @@ impl super::super::DurabilityRoot {
                             })
                         })
                         .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
-                    let payload = encode_cooldown_list(
+                    // Progress belongs to the same Character authority and transaction as the
+                    // cooldown page, so the client cannot observe a cross-session mixture.
+                    let boss_points: i64 = sqlx::query_scalar(
+                        "SELECT COALESCE(sum(boss_points),0)::bigint FROM game_character_bosstiary_progress \
+                         WHERE character_id=encode($1,'hex')::uuid",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    let boss_points = u64::try_from(boss_points)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    let progress_rows: Vec<(String, i64)> = sqlx::query_as(
+                        "SELECT boss_key,kill_count FROM game_character_bosstiary_progress \
+                         WHERE character_id=encode($1,'hex')::uuid AND boss_key > $2 COLLATE \"C\" \
+                         ORDER BY boss_key LIMIT 65",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .bind(&after)
+                    .fetch_all(&mut *tx)
+                    .await?;
+                    let progress_more = progress_rows.len() > COOLDOWN_PAGE_SIZE;
+                    let progress = progress_rows
+                        .into_iter()
+                        .take(COOLDOWN_PAGE_SIZE)
+                        .map(|(boss_key, kills)| {
+                            Ok(BosstiaryProgressEntry {
+                                boss_key,
+                                kill_count: u64::try_from(kills)
+                                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+                            })
+                        })
+                        .collect::<std::result::Result<Vec<_>, DurabilityError>>()?;
+                    let payload = encode_bosstiary_list(
                         u64::try_from(now).map_err(|_| DurabilityError::InvalidStoredState)?,
                         &entries,
                         more,
+                        &progress,
+                        boss_points,
+                        progress_more,
                     )
                     .map_err(|_| DurabilityError::InvalidStoredState)?;
                     commit_semantic_transaction(tx, deadline).await?;

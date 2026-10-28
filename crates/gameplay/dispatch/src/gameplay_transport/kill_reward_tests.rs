@@ -1121,3 +1121,19 @@ fn prey_mutation_waits_for_captured_reward_settlement() {
     taken.finish();
     assert!(!queue.blocks_prey(character.as_bytes()));
 }
+
+#[test]
+fn talisman_spoils_scales_each_chance_rounds_up_and_caps() {
+    let mut table = row(3).loot_table.clone();
+    table.entries[0].probability_ppm = Some(1);
+    table.entries[1].probability_ppm = Some(500_000);
+    table.entries[2].probability_ppm = None;
+    apply_talisman_loot_bonus(&mut table, 300);
+    assert_eq!(table.entries[0].probability_ppm, Some(2));
+    assert_eq!(table.entries[1].probability_ppm, Some(515_000));
+    assert_eq!(table.entries[2].probability_ppm, None);
+
+    table.entries[0].probability_ppm = Some(999_999);
+    apply_talisman_loot_bonus(&mut table, i64::MAX);
+    assert_eq!(table.entries[0].probability_ppm, Some(1_000_000));
+}

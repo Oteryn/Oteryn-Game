@@ -36,6 +36,8 @@ impl<T> CurrentProjection<T> {
 }
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct AccessProjections {
+    /// Current durable Platform projection. Zero is the defined no-row value.
+    pub loyalty_points: u32,
     /// Independently registered combat-state owner. Missing skull evidence is
     /// unavailable; ordinary group membership cannot manufacture a clear skull.
     pub black_skull: Option<CurrentProjection<bool>>,
@@ -221,6 +223,27 @@ impl OwnedCastFacts {
         {
             return Err(OwnedFactsError::BuildMismatch);
         }
+        let formula = if self.access.loyalty_points == 0 {
+            None
+        } else {
+            Some(
+                content
+                    .training_formula()
+                    .ok_or(OwnedFactsError::BuildMismatch)?,
+            )
+        };
+        let loyalty_level = |family, (level, progress)| {
+            formula.map_or(level, |formula| {
+                oteryn_gameplay_progression::loyalty::projected_level(
+                    formula,
+                    self.build.vocation(),
+                    family,
+                    level,
+                    progress,
+                    self.access.loyalty_points,
+                )
+            })
+        };
         let premium = self
             .access
             .premium
@@ -291,7 +314,10 @@ impl OwnedCastFacts {
                         };
                         attack = Some((
                             skill_adjustments
-                                .adjust_skill(u32::from(self.build.skills()[skill].0), skill)
+                                .adjust_skill(
+                                    u32::from(loyalty_level(skill + 1, self.build.skills()[skill])),
+                                    skill,
+                                )
                                 .ok_or(OwnedFactsError::BuildMismatch)?,
                             u32::try_from(value.0)
                                 .map_err(|_| OwnedFactsError::UnavailableEquipment)?,
@@ -320,7 +346,7 @@ impl OwnedCastFacts {
             vocation: facts.vocation,
             level: facts.level,
             magic_level: skill_adjustments
-                .adjust_magic_level(facts.magic_level)
+                .adjust_magic_level(u32::from(loyalty_level(0, self.build.magic())))
                 .ok_or(OwnedFactsError::BuildMismatch)?,
             premium: super::CasterPremium::from_current(premium.is_some_and(|p| p.value)),
             mana: vitals.mana,
@@ -331,7 +357,7 @@ impl OwnedCastFacts {
             attack_value,
             attack_factor,
             shielding_skill: skill_adjustments
-                .adjust_shielding(u32::from(self.build.skills()[5].0))
+                .adjust_shielding(u32::from(loyalty_level(6, self.build.skills()[5])))
                 .ok_or(OwnedFactsError::BuildMismatch)?,
             melee_weapon,
             shield_defense: shield,
