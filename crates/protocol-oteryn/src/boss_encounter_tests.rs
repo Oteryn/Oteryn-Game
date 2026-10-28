@@ -66,6 +66,31 @@ fn boss_cooldown_codec_bounds() -> Result<(), Error> {
 }
 
 #[test]
+fn bosstiary_progress_is_bounded_and_ordered() -> Result<(), Error> {
+    let progress = vec![
+        BosstiaryProgressEntry {
+            boss_key: "oteryn:boss.a".into(),
+            kill_count: 5,
+        },
+        BosstiaryProgressEntry {
+            boss_key: "oteryn:boss.b".into(),
+            kill_count: 60,
+        },
+    ];
+    let encoded = encode_bosstiary_list(1, &[], false, &progress, 90, false)?;
+    assert!(encoded.windows(2).any(|field| field == [40, 90]));
+    assert!(
+        encoded
+            .windows(b"oteryn:boss.a".len())
+            .any(|field| field == b"oteryn:boss.a")
+    );
+    let mut reversed = progress;
+    reversed.reverse();
+    assert!(encode_bosstiary_list(1, &[], false, &reversed, 90, false).is_err());
+    Ok(())
+}
+
+#[test]
 fn boss_lever_wire_never_accepts_client_policy() -> Result<(), Error> {
     let encoded = encode_boss_key("oteryn:boss.test")?;
     assert_eq!(decode_boss_key(&encoded)?.boss_key, "oteryn:boss.test");

@@ -153,6 +153,19 @@ fn talisman_curve_and_upgrade_boundaries_match_the_canary_profile() {
 }
 
 #[test]
+fn live_talisman_bonus_requires_equipment_and_the_active_task_race() {
+    let tracks = BTreeMap::from([(SELECTED.to_owned(), 1), (TALISMAN_LOOT.to_owned(), 1)]);
+    assert_eq!(active_talisman_bonus(&tracks, TASKS[0].race, true, 2), 300);
+    assert_eq!(active_talisman_bonus(&tracks, TASKS[0].race, false, 2), 0);
+    assert_eq!(active_talisman_bonus(&tracks, TASKS[1].race, true, 2), 0);
+    assert_eq!(
+        active_talisman_bonus(&BTreeMap::new(), TASKS[0].race, true, 2),
+        0
+    );
+    assert_eq!(active_talisman_bonus(&tracks, TASKS[0].race, true, 4), 0);
+}
+
+#[test]
 fn a_claimed_task_is_locked_for_seven_days() {
     let catalogue = catalogue();
     let mut stored = BTreeMap::from([(claimed_at_track(2), NOW)]);

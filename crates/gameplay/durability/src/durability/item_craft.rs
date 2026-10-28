@@ -12,7 +12,7 @@ use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use oteryn_gameplay_content::content::native_gameplay::NativeGameplayState;
 use crate::foundation::CommandRef;
-use oteryn_gameplay_items::item_craft::cooking_conversion;
+use oteryn_gameplay_items::item_craft::{cooking_conversion, fishing_conversion};
 use oteryn_gameplay_items::reward_bag::{reward_bag_conversion, reward_bag_draw};
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use serde_json::{Value, json};
@@ -24,6 +24,8 @@ pub(crate) mod audit;
 pub struct ItemCraftRequest {
     pub command: CommandRef,
     pub source: [u8; 16],
+    /// An unchanged carried tool for conversions such as fishing.
+    pub tool: Option<[u8; 16]>,
     /// The cooking station; `None` selects the reward-bag draw for this command and source.
     pub station: Option<TypedDefinitionRef>,
     /// Original bounded USE bytes. Replay compares these before resolving current handles.
@@ -104,9 +106,18 @@ async fn write<C: ItemLoopContent>(
         production_key: source.try_get("definition_production_key")?,
         revision_ref: source.try_get("definition_revision_ref")?,
     };
-    let conversion = match &request.station {
-        Some(station) => cooking_conversion(native, &definition, station),
-        None => reward_bag_conversion(
+    let conversion = match (&request.station, request.tool) {
+        (Some(station), Some(tool_id)) => {
+            let tool = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF i")
+                .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+            tool.and_then(|tool| fishing_conversion(native, &TypedDefinitionRef {
+                family: tool.try_get("definition_family").ok()?,
+                production_key: tool.try_get("definition_production_key").ok()?,
+                revision_ref: tool.try_get("definition_revision_ref").ok()?,
+            }, &definition, station))
+        }
+        (Some(station), None) => cooking_conversion(native, &definition, station),
+        (None, _) => reward_bag_conversion(
             native,
             &definition,
             reward_bag_draw(*fence.game_session_id.as_bytes(), request.command.command_id().get(), request.source),

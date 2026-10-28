@@ -11,6 +11,14 @@ name: PR PostgreSQL harness
 # PostgreSQL-backed library tests); the partition jobs only download the
 # archives and run them against PostgreSQL, so nothing is compiled twice and
 # the six count partitions together run every test exactly once.
+#
+# OTERYN_SELF_HOSTED_PG=on runs the six partitions on the Molehill runners
+# against a throwaway native PostgreSQL 18 cluster per job instead of the
+# hosted service container; turn it off or delete it when the PC is offline.
+# Forks and Dependabot always stay hosted. The build job stays hosted: the
+# test binaries embed its workspace path at compile time, so a Molehill
+# partition exposes a checkout of the same head at that path (one head at a
+# time; partitions of other heads wait for it to be released).
 
 on:
   pull_request:
@@ -61,6 +69,7 @@ jobs:
       contents: read
     outputs:
       archives_sha256: ${{ steps.digest.outputs.archives_sha256 }}
+      workspace: ${{ steps.digest.outputs.workspace }}
     # No database here: this job verifies target custody and compiles once; the partition jobs run the tests.
     steps:
       - name: Check out exact pull request head
@@ -245,6 +254,7 @@ jobs:
           sha256sum head-sha pg-e2e.tar.zst pg-lib.tar.zst > SHA256SUMS
           ls -l
           echo "archives_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          echo "workspace=$GITHUB_WORKSPACE" >> "$GITHUB_OUTPUT"
 
       # The archives are already zstd-compressed and only live for this run's partition jobs.
       - name: Upload PostgreSQL test archives
@@ -261,8 +271,8 @@ jobs:
     name: PR early signal / Durability PostgreSQL harness
     needs: build
     if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    runs-on: ${{ (vars.OTERYN_SELF_HOSTED_PG == 'on' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && fromJSON('["self-hosted","linux","x64","oteryn-molehill"]') || 'ubuntu-24.04' }}
+    timeout-minutes: 45
     permissions:
       contents: read
     # Each partition runs a disjoint count slice of both archives; together the six run every test once.
@@ -271,9 +281,10 @@ jobs:
       fail-fast: false
       matrix:
         partition: [1, 2, 3, 4, 5, 6]
+    # An empty image skips the service container on Molehill, which starts its own cluster below.
     services:
       postgres:
-        image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
+        image: ${{ !(vars.OTERYN_SELF_HOSTED_PG == 'on' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') && 'postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc' || '' }}
         env:
           POSTGRES_USER: oteryn_test_admin
           POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
@@ -285,8 +296,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
-    env:
-      OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
     steps:
       # The test binaries read repository files through their compile-time CARGO_MANIFEST_DIR, so the
       # partition checks out the same head at the same workspace path as the build job.
@@ -300,6 +309,141 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Use the PostgreSQL service container
+        if: runner.environment != 'self-hosted'
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          echo "OTERYN_TEST_POSTGRES_ADMIN_URL=postgresql://oteryn_test_admin:ci-${RUN_ID}-${RUN_ATTEMPT}@127.0.0.1:5432/postgres" >> "$GITHUB_ENV"
+          echo "PG_WORKSPACE=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+
+      # The binaries read repository files through the build job's compile-time workspace path. All
+      # Molehill runners share one host, so that path is a symlink to a per-head checkout; it is
+      # switched only while no partition holds the current head (a shared lock held for the job).
+      - name: Expose this head at the build workspace path
+        if: runner.environment == 'self-hosted'
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          BUILD_WORKSPACE: ${{ needs.build.outputs.workspace }}
+        run: |
+          set -euo pipefail
+          if [[ "${OTERYN_CI_TARGET_ROOT:-}" != /* ]]; then
+            echo 'OTERYN_CI_TARGET_ROOT must be set to an absolute path on the self-hosted runner' >&2
+            exit 1
+          fi
+          if [[ ! "${RUNNER_NAME:-}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo 'RUNNER_NAME must be a plain runner name on the self-hosted runner' >&2
+            exit 1
+          fi
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$BUILD_WORKSPACE" =~ ^/home/runner/work/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]]
+          parent="$(dirname "$BUILD_WORKSPACE")"
+          if [[ ! -d "$parent" || ! -w "$parent" ]]; then
+            echo "$parent must exist and be writable by the runner user (Molehill PostgreSQL setup)" >&2
+            exit 1
+          fi
+          if [[ -e "$BUILD_WORKSPACE" && ! -L "$BUILD_WORKSPACE" ]]; then
+            echo "$BUILD_WORKSPACE must be a symlink managed by this job" >&2
+            exit 1
+          fi
+          base="$OTERYN_CI_TARGET_ROOT/pr-postgres"
+          mkdir -p "$base/ws"
+          ws="$base/ws/$EXPECTED_SHA"
+          exec 9>"$base/switch.lock"
+          deadline=$((SECONDS + 1800))
+          while :; do
+            flock -x 9
+            # Drop idle checkouts of other heads older than a day.
+            find "$base/ws" -mindepth 1 -maxdepth 1 -type d -mmin +1440 -print0 |
+              while IFS= read -r -d '' old; do
+                if [[ "$old" != "$ws" ]] && flock -n -x "$old.use" true; then rm -rf -- "$old" "$old.use"; fi
+              done
+            if [[ ! -d "$ws/.git" ]]; then
+              rm -rf -- "$ws.tmp"
+              git clone -q --local --no-checkout "$GITHUB_WORKSPACE" "$ws.tmp"
+              git -C "$ws.tmp" -c advice.detachedHead=false checkout -q --detach "$EXPECTED_SHA"
+              mv -T "$ws.tmp" "$ws"
+            fi
+            test "$(git -C "$ws" rev-parse HEAD)" = "$EXPECTED_SHA"
+            current="$(readlink "$BUILD_WORKSPACE" 2>/dev/null || true)"
+            if [[ "$current" != "$ws" ]] && { [[ -z "$current" ]] || flock -n -x "$current.use" true; }; then
+              ln -sfn "$ws" "$BUILD_WORKSPACE.new"
+              mv -T "$BUILD_WORKSPACE.new" "$BUILD_WORKSPACE"
+              current="$ws"
+            fi
+            if [[ "$current" == "$ws" ]]; then
+              setsid flock -s -o "$ws.use" sleep 7200 </dev/null >/dev/null 2>&1 &
+              holder=$!
+              # Keep the switch lock until the shared lock is held, so no one can switch under us.
+              for _ in $(seq 1 50); do
+                if ! flock -n -x "$ws.use" true; then break; fi
+                sleep 0.1
+              done
+              if flock -n -x "$ws.use" true; then
+                echo 'could not take the shared workspace lock' >&2
+                exit 1
+              fi
+              touch "$ws"
+              flock -u 9
+              break
+            fi
+            flock -u 9
+            if (( SECONDS > deadline )); then
+              echo "timed out waiting for $BUILD_WORKSPACE to be released by another head" >&2
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "PG_WORKSPACE=$BUILD_WORKSPACE" >> "$GITHUB_ENV"
+          echo "PG_WS_HOLDER=$holder" >> "$GITHUB_ENV"
+          test "$(git -C "$BUILD_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      # A throwaway cluster per job: fresh data directory, random password, loopback only, durability
+      # off (the tests never survive a crash of their own database).
+      - name: Start ephemeral PostgreSQL 18
+        if: runner.environment == 'self-hosted'
+        run: |
+          set -euo pipefail
+          bin=/usr/lib/postgresql/18/bin
+          if [[ ! -x "$bin/initdb" ]]; then
+            echo 'PostgreSQL 18 server binaries are missing (Molehill PostgreSQL setup)' >&2
+            exit 1
+          fi
+          "$bin/postgres" --version | grep -Eq ' 18\.'
+          dir="$OTERYN_CI_TARGET_ROOT/$RUNNER_NAME/pr-postgres"
+          if [[ -f "$dir/data/postmaster.pid" ]]; then
+            "$bin/pg_ctl" -D "$dir/data" stop -m immediate -w || true
+          fi
+          rm -rf -- "$dir"
+          mkdir -p "$dir/sock"
+          chmod 700 "$dir"
+          password="$(python3 -c 'import secrets; print(secrets.token_hex(24))')"
+          echo "::add-mask::$password"
+          printf '%s\n' "$password" > "$dir/pwfile"
+          "$bin/initdb" -D "$dir/data" -U oteryn_test_admin --pwfile="$dir/pwfile" \
+            --auth=scram-sha-256 --encoding=UTF8 --locale=en_US.UTF-8 >/dev/null
+          rm -f -- "$dir/pwfile"
+          started=''
+          for _ in 1 2 3; do
+            port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
+            if "$bin/pg_ctl" -D "$dir/data" -l "$dir/postgres.log" -w -t 60 start \
+              -o "-c listen_addresses=127.0.0.1 -p $port -k $dir/sock -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=200"; then
+              started=1
+              break
+            fi
+          done
+          if [[ -z "$started" ]]; then
+            tail -n 50 "$dir/postgres.log" >&2 || true
+            exit 1
+          fi
+          "$bin/pg_isready" -h 127.0.0.1 -p "$port" -U oteryn_test_admin -d postgres
+          echo "OTERYN_TEST_POSTGRES_ADMIN_URL=postgresql://oteryn_test_admin:${password}@127.0.0.1:${port}/postgres" >> "$GITHUB_ENV"
+          echo "PG_DATA_DIR=$dir/data" >> "$GITHUB_ENV"
+          # Match the hosted runner's four CPUs so four partitions share the PC.
+          echo "NEXTEST_TEST_THREADS=4" >> "$GITHUB_ENV"
 
       - name: Install pinned cargo-nextest
         env:
@@ -334,6 +478,7 @@ jobs:
           sha256sum -c SHA256SUMS
           test "$(cat head-sha)" = "$EXPECTED_SHA"
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git -C "$PG_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
 
       # The partition is taken from the matrix position and size, so the slices always cover the
       # whole archive whatever the matrix length; the label must agree with the position.
@@ -355,7 +500,7 @@ jobs:
         run: |
           set -euo pipefail
           cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \
-            --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
+            --workspace-remap "$PG_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
 
       - name: Run PostgreSQL-backed library tests
         if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
@@ -364,4 +509,17 @@ jobs:
         run: |
           set -euo pipefail
           cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
-            --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
+            --workspace-remap "$PG_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
+
+      - name: Stop ephemeral PostgreSQL 18
+        if: always() && runner.environment == 'self-hosted'
+        run: |
+          set -uo pipefail
+          if [[ -n "${PG_DATA_DIR:-}" && -f "$PG_DATA_DIR/postmaster.pid" ]]; then
+            /usr/lib/postgresql/18/bin/pg_ctl -D "$PG_DATA_DIR" stop -m fast -w -t 60 ||
+              /usr/lib/postgresql/18/bin/pg_ctl -D "$PG_DATA_DIR" stop -m immediate -w
+          fi
+          if [[ "${PG_WS_HOLDER:-}" =~ ^[0-9]+$ ]]; then
+            kill -- "-$PG_WS_HOLDER" 2>/dev/null || true
+          fi
+          exit 0

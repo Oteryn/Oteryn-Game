@@ -12,7 +12,7 @@ use crate::durability::character_proficiency::{
     ProficiencyDefinitions, ResolvedProficiencyDefinition,
 };
 use oteryn_gameplay_content::content::{
-    ImportedWeaponProficiencyData, ProjectV2ProficiencyThresholdClass,
+    ImportedWeaponProficiencyData, ProjectV2ProficiencyPerk, ProjectV2ProficiencyThresholdClass,
     import_committed_weapon_proficiency_data,
 };
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
@@ -62,6 +62,61 @@ impl ProductionProficiencyCatalogue {
             shape: ProficiencySelectionShape::new(threshold, &counts).ok()?,
         })
     }
+
+    /// Resolve a retained durable track into the selected attack effects from the same promoted
+    /// definition that supplied its shape. Unknown, locked or malformed selections fail closed.
+    pub fn live_track(
+        &self,
+        stored: &crate::durability::character_proficiency::StoredProficiencyTrack,
+    ) -> Option<LiveProficiencyTrack> {
+        let resolved = self.resolved(stored.state.item_key())?;
+        if stored.state.definition_key() != resolved.definition_key
+            || stored.state.definition_revision() != resolved.definition_revision
+        {
+            return None;
+        }
+        let progress = u32::try_from(stored.state.progress()).ok()?;
+        let selections = stored.state.selections().to_vec();
+        let definition = self.data.definitions().get(&resolved.definition_key)?;
+        let mut effects = ProficiencyAttackEffects {
+            denominator: 1,
+            ..Default::default()
+        };
+        for selected in resolved
+            .shape
+            .active_selections(progress, &selections)
+            .ok()?
+        {
+            let perk = definition
+                .levels
+                .get(usize::from(selected.level))?
+                .perks
+                .get(usize::from(selected.perk_index))?;
+            match perk {
+                ProjectV2ProficiencyPerk::AttackDamage { value } => {
+                    if value.denominator == 0 || value.numerator < 0 {
+                        return None;
+                    }
+                    effects.flat_attack = effects
+                        .flat_attack
+                        .checked_add(value.numerator / i64::try_from(value.denominator).ok()?)?;
+                }
+                ProjectV2ProficiencyPerk::AlphaStrikeDamage { value } => {
+                    effects.add_fraction(*value, AttackFraction::Alpha)?;
+                }
+                ProjectV2ProficiencyPerk::OmegaStrikeDamage { value } => {
+                    effects.add_fraction(*value, AttackFraction::Omega)?;
+                }
+                _ => {}
+            }
+        }
+        Some(LiveProficiencyTrack {
+            shape: resolved.shape,
+            progress,
+            selections,
+            effects,
+        })
+    }
 }
 
 impl ProficiencyDefinitions for ProductionProficiencyCatalogue {
@@ -104,7 +159,39 @@ pub struct ProficiencyAttackEffects {
     pub omega_numerator: i64,
 }
 
+#[derive(Debug, Clone, Copy)]
+enum AttackFraction {
+    Alpha,
+    Omega,
+}
+
 impl ProficiencyAttackEffects {
+    fn add_fraction(
+        &mut self,
+        value: oteryn_gameplay_content::content::ProjectV2ExactRatio,
+        target: AttackFraction,
+    ) -> Option<()> {
+        let denominator = i64::try_from(value.denominator).ok()?;
+        if denominator <= 0 || value.numerator < 0 {
+            return None;
+        }
+        let common = self.denominator.checked_mul(denominator)?;
+        self.damage_numerator = self.damage_numerator.checked_mul(denominator)?;
+        self.alpha_numerator = self.alpha_numerator.checked_mul(denominator)?;
+        self.omega_numerator = self.omega_numerator.checked_mul(denominator)?;
+        let scaled = value.numerator.checked_mul(self.denominator)?;
+        match target {
+            AttackFraction::Alpha => {
+                self.alpha_numerator = self.alpha_numerator.checked_add(scaled)?
+            }
+            AttackFraction::Omega => {
+                self.omega_numerator = self.omega_numerator.checked_add(scaled)?
+            }
+        }
+        self.denominator = common;
+        Some(())
+    }
+
     fn valid(self) -> bool {
         self.denominator > 0
             && self.damage_numerator >= 0
@@ -242,6 +329,36 @@ mod tests {
                 &resolved.definition_revision,
             ),
             Some(resolved.shape)
+        );
+    }
+
+    #[test]
+    fn promoted_selected_attack_perk_reaches_live_dispatch() {
+        use crate::domain::CharacterRevision;
+        use crate::durability::character_proficiency::{
+            DurableProficiencyState, StoredProficiencyTrack,
+        };
+
+        let catalogue = ProductionProficiencyCatalogue::embedded().expect("committed catalogue");
+        let stored = StoredProficiencyTrack {
+            state: DurableProficiencyState::new(
+                "oteryn:item.tibia.i43864",
+                "oteryn:proficiency.tibia.p6",
+                "definition-r1",
+                2_000_000,
+                vec![None, None, None, None, Some(2), None, None],
+            )
+            .expect("durable track"),
+            committed_character_revision: CharacterRevision::new(7).expect("revision"),
+            last_proficiency_occurrence_id: [0; 16],
+        };
+        let live = catalogue.live_track(&stored).expect("resolved live track");
+        assert_eq!(live.effects.flat_attack, 1);
+        let mut owner = WeaponProficiencyDispatch::default();
+        owner.install_track(stored.state.item_key(), live);
+        assert_eq!(
+            owner.dispatch_attack(stored.state.item_key(), 100, 50, 100),
+            101
         );
     }
 

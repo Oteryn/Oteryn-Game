@@ -60,6 +60,13 @@ fn parse_amount(text: &str) -> Option<u64> {
         .ok()
         .filter(|n| (1..=u64::from(u32::MAX)).contains(n))
 }
+
+/// Bank-account commands precede the money-changing topics in the reference NPC handler.
+/// In particular, an account command must cancel an unfinished exchange instead of being
+/// mistaken for the exchange amount (or its confirmation response).
+fn bank_command_precedes_exchange(has_pending_exchange: bool, text: &str) -> bool {
+    has_pending_exchange && super::super::bank_npc::parse(text).is_ok()
+}
 fn quote(exchange: CoinExchange, amount: u64) -> String {
     // Preserve the two reversed-quantity confirmation strings in pinned Canary. The actual
     // conversion uses the correct 100:1 amounts, independently of this dialogue text.
@@ -116,6 +123,9 @@ pub(super) fn prepare(
             && now >= p.opened
             && now - p.opened < 30_000_000
     });
+    if bank_command_precedes_exchange(pending.is_some(), &intent.text) {
+        return None;
+    }
     // Preserve the pinned handler order: change gold precedes every exchange topic;
     // change platinum precedes platinum/crystal topics; change crystal precedes crystal topics.
     let gold_topic = pending.as_ref().is_some_and(|p| {
@@ -354,5 +364,24 @@ mod tests {
             amount_prompt(CoinExchange::CrystalToPlatinum),
             "How many crystal coins would you like to change into platinum?"
         );
+        for command in [
+            "balance",
+            "deposit all",
+            "deposit 7 gold",
+            "withdraw 8 gold",
+            "transfer 9 gold to Al Dric",
+        ] {
+            assert!(bank_command_precedes_exchange(true, command), "{command}");
+            assert!(
+                !bank_command_precedes_exchange(false, command),
+                "an idle exchange handler must leave {command} to the bank handler"
+            );
+        }
+        for response in ["1", "gold", "crystal", "yes", "no"] {
+            assert!(
+                !bank_command_precedes_exchange(true, response),
+                "{response}"
+            );
+        }
     }
 }
