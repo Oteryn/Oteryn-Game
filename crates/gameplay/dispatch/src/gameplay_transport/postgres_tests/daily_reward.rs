@@ -52,7 +52,7 @@ async fn serve_from(
     }
     Ok((format!("{end:?}"), output))
 }
-async fn serve(
+pub(super) async fn serve(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     commands: &[(u32, &[u8])],
@@ -80,7 +80,7 @@ async fn replay_claim(
     assert_eq!(values[3].0, 4);
     Ok((values[3].2.clone(), fresh))
 }
-fn pick(key: &str, quantity: u8) -> TestResult<Vec<u8>> {
+pub(super) fn pick(key: &str, quantity: u8) -> TestResult<Vec<u8>> {
     let mut bytes = vec![
         10,
         u8::try_from(key.len() + 4)?,
@@ -91,7 +91,9 @@ fn pick(key: &str, quantity: u8) -> TestResult<Vec<u8>> {
     bytes.extend([16, quantity]);
     Ok(bytes)
 }
-fn results(output: &[u8]) -> TestResult<Vec<(u64, crate::foundation::CommandStatus, Vec<u8>)>> {
+pub(super) fn results(
+    output: &[u8],
+) -> TestResult<Vec<(u64, crate::foundation::CommandStatus, Vec<u8>)>> {
     let mut cursor = 0;
     let mut values = Vec::new();
     while cursor < output.len() {
@@ -107,7 +109,7 @@ fn results(output: &[u8]) -> TestResult<Vec<(u64, crate::foundation::CommandStat
     }
     Ok(values)
 }
-async fn epoch(h: &Harness, value: u64) -> TestResult {
+pub(super) async fn epoch(h: &Harness, value: u64) -> TestResult {
     // World owner fixture: not a daily runtime clock or a client-supplied epoch.
     if value == 1 {
         sqlx::query("INSERT INTO game_world_reset_epochs VALUES(encode($1,'hex')::uuid,0,$2,'daily-map',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,'2026-10-01 08:00:00Z','2026-10')")

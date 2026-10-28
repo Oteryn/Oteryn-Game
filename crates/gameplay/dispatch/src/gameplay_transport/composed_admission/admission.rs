@@ -374,6 +374,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if writes_after_progression(positioned, admitted.first_entry) {
             self.admit_loop_training(&mut admitted).await;
+            if !self.admit_prey(admitted).await {
+                admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+            }
         }
         if writes_after_progression(positioned, admitted.first_entry) {
             self.admit_quest_session(&admitted).await;

@@ -114,6 +114,8 @@ struct ReleasingMark {
 
 #[derive(Debug, Default)]
 struct KillQueueState {
+    /// One frozen contribution per retained exact corpse projection; pruned on each death.
+    prey_loot: Vec<(ExactActorRef, u8)>,
     queued: VecDeque<PendingKillSettlement>,
     /// Each in-flight entry's death, principal and killed actor.
     in_flight: Vec<(CreatureDeathOccurrenceKey, Principal, ExactActorRef)>,
@@ -204,6 +206,44 @@ impl KillSettlementQueue {
         self.0
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    pub(super) fn blocks_prey(&self, character: &[u8; 16]) -> bool {
+        let state = self.state();
+        let affects = |entry: &PendingKillSettlement| {
+            entry.facts.principal.character.as_bytes() == character
+                || entry
+                    .damage_shares
+                    .iter()
+                    .any(|share| share.character.as_bytes() == character)
+                || entry
+                    .activity_at_death
+                    .as_ref()
+                    .is_none_or(|activity| activity.iter().any(|cell| cell.character == *character))
+        };
+        !state.in_flight.is_empty()
+            || state.queued.iter().any(affects)
+            || state
+                .releasing
+                .iter()
+                .any(|mark| mark.parked.iter().any(|(entry, _)| affects(entry)))
+    }
+
+    fn prey_at_death(&self, runtime: &ChannelRuntimeV1, target: ExactActorRef, percent: u8) -> u8 {
+        let mut state = self.state();
+        // Retention is bounded by the carrier's existing pinned + unpinned corpse ceilings.
+        // Once evicted, that exact death can no longer be projected or replayed by this runtime.
+        state
+            .prey_loot
+            .retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
+        if let Some((_, frozen)) = state.prey_loot.iter().find(|(actor, _)| *actor == target) {
+            return *frozen;
+        }
+        if !runtime.retains_corpse_projection(target) {
+            return 0;
+        }
+        state.prey_loot.push((target, percent));
+        percent
     }
 
     pub fn append(&self, entry: PendingKillSettlement) -> AppendOutcome {
@@ -547,6 +587,7 @@ impl Drop for TakenKillSettlement {
 /// Where a lethal arm appends: the Channel's queue and the active generation's reward rows.
 #[derive(Clone, Copy)]
 pub struct KillSink<'a> {
+    pub prey: Option<&'a super::actor_spell::ChannelSpellStates>,
     pub activity: &'a [oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity],
     pub queue: &'a KillSettlementQueue,
     pub rewards: &'a CreatureRewardTable,
@@ -610,6 +651,7 @@ pub fn record_creature_kill(
         native_room_placement_context: pin.frame_binding_digest().to_vec(),
     };
     let daily_boost = runtime.daily_boost().cloned();
+    // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
     let mut owner = runtime.borrow_combat_death();
     if crate::combat::project_fixed_one_creature_death(&mut owner, target).is_err() {
         return;
@@ -772,6 +814,44 @@ pub fn record_creature_kill(
         for _ in 0..effects.extra_loot_rolls(draw) {
             let extra = row.loot_table.entries.clone();
             Arc::make_mut(&mut row).loot_table.entries.extend(extra);
+        }
+    }
+    let percent = sink.prey.map_or(0, |states| {
+        states.prey_percent(
+            runtime,
+            principal.actor,
+            principal.session,
+            &creature,
+            4,
+            now_ms * 1000,
+        )
+    });
+    let percent = sink.queue.prey_at_death(runtime, target, percent);
+    // One independent trigger plus two <=7-entry rolls stay within PREY-0 R4's
+    // 29 draws; a forge sliver adds two more, still below the existing 32 ceiling.
+    let base = sink
+        .rewards
+        .row(&creature)
+        .ok()
+        .filter(|base| base.loot_table.entries.len() <= 7);
+    if percent > 0
+        && let Some(base) = base
+    {
+        use sha2::Digest as _;
+        let roll = sha2::Sha256::digest(
+            [
+                b"oteryn.prey.loot.v1".as_slice(),
+                facts.occurrence.as_slice(),
+            ]
+            .concat(),
+        );
+        let value = u64::from_be_bytes(roll[..8].try_into().unwrap_or([0; 8]));
+        let draw = ((u128::from(value) * 100) >> 64) as u8;
+        if draw < percent {
+            Arc::make_mut(&mut row)
+                .loot_table
+                .entries
+                .extend(base.loot_table.entries.iter().cloned());
         }
     }
     let activity_at_death = match super::party_xp::capture_activity_at_death(
@@ -1201,21 +1281,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn record_spell_kills<'r>(
         &self,
         runtime: &mut ChannelRuntimeV1,
+        states: &super::actor_spell::ChannelSpellStates,
         receipts: impl Iterator<Item = &'r CombatBatchReceipt>,
     ) {
         let attack = self.states.attack.lock().await;
-        self.record_spell_kills_locked(&attack, runtime, receipts);
+        self.record_spell_kills_locked(&attack, states, runtime, receipts);
     }
     /// [`Self::record_spell_kills`] under an attack-state guard the caller already holds, so a
     /// writer can take the guard before it releases its cancellation-safe attempt.
     pub(super) fn record_spell_kills_locked<'r>(
         &self,
         attack: &ChannelAttackStates,
+        states: &super::actor_spell::ChannelSpellStates,
         runtime: &mut ChannelRuntimeV1,
         receipts: impl Iterator<Item = &'r CombatBatchReceipt>,
     ) {
         let activity = attack.shared_experience_cells();
         let sink = KillSink {
+            prey: Some(states),
             activity: &activity,
             queue: attack.kills(),
             rewards: self.reward_table(),

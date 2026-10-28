@@ -2390,7 +2390,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             parameter_output,
         ) {
             Ok(Some(replayed)) => {
-                self.record_spell_kills(&mut runtime, std::iter::once(&replayed))
+                self.record_spell_kills(&mut runtime, &states, std::iter::once(&replayed))
                     .await;
                 return NativeCastDispatch::Outcome(super::SpellCastOutcome {
                     disposition: parameter_output
@@ -2606,6 +2606,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                     };
                     if invalid_draw{return Err(DurabilityError::Unavailable);}
+                    states.apply_prey_spell_damage(runtime,&mut prepared.batch);
                     if let Some(reserved)=rune_reservation.as_ref(){
                         item_tx::validate_rune_reservation_in_transaction(&mut tx,&authority,reserved).await
                             .map_err(|_|DurabilityError::Unavailable)?;
@@ -2854,7 +2855,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     states.hunting_activity(&runtime, actor, session, at.get());
             }
             // §1.4: the committed batch's kills, under the same runtime turn, after installation.
-            owner.record_spell_kills_locked(&attack,&mut runtime,std::iter::once(&batch));
+            owner.record_spell_kills_locked(&attack,&states,&mut runtime,std::iter::once(&batch));
             drop(attack);
             let disposition=private_result.as_ref().map_or(SpellCastDisposition::Cast,|r|r.disposition);
             **parameter_output=private_result;

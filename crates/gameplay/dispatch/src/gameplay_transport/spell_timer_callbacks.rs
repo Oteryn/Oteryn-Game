@@ -703,6 +703,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         effect.sub_ordinal = saved.sub_ordinal;
                         batch.effects = vec![effect];
+                        states.apply_prey_spell_damage(runtime, &mut batch);
                         let presentation = states
                             .presentations
                             .as_mut()
@@ -792,8 +793,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| Error::StaleOwner)?;
             if let Some(report) = accepted {
-                self.record_spell_kills(&mut runtime, report.receipts.iter().map(|r| &r.batch))
-                    .await;
+                self.record_spell_kills(
+                    &mut runtime,
+                    &states,
+                    report.receipts.iter().map(|r| &r.batch),
+                )
+                .await;
                 return Ok(report);
             }
         }
@@ -804,8 +809,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &casters,
             self.owner_now(),
         )?;
-        self.record_spell_kills(&mut runtime, report.receipts.iter().map(|r| &r.batch))
-            .await;
+        self.record_spell_kills(
+            &mut runtime,
+            &states,
+            report.receipts.iter().map(|r| &r.batch),
+        )
+        .await;
         Ok(report)
     }
 }

@@ -251,6 +251,15 @@ fn fee_fixtures() -> Vec<(u32, &'static str, FeeBurnCauseV1)> {
                 occurrence: vec![0x81, 0x07],
             }),
         ),
+        (
+            12,
+            "PreyListReroll",
+            FeeBurnCauseV1::PreyListReroll(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(),
+                service_key: "oteryn:prey.list_reroll.1".into(),
+                occurrence: vec![0x81, 0x07],
+            }),
+        ),
     ]
 }
 
@@ -274,6 +283,10 @@ fn assert_wire<M: Message + Default + PartialEq>(name: &str, value: M) {
         ("GemReveal", "4a0c0a0672657665616c12028107"),
         ("GemSwitchDomain", "520c0a0673776974636812028107"),
         ("GemGradeUp", "5a0b0a05677261646512028107"),
+        (
+            "PreyListReroll",
+            "621f0a196f746572796e3a707265792e6c6973745f7265726f6c6c2e3112028107",
+        ),
         ("CharmUnassign", "0a0b0a05636861726d12028107"),
         ("PromotionPurchase", "120f0a0970726f6d6f74696f6e12028107"),
         ("BlessingPurchase", "1a0e0a08626c657373696e6712028107"),

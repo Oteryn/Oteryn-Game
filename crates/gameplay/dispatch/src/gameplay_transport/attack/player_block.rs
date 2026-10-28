@@ -186,6 +186,11 @@ impl CreatureBiteVitals for PlayerBiteVitals<'_> {
         magnitude: u32,
         now: OwnerTime,
     ) -> Option<CreatureHit> {
+        let percent = self.charm.as_ref().map_or(0, |c| {
+            self.states
+                .prey_percent(runtime, target, target_session, c.race, 2, now.get())
+        });
+        let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
         self.states
             .apply_creature_damage(runtime, target, target_session, magnitude, now)
     }
