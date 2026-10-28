@@ -664,5 +664,9 @@ mod tests {
 }
 
 #[cfg(test)]
+#[path = "item_use_crystal_parity_tests.rs"]
+mod crystal_parity_tests;
+
+#[cfg(test)]
 #[allow(clippy::expect_used)]
 mod item_use_postgres_tests;

@@ -1,9 +1,5 @@
 //! Actual target-owned Exiva preferences. No caller boolean grants permission and
 //! neither absent preferences nor absent staff roles mean public/ordinary access.
-#![allow(
-    dead_code,
-    reason = "spell import candidate; awaits its production owner caller"
-)]
 use super::spell_item_transaction::{SpellItemAuthority, SpellItemError, check_transaction};
 use serde::{Deserialize, Serialize};
 use sqlx::{Postgres, Row, Transaction};
@@ -79,8 +75,7 @@ fn decision(
     {
         return ExivaDecision::Allowed;
     }
-    // These relations have no admitted owner in the current native generation.
-    // Their enabled branches cannot be evaluated with invented empty groups/lists.
+    // Resolve enabled relationship branches from their durable owners below.
     if preferences.allow_own_guild
         || preferences.allow_own_party
         || preferences.allow_vip_list
@@ -89,6 +84,36 @@ fn decision(
         return ExivaDecision::UnknownRelationships;
     }
     ExivaDecision::Denied
+}
+
+async fn relationship_allowed(
+    tx: &mut Transaction<'_, Postgres>,
+    preferences: &ExivaPreferences,
+    caster: [u8; 16],
+    target: [u8; 16],
+) -> Result<bool, SpellItemError> {
+    if preferences.allow_own_guild {
+        let same: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b USING(guild_id) WHERE a.character_id=encode($1,'hex')::uuid AND b.character_id=encode($2,'hex')::uuid)")
+            .bind(caster.as_slice()).bind(target.as_slice()).fetch_one(&mut **tx).await?;
+        if same {
+            return Ok(true);
+        }
+    }
+    if preferences.allow_own_party {
+        let same: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_party_members a JOIN game_party_members b USING(party_id) WHERE a.character_id=encode($1,'hex')::uuid AND b.character_id=encode($2,'hex')::uuid)")
+            .bind(caster.as_slice()).bind(target.as_slice()).fetch_one(&mut **tx).await?;
+        if same {
+            return Ok(true);
+        }
+    }
+    if preferences.allow_vip_list {
+        let listed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots t JOIN game_vip_entries v ON v.account_id=t.account_id AND v.world_id=t.world_id WHERE t.character_id=encode($2,'hex')::uuid AND v.character_id=encode($1,'hex')::uuid)")
+            .bind(caster.as_slice()).bind(target.as_slice()).fetch_one(&mut **tx).await?;
+        if listed {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 pub async fn read_exiva_decision_in_transaction(
@@ -174,7 +199,17 @@ async fn read_exiva_decision_with_roles_in_transaction(
     let preferences: ExivaPreferences = serde_json::from_value(row.try_get("preferences")?)
         .map_err(|_| SpellItemError::Rejected("stored Exiva preference shape"))?;
     preferences.validate()?;
-    Ok(decision(&preferences, source, caster_staff, target_staff))
+    let basic = decision(&preferences, source, caster_staff, target_staff);
+    if basic == ExivaDecision::UnknownRelationships {
+        return Ok(
+            if relationship_allowed(tx, &preferences, source, target).await? {
+                ExivaDecision::Allowed
+            } else {
+                ExivaDecision::Denied
+            },
+        );
+    }
+    Ok(basic)
 }
 
 /// Initialize only the actual current Character under its existing owner seal.
@@ -246,8 +281,20 @@ pub async fn write_exiva_preferences_in_transaction(
     let receipt:Vec<u8>=sqlx::query_scalar("INSERT INTO game_character_spell_privacy_receipts(receipt_id,character_id,game_session_id,command_id,revision_before,revision_after,preferences) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric(20,0),$4::text::numeric(20,0),$5::text::numeric(20,0),$6) RETURNING uuid_send(receipt_id)")
         .bind(character.as_slice()).bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
         .bind(before.to_string()).bind(next.to_string()).bind(&preferences).fetch_one(&mut **tx).await?;
-    sqlx::query("INSERT INTO game_character_spell_privacy(character_id,revision,preferences,last_receipt) VALUES(encode($1,'hex')::uuid,$2::text::numeric(20,0),$3,encode($4,'hex')::uuid) ON CONFLICT(character_id) DO UPDATE SET revision=EXCLUDED.revision,preferences=EXCLUDED.preferences,last_receipt=EXCLUDED.last_receipt")
-        .bind(character.as_slice()).bind(next.to_string()).bind(&preferences).bind(&receipt).execute(&mut **tx).await?;
+    // An upsert would run the INSERT guard even for an existing row, which rejects
+    // successor revisions. The character lock above serializes both paths.
+    let sql = if revision.is_some() {
+        "UPDATE game_character_spell_privacy SET revision=$2::text::numeric(20,0),preferences=$3,last_receipt=encode($4,'hex')::uuid WHERE character_id=encode($1,'hex')::uuid"
+    } else {
+        "INSERT INTO game_character_spell_privacy(character_id,revision,preferences,last_receipt) VALUES(encode($1,'hex')::uuid,$2::text::numeric(20,0),$3,encode($4,'hex')::uuid)"
+    };
+    sqlx::query(sql)
+        .bind(character.as_slice())
+        .bind(next.to_string())
+        .bind(&preferences)
+        .bind(&receipt)
+        .execute(&mut **tx)
+        .await?;
     Ok(next)
 }
 #[cfg(test)]

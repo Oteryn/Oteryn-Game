@@ -215,7 +215,14 @@ impl BundleFacts {
                         ..
                     } => {
                         let locked = locked || matches!(item.attrs.action, Some(101 | 1001));
-                        self.doors.push(key, closed_solid, open_solid, open, locked);
+                        self.doors.push(
+                            key,
+                            closed_solid,
+                            open_solid,
+                            open,
+                            locked,
+                            item.attrs.action,
+                        );
                     }
                     PaletteDoor::Sealed => {
                         self.doors.push_sealed();
@@ -413,6 +420,16 @@ impl BundleFacts {
             .binary_search_by_key(&key, |(key, _)| *key)
             .ok()?;
         self.placements.get(found)?.1.attrs.depot
+    }
+
+    /// Source action id of a named base placement. This is retained from the world bundle and
+    /// never accepted from a client.
+    pub fn action_at(&self, key: u64) -> Option<u16> {
+        let found = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()?;
+        self.placements[found].1.attrs.action
     }
 
     /// MAP-PICKUP-1: the exact boot-time wrapper decision, before view normalization.

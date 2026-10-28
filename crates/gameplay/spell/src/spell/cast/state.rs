@@ -243,6 +243,26 @@ impl PlayerSpellState {
         Some((next, gained))
     }
 
+    /// One resting-area cadence credit through the native regeneration clocks.
+    pub fn after_resting_regeneration(&self, streak: u32) -> Option<Self> {
+        let mut next = self.clone();
+        crate::spell::food_regeneration::credit_resting_second(&mut next, streak)?;
+        if next != *self {
+            next.revision = next.revision.checked_add(1)?;
+        }
+        Some(next)
+    }
+
+    /// One soul point from the resting-area owner, capped by the current actor facts.
+    pub fn after_resting_soul(&self) -> Option<Self> {
+        let mut next = self.clone();
+        if next.health != 0 && next.soul < next.facts.max_soul {
+            next.soul = next.soul.checked_add(1)?;
+            next.revision = next.revision.checked_add(1)?;
+        }
+        Some(next)
+    }
+
     /// CHAR-VITALS-1: a newly created runtime actor takes the health and mana its Character's
     /// last-position row saved, each capped at its current maximum, in the owner step that
     /// creates it, before its first command and before any vitals snapshot is sent. It is the
