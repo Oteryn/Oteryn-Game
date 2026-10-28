@@ -112,6 +112,51 @@ fn summer_population_boss_values_use_the_selected_pinned_fallback() -> TestResul
     Ok(())
 }
 
+/// PAR-W16: the activated Summer boss profiles against Crystal `201189f8`
+/// `data-global/monster/summer_update_2026/bosses/*.lua`: (hp, xp, speed, armor, defense).
+#[test]
+fn w16_crystal_summer_boss_parity() -> TestResult {
+    let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+    let (controller, _) =
+        crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
+    let native = controller
+        .active()
+        .ok_or("active generation")?
+        .native_gameplay()
+        .ok_or("native gameplay")?;
+    for (name, crystal) in [
+        ("maior_domus", (50_000, 3_500_000, 180, 85, 90)),
+        ("maior_domus_final", (65_000, 0, 190, 95, 100)),
+        ("mimar_haffar", (50_000, 3_500_000, 180, 85, 90)),
+        ("mimar_haffar_final", (65_000, 0, 190, 95, 100)),
+        ("phosphorus", (70_000, 16_000_000, 190, 90, 95)),
+        ("phosphorus_final", (90_000, 0, 200, 100, 105)),
+        ("rakesh_moonfang", (25_500, 25_500, 180, 85, 90)),
+        ("the_moonsnow_magnolia", (52_000, 240_000, 190, 105, 110)),
+    ] {
+        let key = format!("oteryn:creature.{name}");
+        let record = native
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|r| r.profile.target.key == key)
+            .ok_or("boss profile")?;
+        let crate::content::ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data
+        else {
+            return Err("boss has no Creature profile".into());
+        };
+        let oteryn = (
+            profile.health.ok_or("health")?,
+            profile.experience.ok_or("experience")?,
+            profile.speed.ok_or("speed")?,
+            profile.armor.ok_or("armor")?,
+            profile.details.as_ref().ok_or("details")?.defense,
+        );
+        assert_eq!(oteryn, crystal, "{key}");
+    }
+    Ok(())
+}
+
 #[test]
 fn summer_population_all_six_execute_exact_pinned_loot_plans_and_replay() -> TestResult {
     use crate::content::creature_reward::{LootTablesSection, SectionRef};
