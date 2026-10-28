@@ -111,7 +111,8 @@ impl TrainingRates {
         family: usize,
         seconds: u32,
     ) -> Result<u64, TrainingUnavailable> {
-        if !self.enabled || family > 5 || seconds > POOL_SECONDS {
+        // Families 1..=6 match the exercise weapons (6 is the fist wraps); statues select 0..=5.
+        if !self.enabled || family > 6 || seconds > POOL_SECONDS {
             return Err(TrainingUnavailable);
         }
         let rate = self
