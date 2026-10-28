@@ -41,6 +41,7 @@ fn rat_policy(digest: [u8; 32]) -> CompiledCreaturePolicies {
             definition_revision: "fixture:1".into(),
             display_name: "fixture Rat".into(),
             maximum_health: 20,
+            forge_difficulty: None,
             base_speed: 110,
             outfit_look_type: 21,
             object_look_type: None,
@@ -168,6 +169,7 @@ fn a_lethal_due_receipt_appends_one_entry_and_a_non_lethal_one_none() {
     let queue = KillSettlementQueue::default();
     let rewards = rewards();
     let sink = KillSink {
+        prey: None,
         activity: &[],
         queue: &queue,
         rewards: &rewards,
@@ -194,6 +196,7 @@ fn a_lethal_receipt_without_a_reward_row_appends_nothing() {
     let queue = KillSettlementQueue::default();
     let rewards = CreatureRewardTable::default();
     let sink = KillSink {
+        prey: None,
         activity: &[],
         queue: &queue,
         rewards: &rewards,

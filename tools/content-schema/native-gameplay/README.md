@@ -94,6 +94,41 @@ qualification/activation seams; provisioning valid bytes does not issue authorit
 The example intentionally does not change the control-plane issuance or activate a
 running deployment.
 
+Summer owner decision 22 is recorded in `summer-source-qualification.json`. The normal
+`register_spell_families.py` producer carries these limitations into the generated
+Creature records as `source_qualification`, under the Creature provider's manifest digest.
+The runtime retains the annotation in the active generation. Radiant attack and loot
+rows remain provisional pinned donor values, **not verified against Global**; boss HP
+and scaling retain the same limitation. This metadata does not activate an encounter or
+admit an unsupported corpse lifecycle.
+
+The Acolyte and Paragon additionally carry `attack_definitions`: the exact canonical reference
+`records` and typed authoring `profiles` for each Creature, Behavior, Abilities, Effects
+and Formulas (at most 128 records and 128 profiles). The loader requires matching
+Creature and Behavior bodies and rejects duplicate or mismatched records and profiles.
+This closure enables the existing AI schedule; references alone retain the legacy
+targeting-only projection. The native dispatch consumes Acolyte's single-target physical spell (`attack-3`)
+and ice circle (`attack-2`), plus Paragon's fire circle (`attack-2`), through the existing
+damage-spell owner, using the runtime's current fence, transaction-bound sight and
+current player facts. Circles read current area tiles and element-specific direct
+equipment protection. Other authored spells remain unsupported by this consumer.
+The source's numerical damage and chance retain their provisional qualification above.
+
+The Summer producer also binds all six Radiants' pinned physical melee rows to the
+existing `monster_melee` owner (2,000 ms, 100% chance, primary physical damage only).
+The production-owner PostgreSQL test exercises damage for every Radiant. The exact
+loot tables are exercised by the deterministic planner with their original probabilities;
+that check does not qualify corpse materialization, loot custody or durable settlement.
+The Summer Item producer excludes blank imbuement scroll (51442) and etcher (51443)
+from its loot materialization/stack flag changes: their existing imbuement/refinement
+records retain ownership. These are the only overlaps between the Summer loot IDs
+and the imbuement binding/refinement rows. Their donor loot rows remain evidence,
+without qualifying either utility item for Summer materialization.
+Nine boss profiles select base HP/XP from Crystal `201189f871d23597b82caf88fd611454a2ddefb8`,
+with individual source paths and SHA256s in the owning input. Those values include donor
+placeholders and remain **not verified against Global**. Difficulty scaling and encounter
+admission depend on BOSSENC-1 and are not implemented by these base profiles.
+
 ## Versioned optional owner profiles
 
 The explicit candidate manifest `/v2` requires a fifth file pin `item_profiles` and

@@ -71,7 +71,7 @@ mod wild_spawn;
 mod spell_book_sweep_tests;
 
 const SOURCE_AUTHORITY: &str = "platform";
-const PLATFORM_SOURCE: &str = "5d4883acf7079e26fd51e03f460166730de1ada0";
+const PLATFORM_SOURCE: &str = "3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05";
 /// Interpretation requested by the Platform intents that `run.sh` issues.
 const INTERPRETATION: [&str; 4] = [
     "s3b-profile-1",
@@ -1645,6 +1645,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             entry_deadline: Duration::from_secs(20),
         },
         GameplaySeamOwners {
+            gameplay_idle_policy: Default::default(),
             emit: crate::node::serve::emit,
             root: &root,
             character: &authority,

@@ -57,7 +57,9 @@ pub struct ActorCombatState {
     pub(super) party: super::runtime_actor_party::PartyActorState,
     /// Only creature slots use this field; player maxima belong to PlayerSpellState.
     pub maximum_health: i64,
+    pub forge: Option<oteryn_gameplay_domain::domain::forge_creature::ForgeCreature>,
     pub monster_ai: Option<MonsterAiState>,
+    pub(super) hazard: Option<(GameSessionId, u16)>,
     pub paralysed: bool,
     records: Vec<BatchRecord>,
     high_water: Option<(CharacterId, u64, GameSessionId, u64, u16)>,
@@ -175,6 +177,11 @@ impl QualifiedCompanionTouches {
 }
 
 impl StagedSpellBatch {
+    /// Read-only staged physical HP transitions, before the common atomic install.
+    pub fn preview_effect_receipts(&self) -> &[super::runtime_actor_spell_types::EffectReceipt] {
+        &self.receipt.effects
+    }
+
     pub fn batch(&self) -> &OwnerCombatBatch {
         &self.batch
     }
@@ -294,8 +301,15 @@ impl Binding {
     }
     fn actor(&mut self, actor: ExactActorRef) -> Result<(), Error> {
         let a = actor.0;
-        self.bytes(a.world_id.as_bytes())?;
-        self.bytes(a.channel_id.as_bytes())?;
+        let RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } = a.runtime_scope
+        else {
+            return Err(Error::Owner(CarrierError::WrongScope));
+        };
+        self.bytes(world_id.as_bytes())?;
+        self.bytes(channel_id.as_bytes())?;
         self.number(ExactActorRef(a).scope_generation().get())?;
         self.number(u64::from(a.actor_local_id.0))?;
         self.number(a.actor_local_generation.0)

@@ -100,6 +100,59 @@ fn select_kill_and_claim_complete_one_task() {
 }
 
 #[test]
+fn talisman_upgrade_spends_the_sourced_cost_and_persists_each_path() {
+    let catalogue = catalogue();
+    let mut stored = BTreeMap::from([(BOUNTY_POINTS.to_owned(), 22)]);
+    for path in 0..TALISMAN_PATHS.len() {
+        let key = talisman_upgrade_transition(path, 0).expect("first upgrade");
+        if path == 0 {
+            apply(&catalogue, &mut stored, &key, NOW).expect("upgrade");
+            assert_eq!(state(&stored).bounty_points, 17);
+            assert_eq!(state(&stored).talisman_levels[path], 1);
+            assert_eq!(talisman_bonus(path, 1), 300);
+        } else {
+            assert!(catalogue.transition(&key).is_some());
+        }
+    }
+    let second = talisman_upgrade_transition(0, 1).expect("second upgrade");
+    apply(&catalogue, &mut stored, &second, NOW).expect("second upgrade");
+    assert_eq!(state(&stored).bounty_points, 0);
+    assert_eq!(talisman_upgrade_cost(1), Some(17));
+    assert_eq!(talisman_bonus(3, 1), 600);
+    assert_eq!(
+        apply(&catalogue, &mut stored, &second, NOW),
+        Err(QuestRefusal::StageMismatch),
+        "a stale level cannot spend twice"
+    );
+}
+
+#[test]
+fn talisman_curve_and_upgrade_boundaries_match_the_canary_profile() {
+    for (level, ordinary) in [
+        (0, 0),
+        (1, 300),
+        (15, 1_000),
+        (16, 1_025),
+        (55, 2_000),
+        (56, 2_010),
+        (355, 5_000),
+    ] {
+        for path in 0..4 {
+            assert_eq!(
+                talisman_bonus(path, level),
+                if path == 3 { ordinary * 2 } else { ordinary }
+            );
+        }
+    }
+    assert_eq!(talisman_upgrade_cost(354), Some(4_253));
+    for level in [-1, 355, i64::MAX] {
+        assert_eq!(talisman_upgrade_cost(level), None);
+        assert_eq!(talisman_upgrade_transition(0, level), None);
+    }
+    assert_eq!(talisman_upgrade_transition(4, 0), None);
+}
+
+#[test]
 fn a_claimed_task_is_locked_for_seven_days() {
     let catalogue = catalogue();
     let mut stored = BTreeMap::from([(claimed_at_track(2), NOW)]);

@@ -64,6 +64,21 @@ pub mod test_support;
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeBurnCause {
+    PreyListReroll {
+        slot: u8,
+        occurrence: [u8; 16],
+    },
+    GemReveal {
+        occurrence: [u8; 16],
+        proof: Vec<u8>,
+    },
+    GemSwitchDomain {
+        occurrence: [u8; 16],
+    },
+    GemGradeUp {
+        occurrence: [u8; 16],
+        proof: Vec<u8>,
+    },
     NpcTravel {
         service: String,
         occurrence: [u8; 16],
@@ -906,6 +921,12 @@ fn request_binding(fence: &CurrentCharacterGameplayFence, request: &FeeBurnReque
             .to_be_bytes(),
     );
     digest.update(request.cause.key().as_bytes());
+    match &request.cause {
+        FeeBurnCause::GemReveal { proof, .. } | FeeBurnCause::GemGradeUp { proof, .. } => {
+            digest.update(Sha256::digest(proof))
+        }
+        _ => (),
+    }
     digest.update(fence.character_id.as_bytes());
     digest.update(fence.runtime_scope.world_id().as_bytes());
     digest.update(request.fee_gold_units.to_be_bytes());

@@ -78,7 +78,7 @@ impl<'a> SeamRooms<'a> {
 
     /// The field step ingress and its commit.
     pub fn gate_field_step_ingress(&self) -> Option<&'a QualifiedNativeEntryRoom> {
-        self.qualified
+        self.combat
     }
 
     /// The source map initialization: the durable custody of the map's Items.

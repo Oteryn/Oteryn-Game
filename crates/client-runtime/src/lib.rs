@@ -1,5 +1,7 @@
 //! Application-owned Tokio runtime and deterministic shutdown boundary.
 
+pub mod connection;
+
 use oteryn_foundation::CancellationToken;
 use std::fmt::{self, Display, Formatter};
 use std::future::Future;
@@ -97,3 +99,23 @@ mod tests {
         Ok(())
     }
 }
+
+/// Transport-owned Bestiary and Charm values exposed to feature protocol adapters.
+pub mod cyclopedia_protocol {
+    pub use oteryn_session::{
+        BestiaryRaceProgress, CharmAssignDisposition, CharmAssignIntent, CharmKind, CharmState,
+        CharmUnlockDisposition, CharmUnlockStageIntent, CharmView,
+    };
+}
+
+/// Attack command execution and disposition mapping.
+#[path = "features/0017-attack/protocol.rs"]
+pub mod attack;
+/// Session-owned combat command vocabulary and routing.
+pub mod combat;
+/// Quest log state and selected-capability command construction.
+#[path = "features/0016-quest-log/mod.rs"]
+pub mod quest_log;
+/// Spell command execution and feedback.
+#[path = "features/local-spell-action-bar/mod.rs"]
+pub mod spell;

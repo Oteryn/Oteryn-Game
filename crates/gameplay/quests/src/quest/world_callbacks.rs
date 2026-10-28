@@ -59,6 +59,17 @@ pub struct Storage {
     pub set: i64,
 }
 
+/// One carried item applied to the selected world object.  This deliberately is not a
+/// recipe language: the source is consumed or changed exactly once by the receipt owner.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ItemOnTarget {
+    pub item: String,
+    pub count: u16,
+    pub replacement: Option<String>,
+    pub target_replacement: Option<u16>,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Callback {
@@ -73,6 +84,8 @@ pub struct Callback {
     pub teleport: Option<Position>,
     pub storage: Vec<Storage>,
     pub offerings: Vec<Offering>,
+    #[serde(default)]
+    pub item_on_target: Option<ItemOnTarget>,
     pub return_on_failure: bool,
     pub failure_message: Option<String>,
     pub sources: Vec<String>,
@@ -117,6 +130,23 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || callback.storage.len() > MAX_EFFECTS
             || callback.offerings.len() > MAX_EFFECTS
             || (!callback.offerings.is_empty() && callback.storage.is_empty())
+            || callback.sources.is_empty()
+            || !callback.sources.iter().any(|source| {
+                source.starts_with("canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:")
+            })
+            || callback.item_on_target.as_ref().is_some_and(|item| {
+                item.target_replacement == Some(0)
+                    || (item.replacement.is_some() && item.count != 1)
+                    || callback.storage.is_empty()
+                    || callback.trigger != Trigger::Use
+                    || item.count == 0
+                    || item.count > 100
+                    || !super::valid_quest_key(&item.item)
+                    || item
+                        .replacement
+                        .as_ref()
+                        .is_some_and(|key| !super::valid_quest_key(key))
+            })
             || callback
                 .failure_message
                 .as_ref()
@@ -148,7 +178,9 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
     let mut transitions: Vec<_> = catalogue.transitions.values().cloned().collect();
     for callback in callbacks.iter().filter(|c| !c.storage.is_empty()) {
         for storage in &callback.storage {
-            if !tracks.iter().any(|t| t.key == storage.track) {
+            if let Some(track) = tracks.iter_mut().find(|track| track.key == storage.track) {
+                track.max = track.max.max(storage.set).max(storage.maximum);
+            } else {
                 tracks.push(QuestTrack {
                     key: storage.track.clone(),
                     quest: callback.quest.clone(),
@@ -213,7 +245,7 @@ mod tests {
     fn quest_world_callbacks_reject_ambiguous_and_unbounded_authoring() -> Result<(), String> {
         let source: serde_json::Value =
             serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;
-        for case in 0..5 {
+        for case in 0..10 {
             let mut bad = source.clone();
             match case {
                 0 => {
@@ -225,6 +257,15 @@ mod tests {
                         bad["callbacks"][3]["offerings"][0].clone()
                 }
                 3 => bad["callbacks"][3]["offerings"][0]["count"] = 101.into(),
+                4 => bad["callbacks"][6]["item_on_target"]["target_replacement"] = 0.into(),
+                5 => bad["callbacks"][0]["sources"] = serde_json::json!(["crystal:unverified"]),
+                6 => bad["callbacks"][6]["item_on_target"]["replacement"] = "bad".into(),
+                7 => {
+                    bad["callbacks"][6]["item_on_target"]["replacement"] =
+                        "oteryn:item.tibia.i3114".into();
+                    bad["callbacks"][6]["item_on_target"]["count"] = 2.into();
+                }
+                8 => bad["callbacks"][6]["storage"] = serde_json::json!([]),
                 _ => bad["callbacks"][0]["failure_message"] = "x".repeat(257).into(),
             }
             assert!(parse(&bad.to_string()).is_err(), "case {case}");
@@ -274,6 +315,158 @@ mod tests {
         let mut bounded = source;
         bounded["callbacks"][0]["failure_message"] = "x".repeat(256).into();
         assert!(parse(&bounded.to_string()).is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn quest_world_callbacks_three_bounded_action_classes_are_source_witnessed()
+    -> Result<(), String> {
+        let callbacks = load()?;
+        let lowered = super::super::loader::load_embedded_quest_state("content-1")
+            .map_err(|e| format!("{e:?}"))?;
+        for callback in callbacks.iter().filter(|c| {
+            c.item_on_target.is_some()
+                || c.key.ends_with("outlaw-camp-door")
+                || c.key.ends_with("travelling-trader-delivery")
+        }) {
+            for storage in &callback.storage {
+                assert!(
+                    lowered.source_track(&storage.track).is_some(),
+                    "{}",
+                    storage.track
+                );
+                assert_eq!(
+                    lowered
+                        .catalogue()
+                        .track(&storage.track)
+                        .ok_or("track")?
+                        .quest,
+                    callback.quest
+                );
+            }
+        }
+        let outlaw = callbacks
+            .iter()
+            .find(|callback| callback.key.ends_with("outlaw-camp-door"))
+            .ok_or("outlaw door")?;
+        assert_eq!(
+            (outlaw.selector.action, outlaw.lever),
+            (Some(1108), Some([1642, 1643]))
+        );
+        assert_eq!(
+            (outlaw.storage[0].minimum, outlaw.storage[0].maximum),
+            (3, 3)
+        );
+
+        let key = callbacks
+            .iter()
+            .find(|callback| callback.key.ends_with("fish-napping-key"))
+            .ok_or("fish key")?;
+        let item = key.item_on_target.as_ref().ok_or("item target")?;
+        assert_eq!((&*item.item, item.count), ("oteryn:item.tibia.i7934", 1));
+        assert_eq!(key.selector.action, Some(51394));
+
+        let door = callbacks
+            .iter()
+            .find(|callback| callback.key.ends_with("travelling-trader-delivery"))
+            .ok_or("trader delivery")?;
+        assert_eq!(
+            (
+                door.storage[0].minimum,
+                door.storage[0].maximum,
+                door.storage[0].set
+            ),
+            (3, 3, 4)
+        );
+        assert_eq!(door.selector.unique, Some(3020));
+        Ok(())
+    }
+
+    /// PAR-W15: lever/step callbacks against Crystal `201189f8`
+    /// (`quests/behemoth/action-lever.lua`, `others/actions_hellgate_lever.lua`,
+    /// `liquid_black/movements_shortcut.lua`). Oteryn floors are stored as `-z`.
+    #[test]
+    fn w15_crystal_world_callback_parity() -> Result<(), String> {
+        let callbacks = load()?;
+        let find = |suffix: &str| {
+            callbacks
+                .iter()
+                .find(|c| c.key.ends_with(suffix))
+                .ok_or(suffix.to_string())
+        };
+        let row = |x: u16, y: u16, floor: i8, n: u16| -> Vec<Position> {
+            (0..n).map(|i| Position { x: x + i, y, floor }).collect()
+        };
+        // Behemoth: uid 30009, one-way lever 2772 -> 2773, removes wall 1791 at
+        // 33295..=33299, 31677, 15. MATCH.
+        let behemoth = find("behemoth")?;
+        assert_eq!(behemoth.trigger, Trigger::Use);
+        assert_eq!(behemoth.selector.unique, Some(30009));
+        assert_eq!(
+            (behemoth.lever, behemoth.reversible),
+            (Some([2772, 2773]), false)
+        );
+        assert_eq!(
+            behemoth
+                .passages
+                .iter()
+                .map(|p| p.position)
+                .collect::<Vec<_>>(),
+            row(33295, 31677, -15, 5)
+        );
+        assert!(
+            behemoth
+                .passages
+                .iter()
+                .all(|p| p.appearance == 1791 && p.replacement.is_none())
+        );
+        // Hellgate bridge: aid 50027, reversible lever, water 622 <-> bridge 5770 at
+        // 32627..=32629, 31699, 10. MATCH. DIFF: Crystal also moves a creature standing on
+        // the bridge to 32630, 31699, 10; the Oteryn record has no creature push.
+        let hellgate = find("hellgate-bridge")?;
+        assert_eq!(hellgate.selector.action, Some(50027));
+        assert_eq!(
+            (hellgate.lever, hellgate.reversible),
+            (Some([2772, 2773]), true)
+        );
+        assert_eq!(
+            hellgate
+                .passages
+                .iter()
+                .map(|p| p.position)
+                .collect::<Vec<_>>(),
+            row(32627, 31699, -10, 3)
+        );
+        assert!(
+            hellgate
+                .passages
+                .iter()
+                .all(|p| p.appearance == 622 && p.replacement == Some(5770))
+        );
+        assert_eq!(hellgate.teleport, None);
+        // Liquid Black shortcut: aid 57746 step-in, Visitor >= 4 sets 5 and teleports to
+        // 33478, 31314, 7, otherwise pushes back. MATCH (the track's maximum is 5).
+        let shortcut = find("liquid-black-shortcut")?;
+        assert_eq!(shortcut.trigger, Trigger::StepIn);
+        assert_eq!(shortcut.selector.action, Some(57746));
+        assert_eq!(
+            shortcut.teleport,
+            Some(Position {
+                x: 33478,
+                y: 31314,
+                floor: -7
+            })
+        );
+        assert_eq!(
+            (
+                shortcut.storage[0].minimum,
+                shortcut.storage[0].set,
+                shortcut.return_on_failure
+            ),
+            (4, 5, true)
+        );
+        // MISSING: the Annihilator lever (Crystal `annihilator.lua`, uid 30015).
+        assert!(callbacks.iter().all(|c| c.selector.unique != Some(30015)));
         Ok(())
     }
 }

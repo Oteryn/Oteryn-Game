@@ -17,13 +17,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        412,
-        "06201a8f693ef231059f18c099a85a39e5c44515447b836ac2c17fa572684d1a",
+        400,
+        "cca9a6e0864e16128407e711f5ba04853f849eb784813f8adab523018d2d9e57",
     ),
     (
         "definitions/declarations.json",
-        27_600_059,
-        "0ec892e05a7c93137ecf00a5c144ecaaa162118ce746e5a2e905bdff6f85789e",
+        27_600_259,
+        "520b20b1f1d62e1882570b1899f9013dcfcecefa4562a867effee7204784e63c",
     ),
     (
         "definitions/reference.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1955,
-        "c7333bf00a0b7fa8397f4465b85f46049bc8c054e4d0f82c94563beaa57d4edf",
+        1951,
+        "d202bdbc630d48f52fbc8407de4385d729cf9beb71629e67ad59616f410d50b1",
     ),
     (
         "presentations/bindings.json",
@@ -47,13 +47,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        406,
-        "48e0c34573b5813975cb6ee02af3df769e4c918a5b1221c9c2c12010dcdfdd68",
+        402,
+        "f6c484a8c8bf3181bf91cd85245a67b45c17c10c745dc6cc29bca266056c5298",
     ),
     (
         "provenance/imports.json",
-        6770800,
-        "6ac5b17b337f384a25aed9523eda8b2fd2ba94d7ffe62b3e2869859dcaa1994f",
+        6_771_443,
+        "d8026c56aa5251f77c000450cab3d26ca4ebcd46ac1f31921cd7e775a02b7d9f",
     ),
     (
         "provenance/sources.json",
@@ -138,7 +138,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "79dc93e72d80018ba7eb246f05984683baa0ab55dd9361158bd4db199f7f1e3b";
+const TREE_SHA256: &str = "219b7b7882b8a8b3c259b0e4e79c0fc05c6711c6cbaf21a34bd1f75e97452234";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -153,7 +153,8 @@ const CREATURE_PROFILES: usize = 25_052;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1282;
 const NPC_RECORDS: usize = 2564;
-const NPC_DECLARATIONS: usize = 2506;
+// Includes BANK-3's Henricus blessing Service.
+const NPC_DECLARATIONS: usize = 2507;
 const NPC_DIALOGUES: usize = 836;
 const NPC_BINDINGS: usize = 2747;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).
@@ -387,11 +388,8 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(
-        project.project_revision(),
-        "npc-premium-services-20261022-r1"
-    );
-    assert_eq!(project.imports().len(), 31);
+    assert_eq!(project.project_revision(), "tibia-news-bal-1-20261027-r1");
+    assert_eq!(project.imports().len(), 32);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -399,6 +397,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             !b.batch_id.starts_with("monster-full-mechanics-")
                 && b.batch_id != "g4-item-forge289-br-r1"
                 && b.batch_id != "g4-item-fx-audio295-raw-evidence-r1"
+                && b.batch_id != "official-creature-balance-8918-8935-9024-9039"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);

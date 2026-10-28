@@ -720,6 +720,7 @@ fn item_candidate() -> ProjectV2Draft {
         weapon_attack_modifier_points: None,
         weapon_absolute_hit_chance_percent: None,
         augments: vec![ProjectV2AugmentBinding {
+            inspection: None,
             key: "oteryn:augment.base.item-alpha".into(),
             target: ProjectV2AugmentTarget::OffensiveRune,
             effect: None,
@@ -810,6 +811,30 @@ fn proficiency_levels() -> Vec<ProjectV2ProficiencyLevel> {
             ],
         },
     ]
+}
+
+#[test]
+fn inspection_augment_source_text_roundtrips_and_rejects_invalid_values() {
+    let mut draft = item_candidate();
+    draft.state.item_authoring[0].augments[0].inspection =
+        Some("Auto Attack -> +5% Base Damage".into());
+    let documents =
+        CanonicalProjectDocuments::from_v2_draft(draft, limits()).expect("inspection documents");
+    let parsed = ProjectSnapshot::new(documents.documents().clone(), limits())
+        .expect("admit")
+        .parse(limits())
+        .expect("parse");
+    assert_eq!(
+        parsed.v2().expect("v2").item_authoring[0].augments[0]
+            .inspection
+            .as_deref(),
+        Some("Auto Attack -> +5% Base Damage")
+    );
+    for invalid in [String::new(), "x".repeat(1025), "bad\0text".to_owned()] {
+        let mut draft = item_candidate();
+        draft.state.item_authoring[0].augments[0].inspection = Some(invalid);
+        assert!(CanonicalProjectDocuments::from_v2_draft(draft, limits()).is_err());
+    }
 }
 
 #[test]

@@ -1,0 +1,17 @@
+{
+  "mechanic": "0115-mail",
+  "kind": "handlers",
+  "id": "0115-mail-unsupported",
+  "status": "unsupported",
+  "reason": "The native server protocol is registered; client mail views and input are pending.",
+  "commands": [
+    124
+  ],
+  "not_applicable": {
+    "state": "No client mail state owner yet.",
+    "protocol": "Server-only until the client mechanic migration.",
+    "view": "No client mail view yet.",
+    "input": "No client mail input yet.",
+    "settings": "Mail has no client settings."
+  }
+}

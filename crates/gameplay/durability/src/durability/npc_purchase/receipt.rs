@@ -68,12 +68,19 @@ pub(super) async fn insert(
     fence: &CurrentCharacterGameplayFence,
     request: &NpcPurchaseRequest,
     fee: &FeeBurnRequest,
-    blessing: Option<&str>,
+    blessings: &[String],
     binding: &[u8],
 ) -> Result<(), DurabilityError> {
     let occurrence = request.occurrence;
-    sqlx::query("INSERT INTO game_character_npc_purchase_receipts(purchase_occurrence_id,character_id,account_id,command_session_id,command_id,request_binding,cause_kind,npc_key,npc_identity,npc_generation,service_key,blessing_key,fee_transaction_id,fee_gold_units,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) SELECT encode($1,'hex')::uuid,s.character_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8,$9::text::numeric,$10,$11,encode($12,'hex')::uuid,$13,s.character_revision,s.character_revision+1,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state s WHERE s.character_id=encode($14,'hex')::uuid")
-        .bind(occurrence.as_slice()).bind(request.account.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(binding).bind(request.service.kind()).bind(&request.npc_key).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(request.service.key()).bind(blessing).bind(fee.transaction_id.as_slice()).bind(i64::try_from(fee.fee_gold_units).map_err(|_|DurabilityError::InvalidStoredState)?).bind(fence.character_id.as_bytes().as_slice()).execute(&mut ***tx).await?;
+    let henricus = request.service.key() == "oteryn:service.blessing.henricus";
+    let blessing = if henricus {
+        None
+    } else {
+        blessings.first().map(String::as_str)
+    };
+    let bundle = henricus.then_some(blessings);
+    sqlx::query("INSERT INTO game_character_npc_purchase_receipts(purchase_occurrence_id,character_id,account_id,command_session_id,command_id,request_binding,cause_kind,npc_key,npc_identity,npc_generation,service_key,blessing_key,blessing_keys,fee_transaction_id,fee_gold_units,original_character_revision,committed_character_revision,level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision,committed_at) SELECT encode($1,'hex')::uuid,s.character_id,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,$5,$6,$7,$8,$9::text::numeric,$10,$11,$15,encode($12,'hex')::uuid,$13,s.character_revision,s.character_revision+1,s.level,s.level,s.total_experience,s.total_experience,s.profile_revision,s.ruleset_revision,s.content_revision,s.simulation_revision,s.evidence_revision,s.declaration_revision,s.policy_revision,s.reward_revision,floor(extract(epoch FROM statement_timestamp())*1000)::bigint FROM game_character_progression_state s WHERE s.character_id=encode($14,'hex')::uuid")
+        .bind(occurrence.as_slice()).bind(request.account.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(binding).bind(request.service.kind()).bind(&request.npc_key).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(request.service.key()).bind(blessing).bind(fee.transaction_id.as_slice()).bind(i64::try_from(fee.fee_gold_units).map_err(|_|DurabilityError::InvalidStoredState)?).bind(fence.character_id.as_bytes().as_slice()).bind(bundle).execute(&mut ***tx).await?;
     sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).execute(&mut ***tx).await?;
     sqlx::query("UPDATE game_character_progression_state SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid")

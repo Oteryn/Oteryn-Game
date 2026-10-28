@@ -389,6 +389,7 @@ class Stage:
         details: dict[str, Any] = {
             'display_name': creature['display_name'], 'inspection': creature['inspection']['description'],
             'defense': stats['defense'], 'critical_chance_ppm': ppm(stats['critical_chance_percent']),
+            'reference_level': creature.get('reference_level'),
             'flags': creature['flags'],
             'summoning': {'summonable': summoning['summonable'], 'convinceable': summoning['convinceable'],
                           'is_familiar': summoning['is_familiar']},

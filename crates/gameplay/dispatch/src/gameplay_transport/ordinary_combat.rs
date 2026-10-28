@@ -536,6 +536,11 @@ fn lower(
     } else {
         None
     };
+    if let Some(owner) = magnitude.as_mut() {
+        owner
+            .select_item_spell(spell)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+    }
     let mut batch=OwnerCombatBatch{caster:owned.binding().actor,attacker:CharacterId::decode(&owned.binding().character).map_err(|_|SpellCastDisposition::Rejected)?,
         current_lease_generation:owned.binding().lease_generation,command,occurrence:occurrence.clone().into(),anchor:Some(paid.anchor.clone()),now_us:Some(now),now_ms:now.get()/1000,
         effects:Vec::new(),deferred:None,binding:serde_json::to_vec(&json!({"intent":match named {Some((_,parameter))=>source_parameter_intent(&parameter.intent,parameter)?,None=>source_cast_intent(intent,rune)},"source_named_target":named.map(|(a,_)|format!("{a:?}")),"parameter_result":if named.is_some(){Some(oteryn_protocol_oteryn::actor_spell_v2::encode_parameter_spell_cast_result(&oteryn_protocol_oteryn::actor_spell_v2::ParameterSpellCastResult{disposition:SpellCastDisposition::Cast,feedback:None,editor:None}).map_err(|_|SpellCastDisposition::Rejected)?)}else{None},"source_definition":format!("{spell:?}"),
@@ -762,6 +767,7 @@ fn lower(
                 .created_item
                 .as_ref()
                 .ok_or(SpellCastDisposition::Rejected)?;
+            let preceding_items = items.len();
             for p in &geometry {
                 if world
                     .tiles
@@ -774,6 +780,9 @@ fn lower(
                         item: item.clone(),
                     });
                 }
+            }
+            if items.len() == preceding_items {
+                return Err(SpellCastDisposition::TargetIllegal);
             }
         }
         if let Some(p) = &profile.presentation {
@@ -860,6 +869,12 @@ fn lower(
         delayed.len(),
         draw,
     )? {
+        if harmony_heal_target != Some(batch.caster) {
+            cues.push(LocatedCueRequest {
+                binding: cue.binding.clone(),
+                target: CueTarget::Actor(batch.caster),
+            });
+        }
         cues.push(cue);
     }
     #[cfg(test)]
@@ -908,18 +923,23 @@ fn append_harmony_gain_healing(
         return Ok(None);
     };
     let target = target.ok_or(SpellCastDisposition::Rejected)?;
+    let target_count = if target == batch.caster { 1 } else { 2 };
     if batch
         .effects
         .len()
         .checked_add(delayed_count)
+        .and_then(|count| count.checked_add(target_count))
         .ok_or(SpellCastDisposition::Rejected)?
-        >= crate::spell::combat_batch::MAX_EFFECTS
+        > crate::spell::combat_batch::MAX_EFFECTS
     {
         return Err(SpellCastDisposition::Rejected);
     }
     let profile = crate::spell::actor_execution::harmony_gain_profile()?;
     let binding = profile["presentation"]["effect_asset_binding"]
         .as_str()
+        .ok_or(SpellCastDisposition::Rejected)?;
+    let self_ordinal = ordinal
+        .checked_add(1)
         .ok_or(SpellCastDisposition::Rejected)?;
     let magnitude = healing
         .finish_draw(draw(healing.bounds.minimum, healing.bounds.maximum))
@@ -932,6 +952,16 @@ fn append_harmony_gain_healing(
             magnitude,
         },
     });
+    if target != batch.caster {
+        batch.effects.push(OwnerCombatEffect {
+            target: batch.caster,
+            sub_ordinal: self_ordinal,
+            change: OwnerCombatChange::Heal {
+                target_atom: crate::spell::combat_execution::actor_atom(batch.caster),
+                magnitude,
+            },
+        });
+    }
     Ok(Some(LocatedCueRequest {
         binding: binding.into(),
         target: CueTarget::Actor(target),
@@ -1498,10 +1528,10 @@ mod tests {
     }
 
     fn builder_owner_fixture(charges: u8) -> BuilderOwnerFixture {
-        use crate::gameplay_transport::actor_spell::tests::{runtime_with_player, wound};
+        use crate::gameplay_transport::actor_spell::tests::{runtime_with_capacity, wound};
         use crate::spell::cast::CharacterCastFacts;
         use crate::spell::{CasterState, Vocation};
-        let (mut runtime, actor, session) = runtime_with_player(31);
+        let (mut runtime, actor, session) = runtime_with_capacity(31, 3);
         runtime
             .initialize_movement_test_position(
                 actor,
@@ -1663,6 +1693,108 @@ mod tests {
             .creature_combat_facts(f.target, 100)
             .unwrap()
             .health
+    }
+
+    #[test]
+    fn news_8944_builder_heals_monk_and_ally_in_one_commit_and_replays_once() {
+        use crate::gameplay_transport::actor_spell::tests::wound;
+        let mut f = builder_owner_fixture(3);
+        let session = GameSessionId::decode(&{
+            let mut bytes = *f.session.as_bytes();
+            bytes[15] ^= 1;
+            bytes
+        })
+        .unwrap();
+        let reservation = f.runtime.reserve_fresh_session(session).unwrap();
+        let ally = f.runtime.commit_fresh_session(reservation).unwrap();
+        f.runtime
+            .initialize_movement_test_position(
+                ally,
+                MovementLocalPosition {
+                    x: 10,
+                    y: 11,
+                    floor: 7,
+                },
+            )
+            .unwrap();
+        f.states
+            .initialize(
+                &f.runtime,
+                ally,
+                session,
+                f.before.character_facts(),
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .unwrap();
+        wound(&mut f.states, ally, session, 50);
+        let healing = f.paid.harmony_gain_healing.as_ref().unwrap();
+        let amount = healing.finish_draw(healing.bounds.minimum).unwrap() as u32;
+        let mut draws = 0;
+        append_harmony_gain_healing(
+            &mut f.batch,
+            Some(healing),
+            Some(ally),
+            1,
+            0,
+            &mut |minimum, _| {
+                draws += 1;
+                minimum
+            },
+        )
+        .unwrap();
+        assert_eq!(draws, 1);
+        assert_eq!(f.batch.effects.len(), 3);
+        let staged = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.paid.next.clone())).unwrap();
+        assert!(
+            commit_owner_batch(&mut f.runtime, &mut f.states, staged, Some(proof))
+                .unwrap()
+                .applied
+        );
+        let monk_after = f
+            .states
+            .get(&f.runtime, f.actor, f.session)
+            .unwrap()
+            .clone();
+        let ally_after = f.states.get(&f.runtime, ally, session).unwrap().clone();
+        assert_eq!(monk_after.vitals().health, 10 + amount);
+        assert_eq!(ally_after.vitals().health, 50 + amount);
+        assert_eq!(monk_after.vitals().mana, 1997);
+        assert_eq!(monk_after.vitals().harmony, 4);
+        let replay = f.runtime.stage_spell_batch(&f.batch).unwrap();
+        assert!(
+            !commit_owner_batch(&mut f.runtime, &mut f.states, replay, None)
+                .unwrap()
+                .applied
+        );
+        assert_eq!(
+            f.states.get(&f.runtime, f.actor, f.session),
+            Some(&monk_after)
+        );
+        assert_eq!(f.states.get(&f.runtime, ally, session), Some(&ally_after));
+    }
+
+    #[test]
+    fn news_8944_two_target_heal_requires_capacity_before_drawing() {
+        let mut f = builder_owner_fixture(3);
+        let before = format!("{:?}", f.batch);
+        // One damage effect plus the two healing effects would exceed the
+        // batch limit when all but one remaining slots are delayed work.
+        let delayed = crate::spell::combat_batch::MAX_EFFECTS - 2;
+        assert!(
+            append_harmony_gain_healing(
+                &mut f.batch,
+                f.paid.harmony_gain_healing.as_ref(),
+                Some(f.target),
+                1,
+                delayed,
+                &mut |_, _| panic!("capacity refusal must precede the healing roll"),
+            )
+            .is_err()
+        );
+        assert_eq!(format!("{:?}", f.batch), before);
     }
 
     #[test]
@@ -2133,6 +2265,12 @@ pub(in crate::gameplay_transport) async fn prepare_due(
             now.get() / 1000,
         )
         .map_err(|_| SpellCastDisposition::Rejected)
+        .and_then(|mut owner| {
+            owner
+                .select_item_spell(spell)
+                .map_err(|_| SpellCastDisposition::Rejected)?;
+            Ok(owner)
+        })
     };
     let mut preview_owner = qualify(&preview)?;
     let NativeCombatPlan::Combat(preview_combat) = &preview else {

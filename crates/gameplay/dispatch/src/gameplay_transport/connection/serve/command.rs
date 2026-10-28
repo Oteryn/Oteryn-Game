@@ -56,12 +56,14 @@ where
             Err(error) => return Err(close(stream, session.admitted, error).await),
         },
     };
-    let mut input_permit = authority
-        .enter_input(session.admitted.game_session_id)
-        .await;
-    if input_permit.is_some() && !authority.house_transfer_input(session.admitted).await {
-        return Err(ServeEnd::Disconnected);
-    }
+    // Charge network commands, including replays, but never the server's delayed step.
+    // A full window backpressures reads for at most one second. The bounded held-frame
+    // queue and frame reader remain the only buffering; no work reaches the owner yet.
+    let limited = if buffered_original {
+        false
+    } else {
+        session.integrity.admit().await
+    };
     match session.commands.begin(
         command.command_id,
         session.generation,
@@ -92,6 +94,46 @@ where
         Ok(crate::gameplay_transport::session_ingress::CommandAction::Execute) => {}
     }
     session.admitted.continuity.next_command_id = session.commands.next_command_id();
+    // A retained unknown Bank operation must reconcile its original outcome. Rejecting it
+    // here could hide committed money work. A replay above always keeps its retained result.
+    if limited && !session.reconcile_original_bank {
+        let mut dispatch = integrity::refusal(session, command.command_type);
+        session.sequence = session
+            .sequence
+            .checked_add(1)
+            .ok_or(ServeEnd::Disconnected)?;
+        session.admitted.continuity.server_sequence = session.sequence;
+        let result = result::encode(session, command, &mut dispatch)?;
+        return outbound::finish(
+            stream,
+            authority,
+            session,
+            command,
+            dispatch,
+            result,
+            CommandOutcome {
+                second_logout: false,
+                lost_while_logging_out: false,
+                npc_relocation: None,
+                training_logged_out: false,
+            },
+        )
+        .await;
+    }
+    let mut input_permit = authority
+        .enter_input(session.admitted.game_session_id)
+        .await;
+    if input_permit.is_some() && !authority.house_transfer_input(session.admitted).await {
+        return Err(ServeEnd::Disconnected);
+    }
+
+    // Count a newly received action once, never its retained replay or delayed step.
+    let activity_at = authority.gameplay_idle_now();
+    let gameplay_activity = !buffered_original
+        && super::super::gameplay_idle::meaningful(
+            command,
+            session.selected_capabilities.as_slice(),
+        );
     // Unknown command types and malformed payloads have no effect. The result payload
     // belongs to the command type, so an unregistered type gets none. USE_INTENT (command
     // type 2, USE-WIRE-V1 #162 5868482467) is dispatched under the same FND-02 CommandId
@@ -200,6 +242,17 @@ where
     } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
         match route::step(authority, session, command, arrived_while_buffered).await {
             route::StepAction::Wait(due) => {
+                // Pacing throttled this input; the buffered original is charged only once.
+                session
+                    .integrity
+                    .observe(&Dispatch::Step(StepOutcome::too_early(), 0));
+                if gameplay_activity {
+                    session
+                        .admitted
+                        .continuity
+                        .gameplay_idle
+                        .activity(activity_at);
+                }
                 session.buffered = Some(BufferedStep { frame, due });
                 return Ok(());
             }
@@ -208,6 +261,22 @@ where
     } else {
         route::execute(stream, authority, session, command, &mut outcome).await?
     };
+    if let Dispatch::Training(result) = &dispatch
+        && matches!(result.disposition, 1 | 2)
+    {
+        session
+            .admitted
+            .continuity
+            .gameplay_idle
+            .training(activity_at, result.disposition == 1);
+    }
+    if gameplay_activity && input_permit.is_some() && !matches!(dispatch, Dispatch::Unregistered) {
+        session
+            .admitted
+            .continuity
+            .gameplay_idle
+            .activity(activity_at);
+    }
     let mut no_path = false;
     if autowalk::too_far(&dispatch)
         && let Some(target) = walk_target

@@ -18,7 +18,6 @@ use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition, MovementPositionSnapshot,
 };
-use oteryn_gameplay_progression::charm_effects::CharmHookEvent;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -316,6 +315,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let dispatch = melee_owner.think(
                 &mut runtime,
                 &mut super::attack::player_block::PlayerBiteVitals {
+                    charm: Some(super::attack::player_block::IncomingCharm {
+                        catalogue: self.imported_charms,
+                        root: decision_root,
+                        occurrence: decision_occurrence,
+                        sequence,
+                        race: race_key,
+                        base_damage: 0,
+                    }),
                     states: &mut states,
                     attack: &mut attack,
                     formula: content.training_formula(),
@@ -352,36 +359,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let (Some((player, session)), Ok(dispatch)) = (attacked.get(), dispatch) else {
                 continue;
             };
-            let base_damage = match dispatch {
+            match dispatch {
                 Dispatch::Bite(Ok(applied)) => {
                     if applied.damage.applied > 0 {
                         states.hunting_activity(&runtime, player, session, now.get());
                     }
-                    Some(u64::from(applied.requested))
                 }
-                Dispatch::ZeroDamage => None,
+                Dispatch::ZeroDamage => {}
                 Dispatch::Bite(Err(_)) | Dispatch::Decision(_) => continue,
-            };
-            if let Ok(lease) = runtime.bound_attacker_lease(player, session) {
-                let character = *lease.character_id().as_bytes();
-                super::attack::run_charm_hook(
-                    self.imported_charms,
-                    character,
-                    race_key,
-                    &decision_root,
-                    decision_occurrence,
-                    CharmHookEvent::IncomingCreatureAttack,
-                );
-                if let Some(base_damage) = base_damage {
-                    super::attack::run_charm_hook(
-                        self.imported_charms,
-                        character,
-                        race_key,
-                        &decision_root,
-                        decision_occurrence,
-                        CharmHookEvent::IncomingCreatureHit { base_damage },
-                    );
-                }
             }
             attack.record_hit_taken(&runtime, player, session, semantic_now);
         }
@@ -391,10 +376,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.monster_ai_cursor = (cursor + count) % swinging.len();
         }
         let activity = attack.shared_experience_cells();
-        for (target, lethal, at) in states.equipment_reflection_kills.drain(..) {
+        for (target, lethal, at) in std::mem::take(&mut states.equipment_reflection_kills) {
             super::kill_reward::record_creature_kill(
                 &mut runtime,
                 super::kill_reward::KillSink {
+                    prey: Some(&states),
                     queue: attack.kills(),
                     rewards: self.reward_table(),
                     activity: &activity,

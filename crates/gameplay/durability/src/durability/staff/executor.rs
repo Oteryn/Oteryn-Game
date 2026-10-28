@@ -381,6 +381,7 @@ pub(super) async fn execute(
                     rules::decimal(duration_ms).ok_or(DurabilityError::InvalidStoredState)?,
                 ),
                 rules::Action::Unmute { .. } => ("UNMUTE", 0),
+                rules::Action::Kick { .. } => ("KICK", 0),
             };
             let mut committed = exists;
             if let rules::Action::Unmute { sanction_id, .. } = &r.action {
@@ -437,6 +438,10 @@ pub(super) async fn execute(
                             .bind(env).bind(sanction_id).bind(&r.operation_id).bind(lower as i64).execute(&mut **tx).await?;
                     }
                     rules::Action::Inspect { .. } => {}
+                    rules::Action::Kick { .. } => {
+                        sqlx::query("INSERT INTO game_staff_kicks(environment,operation_id,character_id,created_at_ms) VALUES($1,$2::uuid,encode($3,'hex')::uuid,$4)")
+                            .bind(env).bind(&r.operation_id).bind(target.as_bytes().as_slice()).bind(lower as i64).execute(&mut **tx).await?;
+                    }
                 }
             }
             let payload = audit_payload(&auth.envelope, &auth.fingerprint, &auth.roster, &outcome)?;
@@ -482,6 +487,7 @@ fn parse_id(action: &rules::Action) -> [u8; 16] {
         rules::Action::Inspect { character_id }
         | rules::Action::Mute { character_id, .. }
         | rules::Action::Unmute { character_id, .. } => character_id,
+        rules::Action::Kick { character_id } => character_id,
     })
 }
 
@@ -519,6 +525,7 @@ async fn operation_matches(
             rules::decimal(duration_ms).unwrap_or(0),
         ),
         rules::Action::Unmute { character_id, .. } => ("UNMUTE", character_id, 0),
+        rules::Action::Kick { character_id } => ("KICK", character_id, 0),
     };
     let result: wire_result::StaffResult = match wire_result::decode_result(outcome) {
         Ok(r) => r,
@@ -551,6 +558,8 @@ async fn operation_matches(
             1,
             Some((character, _, _, sanction, lifted)),
         ) => character == *target && sanction == *sanction_id && lifted == Some(starts),
+        (rules::Action::Kick { .. }, 1, None) => sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM game_staff_kicks WHERE environment=$1 AND operation_id=$2::uuid AND replace(character_id::text,'-','')=$3 AND created_at_ms=$4)")
+            .bind(trust.environment()).bind(&r.operation_id).bind(target).bind(starts).fetch_one(&mut *tx).await?,
         (rules::Action::Inspect { .. }, _, None) | (_, 2, None) => true,
         _ => false,
     })

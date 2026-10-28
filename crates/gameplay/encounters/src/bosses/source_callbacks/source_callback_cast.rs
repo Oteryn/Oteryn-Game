@@ -157,6 +157,7 @@ impl SourceCallbackCast {
         let critical = crate::source_critical_baseline::SourceCriticalBaseline::qualify(
             &creature.key,
             cp.details.as_ref().map_or(0, |c| c.critical_chance_ppm),
+            false,
         )
         .map_err(|_| AttackError::UnsupportedShape)?;
         for stage in &c.casts {
@@ -286,6 +287,16 @@ impl SourceCallbackCast {
                     entry_index: index,
                     minimum,
                     maximum,
+                    reference_level: cp
+                        .details
+                        .as_ref()
+                        .and_then(|details| details.reference_level),
+                    reference_level_overrides: cp
+                        .details
+                        .as_ref()
+                        .map_or_else(Vec::new, |details| {
+                            details.reference_level_overrides.clone()
+                        }),
                     critical,
                     conditions: Vec::new(),
                     formula_revision: None,

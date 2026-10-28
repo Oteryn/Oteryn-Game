@@ -352,6 +352,13 @@ pub type BundleSpawnFacts = (Vec<BundleSpawnPointFacts>, u64);
 /// SPAWN-1b: one point of a [`BundleSpawnFacts`] (the carrier's `ActivationSpawnPointFacts`).
 pub type BundleSpawnPointFacts = ((i32, i32, i16), u64, String, u64, bool);
 
+pub type BundleBossSpawnFacts = (
+    String,
+    String,
+    (i32, i32, i16),
+    oteryn_gameplay_content::content::BossPolicy,
+);
+
 /// CREATURE-AI-0 §6.3: the occupancy retry interval of a bundle spawn (the D116 value).
 pub const BUNDLE_OCCUPANCY_RETRY_MS: u64 = 5_000;
 
@@ -375,7 +382,7 @@ pub fn table_activation_spawns(
         for point in &source.points {
             let index = usize::try_from(point.creature).ok()?;
             let creature = table.creatures.get(index)?;
-            if creature.period != Period::All {
+            if creature.period != Period::All || point.boss_policy.is_some() {
                 continue;
             }
             let resolved = profiles.get_mut(index)?;
@@ -406,6 +413,28 @@ impl BundleWorld {
         profile: impl Fn(&str) -> Option<(u64, bool)>,
     ) -> Option<Vec<BundleSpawnFacts>> {
         table_activation_spawns(&self.spawns, profile)
+    }
+
+    /// Boss placements are kept separate from ordinary activation/respawn sources.
+    pub fn boss_spawns(&self) -> Vec<BundleBossSpawnFacts> {
+        let mut out = Vec::new();
+        for source in &self.spawns.sources {
+            for (ordinal, point) in source.points.iter().enumerate() {
+                if let Some(policy) = point.boss_policy {
+                    out.push((
+                        format!("{}:{ordinal}", source.key),
+                        self.spawns.creatures[point.creature as usize].key.clone(),
+                        (
+                            i32::from(point.x),
+                            i32::from(point.y),
+                            -i16::from(source.floor),
+                        ),
+                        policy,
+                    ));
+                }
+            }
+        }
+        out
     }
 
     /// Test only: this World with `table` as its spawn family (a booted bundle carries the
@@ -627,6 +656,7 @@ pub mod tests {
             y: 5,
             direction: Direction::South,
             respawn_ms,
+            boss_policy: None,
         };
         let creature = |key: &str, period| Creature {
             key: key.into(),
@@ -729,6 +759,7 @@ pub mod tests {
             y: 5,
             direction: Direction::South,
             respawn_ms: 60_000,
+            boss_policy: None,
         };
         let creature = |key: &str| Creature {
             key: key.into(),
@@ -1735,5 +1766,39 @@ pub mod tests {
         assert!(!world.enterable(DOOR_AT));
         assert!(world.facts().house_tile(DOOR_AT));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod boss_spawn_tests {
+    #[test]
+    fn boss_spawn1_policies_never_enter_ordinary_activation() {
+        use oteryn_world_bundle::spawn::{
+            BossPolicy, Creature, Direction, Period, Point, Source, Table,
+        };
+        let table = Table {
+            creatures: vec![Creature {
+                key: "oteryn:creature.boss".into(),
+                period: Period::All,
+            }],
+            sources: vec![Source {
+                key: "oteryn:spawn.boss".into(),
+                floor: -7,
+                x: 1,
+                y: 1,
+                points: vec![Point {
+                    creature: 0,
+                    x: 1,
+                    y: 1,
+                    direction: Direction::North,
+                    respawn_ms: 0,
+                    boss_policy: Some(BossPolicy::Respawn { min_s: 1, max_s: 2 }),
+                }],
+            }],
+        };
+        assert_eq!(
+            super::table_activation_spawns(&table, |_| None),
+            Some(Vec::new())
+        );
     }
 }

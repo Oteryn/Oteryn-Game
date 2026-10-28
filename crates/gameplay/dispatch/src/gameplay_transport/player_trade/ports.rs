@@ -1,5 +1,68 @@
 use super::*;
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn inspection_trade_item(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        counter: bool,
+        index: u8,
+    ) -> Option<(
+        [u8; 16],
+        crate::durability::item_mint::TypedDefinitionRef,
+        u32,
+    )> {
+        // The current trade owner only admits leaves; there are no container children.
+        if index != 0 {
+            return None;
+        }
+        let permit = self.spell_lane_permit().await?;
+        let runtime = self.runtime.lock().await;
+        runtime.owner_fence().ok()?;
+        let record = self
+            .states
+            .player_trades
+            .0
+            .lock()
+            .ok()?
+            .record(admitted.game_session_id)?;
+        if record.request.is_some()
+            || record.binding != runtime.binding()
+            || record.digest != runtime.content_pin().server_artifact_digest()
+        {
+            return None;
+        }
+        let lives = self.trade_lives(&record)?;
+        let side = usize::from(record.sessions[1] == admitted.game_session_id);
+        if lives[side].admitted.continuity.connection_generation
+            != admitted.continuity.connection_generation
+            || lives[side].admitted.item_fence != admitted.item_fence
+        {
+            return None;
+        }
+        self.trade_pair(
+            &permit,
+            &runtime,
+            &lives,
+            CommandRef::new(admitted.game_session_id, CommandId::new(id).ok()?),
+        )
+        .await
+        .ok()?;
+        self.trade_unchanged(&record, self.trade_fences(&lives).await.ok()?)
+            .await
+            .ok()?;
+        let selected = if counter { 1 - side } else { side };
+        // A partner offer is disclosed only after this side also offered an item.
+        if counter && record.projections[side].is_none() {
+            return None;
+        }
+        let (definition, count) = record.offers[selected]
+            .as_ref()?
+            .definition_and_quantity()
+            .ok()?;
+        Some((record.items[selected]?, definition, count))
+    }
+}
+impl ComposedFreshAdmission<'_, '_, '_> {
     /// Local reservation observation only; the eventual writer still checks its own fences.
     /// Even an empty book answer follows the current carrier check.
     pub(in crate::gameplay_transport) async fn trade_item_available(

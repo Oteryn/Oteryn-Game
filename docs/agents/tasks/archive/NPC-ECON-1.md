@@ -51,6 +51,31 @@ Merged evidence: [#2040](https://github.com/Oteryn/Oteryn-Game/pull/2040), [#219
 
 Tracking closeout: delivered on main; no active implementation ownership is retained by this historical card.
 
+## 2026-10-27 — NPC-ECON-RASHID-1 weekday availability
+
+The server now selects Rashid's one UTC weekday destination from the seven placements observed in
+the pinned Canary spawn event, applies that selection in the production bundle-NPC boot owner, and
+rechecks the visible actor's current destination before an NPC trade can commit. The check remains
+after durable replay, preserving `CommandRef` replay semantics.
+
+| behaviour | Canary/Crystal ref | Oteryn | status |
+|---|---|---|---|
+| Monday–Sunday destination rotation | Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`, `data-otservbr-global/scripts/globalevents/spawn/rashid.lua` | UTC schedule and boot-time placement selection | Complete |
+| Reject trade away from today's destination | Canary creates/teleports the sole actor to today's destination; Crystal `201189f871d23597b82caf88fd611454a2ddefb8`: Not verified | Dispatch checks the current visible actor immediately before request construction | Complete |
+| Day boundary | Canary host-local `os.date`, move at `00:01`; Crystal: Not verified | UTC day, applied at Channel boot; a still-running stale actor is refused after midnight | Intentional documented difference |
+| Durable replay after day/location changes | Canary: Not verified | Stored matching receipt is answered before live availability | Complete |
+
+Validation results:
+
+- `cargo fmt --all`: passed.
+- `cargo test -p oteryn-gameplay-entities rashid_schedule --all-features`: passed.
+- `cargo test -p oteryn-gameplay-dispatch npc_shop_postgres_real_wire_look_sell_all_replay_and_nothing_left --all-features`: passed (auto-skips without `OTERYN_TEST_POSTGRES_ADMIN_URL`).
+- `cargo clippy -p oteryn-gameplay-entities -p oteryn-gameplay-dispatch -p oteryn-game-server --all-targets --all-features -- -D warnings`: passed.
+
+Remaining:
+
+- Native-client shop UI (client-owned and outside this server-only slice).
+
 Recorded implementation disposition at source head
 `222c7dce99ee3fb854b25bcb2140e4fde8e7fc9e`: **owned native/content/pin core
 qualified; shared protocol/resource/protected-PG tail applied by the 2026-10-17

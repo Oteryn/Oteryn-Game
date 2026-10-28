@@ -64,6 +64,7 @@ fn occurrence(seed: u8) -> TestResult<WheelOccurrence> {
 
 fn request(seed: u8, expected: u64, points: &[(usize, u16)]) -> TestResult<WheelChangeRequest> {
     Ok(WheelChangeRequest {
+        vessels: None,
         occurrence: occurrence(seed)?,
         expected_wheel_revision: expected,
         slots: slots(points)?,

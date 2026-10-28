@@ -254,6 +254,8 @@ pub struct NodeConfig {
     /// Optional message shown once after login in this configured World (NOLOGOUT-RL-01).
     #[serde(default)]
     pub server_motd: String,
+    #[serde(default)]
+    pub gameplay_idle: crate::gameplay_transport::GameplayIdlePolicy,
     pub staff: Option<crate::durability::staff::StaffConfig>,
     pub listener: ListenerConfig,
     pub scope: ScopeConfig,
@@ -412,6 +414,11 @@ impl NodeConfig {
     fn validate(&self) -> Result<(), ConfigError> {
         if self.server_motd.len() > oteryn_protocol_oteryn::zones_nologout::MAX_SERVER_MOTD_BYTES {
             return reject("server_motd");
+        }
+        if self.gameplay_idle.warning_after_ms == 0
+            || self.gameplay_idle.warning_after_ms >= self.gameplay_idle.removal_after_ms
+        {
+            return reject("gameplay_idle");
         }
         let listener = &self.listener;
         if !(1..=MAX_ENTRY_DEADLINE_MS).contains(&listener.entry_deadline_ms) {
@@ -825,6 +832,34 @@ installed_at = 1790000000
 authorization_file = "/var/lib/oteryn-ops/launch-node-a.json"
 s2_authorization_file = "/var/lib/oteryn-ops/s2-fresh-store.json"
 "#;
+
+    #[test]
+    fn idle_kick_node_config_defaults_overrides_and_rejects_invalid_thresholds() {
+        let config = NodeConfig::parse(NODE.as_bytes()).expect("default idle policy");
+        assert_eq!(config.gameplay_idle.warning_after_ms, 900_000);
+        assert_eq!(config.gameplay_idle.removal_after_ms, 960_000);
+        let document =
+            format!("{NODE}\n[gameplay_idle]\nwarning_after_ms=15\nremoval_after_ms=16\n");
+        let config = NodeConfig::parse(document.as_bytes()).expect("short test thresholds");
+        assert_eq!(
+            (
+                config.gameplay_idle.warning_after_ms,
+                config.gameplay_idle.removal_after_ms
+            ),
+            (15, 16)
+        );
+        for (warning, removal) in [(0, 16), (16, 16), (17, 16)] {
+            let invalid = format!(
+                "{NODE}\n[gameplay_idle]\nwarning_after_ms={warning}\nremoval_after_ms={removal}\n"
+            );
+            assert_eq!(
+                NodeConfig::parse(invalid.as_bytes())
+                    .expect_err("invalid thresholds")
+                    .key,
+                "gameplay_idle"
+            );
+        }
+    }
 
     #[test]
     fn premchan_static_scope_configuration_defaults_public_and_accepts_premium_only() {

@@ -461,23 +461,23 @@ fn the_view_command_window_is_carried_across_reconnect_and_transfer() {
 }
 
 #[test]
-fn the_container_tree_bound_holds_637_handles_and_refuses_638() {
+fn the_container_tree_bound_holds_651_handles_and_refuses_652() {
     let keys: Vec<ItemKey> = (0..=MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE as u16)
         .map(instance)
         .collect();
     // ITEMV0-RL-03 for the capability 4 views, plus 16 views of a container and 20 entries.
     let (base, tree) = keys.split_at(MAX_LIVE_ITEM_HANDLES);
     let mut table = ItemHandleTable::default().with_container_tree();
-    assert_eq!(table.limit(), 637);
+    assert_eq!(table.limit(), MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE);
     table.replace(View::Spatial, base).expect("ITEMV0-RL-03");
     let max = &tree[..MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE - MAX_LIVE_ITEM_HANDLES];
-    table.replace(View::Tree, max).expect("max = 637");
-    assert_eq!(table.live(), 637);
+    table.replace(View::Tree, max).expect("max = 651");
+    assert_eq!(table.live(), MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE);
     assert_eq!(
         table.replace(View::Tree, tree),
         Err(ItemViewError::LimitExceeded)
     );
-    assert_eq!(table.live(), 637);
+    assert_eq!(table.live(), MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE);
     // Without capability 14 the bound stays ITEMV0-RL-03.
     assert_eq!(ItemHandleTable::default().limit(), MAX_LIVE_ITEM_HANDLES);
 }

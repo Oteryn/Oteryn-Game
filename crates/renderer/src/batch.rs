@@ -4,6 +4,7 @@
 //! same space as window cursor positions. Everything here is plain data and integer or float math
 //! so batch shape, counts and tile/screen conversion are testable without a GPU.
 
+use oteryn_client_domain::TileCoord;
 use std::fmt::{self, Display, Formatter};
 
 /// Upper bound of quads in one batch. Bounds both memory and the GPU instance buffer.
@@ -48,20 +49,6 @@ impl Display for BatchError {
 }
 
 impl std::error::Error for BatchError {}
-
-/// Signed tile coordinate. The renderer treats it as opaque grid position, not as a world id.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct TileCoord {
-    pub x: i32,
-    pub y: i32,
-}
-
-impl TileCoord {
-    #[must_use]
-    pub const fn new(x: i32, y: i32) -> Self {
-        Self { x, y }
-    }
-}
 
 /// One textured quad: screen rectangle plus the atlas rectangle `[u0, v0, u1, v1]`.
 #[derive(Debug, Clone, Copy, PartialEq)]

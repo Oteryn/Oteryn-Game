@@ -18,6 +18,7 @@ pub use oteryn_gameplay_domain::domain::carrier_values::CarrierError;
 pub use oteryn_gameplay_domain::domain::carrier_values::LocalPosition;
 
 pub mod content_adapters;
+pub mod rashid_schedule;
 
 #[allow(dead_code)]
 pub mod carrier;
@@ -44,6 +45,8 @@ pub use runtime_actor_carrier::AttackerCommand;
 pub use runtime_actor_carrier::AttributeModifier;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::AttributeModifiers;
+#[allow(unused_imports)]
+pub use runtime_actor_carrier::BossSpawn;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX;
 #[allow(unused_imports)]

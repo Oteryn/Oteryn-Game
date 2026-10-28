@@ -2,6 +2,7 @@
 
 pub mod account_achievement;
 pub mod achievement_catalogue;
+pub mod atelier;
 pub mod bestiary;
 pub mod charm_effects;
 pub mod daily_reward;
@@ -16,6 +17,7 @@ pub mod ranking;
 pub mod regeneration;
 pub mod spell_wheel;
 pub mod wheel;
+pub mod wheel_effects;
 pub mod wheel_gem_data;
 pub mod wheel_read;
 
@@ -26,3 +28,6 @@ mod experience_property_tests;
 
 #[cfg(test)]
 mod mana_training_property_tests;
+
+#[cfg(test)]
+mod regeneration_crystal_parity_tests;

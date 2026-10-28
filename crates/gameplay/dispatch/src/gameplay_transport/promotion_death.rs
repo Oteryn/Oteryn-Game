@@ -1,15 +1,22 @@
 //! Composition of current Premium with the existing durable death settlement.
 use super::*;
-use crate::durability::character_death::promotion::{DeathPremiumOwner, DeathPremiumState};
+use crate::durability::character_death::promotion::DeathPremiumOwner;
 
 struct PremiumDeathGate<'a, 'r, 'c, 'n> {
     admission: &'a ComposedFreshAdmission<'r, 'c, 'n>,
     session: GameSessionId,
 }
 impl DeathPremiumOwner for PremiumDeathGate<'_, '_, '_, '_> {
-    fn current(
-        &self,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = DeathPremiumState> + Send + '_>> {
+    fn current<'a>(
+        &'a self,
+        tx: &'a mut sqlx::Transaction<'_, sqlx::Postgres>,
+    ) -> std::pin::Pin<
+        Box<
+            dyn std::future::Future<Output = Result<bool, crate::durability::DurabilityError>>
+                + Send
+                + 'a,
+        >,
+    > {
         Box::pin(async move {
             let account = self
                 .admission
@@ -20,22 +27,11 @@ impl DeathPremiumOwner for PremiumDeathGate<'_, '_, '_, '_> {
                 .and_then(|sessions| sessions.account_of(self.session));
             let (Some(account), Some(coordinator)) = (account, self.admission.premium_coordinator)
             else {
-                return DeathPremiumState::default();
+                return Ok(false);
             };
             coordinator
-                .with_premium_gate(account, |status, _| {
-                    Box::pin(async move {
-                        DeathPremiumState {
-                            current: status.gate().premium_current(),
-                            before_delivery: matches!(
-                                status,
-                                crate::domain::premium::PremiumStatus::NotActivated(_)
-                            ),
-                        }
-                    })
-                })
+                .transaction_permission(tx, account, |status| status.gate().premium_current())
                 .await
-                .unwrap_or_default()
         })
     }
 }
@@ -74,6 +70,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|active| active.native_gameplay())
             .and_then(|native| native.training_formula())
             .map(|formula| formula as &dyn crate::durability::character_build::BuildFormula);
+        // Settle deployment activation before entering the durable transaction. Its
+        // Premium decision is read again in that transaction, never retained here.
+        let _ = self.session_premium_gate(session).await;
         let premium = PremiumDeathGate {
             admission: self,
             session,

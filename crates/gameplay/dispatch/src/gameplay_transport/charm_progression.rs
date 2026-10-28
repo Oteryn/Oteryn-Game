@@ -45,13 +45,12 @@ fn bestiary() -> Option<&'static Bestiary> {
             max_reimport_states: 1,
         })
         .ok()?;
-        let facts = BestiaryCharmFacts::new(rows.iter().map(|(race, charm_points)| {
-            BestiaryCharmEntry {
+        let facts =
+            BestiaryCharmFacts::new(rows.iter().map(|(race, charm_points)| BestiaryCharmEntry {
                 race: race.clone(),
                 charm_points: *charm_points,
-            }
-        }))
-        .ok()?;
+            }))
+            .ok()?;
         Some(Bestiary {
             races: rows.into_iter().map(|(race, _)| race).collect(),
             facts,
@@ -77,7 +76,7 @@ pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<Offere
 }
 
 /// The remove's coin facts: the current coin definitions and the main backpack's.
-fn fee_change(
+pub(super) fn fee_change(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     runtime: &crate::foundation::ChannelRuntimeV1,
     backpack: Option<&crate::durability::item_transfer::CharacterBackpack>,
@@ -265,7 +264,29 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (CharmProgressionOutcome::Remove(disposition), fee_gold)
             }
         };
-        let Ok(views) = port.views().await else {
+        let views = port.views().await;
+        // Read after CHARM-3's commit/reconciliation, then install only on the same live session.
+        // If the read failed, discard the old assignment rather than continuing a removed effect.
+        {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            states.charm_states.retain(|(present, held, _)| {
+                runtime.player_control_facts(*present, *held).is_ok()
+                    && !(*present == actor && *held == admitted.game_session_id)
+            });
+            if let Ok(views) = &views {
+                states.install_charm_state(
+                    &runtime,
+                    actor,
+                    admitted.game_session_id,
+                    crate::durability::charm_state::CombatCharmState::new(
+                        fence.character_id,
+                        views.combat_state.clone(),
+                    ),
+                );
+            }
+        }
+        let Ok(views) = views else {
             return GuildReply::Unavailable;
         };
         match wire::encode_charm_progression_reply(&CharmProgressionReply {

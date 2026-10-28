@@ -39,7 +39,13 @@ impl DurabilityRoot {
         fence: CurrentCharacterGameplayFence,
         change: Option<(i64, TutorialProgress)>,
     ) -> Result<TutorialProgressOutcome, CharacterProgressionError> {
-        if change.is_some_and(|(version, row)| {
+        // This owner can create a pending Channel islet placement. Activity
+        // coordinates must never produce or consume that obligation, including
+        // when an Instance happens to have the Channel's UUID bytes.
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) || change.is_some_and(|(version, row)| {
             version < 0
                 || version == i64::MAX
                 || (row.step == TutorialStep::Departed && (row.hunting || row.corruptor))

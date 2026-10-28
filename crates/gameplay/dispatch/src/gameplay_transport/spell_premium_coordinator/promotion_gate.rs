@@ -11,6 +11,10 @@ impl NpcPurchaseGate for SpellPremiumCoordinator {
         account: [u8; 16],
         service: &PurchaseService,
     ) -> Result<bool, DurabilityError> {
+        // Inquisition completion permits this offer even after Premium lapses.
+        if service.key() == "oteryn:service.blessing.henricus" {
+            return Ok(true);
+        }
         self.transaction_permission(tx, account, |status| match service {
             PurchaseService::Promotion(_) => {
                 oteryn_gameplay_progression::promotion::purchase_permitted(&status)
@@ -52,7 +56,7 @@ impl crate::durability::daily_reward_delivery::DailyRewardPremiumGate for DailyR
 }
 
 impl SpellPremiumCoordinator {
-    async fn transaction_permission(
+    pub(in crate::gameplay_transport) async fn transaction_permission(
         &self,
         tx: &mut PremiumGateTx<'_>,
         account: [u8; 16],

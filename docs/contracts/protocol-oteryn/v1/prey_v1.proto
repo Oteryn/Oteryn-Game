@@ -1,0 +1,14 @@
+syntax = "proto3";
+package oteryn.protocol.v1;
+// Native Oteryn canonical subset: ascending fields; singular fields never repeat;
+// unknown fields fail closed. Replies encode every scalar, including zero; requests
+// omit slot/argument at zero. Request/reply budgets: 263/8192 bytes.
+// Slot bounds: id 1..3, state 0..2, candidates <=9 (Creature keys <=256 bytes),
+// bonus <=4 (Canary None sentinel included), grade <=10, percent <=40,
+// hunting_seconds <=7200, option <=2. free_reroll_at is Unix seconds <= INT64_MAX.
+// Reply status: 0 success; 8 CONTENT_UNAVAILABLE (no mutation); 1..7 reserved.
+// CONTENT_UNAVAILABLE means the creature lacks an admitted bounded Prey loot table.
+// wildcard_balance <=52.
+message PreyRequestV1 { uint32 action = 1; uint32 slot = 2; uint32 argument = 3; string creature = 4; }
+message PreySlotV1 { uint32 slot = 1; uint32 state = 2; repeated string creatures = 3; string selected = 4; uint32 bonus = 5; uint32 grade = 6; uint32 percent = 7; uint32 hunting_seconds = 8; uint32 option = 9; uint64 free_reroll_at = 10; }
+message PreyReplyV1 { uint32 status = 1; uint32 wildcard_balance = 2; repeated PreySlotV1 slots = 3; }

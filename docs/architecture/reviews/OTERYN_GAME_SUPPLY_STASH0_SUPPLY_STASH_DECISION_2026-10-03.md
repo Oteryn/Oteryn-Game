@@ -27,6 +27,12 @@
   - the composition decision rule 1.
 - Amended by the D309 P2 bundle (clarifying, review finding 4173377198): a refused operation
   writes no stash event (§7).
+- Amended by DEPOT-1 after tibia.com news 8076: the Premium-only stow rule in R2 is obsolete.
+  Free accounts, current Premium accounts and accounts whose Premium expired may both stow and
+  withdraw. News 8087 and 8140 do not relax this slice's default-state and non-container rules.
+  Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446` and Crystal
+  `201189f871d23597b82caf88fd611454a2ddefb8` remain pinned implementation evidence, but their
+  Premium check is superseded by that later official product rule.
 - Runtime, migration and production authority: NONE. Each child needs its own #162/#1622
   allocation.
 - `MERGE_AUTHORITY: WORK_COORDINATOR_ONLY`
@@ -76,10 +82,11 @@ How does a character keep large amounts of supplies in its locker, beyond the de
 - Imbuing materials may come from the backpack or the Stash (`characters.md` line 120). Stash
   retrieval follows the loot container routing for Premium (`controls.md` lines 83-85).
 
-**TIBIAWIKI_STRUCTURED** ("Your Supply Stash" rev 1057911, item 28750, introduced in 11.80; Depot
-rev 1057910)
+**TIBIAWIKI_STRUCTURED — HISTORICAL** ("Your Supply Stash" rev 1057911, item 28750, introduced in
+11.80; Depot rev 1057910; its Premium statement is superseded by tibia.com news 8076)
 
-- Only Premium players can add items; anyone can retrieve them after Premium ends.
+- At that revision, only Premium players could add items and anyone could retrieve them after
+  Premium ended. News 8076 later opened both operations to Free accounts.
 - Each item type is shown as one stack, whatever its amount.
 - Stash items count toward the depot item limit in increments of 100 per type: 100 units count 1,
   101 units count 2.
@@ -299,15 +306,18 @@ Anything else is `NOT_SUPPORTED`. Stackable and non-stackable wares are both adm
   official remote access (R3).
 - **Unbounded withdraw.** Canary allows 100,000 units at once; a bounded transaction needs a fixed
   output count.
-- **A Stash without the Premium gate until PREM-3.** It would differ from Tibia (R2).
+- **A new Premium gate.** This was the original R2 decision, but tibia.com news 8076 superseded it;
+  retaining it would now differ from the official product rule.
 
 ## 12. Architect rulings (owner rule 5905825574)
 
 - **R1, eligibility: a) Market wares in default state, stackable or not** (official manual and
   Canary). b) Stackables only (TibiaWiki). c) Every item. Recommendation and ruling: a).
-- **R2, Premium: a) stow needs Premium, fail closed until PREM-3; withdraw never needs it**
-  (TibiaWiki). b) Open to all until PREM-3. Recommendation and ruling: a). Until PREM-3 the Stash
-  ships and is tested with a test Premium source but stays closed to stows in play.
+- **R2, Premium (superseded): stow and withdraw are open to Free, current Premium and expired
+  Premium accounts.** The original ruling required Premium for stow and allowed withdrawal for
+  everyone based on the then-current TibiaWiki revision. Tibia.com news 8076 supersedes that
+  historical rule. Existing Premium-required receipts remain replayable; no new operation returns
+  that refusal.
 - **R3, where: a) at a locker only**, `PARITY_PENDING`. b) From anywhere. Recommendation and
   ruling: a).
 - **R4, capacity: a) `ceil(quantity / 100)` per definition counts toward the depot limit**

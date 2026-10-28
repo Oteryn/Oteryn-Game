@@ -146,10 +146,17 @@ impl PlayerSpellState {
     /// playable: a fresh admission, a same-GameSession reconnect or FND-04B §21 recovery. No
     /// command of a monk is accepted before it.
     pub fn make_playable(&mut self, now: SemanticTimeMicros) -> Result<(), MonkStateError> {
+        let regeneration_due = now
+            .get()
+            .checked_add(u64::from(crate::spell::food_regeneration::FOOD_TICK_MS) * 1_000)
+            .ok_or(MonkStateError::TimeOverflow)?;
         match &mut self.monk {
             Some(monk) => monk.initialize(now, &solo()),
             None => Ok(()),
-        }
+        }?;
+        self.regeneration_next_tick_us
+            .get_or_insert(regeneration_due);
+        Ok(())
     }
 
     /// The session left the actor: Harmony and the forced time are kept, and commands wait for
@@ -236,6 +243,26 @@ impl PlayerSpellState {
         Some((next, gained))
     }
 
+    /// One resting-area cadence credit through the native regeneration clocks.
+    pub fn after_resting_regeneration(&self, streak: u32) -> Option<Self> {
+        let mut next = self.clone();
+        crate::spell::food_regeneration::credit_resting_second(&mut next, streak)?;
+        if next != *self {
+            next.revision = next.revision.checked_add(1)?;
+        }
+        Some(next)
+    }
+
+    /// One soul point from the resting-area owner, capped by the current actor facts.
+    pub fn after_resting_soul(&self) -> Option<Self> {
+        let mut next = self.clone();
+        if next.health != 0 && next.soul < next.facts.max_soul {
+            next.soul = next.soul.checked_add(1)?;
+            next.revision = next.revision.checked_add(1)?;
+        }
+        Some(next)
+    }
+
     /// CHAR-VITALS-1: a newly created runtime actor takes the health and mana its Character's
     /// last-position row saved, each capped at its current maximum, in the owner step that
     /// creates it, before its first command and before any vitals snapshot is sent. It is the
@@ -315,6 +342,21 @@ impl PlayerSpellState {
             && before.mana.checked_sub(anchor.paid_mana) == Some(self.mana)
             && before.soul.checked_sub(anchor.paid_soul) == Some(self.soul)
             && self.cooldowns.canonical_deadlines() == anchor.cooldown_deadlines
+    }
+
+    /// Restore spell leech within the already revisioned, paid batch successor.
+    pub fn apply_batch_leech(&mut self, health_gain: u32, mana_gain: u32) {
+        if self.health == 0 {
+            return;
+        }
+        self.health = self.health.max(
+            self.health
+                .saturating_add(health_gain)
+                .min(self.facts.max_health),
+        );
+        self.mana = self
+            .mana
+            .max(self.mana.saturating_add(mana_gain).min(self.facts.max_mana));
     }
 
     pub fn apply_batch_heal(&mut self, magnitude: i64) -> Result<(), SpellCastDisposition> {

@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 pub(super) struct SessionAppearance {
     selected: bool,
     item_view: bool,
+    forge: bool,
     revision: u64,
     high_water: u32,
     catalogue: Option<wire::Catalogue>,
@@ -20,16 +21,21 @@ impl SessionAppearance {
         Self {
             selected: selected.contains(wire::CAPABILITY_APPEARANCE_V1),
             item_view: selected.contains(CAPABILITY_ITEM_VIEW_MOVE_V1),
+            forge: selected.contains(wire::CAPABILITY_FORGE_CREATURE_V1),
             ..Self::default()
         }
     }
     fn players(
+        &self,
         entities: &[oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity],
     ) -> Vec<WireEntityRef> {
         entities
             .iter()
             .filter(|e| {
                 e.kind == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Player
+                    || (self.forge
+                        && e.kind
+                            == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Creature)
             })
             .map(|e| e.entity)
             .collect()
@@ -71,11 +77,15 @@ impl SessionAppearance {
                     self.high_water
                 }
             };
+            if !self.forge {
+                binding.forge_stacks = None;
+            }
             let unchanged = self.bindings.get(&binding.entity).is_some_and(|prior| {
                 prior.root_revision == binding.root_revision
                     && prior.condition_revision == binding.condition_revision
                     && prior.look == binding.look
                     && prior.selection_revision == binding.selection_revision
+                    && prior.forge_stacks == binding.forge_stacks
             });
             if !unchanged {
                 self.bindings.insert(binding.entity, binding.clone());
@@ -91,7 +101,11 @@ impl SessionAppearance {
         entities: &mut [oteryn_protocol_oteryn::world_spatial_entities::WorldSpatialEntity],
     ) -> Option<()> {
         for entity in entities {
-            if entity.kind == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Player {
+            if entity.kind == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Player
+                || (self.forge
+                    && entity.kind
+                        == oteryn_protocol_oteryn::world_spatial_entities::EntityKind::Creature)
+            {
                 let reference = self.bindings.get(&entity.entity)?.appearance_ref;
                 let oteryn_protocol_oteryn::world_spatial_entities::EntityDetail::Actor {
                     appearance_ref,
@@ -121,7 +135,7 @@ impl SessionAppearance {
             })
             .ok()?;
         if self.selected {
-            let players = Self::players(&snapshot.entities);
+            let players = self.players(&snapshot.entities);
             let observation = authority
                 .appearance_observation(actor, admitted.game_session_id, players.clone())
                 .await?;

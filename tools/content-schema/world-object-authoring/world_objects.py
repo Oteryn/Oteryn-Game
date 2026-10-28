@@ -503,6 +503,17 @@ def validate_record(record):
     errors = schema_errors(family, record)
     if errors:
         return errors
+    if "item_pointer" not in record["provenance"]:
+        import summer_ground
+
+        expected = json.loads(summer_ground.outputs()[summer_ground.SHARD])["records"][
+            0
+        ]
+        return (
+            []
+            if record == expected
+            else ["appearance-only Terrain differs from its qualified official source"]
+        )
     identity_number = sequence_number(record["identity"]["key"], family)
     pointer_number = sequence_number(
         record["provenance"]["item_pointer"]["key"], "Item"

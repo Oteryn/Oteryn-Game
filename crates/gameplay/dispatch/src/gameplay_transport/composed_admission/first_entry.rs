@@ -46,6 +46,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(character_id) => character_id,
                 Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
             };
+        let daily_streak = match self
+            .root
+            .read_daily_reward_streak(self.character, character_id, self.world_id)
+            .await
+        {
+            Ok(streak) => streak,
+            Err(_) => return (FirstEntryOutcome::RefusedUnavailable, None, None),
+        };
         let (facts, character_revision) = match spell_character_facts::load_character_cast_facts(
             self.root,
             self.character,
@@ -325,6 +333,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             game_session_id,
             stamina,
         );
+        self.states
+            .resting_areas
+            .install(game_session_id, actor, daily_streak);
         drop(runtime);
         drop(permit);
         #[cfg(test)]

@@ -1,0 +1,7 @@
+{
+  "concerns": [
+    "input",
+    "view"
+  ],
+  "events": {}
+}

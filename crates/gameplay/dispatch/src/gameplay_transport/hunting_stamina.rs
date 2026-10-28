@@ -79,9 +79,11 @@ impl ChannelSpellStates {
             .iter_mut()
             .find(|s| s.actor == actor && s.session == session)
         {
-            let (spent, next) = state.clock.activity(now, state.minutes);
+            let (hunting_minutes, next) = state.clock.activity(now, u16::MAX);
+            let spent = hunting_minutes.min(state.minutes);
             state.clock = next;
             state.minutes -= spent;
+            self.prey_hunting_tick(actor, session, u32::from(hunting_minutes) * 60);
         }
     }
     pub(super) fn live_stamina(&self, actor: ExactActorRef, session: GameSessionId) -> Option<u16> {
@@ -89,6 +91,23 @@ impl ChannelSpellStates {
             .iter()
             .find(|s| s.actor == actor && s.session == session)
             .map(|s| s.minutes)
+    }
+    pub(super) fn gain_resting_stamina(
+        &mut self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let Some(state) = self
+            .hunting_stamina
+            .iter_mut()
+            .find(|state| state.actor == actor && state.session == session)
+        else {
+            return false;
+        };
+        let next = state.minutes.saturating_add(1).min(2520);
+        let changed = next != state.minutes;
+        state.minutes = next;
+        changed
     }
     pub(super) fn stamina_to_flush(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.hunting_stamina.iter().any(|s| {
@@ -105,6 +124,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> TrainingSave {
+        if !self.flush_prey(session).await {
+            return TrainingSave::Unknown;
+        }
         {
             let states = self.states.spell_states.lock().await;
             if !states.stamina_to_flush(actor, session) {
@@ -236,6 +258,7 @@ mod tests {
         let mut attack = super::super::attack::ChannelAttackStates::default();
         let mut trained = Vec::new();
         let mut vitals = super::super::attack::player_block::PlayerBiteVitals {
+            charm: None,
             states: &mut states,
             attack: &mut attack,
             formula: None,

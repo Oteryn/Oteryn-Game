@@ -276,12 +276,12 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           languages: ${{ matrix.language }}
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           category: /language:${{ matrix.language }}-merge-queue
 
@@ -428,11 +428,15 @@ jobs:
           import re
           from pathlib import Path
 
+          import tomllib
+
+          # Synthetic and test packages come from workspace-boundaries.toml, the
+          # single source of truth for production classification.
+          boundaries = tomllib.loads(Path('workspace-boundaries.toml').read_text(encoding='utf-8'))
           forbidden = (
               'protocol-canary', 'protocol-core',
-              'transport', 'game-session', 'oteryn-client-domain',
-              'oteryn-client-simulation', 'oteryn-synthetic-assets',
-              'oteryn-test-support', 'oteryn-synthetic-client-harness',
+              'transport', 'game-session',
+              *boundaries['synthetic'], *boundaries['test'],
               'oteryn-dev-client',
           )
           session_crates = ('oteryn-session', 'oteryn-session-tcp')
@@ -1013,12 +1017,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Oteryn/Oteryn-Platform
-          ref: 5d4883acf7079e26fd51e03f460166730de1ada0
+          ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
           path: _platform
           persist-credentials: false
 
       - name: Verify exact Platform revision
-        run: test "$(git -C _platform rev-parse HEAD)" = 5d4883acf7079e26fd51e03f460166730de1ada0
+        run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.99.1 --profile minimal
@@ -1090,12 +1094,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: Oteryn/Oteryn-Platform
-          ref: 5d4883acf7079e26fd51e03f460166730de1ada0
+          ref: 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
           path: _platform
           persist-credentials: false
 
       - name: Verify exact Platform revision
-        run: test "$(git -C _platform rev-parse HEAD)" = 5d4883acf7079e26fd51e03f460166730de1ada0
+        run: test "$(git -C _platform rev-parse HEAD)" = 3bc2d0e923db7472ec1f9b534ebe87aaffa1ef05
 
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.99.1 --profile minimal

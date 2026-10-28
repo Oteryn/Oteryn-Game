@@ -35,3 +35,22 @@ fn the_production_set_selects_only_offered_capabilities_whatever_the_client_supp
     );
     Ok(())
 }
+
+#[test]
+fn bundle_world_quest_log_offer_has_no_prerequisites_and_gates_both_directions()
+-> Result<(), Box<dyn Error>> {
+    let offers = crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES;
+    let quest_log = offers
+        .iter()
+        .find(|offer| offer.id == 16)
+        .ok_or("quest log offer")?;
+    assert!(quest_log.requires.is_empty());
+    let selected = SelectedCapabilities::select(offers, &[16]).ok_or("selection")?;
+    assert_eq!(selected.as_slice(), &[16]);
+    assert!(selected.command_selected(22));
+    assert!(selected.domain_selected(16));
+    let unselected = SelectedCapabilities::select(offers, &[]).ok_or("selection")?;
+    assert!(!unselected.command_selected(22));
+    assert!(!unselected.domain_selected(16));
+    Ok(())
+}

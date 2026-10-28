@@ -294,3 +294,16 @@ pub fn decode_highscores_result(payload: &[u8]) -> WireResult<HighscoresResult> 
 #[cfg(test)]
 #[path = "highscores_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod count_bounds_tests {
+    use super::*;
+    #[test]
+    fn f26_owned_text_bounds() {
+        crate::count_bounds_tests::owned_text_bounds(
+            read_text,
+            &[MAX_HIGHSCORE_NAME_BYTES, MAX_HIGHSCORE_VOCATION_BYTES],
+            true,
+        );
+    }
+}

@@ -12,11 +12,12 @@ pub const MAX_REQUEST_BYTES: usize = 32;
 pub const MAX_REPLY_BYTES: usize = 1024;
 /// `TASKBOARD1-RL-03`: kill tasks on one board.
 pub const MAX_TASKS: usize = 5;
+pub const TALISMAN_PATHS: usize = 4;
 const MAX_RACE_BYTES: usize = 128;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TaskBoardRequest {
-    /// 0 query, 1 select `task`, 2 claim `task`.
+    /// 0 query, 1 select `task`, 2 claim `task`, 3 upgrade talisman path `task` (1-based).
     pub action: u8,
     /// The 1-based task number; 0 for a query.
     pub task: u8,
@@ -39,6 +40,10 @@ pub struct TaskBoardReply {
     pub selected: u8,
     pub kills: i64,
     pub points: i64,
+    pub bounty_points: i64,
+    pub talisman_levels: [i64; TALISMAN_PATHS],
+    pub talisman_bonuses: [i64; TALISMAN_PATHS],
+    pub talisman_next_costs: [i64; TALISMAN_PATHS],
     pub tasks: Vec<TaskBoardTask>,
 }
 
@@ -56,9 +61,10 @@ pub fn encode_task_board_request(r: &TaskBoardRequest) -> Result<Vec<u8>, Error>
     let task_ok = if r.action == 0 {
         r.task == 0
     } else {
-        (1..=MAX_TASKS).contains(&usize::from(r.task))
+        (r.action != 3 && (1..=MAX_TASKS).contains(&usize::from(r.task)))
+            || (r.action == 3 && (1..=TALISMAN_PATHS).contains(&usize::from(r.task)))
     };
-    if r.action > 2 || !task_ok {
+    if r.action > 3 || !task_ok {
         return Err(Error::Malformed);
     }
     let mut out = Vec::new();
@@ -105,6 +111,10 @@ pub fn encode_task_board_reply(r: &TaskBoardReply) -> Result<Vec<u8>, Error> {
     };
     if !kills_ok
         || r.points < 0
+        || r.bounty_points < 0
+        || r.talisman_levels.iter().any(|value| *value < 0)
+        || r.talisman_bonuses.iter().any(|value| *value < 0)
+        || r.talisman_next_costs.iter().any(|value| *value < 0)
         || r.tasks
             .iter()
             .any(|task| !valid_race(&task.race) || task.required <= 0 || task.claimed_at_unix < 0)
@@ -122,6 +132,16 @@ pub fn encode_task_board_reply(r: &TaskBoardReply) -> Result<Vec<u8>, Error> {
         push_varint_field(&mut entry, 2, task.required as u64);
         push_varint_field(&mut entry, 3, task.claimed_at_unix as u64);
         push_message_field(&mut out, 5, &entry);
+    }
+    push_varint_field(&mut out, 6, r.bounty_points as u64);
+    for value in r.talisman_levels {
+        push_varint_field(&mut out, 7, value as u64);
+    }
+    for value in r.talisman_bonuses {
+        push_varint_field(&mut out, 8, value as u64);
+    }
+    for value in r.talisman_next_costs {
+        push_varint_field(&mut out, 9, value as u64);
     }
     if out.len() > MAX_REPLY_BYTES {
         return Err(Error::LimitExceeded);
@@ -160,8 +180,10 @@ pub fn decode_task_board_reply(bytes: &[u8]) -> Result<TaskBoardReply, Error> {
     if bytes.len() > MAX_REPLY_BYTES {
         return Err(Error::LimitExceeded);
     }
-    let (mut refused, mut selected, mut kills, mut points) = (None, None, None, None);
+    let (mut refused, mut selected, mut kills, mut points, mut bounty_points) =
+        (None, None, None, None, None);
     let mut tasks = Vec::new();
+    let (mut levels, mut bonuses, mut costs) = (Vec::new(), Vec::new(), Vec::new());
     let mut at = 0;
     while at < bytes.len() {
         match read_varint(bytes, &mut at)? {
@@ -185,6 +207,10 @@ pub fn decode_task_board_reply(bytes: &[u8]) -> Result<TaskBoardReply, Error> {
                 }
                 tasks.push(decode_task(read_bytes(bytes, &mut at)?)?);
             }
+            48 => set_once(&mut bounty_points, read_i64(bytes, &mut at)?)?,
+            56 => levels.push(read_i64(bytes, &mut at)?),
+            64 => bonuses.push(read_i64(bytes, &mut at)?),
+            72 => costs.push(read_i64(bytes, &mut at)?),
             _ => return Err(Error::Malformed),
         }
     }
@@ -193,6 +219,10 @@ pub fn decode_task_board_reply(bytes: &[u8]) -> Result<TaskBoardReply, Error> {
         selected: selected.ok_or(Error::Malformed)?,
         kills: kills.ok_or(Error::Malformed)?,
         points: points.ok_or(Error::Malformed)?,
+        bounty_points: bounty_points.ok_or(Error::Malformed)?,
+        talisman_levels: levels.try_into().map_err(|_| Error::Malformed)?,
+        talisman_bonuses: bonuses.try_into().map_err(|_| Error::Malformed)?,
+        talisman_next_costs: costs.try_into().map_err(|_| Error::Malformed)?,
         tasks,
     };
     // Strict: only the canonical encoding (field order, minimal varints) decodes.

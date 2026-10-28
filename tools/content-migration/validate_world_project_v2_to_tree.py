@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import subprocess
@@ -42,7 +43,7 @@ REWARD_CLAIM_COUNT = len(json.loads(
     (ROOT / "tools/content-schema/quest-authoring/samples/chests/claims.json").read_text())["claims"])
 # StarterKit likewise (tools/content-schema/starter-kit-authoring).
 STARTER_KIT_COUNT = 1
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 3}
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 324, "Service.Travel": 56, "Service.Bank": 1, "Service.Promotion": 4, "Service.Blessing": 4}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes"), "Service.Bank": ("content/services/bank/", "bank"), "Service.Promotion": ("content/services/promotion/", "promotion"), "Service.Blessing": ("content/services/blessings/", "blessing")}
 
 class ValidationError(RuntimeError):
@@ -100,7 +101,7 @@ def authoring_value(entry: dict[str, Any], path: str) -> Any:
 def closed_forge_owner():
     """One explicit source-qualified Forge pair; no global maximum/default inference."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "5a66740bc3bc17275c042b2ecf0523379925ffb2b5a08f7aea3fc4cb90a152c5", "FORGE_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "9e8776e9a0806667d268e41fbb89fa9159f182b18a807a370884745e3bc06fd3", "FORGE_PACKET_DIGEST")
     packet = json.loads(raw)
     owner = {"item": {"family": "Item", "key": "oteryn:item.tibia.i3332", "revision": "definition-r1"}, "forge": {"classification": 2, "max_tier": 2}}
     require(packet["schema"] == "OTERYN_ITEM_FORGE3332_PROMOTION/v1"
@@ -111,10 +112,10 @@ def closed_forge_owner():
 def closed_weapon_metadata():
     """Sealed103 source properties; absolute percentages are not relative hit ratios."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "61807d5df9c08851c6137c74353bf4e96e093f4316b13d13e1a0e1031a6b8a4c", "WEAPON_METADATA_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "6b354569d20656dd1008d0b2837ab437389cebfb442de67ea96e980b2879f915", "WEAPON_METADATA_PACKET_DIGEST")
     packet = json.loads(raw)
     proof_raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-weapon-metadata-source-qualification-v2.json").read_bytes()
-    require(hashlib.sha256(proof_raw).hexdigest() == "44d6a859c38a0a8235c501ce15478f4e0edb829fba049a7587ea642f261dc6dc", "WEAPON_METADATA_PROOF_DIGEST")
+    require(hashlib.sha256(proof_raw).hexdigest() == "aa5eb84d2107fa9577ff8a9fdd741e4f4bbbd01a283483f8a817627d193d4ede", "WEAPON_METADATA_PROOF_DIGEST")
     proof = json.loads(proof_raw)
     rows = {target_id(row["target"]): row for row in packet["promotions"]}
     sources = {target_id(row["target"]): row for row in proof["records"]}
@@ -196,7 +197,7 @@ def validate_forge289_relation(row, definition, closed, source):
 def validate_item_authoring_targets(legacy_authoring, staged_items):
     """Retain every admitted cohort plus sealed103 intrinsic weapon properties."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-hit-magic-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "8d71139027a1ad298cde8a0cf2944822cfd5a627214fa6a3780b113809515b00", "HIT_MAGIC_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "1a953c2655405c5cf162de174ba00cef616fd9842dab11143f62c06a657c767c", "HIT_MAGIC_PACKET_DIGEST")
     magic = {target_id(row["target"]): row for row in json.loads(raw)["promotions"]
              if "required_magic_level" in row["facts"]}
     require(len(staged_items) == 164 and len(magic) == 39 and not set(magic).intersection(staged_items), "CLOSED_ML_OWNER_SCOPE")
@@ -205,7 +206,7 @@ def validate_item_authoring_targets(legacy_authoring, staged_items):
     for key, row in magic.items():
         expected[key] = {"item": row["target"], "required_magic_level": row["facts"]["required_magic_level"]}
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "f9e30b8c218a10410bab12baa195fea45cb21f2570cc1e8c7ffef295618fbbc0", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "127a57ff968264ded2079147e393c866024b3ec10226138b6d79719352f81d8c", "USE_OBSERVATION_PACKET_DIGEST")
     packet = json.loads(raw)
     observations = {target_id(row["target"]): row for row in packet["promotions"]}
     require(packet["schema"] == "OTERYN_ITEM_USE_OBSERVATION_PROMOTION/v1"
@@ -245,7 +246,7 @@ def validate_forge_relation(row, definition):
 def use_relation_targets():
     """The sealed Use owners; only these rows are the PR's Use relations (D322)."""
     raw = (ROOT / "docs/agents/evidence/OTV2-20261002-item-use-observation-promotion-v1.json").read_bytes()
-    require(hashlib.sha256(raw).hexdigest() == "f9e30b8c218a10410bab12baa195fea45cb21f2570cc1e8c7ffef295618fbbc0", "USE_OBSERVATION_PACKET_DIGEST")
+    require(hashlib.sha256(raw).hexdigest() == "127a57ff968264ded2079147e393c866024b3ec10226138b6d79719352f81d8c", "USE_OBSERVATION_PACKET_DIGEST")
     return {target_id(p["target"]) for p in json.loads(raw)["promotions"]}
 
 
@@ -415,6 +416,12 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
     family_counts = creature_family_counts(reference)
     legacy_profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])
                        if row["target"]["family"] != "Encounter"}
+    # The successor explicitly materializes MRL's null default; preserve all other legacy facts.
+    for key, profile in list(legacy_profiles.items()):
+        if key[0] == "Creature":
+            profile = copy.deepcopy(profile)
+            profile["profile"]["details"].setdefault("reference_level", None)
+            legacy_profiles[key] = profile
     migrated_profiles: dict[tuple[str, str, str], Any] = {}
     migrated_bindings: list[Any] = []
     for family, node in CREATURE_FAMILY_NODES.items():
@@ -433,6 +440,11 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
             for row in payload["records"]:
                 definition = row["definition"]
                 migrated.append(definition)
+                if family == "Creature":
+                    details = row.get("authoring", {}).get("profile", {}).get("details", {})
+                    cap = details.get("reference_level")
+                    require("reference_level" in details and (cap is None or type(cap) is int and cap > 0),
+                            "CREATURE_REFERENCE_LEVEL")
                 if "authoring" in row:
                     migrated_profiles[target_id(definition["identity"])] = row["authoring"]
                 for binding in row.get("source_bindings", []):

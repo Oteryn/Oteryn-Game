@@ -52,6 +52,15 @@ pub(super) async fn exercise(
     admitted: AdmittedSession,
     actor: ExactActorRef,
 ) -> TestResult {
+    // Protection lifetimes are fixture provisioning only; equipment moves, reads and expiry
+    // below run through the same production owners as the wire command.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("UPDATE game_item_imbuements SET category=3,imbuement_key='oteryn:imbuement.snake_skin',tier=3 WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(id(71).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_imbuements(item_instance_id,slot,category,imbuement_key,imbuement_revision,tier,remaining_ms,applying_occurrence_id,applying_transaction_id) VALUES(encode($1,'hex')::uuid,1,2,'oteryn:imbuement.lich_shroud','r1',3,1000,game_character_uuid_v7(),game_character_uuid_v7())")
+        .bind(id(71).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
     // The real imbuement dispatch reads the fixture lifetime before it enters equipment.
     let (admitted, _, reply) = exchange(
         owner,
@@ -114,6 +123,14 @@ pub(super) async fn exercise(
         Some(1000),
         "equipped but out of fight pauses"
     );
+    {
+        use crate::content::ReferenceResistanceKind as Kind;
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, admitted.game_session_id).ok_or("protection state")?;
+        assert_eq!(state.equipped_element_protection(Kind::Earth).map(|p| p.numerator), Some(15));
+        assert_eq!(state.equipped_element_protection(Kind::Death).map(|p| p.numerator), Some(10));
+    }
     // Inject a real transaction failure. The unchanged request is retried, with no
     // time lost and no debit of the recovery interval.
     sqlx::raw_sql("CREATE FUNCTION imbuetime_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'checkpoint failure'; END $$; CREATE CONSTRAINT TRIGGER imbuetime_fail AFTER INSERT ON game_item_imbuement_checkpoints DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION imbuetime_fail();").execute(&h.pool).await?;
@@ -125,6 +142,13 @@ pub(super) async fn exercise(
             .await
     );
     assert_eq!(budget(h, 70).await?, before, "failed commit rolls back");
+    {
+        let effects = owner.read_admission_effects(admitted.game_session_id).await.map_err(|_| "suspended effects")?.ok_or("effects")?;
+        assert!(!effects.0.protections.contains_key(&crate::content::ReferenceResistanceKind::Earth));
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        assert_eq!(states.get(&runtime, actor, admitted.game_session_id).ok_or("suspended state")?.equipped_element_protection(crate::content::ReferenceResistanceKind::Earth), None);
+    }
     sqlx::raw_sql("DROP TRIGGER imbuetime_fail ON game_item_imbuement_checkpoints; DROP FUNCTION imbuetime_fail();").execute(&h.pool).await?;
     // Commit the retained request without letting the owner observe its acknowledgement.
     let retained = owner
@@ -178,6 +202,14 @@ pub(super) async fn exercise(
     assert_eq!(budget(h, 71).await?, None, "expiry frees the occupied slot");
     let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_imbuement_checkpoints WHERE changes @> '[{\"after_ms\":0}]'::jsonb").fetch_one(&h.pool).await?;
     assert_eq!(count, 1, "one immutable expiry audit");
+    {
+        use crate::content::ReferenceResistanceKind as Kind;
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, admitted.game_session_id).ok_or("expired state")?;
+        assert_eq!(state.equipped_element_protection(Kind::Earth), None);
+        assert_eq!(state.equipped_element_protection(Kind::Death), None);
+    }
     // A receipt replay after expiry is identical; a changed request under its key fails closed.
     let (transaction,changes):(String,serde_json::Value)=sqlx::query_as("SELECT transaction_id::text,changes FROM game_item_imbuement_checkpoints WHERE changes @> '[{\"after_ms\":0}]'::jsonb").fetch_one(&h.pool).await?;
     let hex = transaction.replace('-', "");

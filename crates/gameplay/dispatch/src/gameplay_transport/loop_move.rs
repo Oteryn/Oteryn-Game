@@ -11,8 +11,8 @@
 //!   (domain 17) shows them over the bundle map, each with its definition's facts. An item whose
 //!   `map_revision` is not the bundle's, or whose definition the pinned index does not name, is
 //!   not shown. A failed durable read fails the map view closed.
-//! - **Containers (capability 14).** [`observe_container`] reads a container of the carried tree
-//!   with its direct entries; a container is carried, so it is always in reach.
+//! - **Containers (capability 14).** [`observe_container`] reads carried containers and proven
+//!   Ground container trees within one tile on the actor's floor, under the Channel lane.
 
 #[path = "loop_map_pickup.rs"]
 mod map_pickup;
@@ -39,6 +39,7 @@ use crate::map::view::{self, EntryFacts, MapFacts};
 use oteryn_protocol_oteryn::container_tree::MAX_CONTAINER_VIEW_ENTRIES;
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 use oteryn_protocol_oteryn::world_map::MapDefinition;
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex};
@@ -148,6 +149,7 @@ impl ItemLoopContent for NativeItemWeights<'_> {
 pub struct LoopGroundOverlay {
     overlay: ChannelOverlay,
     facts: HashMap<[u8; 16], EntryFacts>,
+    field_pin: ([u8; 32], [u8; 32], u64),
 }
 
 impl LoopGroundOverlay {
@@ -159,15 +161,28 @@ impl LoopGroundOverlay {
         world: WorldId,
         channel: ChannelId,
         index: &ItemDefinitionIndex,
+        field_pin: ([u8; 32], [u8; 32], u64),
         mut items: Vec<crate::durability::item_loop_move::LoopGroundItem>,
     ) -> Self {
         items.sort_by_key(|item| item.stack_ordinal);
         let revision = map_revision(&base);
+        let field_revision = sha256_revision(Sha256::digest(revision.as_bytes()).into());
+        let field_content = sha256_revision(field_pin.0);
         let mut overlay = ChannelOverlay::new(base, world, channel);
         let mut facts = HashMap::new();
         for entry in items {
-            let item = entry.item;
-            if item.ground.map_revision != revision {
+            let mut item = entry.item;
+            if entry.field_collision.is_some() {
+                if item.ground.map_revision != field_revision
+                    || item.ground.content_revision != field_content
+                    || item.ground.native_room_placement_context.as_slice()
+                        != field_pin.1.as_slice()
+                    || item.runtime_scope_ownership_generation != field_pin.2
+                {
+                    continue;
+                }
+                item.ground.map_revision = revision.clone();
+            } else if item.ground.map_revision != revision {
                 continue;
             }
             let Some(reference) = definition_ref(index, &item.definition) else {
@@ -177,18 +192,35 @@ impl LoopGroundOverlay {
                 definition: MapDefinition::Item(reference),
                 terrain_kind: None,
                 appearance_id: view::appearance_id(&item.definition.production_key, None),
-                blocks_projectile: false,
-                pickupable: true,
+                blocks_projectile: entry
+                    .field_collision
+                    .is_some_and(|(_, projectile)| projectile),
+                pickupable: entry.field_collision.is_none(),
                 bound: false,
                 count: item.quantity.clamp(1, 100),
                 sub_type: 0,
             };
+            if entry.field_collision.is_some() {
+                let Ok(cell) = crate::durability::spell_items_abi::decode_ground_cell(
+                    &item.ground.spatial_position,
+                ) else {
+                    continue;
+                };
+                let Some(floor) = i16::try_from(cell.z).ok().and_then(i16::checked_neg) else {
+                    continue;
+                };
+                item.ground.spatial_position = ground_cell(cell.x, cell.y, floor);
+            }
             let id = item.item_instance_id;
             if overlay.add_ground(item).is_ok() {
                 facts.insert(id, entry_facts);
             }
         }
-        Self { overlay, facts }
+        Self {
+            overlay,
+            facts,
+            field_pin,
+        }
     }
 
     pub fn overlay(&self) -> &ChannelOverlay {
@@ -256,6 +288,16 @@ pub struct LoopGroundCache {
     state: Mutex<CacheState>,
 }
 
+/// Cancellation after a COMMIT must also discard any pre-commit map projection.
+pub(super) struct GroundChange<'a>(pub(super) Option<&'a LoopGroundCache>);
+impl Drop for GroundChange<'_> {
+    fn drop(&mut self) {
+        if let Some(cache) = self.0 {
+            cache.invalidate();
+        }
+    }
+}
+
 impl LoopGroundCache {
     /// A drop or pickup may have changed the Ground: the next read rebuilds.
     pub fn invalidate(&self) {
@@ -280,6 +322,30 @@ impl LoopGroundCache {
         }
     }
 }
+/// A view may overlap the same connection's inventory refresh on the bounded
+/// durability holder. Retry only that temporary resource refusal, within one
+/// deadline; stored-state and authority errors still close the view.
+async fn projection_read<T, E, F, Fut>(mut read: F, busy: impl Fn(&E) -> bool) -> Option<T>
+where
+    F: FnMut() -> Fut,
+    Fut: std::future::Future<Output = Result<T, E>>,
+{
+    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        loop {
+            match read().await {
+                Ok(value) => return Some(value),
+                Err(error) if busy(&error) => {
+                    tokio::time::sleep(std::time::Duration::from_millis(5)).await
+                }
+                Err(_) => return None,
+            }
+        }
+    })
+    .await
+    .ok()
+    .flatten()
+}
+
 /// The Channel's loop Ground overlay over the bundle `base`; `None` without a pinned index or
 /// when the item owner cannot be read.
 pub async fn loop_ground(
@@ -287,32 +353,56 @@ pub async fn loop_ground(
     base: &Arc<WorldBase>,
     index: Option<&ItemDefinitionIndex>,
 ) -> Option<Arc<LoopGroundOverlay>> {
+    let field_pin = {
+        let runtime = admission.runtime.lock().await;
+        (
+            runtime.content_pin().server_artifact_digest(),
+            runtime.content_pin().frame_binding_digest(),
+            runtime.binding().scope_generation().get(),
+        )
+    };
     let (epoch, cached) = admission.states.loop_ground.cached();
-    if let Some(cached) = cached {
+    if let Some(cached) = cached.filter(|cached| {
+        cached.field_pin == field_pin && cached.overlay.base().digest() == base.digest()
+    }) {
         return Some(cached);
     }
     let index = index?;
-    let items = admission
-        .root
-        .read_item_loop_ground(admission.world_id, admission.channel_id)
-        .await
-        .ok()?;
-    let taken = admission
-        .root
-        .read_map_item_mint_placements(
-            admission.world_id,
-            admission.channel_id,
-            base.digest(),
-            admission.reset_epoch,
-            base.entry_count(),
-        )
-        .await
-        .ok()?;
+    let items = projection_read(
+        || {
+            admission
+                .root
+                .read_item_loop_ground(admission.world_id, admission.channel_id)
+        },
+        |error| matches!(error, crate::durability::DurabilityError::RootUnavailable),
+    )
+    .await?;
+    let taken = projection_read(
+        || {
+            admission.root.read_map_item_mint_placements(
+                admission.world_id,
+                admission.channel_id,
+                base.digest(),
+                admission.reset_epoch,
+                base.entry_count(),
+            )
+        },
+        |error| {
+            matches!(
+                error,
+                crate::durability::map_item_mint::MapItemMintError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable
+                )
+            )
+        },
+    )
+    .await?;
     let mut built = LoopGroundOverlay::build(
         base.clone(),
         admission.world_id,
         admission.channel_id,
         index,
+        field_pin,
         items,
     );
     crate::map::overlay::pickup::rehide_taken_origins(&mut built.overlay, &taken).ok()?;
@@ -536,12 +626,12 @@ fn drop_cell(
     Ok(ground_cell(to.x, to.y, to.floor))
 }
 
-/// BAGS-1: a container of the fenced Character's carried tree (the main backpack included) with
-/// its direct entries. `None` for anything that is not an item instance, without an item fence
-/// or a pinned index, or when the item owner cannot be read; an instance outside the carried
-/// tree is `Gone`, a carried item that is no container `NotAContainer`.
+/// A carried container or a container below a proven Ground root, with direct entries.
+/// Ground reach uses the actor's current same-floor position under the Channel lane.
+/// Reach follows the current Ground root; other external sources remain unavailable.
 pub(super) async fn observe_container(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
     fence: Option<CurrentCharacterItemFence>,
     target: ItemKey,
 ) -> Option<ContainerObservation> {
@@ -549,27 +639,138 @@ pub(super) async fn observe_container(
         return None;
     };
     let fence = fence?;
+    // Retain the Channel lane across current position and durable custody reads.
+    // The resulting view is historical data, never permission for a later write.
+    let _permit = admission.spell_lane_permit().await?;
+    if admission
+        .runtime
+        .lock()
+        .await
+        .player_control_facts(actor, fence.game_session_id)
+        .is_err()
+    {
+        return Some(ContainerObservation::Gone);
+    }
     let index = pinned_index(
         &*admission.runtime.lock().await,
         admission.active_generation,
     )?;
     let native = admission.active_generation?.native_gameplay()?;
-    let Some(read) = admission
+    let carried = admission
         .root
         .read_item_loop_container(admission.character, fence.character_id, container)
         .await
-        .ok()?
-    else {
-        return Some(ContainerObservation::Gone);
+        .ok()?;
+    let is_carried = carried.is_some();
+    let (read, reachable) = if let Some(read) = carried {
+        (read, true)
+    } else {
+        // Carried views use the Character owner's custody read, including for
+        // sessions admitted without a fresh-admission receipt. Only the new
+        // Ground path needs the fresh-session proof for external reach.
+        let current = super::FreshAdmissionStore::from_root(admission.root.clone())
+            .current_session_at(fence.game_session_id)
+            .await
+            .ok()?
+            .0;
+        if current.session_state() != super::GameSessionState::Active
+            || super::item_fence_of(current) != Some(fence)
+        {
+            return Some(ContainerObservation::Gone);
+        }
+        let (base, at, content_revision, placement_context) = {
+            let mut runtime = admission.runtime.lock().await;
+            let pin = runtime.content_pin();
+            let content_revision = sha256_revision(pin.server_artifact_digest());
+            let placement_context = pin.frame_binding_digest().to_vec();
+            let at = super::bundle_map_position(&mut runtime, admission.movement_cells, actor)?;
+            (
+                at.map.overlay.base().clone(),
+                (at.at.x, at.at.y, at.at.floor),
+                content_revision,
+                placement_context,
+            )
+        };
+        let overlay = loop_ground(admission, &base, Some(index)).await?;
+        let Some(root) = admission
+            .root
+            .read_item_loop_ground_container_root(admission.character, fence, container)
+            .await
+            .ok()?
+        else {
+            return Some(ContainerObservation::Gone);
+        };
+        let Some((cell, _)) = overlay.ground_entry(&root) else {
+            return Some(ContainerObservation::Gone);
+        };
+        let reachable = in_reach(
+            at,
+            (i32::from(cell.x), i32::from(cell.y), i16::from(cell.floor)),
+        );
+        let Some(read) = admission
+            .root
+            .read_item_loop_ground_container(
+                admission.character,
+                fence,
+                container,
+                root,
+                LoopGround {
+                    spatial_position: ground_cell(
+                        i32::from(cell.x),
+                        i32::from(cell.y),
+                        i16::from(cell.floor),
+                    ),
+                    map_revision: map_revision(&base),
+                    content_revision,
+                    placement_context,
+                },
+            )
+            .await
+            .ok()?
+        else {
+            return Some(ContainerObservation::Gone);
+        };
+        (read, reachable)
     };
+    // Ground custody reads can wait on physical item/location locks while
+    // reconnect advances the durable session. Recheck before publishing.
+    if !is_carried {
+        let current = super::FreshAdmissionStore::from_root(admission.root.clone())
+            .current_session_at(fence.game_session_id)
+            .await
+            .ok()?
+            .0;
+        if current.session_state() != super::GameSessionState::Active
+            || super::item_fence_of(current) != Some(fence)
+        {
+            return Some(ContainerObservation::Gone);
+        }
+    }
+    if admission
+        .runtime
+        .lock()
+        .await
+        .player_control_facts(actor, fence.game_session_id)
+        .is_err()
+    {
+        return Some(ContainerObservation::Gone);
+    }
     let capacity = generation_item_facts(native, &read.container.definition)
         .ok()
         .and_then(|facts| facts.container_capacity)
         .and_then(|capacity| u8::try_from(capacity).ok())
         .filter(|capacity| (1..=MAX_CONTAINER_VIEW_ENTRIES).contains(&usize::from(*capacity)));
     let Some(capacity) = capacity else {
-        return Some(ContainerObservation::NotAContainer);
+        // USE uses NotAContainer as evidence of carried custody for consumption.
+        return Some(if is_carried {
+            ContainerObservation::NotAContainer
+        } else {
+            ContainerObservation::Gone
+        });
     };
+    if !reachable {
+        return Some(ContainerObservation::TooFar);
+    }
     let entries = read
         .entries
         .iter()
@@ -593,6 +794,44 @@ pub(super) async fn observe_container(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn projection_retries_only_temporary_holder_refusal() -> Result<(), Box<dyn std::error::Error>>
+    {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let attempts = std::cell::Cell::new(0);
+                let result = projection_read(
+                    || {
+                        let attempt = attempts.get() + 1;
+                        attempts.set(attempt);
+                        std::future::ready(if attempt < 3 { Err(true) } else { Ok(42) })
+                    },
+                    |temporary| *temporary,
+                )
+                .await;
+                assert_eq!(result, Some(42));
+                assert_eq!(attempts.get(), 3);
+                let attempts = std::cell::Cell::new(0);
+                let result = projection_read(
+                    || {
+                        attempts.set(attempts.get() + 1);
+                        std::future::ready(Err::<u8, _>(false))
+                    },
+                    |temporary| *temporary,
+                )
+                .await;
+                assert_eq!(result, None);
+                assert_eq!(
+                    attempts.get(),
+                    1,
+                    "an authority or stored-state refusal is never retried as resource contention"
+                );
+            });
+        Ok(())
+    }
 
     #[test]
     fn the_ground_cell_codec_is_the_item_owners() {

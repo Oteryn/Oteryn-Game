@@ -162,6 +162,9 @@ pub(super) async fn apply(
         return rejected();
     };
     let service = match &pending.service {
+        PremiumNpcService::Henricus => {
+            PurchaseService::Blessing("oteryn:service.blessing.henricus".into())
+        }
         PremiumNpcService::Promotion { service } => PurchaseService::Promotion(service.clone()),
         PremiumNpcService::Blessing(blessing) => {
             PurchaseService::Blessing(blessing.service.clone())
@@ -224,7 +227,20 @@ pub(super) async fn apply(
         Ok(PurchaseOutcome::Refused(reason)) => NpcConversations::bank_reply(
             &intent,
             match reason {
+                PurchaseRefusal::NotEligible
+                    if service.key() == "oteryn:service.blessing.henricus" =>
+                {
+                    "You must complete The Inquisition Quest first."
+                }
                 PurchaseRefusal::NotEligible => "You cannot be promoted yet.",
+                PurchaseRefusal::AlreadyHeld
+                    if service.key() == "oteryn:service.blessing.henricus" =>
+                {
+                    "You already have all five regular blessings."
+                }
+                PurchaseRefusal::PartialOwnership => {
+                    "You already have a regular blessing. I can only provide the complete set."
+                }
                 PurchaseRefusal::AlreadyHeld => "You already have this blessing.",
                 PurchaseRefusal::PremiumRequired => "You need current Premium for this service.",
                 PurchaseRefusal::InsufficientFunds => {
@@ -246,6 +262,9 @@ pub(super) async fn apply(
 fn completion(intent: &NpcTalkIntent, receipt: &PurchaseReceipt) -> NpcTalkOutcome {
     let line = match receipt.service {
         PurchaseService::Promotion(_) => "You are now promoted.",
+        PurchaseService::Blessing(ref key) if key == "oteryn:service.blessing.henricus" => {
+            "You have received the blessings of the Inquisition."
+        }
         PurchaseService::Blessing(_) => "You have received the blessing.",
     };
     NpcTalkOutcome {
@@ -297,6 +316,9 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
         return Some(outcome);
     }
     if let Some(outcome) = resume_premium_talk(admission, actor, command).await {
+        return Some(outcome);
+    }
+    if let Some(outcome) = super::coin_exchange::resume(admission, actor, command).await {
         return Some(outcome);
     }
     super::resume_bank_talk(admission, actor, command).await

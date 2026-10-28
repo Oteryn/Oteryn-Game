@@ -5,6 +5,7 @@
 #[rustfmt::skip]
 const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_bestiary_kill(", "durability/character_revision_sequencer.rs"),
+    (".commit_character_atelier(", "durability/character_revision_sequencer/atelier.rs"),
     (".commit_character_build(", "durability/character_revision_sequencer.rs"),
     (".commit_character_death(", "durability/character_revision_sequencer.rs"),
     (".commit_character_experience(", "durability/character_revision_sequencer.rs"),
@@ -25,12 +26,14 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
 // Revision-advancing fees run inside their sequenced Character source.
 // ITEM-TIMED-1 is the accepted item-only exception under the same locked root.
 const FEE_WRITERS: &[&str] = &[
+    "durability/character_atelier/actions.rs",
     "durability/character_cyclopedia.rs",
     "durability/charm_state.rs",
     "durability/item_imbuement.rs",
     "durability/item_timed_runtime/repair.rs",
     "durability/npc_purchase.rs",
     "durability/npc_travel/paid.rs",
+    "durability/prey/command.rs",
 ];
 
 /// The non-test part of a source file: from the first `#[cfg(test)]` that, after any other

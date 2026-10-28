@@ -79,6 +79,7 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
             }],
         },
         ground: DeathGroundContext {
+            boss_spawn: None,
             map_revision: "fixture:bestiary.map.r1".into(),
             content_revision: "fixture:bestiary.content.r1".into(),
             ruleset_revision: "fixture:bestiary.ruleset.r1".into(),

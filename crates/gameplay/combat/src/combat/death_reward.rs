@@ -159,6 +159,8 @@ pub fn check_corpse_container_capacity(
 /// invents them.
 #[derive(Debug, Clone)]
 pub struct DeathGroundContext {
+    /// Spawn key, claimed cycle and qualified policy captured from this exact boss actor.
+    pub boss_spawn: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
     pub map_revision: String,
     pub content_revision: String,
     pub ruleset_revision: String,
@@ -476,17 +478,31 @@ async fn settle_loot(
         .freeze_item_mint(session.authority, session.node, corpse_request)
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
-    let corpse_outcome = session
-        .root
-        .commit_corpse_mint(
-            permit,
-            session.authority,
-            session.node,
-            &mut corpse_candidate,
-            top_damage_character_id,
-        )
-        .await
-        .map_err(CombatDeathRewardLootError::Corpse)?;
+    let corpse_outcome = if let Some(boss) = &ground.boss_spawn {
+        session
+            .root
+            .commit_boss_corpse_mint(
+                permit,
+                session.authority,
+                session.node,
+                &mut corpse_candidate,
+                top_damage_character_id,
+                boss.clone(),
+            )
+            .await
+    } else {
+        session
+            .root
+            .commit_corpse_mint(
+                permit,
+                session.authority,
+                session.node,
+                &mut corpse_candidate,
+                top_damage_character_id,
+            )
+            .await
+    }
+    .map_err(CombatDeathRewardLootError::Corpse)?;
     let corpse_mint = committed(corpse_outcome);
 
     let mut entries = Vec::with_capacity(plan.entries.len());
@@ -920,11 +936,15 @@ mod tests {
 
     #[test]
     fn corpse_container_capacity_accepts_the_full_plan_and_rejects_one_over() {
-        // Equal by construction to the accepted loot-plan ceiling.
-        assert_eq!(
-            GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX,
-            oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX
+        // A complete accepted loot plan fits the container; SUMMER decision 20
+        // increases container capacity without increasing generated loot.
+        assert!(
+            check_corpse_container_capacity(
+                oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX
+            )
+            .is_ok()
         );
+        assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
         assert!(check_corpse_container_capacity(0).is_ok());
         assert!(check_corpse_container_capacity(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX).is_ok());
         assert_eq!(
@@ -1021,6 +1041,7 @@ mod tests {
             floor: 5,
         };
         let ground = DeathGroundContext {
+            boss_spawn: None,
             map_revision: "map-1".into(),
             content_revision: "content-1".into(),
             ruleset_revision: "ruleset-1".into(),

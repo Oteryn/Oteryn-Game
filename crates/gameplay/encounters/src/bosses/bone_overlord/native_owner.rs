@@ -451,9 +451,9 @@ fn bone_shared_indexes(
     c: &NamespaceContinuityGuard,
     g: &NativeBoneSharedGroup,
 ) -> Result<[usize; 4], CarrierError> {
-    if carrier.encounter_scope().0 != g.world
-        || carrier.encounter_scope().1 != g.channel
-        || carrier.encounter_scope().2 != g.generation
+    if carrier.encounter_scope().0
+        != oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(g.world, g.channel)
+        || carrier.encounter_scope().1 != g.generation
     {
         return Err(CarrierError::WrongScope);
     }
@@ -593,9 +593,11 @@ impl EncounterHooks for BoneEncounterHooks {
                 {
                     return Err(CarrierError::PositionContextMismatch);
                 }
-                if carrier.encounter_scope().0 != g.world
-                    || carrier.encounter_scope().1 != g.channel
-                    || carrier.encounter_scope().2 != g.generation
+                if carrier.encounter_scope().0
+                    != oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
+                        g.world, g.channel,
+                    )
+                    || carrier.encounter_scope().1 != g.generation
                 {
                     return Err(CarrierError::WrongScope);
                 }

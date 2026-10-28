@@ -441,6 +441,7 @@ pub(super) async fn prepare(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     Ok(PreparedNativeCombatCast {
+        item_spell_leech: (0, 0),
         direct_companion: None,
         corpse_companion: None,
         field_policy_revision: None,
@@ -541,6 +542,9 @@ async fn prepare_barrier(
     }
     let flags = *tiles.get(&target).ok_or(SpellCastDisposition::Rejected)?;
     let caster_flags = *tiles.get(&origin).ok_or(SpellCastDisposition::Rejected)?;
+    if flags.protection || caster_flags.protection || !flags.present || flags.floor_change {
+        return Err(SpellCastDisposition::TargetIllegal);
+    }
     let sight = sight_steps(origin, target)?
         .iter()
         .all(|(p, exempt)| *exempt || tiles.get(p).is_some_and(|t| !t.projectile));
@@ -630,8 +634,11 @@ async fn prepare_barrier(
             .map_err(|_| SpellCastDisposition::NotAvailable)?;
     // The Barrier preview identifies this exact qualified Item; no damage recipe is required.
     definition.field_class = crate::durability::spell_items_abi::SpellFieldClass::Wall;
+    // The callback's per-instance duration replaces the Item's default decay.
+    // Keeping both schedules would retire a long-lived barrier at the default.
+    definition.decay = None;
     let record = policy.record();
-    let blocks_movement = record
+    let item_blocks_movement = record
         .attributes
         .blocks_movement
         .ok_or(SpellCastDisposition::NotAvailable)?;
@@ -641,8 +648,17 @@ async fn prepare_barrier(
         .ok_or(SpellCastDisposition::NotAvailable)?;
     if !definition.ground_destination
         || definition.stack_maximum != 1
-        || record.attributes.immovable_block_solid != Some(!definition.movable && blocks_movement)
+        || record.attributes.immovable_block_solid
+            != Some(!definition.movable && item_blocks_movement)
     {
+        return Err(SpellCastDisposition::NotAvailable);
+    }
+    // WORLD-INTERACTION-0 §8.3: normal barriers block, while the Optional-PvP
+    // variants permit entry. The generic Item profile lacks that distinction.
+    let (blocks_movement, field_blocks_projectile) =
+        oteryn_gameplay_items::native_world_items::source_barrier_collision(policy)
+            .ok_or(SpellCastDisposition::NotAvailable)?;
+    if blocks_movement == optional_pvp || field_blocks_projectile != blocks_projectile {
         return Err(SpellCastDisposition::NotAvailable);
     }
     let mut operations = Vec::new();
@@ -773,6 +789,7 @@ async fn prepare_barrier(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     Ok(PreparedNativeCombatCast {
+        item_spell_leech: (0, 0),
         direct_companion: None,
         corpse_companion: None,
         field_policy_revision: Some(world_revision),
@@ -1060,6 +1077,7 @@ async fn prepare_carried(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     Ok(PreparedNativeCombatCast {
+        item_spell_leech: (0, 0),
         direct_companion: None,
         corpse_companion: None,
         field_policy_revision: None,

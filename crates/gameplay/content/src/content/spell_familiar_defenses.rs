@@ -145,6 +145,7 @@ mod tests {
             definition_revision: record.creature_revision.clone(),
             display_name: "Source-qualified test familiar".into(),
             maximum_health: record.maximum_health,
+            forge_difficulty: None,
             base_speed: record.base_speed,
             outfit_look_type: 991,
             object_look_type: None,

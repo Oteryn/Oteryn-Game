@@ -35,6 +35,13 @@ impl ChannelRuntimeV1 {
         if !self.contains_live_creature(actor) {
             return None;
         }
+        if let Some(spawn) = self
+            .boss_spawns
+            .iter()
+            .find(|spawn| spawn.actor == Some(actor))
+        {
+            return Some(spawn.position);
+        }
         let (source, index) = self.carrier.locate_spawn_cell(actor)?;
         let cell = self
             .carrier

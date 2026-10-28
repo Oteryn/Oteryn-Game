@@ -1,6 +1,8 @@
 mod appearance_session_tests;
 #[path = "tests/depot_map_tests.rs"]
 mod depot_map_tests;
+#[path = "quest_log_transport/tests.rs"]
+mod quest_log_tests;
 include!("tutorial_notices_tests.rs");
 use super::*;
 use oteryn_protocol_oteryn::world_object::{

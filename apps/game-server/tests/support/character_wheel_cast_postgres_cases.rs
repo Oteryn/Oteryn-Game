@@ -377,6 +377,7 @@ async fn allocate(
             &h.node,
             fence(READY_CHARACTER_REVISION)?,
             WheelChangeRequest {
+                vessels: None,
                 occurrence: WheelOccurrence::from_bytes(id(93)).map_err(debug)?,
                 expected_wheel_revision: 0,
                 slots: WheelSlots::new(points).map_err(debug)?,

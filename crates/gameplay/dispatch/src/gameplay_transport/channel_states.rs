@@ -23,8 +23,11 @@ pub struct ChannelSessionStates {
     pub command_ingress: super::session_ingress::SessionCommands,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
     pub fence_holders: FenceHolders,
+    /// IDLEKICK: operator thresholds, shared by every connection served by this owner.
+    pub gameplay_idle_policy: super::connection::GameplayIdlePolicy,
     /// OPS-SAVE-2: closed by the shutdown flush; admissions and commands run under its permits.
     pub input_gate: input_gate::InputGate,
+    pub(super) inspection_permissions: super::inspection::Permissions,
     /// CHAR-POSITION-1: the sessions whose last position this owner writes, and the write
     /// sequence generator (CHAR-POSITION-0 §3.2).
     pub last_positions: last_position::LastPositions,
@@ -41,6 +44,14 @@ pub struct ChannelSessionStates {
     /// NPC-CMD-1a: the NPC conversation and talk limit of each session with capability 3.
     pub npc_conversations: npc_command::NpcConversations,
     pub(super) player_trades: super::player_trade::TradeBook,
+    /// PROF-WIRE-1: durable tracks installed for each admitted session. The leaf lock is never
+    /// held across a database await.
+    pub(super) proficiencies: std::sync::Mutex<
+        std::collections::HashMap<
+            GameSessionId,
+            super::weapon_proficiency::WeaponProficiencyDispatch,
+        >,
+    >,
     /// PREM-1b (D476): the sessions holding each account's Premium registration, so a late
     /// release of one session never cancels another's pulls.
     pub premium_sessions: std::sync::Mutex<PremiumSessions>,
@@ -54,6 +65,7 @@ pub struct ChannelSessionStates {
     /// and resume. Never held across an await.
     pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
     pub(super) quest_callbacks: super::quest_callbacks::PendingCallbacks,
+    pub(super) resting_areas: super::resting_area::RestingAreaSessions,
     /// PARITY-EVENT-CALLBACKS-1: the currently due server-save countdown minute.
     pub(super) server_save: super::server_save_countdown::ServerSaveCountdownHub,
     /// VITALS-SOUL-1: the soul hook of each settled kill, applied on the killer's cadence.
@@ -64,6 +76,13 @@ pub struct ChannelSessionStates {
     pub(super) timed_items: super::timed_item::TimedRuntime,
     pub(super) training: super::loop_training::TrainingRuntime,
     pub(super) tutorial_sessions: tutorial_session::TutorialSessions,
+    /// Committed Atelier gems and grades, with the current Wheel vessel overlay.
+    pub atelier_sessions: std::sync::Mutex<
+        std::collections::HashMap<
+            GameSessionId,
+            Option<oteryn_gameplay_progression::atelier::AtelierState>,
+        >,
+    >,
     /// The Wheel allocation of each admitted session (WHEEL-0 §4 "Load"), after the admission
     /// Wheel reset; `None` when the load failed. The allocation only, never an eligibility
     /// result. Never held across an await.
@@ -86,14 +105,21 @@ impl ChannelSessionStates {
         self.chat.forget(session);
         self.command_ingress.forget(session);
         self.player_trades.forget(session);
+        self.inspection_permissions.forget(session);
         self.npc_conversations.forget(session);
         if let Ok(mut sessions) = self.quest_sessions.lock() {
+            sessions.remove(&session);
+        }
+        if let Ok(mut sessions) = self.atelier_sessions.lock() {
             sessions.remove(&session);
         }
         if let Ok(mut sessions) = self.wheel_sessions.lock() {
             sessions.remove(&session);
         }
         if let Ok(mut sessions) = self.progression_sessions.lock() {
+            sessions.remove(&session);
+        }
+        if let Ok(mut sessions) = self.proficiencies.lock() {
             sessions.remove(&session);
         }
         self.last_positions.forget(session);

@@ -1,4 +1,4 @@
-"""Carry already admitted quest offering definitions into the native Item provider."""
+"""Carry already admitted quest offering and chest definitions into the native Item provider."""
 import copy
 import hashlib
 import json
@@ -12,6 +12,21 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
     callbacks = json.loads((root / 'content/quests/world-callbacks.json').read_bytes())
     keys = {offering['item'] for callback in callbacks['callbacks']
             for offering in callback['offerings']}
+    for callback in callbacks['callbacks']:
+        item = callback.get('item_on_target')
+        if item:
+            keys.add(item['item'])
+            if item.get('replacement'):
+                keys.add(item['replacement'])
+    # These source chests also advance a quest track. Their Item definitions
+    # already have canonical admission; retain the same proof in the native provider.
+    for path in sorted((root / 'content/interactions/reward_claims').glob('reward-claims-*.json')):
+        for row in json.loads(path.read_bytes())['records']:
+            definition = row['definition']
+            if definition.get('readiness') == 'ready':
+                for placement in definition['placements']:
+                    if placement.get('quest_transition'):
+                        keys.update(item['item']['key'] for item in placement['reward']['items'])
     document = json.loads(generated[profile_path])
     present = {row['production_definition']['production_key'] for row in document['records']}
     missing = keys - present

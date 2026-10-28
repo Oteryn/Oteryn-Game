@@ -2587,6 +2587,7 @@ async fn boot_and_serve(
     // (§1.2): setting one needs separate owner authority, so Premium is not delivered.
     let premium_reads = production_premium_reads(root);
     let owners = GameplaySeamOwners {
+        gameplay_idle_policy: config.gameplay_idle,
         emit,
         root,
         character: &authority,
@@ -2625,6 +2626,7 @@ async fn boot_and_serve(
         shutdown: &shutdown,
         last_position_flush: &last_position_flush,
         reset_epoch,
+        generation,
         signalled,
     })
     .await
@@ -3050,6 +3052,7 @@ mod tests {
             y: 5,
             direction: Direction::South,
             respawn_ms,
+            boss_policy: None,
         };
         let creature = |key: &str| Creature {
             key: key.into(),

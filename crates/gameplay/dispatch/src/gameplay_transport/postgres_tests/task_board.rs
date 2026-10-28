@@ -329,6 +329,20 @@ fn scenario() -> TestResult {
                     )
                     .is_some()
             );
+            // This tests task credit, not combat odds. A trained fist makes even the
+            // minimum real swing lethal after the production rat's defence and armor,
+            // independent of the content digest that seeds the swing draws.
+            let mut skills = [(10, 0); 7];
+            skills[0] = (1_000, 0);
+            let build = crate::durability::character_build::DurableBuildState::new(
+                "monk",
+                (crate::gameplay_transport::actor_spell::tests::FACTS.magic_level.try_into()?, 0),
+                skills,
+            )
+            .map_err(debug)?;
+            assert!(owner.states.spell_states.lock().await.load_owned_build(
+                &runtime, actor, session, &build,
+            ));
         }
         owner.admit_progression_session(&mut admitted).await;
         assert!(owner.progression_binding(session).is_some());
@@ -417,6 +431,13 @@ fn scenario() -> TestResult {
             assert!(drains < 8, "the queued kill settles");
         }
         assert_eq!(experience(&harness).await?, RAT_XP);
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
+                .fetch_one(&harness.pool)
+                .await?,
+            1,
+            "the real kill's XP receipt is committed"
+        );
         let credited = board(&owner, &mut admitted, 0, 0).await?;
         assert_eq!((credited.selected, credited.kills), (1, 1), "the real kill counts");
 
@@ -471,6 +492,66 @@ fn scenario() -> TestResult {
             experience(&harness).await?,
             RAT_XP + task_board::EXPERIENCE
         );
+
+        // The talisman upgrade is reached through opcode 89's real command stream. With no
+        // Bounty Points it refuses atomically and exposes all four durable paths and sourced
+        // next costs (rather than manufacturing points from Weekly Task Points).
+        let talisman = board(&owner, &mut admitted, 3, 1).await?;
+        assert!(talisman.refused);
+        assert_eq!(talisman.bounty_points, 0);
+        assert_eq!(talisman.talisman_levels, [0; 4]);
+        assert_eq!(talisman.talisman_bonuses, [0; 4]);
+        assert_eq!(talisman.talisman_next_costs, [5; 4]);
+        assert_eq!(talisman.points, task_board::TASK_POINTS);
+
+        // Fixture funding represents previously earned Bounty Points. All upgrades below
+        // still use the production catalogue, writer, fences and real command stream.
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,37,2)")
+            .bind(id(41).as_slice()).bind(task_board::BOUNTY_POINTS).bind(task_board::QUEST)
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        owner.refresh_quest_session(session, false).await;
+        for path in 1..=4 {
+            let upgrade_id = admitted.continuity.next_command_id;
+            let upgraded = board(&owner, &mut admitted, 3, path).await?;
+            assert!(!upgraded.refused);
+            assert_eq!(upgraded.bounty_points, 37 - i64::from(path) * 5);
+            assert_eq!(upgraded.talisman_levels[usize::from(path - 1)], 1);
+            assert_eq!(upgraded.talisman_bonuses[usize::from(path - 1)], if path == 4 { 600 } else { 300 });
+            assert_eq!(upgraded.talisman_next_costs[usize::from(path - 1)], 17);
+            let replay = serve_from(&owner, &mut admitted, upgrade_id, &[request(3, path)]).await?;
+            assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+        }
+        let upgraded = board(&owner, &mut admitted, 3, 1).await?;
+        assert!(!upgraded.refused);
+        assert_eq!(upgraded.bounty_points, 0);
+        assert_eq!(upgraded.talisman_levels, [2, 1, 1, 1]);
+        assert_eq!(upgraded.talisman_next_costs, [29, 17, 17, 17]);
+        assert!(board(&owner, &mut admitted, 3, 1).await?.refused);
+        owner.refresh_quest_session(session, false).await;
+        let reloaded = board(&owner, &mut admitted, 0, 0).await?;
+        assert_eq!(reloaded.talisman_levels, upgraded.talisman_levels);
+        assert_eq!(reloaded.bounty_points, 0);
+        assert_eq!(reloaded.points, task_board::TASK_POINTS);
+
+        // An already capped path refuses rather than silently succeeding as a query.
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_quest_tracks SET value=$1 WHERE character_id=encode($2,'hex')::uuid AND track_key=$3")
+            .bind(task_board::TALISMAN_MAX_LEVEL).bind(id(41).as_slice()).bind(task_board::TALISMAN_DAMAGE)
+            .execute(&mut *tx).await?;
+        tx.commit().await?;
+        owner.refresh_quest_session(session, false).await;
+        let receipts = quest_receipts(&harness).await?;
+        let capped = board(&owner, &mut admitted, 3, 1).await?;
+        assert!(capped.refused);
+        assert_eq!(capped.talisman_levels[0], task_board::TALISMAN_MAX_LEVEL);
+        assert_eq!(capped.talisman_next_costs[0], 0);
+        assert_eq!(quest_receipts(&harness).await?, receipts);
 
         drop(owner);
         drop(authority);

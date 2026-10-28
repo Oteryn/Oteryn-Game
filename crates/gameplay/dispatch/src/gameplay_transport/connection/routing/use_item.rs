@@ -106,6 +106,25 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 {
                     return Some(Dispatch::Use(outcome));
                 }
+                if let (
+                    Some(source),
+                    Some(oteryn_protocol_oteryn::world_object::MapUseTarget::Object(door)),
+                ) = (source, intent.use_with_map_item.clone())
+                    && let Some(outcome) = authority
+                        .use_key_on_door(
+                            actor,
+                            UseCommand {
+                                game_session_id: admitted.game_session_id,
+                                command_id: command.command_id,
+                                item_fence: admitted.item_fence,
+                            },
+                            source,
+                            door,
+                        )
+                        .await
+                {
+                    return Some(Dispatch::Use(outcome));
+                }
                 match transport::mining::dispatch_map_use(authority, actor, UseCommand {
                     game_session_id: admitted.game_session_id,
                     command_id: command.command_id,
@@ -125,6 +144,7 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     item_fence: admitted.item_fence,
                 },
                 intent, item_view.as_ref(), visibility.as_ref(),
+                &admitted.continuity.selected_capabilities,
             ).await {
                 Some(outcome) => Dispatch::Use(outcome),
                 None => return None,

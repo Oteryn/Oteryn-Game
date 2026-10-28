@@ -117,6 +117,51 @@ fn pass(
     )
 }
 #[test]
+fn owned_source_damage_and_food_clock_commit_once_at_the_same_now() {
+    for fed in [false, true] {
+        for in_protection_zone in [false, true] {
+            let (mut runtime, mut states, actor, session) = ready(0xbe);
+            let mut definitions = vec![poison(10)];
+            if fed {
+                let Some(food) = ConditionDefinition::new(
+                    "food.regeneration",
+                    1,
+                    ConditionValues::FoodRegeneration {
+                        added_ms: 120_000,
+                        interval_ms: 1_000,
+                    },
+                ) else {
+                    panic!("food condition");
+                };
+                definitions.push(food);
+            }
+            install(&mut states, &runtime, actor, session, &definitions);
+            let facts = TickFacts {
+                in_protection_zone,
+                standing_on_field: None,
+            };
+            let now = 1_000_000;
+            let Some(receipt) = pass(&mut states, &mut runtime, actor, session, now, facts) else {
+                panic!("damage and regeneration commit");
+            };
+            assert_eq!(receipt.damage, 10);
+            let before = states.get(&runtime, actor, session).cloned();
+            assert!(before.as_ref().is_some_and(|state| {
+                crate::spell::actor_conditions::stage_source_owner_cycle(
+                    state,
+                    SemanticTimeMicros::from_micros(now),
+                    Some(facts),
+                    None,
+                )
+                .is_ok_and(|cycle| cycle.is_none())
+            }));
+            assert!(pass(&mut states, &mut runtime, actor, session, now, facts).is_some());
+            assert_eq!(states.get(&runtime, actor, session), before.as_ref());
+        }
+    }
+}
+
+#[test]
 fn actual_creature_field_periodic_routes_to_death_owner_and_failed_mint_keeps_cursor() {
     let (mut runtime, mut states, actor, session) = ready(0xb8);
     install(&mut states, &runtime, actor, session, &[poison(200)]);

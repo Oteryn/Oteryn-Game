@@ -1,0 +1,368 @@
+{
+  "schema": "OTERYN_OFFICIAL_CREATURE_BALANCE/v1",
+  "task": "TIBIA-NEWS-BAL-1",
+  "sources": {
+    "8918": "https://www.tibia.com/news/?subtopic=newsarchive&id=8918",
+    "8935": "https://www.tibia.com/news/?subtopic=newsarchive&id=8935",
+    "9024": "https://www.tibia.com/news/?subtopic=newsarchive&id=9024",
+    "9039": "https://www.tibia.com/news/?subtopic=newsarchive&id=9039"
+  },
+  "provenance": "Field overrides from owner-supplied official news text; existing source bindings retain base creature identity provenance. before is the Oteryn baseline, which can already include a news change. Sensitivity is damage taken %, encoded as resistance = 100 - sensitivity. Percentage XP changes use nearest integer, half up.",
+  "overrides": [
+    {
+      "creature": "druid_s_apparition",
+      "field": "experience",
+      "before": 21130,
+      "after": 21130,
+      "news_id": 8918
+    },
+    {
+      "creature": "knight_s_apparition",
+      "field": "experience",
+      "before": 21130,
+      "after": 21130,
+      "news_id": 8918
+    },
+    {
+      "creature": "monk_s_apparition",
+      "field": "experience",
+      "before": 21130,
+      "after": 21130,
+      "news_id": 8918
+    },
+    {
+      "creature": "paladin_s_apparition",
+      "field": "experience",
+      "before": 21130,
+      "after": 21130,
+      "news_id": 8918
+    },
+    {
+      "creature": "sorcerer_s_apparition",
+      "field": "experience",
+      "before": 21130,
+      "after": 21130,
+      "news_id": 8918
+    },
+    {
+      "creature": "darklight_matter",
+      "field": "experience",
+      "before": 20680,
+      "after": 19232,
+      "news_id": 8935
+    },
+    {
+      "creature": "darklight_matter",
+      "field": "fire_sensitivity",
+      "before": 120,
+      "after": 120,
+      "news_id": 8935
+    },
+    {
+      "creature": "darklight_source",
+      "field": "experience",
+      "before": 20870,
+      "after": 19409,
+      "news_id": 8935
+    },
+    {
+      "creature": "darklight_striker",
+      "field": "experience",
+      "before": 20650,
+      "after": 19205,
+      "news_id": 8935
+    },
+    {
+      "creature": "darklight_striker",
+      "field": "fire_sensitivity",
+      "before": 120,
+      "after": 120,
+      "news_id": 8935
+    },
+    {
+      "creature": "devoted_radiant_acolyte",
+      "field": "experience",
+      "before": 47820,
+      "after": 56428,
+      "news_id": 8935
+    },
+    {
+      "creature": "devoted_radiant_inquisitor",
+      "field": "experience",
+      "before": 47050,
+      "after": 55519,
+      "news_id": 8935
+    },
+    {
+      "creature": "devoted_radiant_paragon",
+      "field": "experience",
+      "before": 50560,
+      "after": 59661,
+      "news_id": 8935
+    },
+    {
+      "creature": "devoted_radiant_templar",
+      "field": "experience",
+      "before": 49900,
+      "after": 58882,
+      "news_id": 8935
+    },
+    {
+      "creature": "devoted_radiant_warden",
+      "field": "experience",
+      "before": 51280,
+      "after": 60510,
+      "news_id": 8935
+    },
+    {
+      "creature": "devoted_radiant_zealot",
+      "field": "experience",
+      "before": 50500,
+      "after": 59590,
+      "news_id": 8935
+    },
+    {
+      "creature": "radiant_acolyte",
+      "field": "experience",
+      "before": 32960,
+      "after": 37245,
+      "news_id": 8935
+    },
+    {
+      "creature": "radiant_inquisitor",
+      "field": "experience",
+      "before": 32460,
+      "after": 36680,
+      "news_id": 8935
+    },
+    {
+      "creature": "radiant_paragon",
+      "field": "experience",
+      "before": 34780,
+      "after": 39301,
+      "news_id": 8935
+    },
+    {
+      "creature": "radiant_templar",
+      "field": "experience",
+      "before": 34520,
+      "after": 39008,
+      "news_id": 8935
+    },
+    {
+      "creature": "radiant_warden",
+      "field": "experience",
+      "before": 35540,
+      "after": 40160,
+      "news_id": 8935
+    },
+    {
+      "creature": "radiant_zealot",
+      "field": "experience",
+      "before": 35220,
+      "after": 39799,
+      "news_id": 8935
+    },
+    {
+      "creature": "walking_pillar",
+      "field": "experience",
+      "before": 22600,
+      "after": 21018,
+      "news_id": 8935
+    },
+    {
+      "creature": "dworc_shadowstalker",
+      "field": "experience",
+      "before": 8930,
+      "after": 7680,
+      "news_id": 9024
+    },
+    {
+      "creature": "gloom_maw",
+      "field": "experience",
+      "before": 8770,
+      "after": 7550,
+      "news_id": 9024
+    },
+    {
+      "creature": "orclops_bloodbreaker",
+      "field": "experience",
+      "before": 10250,
+      "after": 8820,
+      "news_id": 9024
+    },
+    {
+      "creature": "true_dawnfire_asura",
+      "field": "experience",
+      "before": 7475,
+      "after": 8100,
+      "news_id": 9024
+    },
+    {
+      "creature": "true_feverbloom_asura",
+      "field": "experience",
+      "before": 7850,
+      "after": 8600,
+      "news_id": 9024
+    },
+    {
+      "creature": "true_midnight_asura",
+      "field": "experience",
+      "before": 7313,
+      "after": 8200,
+      "news_id": 9024
+    },
+    {
+      "creature": "darklight_source",
+      "field": "fire_sensitivity",
+      "before": 115,
+      "after": 110,
+      "news_id": 9039
+    },
+    {
+      "creature": "darklight_striker",
+      "field": "fire_sensitivity",
+      "before": 120,
+      "after": 115,
+      "news_id": 9039
+    },
+    {
+      "creature": "mycobiontic_beetle",
+      "field": "energy_sensitivity",
+      "before": 115,
+      "after": 110,
+      "news_id": 9039
+    },
+    {
+      "creature": "oozing_corpus",
+      "field": "energy_sensitivity",
+      "before": 125,
+      "after": 115,
+      "news_id": 9039
+    }
+  ],
+  "gold_gain": [
+    {
+      "creature": "oozing_corpus",
+      "percent": -12,
+      "news_id": 9039,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "mycobiontic_beetle",
+      "percent": -12,
+      "news_id": 9039,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "bloated_man_maggot",
+      "percent": -12,
+      "news_id": 9039,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "sopping_corpus",
+      "percent": -12,
+      "news_id": 9039,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "converter",
+      "percent": -12,
+      "news_id": 9039,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "darklight_construct",
+      "percent": -12,
+      "news_id": 9039,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "darklight_emitter",
+      "percent": -12,
+      "news_id": 9039,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "wandering_pillar",
+      "percent": -12,
+      "news_id": 9039,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "true_dawnfire_asura",
+      "percent": -14,
+      "news_id": 9024,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "true_midnight_asura",
+      "percent": -10,
+      "news_id": 9024,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "true_frost_flower_asura",
+      "percent": -10,
+      "news_id": 9024,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "bulltaur_brute",
+      "percent": -10,
+      "news_id": 9024,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "bulltaur_alchemist",
+      "percent": -10,
+      "news_id": 9024,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "bulltaur_forgepriest",
+      "percent": -10,
+      "news_id": 9024,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "bony_sea_devil",
+      "percent": 13,
+      "news_id": 8918,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "capricious_phantom",
+      "percent": 14,
+      "news_id": 8918,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "turbulent_elemental",
+      "percent": 14,
+      "news_id": 8918,
+      "status": "not applied (no explicit gold)"
+    },
+    {
+      "creature": "hazardous_phantom",
+      "percent": 14,
+      "news_id": 8918,
+      "status": "not applied (no explicit gold)"
+    }
+  ],
+  "behaviour_notes_only": [
+    {
+      "news_id": 9024,
+      "note": "Once triggered, devoted radiants spawn for 2 hours (duration, not a 2-hour delay)."
+    },
+    {
+      "news_id": 9039,
+      "note": "Rookgaard kills never trigger echo raids."
+    },
+    {
+      "news_id": 9039,
+      "note": "Lion knights and creatures of the same faction do not hurt allies with spells."
+    }
+  ]
+}

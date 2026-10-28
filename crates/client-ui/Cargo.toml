@@ -1,0 +1,31 @@
+[package]
+name = "oteryn-client-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "client-ui"
+release-role = "production"
+
+[dependencies]
+oteryn-client-domain = { version = "=0.1.0", path = "../client-domain" }
+oteryn-client-runtime = { version = "=0.1.0", path = "../client-runtime" }
+oteryn-input-actions = { version = "=0.1.0", path = "../input-actions" }
+oteryn-renderer = { version = "=0.1.0", path = "../renderer" }
+
+[build-dependencies]
+serde_json.workspace = true
+sha2.workspace = true
+syn.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+sha2.workspace = true
+syn.workspace = true
+
+[lints]
+workspace = true

@@ -94,6 +94,8 @@ pub struct PlayerSpellState {
     /// Runtime-only; a fresh actor starts at zero.
     pub(super) regen_health_ms: u32,
     pub(super) regen_mana_ms: u32,
+    /// Runtime-only clock, anchored when admission makes this actor playable.
+    pub(super) regeneration_next_tick_us: Option<u64>,
     pub(super) soul: u32,
     /// VITALS-SOUL-1: the running soul kill window, if any. Runtime-only.
     pub(super) soul_window: Option<super::soul_window::SoulWindow>,
@@ -116,6 +118,23 @@ pub struct PlayerSpellState {
         Option<oteryn_gameplay_combat_rules::resolution::player_defence::HandDefence>,
     /// EQUIP-PROTECTION-1: the summed physical protection of the last committed equipment read.
     pub(super) equipped_physical_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct energy damage (not fields).
+    pub(super) equipped_energy_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct fire damage (not fields).
+    pub(super) equipped_fire_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Additional direct damage elements, installed alongside the existing typed projections.
+    pub(super) equipped_element_protections: std::collections::BTreeMap<
+        oteryn_gameplay_content::content::ReferenceResistanceKind,
+        oteryn_gameplay_content::content::ReferenceRationalPercent,
+    >,
+    /// Current committed equipment protection against direct holy damage.
+    pub(super) equipped_holy_protection:
+        Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
+    /// Current committed equipment protection against direct ice damage (not fields).
+    pub(super) equipped_ice_protection:
         Option<oteryn_gameplay_content::content::ReferenceRationalPercent>,
     /// PARITY-EQUIP-MODIFIERS-1: the critical hit and leech of the last committed equipment read.
     pub(super) equipped_offence:
@@ -157,6 +176,7 @@ impl PlayerSpellState {
                 mana: facts.max_mana,
                 regen_health_ms: 0,
                 regen_mana_ms: 0,
+                regeneration_next_tick_us: None,
                 premium_current: false,
                 premium_valid_until_micros: None,
                 soul: facts.max_soul,
@@ -175,6 +195,11 @@ impl PlayerSpellState {
                 equipped_mana_shield: false,
                 equipped_defence: None,
                 equipped_physical_protection: None,
+                equipped_ice_protection: None,
+                equipped_energy_protection: None,
+                equipped_fire_protection: None,
+                equipped_holy_protection: None,
+                equipped_element_protections: Default::default(),
                 equipped_offence: Default::default(),
                 training: None,
                 training_payment: None,

@@ -130,14 +130,36 @@ fn setup(
     AttackFacts,
     GameplayDecisionRoot,
 ) {
+    setup_at(
+        name,
+        far,
+        MovementLocalPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+    )
+}
+
+fn setup_at(
+    name: &str,
+    far: bool,
+    origin: MovementLocalPosition,
+) -> (
+    ChannelRuntimeV1,
+    ChannelSpellStates,
+    MeleeSource,
+    AttackFacts,
+    GameplayDecisionRoot,
+) {
     let (mut runtime, target, session) = runtime_with_player(0x71);
     runtime
         .initialize_movement_test_position(
             target,
             MovementLocalPosition {
-                x: 100,
-                y: 100,
-                floor: 7,
+                x: origin.x,
+                y: origin.y,
+                floor: origin.floor,
             },
         )
         .expect("actual position");
@@ -153,9 +175,9 @@ fn setup(
     let issuer = runtime
         .admit_monster_lab_creature(
             MovementLocalPosition {
-                x: if far { 110 } else { 101 },
-                y: 100,
-                floor: 7,
+                x: origin.x + if far { 10 } else { 1 },
+                y: origin.y,
+                floor: origin.floor,
             },
             &key,
             i64::try_from(health).expect("source health bound"),
@@ -198,6 +220,8 @@ fn setup(
         target_protected: false,
         defense: 0,
         armor: 0,
+        player_level: 1,
+        reference_level_party_lowest: None,
     };
     (runtime, states, source, facts, root)
 }
@@ -245,6 +269,13 @@ fn native_range_auto_attack_commits_lethal_real_vitals_once() {
         )
         .expect("real owner hit");
     assert!((200..=300).contains(&hit.requested));
+    let critical = hit
+        .source_critical
+        .expect("Global monster auto-attack baseline");
+    assert_eq!(
+        critical.bonus_basis_points, 0,
+        "no unqualified damage bonus"
+    );
     let damage = hit.damage.expect("actual damage receipt");
     assert_eq!(damage.applied, 185);
     assert_eq!(damage.health_after, 0);
@@ -661,6 +692,8 @@ fn shield_budget_65_session_turnovers_purge_stale_and_preserve_live_other_tokens
         target_protected: false,
         defense: 10000,
         armor: 0,
+        player_level: 1,
+        reference_level_party_lowest: None,
     };
     let mut owner = owner(&runtime, &source, facts);
     owner
@@ -997,4 +1030,130 @@ fn native_cat_zero_damage_is_legal_noop_without_vital_or_death_commit() {
             .health_after,
         184
     );
+}
+
+#[test]
+fn reference_level_melee_native_source_scales_only_in_the_overridden_area() {
+    use crate::content::{ProjectV2Bounds, ProjectV2ReferenceLevelOverride};
+    let mut neutral = None;
+    for (level, in_area) in [(800, true), (300, true), (300, false)] {
+        let (mut runtime, mut states, old_source, mut facts, root) =
+            setup("1st_mate_ratticus", false);
+        let (records, mut profiles) = native_data();
+        for profile in &mut profiles {
+            if profile.target.key == "oteryn:creature.1st_mate_ratticus"
+                && let Data::Creature(creature) = &mut profile.data
+            {
+                let details = creature.details.as_mut().expect("creature details");
+                details.reference_level = None;
+                details.reference_level_overrides = vec![ProjectV2ReferenceLevelOverride {
+                    bounds: ProjectV2Bounds {
+                        min_x: if in_area { 90 } else { 200 },
+                        min_y: 90,
+                        max_x_exclusive: 300,
+                        max_y_exclusive: 110,
+                    },
+                    floor: 7,
+                    reference_level: Some(790),
+                    party_mode: Default::default(),
+                    curve: vec![],
+                }];
+            }
+        }
+        let source = MeleeSource::from_native(
+            &Ref {
+                family: ProjectV2Family::Creature,
+                key: "oteryn:creature.1st_mate_ratticus".into(),
+                revision: "definition-r1".into(),
+            },
+            old_source.entry_index,
+            &records,
+            &profiles,
+            runtime.content_pin().server_artifact_digest(),
+        )
+        .expect("native MRL melee source");
+        facts.player_level = level;
+        let hit = owner(&runtime, &source, facts)
+            .fixture_swing(
+                &mut runtime,
+                &mut states,
+                &source,
+                facts,
+                1,
+                revisions(),
+                &root,
+                clock(2_000_000),
+            )
+            .expect("melee dispatch");
+        let base = *neutral.get_or_insert(hit.requested);
+        let multiplier = monster_reference_level_damage_multiplier(
+            in_area.then_some(790),
+            &[],
+            runtime
+                .read_actor_position(facts.target)
+                .expect("position")
+                .position(),
+            &facts,
+        );
+        assert_eq!(
+            u64::from(hit.requested),
+            u64::from(base) * u64::from(multiplier) / u64::from(DAMAGE_MULTIPLIER_SCALE)
+        );
+        assert!(hit.damage.is_some());
+    }
+}
+
+#[test]
+fn hazard_live_melee_level_scaling_area_exclusion_and_replay() {
+    let hit = |level, at| {
+        let (mut runtime, mut states, source, facts, root) =
+            setup_at("1st_mate_ratticus", false, at);
+        runtime
+            .install_hazard_level(facts.target, facts.session, level)
+            .expect("durable projection");
+        let mut owner = owner(&runtime, &source, facts);
+        let first = owner
+            .fixture_swing(
+                &mut runtime,
+                &mut states,
+                &source,
+                facts,
+                1,
+                revisions(),
+                &root,
+                clock(2_000_000),
+            )
+            .expect("hazard live melee");
+        let replay = owner
+            .fixture_swing(
+                &mut runtime,
+                &mut states,
+                &source,
+                facts,
+                1,
+                revisions(),
+                &root,
+                clock(2_000_000),
+            )
+            .expect("hazard replay");
+        assert_eq!(first, replay);
+        first.requested
+    };
+    let inside = MovementLocalPosition {
+        x: 33520,
+        y: 32871,
+        floor: 15,
+    };
+    let excluded = MovementLocalPosition {
+        x: 33640,
+        y: 32920,
+        floor: 15,
+    };
+    let plain = hit(1, excluded);
+    assert_eq!(plain, hit(12, excluded));
+    let one = hit(1, inside);
+    let twelve = hit(12, inside);
+    assert!(one >= plain * 102 / 100);
+    assert!(twelve >= plain * 124 / 100);
+    assert!(twelve > one);
 }

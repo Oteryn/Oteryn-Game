@@ -89,6 +89,14 @@ pub enum FeeBurnCauseV1 {
     Imbuement(Box<OneItemImbuementV1>),
     #[prost(message, tag = "8")]
     NpcTravel(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "9")]
+    GemReveal(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "10")]
+    GemSwitchDomain(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "11")]
+    GemGradeUp(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "12")]
+    PreyListReroll(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
 }
 
@@ -113,6 +121,10 @@ pub struct OneItemFeeBurnCauseV1 {
             6, // MarketFee
             7, // Imbuement
             8, // NpcTravel
+            9, // GemReveal
+            10, // GemSwitchDomain
+            11, // GemGradeUp
+            12, // PreyListReroll
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,
@@ -222,6 +234,9 @@ pub fn fee_burn_usage(value: &OneItemFeeBurnV1) -> TransactionResourceUsage {
     let repair = u64::from(matches!(cause, Some(FeeBurnCauseV1::NpcRepair(_))));
     let imbuement = match cause {
         Some(FeeBurnCauseV1::Imbuement(imbuement)) => imbuement_cause::usage(imbuement),
+        Some(FeeBurnCauseV1::GemReveal(cause) | FeeBurnCauseV1::GemGradeUp(cause)) => {
+            purchase_cause::atelier_usage(cause)
+        }
         _ => TransactionResourceUsage {
             touched_item_instances: 0,
             location_custody_lines: 0,

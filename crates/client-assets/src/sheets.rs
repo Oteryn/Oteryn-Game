@@ -4,7 +4,7 @@ use crate::store::{AssetStore, MAX_COMPRESSED_SHEET_BYTES, MAX_DECOMPRESSED_SHEE
 use std::io::{self, BufReader, Cursor, Write};
 
 /// Edge of one drawn cell in pixels.
-pub const CELL_PX: u32 = 32;
+pub use oteryn_client_domain::world::CELL_PX;
 /// Bytes of one RGBA cell.
 pub const CELL_RGBA_BYTES: usize = (CELL_PX * CELL_PX * 4) as usize;
 /// Decoded sheets kept in memory, least recently used first out (about 37 MiB).

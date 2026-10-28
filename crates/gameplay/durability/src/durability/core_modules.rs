@@ -19,6 +19,7 @@ pub mod blessing_purchase;
     reason = "APP-1 production caller awaits admitted content, sex and grant owners"
 )]
 pub mod character_appearance;
+pub mod character_atelier;
 pub mod character_authority;
 pub mod character_build;
 pub mod character_chat_name;
@@ -47,8 +48,10 @@ pub mod character_tutorial;
 pub mod character_wheel;
 pub mod charm_state;
 pub mod chat_text;
+pub mod coin_exchange;
 pub mod content_activation;
 mod db;
+pub mod depot_search;
 pub mod equipment_policy_abi;
 mod field_capability_port;
 pub mod forge;

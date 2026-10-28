@@ -9,7 +9,7 @@ pub const ITEM_FORGE3332_PACKET: &[u8] = include_bytes!(
     "../../../../../docs/agents/evidence/OTV2-20261001-item-forge3332-promotion-v1.json"
 );
 pub const ITEM_FORGE3332_PACKET_SHA256: &str =
-    "5a66740bc3bc17275c042b2ecf0523379925ffb2b5a08f7aea3fc4cb90a152c5";
+    "9e8776e9a0806667d268e41fbb89fa9159f182b18a807a370884745e3bc06fd3";
 #[derive(Deserialize)]
 struct Packet {
     schema: String,

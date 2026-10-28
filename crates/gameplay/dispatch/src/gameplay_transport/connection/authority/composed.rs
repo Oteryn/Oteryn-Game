@@ -1,8 +1,19 @@
 //! Production delegation to the existing mechanic owners.
 
+use crate::gameplay_transport::connection::UseCommand;
+use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn use_key_on_door(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        key: ItemKey,
+        door: oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        self.use_bundle_key(actor, command, key, &door).await
+    }
     mechanic_composed_methods!();
     async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
         if !admitted
@@ -41,6 +52,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             self.premium_only,
         ))
     }
+    async fn observe_party_icons(
+        &self,
+        admitted: connection::AdmittedSession,
+    ) -> Option<Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>> {
+        self.observe_party_skull(admitted).await
+    }
+
     async fn party_command(
         &self,
         admitted: connection::AdmittedSession,
@@ -312,7 +330,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         intent: oteryn_protocol_oteryn::depot::DepotIntent,
         item: Option<item_view::ItemKey>,
-    ) -> Option<oteryn_protocol_oteryn::depot::DepotReply> {
+    ) -> Option<connection::DepotObservation> {
         depot::execute(self, actor, command, intent, item).await
     }
 
@@ -333,14 +351,14 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         loop_move::move_loop_item(self, actor, command, request).await
     }
 
-    /// BAGS-1: a container of the carried tree (capability 14).
+    /// Carried or reachable proven direct Ground container (capability 14).
     async fn observe_container(
         &self,
-        _actor: ExactActorRef,
+        actor: ExactActorRef,
         fence: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
         target: item_view::ItemKey,
     ) -> Option<container_view::ContainerObservation> {
-        loop_move::observe_container(self, fence, target).await
+        loop_move::observe_container(self, actor, fence, target).await
     }
 
     /// VIS-3: the Channel's players, live creatures and (NPC-LOAD-1) NPC actors, read in one
@@ -533,6 +551,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         source: Option<item_view::ItemKey>,
         target: Option<item_view::ItemKey>,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self
+            .use_machete_impl(actor, command, &intent, source, target)
+            .await
+        {
+            return outcome;
+        }
         self.use_pick_impl(actor, command, intent, source, target)
             .await
     }
@@ -555,6 +579,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         command: connection::UseCommand,
         item: item_view::ItemKey,
     ) -> Option<UseOutcome> {
+        if let Some(outcome) = self.use_coin(actor, command, item).await {
+            return outcome;
+        }
         if let Some(outcome) = self.use_reward_bag(actor, command, item).await {
             return outcome;
         }
@@ -592,8 +619,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         intent: oteryn_protocol_oteryn::world_object::UseIntent,
         key: Option<item_view::ItemKey>,
         visible: bool,
+        field_runes: bool,
     ) -> Option<UseOutcome> {
-        self.use_legacy_rune(actor, command, intent, key, visible)
+        self.use_legacy_rune(actor, command, intent, key, visible, field_runes)
             .await
     }
 
@@ -831,6 +859,25 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.exercise_training(admitted, command, intent, weapon, dummy)
             .await
     }
+    fn gameplay_idle_policy(&self) -> super::super::GameplayIdlePolicy {
+        self.states.gameplay_idle_policy
+    }
+
+    async fn gameplay_idle_exemptions(&self, admitted: AdmittedSession) -> Option<(bool, bool)> {
+        let actor = admitted.runtime_actor?;
+        let mut runtime = self.runtime.lock().await;
+        runtime.owner_fence().ok()?;
+        let facts = runtime
+            .player_control_facts(actor, admitted.game_session_id)
+            .ok()?;
+        if facts.control_loss.is_some() {
+            return None;
+        }
+        let no_logout = self.no_logout_tile(&mut runtime, actor)?;
+        drop(runtime);
+        Some((self.idle_training(admitted).await?, no_logout))
+    }
+
     async fn training_activity(&self, admitted: AdmittedSession, kind: u32) -> bool {
         self.loop_training_activity(admitted, kind).await
     }

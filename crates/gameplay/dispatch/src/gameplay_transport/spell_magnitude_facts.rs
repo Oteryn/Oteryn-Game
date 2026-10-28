@@ -117,11 +117,28 @@ pub fn project(
     )?;
     let wheel_flat = wheel_observation.map(|(flat, _)| flat);
     let wheel_revision = wheel_observation.map(|(_, revision)| revision);
-    // Empty actual equipment proves no equipment bonus. Nonempty equipment has not
-    // qualified modifier units, phases and stacking; its numeric fields stay unknown.
-    let empty_equipment = equipment.items.is_empty().then_some(0);
+    // Reuse the auto-attack equipment owner and intrinsic critical composition.
+    // Keep base and equipment separate for the magnitude owner's condition stages.
+    let offence =
+        super::equipment_move::equipment_effects_owner::equipped_offence(equipment, native)
+            .ok_or(AccessFactsError::Unavailable("magnitude equipment offence"))?;
+    let (base_chance, base_extra) =
+        oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence::default()
+            .player_critical();
+    let (total_chance, total_extra) = offence.player_critical();
     let attributes = MagnitudeOwnedAttributes {
         policy: native.magnitude_policy(),
+        item_augments: equipment
+            .items
+            .iter()
+            .filter_map(|item| {
+                native.item_policy(
+                    &item.definition.production_key,
+                    &item.definition.revision_ref,
+                )
+            })
+            .flat_map(|policy| policy.record().attributes.spell_augments.iter().cloned())
+            .collect(),
         owner_revisions: Some((
             equipment.character_revision,
             equipment.revision,
@@ -136,10 +153,10 @@ pub fn project(
             player_revision: binding.player_revision,
             content_digest: binding.content_digest,
         },
-        base_critical_chance_permyriad: None,
-        base_critical_extra_permyriad: None,
-        equipment_critical_chance_permyriad: empty_equipment,
-        equipment_critical_extra_permyriad: empty_equipment.map(i32::from),
+        base_critical_chance_permyriad: Some(base_chance),
+        base_critical_extra_permyriad: Some(i32::from(base_extra)),
+        equipment_critical_chance_permyriad: Some(total_chance - base_chance),
+        equipment_critical_extra_permyriad: Some(i32::from(total_extra - base_extra)),
         fatal_chance_permyriad: None,
         armor_penetration_permyriad: None,
         elemental_pierce_permyriad: None,

@@ -1234,7 +1234,7 @@ fn charm_effect_charm_damage_never_chains_into_another_charm() {
 }
 
 #[test]
-fn charm_effect_auto_attack_off_its_main_target_excludes_procs_and_carnage() {
+fn news_9024_auto_attack_first_hit_keeps_only_the_charm_exceptions_off_target() {
     let catalogue = forced_catalogue();
     for charm in ["oteryn:charm.wound", "oteryn:charm.carnage"] {
         let state = State::with(RACE, &[(charm, 3)]);

@@ -226,90 +226,104 @@ pub(super) fn apply(
 #[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
-    fn fixture() -> ProjectV2Draft {
-        let content = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
-        let fs_limits = ProjectFilesystemLimits {
-            project: limits(),
-            max_entries_per_directory_scan: 32,
-            max_total_directory_entries_scanned: 201,
-        };
-        let mut draft = capture_world_project(&content, std::ffi::OsStr::new("world"), fs_limits)
-            .expect("repository native project")
-            .migrate_to_v2();
-        npc_bulk_enrichment::reverse_for_fixture(
-            &mut draft,
-            NPC_ENRICH,
-            NPC_ENRICH_SHA256,
-            NPC_ENRICH_PREDECESSOR,
-        )
-        .expect("enrichment fixture predecessor");
-        let p: Packet = serde_json::from_slice(NPC_BULK).unwrap();
-        let more: Packet = serde_json::from_slice(NPC_BULK_MORE).unwrap();
-        let ids = p
-            .native_additions
-            .declarations
-            .iter()
-            .chain(more.native_additions.declarations.iter())
-            .map(|d| {
-                serde_json::to_value(d).unwrap()["identity"]["key"]
-                    .as_str()
-                    .unwrap()
-                    .to_owned()
+    fn fixture() -> (ProjectV2Draft, String) {
+        static FIXTURE: std::sync::OnceLock<(ProjectV2Draft, String)> = std::sync::OnceLock::new();
+        FIXTURE
+            .get_or_init(|| {
+                let content = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../content");
+                let fs_limits = ProjectFilesystemLimits {
+                    project: limits(),
+                    max_entries_per_directory_scan: 32,
+                    // Match the repository capture budget: successor siblings/world markers,
+                    // world shard, spawns, spell imports, pins, NPC placements, cyclopedia,
+                    // weather and craft: 31 parent + 11 * 17 root + 14 nested entries = 232.
+                    max_total_directory_entries_scanned: 144 + 56 + 1 + 4 + 2 + 11 + 11 + 1 + 1 + 1,
+                };
+                let mut draft =
+                    capture_world_project(&content, std::ffi::OsStr::new("world"), fs_limits)
+                        .expect("repository native project")
+                        .migrate_to_v2();
+                npc_bulk_enrichment::reverse_for_fixture(&mut draft, NPC_ENRICH, NPC_ENRICH_SHA256)
+                    .expect("enrichment fixture predecessor");
+                let p: Packet = serde_json::from_slice(NPC_BULK).unwrap();
+                let more: Packet = serde_json::from_slice(NPC_BULK_MORE).unwrap();
+                let ids = p
+                    .native_additions
+                    .declarations
+                    .iter()
+                    .chain(more.native_additions.declarations.iter())
+                    .map(|d| {
+                        serde_json::to_value(d).unwrap()["identity"]["key"]
+                            .as_str()
+                            .unwrap()
+                            .to_owned()
+                    })
+                    .collect::<BTreeSet<_>>();
+                let records = p
+                    .native_additions
+                    .records
+                    .iter()
+                    .chain(more.native_additions.records.iter())
+                    .map(|r| {
+                        serde_json::to_value(r).unwrap()["identity"]["key"]
+                            .as_str()
+                            .unwrap()
+                            .to_owned()
+                    })
+                    .collect::<BTreeSet<_>>();
+                draft.state.declarations.retain(|d| {
+                    !ids.contains(
+                        serde_json::to_value(d).unwrap()["identity"]["key"]
+                            .as_str()
+                            .unwrap(),
+                    )
+                });
+                draft.core.records.retain(|r| {
+                    !records.contains(
+                        serde_json::to_value(r).unwrap()["identity"]["key"]
+                            .as_str()
+                            .unwrap(),
+                    )
+                });
+                draft
+                    .state
+                    .authoring_profiles
+                    .retain(|p| !records.contains(&p.target.key));
+                draft.state.source_identity_bindings.retain(|b| {
+                    !p.native_additions.source_identity_bindings.contains(b)
+                        && !more.native_additions.source_identity_bindings.contains(b)
+                });
+                draft.core.project_revision = p.from_project_revision;
+                let predecessor = document_tree_digest(
+                    &CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits()).unwrap(),
+                );
+                let mut successor = draft.clone();
+                assert_eq!(
+                    apply(
+                        &mut successor,
+                        NPC_BULK,
+                        NPC_BULK_SHA256,
+                        &predecessor,
+                        NPC_BULK_COUNT
+                    )
+                    .expect("unmodified provisional packet must pass native validation"),
+                    NPC_BULK_COUNT,
+                );
+                (draft, predecessor)
             })
-            .collect::<BTreeSet<_>>();
-        let records = p
-            .native_additions
-            .records
-            .iter()
-            .chain(more.native_additions.records.iter())
-            .map(|r| {
-                serde_json::to_value(r).unwrap()["identity"]["key"]
-                    .as_str()
-                    .unwrap()
-                    .to_owned()
-            })
-            .collect::<BTreeSet<_>>();
-        draft.state.declarations.retain(|d| {
-            !ids.contains(
-                serde_json::to_value(d).unwrap()["identity"]["key"]
-                    .as_str()
-                    .unwrap(),
-            )
-        });
-        draft.core.records.retain(|r| {
-            !records.contains(
-                serde_json::to_value(r).unwrap()["identity"]["key"]
-                    .as_str()
-                    .unwrap(),
-            )
-        });
-        draft
-            .state
-            .authoring_profiles
-            .retain(|p| !records.contains(&p.target.key));
-        draft.state.source_identity_bindings.retain(|b| {
-            !p.native_additions.source_identity_bindings.contains(b)
-                && !more.native_additions.source_identity_bindings.contains(b)
-        });
-        draft.core.project_revision = p.from_project_revision;
-        assert_eq!(
-            document_tree_digest(
-                &CanonicalProjectDocuments::from_v2_draft(draft.clone(), limits()).unwrap()
-            ),
-            NPC_BULK_PREDECESSOR
-        );
-        draft
+            .clone()
     }
+
     fn rejects(value: Value) {
         let bytes = serde_json::to_vec(&value).unwrap();
-        let mut draft = fixture();
+        let (mut draft, predecessor) = fixture();
         let before = draft.clone();
         assert!(
             apply(
                 &mut draft,
                 &bytes,
                 &hex_sha256(&bytes),
-                NPC_BULK_PREDECESSOR,
+                &predecessor,
                 NPC_BULK_COUNT
             )
             .is_err()
@@ -319,7 +333,7 @@ mod tests {
     #[test]
     fn packet_and_predecessor_fences_reject_without_mutation() {
         for wrong_packet in [true, false] {
-            let mut draft = fixture();
+            let (mut draft, predecessor) = fixture();
             let before = draft.clone();
             assert!(
                 apply(
@@ -330,11 +344,7 @@ mod tests {
                     } else {
                         NPC_BULK_SHA256
                     },
-                    if wrong_packet {
-                        NPC_BULK_PREDECESSOR
-                    } else {
-                        "wrong"
-                    },
+                    if wrong_packet { &predecessor } else { "wrong" },
                     NPC_BULK_COUNT
                 )
                 .is_err()

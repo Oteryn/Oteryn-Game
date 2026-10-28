@@ -109,7 +109,7 @@ fn imbuement_allowance_fails_closed_on_unknown_content() {
 }
 
 #[test]
-fn imbuement_offers_every_tier_of_each_admitted_family_at_canary_prices() {
+fn imbuement_offers_every_tier_of_each_admitted_family_at_current_global_prices() {
     let allowance = two_slots();
     let offers: Vec<_> = allowance
         .offers
@@ -119,12 +119,12 @@ fn imbuement_offers_every_tier_of_each_admitted_family_at_canary_prices() {
     assert_eq!(
         offers,
         [
-            (1, 1, 5_000, false),
-            (1, 2, 30_000, true),
-            (1, 3, 200_000, true),
-            (11, 1, 5_000, false),
-            (11, 2, 30_000, true),
-            (11, 3, 200_000, true),
+            (1, 1, 7_500, false),
+            (1, 2, 60_000, true),
+            (1, 3, 250_000, true),
+            (11, 1, 7_500, false),
+            (11, 2, 60_000, true),
+            (11, 3, 250_000, true),
         ]
     );
     let reply = match decide(ImbuementAction::Query, Some(&allowance), &[row(1, 10)]) {

@@ -605,8 +605,16 @@ impl ComposedOwner {
                 .map_err(|_| AttackError::LedgerFull)?;
         }
         if let (Some(primary), Some(prepared)) = (&source.primary, prepared) {
-            let hit = generic
-                .commit_prepared(r, vitals, primary, proposal, prepared, now, fence, stamp)?;
+            let hit = generic.commit_prepared(
+                r,
+                vitals,
+                primary,
+                proposal,
+                prepared,
+                now,
+                Some(fence),
+                stamp,
+            )?;
             if let Some(m) = &mut primary_memo {
                 m.targets.extend(hit.targets.iter().cloned());
             }

@@ -7,6 +7,7 @@ fn member(id: u8) -> SharedExperienceMember {
         level: 100,
         x: 0,
         y: 0,
+        z: 0,
         vocation: 1,
         activity: Some(SharedExperienceActivityObservation {
             original_event_at: SemanticTimeMicros::from_micros(0),
@@ -134,4 +135,62 @@ fn shared_experience_damage_pool_handles_aggregated_wide_integer_products() {
         damage_experience_pool(1, &inputs),
         Err(InvalidSharedExperience)
     );
+}
+
+/// PAR-W14: Crystal 201189f8 `party.cpp:557-562` + `data/events/scripts/party.lua`,
+/// cross-checked against Canary 47dfd51f `party.lua:73`.
+#[test]
+fn w14_crystal_shared_experience_parity() {
+    // MATCH: minimum level ceil(highest / 1.5) (partyShareRangeMultiplier = 1.5).
+    for highest in 1_u32..=1000 {
+        let min = highest * 2 / 3 + u32::from(highest * 2 % 3 != 0);
+        let mut members = [member(1), member(2)];
+        members[0].level = highest;
+        members[1].level = min;
+        assert!(matches!(split(&members, 101), Ok(Some(_))), "{highest}");
+        if min > 1 {
+            members[1].level = min - 1;
+            assert_eq!(split(&members, 101), Ok(None), "{highest}");
+        }
+    }
+    // MATCH: experienceShareActivity = 2 * 60 * 1000 ms, inclusive.
+    assert_eq!(
+        crate::shared_experience::SHARED_EXPERIENCE_ACTIVITY_MICROS,
+        120_000_000
+    );
+    // MATCH: areInRange<30, 30, 1> (TibiaWiki Party: within 30 fields of the leader,
+    // one floor up and one floor down; Tibia manual: across floors up/down).
+    let mut members = [member(1), member(2)];
+    members[1].x = -30;
+    members[1].y = 30;
+    assert_eq!(split(&members, 101), Ok(Some(61)));
+    members[1].y = 31;
+    assert_eq!(split(&members, 101), Ok(None));
+    members[1].y = 30;
+    for (dz, shared) in [(-2, false), (-1, true), (1, true), (2, false)] {
+        members[1].z = dz;
+        assert_eq!(
+            split(&members, 101).map(|s| s.is_some()),
+            Ok(shared),
+            "{dz}"
+        );
+    }
+    // Vocation bonus: Crystal {1.20, 1.35, 1.70, 2.00}; Oteryn (= Canary
+    // 0.1n^2 - 0.2n + 1.3, capped at 2.0, = official Tibia manual +20/30/60/100%)
+    // {1.20, 1.30, 1.60, 2.00}. DIFF on 2 and 3 vocations, kept on the manual. Party of 4, 1000 xp, ceil(xp * mult / 4).
+    for (vocations, crystal, oteryn) in [(1, 300, 300), (2, 338, 325), (3, 425, 400), (4, 500, 500)]
+    {
+        let members: Vec<_> = (1..=4_u8)
+            .map(|id| {
+                let mut m = member(id);
+                m.vocation = id.min(vocations);
+                m
+            })
+            .collect();
+        assert_eq!(split(&members, 1000), Ok(Some(oteryn)), "{vocations}");
+        assert_eq!(crystal == oteryn, vocations == 1 || vocations == 4);
+    }
+    // DIFF: no bonus when the creature is worth fewer than 20 xp (official Tibia
+    // manual, Shared Experience); Crystal applies 1.20 to any amount (ceil(19 * 1.2 / 2) = 12).
+    assert_eq!(split(&[member(1), member(2)], 19), Ok(Some(10)));
 }

@@ -1,6 +1,14 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
 #[path = "depot_dispatch/stash_cases.rs"]
 mod stash_cases;
+#[path = "depot_dispatch/write_text_depot_session.rs"]
+mod write_text_depot_session;
+#[path = "depot_dispatch/write_text_ground_movement.rs"]
+mod write_text_ground_movement;
+#[path = "depot_dispatch/write_text_ground_nested_view.rs"]
+mod write_text_ground_nested_view;
+#[path = "depot_dispatch/write_text_ground_view.rs"]
+mod write_text_ground_view;
 use super::fixture::{Harness, debug, id, run};
 use super::{Dependencies, TestResult, prepare_current_session};
 use crate::content::channel_content_pin::ChannelContentPin;
@@ -8,6 +16,7 @@ use crate::durability::item_mint::{
     GroundPlacement, ItemMintCause, ItemMintOutcome, ItemMintRequest,
 };
 use crate::durability::item_transfer::{ItemTransferDestination, ItemTransferRequest};
+use crate::durability::premium_fence::EntitlementState;
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
@@ -23,9 +32,19 @@ use oteryn_protocol_oteryn::depot::*;
 fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false, false, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "depot e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true, false, false, false, false).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "stash e2e panicked")?
         .map_err(Into::into)
 }
 
@@ -33,13 +52,107 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
 fn stash_session_dispatch_conserves_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| {
+            scenario_with_premium(
+                true,
+                false,
+                false,
+                false,
+                false,
+                Some(EntitlementState::Active),
+            )
+            .map_err(|e| e.to_string())
+        })?
         .join()
-        .map_err(|_| "stash e2e panicked")?
+        .map_err(|_| "Premium stash e2e panicked")?
         .map_err(Into::into)
 }
 
-fn scenario(stash: bool) -> TestResult {
+#[test]
+fn stash_session_dispatch_expired_premium_stows_withdraws_and_replays() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(
+                true,
+                false,
+                false,
+                false,
+                false,
+                Some(EntitlementState::Expired),
+            )
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "expired Premium stash e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn write_text_ground_container_real_dispatch_observes_reach_and_custody() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, true, false, false, false).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "ground container e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn write_text_ground_nested_container_real_dispatch_observes_ancestry_and_reach() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, true, true, false, false).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "nested Ground container e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn write_text_depot_real_dispatch_revalidates_session_after_page_wait() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, false, false, true, false).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "depot session e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(false, true, true, false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "Ground movement view e2e panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario(
+    stash: bool,
+    ground_container: bool,
+    nested_ground: bool,
+    depot_session: bool,
+    ground_movement: bool,
+) -> TestResult {
+    scenario_with_premium(
+        stash,
+        ground_container,
+        nested_ground,
+        depot_session,
+        ground_movement,
+        None,
+    )
+}
+
+fn scenario_with_premium(
+    stash: bool,
+    ground_container: bool,
+    nested_ground: bool,
+    depot_session: bool,
+    ground_movement: bool,
+    stash_premium: Option<EntitlementState>,
+) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
             .await
@@ -60,6 +173,9 @@ fn scenario(stash: bool) -> TestResult {
                 deps.admitted.world_id,
                 "content-1",
             )?;
+        if ground_movement {
+            deps.room = activated_pin.qualified_room().clone();
+        }
         let generation = controller.active().ok_or("active generation")?;
         let native = generation.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("item index")?;
@@ -117,6 +233,20 @@ fn scenario(stash: bool) -> TestResult {
             .find(|t| t.x == 6)
             .ok_or("locker tile")?;
         locker.items.get_mut(1).ok_or("locker item")?.attrs.depot = Some(0);
+        if ground_movement {
+            let sector = bundle.sectors.first_mut().ok_or("sector")?;
+            let mut tile = sector
+                .tiles
+                .iter()
+                .find(|tile| tile.x == 7)
+                .ok_or("start")?
+                .clone();
+            tile.items.truncate(1);
+            for x in [8, 9] {
+                tile.x = x;
+                sector.tiles.push(tile.clone());
+            }
+        }
         let bytes =
             oteryn_world_bundle::writer::write(&bundle.manifest, &bundle.sectors, &bundle.spawns)
                 .map_err(debug)?;
@@ -187,7 +317,7 @@ fn scenario(stash: bool) -> TestResult {
             )
             .map_err(debug)?;
         deps.runtime = tokio::sync::Mutex::new(runtime);
-        let (consumer, clock, activation, _) =
+        let (consumer, clock, activation, mut evidence) =
             crate::gameplay_transport::spell_premium_coordinator::purchase_fixture::current(id(40));
         if stash {
             harness
@@ -200,6 +330,19 @@ fn scenario(stash: bool) -> TestResult {
                 .await
                 .map_err(debug)?;
         }
+        let consumer = if stash_premium == Some(EntitlementState::Expired) {
+            evidence.state = EntitlementState::Expired;
+            evidence.effective_until_us = evidence.authority_issued_at_us;
+            let consumer = std::sync::Arc::new(crate::premium::PremiumConsumer::default());
+            consumer.prove_for_test(evidence);
+            assert_eq!(
+                consumer.class(id(40), clock.read_current_window()),
+                crate::premium::PremiumClass::Expired
+            );
+            consumer
+        } else {
+            consumer
+        };
         let premium =
             crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator::new(
                 consumer,
@@ -231,7 +374,7 @@ fn scenario(stash: bool) -> TestResult {
         // under test starts below at the real dispatch, with a map handle issued by domain 17.
         let mut carried = None;
         let mut stacks = Vec::new();
-        for ordinal in 0..=if stash { 3 } else { 1 } {
+        for ordinal in 0..=if stash || ground_container { 3 } else { 1 } {
             let mut seed = harness
                 .root
                 .freeze_item_mint(
@@ -252,12 +395,16 @@ fn scenario(stash: bool) -> TestResult {
                             "fixture:purpose.map-target".into(),
                             0,
                         ),
-                        item: if ordinal == 0 {
+                        item: if ordinal == 0 || (ground_container && ordinal <= 2) {
                             backpack_definition.clone()
                         } else {
                             coin_definition.clone()
                         },
-                        quantity: if ordinal == 0 { 1 } else { 100 },
+                        quantity: if ordinal == 0 || (ground_container && ordinal <= 2) {
+                            1
+                        } else {
+                            100
+                        },
                         ground: GroundPlacement {
                             spatial_position:
                                 crate::durability::map_item_mint_audit::map_item_spatial_position(
@@ -300,7 +447,7 @@ fn scenario(stash: bool) -> TestResult {
                         } else {
                             ItemTransferDestination::MainBackpack
                         },
-                        item: if ordinal == 0 {
+                        item: if ordinal == 0 || (ground_container && ordinal <= 2) {
                             backpack_facts.clone()
                         } else {
                             coin_facts.clone()
@@ -339,7 +486,7 @@ fn scenario(stash: bool) -> TestResult {
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37])
+            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37, 62, 153])
                 .ok_or("selected")?;
         assert!(
             admitted
@@ -361,29 +508,54 @@ fn scenario(stash: bool) -> TestResult {
             .table()
             .handle(&ItemKey::Instance(carried.ok_or("carried")?))
             .ok_or("source handle")?;
-        if stash {
-            use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
-            let free = owner
-                .stash(
-                    deps.actor,
-                    UseCommand {
-                        game_session_id: session,
-                        command_id: 900,
-                        item_fence: Some(fence),
-                    },
-                    StashIntent {
-                        page: 0,
-                        action: StashAction::Stow(handle),
-                    },
-                    Some(ItemKey::Instance(carried.ok_or("source")?)),
-                    true,
+        if ground_container {
+            if !nested_ground {
+                write_text_ground_view::exercise(
+                    &owner,
+                    admitted,
+                    carried.ok_or("ground container")?,
+                    *stacks.get(2).ok_or("Ground non-container")?,
+                    index
+                        .definition_ref(
+                            "Item",
+                            &backpack_definition.production_key,
+                            &backpack_definition.revision_ref,
+                        )
+                        .ok_or("bag reference")?,
                 )
-                .await
-                .ok_or("free refusal")?;
-            assert_eq!(free.outcome, StashOutcome::PremiumRequired);
-            owner.premium_coordinator = Some(&premium);
-            owner.admit_premium(id(40), session);
-            assert!(owner.session_premium_gate(session).await.premium_current());
+                .await?;
+            } else {
+                write_text_ground_nested_view::exercise(
+                    &owner,
+                    admitted,
+                    &harness.pool,
+                    carried.ok_or("Ground root")?,
+                    *stacks.get(1).ok_or("nested Ground container")?,
+                    ground_movement,
+                    index
+                        .definition_ref(
+                            "Item",
+                            &backpack_definition.production_key,
+                            &backpack_definition.revision_ref,
+                        )
+                        .ok_or("bag reference")?,
+                )
+                .await?;
+            }
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        if stash {
+            if stash_premium.is_some() {
+                owner.premium_coordinator = Some(&premium);
+                owner.admit_premium(id(40), session);
+            }
+            assert_eq!(
+                owner.session_premium_gate(session).await.premium_current(),
+                stash_premium == Some(EntitlementState::Active)
+            );
             let other_handles = stacks
                 .iter()
                 .skip(1)
@@ -404,6 +576,43 @@ fn scenario(stash: bool) -> TestResult {
                 fence,
             )
             .await;
+        }
+        if depot_session {
+            let deposit = DepotIntent {
+                town: Some(0),
+                box_number: 17,
+                page: 0,
+                action: DepotAction::Deposit(handle),
+            };
+            let moved = owner
+                .depot(
+                    deps.actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: 3,
+                        item_fence: Some(fence),
+                    },
+                    deposit,
+                    Some(ItemKey::Instance(carried.ok_or("carried")?)),
+                )
+                .await
+                .ok_or("page race deposit")?;
+            assert_eq!(moved.reply.outcome, DepotOutcome::Moved);
+            assert_eq!(moved.items, vec![(1, carried.ok_or("carried")?)]);
+            let search = harness
+                .root
+                .read_depot_search(&authority, fence.character_id, 3031)
+                .await?
+                .ok_or("depot search result")?;
+            assert_eq!(
+                (search.client_id, search.depot, search.stash, search.inbox),
+                (3031, 100, 0, 0)
+            );
+            write_text_depot_session::exercise(&owner, admitted, &harness.pool, deposit).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
         }
         let browse = DepotIntent {
             town: None,
@@ -432,9 +641,49 @@ fn scenario(stash: bool) -> TestResult {
                     ..browse
                 },
             ),
-            (4, withdraw),
-            (5, withdraw),
+            (9, withdraw),
+            (10, withdraw),
         ] {
+            if command_id == 9 {
+                use oteryn_protocol_oteryn::depot_search::{self as search, Request};
+                for (id, request) in [
+                    (4, Request::Search { client_id: 3031 }),
+                    (5, Request::Detail { client_id: 3031 }),
+                    (
+                        6,
+                        Request::Search {
+                            client_id: u32::MAX,
+                        },
+                    ),
+                    (
+                        7,
+                        Request::Retrieve {
+                            client_id: 3031,
+                            all: false,
+                        },
+                    ),
+                    (
+                        8,
+                        Request::Retrieve {
+                            client_id: 3031,
+                            all: true,
+                        },
+                    ),
+                ] {
+                    let payload = search::encode_request(request).map_err(debug)?;
+                    let frame = oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: id,
+                            command_type: search::COMMAND_TYPE_DEPOT_SEARCH,
+                            payload: &payload,
+                        },
+                    )
+                    .map_err(debug)?;
+                    input.extend(u32::try_from(frame.len())?.to_be_bytes());
+                    input.extend(frame);
+                }
+            }
             let payload = encode_depot_intent(intent).map_err(debug)?;
             let frame = oteryn_protocol_oteryn::encode_client_command(
                 1,
@@ -451,6 +700,7 @@ fn scenario(stash: bool) -> TestResult {
         let (end, output) =
             super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
         let mut replies = Vec::new();
+        let mut search_replies = Vec::new();
         let mut cursor = output.as_slice();
         while !cursor.is_empty() {
             let length =
@@ -461,12 +711,53 @@ fn scenario(stash: bool) -> TestResult {
             if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
                     .map_err(debug)?;
+                if (4..=8).contains(&result.command_id) {
+                    assert_eq!(
+                        result.status,
+                        oteryn_protocol_oteryn::CommandStatus::Accepted
+                    );
+                    search_replies.push(
+                        oteryn_protocol_oteryn::depot_search::decode_reply(result.payload)
+                            .map_err(debug)?,
+                    );
+                    continue;
+                }
                 replies.push((
                     result.status,
                     decode_depot_reply(result.payload).map_err(debug)?,
                 ));
             }
         }
+        use oteryn_protocol_oteryn::depot_search::{Outcome, TierCount};
+        assert_eq!(search_replies.len(), 5, "{end}");
+        assert_eq!(
+            search_replies.iter().map(|r| r.outcome).collect::<Vec<_>>(),
+            [
+                Outcome::Found,
+                Outcome::Found,
+                Outcome::NotFound,
+                Outcome::Rejected,
+                Outcome::Rejected
+            ]
+        );
+        assert_eq!(search_replies[0], search_replies[1]);
+        let found = search_replies[0].results.first().ok_or("search result")?;
+        assert_eq!(
+            (found.client_id, found.depot, found.stash, found.inbox),
+            (3031, 100, 0, 0)
+        );
+        assert_eq!(
+            found.tiers,
+            [TierCount {
+                tier: 0,
+                count: 100
+            }]
+        );
+        assert!(
+            search_replies[2..]
+                .iter()
+                .all(|r| r.retrieved == 0 && r.results.is_empty())
+        );
         assert_eq!(replies.len(), 5, "{end}");
         assert_eq!(
             replies.iter().map(|(_, r)| r.outcome).collect::<Vec<_>>(),
@@ -521,7 +812,8 @@ fn scenario(stash: bool) -> TestResult {
                 None,
             )
             .await
-            .ok_or("durable replay")?;
+            .ok_or("durable replay")?
+            .reply;
         assert_eq!(replay.outcome, DepotOutcome::Moved);
         // Reusing an ordinal after withdrawal cannot move another item; a wrong town fails closed.
         let wrong = owner
@@ -529,7 +821,7 @@ fn scenario(stash: bool) -> TestResult {
                 deps.actor,
                 UseCommand {
                     game_session_id: session,
-                    command_id: 6,
+                    command_id: 11,
                     item_fence: Some(fence),
                 },
                 DepotIntent {
@@ -539,7 +831,8 @@ fn scenario(stash: bool) -> TestResult {
                 None,
             )
             .await
-            .ok_or("town refusal")?;
+            .ok_or("town refusal")?
+            .reply;
         assert_eq!(wrong.outcome, DepotOutcome::Stale);
         let replay_command = UseCommand {
             game_session_id: session,
@@ -557,7 +850,8 @@ fn scenario(stash: bool) -> TestResult {
                 None,
             )
             .await
-            .ok_or("conflicting replay")?;
+            .ok_or("conflicting replay")?
+            .reply;
         assert_eq!(changed.outcome, DepotOutcome::Rejected);
         let stale = crate::durability::item_transfer::CurrentCharacterItemFence {
             connection_generation: crate::foundation::ConnectionGeneration::new(2)
@@ -569,15 +863,67 @@ fn scenario(stash: bool) -> TestResult {
                 deps.actor,
                 UseCommand {
                     item_fence: Some(stale),
-                    command_id: 7,
+                    command_id: 12,
                     ..replay_command
                 },
                 deposit,
                 Some(ItemKey::Instance(carried.ok_or("carried")?)),
             )
             .await
-            .ok_or("stale fence")?;
+            .ok_or("stale fence")?
+            .reply;
         assert_eq!(refused.outcome, DepotOutcome::Rejected);
+        // The native page preserves exact identities from storage; neither the wire
+        // ordinal nor its definition can be used as an instance identity. In particular,
+        // this second deposit gets a new ordinal while keeping the same ItemInstance.
+        let observation = owner
+            .depot(
+                deps.actor,
+                UseCommand {
+                    command_id: 14,
+                    ..replay_command
+                },
+                deposit,
+                Some(ItemKey::Instance(carried.ok_or("carried")?)),
+            )
+            .await
+            .ok_or("selection deposit")?;
+        assert_eq!(observation.reply.outcome, DepotOutcome::Moved);
+        assert_eq!(observation.items, vec![(2, carried.ok_or("carried")?)]);
+        assert_eq!(observation.reply.entries[0].ordinal, observation.items[0].0);
+        let observation = owner
+            .depot(
+                deps.actor,
+                UseCommand {
+                    command_id: 15,
+                    ..replay_command
+                },
+                browse,
+                None,
+            )
+            .await
+            .ok_or("selection browse")?;
+        assert_eq!(observation.reply.outcome, DepotOutcome::Opened);
+        assert_eq!(observation.items, vec![(2, carried.ok_or("carried")?)]);
+        // Restore custody through the fenced owner; an empty current page retains no IDs.
+        let observation = owner
+            .depot(
+                deps.actor,
+                UseCommand {
+                    command_id: 16,
+                    ..replay_command
+                },
+                DepotIntent {
+                    action: DepotAction::Withdraw(2),
+                    ..withdraw
+                },
+                None,
+            )
+            .await
+            .ok_or("selection withdraw")?;
+        assert_eq!(observation.reply.outcome, DepotOutcome::Moved);
+        assert!(observation.items.is_empty());
+        assert!(observation.reply.entries.is_empty());
         {
             let mut runtime = owner.runtime.lock().await;
             let mut movement = runtime.borrow_movement_position();
@@ -592,19 +938,22 @@ fn scenario(stash: bool) -> TestResult {
             .depot(
                 deps.actor,
                 UseCommand {
-                    command_id: 8,
+                    command_id: 13,
                     ..replay_command
                 },
                 browse,
                 None,
             )
             .await
-            .ok_or("reach refusal")?;
+            .ok_or("reach refusal")?
+            .reply;
         assert_eq!(far.outcome, DepotOutcome::NoLocker);
         let replay = owner
             .depot(deps.actor, replay_command, deposit, None)
             .await
             .ok_or("replay outside locker")?;
+        assert!(replay.items.is_empty());
+        let replay = replay.reply;
         assert_eq!(replay.outcome, DepotOutcome::Moved);
         assert_eq!(
             replay.town, None,

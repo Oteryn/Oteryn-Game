@@ -256,6 +256,9 @@ def main() -> int:
     ]
 
     profiles = {target_id(row["target"]): row["data"] for row in declarations.get("authoring_profiles", [])}
+    for key, profile in profiles.items():
+        if key[0] == "Creature":
+            profile["profile"]["details"].setdefault("reference_level", None)
     creature_shards: dict[str, list[str]] = {}
     creature_counts: dict[str, int] = {}
     for family, (node, stem) in CREATURE_FAMILIES.items():
@@ -506,7 +509,7 @@ def main() -> int:
                             "schema": declarations["schema"]}})
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 388:
+    if len(service_records) != 389:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}

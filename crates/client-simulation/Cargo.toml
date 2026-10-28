@@ -9,7 +9,7 @@ publish.workspace = true
 
 [package.metadata.oteryn]
 category = "client-simulation"
-release-role = "synthetic-only"
+release-role = "production"
 
 [dependencies]
 oteryn-client-domain = { version = "=0.1.0", path = "../client-domain" }

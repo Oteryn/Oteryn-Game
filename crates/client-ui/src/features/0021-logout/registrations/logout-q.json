@@ -1,0 +1,9 @@
+{
+  "mechanic": "0021-logout",
+  "kind": "keybindings",
+  "id": "0021-logout-logout-q",
+  "status": "supported",
+  "context": "global",
+  "chord": "CTRL+Q",
+  "entry": "input.rs::default_logout_binding"
+}

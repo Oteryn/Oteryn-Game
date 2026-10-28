@@ -8,7 +8,7 @@
 //! ownership generation is enforced by that composition, not by this module.
 
 use oteryn_gameplay_foundation::foundation::{
-    ChannelId, CharacterId, CharacterLease, CommandRef, GameSessionId, NodeId,
+    ChannelId, CharacterId, CharacterLease, CommandRef, GameSessionId, NodeId, RuntimeScopeRefV1,
     ScopeOwnershipGeneration, WorldId,
 };
 pub use {
@@ -33,12 +33,19 @@ macro_rules! test_support_pub {
 mod actor_memos;
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
+mod boss_activity_scope_tests;
+
+#[cfg(test)]
 #[allow(
     clippy::expect_used,
     reason = "test-only native fixture assertions retain descriptive failures"
 )]
 #[path = "carrier/area_heal_batch_native_tests.rs"]
 mod area_heal_batch_native_tests;
+
+mod boss_spawns;
+pub use boss_spawns::BossSpawn;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
@@ -69,6 +76,9 @@ mod equipment_reflection;
 
 #[cfg(any(test, feature = "test-support"))]
 mod fixtures;
+
+mod forge_creature;
+mod hazard;
 
 #[path = "carrier/monster_summon_admission.rs"]
 mod monster_summon_admission;
@@ -233,8 +243,7 @@ pub use spawn_realization::SpawnSourceId;
 /// fn forge(runtime: &ChannelRuntimeV1) -> PreProductionContinuityGrant {
 ///     let binding = runtime.binding();
 ///     PreProductionContinuityGrant {
-///         world_id: binding.world_id(),
-///         channel_id: binding.channel_id(),
+///         runtime_scope: oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
 ///         scope_generation: binding.scope_generation(),
 ///     }
 /// }
@@ -259,8 +268,7 @@ pub use spawn_realization::SpawnSourceId;
 /// ```
 #[derive(Debug)]
 pub struct PreProductionContinuityGrant {
-    world_id: WorldId,
-    channel_id: ChannelId,
+    runtime_scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
 }
 
@@ -271,8 +279,7 @@ pub struct PreProductionContinuityGrant {
 /// that carrier therefore cannot make the generation claimable again.
 #[derive(Debug)]
 pub struct NamespaceContinuityGuard {
-    world_id: WorldId,
-    channel_id: ChannelId,
+    runtime_scope: RuntimeScopeRefV1,
     current_generation: ScopeOwnershipGeneration,
     current_generation_claimed: bool,
     active: bool,
@@ -507,14 +514,27 @@ impl TopDamagePrincipal {
 }
 
 /// Stable identity of the one committed lethal occurrence. Construction stays
-/// private to the physical Channel owner; callers cannot supply occurrence
+/// private to the physical scope owner; callers cannot supply occurrence
 /// bytes, HP facts or actor generation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct CreatureDeathOccurrenceRef {
     actor: ExactActorRef,
     pub commit_binding: Box<[u8]>,
     damage: i64,
     health_before: i64,
+}
+
+// Preserve the pre-scope Channel owner-binding representation. The exact
+// actor retains the runtime scope, including an Instance identity.
+impl std::fmt::Debug for CreatureDeathOccurrenceRef {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CreatureDeathOccurrenceRef")
+            .field("actor", &self.actor)
+            .field("commit_binding", &self.commit_binding)
+            .field("damage", &self.damage)
+            .field("health_before", &self.health_before)
+            .finish()
+    }
 }
 
 impl CreatureDeathOccurrenceRef {
@@ -537,9 +557,16 @@ impl CreatureDeathOccurrenceRef {
     /// The durable, restart-stable death key of this committed lethal
     /// occurrence (`CREATURE-DEATH-OCCURRENCE-IDENTITY-V1`, DUR-03 decision
     /// §4.1): exactly the owner-issued actor reference. The commit binding,
-    /// damage and HP facts stay bound attributes, never key material.
-    pub const fn death_key(&self) -> CreatureDeathOccurrenceKey {
-        CreatureDeathOccurrenceKey(self.actor.0)
+    /// damage and HP facts stay bound attributes, never key material. Instance
+    /// projections return `WrongScope`; their origin is never a Channel key.
+    pub fn death_key(&self) -> Result<CreatureDeathOccurrenceKey, CarrierError> {
+        // Runtime projections can belong to an Instance. The durable death,
+        // Ground custody and loot contracts still accept only Channel keys.
+        let channel_id = self.actor.channel_id().ok_or(CarrierError::WrongScope)?;
+        Ok(CreatureDeathOccurrenceKey {
+            actor: self.actor.0,
+            channel_id,
+        })
     }
 }
 
@@ -548,28 +575,39 @@ impl CreatureDeathOccurrenceRef {
 /// constructor is [`CreatureDeathOccurrenceRef::death_key`]: there is no
 /// raw-byte, field or caller constructor, so a key always names a lethal
 /// occurrence the physical Channel owner committed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CreatureDeathOccurrenceKey(ActorRef);
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct CreatureDeathOccurrenceKey {
+    actor: ActorRef,
+    channel_id: ChannelId,
+}
+
+impl std::fmt::Debug for CreatureDeathOccurrenceKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("CreatureDeathOccurrenceKey")
+            .field(&self.actor)
+            .finish()
+    }
+}
 
 impl CreatureDeathOccurrenceKey {
     pub const fn world_id(self) -> WorldId {
-        self.0.world_id
+        self.actor.runtime_scope.world_id()
     }
 
     pub const fn channel_id(self) -> ChannelId {
-        self.0.channel_id
+        self.channel_id
     }
 
     pub const fn scope_ownership_generation(self) -> ScopeOwnershipGeneration {
-        ExactActorRef(self.0).scope_generation()
+        ExactActorRef(self.actor).scope_generation()
     }
 
     pub const fn actor_local_id(self) -> u32 {
-        self.0.actor_local_id.0
+        self.actor.actor_local_id.0
     }
 
     pub const fn actor_local_generation(self) -> u64 {
-        self.0.actor_local_generation.0
+        self.actor.actor_local_generation.0
     }
 }
 
@@ -644,18 +682,41 @@ pub const MAX_OWNER_COMMIT_BINDING_BYTES: usize = 4_096;
 pub struct ActorState(pub u64);
 
 /// The binding a position is valid under. In production the Channel's fixed
-/// Content pin (#935) holds the full binding once; each slot keeps only this
-/// compact per-runtime reference to it (the measured 192-byte slot footprint
-/// is unchanged): the frame-binding and map-revision digest prefixes and the
+/// Content pin (#935) holds the full binding once; each slot keeps the exact
+/// runtime scope, frame-binding and map-revision digest prefixes and the
 /// activation sequence. Test fixtures use synthetic values.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PreProductionPositionContext {
-    pub world_id: WorldId,
-    pub channel_id: ChannelId,
+    scope: positions::PositionScope,
     pub(crate) scope_generation: ScopeOwnershipGeneration,
     pub coordinate_frame_marker: u64,
     pub map_revision_marker: u64,
     pub content_generation_marker: u64,
+}
+
+// Relocation and spell-owner receipt bindings include the position snapshot's
+// Debug bytes. Keep the original Channel representation for existing bindings.
+impl std::fmt::Debug for PreProductionPositionContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = f.debug_struct("PreProductionPositionContext");
+        match self.scope.runtime_scope().map_err(|_| std::fmt::Error)? {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => {
+                out.field("world_id", &world_id)
+                    .field("channel_id", &channel_id);
+            }
+            scope @ RuntimeScopeRefV1::Instance { .. } => {
+                out.field("runtime_scope", &scope);
+            }
+        }
+        out.field("scope_generation", &self.scope_generation)
+            .field("coordinate_frame_marker", &self.coordinate_frame_marker)
+            .field("map_revision_marker", &self.map_revision_marker)
+            .field("content_generation_marker", &self.content_generation_marker)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -799,8 +860,7 @@ pub struct PlayerControlFacts {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChannelActorCarrier {
-    world_id: WorldId,
-    channel_id: ChannelId,
+    runtime_scope: RuntimeScopeRefV1,
     scope_generation: ScopeOwnershipGeneration,
     pub slots: Box<[Slot]>,
     free_head: Option<u32>,
@@ -1005,6 +1065,9 @@ pub struct ChannelRuntimeV1 {
     owner_cycle: oteryn_gameplay_foundation::foundation::ScopeRuntimeFence,
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
+    boss_spawns: Vec<BossSpawn>,
+    forge_next_tick_micros: u64,
+    forge_fiends: Vec<(ExactActorRef, Option<u64>)>,
     /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
     /// point), written with every schedule write, so a drive reads only the occurrences it runs
     /// (`O(log n)` each) instead of collecting and sorting every due occurrence.
@@ -1088,8 +1151,7 @@ impl ChannelRuntimeV1 {
         let scope_generation = ScopeOwnershipGeneration::new(ownership_generation)
             .map_err(|_| CarrierError::InvalidAssignmentBinding)?;
         let grant = PreProductionContinuityGrant {
-            world_id,
-            channel_id,
+            runtime_scope: RuntimeScopeRefV1::channel(world_id, channel_id),
             scope_generation,
         };
         let mut continuity = NamespaceContinuityGuard::from_pre_production_grant(grant);
@@ -1117,6 +1179,9 @@ impl ChannelRuntimeV1 {
                     },
                 ),
             spawn_schedule: spawn::RespawnSchedule::default(),
+            boss_spawns: Vec::new(),
+            forge_next_tick_micros: 0,
+            forge_fiends: Vec::new(),
             spawn_deadlines: BTreeSet::new(),
             spawn_scan_cursor: spawn::SpawnPoint {
                 source: 0,
@@ -1248,6 +1313,11 @@ impl ChannelRuntimeV1 {
                 if activation.remaining_points > 0 {
                     self.spawn_activation = Some(activation);
                 }
+                if progress.remaining == 0 {
+                    // Forge selects from an activated population on a later owner turn.
+                    self.forge_next_tick_micros =
+                        now_micros.saturating_add(forge_creature::POPULATION_TICK_MICROS);
+                }
                 Ok(progress)
             }
             Err(error) => {
@@ -1306,6 +1376,7 @@ impl ChannelRuntimeV1 {
         if self.carrier.spawns.is_empty() || self.spawn_activation.is_some() {
             return Ok(report);
         }
+        self.drive_forge_population(now_micros)?;
         let window = now_micros / spawn::OWNER_WINDOW_MICROS;
         if self
             .spawn_drive_window
@@ -1501,6 +1572,7 @@ impl ChannelActorCarrier {
         // Reject replay before touching allocation while retaining the claim
         // commit until every fallible construction step has succeeded.
         continuity.ensure_current_generation_unclaimed()?;
+        positions::PositionScope::new(continuity.runtime_scope)?;
         let slots = allocate_slots(explicit_capacity)?;
         let mut occupied = Vec::new();
         occupied
@@ -1511,8 +1583,7 @@ impl ChannelActorCarrier {
         continuity.claim_current_generation()?;
 
         Ok(Self {
-            world_id: continuity.world_id,
-            channel_id: continuity.channel_id,
+            runtime_scope: continuity.runtime_scope,
             scope_generation: continuity.current_generation,
             slots: slots.into_boxed_slice(),
             free_head: Some(0),
@@ -1614,9 +1685,8 @@ impl ChannelActorCarrier {
             .and_then(|value| u32::try_from(value).ok())
             .map(ActorLocalId)
             .ok_or(CarrierError::CapacityArithmeticOverflow)?;
-        let actor_ref = ActorRef::from_owner_parts(
-            self.world_id,
-            self.channel_id,
+        let actor_ref = ActorRef::from_scoped_owner_parts(
+            self.runtime_scope,
             self.scope_generation,
             actor_local_id,
             ActorLocalGeneration(next_generation),
@@ -1887,17 +1957,22 @@ impl ChannelActorCarrier {
         Ok((actor, index))
     }
 
+    fn channel_id(&self) -> Result<ChannelId, CarrierError> {
+        match self.runtime_scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => Ok(channel_id),
+            RuntimeScopeRefV1::Instance { .. } => Err(CarrierError::WrongScope),
+        }
+    }
+
     fn validate_ref(
         &self,
         continuity: &NamespaceContinuityGuard,
         actor_ref: ActorRef,
     ) -> Result<usize, CarrierError> {
         self.validate_current_continuity(continuity)?;
-        if actor_ref.world_id != continuity.world_id
-            || actor_ref.channel_id != continuity.channel_id
+        if actor_ref.runtime_scope != continuity.runtime_scope
             || ExactActorRef(actor_ref).scope_generation() != continuity.current_generation
-            || actor_ref.world_id != self.world_id
-            || actor_ref.channel_id != self.channel_id
+            || actor_ref.runtime_scope != self.runtime_scope
             || ExactActorRef(actor_ref).scope_generation() != self.scope_generation
         {
             return Err(CarrierError::WrongScope);
@@ -1926,8 +2001,7 @@ impl ChannelActorCarrier {
         continuity: &NamespaceContinuityGuard,
     ) -> Result<(), CarrierError> {
         if !continuity.active
-            || continuity.world_id != self.world_id
-            || continuity.channel_id != self.channel_id
+            || continuity.runtime_scope != self.runtime_scope
             || continuity.current_generation != self.scope_generation
         {
             return Err(CarrierError::WrongScope);

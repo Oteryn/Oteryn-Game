@@ -236,6 +236,8 @@ pub struct DurableTileItem {
 /// the current player/lease/placement; these bytes cannot reconstruct an actor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurableFieldOrigin {
+    /// Original mint identity survives transforms into shared decay-stage IDs.
+    pub source_item_key: String,
     /// Actual DB-clock timestamp from the immutable originating cast receipt.
     pub created_at_unix_ms: i64,
     pub character_id: [u8; 16],
@@ -273,8 +275,7 @@ pub struct SpellItemTransactionRequest {
     pub cost: CastCostBinding,
     pub caster_origin: Option<SourceCasterOrigin>,
     pub operations: Vec<SpellItemOperation>,
-    pub companion:
-        Option<crate::durability::spell_item_transaction::PreparedCompanionAcquisition>,
+    pub companion: Option<crate::durability::spell_item_transaction::PreparedCompanionAcquisition>,
     pub direct_companion:
         Option<crate::durability::spell_item_transaction::PreparedDirectCompanionAcquisition>,
 }

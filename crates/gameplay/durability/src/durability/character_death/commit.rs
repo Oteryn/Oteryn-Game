@@ -8,8 +8,8 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         request: CharacterDeathRequest<N>,
-        mut formula: Option<&dyn BuildFormula>,
-        premium: promotion::DeathPremiumState,
+        formula: Option<&dyn BuildFormula>,
+        premium: Option<&dyn promotion::DeathPremiumOwner>,
     ) -> Result<CharacterDeathOutcome> {
         validate_request(&fence, &request)?;
         let binding = command_binding(&fence, &request)?;
@@ -20,11 +20,12 @@ impl DurabilityRoot {
         let node = node.clone();
         let durability = self.clone();
 
+        let mut owners = (formula, premium);
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut formula, move |holder, deadline, formula| {
+            .run_with_context(&mut owners, move |holder, deadline, owners| {
                 Box::pin(async move {
+                    let (formula, premium) = owners;
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                    if let Err(error) = promotion::hold_delivery(&mut tx, premium).await? { return Ok(Err(error)); }
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     lock_admission_relations(&mut tx).await?;
 
@@ -54,6 +55,13 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(CharacterDeathOutcome::AlreadyCommitted(committed)));
                     }
+
+                    // Resolve Premium in this transaction, before the Character row lock,
+                    // matching the promotion and Wheel latch-before-Character lock order.
+                    let premium = match *premium {
+                        Some(owner) => owner.current(&mut tx).await?,
+                        None => false,
+                    };
 
                     // The player died in the Channel that owns the session.
                     if fence.runtime_scope
@@ -144,10 +152,11 @@ impl DurabilityRoot {
                         skill_progression: (),
                         magic_progression: (),
                     };
-                    // Every held blessing is a regular one until DEATH-4
-                    // admits other kinds; more than D58's seven is rejected
-                    // by the calculator.
-                    let regular_blessings = u8::try_from(held.len())
+                    let twist_key = oteryn_gameplay_combat_rules::pvp::death::TWIST_OF_FATE_KEY;
+                    let has_twist = held.iter().any(|key| key == twist_key);
+                    let regular_blessings = u8::try_from(
+                        held.len().saturating_sub(usize::from(has_twist)),
+                    )
                         .map_err(|_| DurabilityError::InvalidStoredState)?;
                     let operation = ProgressionOperation::ApplyDeathExperienceLoss {
                         death_occurrence: request.occurrence,
@@ -240,7 +249,26 @@ impl DurabilityRoot {
                     )
                     .fetch_one(&mut *tx)
                     .await?;
-                    let blessings_after = if adventurer_applied { held.clone() } else { Vec::new() };
+                    let effective_red_or_black: bool = sqlx::query_scalar(
+                        "SELECT EXISTS(SELECT 1 FROM game_character_pvp_state \
+                         WHERE character_id = encode($1,'hex')::uuid \
+                           AND skull > 0 AND skull_until > clock_timestamp())",
+                    )
+                    .bind(fence.character_id.as_bytes().as_slice())
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    let disposition = oteryn_gameplay_combat_rules::pvp::death::blessing_disposition(
+                        !contributors.is_empty(),
+                        effective_red_or_black,
+                        adventurer_applied,
+                        usize::from(regular_blessings),
+                        has_twist,
+                    );
+                    let blessings_after = match disposition {
+                        oteryn_gameplay_combat_rules::pvp::death::BlessingDisposition::KeepAll => held.clone(),
+                        oteryn_gameplay_combat_rules::pvp::death::BlessingDisposition::ConsumeRegular => held.iter().filter(|key| key.as_str() == twist_key).cloned().collect(),
+                        oteryn_gameplay_combat_rules::pvp::death::BlessingDisposition::ConsumeTwist => held.iter().filter(|key| key.as_str() != twist_key).cloned().collect(),
+                    };
                     let receipt = sqlx::query(
                         "INSERT INTO game_character_death_receipts(\
                            death_occurrence_id, command_binding, policy_digest, character_id, \
@@ -313,10 +341,11 @@ impl DurabilityRoot {
                     .await?;
                     let consumed = sqlx::query(
                         "DELETE FROM game_character_blessings \
-                          WHERE character_id = encode($1,'hex')::uuid AND NOT $2",
+                          WHERE character_id = encode($1,'hex')::uuid \
+                            AND NOT (blessing_key = ANY($2))",
                     )
                     .bind(fence.character_id.as_bytes().as_slice())
-                    .bind(adventurer_applied)
+                    .bind(&blessings_after)
                     .execute(&mut *tx)
                     .await?;
                     if usize::try_from(consumed.rows_affected()).ok() != Some(held.len() - blessings_after.len()) {

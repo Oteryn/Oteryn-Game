@@ -1,0 +1,16 @@
+{
+  "id": 117,
+  "name": "BOSS_ENCOUNTER_V1",
+  "owner_decision": "BOSS-ENCOUNTER-1 owner decisions 23/24, 2026-10-26",
+  "owner": "Shared per-character boss cooldown reads and hazard-level selection. Boss lever (178), defeat (179) and timeout (180) are reserved staged commands and remain refused until the committed activity handoff, InstanceRuntime and return/recovery owner are installed; they advertise no activity admission or reward delivery.",
+  "requires": [],
+  "command_types": [
+    133,
+    169,
+    178,
+    179,
+    180
+  ],
+  "state_domains": [],
+  "offered": true
+}

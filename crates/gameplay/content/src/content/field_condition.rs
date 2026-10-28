@@ -216,3 +216,6 @@ mod tests {
         assert!(serde_json::from_value::<QualifiedFieldCondition>(value).is_err());
     }
 }
+#[cfg(test)]
+#[path = "field_condition_crystal_parity_tests.rs"]
+mod crystal_parity_tests;

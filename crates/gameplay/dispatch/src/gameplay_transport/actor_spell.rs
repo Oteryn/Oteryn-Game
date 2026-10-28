@@ -46,6 +46,8 @@ mod field_step_ingress;
 pub(in crate::gameplay_transport) mod native_combat_cast;
 #[path = "parameter_cast.rs"]
 mod parameter_cast;
+#[path = "player_field.rs"]
+pub(in crate::gameplay_transport) mod player_field;
 #[path = "spell_timer_callbacks.rs"]
 mod spell_timer_callbacks;
 #[path = "world_item_cast.rs"]
@@ -94,9 +96,15 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    pub(super) prey: Vec<super::prey::LivePrey>,
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
     pub(in crate::gameplay_transport) actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
+    pub(in crate::gameplay_transport) charm_states: Vec<(
+        ExactActorRef,
+        GameSessionId,
+        crate::durability::charm_state::CombatCharmState,
+    )>,
     /// One real Channel-owner lane; no timer is restored from client intent.
     pub spell_timers: Option<crate::spell::delayed_execution::SpellTimerOwner>,
     pub pending_familiars: Vec<
@@ -136,6 +144,8 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) next_party_deadline_pass_us: u64,
     pub(in crate::gameplay_transport) monster_summons: crate::monster_summon::NativeSummonOwner,
     pub(in crate::gameplay_transport) monster_melee: crate::ai_monster_melee::MonsterMeleeOwner,
+    pub(in crate::gameplay_transport) monster_spells:
+        crate::creature_damage_spell::DamageSpellOwner,
     pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
     pub(in crate::gameplay_transport) monster_ai_sequence: u64,
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
@@ -260,9 +270,11 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            prey: Vec::new(),
             hunting_stamina: Vec::new(),
             owner_wake: Default::default(),
             actors: Vec::new(),
+            charm_states: Vec::new(),
             spell_timers: Default::default(),
             pending_familiars: Default::default(),
             pending_familiar_lifecycle: Default::default(),
@@ -277,6 +289,7 @@ impl Default for ChannelSpellStates {
             next_map_initialization_pass_us: Default::default(),
             next_party_deadline_pass_us: Default::default(),
             monster_melee: Default::default(),
+            monster_spells: Default::default(),
             monster_summons: Default::default(),
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),
@@ -315,6 +328,37 @@ fn mint_player_death_occurrence() -> Option<PlayerDeathOccurrence> {
 }
 
 impl ChannelSpellStates {
+    pub(in crate::gameplay_transport) fn install_charm_state(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        state: crate::durability::charm_state::CombatCharmState,
+    ) -> bool {
+        if runtime.player_control_facts(actor, session).is_err() {
+            return false;
+        }
+        self.charm_states.retain(|(present, held, _)| {
+            runtime.player_control_facts(*present, *held).is_ok()
+                && !(*present == actor && *held == session)
+        });
+        self.charm_states.push((actor, session, state));
+        true
+    }
+
+    pub(in crate::gameplay_transport) fn charm_state(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> Option<&crate::durability::charm_state::CombatCharmState> {
+        runtime.player_control_facts(actor, session).ok()?;
+        self.charm_states
+            .iter()
+            .find(|(present, held, _)| *present == actor && *held == session)
+            .map(|(_, _, state)| state)
+    }
+
     /// Unknown durable outcomes retain their original prepared owner state.
     pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
         self.has_pending_native(actor, session)
@@ -484,6 +528,8 @@ impl ChannelSpellStates {
         self.actors.retain(|(present, session, _)| {
             runtime.player_control_facts(*present, *session).is_ok()
         });
+        self.charm_states
+            .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
         self.prune_source_memos(runtime);
         let actors = &self.actors;
         self.deaths.retain(|(dead, session, _)| {
@@ -762,6 +808,38 @@ impl ChannelSpellStates {
         }
         self.commit(runtime, actor, game_session_id, next)
             .then_some((gained, revision))
+    }
+
+    pub(super) fn apply_resting_regeneration(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        streak: u32,
+        soul_due: bool,
+    ) -> Option<(u64, ActorVitals)> {
+        if self.is_dead(actor) || self.has_pending_spell_commit(actor, session) {
+            return None;
+        }
+        let current = self.get(runtime, actor, session)?.clone();
+        let next = current.after_resting_regeneration(streak)?;
+        let mut changed = next.revision() != current.revision();
+        if changed && !self.commit(runtime, actor, session, next) {
+            return None;
+        }
+        let current = self.get(runtime, actor, session)?.clone();
+        let next = if soul_due {
+            current.after_resting_soul()?
+        } else {
+            current.clone()
+        };
+        let soul_changed = next.revision() != current.revision();
+        if soul_changed && !self.commit(runtime, actor, session, next) {
+            return None;
+        }
+        changed |= soul_changed;
+        let state = self.get(runtime, actor, session)?;
+        changed.then(|| (state.revision(), state.vitals()))
     }
 
     /// True while no spell commit is pending for the committed player and no durable spell holds
@@ -1321,6 +1399,17 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             return None;
         }
 
+        let percent = runtime.companion_snapshot(source).ok().map_or(0, |s| {
+            self.prey_percent(
+                runtime,
+                target,
+                session,
+                &s.state.policy.definition_key,
+                2,
+                facts.now,
+            )
+        });
+        let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
         if definitions.is_empty() {
             return self.apply_attack_damage(
                 runtime,
@@ -1687,7 +1776,12 @@ impl ChannelSpellStates {
                     damage = damage.checked_add(hit.applied)?;
                     next = successor;
                 }
-                TickKind::Damage { refused: true, .. }
+                // Food duration is consumed here; source_take_due already stepped its clock.
+                TickKind::Regeneration {
+                    key: oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
+                    ..
+                }
+                | TickKind::Damage { refused: true, .. }
                 | TickKind::Regeneration {
                     suppressed: true, ..
                 } => {}

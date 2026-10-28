@@ -56,6 +56,22 @@ impl Default for TrainingRuntime {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Read the existing exercise owner; offline training already ends the online session
+    /// through ordinary logout and therefore cannot accrue online idle time.
+    pub(in crate::gameplay_transport) async fn idle_training(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Option<bool> {
+        let sessions = self.states.training.sessions.lock().await;
+        let run = sessions
+            .get(&admitted.game_session_id)
+            .and_then(|state| state.exercise.as_ref());
+        match run {
+            Some(run) => run.matches_session(admitted),
+            None => Some(false),
+        }
+    }
+
     fn training_context(&self) -> Option<TrainingContext> {
         let rates = self.states.training.config.as_ref()?.clone();
         if !rates.enabled {
@@ -73,7 +89,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .any(|key| index.definition_ref("Item", key, "definition-r1").is_some())
             || !rates
                 .dummies
-                .iter()
+                .keys()
                 .any(|key| index.definition_ref("Item", key, "definition-r1").is_some())
         {
             return None;

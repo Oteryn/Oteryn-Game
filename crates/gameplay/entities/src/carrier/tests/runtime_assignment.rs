@@ -65,6 +65,7 @@ fn qualification_spawn_uses_current_policy_and_refuses_wrong_pin_occupancy_dupli
         definition_revision: "fixture:1".into(),
         display_name: "fixture Rat".into(),
         maximum_health: 37,
+        forge_difficulty: None,
         base_speed: 110,
         outfit_look_type: 21,
         object_look_type: None,

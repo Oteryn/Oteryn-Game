@@ -7,7 +7,9 @@ include!(concat!(env!("OUT_DIR"), "/mechanic_modules.rs"));
 // Test mounts, including #[path] mounts, share this block.
 // Keep sorted by module name; insert in order, never append.
 pub mod actor_spell;
+pub mod atelier;
 mod attack;
+mod automatic_spell_progression;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
@@ -24,6 +26,7 @@ mod character_progression_binding_tests;
 pub mod charm;
 mod chat_intent;
 mod chat_relay;
+mod coin_use;
 mod combat_lock_fact;
 mod composed_admission;
 #[cfg(test)]
@@ -34,6 +37,7 @@ mod container_view;
 mod control_loss;
 mod control_loss_reconciliation;
 mod corpse_decay;
+mod creature_field;
 /// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 18.6: a trained actor
 /// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
 /// next training save commits on the lowered durable build instead of returning `Unknown`.
@@ -43,6 +47,7 @@ mod death_ml_loss_postgres;
 mod depot;
 mod equipment_move;
 mod equipment_reflection;
+mod field_removal;
 mod first_vocation_vitals;
 pub mod fresh_evidence;
 pub mod gameplay_drain;
@@ -50,6 +55,7 @@ mod guild_bank;
 mod guild_chat;
 mod guild_war;
 mod highscores;
+mod house_furnishing;
 mod house_query;
 mod house_transfer;
 mod hunting_stamina;
@@ -59,6 +65,7 @@ mod item_craft;
 mod item_look;
 mod item_move;
 mod item_ref_admission;
+mod item_spell_augments;
 mod item_transform;
 mod item_use;
 mod item_view;
@@ -71,6 +78,7 @@ mod logout;
 mod logout_tests;
 mod loop_move;
 mod loop_training;
+pub mod mail;
 mod map_door;
 mod mining;
 mod monk_save;
@@ -94,6 +102,7 @@ mod npc_voice;
 mod paced_movement;
 pub mod party_command;
 mod party_kill_settlement;
+mod party_skull;
 mod party_spell_feedback;
 mod party_spell_owner;
 mod party_xp;
@@ -106,8 +115,10 @@ mod pvp_live;
 mod quest_admission;
 mod quest_callbacks;
 mod quest_log_source;
+mod resting_area;
 mod resume;
 mod reward_bag_use;
+pub mod rotten_blood_dispatch;
 mod rune_use_bridge;
 mod seam_rooms;
 pub mod server_save_countdown;
@@ -137,6 +148,7 @@ mod tutorial_corruptor;
 mod tutorial_movement;
 mod tutorial_session;
 mod vocation_choice;
+pub mod weapon_proficiency;
 mod world_event;
 mod world_map;
 /// ADMIT0: the boot-bound Channel required gameplay capabilities (D1081-D1084).
@@ -150,7 +162,7 @@ use crate::map::boot::BundleCollisionIndexExt;
 use bundle_map_position::bundle_map_position;
 #[cfg(test)]
 use bundle_map_position::bundle_world_map;
-pub use connection::quest_log;
+pub use connection::{GameplayIdlePolicy, quest_log};
 pub use last_position::LastPositionFlush;
 pub use npc_talk::NpcTalkBook;
 pub use paced_movement::{AutoWalkRoute, AutoWalkTarget};
@@ -293,6 +305,7 @@ async fn first<T>(primary: impl Future<Output = T>, stop: impl Future<Output = (
 /// #414 Character authority, and this GameNode's #415 incarnation holding the
 /// served Channel.
 pub struct GameplaySeamOwners<'a, 'f, 's> {
+    pub gameplay_idle_policy: connection::GameplayIdlePolicy,
     /// The composition root's leveled diagnostic writer.
     pub emit: fn(&str, &oteryn_error_codes::Line<'_>),
     pub root: &'a DurabilityRoot,
@@ -362,11 +375,14 @@ pub enum GameplayServeError {
     InvalidLimits,
     /// The TLS material cannot form a TLS 1.3 server configuration.
     InvalidTls(rustls::Error),
+    /// Boss activation or an owner timer failed closed; this generation cannot serve.
+    OwnerUnavailable,
 }
 
 impl std::fmt::Display for GameplayServeError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::OwnerUnavailable => formatter.write_str("gameplay owner unavailable"),
             Self::InvalidLimits => formatter.write_str("invalid gameplay listener limits"),
             Self::InvalidTls(error) => write!(formatter, "invalid gameplay TLS material: {error}"),
         }
@@ -506,6 +522,9 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     // Keep the same imported catalogue resident for every connection served by this owner.
     pub imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
+    /// Promoted Weapon Proficiency definitions used by runtime and durable validation.
+    pub proficiency_catalogue:
+        Option<std::sync::Arc<weapon_proficiency::ProductionProficiencyCatalogue>>,
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub clock_origin: std::time::Instant,

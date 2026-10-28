@@ -205,6 +205,19 @@ pub struct CreatureProfileRecord {
     pub monster_melee: Option<NativeMonsterMeleeProfile>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub source_item_abilities: Vec<ProjectV2AuthoringProfile>,
+    /// Exact source records and authoring consumed by scheduled monster spells.
+    /// References alone never enable execution.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attack_definitions: Option<NativeMonsterAttackDefinitions>,
+    /// Owner decision 22: explicit provenance limitation retained in the pinned generation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_qualification: Option<String>,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeMonsterAttackDefinitions {
+    pub records: Vec<super::ProjectReferenceRecord>,
+    pub profiles: Vec<ProjectV2AuthoringProfile>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -288,6 +301,9 @@ pub struct PresentationProfilesDocument {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NativeItemAttributes {
+    /// Server-only numerical Item augments. Missing preserves pre-augment artifact bytes.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub spell_augments: Vec<super::item_spell_augments::ItemSpellAugment>,
     /// None is unknown, never a zero equipment contribution.
     pub speed_bonus: Option<i32>,
     pub blocks_movement: Option<bool>,
@@ -1151,6 +1167,7 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                     || record.attributes.immovable_block_solid != Some(false)
                     || record.attributes.field_condition.is_some()
                     || record.attributes.rune_consumption.is_some()
+                    || !record.attributes.spell_augments.is_empty()
                     || record.attributes.field_replaceable.is_some()
                     || record.attributes.has_height.is_some_and(|height| height)
                 {
@@ -1162,6 +1179,23 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 return Err(invalid("native gameplay unexpected Item candidate proof"));
             }
             exact(&binding.target, ProjectV2Family::Item)?;
+            // WRITE0-RL-01: text belongs to a single item. Unmaterializable map
+            // carriers may retain unknown stack facts; they grant no mint permission.
+            if let super::ReferenceItemField::Known(text) = &record.semantics.readable_writeable {
+                use super::ReferenceItemField as F;
+                if text.writeable == F::Known(true)
+                    && (text.readable != F::Known(true)
+                        || record.admission.stack_class != NativeItemStackClass::NonStackable
+                        || !matches!(text.max_text_length, F::Known(1..=4_000))
+                        || matches!(&record.semantics.stack, F::Known(stack)
+                            if stack.stackable == F::Known(true))
+                        || (record.admission.materializable
+                            && !matches!(&record.semantics.stack, F::Known(stack)
+                                if stack.stackable == F::Known(false))))
+                {
+                    return Err(invalid("native gameplay writable item bounds or stack"));
+                }
+            }
             if record.attributes.rune_consumption.is_some() {
                 use super::{ReferenceItemField as F, ReferenceItemType};
                 if !matches!(&record.semantics.classification,
@@ -1174,6 +1208,25 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                 field
                     .validate_for(&field.source.server, external)
                     .map_err(|_| invalid("native gameplay item field source recipe"))?;
+            }
+            use super::item_spell_augments::{ItemSpellAugmentKind, MAX_ITEM_SPELL_AUGMENTS};
+            if record.attributes.spell_augments.len() > MAX_ITEM_SPELL_AUGMENTS
+                || record.attributes.spell_augments.iter().any(|augment| {
+                    augment.spell.is_empty()
+                        || augment.spell.len() > 128
+                        || augment.spell != augment.spell.to_ascii_lowercase()
+                        || !augment
+                            .spell
+                            .bytes()
+                            .all(|b| b.is_ascii_lowercase() || b == b' ' || b == b'\'')
+                        || augment.value
+                            > match augment.kind {
+                                ItemSpellAugmentKind::Cooldown => 86_400_000,
+                                _ => 100_000,
+                            }
+                })
+            {
+                return Err(invalid("native gameplay Item spell augment bounds"));
             }
             exact(&record.authoring.item, ProjectV2Family::Item)?;
             super::project::validate_native_gameplay_item(&record.authoring)
@@ -1192,6 +1245,30 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
                     .any(|w| w[0] >= w[1])
             {
                 return Err(invalid("native gameplay item admission destinations"));
+            }
+        }
+        // WRITE-0 §5.3 / owner decision 25: a write-once transform ends in
+        // an explicitly readable, nonwritable definition of this same pin.
+        // Checking the complete set also rejects missing targets and cycles.
+        for record in &items.records {
+            use super::ReferenceItemField as F;
+            let F::Known(text) = &record.semantics.readable_writeable else {
+                continue;
+            };
+            let F::Known(target) = &text.write_once_target else {
+                continue;
+            };
+            if text.writeable != F::Known(true)
+                || !items.records.iter().any(|candidate| {
+                    candidate.production_definition.production_key == target.key
+                        && candidate.production_definition.revision_ref == target.revision
+                        && matches!(&candidate.semantics.readable_writeable,
+                            F::Known(fixed) if fixed.readable == F::Known(true)
+                                && fixed.writeable == F::Known(false)
+                                && fixed.write_once_target == F::NotApplicable)
+                })
+            {
+                return Err(invalid("native gameplay write-once target is not fixed"));
             }
         }
         Some(items)
@@ -1443,6 +1520,7 @@ fn creature_policies(
     let mut records = Vec::new();
     for record in &creatures.records {
         validate_source_item_abilities(record)?;
+        validate_attack_definitions(record)?;
         super::project::validate_native_gameplay_profile(&record.profile)
             .map_err(|_| invalid("native gameplay invalid V2 creature authoring"))?;
         exact(&record.profile.target, ProjectV2Family::Creature)?;
@@ -1506,7 +1584,33 @@ fn creature_policies(
             }
             None
         };
+        let forge_difficulty = value.bestiary.as_ref().and_then(|bestiary| {
+            let difficulty = match bestiary.difficulty.as_str() {
+                "trivial" => 1,
+                "easy" => 2,
+                "medium" => 4,
+                "hard" => 6,
+                "challenging" => 8,
+                _ => return None,
+            };
+            let hostile = record.behavior.as_ref().is_some_and(|profile| {
+                matches!(&profile.data, ProjectV2AuthoringProfileData::Behavior(b) if b.targeting.hostile)
+            });
+            (details.system_eligibility.forge
+                && bestiary.occurrence.as_deref() == Some("common")
+                && !details.system_eligibility.reward_boss
+                && !details.summoning.is_familiar
+                && value.familiar.is_none()
+                && value.bosstiary.is_none()
+                && details.bosstiary.is_none()
+                && details.reward_encounter.is_none()
+                && details.flags.attackable
+                && details.corpse_item.is_some()
+                && value.experience.is_some_and(|xp| xp > 0)
+                && hostile).then_some(difficulty)
+        });
         records.push(CompiledCreaturePolicy {
+            forge_difficulty,
             preferred_distance,
             reward_boss: Some(details.system_eligibility.reward_boss),
             blocked_by_nearby_players: details.spawn_eligibility.blocked_by_nearby_players,
@@ -1688,6 +1792,211 @@ mod tests {
         qualify_native_entry_room_with_gameplay,
     };
     use serde_json::Value;
+    #[test]
+    fn item_spell_augments_artifact_roundtrip_and_bounds() {
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let mut profiles: Value =
+            serde_json::from_slice(&supplied.item_profiles.as_ref().unwrap().bytes).unwrap();
+        let augment =
+            serde_json::json!({"spell":"a".repeat(128),"kind":"base_damage","value":100000});
+        profiles["records"][0]["attributes"]["spell_augments"] =
+            serde_json::json!(vec![augment; 16]);
+        supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        let records = decoded.state.items.as_ref().unwrap();
+        assert_eq!(records.records[0].attributes.spell_augments.len(), 16);
+        for invalid in [
+            serde_json::json!([{ "spell":"a".repeat(129), "kind":"base_damage", "value":0 }]),
+            serde_json::json!([{ "spell":"a", "kind":"base_damage", "value":100001 }]),
+            serde_json::json!([{ "spell":"a", "kind":"cooldown", "value":86400001 }]),
+            serde_json::json!(vec![
+                serde_json::json!({"spell":"a","kind":"base_healing","value":0});
+                17
+            ]),
+            serde_json::json!([{ "spell":"", "kind":"base_damage", "value":0 }]),
+            serde_json::json!([{ "spell":"a", "kind":"wheel", "value":0 }]),
+        ] {
+            profiles["records"][0]["attributes"]["spell_augments"] = invalid;
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&profiles).unwrap()));
+            assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+        }
+    }
+
+    #[test]
+    fn writable_profiles_survive_native_artifact_and_preserve_definition_admission() {
+        use super::super::ReferenceItemField as F;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let mut supplied = input();
+        supplied.item_profiles = Some(pinned(include_bytes!(
+            "../../../../../content/items/definitions/spell-native-profiles.json"
+        )));
+        let artifact = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+        let decoded = decode(&artifact.server_artifact).unwrap();
+        for (id, maximum) in [
+            (2813, 511),
+            (2815, 511),
+            (2598, 1023),
+            (3505, 1999),
+            (3507, 79),
+        ] {
+            let record = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap()
+                .record();
+            assert_eq!(record.admission.materializable, id == 2815);
+            assert_eq!(
+                record.admission.stack_class,
+                NativeItemStackClass::NonStackable
+            );
+            let F::Known(text) = &record.semantics.readable_writeable else {
+                panic!("qualified document semantics missing");
+            };
+            assert_eq!(text.readable, F::Known(true));
+            assert_eq!(text.writeable, F::Known(true));
+            assert_eq!(text.max_text_length, F::Known(maximum));
+            assert_eq!(text.write_once_target, F::NotApplicable);
+        }
+        // The two source mappings form a cycle; neither is silently chosen.
+        for id in [2816, 2837] {
+            assert!(
+                decoded
+                    .state
+                    .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                    .is_none()
+            );
+        }
+        for (source, target) in [(2817, 2819), (2818, 2834), (2839, 2824)] {
+            let record = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{source}"), "definition-r1")
+                .unwrap()
+                .record();
+            let F::Known(text) = &record.semantics.readable_writeable else {
+                panic!("write-once source missing");
+            };
+            let F::Known(to) = &text.write_once_target else {
+                panic!("write-once transform missing");
+            };
+            assert_eq!(to.key, format!("oteryn:item.tibia.i{target}"));
+            let fixed = decoded
+                .state
+                .item_policy(&to.key, &to.revision)
+                .unwrap()
+                .record();
+            assert!(matches!(&fixed.semantics.readable_writeable,
+                F::Known(text) if text.readable == F::Known(true)
+                    && text.writeable == F::Known(false)
+                    && text.write_once_target == F::NotApplicable));
+        }
+        for id in [27932, 27933, 27934] {
+            let record = decoded
+                .state
+                .item_policy(&format!("oteryn:item.tibia.i{id}"), "definition-r1")
+                .unwrap()
+                .record();
+            assert!(matches!(&record.semantics.readable_writeable,
+                F::Known(text) if text.max_text_length == F::Known(1500)));
+        }
+        let profiles: Value =
+            serde_json::from_slice(&supplied.item_profiles.as_ref().unwrap().bytes).unwrap();
+        for failure in ["writable", "unknown", "missing", "cycle"] {
+            let mut changed = profiles.clone();
+            let rows = changed["records"].as_array_mut().unwrap();
+            if failure == "missing" {
+                rows.retain(|row| row["production_binding"]["external_id"] != "2819");
+            } else {
+                let fixed = rows
+                    .iter_mut()
+                    .find(|row| row["production_binding"]["external_id"] == "2819")
+                    .unwrap();
+                let text = &mut fixed["semantics"]["readable_writeable"]["value"];
+                text["writeable"] = if failure == "unknown" {
+                    serde_json::json!({"state":"UNKNOWN"})
+                } else {
+                    serde_json::json!({"state":"KNOWN","value":true})
+                };
+                if failure == "cycle" {
+                    text["write_once_target"] = serde_json::json!({"state":"KNOWN","value":{
+                        "key":"oteryn:item.tibia.i2817","revision":"definition-r1"
+                    }});
+                }
+            }
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&changed).unwrap()));
+            assert!(
+                compile_native_gameplay(baseline.compiled(), &supplied).is_err(),
+                "{failure}"
+            );
+        }
+        for (field, replacement, accepted) in [
+            (
+                "max_text_length",
+                serde_json::json!({"state":"KNOWN","value":4000}),
+                true,
+            ),
+            (
+                "max_text_length",
+                serde_json::json!({"state":"KNOWN","value":4001}),
+                false,
+            ),
+            (
+                "max_text_length",
+                serde_json::json!({"state":"KNOWN","value":0}),
+                false,
+            ),
+            (
+                "max_text_length",
+                serde_json::json!({"state":"UNKNOWN"}),
+                false,
+            ),
+            (
+                "readable",
+                serde_json::json!({"state":"KNOWN","value":false}),
+                false,
+            ),
+        ] {
+            let mut changed = profiles.clone();
+            let row = changed["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|r| r["production_binding"]["external_id"] == "2815")
+                .unwrap();
+            row["semantics"]["readable_writeable"]["value"][field] = replacement;
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&changed).unwrap()));
+            assert_eq!(
+                compile_native_gameplay(baseline.compiled(), &supplied).is_ok(),
+                accepted
+            );
+        }
+        for field in ["admission", "semantics", "unknown_stack"] {
+            let mut changed = profiles.clone();
+            let row = changed["records"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|r| r["production_binding"]["external_id"] == "2815")
+                .unwrap();
+            if field == "admission" {
+                row["admission"]["stack_class"] = serde_json::json!("StackCapable");
+            } else if field == "semantics" {
+                row["semantics"]["stack"] = serde_json::json!({"state":"KNOWN","value":{
+                    "stackable":{"state":"KNOWN","value":true},"stack_max":{"state":"KNOWN","value":100}
+                }});
+            } else {
+                row["semantics"]["stack"] = serde_json::json!({"state":"UNKNOWN"});
+            }
+            supplied.item_profiles = Some(pinned(&serde_json::to_vec(&changed).unwrap()));
+            assert!(compile_native_gameplay(baseline.compiled(), &supplied).is_err());
+        }
+    }
     #[test]
     fn ranged_profiles_survive_native_artifact_and_incomplete_weapon_is_rejected() {
         let world = test_source(1).unwrap().world_id;
@@ -2857,6 +3166,38 @@ mod tests {
         );
     }
     #[test]
+    fn summer_corpse_capacity_reward_admission_accepts_thirty_and_refuses_thirty_one() {
+        use super::super::creature_reward::NoSettlementReason;
+        let world = test_source(1).unwrap().world_id;
+        let baseline = qualify_native_entry_room(world).unwrap();
+        let keys: &[u8] =
+            include_bytes!("../../../../../tools/content-schema/native-gameplay/item-keys.json");
+        for (capacity, materializable) in [(30, true), (31, true), (30, false)] {
+            let mut section: serde_json::Value =
+                serde_json::from_slice(SAMPLE_LOOT_TABLES).unwrap();
+            section["items"][0]["container_capacity"] = capacity.into();
+            section["items"][0]["materializable"] = materializable.into();
+            let bytes = serde_json::to_vec(&section).unwrap();
+            let mut supplied = v7_input(Some(keys));
+            supplied.loot_tables = Some(pinned(&bytes));
+            let compiled = compile_native_gameplay(baseline.compiled(), &supplied).unwrap();
+            let state = decode(&compiled.server_artifact).unwrap().state;
+            let reward = state.reward_table().row("canary:creature/rat");
+            if capacity == 30 && materializable {
+                assert_eq!(
+                    reward.unwrap().xp_amount,
+                    oteryn_simulation_determinism::ExactI64::new(5)
+                );
+            } else {
+                assert_eq!(
+                    reward.unwrap_err(),
+                    NoSettlementReason::CorpseItemInadmissible
+                );
+            }
+        }
+    }
+
+    #[test]
     fn loot_section_selects_v8_and_builds_the_reward_table() {
         use super::super::creature_reward::NoSettlementReason;
         let world = test_source(1).unwrap().world_id;
@@ -3210,6 +3551,87 @@ impl NativeGameplayState {
             .find(|p| &p.target == ability)
     }
 }
+fn validate_attack_definitions(record: &CreatureProfileRecord) -> Result<(), ContentError> {
+    use super::ProjectReferenceRecord;
+    let Some(definitions) = &record.attack_definitions else {
+        return Ok(());
+    };
+    if definitions.records.is_empty()
+        || definitions.records.len() > 128
+        || definitions.records.len() != definitions.profiles.len()
+        || definitions.profiles.is_empty()
+        || definitions.profiles.len() > 128
+    {
+        return Err(invalid("native monster attack closure size"));
+    }
+    let mut seen = BTreeSet::new();
+    for profile in &definitions.profiles {
+        super::project::validate_native_gameplay_profile(profile)
+            .map_err(|_| invalid("native monster attack closure profile"))?;
+        if !seen.insert(profile.target.clone()) {
+            return Err(invalid("native monster duplicate attack profile"));
+        }
+    }
+    let mut references = BTreeSet::new();
+    for reference in &definitions.records {
+        let (identity, family, name) = match reference {
+            ProjectReferenceRecord::Ability { identity, .. } => {
+                (identity, ProjectV2Family::Ability, "Ability")
+            }
+            ProjectReferenceRecord::Creature { identity, .. } => {
+                (identity, ProjectV2Family::Creature, "Creature")
+            }
+            ProjectReferenceRecord::Effect { identity, .. } => {
+                (identity, ProjectV2Family::Effect, "Effect")
+            }
+            ProjectReferenceRecord::Formula { identity, .. } => {
+                (identity, ProjectV2Family::Formula, "Formula")
+            }
+            ProjectReferenceRecord::Generic { identity, .. } => {
+                (identity, ProjectV2Family::Behavior, "Behavior")
+            }
+            _ => return Err(invalid("native monster unsupported attack record")),
+        };
+        if identity.family != name
+            || !references.insert((&identity.family, &identity.key, &identity.revision))
+            || !definitions.profiles.iter().any(|profile| {
+                profile.target.family == family
+                    && profile.target.key == identity.key
+                    && profile.target.revision == identity.revision
+            })
+        {
+            return Err(invalid("native monster attack record membership"));
+        }
+    }
+    if !definitions.profiles.contains(&record.profile)
+        || record
+            .behavior
+            .as_ref()
+            .is_none_or(|behavior| !definitions.profiles.contains(behavior))
+        || definitions
+            .records
+            .iter()
+            .filter(|reference| {
+                matches!(reference,
+                    ProjectReferenceRecord::Creature { identity, behavior, .. }
+                        if identity.family == "Creature"
+                            && identity.key == record.profile.target.key
+                            && identity.revision == record.profile.target.revision
+                            && record.behavior.as_ref().is_some_and(|p|
+                                behavior.family == "Behavior" && behavior.key == p.target.key
+                                    && behavior.revision == p.target.revision)
+                )
+            })
+            .count()
+            != 1
+    {
+        return Err(invalid(
+            "native monster attack Creature and Behavior binding",
+        ));
+    }
+    Ok(())
+}
+
 fn validate_source_item_abilities(record: &CreatureProfileRecord) -> Result<(), ContentError> {
     use super::project::{ProjectV2AbilityEffect, ProjectV2InlineEffectOperation};
     let ProjectV2AuthoringProfileData::Creature(creature) = &record.profile.data else {
@@ -3262,6 +3684,46 @@ mod source_item_closure_tests {
         serde_json::from_slice(include_bytes!(
             "../../../../../content/creatures/definitions/spell-native-profiles.json"
         ))
+    }
+    #[test]
+    fn summer_attack_closure_requires_exact_creature_and_behavior()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let doc = actual()?;
+        let original = doc
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == "oteryn:creature.radiant_acolyte")
+            .ok_or("Acolyte profile")?;
+        validate_attack_definitions(original).map_err(|_| "actual attack closure")?;
+        let mut changed = original.clone();
+        let definitions = changed
+            .attack_definitions
+            .as_mut()
+            .ok_or("attack closure")?;
+        definitions.profiles.push(definitions.profiles[0].clone());
+        assert!(validate_attack_definitions(&changed).is_err());
+        let mut changed = original.clone();
+        let definitions = changed
+            .attack_definitions
+            .as_mut()
+            .ok_or("attack closure")?;
+        definitions.records[0] = definitions.records[1].clone();
+        assert!(validate_attack_definitions(&changed).is_err());
+        let mut changed = original.clone();
+        changed.profile.target.revision = "definition-r2".into();
+        assert!(validate_attack_definitions(&changed).is_err());
+        let mut changed = original.clone();
+        changed.behavior = None;
+        assert!(validate_attack_definitions(&changed).is_err());
+        let mut changed = original.clone();
+        changed
+            .attack_definitions
+            .as_mut()
+            .ok_or("attack closure")?
+            .records
+            .clear();
+        assert!(validate_attack_definitions(&changed).is_err());
+        Ok(())
     }
     #[test]
     fn source_item_closure_actual82_requires_exact_creature_schedule_membership()

@@ -524,6 +524,7 @@ fn tick_inner(
         return rejected();
     }
     let mut staged = state.clone();
+    super::food_regeneration::step_due(&mut staged, now, facts.in_protection_zone);
     let mut combat = Vec::new();
     let ticks = if damage {
         staged.conditions.take_due(now, facts)
@@ -550,13 +551,10 @@ fn tick_inner(
             }
             TickKind::Regeneration {
                 key: oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
-                suppressed,
+                suppressed: _,
             } => {
-                if suppressed {
-                    super::food_regeneration::hold_fed_second(&mut staged);
-                } else {
-                    super::food_regeneration::credit_fed_second(&mut staged);
-                }
+                // The food condition owns saturation duration. The always-on clock above owns
+                // the single health/mana credit for this periodic dispatch occurrence.
             }
             // Retain the generic refusal handling; NIGHT-W1 #1 permits agony in PZ.
             TickKind::Agony { refused: true, .. } => {}
@@ -642,6 +640,7 @@ pub fn clear_on_lifecycle(state: &mut PlayerSpellState) {
     }
     state.regen_health_ms = 0;
     state.regen_mana_ms = 0;
+    state.regeneration_next_tick_us = None;
     state.soul_window = None;
     if let Some(monk) = state.monk.as_mut() {
         monk.clear_on_death();
@@ -782,6 +781,26 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    fn news_8933_death_keeps_every_standard_stance_and_its_durable_key() {
+        use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
+        for stance in [
+            StandardStance::BloodRage,
+            StandardStance::Protector,
+            StandardStance::Sharpshooter,
+            StandardStance::Harmony,
+            StandardStance::Justice,
+            StandardStance::Sustain,
+        ] {
+            let mut state = actor();
+            state.stance = Some(stance);
+            state.stance_key = Some(stance.key().into());
+            clear_on_lifecycle(&mut state);
+            assert_eq!(state.standard_stance(), Some(stance));
+            assert_eq!(state.durable_stance_key(), Some(stance.key()));
+        }
+    }
+
     #[test]
     fn cancel_mana_shield_requires_active_capacity_and_removes_it() {
         let mut state = actor();

@@ -7,7 +7,10 @@ use crate::content::{
     ProjectV2DefinitionRef as Ref, ProjectV2Family, ProjectV2FormulaAuthoring, ProjectV2Magnitude,
 };
 use crate::creature_auto_attack::ProfileAbilityProposal;
-use crate::creature_auto_attack::{AttackError, CurrentConditionPolicy};
+use crate::creature_auto_attack::{
+    AttackError, CurrentConditionPolicy, DAMAGE_MULTIPLIER_SCALE,
+    monster_reference_level_damage_multiplier,
+};
 use crate::creature_damage_spell_delayed as delayed;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::{ApplicationFacts, ConditionDefinition};
@@ -32,6 +35,9 @@ pub struct SpellSource {
     pub entry_index: usize,
     pub minimum: u32,
     pub maximum: u32,
+    /// Creature-owned cap for the observed MRL approximation.
+    pub reference_level: Option<u32>,
+    pub reference_level_overrides: Vec<crate::content::ProjectV2ReferenceLevelOverride>,
     pub critical: Option<crate::source_critical_baseline::SourceCriticalBaseline>,
     pub conditions: Vec<ConditionDefinition>,
     pub appearances: Vec<crate::content::ProjectV2InlineEffect>,
@@ -515,6 +521,13 @@ impl SpellSource {
                 entry_index: index,
                 minimum: 0,
                 maximum: 0,
+                reference_level: cp
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.reference_level),
+                reference_level_overrides: cp.details.as_ref().map_or_else(Vec::new, |details| {
+                    details.reference_level_overrides.clone()
+                }),
                 critical: None,
                 conditions,
                 appearance_cast: !appearances.is_empty(),
@@ -570,6 +583,7 @@ impl SpellSource {
         let critical = crate::source_critical_baseline::SourceCriticalBaseline::qualify(
             &creature.key,
             cp.details.as_ref().map_or(0, |d| d.critical_chance_ppm),
+            false,
         )
         .map_err(|_| AttackError::UnsupportedShape)?;
         if !cp.abilities.contains(&e.ability) {
@@ -694,6 +708,13 @@ impl SpellSource {
                 entry_index: index,
                 minimum: 0,
                 maximum: 0,
+                reference_level: cp
+                    .details
+                    .as_ref()
+                    .and_then(|details| details.reference_level),
+                reference_level_overrides: cp.details.as_ref().map_or_else(Vec::new, |details| {
+                    details.reference_level_overrides.clone()
+                }),
                 critical: None,
                 conditions: Vec::new(),
                 appearances: Vec::new(),
@@ -756,6 +777,13 @@ impl SpellSource {
             entry_index: index,
             minimum,
             maximum,
+            reference_level: cp
+                .details
+                .as_ref()
+                .and_then(|details| details.reference_level),
+            reference_level_overrides: cp.details.as_ref().map_or_else(Vec::new, |details| {
+                details.reference_level_overrides.clone()
+            }),
             critical,
             conditions,
             appearance_cast: !appearances.is_empty(),
@@ -948,7 +976,7 @@ pub struct PreparedPlayerTarget {
 pub struct CastMemo {
     issuer: ExactActorRef,
     pub list: ScheduleList,
-    entry: usize,
+    pub entry: usize,
     pub sequence: u64,
     at: SemanticTimeMicros,
     binding: [u8; 32],
@@ -958,6 +986,14 @@ pub struct CastMemo {
 pub struct DamageSpellOwner {
     pub casts: Vec<CastMemo>,
     pub delayed: Option<delayed::DelayedOwner>,
+}
+impl std::fmt::Debug for DamageSpellOwner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DamageSpellOwner")
+            .field("casts", &self.casts.len())
+            .field("delayed", &self.delayed.is_some())
+            .finish()
+    }
 }
 /// Narrow immutable loader context; every mutable world fact still comes from its owner.
 struct NativeAppearanceReader<'a> {
@@ -1054,14 +1090,111 @@ impl DamageSpellOwner {
         reader: &mut dyn SpellWorldReader,
         now: SemanticTimeMicros,
     ) -> Result<SpellOutcome, AttackError> {
+        self.execute_inner(
+            runtime,
+            Some(fence),
+            stamp,
+            vitals,
+            source,
+            proposal,
+            reader,
+            now,
+        )
+    }
+
+    /// Execute a source-bound physical, holy, earth or death target spell under the current fence.
+    /// The restricted shape needs no external condition authority or timer installation.
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_current_target_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn SpellWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
+        if source.list != ScheduleList::Attack
+            || !matches!(
+                source.element.as_deref(),
+                Some("physical" | "holy" | "earth" | "death")
+            )
+            || !source.needs_target
+            || source.needs_direction
+            || source.area.is_some()
+            || source.chain.is_some()
+            || source.windup.is_some()
+            || !source.variants.is_empty()
+            || !source.conditions.is_empty()
+            || !source.appearances.is_empty()
+            || source.dispel_invisible
+            || source.appearance_cast
+            || source.source_none_correction
+        {
+            return Err(AttackError::UnsupportedShape);
+        }
+        self.execute_inner(runtime, None, stamp, vitals, source, proposal, reader, now)
+    }
+
+    /// Execute a source-bound ice, fire or energy circle spell under the runtime's own current fence.
+    /// The restricted shape needs no external condition authority or timer installation.
+    #[allow(clippy::too_many_arguments)]
+    pub fn execute_current_elemental_area(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn SpellWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
+        if source.list != ScheduleList::Attack
+            || !matches!(source.element.as_deref(), Some("ice" | "fire" | "energy"))
+            || source.needs_target
+            || source.needs_direction
+            || !matches!(
+                source.area,
+                Some(ProjectV2AbilityArea::Circle { radius_tiles: 4 })
+            )
+            || source.chain.is_some()
+            || source.windup.is_some()
+            || !source.variants.is_empty()
+            || !source.conditions.is_empty()
+            || !source.appearances.is_empty()
+            || source.dispel_invisible
+            || source.appearance_cast
+            || source.source_none_correction
+        {
+            return Err(AttackError::UnsupportedShape);
+        }
+        self.execute_inner(runtime, None, stamp, vitals, source, proposal, reader, now)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn execute_inner(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        fence: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        source: &SpellSource,
+        proposal: &ProfileAbilityProposal,
+        reader: &mut dyn SpellWorldReader,
+        now: SemanticTimeMicros,
+    ) -> Result<SpellOutcome, AttackError> {
         if source.chain.is_some() {
             return Err(AttackError::UnsupportedShape);
         }
         let b = runtime.binding();
-        if !fence.is_current_for_scope(
+        let current = fence
+            .or_else(|| runtime.owner_fence().ok())
+            .ok_or(AttackError::StaleOwner)?;
+        if !current.is_current_for_scope(
             crate::foundation::RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
             b.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        ) || !current.accepts_stamp(stamp)
         {
             return Err(AttackError::StaleOwner);
         }
@@ -1158,44 +1291,56 @@ impl DamageSpellOwner {
                 .try_reserve(1)
                 .map_err(|_| AttackError::LedgerFull)?;
         }
-        let result = if source.windup.is_some() {
-            self.schedule_windup(runtime, fence, stamp, source, proposal, reader, now)
-        } else if source.variants.is_empty() {
-            self.apply(runtime, vitals, source, proposal, reader, stamp, now, fence)
-        } else {
-            let root = GameplayDecisionRoot::from_bytes(source.content_digest);
-            let digest = Sha256::new()
-                .chain_update(b"oteryn:creature-source-variant:v1")
-                .chain_update(proposal.occurrence.id().as_str().as_bytes())
-                .finalize();
-            let mut id = [0; 16];
-            id.copy_from_slice(&digest[..16]);
-            let decision = deterministic_decision_u64(
-                &root,
-                DecisionOccurrenceId::from_bytes(id),
-                "source_variant_once_per_cast",
-                source.entry_index as u64,
-            )
-            .map_err(|_| AttackError::InvalidPlan)?;
-            let selected =
-                usize::try_from(oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
-                    decision,
-                    0,
-                    (source.variants.len() - 1) as i64,
-                ))
-                .map_err(|_| AttackError::InvalidPlan)?;
-            match &source.variants[selected] {
-                Err(error) => Err(*error),
-                Ok(child) => {
-                    let selected_child = child
-                        .variant_child
-                        .clone()
-                        .ok_or(AttackError::InvalidSource)?;
-                    self.apply(runtime,vitals,child,proposal,reader,stamp,now, fence).map(|mut result|{
+        let result = match fence {
+            Some(fence) => {
+                if source.windup.is_some() {
+                    self.schedule_windup(runtime, fence, stamp, source, proposal, reader, now)
+                } else if source.variants.is_empty() {
+                    self.apply(runtime, vitals, source, proposal, reader, stamp, now, fence)
+                } else {
+                    let root = GameplayDecisionRoot::from_bytes(source.content_digest);
+                    let digest = Sha256::new()
+                        .chain_update(b"oteryn:creature-source-variant:v1")
+                        .chain_update(proposal.occurrence.id().as_str().as_bytes())
+                        .finalize();
+                    let mut id = [0; 16];
+                    id.copy_from_slice(&digest[..16]);
+                    let decision = deterministic_decision_u64(
+                        &root,
+                        DecisionOccurrenceId::from_bytes(id),
+                        "source_variant_once_per_cast",
+                        source.entry_index as u64,
+                    )
+                    .map_err(|_| AttackError::InvalidPlan)?;
+                    let selected = usize::try_from(
+                        oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+                            decision,
+                            0,
+                            (source.variants.len() - 1) as i64,
+                        ),
+                    )
+                    .map_err(|_| AttackError::InvalidPlan)?;
+                    match &source.variants[selected] {
+                        Err(error) => Err(*error),
+                        Ok(child) => {
+                            let selected_child = child
+                                .variant_child
+                                .clone()
+                                .ok_or(AttackError::InvalidSource)?;
+                            self.apply(runtime,vitals,child,proposal,reader,stamp,now, fence).map(|mut result|{
      result.source_variant=Some(SourceVariantReceipt{parent:source.ability.clone(),child:selected_child,index:selected,qualification:"SOURCE_UNIFORM_SELECTOR_PROJECT_DETERMINISTIC_RNG_GLOBAL_UNVERIFIED"});result
     })
+                        }
+                    }
                 }
             }
+            None => self
+                .prepare_target(runtime, source, proposal, reader, stamp, None)
+                .and_then(|prepared| {
+                    self.commit_prepared(
+                        runtime, vitals, source, proposal, prepared, now, None, stamp,
+                    )
+                }),
         };
         let memo = CastMemo {
             issuer: proposal.issuer,
@@ -1687,7 +1832,14 @@ impl DamageSpellOwner {
     ) -> Result<SpellOutcome, AttackError> {
         let prepared = self.prepare_target(runtime, source, proposal, reader, stamp, forced)?;
         self.commit_prepared(
-            runtime, vitals, source, proposal, prepared, now, fence, stamp,
+            runtime,
+            vitals,
+            source,
+            proposal,
+            prepared,
+            now,
+            Some(fence),
+            stamp,
         )
     }
     pub fn prepare_target(
@@ -1900,14 +2052,29 @@ impl DamageSpellOwner {
             } else {
                 0
             };
-            let remaining = requested.saturating_sub(armor);
+            let reference_multiplier = monster_reference_level_damage_multiplier(
+                source.reference_level,
+                &source.reference_level_overrides,
+                runtime
+                    .read_actor_position(proposal.issuer)
+                    .map_err(|_| AttackError::StaleIssuer)?
+                    .position(),
+                &facts.attack,
+            );
+            let requested_for_player = u32::try_from(
+                u64::from(requested) * u64::from(reference_multiplier)
+                    / u64::from(DAMAGE_MULTIPLIER_SCALE),
+            )
+            .map_err(|_| AttackError::NumericOverflow)?;
+            let remaining = requested_for_player.saturating_sub(armor);
             let blocked =
                 source.element.is_some() && facts.immune || source.armor && remaining == 0;
             let amount = if blocked {
                 0
             } else {
-                u32::try_from(u64::from(remaining) * u64::from(facts.multiplier_ppm) / 1_000_000)
-                    .map_err(|_| AttackError::NumericOverflow)?
+                facts
+                    .mitigate_damage(remaining)
+                    .ok_or(AttackError::NumericOverflow)?
             };
             prepared
                 .try_reserve(1)
@@ -1951,7 +2118,7 @@ impl DamageSpellOwner {
         proposal: &ProfileAbilityProposal,
         prepared: PreparedPlayerCast,
         now: SemanticTimeMicros,
-        fence: &ScopeRuntimeFence,
+        fence: Option<&ScopeRuntimeFence>,
         stamp: RuntimeWorkStamp,
     ) -> Result<SpellOutcome, AttackError> {
         let root = GameplayDecisionRoot::from_bytes(source.content_digest);
@@ -1998,7 +2165,7 @@ impl DamageSpellOwner {
                     session,
                     proposal.issuer,
                     now.get(),
-                    fence,
+                    fence.ok_or(AttackError::StaleOwner)?,
                     stamp,
                 );
                 result.targets.push((
@@ -2045,7 +2212,7 @@ impl DamageSpellOwner {
                             &source.conditions,
                             &af,
                             &policy.immunities,
-                            fence,
+                            fence.ok_or(AttackError::StaleOwner)?,
                             stamp,
                         )
                         .then_some(SpellTargetOutcome {
@@ -2097,7 +2264,7 @@ impl DamageSpellOwner {
                     &source.conditions,
                     &af,
                     &policy.immunities,
-                    fence,
+                    fence.ok_or(AttackError::StaleOwner)?,
                     stamp,
                 )
             };

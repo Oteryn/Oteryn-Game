@@ -1,4 +1,5 @@
 use super::*;
+use crate::gameplay_transport::spell_character_facts::{CastFactsLoad, load_character_cast_facts};
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(in crate::gameplay_transport) async fn admit_fresh_session(
@@ -348,6 +349,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         if positioned {
             self.admit_progression_session(&mut admitted).await;
+            if matches!(
+                admitted.first_entry,
+                FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+            ) && !self.admit_hazard(admitted).await
+            {
+                admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+            }
         }
         // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
         // input-ineligible, its pending row intact for the next admission.
@@ -366,9 +374,55 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         if writes_after_progression(positioned, admitted.first_entry) {
             self.admit_loop_training(&mut admitted).await;
+            if !self.admit_prey(admitted).await {
+                admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+            }
         }
         if writes_after_progression(positioned, admitted.first_entry) {
             self.admit_quest_session(&admitted).await;
+        }
+        // CHARM-WIRE-1: snapshot CHARM-3 assignments before the session becomes input-eligible.
+        // The runtime actor/session check on installation fences the snapshot against a replaced
+        // session; a failed durable read leaves Charm evaluation unavailable (fail closed).
+        if writes_after_progression(positioned, admitted.first_entry)
+            && let Ok(state) = self
+                .root
+                .read_character_charm_state(self.character, character_id)
+                .await
+        {
+            let state = crate::durability::charm_state::CombatCharmState::new(character_id, state);
+            let runtime = self.runtime.lock().await;
+            self.states.spell_states.lock().await.install_charm_state(
+                &runtime,
+                actor,
+                admitted.game_session_id,
+                state,
+            );
+        }
+        // Login is the repair path for characters created before automatic acquisition and for
+        // an earlier level-up whose durable projection could not be written.
+        if writes_after_progression(positioned, admitted.first_entry) {
+            let facts = load_character_cast_facts(self.root, self.character, character_id).await;
+            let (facts, character_revision) = match facts {
+                CastFactsLoad::Ready {
+                    facts,
+                    character_revision,
+                } => (facts, character_revision),
+                CastFactsLoad::NoVocation { .. } => return Ok(admitted),
+                CastFactsLoad::Unavailable => return Err(AdmissionRefusal::Unavailable),
+            };
+            if !self
+                .reconcile_automatic_spells(
+                    character_id,
+                    admitted.game_session_id,
+                    character_revision,
+                    facts.level,
+                    facts.vocation,
+                )
+                .await
+            {
+                return Err(AdmissionRefusal::Unavailable);
+            }
         }
         Ok(admitted)
     }

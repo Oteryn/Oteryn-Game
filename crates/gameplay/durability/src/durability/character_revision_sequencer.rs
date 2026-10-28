@@ -21,6 +21,7 @@
 //! existing session-generation gameplay fence in its own transaction.
 
 mod appearance_revision;
+mod atelier;
 
 use std::collections::HashMap;
 use std::future::Future;
@@ -415,6 +416,7 @@ impl RevisionSlot {
         fence: CurrentCharacterGameplayFence,
         request: QuestTransitionRequest,
         catalogue: std::sync::Arc<QuestStateCatalogue>,
+        permit: &super::spell_owner_commit::SpellLanePermit,
         context: super::quest_world_callback::QuestWorldContext,
     ) -> Result<QuestTransitionOutcome, CharacterProgressionError> {
         self.sequenced(
@@ -428,6 +430,7 @@ impl RevisionSlot {
                     fence,
                     request.clone(),
                     std::sync::Arc::clone(&catalogue),
+                    permit,
                     context.clone(),
                 )
             },

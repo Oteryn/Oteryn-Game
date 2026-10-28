@@ -22,6 +22,15 @@ use tokio::{io::AsyncWriteExt, sync::Mutex};
 
 #[test]
 fn party_membership_real_dispatch_postgres_end_to_end() -> TestResult {
+    run(false)
+}
+pub(super) fn run(partyskull: bool) -> TestResult {
+    run_case(partyskull, false)
+}
+pub(super) fn run_reference_level() -> TestResult {
+    run_case(false, true)
+}
+fn run_case(partyskull: bool, reference_level: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -32,7 +41,9 @@ fn party_membership_real_dispatch_postgres_end_to_end() -> TestResult {
                 let h = Harness::create(admin, "party_membership_wire", false)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h).await.map_err(|e| e.to_string());
+                let result = scenario(&h, partyskull, reference_level)
+                    .await
+                    .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
                 result
             })
@@ -164,7 +175,7 @@ async fn roundtrip(
     }
     result
 }
-async fn scenario(h: &Harness) -> TestResult {
+async fn scenario(h: &Harness, partyskull: bool, reference_level: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -178,6 +189,16 @@ async fn scenario(h: &Harness) -> TestResult {
             .await?,
         );
     }
+    let characters = [
+        *currents[0]
+            .current_character_lease()
+            .character_id()
+            .as_bytes(),
+        *currents[1]
+            .current_character_lease()
+            .character_id()
+            .as_bytes(),
+    ];
     let seal = h.recovery.seal_current().map_err(debug)?;
     let recovery = h
         .root
@@ -263,11 +284,23 @@ async fn scenario(h: &Harness) -> TestResult {
         runtime: &runtime, door: &door, spells: &spells, achievements: &achievements, imported_charms: &charms, room: &room,
     }.build()
     };
+    if partyskull {
+        sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'world-policy-1')").bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'world-policy-1',2,8,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'party-skull-fixture')").bind(world.as_bytes().as_slice()).execute(&h.pool).await?;
+    }
     let mut owner = make_owner();
     for a in &mut admitted {
         a.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42])
                 .ok_or("party offer")?;
+    }
+    if partyskull {
+        super::party_skull::check(&owner, &mut admitted[0], &targets, &[0, 0, 0], &[0, 0, 0])
+            .await?;
+        super::party_skull::aggression(h, &targets, &characters, true).await?;
+        let result = roundtrip(&owner, &mut admitted[0], &[Step::Invite(targets[1])]).await?;
+        assert_eq!(result[0].disposition, PartyDisposition::Rejected);
+        super::party_skull::aggression(h, &targets, &characters, false).await?;
     }
     // Old clients and malformed payloads cannot reach the durable writer.
     let mut old = admitted[0];
@@ -305,14 +338,43 @@ async fn scenario(h: &Harness) -> TestResult {
     assert_eq!(refused[0].disposition, PartyDisposition::Rejected);
     // Carry the stale connection's ended continuity while keeping the current lease.
     admitted[2].continuity = stale.continuity;
+    if partyskull {
+        super::party_skull::check(&owner, &mut admitted[0], &targets, &[4, 2, 2], &[2, 0, 0])
+            .await?;
+        super::party_skull::aggression(h, &targets, &characters, true).await?;
+        let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Accept]).await?;
+        assert_eq!(result[1].disposition, PartyDisposition::Rejected);
+        super::party_skull::aggression(h, &targets, &characters, false).await?;
+    }
     for a in admitted.iter_mut().skip(1) {
         let results = roundtrip(&owner, a, &[Step::Query, Step::Accept]).await?;
         assert_eq!(results[0].invitations.len(), 1);
         assert_eq!(results[1].disposition, PartyDisposition::Ok);
     }
+    if partyskull {
+        for observer in &mut admitted {
+            super::party_skull::check(&owner, observer, &targets, &[4, 3, 3], &[2, 2, 2]).await?;
+        }
+        // Existing shared-XP durable owner preference; no committed activity: every shield blinks.
+        sqlx::query("UPDATE game_parties SET shared_xp_enabled=true,revision=revision+1")
+            .execute(&h.pool)
+            .await?;
+        super::party_skull::check(&owner, &mut admitted[2], &targets, &[8, 7, 7], &[2, 2, 2])
+            .await?;
+        sqlx::query("UPDATE game_parties SET shared_xp_enabled=false,revision=revision+1")
+            .execute(&h.pool)
+            .await?;
+    }
+    if reference_level {
+        super::monster_reference_level::check(&owner, &admitted).await?;
+    }
     let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Pass(1)]).await?;
     assert_eq!(result[0].members.len(), 3);
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
+    if partyskull {
+        super::party_skull::check(&owner, &mut admitted[2], &targets, &[3, 4, 3], &[2, 2, 2])
+            .await?;
+    }
     let result = roundtrip(&owner, &mut admitted[0], &[Step::Query, Step::Kick(2)]).await?;
     assert_eq!(result[1].disposition, PartyDisposition::NotLeader);
     let result = roundtrip(&owner, &mut admitted[1], &[Step::Query, Step::Pass(0)]).await?;
@@ -340,6 +402,10 @@ async fn scenario(h: &Harness) -> TestResult {
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
     let result = roundtrip(&owner, &mut admitted[2], &[Step::Query]).await?;
     assert!(result[0].members.is_empty());
+    if partyskull {
+        super::party_skull::check(&owner, &mut admitted[2], &targets, &[11, 11, 0], &[0, 0, 0])
+            .await?;
+    }
     let actor = admitted[1].runtime_actor.ok_or("actor")?;
     {
         let rt = runtime.lock().await;
@@ -378,7 +444,7 @@ async fn scenario(h: &Harness) -> TestResult {
     let member = currents[1].current_character_lease().character_id();
     for column in ["logout_block_until", "pz_block_until", "kill_block_until"] {
         let sql = format!(
-            "INSERT INTO game_character_pvp_state(character_id,world_id,{column}) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '60 seconds') ON CONFLICT(character_id) DO UPDATE SET {column}=EXCLUDED.{column}"
+            "INSERT INTO game_character_pvp_state(character_id,world_id,{column}) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,clock_timestamp()+interval '60 seconds') ON CONFLICT(character_id) DO UPDATE SET {column}=EXCLUDED.{column},revision=game_character_pvp_state.revision+1"
         );
         sqlx::query(sqlx::AssertSqlSafe(sql))
             .bind(member.as_bytes().as_slice())
@@ -395,8 +461,24 @@ async fn scenario(h: &Harness) -> TestResult {
         .execute(&h.pool)
         .await?;
     }
-    let result = roundtrip(&owner, &mut admitted[1], &[Step::Leave]).await?;
-    assert_eq!(result[0].disposition, PartyDisposition::Ok);
+    if partyskull {
+        admitted[1].controller = Some(crate::gameplay_transport::connection::ControllerBinding {
+            transport: currents[1].current_transport().ok_or("logout transport")?,
+            account_id: id(64),
+        });
+        super::party_skull::logout(&owner, &mut admitted[1]).await?;
+        super::party_skull::check(
+            &owner,
+            &mut admitted[0],
+            &[targets[0], targets[2]],
+            &[0, 0],
+            &[0, 0],
+        )
+        .await?;
+    } else {
+        let result = roundtrip(&owner, &mut admitted[1], &[Step::Leave]).await?;
+        assert_eq!(result[0].disposition, PartyDisposition::Ok);
+    }
     let rows: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_parties),(SELECT count(*) FROM game_party_members),(SELECT count(*) FROM game_world_party_receipts)").fetch_one(&h.pool).await?;
     assert_eq!(rows.0, 0);
     assert_eq!(rows.1, 0);

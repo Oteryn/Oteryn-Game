@@ -350,33 +350,16 @@ pub(super) async fn move_equipment(
             }
             // EQUIP-0 §4: only a committed owner move changes suppressions. Keep the lane
             // permit across the fresh read, then obey runtime -> spell_states lock order.
-            let Some((effects, armor, defence, mana_shield, offence)) =
-                read_current_equipment(admission, command.game_session_id)
-                    .await
-                    .and_then(|equipment| {
-                        Some((
-                            equipment_effects_owner::equipment_effects(&equipment, native)?,
-                            equipment_effects_owner::equipped_armor(&equipment, native)?,
-                            equipment_effects_owner::equipped_defence(&equipment, native)?,
-                            equipment_effects_owner::equipped_mana_shield(&equipment, native)?,
-                            equipment_effects_owner::equipped_offence(&equipment, native)?,
-                        ))
-                    })
+            let Ok(effects) = admission
+                .read_admission_effects(command.game_session_id)
+                .await
             else {
                 return EquipmentMoveResult::Unknown;
             };
             let runtime = admission.runtime.lock().await;
-            let mut states = admission.states.spell_states.lock().await;
-            if let Some(state) = states.get_mut(&runtime, actor, command.game_session_id) {
-                state.install_equipped_physical_protection(
-                    equipment_effects_owner::physical_protection(&effects),
-                );
-                equipment_effects_owner::install_suppressions(state, effects);
-                state.install_equipped_armor(armor);
-                state.install_equipped_defence(defence);
-                state.install_equipped_mana_shield(mana_shield);
-                state.install_equipped_offence(offence);
-            }
+            let _ = admission
+                .install_admission_suppressions(&runtime, actor, command.game_session_id, effects)
+                .await;
             EquipmentMoveResult::Committed
         }
         Ok(Err(refusal)) => EquipmentMoveResult::Refused(refusal),

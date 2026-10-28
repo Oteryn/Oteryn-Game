@@ -1,0 +1,29 @@
+[
+  {
+    "mechanic": "0001-bestiary-charms",
+    "kind": "handlers",
+    "id": "0001-bestiary-charms-unsupported",
+    "status": "unsupported",
+    "reason": "Command dispatch moves with CLIENT-STRUCT-5; step 4 owns the feature UI and mappings.",
+    "commands": [4, 5],
+    "not_applicable": {
+      "input": "Cyclopedia commands are selected from page controls, not keybindings."
+    }
+  },
+  {
+    "mechanic": "0001-bestiary-charms",
+    "kind": "cyclopedia-pages",
+    "id": "cyclopedia-bestiary",
+    "status": "supported",
+    "entry": "view.rs::bestiary_page",
+    "parent": "root"
+  },
+  {
+    "mechanic": "0001-bestiary-charms",
+    "kind": "cyclopedia-pages",
+    "id": "cyclopedia-charms",
+    "status": "supported",
+    "entry": "view.rs::charms_page",
+    "parent": "root"
+  }
+]

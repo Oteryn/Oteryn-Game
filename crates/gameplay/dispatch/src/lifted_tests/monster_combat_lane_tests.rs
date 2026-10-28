@@ -77,6 +77,8 @@ mod tests {
                 target_protected: false,
                 defense: 0,
                 armor: 0,
+                player_level: 1,
+                reference_level_party_lowest: None,
             })
         }
     }
@@ -147,6 +149,7 @@ mod tests {
             Some(SpellCombatFacts {
                 attack: self.facts(r, i, t, s)?,
                 multiplier_ppm: 1_000_000,
+                equipment_protection: None,
                 immune: false,
                 condition_policy: Some(CurrentConditionPolicy {
                     immunities: Vec::new(),

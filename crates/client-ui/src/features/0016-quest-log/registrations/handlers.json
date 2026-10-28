@@ -1,0 +1,15 @@
+{
+  "mechanic": "0016-quest-log",
+  "kind": "handlers",
+  "id": "0016-quest-log-query",
+  "status": "supported",
+  "commands": [
+    22
+  ],
+  "direction": "client_to_server",
+  "capability": 16,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "No persistent quest settings; tracking is session-owned."
+  }
+}

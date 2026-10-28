@@ -419,6 +419,7 @@ pub(super) async fn prepare_direct(
         .stage_spell_batch(&batch)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     Ok(PreparedNativeCombatCast {
+        item_spell_leech: (0, 0),
         direct_companion: Some(PreparedDirectCompanionState {
             reservation,
             restrictions,
@@ -681,6 +682,7 @@ pub(super) async fn prepare_with_current_restrictions(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let players = vec![(b.actor, b.session, before.clone())];
     let cast = PreparedNativeCombatCast {
+        item_spell_leech: (0, 0),
         direct_companion: None,
         corpse_companion: None,
         field_policy_revision: None,

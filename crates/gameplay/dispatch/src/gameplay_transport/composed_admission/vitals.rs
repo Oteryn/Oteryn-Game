@@ -100,6 +100,43 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 now,
             )
         };
+        let resting = {
+            let streak = self.states.resting_areas.streak(game_session_id, actor);
+            let mut runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            let inside =
+                actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells, actor)
+                    == Some(true);
+            let stamina = states.live_stamina(actor, game_session_id).unwrap_or(2520);
+            let soul_interval = states
+                .get(&runtime, actor, game_session_id)
+                .map_or(120, |state| {
+                    if state.character_facts().max_soul > 100 {
+                        15
+                    } else {
+                        120
+                    }
+                });
+            let (stamina_due, soul_due) = self.states.resting_areas.cadence(
+                game_session_id,
+                actor,
+                inside,
+                stamina,
+                soul_interval,
+            );
+            if stamina_due {
+                states.gain_resting_stamina(actor, game_session_id);
+            }
+            streak.filter(|_| inside).and_then(|streak| {
+                states.apply_resting_regeneration(
+                    &runtime,
+                    actor,
+                    game_session_id,
+                    streak,
+                    soul_due,
+                )
+            })
+        };
         let _ = self
             .save_spell_training(actor, game_session_id, false)
             .await;
@@ -114,6 +151,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await;
         let _ = self.tick_familiar_defenses(actor, game_session_id).await;
         let _ = self.drain_native_ai_timers().await;
-        result.or(party_vitals)
+        resting.or(result).or(party_vitals)
     }
 }

@@ -26,6 +26,8 @@ pub struct VisibleRuntimeCorpse {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct CorpseItemBinding {
     actor: ExactActorRef,
+    // Original MINT binding stays immutable when the displayed Item transforms.
+    minted_item: RuntimeCorpseItem,
     item: RuntimeCorpseItem,
 }
 
@@ -35,8 +37,10 @@ impl ChannelActorCarrier {
         actor: ExactActorRef,
         item: RuntimeCorpseItem,
     ) -> Result<(), CarrierError> {
-        if actor.world_id() != self.world_id
-            || actor.channel_id() != self.channel_id
+        // A runtime projection alone never proves a committed Item MINT in
+        // Instance custody. That durable owner is not implemented yet.
+        self.channel_id()?;
+        if actor.runtime_scope() != self.runtime_scope
             || actor.scope_generation() != self.scope_generation
             || !self
                 .corpse_projections
@@ -50,7 +54,7 @@ impl ChannelActorCarrier {
             .iter()
             .find(|binding| binding.actor == actor)
         {
-            return if bound.item == item {
+            return if bound.minted_item == item {
                 Ok(())
             } else {
                 Err(CarrierError::CorpseProjectionConflict)
@@ -72,8 +76,11 @@ impl ChannelActorCarrier {
         self.corpse_item_bindings
             .try_reserve(1)
             .map_err(|_| CarrierError::AllocationFailed)?;
-        self.corpse_item_bindings
-            .push(CorpseItemBinding { actor, item });
+        self.corpse_item_bindings.push(CorpseItemBinding {
+            actor,
+            minted_item: item.clone(),
+            item,
+        });
         Ok(())
     }
 
@@ -164,7 +171,6 @@ impl ChannelRuntimeV1 {
     }
 
     /// Whether `actor`'s committed death is still projected and retained in this generation.
-    #[cfg(any(test, feature = "test-support"))]
     pub fn retains_corpse_projection(&self, actor: ExactActorRef) -> bool {
         self.carrier.retains_corpse_projection(actor)
     }
@@ -175,6 +181,30 @@ impl ChannelRuntimeV1 {
     pub fn visible_corpses(&self) -> Vec<VisibleRuntimeCorpse> {
         self.carrier
             .bound_corpses(Some(self.pinned_position_context()))
+    }
+
+    /// Refresh an existing projection from the current durable Item definition.
+    /// The caller holds the item lane across its complete read and this update;
+    /// this never creates a binding or changes a death's reward provenance.
+    pub fn refresh_corpse_item(
+        &mut self,
+        item_instance_id: [u8; 16],
+        family: &str,
+        production_key: &str,
+        revision_ref: &str,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        if let Some(binding) = self
+            .carrier
+            .corpse_item_bindings
+            .iter_mut()
+            .find(|binding| binding.item.item_instance_id == item_instance_id)
+        {
+            binding.item.family = family.to_owned();
+            binding.item.production_key = production_key.to_owned();
+            binding.item.revision_ref = revision_ref.to_owned();
+        }
+        Ok(())
     }
 
     /// Forget corpse Item bindings absent from the owner's complete durable live-corpse read.

@@ -2,6 +2,12 @@
 #[path = "tests/capability_tests.rs"]
 mod capability_tests;
 
+#[path = "tests/idle_kick.rs"]
+mod idle_kick;
+
+#[path = "tests/integrity.rs"]
+mod integrity;
+
 mod bed_sleep_dispatch_tests {
     include!("../bed_sleep_dispatch_tests.rs");
 }
@@ -9,6 +15,9 @@ mod bed_sleep_dispatch_tests {
 mod item_transform_dispatch_tests {
     include!("../item_transform_dispatch_tests.rs");
 }
+
+#[path = "tests/write_text_depot_view.rs"]
+mod write_text_depot_view;
 
 use super::*;
 use crate::gameplay_transport::world_spatial::encode_step_result;

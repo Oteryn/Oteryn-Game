@@ -8,7 +8,9 @@ use super::character_authority::assert_recovery_fence;
 use super::db::lock_admission_relations;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
+#[cfg(test)]
 use crate::content::ProductionKey;
+#[cfg(test)]
 use crate::domain::CharacterId;
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use oteryn_simulation_determinism::{
@@ -107,6 +109,8 @@ impl BossClock {
 #[derive(Debug, PartialEq, Eq)]
 pub enum BossClockClaim {
     Claimed(BossClock),
+    /// A committed clock snapshot used only to schedule the next owner timer.
+    Waiting(BossClock),
     Unchanged,
     CompareFailed,
 }
@@ -133,6 +137,35 @@ pub async fn claim_respawn_clock_in_transaction(
         return Err(BossClockError::InvalidInput);
     }
     expected.validate()?;
+    assert_clock_owner(tx, recovery, node, key, generation).await?;
+    // DB wall-clock milliseconds are portable across owners; process-local owner timer instants
+    // are deliberately not persisted. Resolve time after blocking authority locks.
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    let current = read_clock(tx, key)
+        .await?
+        .ok_or(BossClockError::MissingClock)?;
+    if current != *expected {
+        return Ok(BossClockClaim::CompareFailed);
+    }
+    let Some(next) = plan_claim(&current, generation, now)? else {
+        return Ok(BossClockClaim::Unchanged);
+    };
+    if !compare_and_set_clock(tx, key, &current, &next).await? {
+        return Ok(BossClockClaim::CompareFailed);
+    }
+    Ok(BossClockClaim::Claimed(next))
+}
+
+async fn assert_clock_owner(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    key: &BossClockKey,
+    generation: ScopeOwnershipGeneration,
+) -> Result<()> {
     assert_recovery_fence(tx, recovery).await?;
     lock_admission_relations(tx).await?;
     // Native assignment reads reject a materialized row not backed by the retained writer
@@ -165,25 +198,7 @@ pub async fn claim_respawn_clock_in_transaction(
     if !assigned || !prove_current_incarnation(tx, node).await? {
         return Err(BossClockError::AuthorityRejected);
     }
-    // DB wall-clock milliseconds are portable across owners; process-local owner timer instants
-    // are deliberately not persisted. Resolve time after blocking authority locks.
-    let now: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
-            .fetch_one(&mut **tx)
-            .await?;
-    let current = read_clock(tx, key)
-        .await?
-        .ok_or(BossClockError::MissingClock)?;
-    if current != *expected {
-        return Ok(BossClockClaim::CompareFailed);
-    }
-    let Some(next) = plan_claim(&current, generation, now)? else {
-        return Ok(BossClockClaim::Unchanged);
-    };
-    if !compare_and_set_clock(tx, key, &current, &next).await? {
-        return Ok(BossClockClaim::CompareFailed);
-    }
-    Ok(BossClockClaim::Claimed(next))
+    Ok(())
 }
 
 pub async fn read_clock(
@@ -286,7 +301,7 @@ pub fn plan_respawn_death(
     max_s: u64,
 ) -> Result<BossClock> {
     clock.validate()?;
-    if clock.state != BossClockState::Alive || death_unix_ms < 0 || min_s > max_s {
+    if clock.state != BossClockState::Alive || death_unix_ms < 0 || min_s == 0 || min_s > max_s {
         return Err(BossClockError::InvalidInput);
     }
     let cycle = clock
@@ -296,7 +311,8 @@ pub fn plan_respawn_death(
     let minimum = i64::try_from(min_s).map_err(|_| BossClockError::InvalidInput)?;
     let maximum = i64::try_from(max_s).map_err(|_| BossClockError::InvalidInput)?;
     let draw = draw(key, cycle, "boss_respawn")?;
-    let seconds = oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(draw, minimum, maximum);
+    let seconds =
+        oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(draw, minimum, maximum);
     let due = seconds
         .checked_mul(1000)
         .and_then(|delta| death_unix_ms.checked_add(delta))
@@ -334,8 +350,11 @@ pub fn plan_reset(
         return Ok(None);
     }
     let draw = draw(key, epoch, "boss_at_reset")?;
-    let yes = oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(draw, 0, (denominator - 1) as i64)
-        < numerator as i64;
+    let yes = oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+        draw,
+        0,
+        (denominator - 1) as i64,
+    ) < numerator as i64;
     Ok(Some(BossClock {
         state: if yes {
             BossClockState::Due
@@ -390,405 +409,136 @@ fn draw(key: &BossClockKey, ordinal: u64, purpose: &str) -> Result<u64> {
     .map_err(|_| BossClockError::InvalidInput)
 }
 
-// BOSS_RAID0 §6.3/§9/§12. These rows are reward-domain state: no CharacterRevision
-// comparison or increment. All helpers remain private DATA preparation. The respawn
-// preparation independently validates an admitted Channel contributor, but cannot
-// prove a boss death or qualified content. Reset, boosted-boss and activity admission
-// facts also have no current native producer here. No helper grants reward authority.
-type RewardResult<T> = std::result::Result<T, BossRewardStateError>;
+#[cfg(test)]
+#[path = "boss_encounter/activity_assignment_tests.rs"]
+mod activity_assignment_tests;
 
-#[derive(Debug)]
-enum BossRewardStateError {
-    InvalidInput,
-    InvalidStoredState,
-    AuthorityRejected,
-    ConflictingAdmission,
-    Unavailable(DurabilityError),
-}
-impl From<DurabilityError> for BossRewardStateError {
-    fn from(error: DurabilityError) -> Self {
-        Self::Unavailable(error)
+#[path = "boss_encounter/cooldown_list.rs"]
+mod cooldown_list;
+
+// These private preparation primitives had no production caller in the source file.
+// Keep qualifying them without exposing an unfenced admission/death write API.
+#[cfg(test)]
+#[path = "boss_encounter/preparation.rs"]
+mod preparation;
+
+impl super::DurabilityRoot {
+    /// One activation/timer pass. The current reset pointer and ownership are read under
+    /// their database locks, never supplied by content or an old process snapshot.
+    pub async fn activate_boss_clock(
+        &self,
+        authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        key: BossClockKey,
+        generation: ScopeOwnershipGeneration,
+        policy: oteryn_gameplay_content::content::BossPolicy,
+    ) -> Result<BossClockClaim> {
+        policy
+            .validate()
+            .map_err(|_| BossClockError::InvalidInput)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| BossClockError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            // Keep domain rejection inside the pass's DurabilityError envelope.
+            let result: Result<BossClockClaim> = async {
+                assert_clock_owner(&mut tx, &recovery, &node, &key, generation).await?;
+                let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
+                let reset: Option<(String,i64)> = sqlx::query_as("SELECT a.reset_epoch::text, floor(extract(epoch FROM e.activated_at)*1000)::bigint FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid FOR SHARE OF a,e")
+                    .bind(key.world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                let reset_initialized = reset.is_some();
+                let (epoch, reset_time) = match reset {
+                    Some((epoch,time)) => (epoch.parse().map_err(|_| BossClockError::InvalidStoredState)?, time),
+                    None => (0, now),
+                };
+                if matches!(policy, oteryn_gameplay_content::content::BossPolicy::AtReset { .. }) && !reset_initialized {
+                    // No actual reset owner yet: no invented reset or draw.
+                    return Ok(BossClockClaim::Unchanged);
+                }
+                let mut initial = BossClock { cycle: 0, state: BossClockState::Inactive,
+                    reset_epoch: 0, due_at_unix_ms: None, owner_generation: None };
+                if let oteryn_gameplay_content::content::BossPolicy::Respawn { min_s, max_s } = policy {
+                    let seconds = oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+                        draw(&key,0,"boss_respawn")?, min_s as i64, max_s as i64);
+                    initial.state = BossClockState::Due;
+                    initial.due_at_unix_ms = Some(seconds.checked_mul(1000).and_then(|d| now.checked_add(d)).ok_or(BossClockError::InvalidInput)?);
+                    initial.reset_epoch = epoch;
+                }
+                if let oteryn_gameplay_content::content::BossPolicy::AtReset { chance } = policy {
+                    let yes = oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+                        draw(&key,epoch,"boss_at_reset")?,0,(chance.denominator-1) as i64) < chance.numerator as i64;
+                    initial.reset_epoch = epoch;
+                    if yes { initial.state = BossClockState::Due; initial.due_at_unix_ms = Some(reset_time); }
+                }
+                sqlx::query("INSERT INTO game_boss_spawn_clocks(world_id,channel_id,spawn_key,cycle,state,reset_epoch,due_at,owner_generation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,0,$4,$5::text::numeric,$6,NULL) ON CONFLICT DO NOTHING")
+                    .bind(key.world.as_bytes().as_slice()).bind(key.channel.as_bytes().as_slice()).bind(&key.spawn)
+                    .bind(initial.state.stored()).bind(initial.reset_epoch.to_string()).bind(initial.due_at_unix_ms).execute(&mut *tx).await?;
+                let mut clock = read_clock(&mut tx, &key).await?.ok_or(BossClockError::MissingClock)?;
+                if let oteryn_gameplay_content::content::BossPolicy::AtReset { chance } = policy {
+                    if let Some(next) = plan_reset(&key,&clock,epoch,reset_time,chance.numerator,chance.denominator)? {
+                        if !compare_and_set_clock(&mut tx,&key,&clock,&next).await? { return Ok(BossClockClaim::CompareFailed); }
+                        clock = next;
+                    }
+                    if let Some(next) = plan_claim(&clock,generation,now)? {
+                        if !compare_and_set_clock(&mut tx,&key,&clock,&next).await? { return Ok(BossClockClaim::CompareFailed); }
+                        return Ok(BossClockClaim::Claimed(next));
+                    }
+                    Ok(BossClockClaim::Unchanged)
+                } else {
+                    claim_respawn_clock_in_transaction(&mut tx,&recovery,&node,&key,generation,&clock).await
+                }
+            }.await;
+            let result = match result {
+                Ok(BossClockClaim::Unchanged) => {
+                    match read_clock(&mut tx,&key).await.map_err(|_| super::DurabilityError::InvalidStoredState)? {
+                        Some(clock) if clock.state != BossClockState::Alive => Ok(BossClockClaim::Waiting(clock)),
+                        _ => Ok(BossClockClaim::Unchanged),
+                    }
+                }
+                other => other,
+            };
+            if result.is_ok() { commit_semantic_transaction(tx,deadline).await?; }
+            Ok(result)
+        })).await?
     }
 }
-impl From<sqlx::Error> for BossRewardStateError {
-    fn from(error: sqlx::Error) -> Self {
-        Self::Unavailable(error.into())
-    }
-}
-impl std::fmt::Display for BossRewardStateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::InvalidInput => f.write_str("invalid boss reward state input"),
-            Self::InvalidStoredState => f.write_str("invalid boss reward stored state"),
-            Self::AuthorityRejected => f.write_str("boss contributor authority rejected"),
-            Self::ConflictingAdmission => f.write_str("boss admission reused with different state"),
-            Self::Unavailable(error) => write!(f, "boss reward state unavailable: {error:?}"),
-        }
-    }
-}
-impl std::error::Error for BossRewardStateError {}
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct BossRewardKey {
-    character: CharacterId,
-    boss: ProductionKey,
-}
-impl BossRewardKey {
-    fn new(character: CharacterId, boss: &str) -> RewardResult<Self> {
-        Ok(Self {
-            character,
-            boss: ProductionKey::new(boss).map_err(|_| BossRewardStateError::InvalidInput)?,
-        })
-    }
-}
-
-/// Pending transaction result only; it is neither a committed death nor reward authority.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum BossEligibilityClaim {
-    Claimed,
-    Ineligible,
-}
-
-/// Private respawn-eligibility storage preparation with a genuine contributor fence.
-/// No current native death/content owner calls this. The future owner must bind it to
-/// a qualified boss death before making any production entry reachable.
-/// It must retain its recovery seal, hold the existing death occurrence first,
-/// check its immutable death receipt for replay before calling, and compose the claim,
-/// reward draw and Bosstiary receipt in this same semantic transaction/deadline/commit.
-/// A rollback releases the claim; an ambiguous commit must reconcile that death receipt,
-/// never retry this as a new death. No standalone transaction/commit is offered here.
-///
-/// Content supplies the qualified boss key and spawn's actual min_s, as for the clock's
-/// death planner. This entry supplies neither content admission nor death legitimacy.
-/// Terminal/post-grace and Instance scopes fail closed under the native session fence;
-/// §7 forbids crediting post-grace ahead of an accepted writer for the actor's own death.
-async fn claim_respawn_eligibility_in_transaction(
+/// Called only after the corpse receipt's replay check and current-generation check.
+/// A failure rolls the corpse and clock back together; replay returns before this call.
+pub(crate) async fn advance_death_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
-    recovery: &CharacterRecoveryFenceV1,
-    node: &NodeIncarnationProof,
-    fence: &super::item_transfer::CurrentCharacterItemFence,
-    boss: &str,
-    min_s: u64,
-) -> RewardResult<BossEligibilityClaim> {
-    let key = BossRewardKey::new(fence.character_id, boss)?;
-    reward_deadline(0, min_s)?;
-    assert_recovery_fence(tx, recovery).await?;
-    lock_admission_relations(tx).await?;
-    let history_valid: bool =
-        sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
-            .fetch_one(&mut **tx)
-            .await?;
-    if !history_valid {
-        return Err(BossRewardStateError::InvalidStoredState);
-    }
-    super::character_progression::assert_item_only_fence(tx, fence, node)
+    key: &BossClockKey,
+    generation: ScopeOwnershipGeneration,
+    cycle: u64,
+    policy: oteryn_gameplay_content::content::BossPolicy,
+) -> Result<()> {
+    policy
+        .validate()
+        .map_err(|_| BossClockError::InvalidInput)?;
+    let clock = read_clock(tx, key)
         .await?
-        .map_err(|_| BossRewardStateError::AuthorityRejected)?;
-    // All blocking authority/Character-root locks precede the DB time sample. No
-    // caller-supplied timestamp or process-local timer can open an eligibility window.
+        .ok_or(BossClockError::MissingClock)?;
+    if clock.state != BossClockState::Alive
+        || clock.owner_generation != Some(generation)
+        || clock.cycle != cycle
+    {
+        return Err(BossClockError::AuthorityRejected);
+    }
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
             .fetch_one(&mut **tx)
             .await?;
-    claim_open_world_eligibility_data(tx, &key, now, OpenWorldEligibilityData::Respawn { min_s })
-        .await
-}
-
-fn reward_deadline(now: i64, seconds: u64) -> RewardResult<i64> {
-    if now < 0 {
-        return Err(BossRewardStateError::InvalidInput);
-    }
-    i64::try_from(seconds)
-        .ok()
-        .and_then(|seconds| seconds.checked_mul(1000))
-        .and_then(|delta| now.checked_add(delta))
-        .ok_or(BossRewardStateError::InvalidInput)
-}
-
-fn reward_uuid(value: &[u8; 16]) -> bool {
-    value[6] >> 4 == 7 && value[8] & 0xc0 == 0x80
-}
-
-// Character roots serialize missing singleton/cooldown rows too. Sorting distinct roots
-// before rows preserves §12 even for a group. This is only a lock, never an authority check.
-async fn lock_reward_roots(
-    tx: &mut Transaction<'_, Postgres>,
-    keys: &[BossRewardKey],
-) -> RewardResult<()> {
-    let characters: std::collections::BTreeSet<_> = keys.iter().map(|key| key.character).collect();
-    for character in characters {
-        let exists = sqlx::query(
-            "SELECT 1 FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR UPDATE",
-        )
-        .bind(character.as_bytes().as_slice())
-        .fetch_optional(&mut **tx)
-        .await?
-        .is_some();
-        if !exists {
-            return Err(BossRewardStateError::InvalidStoredState);
+    let next = match policy {
+        oteryn_gameplay_content::content::BossPolicy::Respawn { min_s, max_s } => {
+            plan_respawn_death(key, &clock, now, min_s, max_s)?
         }
+        oteryn_gameplay_content::content::BossPolicy::AtReset { .. } => plan_reset_death(&clock)?,
+    };
+    if !compare_and_set_clock(tx, key, &clock, &next).await? {
+        return Err(BossClockError::AuthorityRejected);
     }
     Ok(())
 }
-
-#[derive(Debug, Clone, Copy)]
-enum OpenWorldEligibilityData {
-    Respawn { min_s: u64 },
-    AtReset { epoch: u64 },
-}
-
-// Private storage mechanics. Raw epoch/time values do not prove a current reset/death.
-// The future at-reset caller must independently resolve the current WorldReset and use
-// the same §7 fence as its own death writer; no exported at-reset activation exists.
-async fn claim_open_world_eligibility_data(
-    tx: &mut Transaction<'_, Postgres>,
-    key: &BossRewardKey,
-    now: i64,
-    policy: OpenWorldEligibilityData,
-) -> RewardResult<BossEligibilityClaim> {
-    let next = match policy {
-        OpenWorldEligibilityData::Respawn { min_s } => reward_deadline(now, min_s)?,
-        OpenWorldEligibilityData::AtReset { .. } if now >= 0 => 0,
-        _ => return Err(BossRewardStateError::InvalidInput),
-    };
-    lock_reward_roots(tx, std::slice::from_ref(key)).await?;
-    sqlx::query(
-        "INSERT INTO game_character_boss_open_world_eligibility \
-         (character_id,boss_key,next_eligible_at,last_credited_epoch) \
-         VALUES(encode($1,'hex')::uuid,$2,0,NULL) ON CONFLICT DO NOTHING",
-    )
-    .bind(key.character.as_bytes().as_slice())
-    .bind(key.boss.as_str())
-    .execute(&mut **tx)
-    .await?;
-    let row = sqlx::query(
-        "SELECT next_eligible_at,last_credited_epoch::text \
-         FROM game_character_boss_open_world_eligibility \
-         WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR UPDATE",
-    )
-    .bind(key.character.as_bytes().as_slice())
-    .bind(key.boss.as_str())
-    .fetch_one(&mut **tx)
-    .await?;
-    let before: i64 = row.try_get("next_eligible_at")?;
-    let last_epoch: Option<String> = row.try_get("last_credited_epoch")?;
-    let last_epoch = last_epoch
-        .map(|value| {
-            value
-                .parse::<u64>()
-                .map_err(|_| BossRewardStateError::InvalidStoredState)
-        })
-        .transpose()?;
-    if before < 0 {
-        return Err(BossRewardStateError::InvalidStoredState);
-    }
-    let (next, epoch) = match policy {
-        OpenWorldEligibilityData::Respawn { .. } if now >= before => (next, last_epoch),
-        OpenWorldEligibilityData::AtReset { epoch }
-            if last_epoch.is_none_or(|last| last < epoch) =>
-        {
-            (before, Some(epoch))
-        }
-        _ => return Ok(BossEligibilityClaim::Ineligible),
-    };
-    sqlx::query(
-        "UPDATE game_character_boss_open_world_eligibility \
-         SET next_eligible_at=$3,last_credited_epoch=$4::text::numeric(20,0) \
-         WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2",
-    )
-    .bind(key.character.as_bytes().as_slice())
-    .bind(key.boss.as_str())
-    .bind(next)
-    .bind(epoch.map(|value| value.to_string()))
-    .execute(&mut **tx)
-    .await?;
-    Ok(BossEligibilityClaim::Claimed)
-}
-
-// Existing firing_id/admission identity only; no new eligibility-window ID is derived.
-// Caller must check the death receipt before this, and compose the draw/receipt atomically.
-async fn claim_reference_eligibility_data(
-    tx: &mut Transaction<'_, Postgres>,
-    key: &BossRewardKey,
-    eligibility_ref: [u8; 16],
-) -> RewardResult<BossEligibilityClaim> {
-    if !reward_uuid(&eligibility_ref) {
-        return Err(BossRewardStateError::InvalidInput);
-    }
-    lock_reward_roots(tx, std::slice::from_ref(key)).await?;
-    let inserted = sqlx::query(
-        "INSERT INTO game_character_boss_eligibility(character_id,boss_key,eligibility_ref) \
-         VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid) ON CONFLICT DO NOTHING",
-    )
-    .bind(key.character.as_bytes().as_slice())
-    .bind(key.boss.as_str())
-    .bind(eligibility_ref.as_slice())
-    .execute(&mut **tx)
-    .await?
-    .rows_affected();
-    Ok(if inserted == 1 {
-        BossEligibilityClaim::Claimed
-    } else {
-        BossEligibilityClaim::Ineligible
-    })
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct BossCooldownData {
-    available_at: i64,
-    admission: [u8; 16],
-    reset_epoch: u64,
-}
-
-async fn read_boss_cooldown_data(
-    tx: &mut Transaction<'_, Postgres>,
-    key: &BossRewardKey,
-) -> RewardResult<Option<BossCooldownData>> {
-    let row = sqlx::query(
-        "SELECT available_at,uuid_send(admission) AS admission_bytes,reset_epoch::text \
-         FROM game_character_boss_cooldowns \
-         WHERE character_id=encode($1,'hex')::uuid AND boss_key=$2 FOR UPDATE",
-    )
-    .bind(key.character.as_bytes().as_slice())
-    .bind(key.boss.as_str())
-    .fetch_optional(&mut **tx)
-    .await?;
-    row.map(|row| {
-        let admission: Vec<u8> = row.try_get("admission_bytes")?;
-        let value = BossCooldownData {
-            available_at: row.try_get("available_at")?,
-            admission: admission
-                .try_into()
-                .map_err(|_| BossRewardStateError::InvalidStoredState)?,
-            reset_epoch: row
-                .try_get::<String, _>("reset_epoch")?
-                .parse()
-                .map_err(|_| BossRewardStateError::InvalidStoredState)?,
-        };
-        if value.available_at < 0 || !reward_uuid(&value.admission) {
-            return Err(BossRewardStateError::InvalidStoredState);
-        }
-        Ok(value)
-    })
-    .transpose()
-}
-
-/// Proposed facts ONLY. Current epoch, boosted-boss identity, lever predicates and the
-/// admission occurrence must be resolved by BOSS-ROOM-1 before these data helpers are wired.
-struct BossCooldownAdmissionData {
-    admission: [u8; 16],
-    now: i64,
-    reset_epoch: u64,
-    cooldown_s: u64,
-    boosted: bool,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum BossCooldownChange {
-    Applied,
-    Replayed,
-    OnCooldown,
-}
-
-// No partial group write on a refusal: validate and lock every root/row in deterministic
-// order, then preflight the entire group before the first write. Allocation ADMITTING and
-// cooldowns still must commit together in the real lever owner, which this does not replace.
-async fn set_boss_cooldowns_data(
-    tx: &mut Transaction<'_, Postgres>,
-    keys: &[BossRewardKey],
-    facts: &BossCooldownAdmissionData,
-) -> RewardResult<BossCooldownChange> {
-    if keys.is_empty()
-        || keys.len() > 15
-        || !reward_uuid(&facts.admission)
-        || facts.cooldown_s > 30 * 24 * 60 * 60
-    {
-        return Err(BossRewardStateError::InvalidInput);
-    }
-    let available_at = reward_deadline(facts.now, facts.cooldown_s)?;
-    let sorted: std::collections::BTreeSet<_> = keys.iter().cloned().collect();
-    if sorted.len() != keys.len() || keys.iter().any(|key| key.boss != keys[0].boss) {
-        return Err(BossRewardStateError::InvalidInput);
-    }
-    let keys: Vec<_> = sorted.into_iter().collect();
-    lock_reward_roots(tx, &keys).await?;
-    let next = BossCooldownData {
-        available_at,
-        admission: facts.admission,
-        reset_epoch: facts.reset_epoch,
-    };
-    let mut replayed = 0;
-    for key in &keys {
-        if let Some(old) = read_boss_cooldown_data(tx, key).await? {
-            if facts.reset_epoch < old.reset_epoch {
-                return Err(BossRewardStateError::InvalidInput);
-            }
-            if old.admission == facts.admission {
-                if old != next {
-                    return Err(BossRewardStateError::ConflictingAdmission);
-                }
-                replayed += 1;
-            } else if facts.now < old.available_at
-                && !(facts.boosted && old.reset_epoch < facts.reset_epoch)
-            {
-                return Ok(BossCooldownChange::OnCooldown);
-            }
-        }
-    }
-    if replayed != 0 {
-        return if replayed == keys.len() {
-            Ok(BossCooldownChange::Replayed)
-        } else {
-            Err(BossRewardStateError::InvalidStoredState)
-        };
-    }
-    for key in &keys {
-        sqlx::query(
-            "INSERT INTO game_character_boss_cooldowns(character_id,boss_key,available_at,admission,reset_epoch) \
-             VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5::text::numeric(20,0)) \
-             ON CONFLICT(character_id,boss_key) DO UPDATE SET available_at=EXCLUDED.available_at, \
-             admission=EXCLUDED.admission,reset_epoch=EXCLUDED.reset_epoch",
-        )
-        .bind(key.character.as_bytes().as_slice()).bind(key.boss.as_str()).bind(next.available_at)
-        .bind(next.admission.as_slice()).bind(next.reset_epoch.to_string())
-        .execute(&mut **tx).await?;
-    }
-    Ok(BossCooldownChange::Applied)
-}
-
-// An admission's actual ABANDONED/no-arrival predicate must be locked by its owner first.
-// Matching only that admission never refunds a participant's later spent cooldown. This
-// helper is private and cannot interpret raw IDs as permission to compensate an admission.
-async fn compensate_boss_cooldowns_data(
-    tx: &mut Transaction<'_, Postgres>,
-    keys: &[BossRewardKey],
-    admission: [u8; 16],
-) -> RewardResult<u64> {
-    if keys.is_empty() || keys.len() > 15 || !reward_uuid(&admission) {
-        return Err(BossRewardStateError::InvalidInput);
-    }
-    let sorted: std::collections::BTreeSet<_> = keys.iter().cloned().collect();
-    if sorted.len() != keys.len() || keys.iter().any(|key| key.boss != keys[0].boss) {
-        return Err(BossRewardStateError::InvalidInput);
-    }
-    let keys: Vec<_> = sorted.into_iter().collect();
-    lock_reward_roots(tx, &keys).await?;
-    let mut deleted = 0;
-    for key in &keys {
-        deleted += sqlx::query(
-            "DELETE FROM game_character_boss_cooldowns WHERE character_id=encode($1,'hex')::uuid \
-             AND boss_key=$2 AND admission=encode($3,'hex')::uuid",
-        )
-        .bind(key.character.as_bytes().as_slice())
-        .bind(key.boss.as_str())
-        .bind(admission.as_slice())
-        .execute(&mut **tx)
-        .await?
-        .rows_affected();
-    }
-    Ok(deleted)
-}
-
-#[cfg(test)]
-#[allow(clippy::expect_used)]
-mod tests;

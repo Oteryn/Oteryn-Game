@@ -44,7 +44,10 @@ fn parameter_spell_protected_exiva_real_session_postgres() -> TestResult {
     scenario(3)
 }
 
-fn scenario(case: u8) -> TestResult {
+#[path = "parameter_spell/exiva_settings.rs"]
+mod exiva_settings;
+
+pub(super) fn scenario(case: u8) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -70,7 +73,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
     eprintln!("PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}");
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
-    if case != 1 {
+    if !matches!(case, 1 | 5 | 6) {
         observer::admit(&h).await?;
     }
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -80,14 +83,18 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         .await
         .map_err(debug)?;
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
-    let (controller, pin) = production_generation_with_source(
-        world,
-        "content-1",
-        Some(include_bytes!(
-            "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-        )),
-    )
-    .map_err(debug)?;
+    let (controller, pin) = if matches!(case, 4..=6) {
+        super::item_spell_augments::activate(world, case == 6)?
+    } else {
+        production_generation_with_source(
+            world,
+            "content-1",
+            Some(include_bytes!(
+                "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
+            )),
+        )
+        .map_err(debug)?
+    };
     let active = controller.active().ok_or("active")?;
     let native = active.native_gameplay().ok_or("native")?;
     let room = pin.qualified_room().clone();
@@ -100,7 +107,12 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         room.map_revision_digest(),
         (2, 11, -7),
     );
-    let mut deps = Dependencies::with_content(cp, room.clone(), native.spell_book().clone())?;
+    let mut deps = Dependencies::with_content_and_capacity(
+        cp,
+        room.clone(),
+        native.spell_book().clone(),
+        if matches!(case, 5 | 6) { 4 } else { 2 },
+    )?;
     deps.combat_room = Some(room);
     let mut owner = deps.owner(&h, &authority);
     owner.active_generation = Some(active);
@@ -143,6 +155,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         )
         .await
         .map_err(debug)?;
+    let mut augment_target = None;
     {
         let mut runtime = deps.runtime.lock().await;
         runtime
@@ -159,6 +172,40 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
                 .map_err(debug)?,
             )
             .map_err(debug)?;
+        if matches!(case, 5 | 6) {
+            let p = runtime
+                .read_actor_position(actor)
+                .map_err(debug)?
+                .position();
+            let position = crate::foundation::MovementLocalPosition {
+                x: p.x + 1,
+                y: p.y,
+                floor: p.floor,
+            };
+            runtime
+                .install_companion_policies(native.policies().clone())
+                .map_err(debug)?;
+            let health = runtime
+                .companion_policy("oteryn:creature.rat")
+                .map_err(debug)?
+                .maximum_health;
+            runtime
+                .realize_activation_spawns(vec![(
+                    vec![(position.x, position.y, position.floor)],
+                    60_000,
+                    5_000,
+                    "oteryn:creature.rat".into(),
+                    u64::try_from(health)?,
+                )])
+                .map_err(debug)?;
+            let target = runtime
+                .visible_entities()
+                .creatures
+                .first()
+                .ok_or("rat")?
+                .actor;
+            augment_target = Some((target, position));
+        }
         let mut states = owner.states.spell_states.lock().await;
         assert!(
             states
@@ -183,15 +230,34 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    if case != 1 {
-        observer::initialize(&deps, &owner).await?;
-    }
+    let target_actor = if !matches!(case, 1 | 5 | 6) {
+        Some(observer::initialize(&deps, &owner).await?)
+    } else {
+        None
+    };
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1),(encode($2,'hex')::uuid,1)").bind(id(41).as_slice()).bind(id(101).as_slice()).execute(&h.pool).await?;
+    if matches!(case, 4..=6) {
+        let mut tx = h.pool.begin().await?;
+        // Fixture custody only; tested equipment reads use the production fences.
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
+            .bind(id(112).as_slice()).bind(id(42).as_slice()).bind(if case == 6 { "oteryn:item.tibia.i6529" } else { "oteryn:item.tibia.i2854" }).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_equipment_slots(character_id,world_id,slot,item_instance_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$4,encode($3,'hex')::uuid,encode($3,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(id(112).as_slice()).bind(if case == 6 { 4_i16 } else { 3 }).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let mut states = owner.states.spell_states.lock().await;
+        crate::gameplay_transport::actor_spell::tests::wound(&mut states, actor, session, 1);
+    }
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
-    for current_session in [Some(session), (case != 1).then_some(target_session)]
-        .into_iter()
-        .flatten()
+    for current_session in [
+        Some(session),
+        (!matches!(case, 1 | 5 | 6)).then_some(target_session),
+    ]
+    .into_iter()
+    .flatten()
     {
         h.root
             .initialize_familiar_group(
@@ -211,17 +277,43 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
             .await?
             .0;
     admitted.item_fence = item_fence_of(current);
+    if case == 6 {
+        // The fixture seeds custody after admission; install its derived abilities through
+        // the same fenced reader and installer as a real equipment-bearing admission.
+        let _permit = owner.spell_lane_permit().await.ok_or("spell lane")?;
+        let effects = owner
+            .read_admission_effects(session)
+            .await
+            .map_err(|_| "equipment effects")?;
+        let runtime = deps.runtime.lock().await;
+        owner
+            .install_admission_suppressions(&runtime, actor, session, effects)
+            .await
+            .ok_or("install equipment effects")?;
+    }
     admitted.first_entry = FirstEntryOutcome::Positioned;
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
+    if case >= 7 {
+        return exiva_settings::exercise(
+            &h,
+            &owner,
+            admitted,
+            target_actor.ok_or("target actor")?,
+            case,
+        )
+        .await;
+    }
     let before = owner
         .observe_vitals(actor, session)
         .await
         .ok_or("before vitals")?
         .1
         .mana;
-    let words = if case == 2 {
+    let words = if matches!(case, 5 | 6) {
+        "exori vis"
+    } else if matches!(case, 2 | 4) {
         "exura"
     } else {
         "  EXIVA prefix\"Fixture Watcher\"  "
@@ -235,8 +327,87 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         (chat::COMMAND_TYPE_CHAT_INTENT, payload.clone()),
         (chat::COMMAND_TYPE_CHAT_INTENT, payload),
     ];
-    let (results, feedback) = exchange(&owner, &mut admitted, &commands, true, case != 2).await?;
+    if let Some((_, position)) = augment_target {
+        let index = (1..=deps.spells.source_len())
+            .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
+            .find(|i| {
+                deps.spells
+                    .indexed(*i)
+                    .is_some_and(|s| s.name == "Energy Strike")
+            })
+            .ok_or("energy strike")?;
+        let payload = actor_spell::encode_spell_cast_intent(&actor_spell::SpellCastIntent {
+            spell: index,
+            target: actor_spell::SpellTarget::Position(actor_spell::SpellTargetPosition {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            }),
+            aim_at_target: false,
+        });
+        commands = vec![
+            (
+                actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+                payload.clone(),
+            ),
+            (
+                actor_spell::COMMAND_TYPE_WORLD_ACTOR_SPELL_CAST_INTENT,
+                payload,
+            ),
+        ];
+    }
+    let (results, feedback) = exchange(
+        &owner,
+        &mut admitted,
+        &commands,
+        true,
+        !matches!(case, 2 | 4 | 5 | 6),
+    )
+    .await?;
     assert_eq!(results[1].0, CommandStatus::DuplicateReplay);
+    if let Some((target, _)) = augment_target {
+        assert_eq!(
+            actor_spell::decode_spell_cast_result(&results[0].1).map_err(debug)?,
+            actor_spell::SpellCastDisposition::Cast
+        );
+        let (_, vitals) = owner
+            .observe_vitals(actor, session)
+            .await
+            .ok_or("leech vitals")?;
+        let runtime = deps.runtime.lock().await;
+        let hp = runtime
+            .creature_combat_facts(target, owner.owner_now().get() / 1000)
+            .map_err(debug)?;
+        let real = hp.maximum_health - hp.health;
+        assert!(real > 0);
+        assert_eq!(
+            i64::from(vitals.health),
+            (1 + real).min(i64::from(vitals.max_health))
+        );
+        assert_eq!(
+            i64::from(vitals.mana),
+            (i64::from(before) - 20 + real).min(i64::from(vitals.max_mana))
+        );
+        drop(runtime);
+        if case == 6 {
+            // Mana training checkpoints below its advance threshold; flush through the
+            // production save owner, then prove the duplicate did not train twice.
+            assert_eq!(
+                owner.save_spell_training(actor, session, true).await,
+                crate::gameplay_transport::actor_spell::TrainingSave::Saved
+            );
+            let durable = h
+                .root
+                .read_character_build_state(
+                    &authority,
+                    crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?,
+                )
+                .await
+                .map_err(debug)?;
+            assert_eq!(durable.magic(), (0, 20));
+        }
+        return Ok(());
+    }
     let result = chat::decode_chat_intent_result(&results[0].1).map_err(debug)?;
     assert_eq!(
         result.disposition,
@@ -254,7 +425,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         .1
         .mana;
     assert_eq!(before - after, if case == 1 || case == 3 { 0 } else { 20 });
-    if case != 2 {
+    if !matches!(case, 2 | 4) {
         let expected = if case == 1 {
             "A player with this name is not online."
         } else if case == 3 {
@@ -264,6 +435,36 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         };
         assert!(feedback.iter().any(|line| matches!(line, chat::ChatLine::Private { speaker_name, text } if speaker_name == "Game" && text == expected)), "{feedback:?}");
         assert!(owner.states.chat.drain(target_session).is_empty());
+    }
+    if case == 4 {
+        let (_, vitals) = owner.observe_vitals(actor, session).await.ok_or("healed")?;
+        assert!(vitals.health >= 100, "augmented healing {vitals:?}");
+        let runtime = deps.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session).ok_or("state")?;
+        let spell = deps
+            .spells
+            .spells
+            .iter()
+            .find(|s| s.name == "Light Healing")
+            .ok_or("spell")?;
+        let ready = state
+            .cooldowns
+            .spell_ready_at(&spell.key)
+            .ok_or("cooldown")?
+            .get();
+        assert!(ready <= owner.owner_now().get() + spell.cooldown_micros / 2);
+        drop(states);
+        drop(runtime);
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query("DELETE FROM game_character_equipment_slots WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(112).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_character_equipment_state SET revision=revision+1 WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let mut states = owner.states.spell_states.lock().await;
+        crate::gameplay_transport::actor_spell::tests::wound(&mut states, actor, session, 1);
     }
     // A second input after the source cooldown uses a new command, not another cast path.
     owner.clock_origin = owner
@@ -279,7 +480,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
             })
             .map_err(debug)?,
         )];
-    } else if case == 2 {
+    } else if matches!(case, 2 | 4) {
         let index = (1..=deps.spells.source_len())
             .filter_map(|i| u32::try_from(i).ok().and_then(std::num::NonZeroU32::new))
             .find(|i| {
@@ -332,6 +533,13 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
                     .mana,
             20
         );
+    }
+    if case == 4 {
+        let (_, vitals) = owner
+            .observe_vitals(actor, session)
+            .await
+            .ok_or("unequipped")?;
+        assert!(vitals.health < 100, "unequipped healing {vitals:?}");
     }
     Ok(())
 }
@@ -397,6 +605,25 @@ async fn exchange(
     replay: bool,
     feedback_expected: bool,
 ) -> TestResult<WireResults> {
+    exchange_from(
+        owner,
+        admitted,
+        commands,
+        replay,
+        feedback_expected,
+        admitted.continuity.next_command_id,
+    )
+    .await
+}
+
+async fn exchange_from(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    commands: &[(u32, Vec<u8>)],
+    replay: bool,
+    feedback_expected: bool,
+    first_command_id: u64,
+) -> TestResult<WireResults> {
     let session = *admitted;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async move { serve_admitted(&mut server, session, owner, IDLE_LIVENESS).await };
@@ -412,8 +639,7 @@ async fn exchange(
         let mut results = Vec::new();
         let mut feedback = Vec::new();
         for (offset, (kind, payload)) in commands.iter().enumerate() {
-            let command_id =
-                session.continuity.next_command_id + if replay { 0 } else { offset as u64 };
+            let command_id = first_command_id + if replay { 0 } else { offset as u64 };
             let frame = encode_client_command(
                 session.continuity.connection_generation,
                 &ClientCommandValue {

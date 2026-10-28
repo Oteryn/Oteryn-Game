@@ -840,3 +840,32 @@ Structure rules (binding acceptance criteria):
 - CREATURE-MOVE-1 (chase/step composition): re-implementation pending (draft #2184 closing; card `docs/agents/tasks/archive/CREATURE-MOVE-1.md`).
 - TRAVEL-CONTENT-1: BLOCKING (content draft #2235 open). D1357/D1358 native NPC source work: open.
 - MERGED: ADMIT-CAP-1 (#2187), NPC-CONTENT-2 (#2129), NPC-ECON-1 (#2197); NPC-TRAVEL-1, CHAT-1 and PREMIUM-1 merged earlier.
+
+## NPC-TRAVEL-2 completion audit — 2026-10-27
+
+The paid travel composition merged in #2479 is now covered through the production NPC talk,
+durability, placement, and Movement-owner path. The PostgreSQL dispatch case additionally proves
+that consuming an arrival releases the travel hold and hands the actor back to ordinary walking;
+it also covers the content-derived ship/carpet route table, typed Premium refusal, quest discount,
+fee debit, replay, and arrival rollback. No new migration or command was required.
+
+| behaviour | Canary/Crystal ref | Oteryn | status |
+|---|---|---|---|
+| Confirmed ship/carpet travel debits once and relocates once | Canary `47dfd51f45280a59a1d3e50ba7edd573d7234446`; Crystal `201189f871d23597b82caf88fd611454a2ddefb8` | `paid_travel.rs`, `npc_travel/paid.rs`, PostgreSQL dispatch case | Complete |
+| Content destinations, fares, Premium, level, and quest gates | Same pinned trees; exact donor behaviour outside admitted records: Not verified | admitted `travel_routes.json` through `NpcTalkBook` and the durable gate | Complete for admitted content |
+| Walking resumes after the arrival obligation is consumed | Same pinned trees; exact cooldown timing: Not verified | real dispatch test performs an ordinary paced step after arrival/cooldown | Complete |
+| Fee source and replay | Same pinned trees; bank ordering details: Not verified | existing item/bank gold owner, occurrence-bound fee audit and command replay | Complete |
+
+Validation results:
+
+- `cargo fmt --all -- --check`: pass.
+- `cargo clippy -p oteryn-gameplay-dispatch --all-targets --all-features -- -D warnings`: pass.
+- `cargo test -p oteryn-gameplay-entities --all-features npc_actor`: pass.
+- `cargo test -p oteryn-gameplay-dispatch --all-features npc_paid_travel`: pass (PostgreSQL case returns `Ok(())` when the admin URL is absent).
+
+Remaining:
+
+- Install and tick the prepared `NpcWalkBook`/`NpcWalkState` from the Channel owner and publish
+  its spatial movement.
+- Publish admitted NPC voice lines through the budgeted chat path.
+- Rashid weekday availability remains tracked separately.

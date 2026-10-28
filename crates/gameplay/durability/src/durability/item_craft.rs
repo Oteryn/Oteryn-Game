@@ -165,7 +165,12 @@ async fn write<C: ItemLoopContent>(
         let Some(weight) = facts.weight else {
             return Ok(UseDisposition::NotPossible);
         };
-        if facts.container_capacity.is_some()
+        // REWARD-BAGS-2: the alicorn quiver is one fresh empty container. The
+        // existing mint inserts only its instance and parent placement, no children.
+        let empty_quiver = request.station.is_none()
+            && definition.production_key == "oteryn:item.tibia.i39150"
+            && *count == 1;
+        if (facts.container_capacity.is_some() && !empty_quiver)
             || *count
                 > stack_maximum(facts.stack)
                     .map(|(maximum, _)| maximum)

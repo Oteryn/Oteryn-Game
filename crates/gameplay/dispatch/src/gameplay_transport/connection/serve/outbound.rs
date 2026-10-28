@@ -116,7 +116,7 @@ where
         Dispatch::Spell(outcome) => {
             effects::spell(stream, authority, session, outcome).await?;
         }
-        Dispatch::Timed(_, deltas) => {
+        Dispatch::Timed(_, deltas) | Dispatch::ContainerSort(deltas) => {
             for delta in deltas {
                 let Some((delta_sequence, frame)) =
                     item_view_delta(session.generation, session.sequence, &delta)
@@ -365,6 +365,7 @@ where
         &mut session.admitted,
         session.visibility.as_mut(),
         session.item_view.as_mut(),
+        session.container_views.as_mut(),
         session.world_map.as_mut(),
         session.generation,
         &mut session.sequence,

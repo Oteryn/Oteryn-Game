@@ -60,6 +60,7 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
     mut admitted: AdmittedSession,
     authority: &A,
     policy: LivenessPolicy,
+    integrity: &mut integrity::Integrity,
 ) -> Result<AdmittedSession, Box<ConnectionEnd>> {
     let run = async {
         let (_, projection) = authority
@@ -145,10 +146,7 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             let command = envelope
                 .client_command(generation)
                 .map_err(ServeEnd::Closed)?;
-            let permit = authority.enter_input(admitted.game_session_id).await;
-            if permit.is_some() && !authority.house_transfer_input(admitted).await {
-                return Err(ServeEnd::Disconnected);
-            }
+            let limited = integrity.admit().await;
             match commands
                 .begin(
                     command.command_id,
@@ -167,6 +165,14 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
                     continue;
                 }
                 crate::gameplay_transport::session_ingress::CommandAction::Execute => {}
+            }
+            let permit = if limited {
+                None
+            } else {
+                authority.enter_input(admitted.game_session_id).await
+            };
+            if permit.is_some() && !authority.house_transfer_input(admitted).await {
+                return Err(ServeEnd::Disconnected);
             }
             let (next, payload, status) = if permit.is_some()
                 && command.command_type == COMMAND_TYPE_HOUSE_TRANSFER

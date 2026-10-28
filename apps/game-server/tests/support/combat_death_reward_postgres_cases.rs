@@ -456,6 +456,7 @@ fn death_fixture() -> TestResult<CombatDeathFixture> {
 
 fn ground() -> DeathGroundContext {
     DeathGroundContext {
+        boss_spawn: None,
         map_revision: "fixture:combat-death-reward.map.r1".into(),
         content_revision: "fixture:combat-death-reward.content.r1".into(),
         ruleset_revision: "fixture:combat-death-reward.ruleset.r1".into(),

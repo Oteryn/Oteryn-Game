@@ -22,15 +22,15 @@ pub fn valid_key_bytes(value: &str) -> bool {
         })
 }
 
-// Reference snapshot: Canary 04b83b512114bfd888000d6e1433ed8ecaec7c5b,
-// src/game/game.cpp playerCreateMarketOffer and config.lua.dist market settings.
+// Current fee terms: https://www.tibia.com/news/?subtopic=newsarchive&id=8996
+// (2026-10-06), superseding the older Canary snapshot for rate and cap.
 // MARKET0 §3.2 additionally caps the checked total, not only the piece price.
 pub const MAX_OPEN_OFFERS: usize = 100;
 pub const MAX_AMOUNT: u32 = 64_000;
 // MARKET0 §6 limits a transaction to this many native ItemInstances.
 pub const MAX_TOUCHED_ITEMS: usize = 100;
 pub const MIN_FEE: u64 = 20;
-pub const MAX_FEE: u64 = 1_000_000;
+pub const MAX_FEE: u64 = 2_500_000;
 pub const MAX_TOTAL: u64 = 999_999_999_999;
 pub const HARD_CREDIT_CEILING: u64 = 9_000_000_000_000_000;
 pub const LIFETIME_US: i64 = 30 * 24 * 60 * 60 * 1_000_000;
@@ -91,7 +91,13 @@ pub fn offer_total(amount: u32, price: u64) -> Result<u64, PlanError> {
     u64::try_from(total).map_err(|_| PlanError::InvalidAmount)
 }
 pub fn placement_fee(amount: u32, price: u64) -> Result<u64, PlanError> {
-    Ok((offer_total(amount, price)? / 50).clamp(MIN_FEE, MAX_FEE))
+    let fee = u128::from(offer_total(amount, price)?)
+        .checked_mul(25)
+        .ok_or(PlanError::InvalidAmount)?
+        / 1_000;
+    Ok(u64::try_from(fee)
+        .map_err(|_| PlanError::InvalidAmount)?
+        .clamp(MIN_FEE, MAX_FEE))
 }
 impl Offer<'_> {
     fn book(&self) -> (WorldId, &str) {
@@ -263,6 +269,10 @@ pub fn held_credit_release(
 mod tests;
 
 #[cfg(test)]
+#[path = "market_crystal_parity_tests.rs"]
+mod crystal_parity_tests;
+
+#[cfg(test)]
 #[path = "market_reference_tests.rs"]
 mod reference_tests;
 
@@ -294,7 +304,7 @@ mod settlement_tests {
         for side in [Side::Buy, Side::Sell] {
             let plan = plan_placement(side, 100, 25)?;
             assert_eq!(plan.total, 2500);
-            assert_eq!(plan.fee, 50);
+            assert_eq!(plan.fee, 62);
             let bank_delta = -i128::from(plan.escrow + plan.fee);
             assert_eq!(
                 bank_delta + i128::from(plan.escrow) + i128::from(plan.fee),

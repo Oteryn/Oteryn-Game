@@ -71,6 +71,7 @@ fn a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn() {
                 y: 11,
                 direction: Direction::South,
                 respawn_ms: 30_000,
+                boss_policy: None,
             }],
         }],
     };
@@ -93,6 +94,10 @@ fn a_bundle_spawned_rat_killed_by_a_lethal_hit_respawns_on_the_owner_turn() {
         .companion_policy("oteryn:creature.rat")
         .expect("rat policy")
         .maximum_health;
+
+    let plain = runtime.companion_snapshot(rat).expect("plain rat");
+    assert_eq!(plain.forge, None);
+    assert_eq!((plain.health, plain.maximum_health), (health, health));
 
     // A real lethal native hit (the target identity is read from the slot).
     runtime

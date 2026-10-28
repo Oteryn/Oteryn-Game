@@ -20,6 +20,7 @@ pub(super) fn encode(
     command: oteryn_protocol_oteryn::ClientCommandView<'_>,
     dispatch: &mut Dispatch,
 ) -> Result<Vec<u8>, ServeEnd> {
+    session.integrity.observe(dispatch);
     let (status, result_payload) = match dispatch {
         Dispatch::Vip(Some(payload)) => (CommandStatus::Accepted, payload.clone()),
         Dispatch::Vip(None) => {
@@ -131,6 +132,7 @@ pub(super) fn encode(
                 ),
             )
         }
+        Dispatch::ContainerSort(_) => (CommandStatus::Accepted, vec![1]),
         Dispatch::ContainerView(outcome, _) => (
             CommandStatus::Accepted,
             encode_container_view_result(*outcome),

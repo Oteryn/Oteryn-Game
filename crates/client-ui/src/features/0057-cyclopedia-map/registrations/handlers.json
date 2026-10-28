@@ -1,0 +1,17 @@
+{
+  "mechanic": "0057-cyclopedia-map",
+  "kind": "handlers",
+  "id": "0057-cyclopedia-map-unsupported",
+  "status": "unsupported",
+  "reason": "Command dispatch and live map state move with CLIENT-STRUCT-5; step 4 owns navigation.",
+  "commands": [
+    72,
+    73
+  ],
+  "not_applicable": {
+    "state": "Unsupported until the owning mechanic migration.",
+    "protocol": "Unsupported until the owning mechanic migration.",
+    "input": "Unsupported until the owning mechanic migration.",
+    "settings": "Unsupported until the owning mechanic migration."
+  }
+}

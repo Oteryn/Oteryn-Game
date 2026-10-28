@@ -1,8 +1,6 @@
-//! FOOD-REGEN-1: fed-time regeneration of a player's health and mana. While the
-//! `FoodRegeneration` condition runs, each one-second tick credits fed time toward the
-//! vocation's health and mana periods; a completed period credits its amount once.
-//! Protection-zone ticks accumulate fed time but credit nothing; the first tick outside
-//! credits the due period once (Canary `ConditionRegeneration`).
+//! Always-on player health/mana regeneration. Food selects the faster clocks;
+//! the existing vocation table supplies the amount credited per completed period.
+//! Protection zones hold progress without credits for both hungry and fed actors.
 #[cfg(test)]
 use super::Vocation;
 use super::cast::PlayerSpellState;
@@ -10,6 +8,26 @@ use super::cast::PlayerSpellState;
 pub use oteryn_gameplay_progression::regeneration::{
     FOOD_TICK_MS, RegenerationRate, RegenerationState, effective, rate,
 };
+
+/// Every condition consumer advances the same clock before consuming due conditions.
+pub(super) fn step_due(state: &mut PlayerSpellState, now: u64, in_protection_zone: bool) {
+    if state.regeneration_next_tick_us.unwrap_or(now) > now {
+        return;
+    }
+    let fed = state
+        .conditions
+        .active_at(
+            oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
+            now.saturating_sub(1),
+        )
+        .is_some();
+    if in_protection_zone {
+        hold_fed_second(state, fed);
+    } else {
+        credit_second(state, fed);
+    }
+    state.regeneration_next_tick_us = Some(now.saturating_add(u64::from(FOOD_TICK_MS) * 1_000));
+}
 
 /// Credits one fed tick to a living actor. Dead actors neither accumulate nor gain.
 pub fn credit_fed_second(state: &mut PlayerSpellState) {
@@ -23,9 +41,63 @@ pub fn credit_fed_second(state: &mut PlayerSpellState) {
     });
 }
 
-/// Holds one fed tick of a living actor standing in a protection zone.
-pub fn hold_fed_second(state: &mut PlayerSpellState) {
-    apply(state, |regeneration, rate, _, _| {
+/// Credits the always-on native clock, using the saturation state selected by the condition
+/// owner for this occurrence.
+pub fn credit_second(state: &mut PlayerSpellState, fed: bool) {
+    apply(state, |regeneration, rate, max_health, max_mana| {
+        oteryn_gameplay_progression::regeneration::credit_second(
+            regeneration,
+            rate,
+            max_health,
+            max_mana,
+            fed,
+        );
+    });
+}
+
+/// Credit the daily-reward resting-area clocks. The streak unlocks health at two,
+/// mana at three, and a second health/mana credit at five/six respectively.
+pub fn credit_resting_second(state: &mut PlayerSpellState, streak: u32) -> Option<()> {
+    if streak < 2 || state.health == 0 {
+        return Some(());
+    }
+    let before = state.clone();
+    let fed = state
+        .conditions
+        .active_at(
+            oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
+            state
+                .regeneration_next_tick_us
+                .unwrap_or(0)
+                .saturating_sub(1),
+        )
+        .is_some();
+    credit_second(state, fed);
+    if streak < 3 {
+        state.mana = before.mana;
+        state.regen_mana_ms = before.regen_mana_ms;
+    }
+    if streak >= 5 {
+        let mana = (state.mana, state.regen_mana_ms);
+        credit_second(state, fed);
+        if streak < 6 {
+            (state.mana, state.regen_mana_ms) = mana;
+        }
+    }
+    Some(())
+}
+
+/// Holds one native tick in a protection zone. The historical helper also serves hungry actors.
+pub fn hold_fed_second(state: &mut PlayerSpellState, fed: bool) {
+    apply(state, |regeneration, mut rate, _, _| {
+        use oteryn_gameplay_progression::regeneration::{
+            FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS, UNFED_HEALTH_PERIOD_MS, UNFED_MANA_PERIOD_MS,
+        };
+        (rate.health_period_ms, rate.mana_period_ms) = if fed {
+            (FED_HEALTH_PERIOD_MS, FED_MANA_PERIOD_MS)
+        } else {
+            (UNFED_HEALTH_PERIOD_MS, UNFED_MANA_PERIOD_MS)
+        };
         oteryn_gameplay_progression::regeneration::hold_fed_second(regeneration, rate);
     });
 }
@@ -79,6 +151,29 @@ mod tests {
         state
     }
 
+    #[test]
+    fn resting_streak_tiers_unlock_and_double_only_the_named_pool() {
+        let mut tier_one = actor(Vocation::Druid);
+        let before = tier_one.clone();
+        credit_resting_second(&mut tier_one, 1).expect("tier");
+        assert_eq!(tier_one, before);
+
+        let mut tier_two = actor(Vocation::Druid);
+        let mut tier_three = tier_two.clone();
+        let mut tier_five = tier_two.clone();
+        let mut tier_six = tier_two.clone();
+        for _ in 0..12 {
+            credit_resting_second(&mut tier_two, 2).expect("tier 2");
+            credit_resting_second(&mut tier_three, 3).expect("tier 3");
+            credit_resting_second(&mut tier_five, 5).expect("tier 5");
+            credit_resting_second(&mut tier_six, 6).expect("tier 6");
+        }
+        assert_eq!(tier_two.mana, 100, "tier 2 has no mana bonus");
+        assert!(tier_three.mana > tier_two.mana);
+        assert!(tier_five.health > tier_three.health);
+        assert!(tier_six.mana > tier_five.mana);
+    }
+
     /// Ticks seconds `from + 1 ..= to` (time stays monotonic across calls).
     fn run(state: &mut PlayerSpellState, from: u64, to: u64, facts: TickFacts) {
         for second in from + 1..=to {
@@ -87,18 +182,17 @@ mod tests {
     }
 
     #[test]
-    fn fed_knight_regenerates_per_vocation_period_and_stops_when_the_food_ends() {
+    fn fed_then_unfed_knight_uses_the_respective_native_periods() {
         let mut state = actor(Vocation::Knight);
         eat_food(&mut state, 10, 0).expect("eat");
         run(&mut state, 0, 5, TickFacts::default());
-        assert_eq!((state.health, state.mana), (100, 100));
-        run(&mut state, 5, 15, TickFacts::default());
-        // 10 fed seconds: one health credit (6 s), one mana credit (6 s).
         assert_eq!((state.health, state.mana), (101, 102));
+        run(&mut state, 5, 15, TickFacts::default());
+        // Ten fed seconds followed by five unfed seconds retain one credit per due clock.
+        assert_eq!((state.health, state.mana), (104, 104));
         assert!(state.conditions.instances().is_empty());
-        let after = (state.health, state.mana, state.regen_health_ms);
-        tick(&mut state, 60_000, TickFacts::default()).expect("tick");
-        assert_eq!((state.health, state.mana, state.regen_health_ms), after);
+        run(&mut state, 15, 18, TickFacts::default());
+        assert_eq!((state.health, state.mana), (105, 106));
     }
 
     #[test]
@@ -118,8 +212,7 @@ mod tests {
         lapsed.premium_current = false;
         eat_food(&mut lapsed, 6, 0).expect("eat");
         run(&mut lapsed, 0, 6, TickFacts::default());
-        // Knight rate: one health credit in 6 s (Elite Knight would need 4 s).
-        assert_eq!(lapsed.health, 101);
+        assert_eq!(lapsed.health, 102);
         assert_eq!(lapsed.regen_health_ms, 0);
         let mut current = actor(Vocation::EliteKnight);
         current.premium_current = true;
@@ -133,20 +226,49 @@ mod tests {
         let mut state = actor(Vocation::Knight);
         eat_food(&mut state, 10, 0).expect("eat");
         run(&mut state, 0, 5, TickFacts::default());
-        assert_eq!(state.regen_health_ms, 5_000);
+        assert_eq!(state.regen_health_ms, 2_000);
         super::super::actor_conditions::clear_on_lifecycle(&mut state);
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+        assert_eq!(state.regeneration_next_tick_us, None);
     }
 
     #[test]
-    fn vocations_differ_and_unfed_actors_do_not_regenerate() {
+    fn fed_and_unfed_actors_regenerate_on_their_native_clocks() {
         let mut druid = actor(Vocation::Druid);
         let mut unfed = actor(Vocation::Druid);
         eat_food(&mut druid, 12, 0).expect("eat");
         run(&mut druid, 0, 12, TickFacts::default());
         run(&mut unfed, 0, 12, TickFacts::default());
-        assert_eq!((druid.health, druid.mana), (101, 108));
-        assert_eq!((unfed.health, unfed.mana), (100, 100));
+        assert_eq!((druid.health, druid.mana), (104, 104));
+        assert_eq!((unfed.health, unfed.mana), (103, 104));
+    }
+
+    #[test]
+    fn real_periodic_dispatch_path_ticks_fed_and_unfed_actors() {
+        fn dispatch(state: &mut PlayerSpellState, seconds: u64) {
+            for second in 1..=seconds {
+                let cycle = super::super::actor_conditions::stage_source_owner_cycle(
+                    state,
+                    oteryn_simulation_determinism::SemanticTimeMicros::from_micros(
+                        second * 1_000_000,
+                    ),
+                    Some(TickFacts::default()),
+                    None,
+                )
+                .expect("periodic dispatch")
+                .expect("clock successor");
+                assert!(cycle.combat_ticks.is_empty());
+                *state = cycle.next;
+            }
+        }
+
+        let mut fed = actor(Vocation::Knight);
+        let mut unfed = actor(Vocation::Knight);
+        eat_food(&mut fed, 6, 0).expect("eat");
+        dispatch(&mut fed, 6);
+        dispatch(&mut unfed, 6);
+        assert_eq!((fed.health, fed.mana), (102, 102));
+        assert_eq!((unfed.health, unfed.mana), (101, 102));
     }
 
     #[test]
@@ -171,18 +293,18 @@ mod tests {
             in_protection_zone: true,
             standing_on_field: None,
         };
-        // Knight: health and mana every 6 s. Ten seconds in the zone hold one tick short.
+        // Fed clocks hold one second short of HP 3 s and MP 5 s.
         run(&mut state, 0, 10, pz);
         assert_eq!((state.health, state.mana), (100, 100));
-        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (5_000, 5_000));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (2_000, 4_000));
         // The first tick outside credits once and starts the next period from zero.
         run(&mut state, 10, 11, TickFacts::default());
         assert_eq!((state.health, state.mana), (101, 102));
         assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
         run(&mut state, 11, 16, TickFacts::default());
-        assert_eq!((state.health, state.mana), (101, 102));
-        run(&mut state, 16, 17, TickFacts::default());
         assert_eq!((state.health, state.mana), (102, 104));
+        run(&mut state, 16, 17, TickFacts::default());
+        assert_eq!((state.health, state.mana), (103, 104));
     }
 
     #[test]
@@ -195,9 +317,9 @@ mod tests {
         };
         run(&mut state, 0, 2, TickFacts::default());
         run(&mut state, 2, 4, pz);
-        assert_eq!(state.regen_health_ms, 4_000);
+        assert_eq!(state.regen_health_ms, 2_000);
         run(&mut state, 4, 5, TickFacts::default());
-        assert_eq!(state.health, 100);
+        assert_eq!(state.health, 101);
         run(&mut state, 5, 6, TickFacts::default());
         assert_eq!(state.health, 101);
     }
@@ -213,8 +335,81 @@ mod tests {
         let mut dead = actor(Vocation::Sorcerer);
         dead.health = 0;
         credit_fed_second(&mut dead);
-        hold_fed_second(&mut dead);
+        hold_fed_second(&mut dead, true);
         assert_eq!((dead.health, dead.regen_health_ms), (0, 0));
+    }
+
+    #[test]
+    fn hungry_protection_zone_ticks_hold_progress_without_credits() {
+        let mut state = actor(Vocation::Knight);
+        let pz = TickFacts {
+            in_protection_zone: true,
+            standing_on_field: None,
+        };
+        run(&mut state, 0, 10, pz);
+        assert_eq!((state.health, state.mana), (100, 100));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (3_000, 5_000));
+        run(&mut state, 10, 11, TickFacts::default());
+        assert_eq!((state.health, state.mana), (101, 102));
+        assert_eq!((state.regen_health_ms, state.regen_mana_ms), (0, 0));
+    }
+
+    #[test]
+    fn source_condition_clock_is_idempotent_at_the_same_now() {
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+
+        for fed in [false, true] {
+            for in_protection_zone in [false, true] {
+                let mut state = actor(Vocation::Knight);
+                state
+                    .make_playable(SemanticTimeMicros::from_micros(0))
+                    .expect("playable actor");
+                if fed {
+                    eat_food(&mut state, 120, 0).expect("eat");
+                }
+                let facts = TickFacts {
+                    in_protection_zone,
+                    standing_on_field: None,
+                };
+                for now in [1_000_000, 60_000_000] {
+                    let _ = state.source_take_due(now, facts);
+                    assert_eq!(state.regeneration_next_tick_us, Some(now + 1_000_000));
+                    let expected_progress = if now == 1_000_000 { 1_000 } else { 2_000 };
+                    assert_eq!(state.regen_health_ms, expected_progress);
+                    assert_eq!(state.regen_mana_ms, expected_progress);
+                    let before = state.clone();
+                    assert!(state.source_take_due(now, facts).is_empty());
+                    assert_eq!(state, before);
+                    assert!(
+                        super::super::actor_conditions::stage_source_owner_cycle(
+                            &state,
+                            SemanticTimeMicros::from_micros(now),
+                            Some(facts),
+                            None,
+                        )
+                        .expect("same-time environment cycle")
+                        .is_none()
+                    );
+                    assert_eq!(state, before);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn delayed_clock_pass_cannot_be_replayed_to_credit_extra_seconds() {
+        let mut state = actor(Vocation::Knight);
+        run(&mut state, 0, 1, TickFacts::default());
+        tick(&mut state, 60_000, TickFacts::default()).expect("delayed pass");
+        let before = state.clone();
+        for now_ms in [
+            60_000, 60_000, 60_000, 60_100, 60_200, 60_300, 60_400, 60_500,
+        ] {
+            tick(&mut state, now_ms, TickFacts::default()).expect("repeated or subsecond pass");
+            assert_eq!((state.health, state.mana), (before.health, before.mana));
+            assert_eq!(state.regen_health_ms, before.regen_health_ms);
+            assert_eq!(state.regen_mana_ms, before.regen_mana_ms);
+        }
     }
 
     #[test]

@@ -29,6 +29,8 @@
 
 #![forbid(unsafe_code)]
 
+pub use oteryn_world_bundle::spawn::{BossChance, BossPolicy};
+
 mod activation;
 mod artifact;
 pub mod blessing_catalogue;
@@ -50,6 +52,7 @@ mod fixture;
 pub mod item_abilities;
 mod item_family;
 pub mod item_ref;
+pub mod item_spell_augments;
 mod model;
 pub mod native_cell_lookup;
 pub mod native_gameplay;
@@ -61,6 +64,10 @@ pub mod newhaven_tutorial_land;
 pub mod npc_catalogue;
 mod production;
 mod project;
+pub use project::{
+    ImportedWeaponProficiencyData, ProjectV2ProficiencyThresholdClass,
+    import_committed_weapon_proficiency_data,
+};
 mod project_fs;
 mod reference_artifact;
 mod reference_playable;
@@ -179,3 +186,6 @@ pub use cw2_b1_import::*;
 #[cfg(test)]
 #[path = "../../../content-promotion/src/content/item_identity.rs"]
 pub mod item_identity;
+
+/// Protocol-neutral Forge creature arithmetic.
+pub use oteryn_gameplay_domain::domain::forge_creature;

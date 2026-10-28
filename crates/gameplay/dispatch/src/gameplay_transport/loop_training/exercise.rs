@@ -11,12 +11,19 @@ pub(super) struct Run {
     weapon: [u8; 16],
     definition: TimedDefinitionFacts,
     family: usize,
+    gain_per_charge: u64,
     dummy: ItemKey,
     durable: TrainingWeapon,
     spent: u32,
     next_tick: u64,
     checkpoint_due: u64,
     pending: Option<(CurrentCharacterGameplayFence, ExerciseCheckpoint)>,
+}
+impl Run {
+    pub(super) fn matches_session(&self, admitted: AdmittedSession) -> Option<bool> {
+        (admitted.runtime_actor == Some(self.actor) && admitted.item_fence == Some(self.fence))
+            .then_some(true)
+    }
 }
 fn occurrence() -> Option<BuildOccurrence> {
     let mut bytes = crate::gameplay_transport::SecureIdentifiers::random::<16>()?;
@@ -104,7 +111,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if matches!(run.family, 0 | 5) { 7 } else { 1 },
             )
             .await
-            .is_some_and(|key| context.rates.dummies.contains(&key));
+            .and_then(|key| context.rates.dummies.get(&key))
+            .is_some_and(|percentage| {
+                context.rates.exercise_gain(run.family, *percentage) == Ok(run.gain_per_charge)
+            });
         let current = self.training_fence(run.fence).await;
         if current.is_none() && run.pending.is_none() {
             return Some(false);
@@ -143,8 +153,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 run.spent += 1;
                 run.next_tick = run.next_tick.checked_add(2_000_000)?;
-                let gain =
-                    context.rates.exercise_gains[run.family].checked_mul(u64::from(run.spent))?;
+                let gain = run.gain_per_charge.checked_mul(u64::from(run.spent))?;
                 let next = oteryn_gameplay_progression::loop_training::add_gain(
                     &build,
                     &context.formula,
@@ -161,8 +170,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     break;
                 }
             }
-            let gain =
-                context.rates.exercise_gains[run.family].checked_mul(u64::from(run.spent))?;
+            let gain = run.gain_per_charge.checked_mul(u64::from(run.spent))?;
             let level_due = if gain > 0 {
                 let next = oteryn_gameplay_progression::loop_training::add_gain(
                     &build,
@@ -199,6 +207,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     before: run.durable.clone(),
                     spent: run.spent,
                     family: run.family,
+                    gain_per_charge: run.gain_per_charge,
                 },
             ));
         }
@@ -306,9 +315,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Some(TrainingResult::REFUSED);
             };
-            if !context.rates.dummies.contains(&key) {
+            let Some(gain_per_charge) = context
+                .rates
+                .dummies
+                .get(&key)
+                .and_then(|percentage| context.rates.exercise_gain(family, *percentage).ok())
+            else {
                 return Some(TrainingResult::REFUSED);
-            }
+            };
             let native = self.active_generation?.native_gameplay()?;
             let record = native
                 .item_policy(&definition.production_key, &definition.revision_ref)?
@@ -343,6 +357,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 weapon,
                 definition,
                 family,
+                gain_per_charge,
                 dummy,
                 durable,
                 spent: 0,

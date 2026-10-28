@@ -1,0 +1,33 @@
+syntax = "proto3";
+package oteryn.party_skull.v1;
+// PARTY-SKULL-1; optional capability 134 requires 6 and 42. Command 155.
+// Offered only when the client advertises capability 134; older clients receive no icon extension.
+// No new state domain or payload type: optional field 6 on the existing domain-1
+// type-2 delta contains one PartyIconsV1. An icons delta has the ordinary content
+// generation / observer position header and no spatial enter/update/leave fields.
+// That field is rejected without capability 134, and cannot repeat.
+// Spatial snapshots/enters retain their existing schema; the visibility cadence
+// follows them with icons for every currently shown player, including outsiders.
+// An absent/unavailable owner observation sends nothing; it never means solo.
+// The bundle replaces the icon view. Entity leaves remove their icons; a resume
+// reconstructs the bundle from current owners. No CharacterId/PartyId is sent.
+message PartySkullQueryV1 {}
+message PartyIconsV1 {
+  repeated PartyIconV1 icons = 1; // <=256, distinct identities, <=12288 bytes
+}
+message PartyIconV1 {
+  bytes identity = 1; // exactly 16 runtime placement bytes
+  uint64 generation = 2; // nonzero; must name an entity the observer sees
+  // 0 none, 1 inviter white/yellow, 2 invitee white/blue, 3 member blue,
+  // 4 leader yellow, 5/6 shared member/leader, 7/8 inactive blink member/leader,
+  // 9/10 inactive steady member/leader, 11 outsider gray.
+  uint32 shield = 3;
+  // 0 none, 1 yellow, 2 green, 3 white, 4 red, 5 black, 6 orange.
+  uint32 skull = 4;
+}
+// All scalars are required by the strict codec, including zero values. Unknown,
+// repeated, truncated, out-of-range or over-bound fields fail closed.
+// Refusal ledger 1640: AGGRESSION_CONFLICT at invite or accept when either side
+// has an unexpired aggression edge to the other side / any destination member.
+// Retains the existing receipted PARTY-1 REJECTED wire outcome for old clients.
+// No blanket ban on permanent red/black skulls is inferred from reference code.

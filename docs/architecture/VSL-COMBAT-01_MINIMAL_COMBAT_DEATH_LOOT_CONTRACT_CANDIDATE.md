@@ -595,3 +595,21 @@ of Canary/Crystal as comparison references is not admission of their values.
 The original evidence history and explicit non-decisions remain intact. Current
 unknowns stay `UNKNOWN`; neither documentation nor fixtures assert Reference
 parity, production readiness or deployment.
+
+## SUMMER corpse capacity amendment (owner decision 20, 2026-10-26)
+
+The owner accepts capacity **30** for the Summer corpse Items, as on Global.
+`GAMEITEM01-CORPSE-CONTAINER-ENTRIES-MAX` is therefore 30, with a reachable
+set of 31 ItemInstances (one corpse and 30 direct entries); placement depth
+remains 1. This supersedes the capacity-16/equality statements in D131 §4.2.
+The generated loot-plan bounds (`COMBAT01-LOOT-PLAN-ITEMS` and
+`COMBAT01-ITEMS-PER-CORPSE`) remain 16: a plan must fit the container ceiling,
+but need not equal it. The same receipt-row lock and commit-time count prove
+the new boundary. Mint, audit, container reads and the N+1 decay drain use the
+same ceiling. Retirement remains one transaction per item (at most 31 steps).
+
+This amendment alone does not admit an Item or replace its lifecycle. Summer
+Items require their actual 10 / 300 / 300 second transform stages followed by
+the 60 second terminal stage, through their owning Item/WorldObject contracts.
+The rat's existing 60 second terminal rule remains specific to its accepted
+route. No item-id exception grants Summer settlement before lifecycle admission.

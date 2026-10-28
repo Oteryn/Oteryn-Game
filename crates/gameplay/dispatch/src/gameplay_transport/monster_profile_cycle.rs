@@ -6,6 +6,8 @@ use crate::foundation::ChannelRuntimeV1;
 use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
+pub(super) mod physical_spell;
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     pub(super) async fn drive_monster_profiles(
@@ -106,16 +108,72 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     now,
                     player_waiting_now,
                 );
+                // Native spell proposals carry the source closure's actual formula revision.
+                let formula_revisions = native
+                    .creature_profiles()
+                    .records
+                    .iter()
+                    .filter_map(|record| record.attack_definitions.as_ref())
+                    .flat_map(|definitions| &definitions.profiles)
+                    .filter(|profile| {
+                        matches!(
+                            profile.data,
+                            crate::content::ProjectV2AuthoringProfileData::Formula(_)
+                        )
+                    })
+                    .map(|profile| profile.target.revision.as_str())
+                    .collect::<std::collections::BTreeSet<_>>();
+                let formula_revision = if formula_revisions.len() == 1 {
+                    formula_revisions
+                        .iter()
+                        .next()
+                        .copied()
+                        .unwrap_or(revisions.formula())
+                } else {
+                    revisions.formula()
+                };
+                let schedule_revisions = crate::ability::RevisionSet::new(
+                    revisions.ruleset(),
+                    revisions.content(),
+                    revisions.world_policy(),
+                    formula_revision,
+                    revisions.simulation(),
+                )
+                .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
+                let source_attack_abilities = native
+                    .creature_profiles()
+                    .records
+                    .iter()
+                    .filter_map(|record| record.attack_definitions.as_ref())
+                    .flat_map(|definitions| &definitions.profiles)
+                    .filter(|profile| {
+                        matches!(
+                            profile.data,
+                            crate::content::ProjectV2AuthoringProfileData::Ability(_)
+                        )
+                    })
+                    .map(|profile| &profile.target)
+                    .collect::<std::collections::BTreeSet<_>>();
                 let summons = &mut states.monster_summons;
+                let mut proposals = Vec::new();
                 table
                     .run_due_current_thinks(
                         runtime,
                         now,
                         &root,
-                        revisions,
+                        &schedule_revisions,
                         candidates,
                         &mut reader,
                         |runtime, table, actor, report, reader| {
+                            proposals.extend(
+                                report
+                                    .proposals
+                                    .iter()
+                                    .filter(|proposal| {
+                                        source_attack_abilities.contains(&proposal.ability)
+                                    })
+                                    .cloned(),
+                            );
                             summons
                                 .consume_report(runtime, table, native, actor, report, reader, now)
                         },
@@ -139,10 +197,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 // Transaction is read-only. Keep its scope lock until every synchronous consumer ends.
                 drop(reader);
+                let next_due = table.earliest_due().into_iter().chain(next_step).min();
+                owner
+                    .tick_creature_fields(&mut tx, &authority, runtime, states, room, native, now)
+                    .await?;
+                let needs_reference_parties = native.creature_profiles().records.iter().any(|record| {
+                    matches!(&record.profile.data, crate::content::ProjectV2AuthoringProfileData::Creature(creature)
+                        if creature.details.as_ref().is_some_and(|details| details.reference_level_overrides.iter()
+                            .any(|area| area.party_mode == crate::content::ProjectV2ReferenceLevelPartyMode::LowestMember)))
+                });
+                let parties = physical_spell::read_reference_parties(
+                    &mut tx, &authority, owner.root, runtime, states, needs_reference_parties,
+                )
+                .await;
+                let mut map =
+                    CurrentMonsterMap::new(&mut tx, &authority, runtime, room, &objects, native);
+                physical_spell::execute(
+                    runtime, states, attack, room, native, &mut map, &proposals, &parties, now,
+                )
+                .await;
+                drop(map);
                 tx.rollback()
                     .await
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                Ok(table.earliest_due().into_iter().chain(next_step).min())
+                Ok(next_due)
             })
         })
         .await

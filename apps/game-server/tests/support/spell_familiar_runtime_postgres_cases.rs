@@ -105,6 +105,7 @@ fn knight_familiar_runtime(
                     definition_revision: "r20".into(),
                     display_name: "Knight familiar".into(),
                     maximum_health: 812,
+                    forge_difficulty: None,
                     base_speed: 220,
                     outfit_look_type: 991,
                     object_look_type: None,
@@ -498,7 +499,7 @@ fn source_familiar_look_and_genuine_lethal_cleanup_require_matching_durable_rece
             .borrow_combat_death()
             .projected_death(dead)
             .map_err(debug)?;
-        assert_eq!(historical.0, projection.occurrence().death_key());
+        assert_eq!(Ok(historical.0), projection.occurrence().death_key());
         assert!(
             crate::spell::companion_lifecycle::commit_lifecycle_familiar(
                 &mut physical,

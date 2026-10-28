@@ -217,6 +217,7 @@ fn families() -> Families {
             cell: (12, 1, 7),
             direction: Direction::South,
             respawn_ms: 60_000,
+            boss_policy: None,
         }],
     }];
     // Authored out of key order on purpose: the bundle sorts by NPC, then position.
