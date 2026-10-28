@@ -11,6 +11,6 @@
     155
   ],
   "state_domains": [],
-  "offered": false,
+  "offered": true,
   "offer_gate": "Unoffered until the native client consumes visibility type-2 optional field 6. Server requires current scope, session, party, PvP and shared XP activity owners."
 }

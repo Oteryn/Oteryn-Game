@@ -45,6 +45,7 @@ pub async fn serve_gameplay(
         rooms: owners.rooms,
         achievements: owners.achievements,
         imported_charms: owners.imported_charms,
+        proficiency_catalogue: weapon_proficiency::ProductionProficiencyCatalogue::embedded(),
         clock_origin: std::time::Instant::now(),
         states: channel_states::ChannelSessionStates {
             gameplay_idle_policy: owners.gameplay_idle_policy,
