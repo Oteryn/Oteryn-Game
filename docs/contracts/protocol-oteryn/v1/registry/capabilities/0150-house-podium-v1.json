@@ -1,0 +1,17 @@
+{
+  "id": 150,
+  "name": "HOUSE_PODIUM_V1",
+  "owner_decision": "PODIUM-WIRE-1",
+  "owner": "Game house owner",
+  "requires": [
+    49
+  ],
+  "command_types": [
+    174,
+    175,
+    176
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Bundle Worlds only; mutation additionally requires current session, node and house-scope generation fences."
+}

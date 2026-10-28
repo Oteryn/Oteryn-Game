@@ -50,6 +50,7 @@ pub mod hazard;
 pub mod highscores;
 pub mod house;
 pub mod house_move_out;
+pub mod house_podium;
 pub mod house_transfer;
 pub mod imbuement;
 pub mod inspection;

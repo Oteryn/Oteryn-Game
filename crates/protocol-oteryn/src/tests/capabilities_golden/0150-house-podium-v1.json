@@ -1,0 +1,21 @@
+{
+  "id": 150,
+  "name": "HOUSE_PODIUM_V1",
+  "constant": "house_podium::CAPABILITY_HOUSE_PODIUM_V1",
+  "requires": [
+    49
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    174,
+    175,
+    176
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}
