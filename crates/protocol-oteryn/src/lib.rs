@@ -87,6 +87,7 @@ mod tests;
 pub mod timed_item;
 pub mod tutorial_notices;
 pub mod vip;
+pub mod wheel;
 pub mod world_clock;
 pub mod world_event;
 pub mod world_interaction;

@@ -14,7 +14,7 @@ use oteryn_gameplay_progression::wheel_gem_data::WheelGemData;
 use std::sync::Arc;
 
 #[path = "atelier/fixture.rs"]
-mod fixture;
+pub(super) mod fixture;
 #[path = "atelier/paid.rs"]
 mod paid;
 
