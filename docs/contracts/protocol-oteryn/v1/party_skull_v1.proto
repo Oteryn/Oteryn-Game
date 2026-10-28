@@ -1,7 +1,7 @@
 syntax = "proto3";
 package oteryn.party_skull.v1;
 // PARTY-SKULL-1; optional capability 134 requires 6 and 42. Command 155.
-// Server-first-safe: UNOFFERED until the native client consumes these updates.
+// Offered only when the client advertises capability 134; older clients receive no icon extension.
 // No new state domain or payload type: optional field 6 on the existing domain-1
 // type-2 delta contains one PartyIconsV1. An icons delta has the ordinary content
 // generation / observer position header and no spatial enter/update/leave fields.

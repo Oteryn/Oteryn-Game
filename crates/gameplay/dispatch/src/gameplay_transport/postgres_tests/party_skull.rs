@@ -3,7 +3,7 @@ use crate::bestiary_postgres_harness::{Harness, TestResult, debug};
 use crate::foundation::{MessageType, decode_wire_envelope};
 use crate::gameplay_transport::{
     ComposedFreshAdmission,
-    capabilities::{OfferedCapability, SelectedCapabilities},
+    capabilities::SelectedCapabilities,
     connection::{
         AdmittedSession, ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
     },
@@ -52,15 +52,10 @@ pub(super) async fn check(
     skulls: &[u8],
 ) -> TestResult {
     let original = admitted.continuity.selected_capabilities;
-    // Capability 134 stays unoffered in production pending its native client consumer.
-    // This fixture negotiates the exact server implementation without changing production offers.
-    let mut offers = owner.offered_capabilities().to_vec();
-    offers.push(OfferedCapability {
-        id: CAPABILITY_PARTY_SKULL_V1,
-        requires: &[6, 42],
-    });
+    // Negotiate the production offer; prerequisites keep the extension closed to older clients.
     admitted.continuity.selected_capabilities =
-        SelectedCapabilities::select(&offers, &[6, 42, 134]).ok_or("selection")?;
+        SelectedCapabilities::select(owner.offered_capabilities(), &[6, 42, 134])
+            .ok_or("selection")?;
     let current = *admitted;
     let (mut server, mut client) = tokio::io::duplex(32_768);
     let serving = async { serve_admitted(&mut server, current, owner, IDLE_LIVENESS).await };
