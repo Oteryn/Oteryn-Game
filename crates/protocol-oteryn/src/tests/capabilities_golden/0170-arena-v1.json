@@ -1,0 +1,17 @@
+{
+  "id": 170,
+  "name": "ARENA_V1",
+  "constant": "arena::CAPABILITY_ARENA_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    240
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

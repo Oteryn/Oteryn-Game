@@ -1,0 +1,17 @@
+{
+  "mechanic": "0170-arena-v1",
+  "kind": "handlers",
+  "id": "0170-arena-v1-unsupported",
+  "status": "unsupported",
+  "reason": "ARENA-1 is server-only; native client presentation is pending.",
+  "commands": [
+    240
+  ],
+  "not_applicable": {
+    "state": "Server-only slice.",
+    "protocol": "Server-only slice.",
+    "view": "Server-only slice.",
+    "input": "Server-only slice.",
+    "settings": "Server-only slice."
+  }
+}
