@@ -1,9 +1,9 @@
 //! ITEM-FORGE-1 pure standard fusion/transfer plans (IMBUE-FORGE0 §8–10).
 //!
-//! Reference prices are not an admitted Content recipe. A plan neither grants
-//! authority nor spends value. The eventual writer must bind current Content,
-//! session fences, custody, imbuements, server RNG and the whole native receipt.
-//! Convergence and success bonuses require their own Content rules.
+//! Reference prices are not an admitted Content recipe. Pure plans neither grant
+//! authority nor spend value. Fusion/transfer remain staged until native custody,
+//! Content, fees, server RNG and whole-receipt composition are installed.
+#![cfg_attr(not(test), allow(dead_code))]
 
 use oteryn_gameplay_domain::domain::forge::{ForgeItemShape, ForgeShapeError, ItemTier};
 use oteryn_gameplay_domain::domain::forge_dust::ForgeDustBalance;
@@ -12,7 +12,11 @@ use oteryn_gameplay_domain::domain::item_definition::{
 };
 
 mod prices;
-pub use prices::{FORGE_CLASS_CAPS, FORGE_REFERENCE_PRICES, ForgeReferencePrice};
+pub use prices::{
+    CONVERGENCE_FUSION_DUST, CONVERGENCE_TRANSFER_DUST, EXALTED_CORE_KEY, FORGE_CLASS_CAPS,
+    FORGE_REFERENCE_PRICES, FORGE_SLIVER_KEY, ForgeReferencePrice, NORMAL_FUSION_DUST,
+    NORMAL_FUSION_SUCCESS_PERCENT, NORMAL_TRANSFER_DUST,
+};
 
 /// Canary 04b83b51 config.lua.dist: fusion/transfer both cost 100 dust;
 /// base success 50%, one core adds 15 points, protection prevents loss at 50%.

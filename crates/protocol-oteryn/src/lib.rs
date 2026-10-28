@@ -55,6 +55,7 @@ pub mod house_move_out;
 pub mod house_transfer;
 pub mod imbuement;
 pub mod inspection;
+pub mod item_forge;
 pub mod item_look;
 pub mod item_view;
 pub mod logout;
