@@ -2,7 +2,7 @@
   "schema_version": 1,
   "provisional": true,
   "enabled": false,
-  "source": "OFFLINE0; training-content-1/gameplay-source-reconciliation.json; Canary 52550d5 data/XML/vocations.xml (PROVISIONAL, not Global parity)",
+  "source": "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 and Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446 (donor parity verified; native Global rates remain UNVERIFIED)",
   "exercise_gains": [
     600,
     7,
@@ -72,13 +72,13 @@
       "vocation": "monk",
       "top_attack_ms": 2000,
       "mana_amount": 2,
-      "top_mana_ticks_ms": 6000
+      "top_mana_ticks_ms": 3000
     },
     {
       "vocation": "exalted_monk",
       "top_attack_ms": 2000,
       "mana_amount": 2,
-      "top_mana_ticks_ms": 6000
+      "top_mana_ticks_ms": 3000
     }
   ],
   "statues": {
@@ -89,34 +89,49 @@
     "oteryn:item.tibia.i16202": 0,
     "oteryn:item.tibia.i50296": 1
   },
-  "dummies": [
-    "oteryn:item.tibia.i28558",
-    "oteryn:item.tibia.i28565"
-  ],
+  "dummies": {
+    "oteryn:item.tibia.i28558": 100,
+    "oteryn:item.tibia.i28559": 110,
+    "oteryn:item.tibia.i28560": 110,
+    "oteryn:item.tibia.i28561": 110,
+    "oteryn:item.tibia.i28562": 110,
+    "oteryn:item.tibia.i28563": 110,
+    "oteryn:item.tibia.i28564": 110,
+    "oteryn:item.tibia.i28565": 100
+  },
   "weapons": {
+    "oteryn:item.tibia.i28540": 3,
+    "oteryn:item.tibia.i28541": 4,
+    "oteryn:item.tibia.i28542": 2,
+    "oteryn:item.tibia.i28543": 5,
+    "oteryn:item.tibia.i28544": 0,
+    "oteryn:item.tibia.i28545": 0,
     "oteryn:item.tibia.i28552": 3,
-    "oteryn:item.tibia.i35279": 3,
-    "oteryn:item.tibia.i35285": 3,
     "oteryn:item.tibia.i28553": 4,
-    "oteryn:item.tibia.i35280": 4,
-    "oteryn:item.tibia.i35286": 4,
     "oteryn:item.tibia.i28554": 2,
-    "oteryn:item.tibia.i35281": 2,
-    "oteryn:item.tibia.i35287": 2,
     "oteryn:item.tibia.i28555": 5,
-    "oteryn:item.tibia.i35282": 5,
-    "oteryn:item.tibia.i35288": 5,
     "oteryn:item.tibia.i28556": 0,
     "oteryn:item.tibia.i28557": 0,
+    "oteryn:item.tibia.i35279": 3,
+    "oteryn:item.tibia.i35280": 4,
+    "oteryn:item.tibia.i35281": 2,
+    "oteryn:item.tibia.i35282": 5,
     "oteryn:item.tibia.i35283": 0,
     "oteryn:item.tibia.i35284": 0,
+    "oteryn:item.tibia.i35285": 3,
+    "oteryn:item.tibia.i35286": 4,
+    "oteryn:item.tibia.i35287": 2,
+    "oteryn:item.tibia.i35288": 5,
     "oteryn:item.tibia.i35289": 0,
     "oteryn:item.tibia.i35290": 0,
-    "oteryn:item.tibia.i50294": 1,
-    "oteryn:item.tibia.i50295": 1,
+    "oteryn:item.tibia.i44064": 6,
     "oteryn:item.tibia.i44065": 6,
     "oteryn:item.tibia.i44066": 6,
-    "oteryn:item.tibia.i44067": 6
+    "oteryn:item.tibia.i44067": 6,
+    "oteryn:item.tibia.i50292": 1,
+    "oteryn:item.tibia.i50293": 1,
+    "oteryn:item.tibia.i50294": 1,
+    "oteryn:item.tibia.i50295": 1
   },
   "percent_scale": 100,
   "offline_divisors": [

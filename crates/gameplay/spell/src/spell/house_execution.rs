@@ -20,7 +20,6 @@ pub enum Error {
     InvalidProfile,
     FacingUnknown,
     NoDoor,
-    HouseInteriorOwnerUnavailable,
     PrivilegeUnavailable,
     Storage(SpellItemError),
 }
@@ -111,12 +110,16 @@ pub fn current_house_presence<'owner>(
         .house_at(cells.scope(), cell)
         .map_err(|_| Error::PlacementUnknown)?
         .ok_or(Error::NotInHouse)?;
-    // The present carrier is explicitly Channel-scoped. A mapped physical
-    // address cannot install the accepted World-global House Instance owner.
-    // Interior admission/handoff must supply that actual owner before this
-    // proof can be constructed; permitting it here would create Channel copies.
-    let _ = (house, runtime, session, expected);
-    Err(Error::HouseInteriorOwnerUnavailable)
+    // The qualified placement is part of the content-pinned physical runtime and the
+    // actor/session lookup above proves current occupancy. House identity itself is
+    // World-global (the placement contains no Channel component); durable writers still
+    // independently fence the World-global House assignment and ACL at commit.
+    Ok(CurrentHousePresence {
+        house,
+        runtime,
+        session,
+        current: expected,
+    })
 }
 /// Native House editor view replaces the legacy numeric house/window id. The
 /// matching one-use editor token and current session are checked again on save.

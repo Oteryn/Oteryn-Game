@@ -44,6 +44,9 @@ use std::sync::{Arc, Weak};
 use tokio::time::{Duration, Instant};
 
 use super::ComposedFreshAdmission;
+use super::weapon_proficiency::{
+    LiveProficiencyTrack, ProficiencyAttackEffects, WeaponProficiencyDispatch,
+};
 use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
@@ -54,6 +57,7 @@ use crate::combat_attack::{
 use crate::content::native_gameplay::NativeGameplayState;
 use crate::content::{LogicalCell, QualifiedNativeEntryRoom};
 use crate::durability::character_equipment::EquippedItem;
+use crate::durability::character_proficiency::ProficiencyDefinitions;
 use crate::foundation::{
     ChannelRuntimeV1, CommandId, CommandRef, ExactActorRef, GameSessionId, MovementLocalPosition,
 };
@@ -168,6 +172,7 @@ pub use oteryn_gameplay_combat_rules::resolution::SwingWeapon;
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct WeaponFacts {
     weapon: SwingWeapon,
+    item_key: Option<String>,
     ranged: Option<Arc<ranged::RangedLoadout>>,
     content_digest: [u8; 32],
     read_at: SemanticTimeMicros,
@@ -1297,12 +1302,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(weapon) = swing_weapon(content, &equipment.items) else {
             return;
         };
+        let item_key = self.proficiency_catalogue.as_ref().and_then(|catalogue| {
+            equipment
+                .items
+                .iter()
+                .filter(|item| matches!(item.slot, 5 | 6 | 10))
+                .find_map(|item| {
+                    catalogue
+                        .resolve_weapon(&item.definition.production_key)
+                        .map(|value| value.canonical_item_key)
+                })
+        });
+        if let Some(catalogue) = self.proficiency_catalogue.as_ref()
+            && let Ok((current, _)) =
+                crate::durability::fresh_admission::FreshAdmissionStore::from_root(
+                    self.root.clone(),
+                )
+                .current_session_at(session)
+                .await
+            && let Ok(character) =
+                crate::domain::CharacterId::from_bytes(*current.commit().character_id().as_bytes())
+            && let Ok((tracks, _)) = self
+                .root
+                .read_character_proficiency_with_definitions(
+                    self.character,
+                    character,
+                    None,
+                    std::sync::Arc::clone(catalogue) as std::sync::Arc<dyn ProficiencyDefinitions>,
+                )
+                .await
+        {
+            let mut owner = WeaponProficiencyDispatch::default();
+            for stored in tracks {
+                if let Some(resolved) = catalogue.resolve_weapon(stored.state.item_key()) {
+                    owner.install_track(
+                        resolved.canonical_item_key,
+                        LiveProficiencyTrack {
+                            shape: resolved.shape,
+                            progress: u32::try_from(stored.state.progress()).unwrap_or(u32::MAX),
+                            selections: stored.state.selections().to_vec(),
+                            effects: ProficiencyAttackEffects::default(),
+                        },
+                    );
+                }
+            }
+            if let Ok(mut sessions) = self.states.proficiencies.lock() {
+                sessions.insert(session, owner);
+            }
+        }
         self.states.attack.lock().await.store_weapon(
             actor,
             session,
             epoch,
             WeaponFacts {
                 weapon,
+                item_key,
                 ranged,
                 content_digest: digest,
                 read_at: now,

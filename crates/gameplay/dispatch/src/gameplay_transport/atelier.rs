@@ -25,7 +25,21 @@ pub enum GemBuildOutcome {
     Wheel(Box<crate::durability::character_wheel::WheelCommitOutcome>),
 }
 impl super::ComposedFreshAdmission<'_, '_, '_> {
-    pub async fn commit_gem_build(
+    /// Runtime Gem Atelier entry point.
+    ///
+    /// All player-facing Atelier and vessel commands must enter here rather than calling a
+    /// durability writer directly. The entry resolves the current session fence, serializes the
+    /// Character revision, and refreshes both projections only after the atomic writer returns.
+    pub async fn execute_gem_atelier(
+        &self,
+        session: crate::foundation::GameSessionId,
+        command: GemBuildCommand<'_>,
+    ) -> Result<GemBuildOutcome, crate::durability::character_progression::CharacterProgressionError>
+    {
+        self.commit_gem_build(session, command).await
+    }
+
+    async fn commit_gem_build(
         &self,
         session: crate::foundation::GameSessionId,
         command: GemBuildCommand<'_>,
