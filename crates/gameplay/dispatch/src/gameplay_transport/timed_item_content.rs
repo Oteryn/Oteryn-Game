@@ -135,3 +135,7 @@ pub(super) fn supported(active: Option<&crate::content::ActiveGeneration>) -> bo
             .is_some()
         })
 }
+
+#[cfg(test)]
+#[path = "timed_item_content_crystal_parity_tests.rs"]
+mod crystal_parity_tests;

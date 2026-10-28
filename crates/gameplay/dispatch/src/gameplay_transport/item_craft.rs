@@ -11,6 +11,7 @@ use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
 
 mod rope;
+mod terrain;
 
 pub(super) async fn dispatch<A: FreshAdmissionAuthority>(
     authority: &A,
@@ -41,6 +42,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        match self
+            .use_terrain_tool(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
         match self
             .use_rope_tool(actor, command, &intent, source, target)
             .await
@@ -159,3 +168,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         disposition(result)
     }
 }
+
+#[cfg(test)]
+#[path = "item_craft_crystal_parity_tests.rs"]
+mod crystal_parity_tests;

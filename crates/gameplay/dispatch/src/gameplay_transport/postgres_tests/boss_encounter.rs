@@ -18,10 +18,23 @@ use tokio::io::AsyncWriteExt;
 #[path = "boss_encounter/activity_handoff.rs"]
 mod activity_handoff;
 
+#[path = "boss_encounter/staged_room.rs"]
+mod staged_room;
+
 async fn exchange(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,
+    payload: &[u8],
+) -> TestResult<(CommandStatus, Vec<u8>)> {
+    exchange_kind(owner, admitted, id, COMMAND_TYPE_BOSS_COOLDOWNS, payload).await
+}
+
+async fn exchange_kind(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    id: u64,
+    kind: u32,
     payload: &[u8],
 ) -> TestResult<(CommandStatus, Vec<u8>)> {
     let before = *admitted;
@@ -46,7 +59,7 @@ async fn exchange(
                 before.continuity.connection_generation,
                 &ClientCommandValue {
                     command_id: id,
-                    command_type: COMMAND_TYPE_BOSS_COOLDOWNS,
+                    command_type: kind,
                     payload,
                 },
             )

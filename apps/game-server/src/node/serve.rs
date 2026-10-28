@@ -2626,6 +2626,7 @@ async fn boot_and_serve(
         shutdown: &shutdown,
         last_position_flush: &last_position_flush,
         reset_epoch,
+        generation,
         signalled,
     })
     .await
