@@ -8,8 +8,9 @@
 
 use oteryn_gameplay_encounter_rules::boss::RewardParticipation;
 
-/// Crystal's reward-boss script expires a chest, but the pinned evidence available to this
-/// owner does not establish a universal duration. Content must therefore provide the deadline.
+/// Global's personal boss rewards remain claimable for exactly seven days from their mint.
+pub const REWARD_EXPIRY_MS: u64 = 7 * 24 * 60 * 60 * 1_000;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PersonalRewardChest<I> {
     pub character: [u8; 16],
@@ -75,10 +76,17 @@ pub fn freeze_personal_rewards<I>(
     participants: &[FrozenBossContribution],
     mut rewards: impl FnMut([u8; 16], RewardParticipation) -> Vec<I>,
 ) -> Vec<PersonalRewardChest<I>> {
+    let eligibility = oteryn_gameplay_encounter_rules::boss::reward_eligibility(
+        &participants
+            .iter()
+            .map(|participant| participant.contribution)
+            .collect::<Vec<_>>(),
+    );
     let frozen: Vec<_> = participants
         .iter()
-        .filter(|participant| participant.contribution.damage_dealt > 0)
-        .map(|participant| (participant.character, participant.contribution))
+        .zip(eligibility)
+        .filter(|(_, eligible)| *eligible)
+        .map(|(participant, _)| (participant.character, participant.contribution))
         .collect();
     frozen
         .into_iter()
@@ -91,6 +99,11 @@ pub fn freeze_personal_rewards<I>(
             items: rewards(character, contribution),
         })
         .collect()
+}
+
+/// Computes the fixed Global deadline without allowing caller-selected retention.
+pub fn reward_expiry(minted_at_unix_ms: u64) -> Option<u64> {
+    minted_at_unix_ms.checked_add(REWARD_EXPIRY_MS)
 }
 
 #[cfg(test)]
@@ -175,5 +188,34 @@ mod tests {
         assert_eq!(chest.collect_all(499, &mut inventory, 3), Ok(()));
         assert_eq!(inventory, vec![1, 10, 11]);
         assert!(chest.items().is_empty());
+    }
+
+    #[test]
+    fn expiry_is_exactly_seven_days_and_overflow_refuses() {
+        assert_eq!(reward_expiry(9), Some(9 + REWARD_EXPIRY_MS));
+        assert_eq!(reward_expiry(u64::MAX), None);
+    }
+
+    #[test]
+    fn contribution_threshold_excludes_a_one_hit_leech_before_drawing() {
+        let participants = [
+            FrozenBossContribution {
+                character: [1; 16],
+                contribution: contribution(1_000_000, 500_000, 0),
+            },
+            FrozenBossContribution {
+                character: [2; 16],
+                contribution: contribution(1, 0, 0),
+            },
+        ];
+        let chests = freeze_personal_rewards(
+            "oteryn:boss.fixture",
+            [9; 16],
+            REWARD_EXPIRY_MS,
+            &participants,
+            |character, _| vec![character[0]],
+        );
+        assert_eq!(chests.len(), 1);
+        assert_eq!(chests[0].character, [1; 16]);
     }
 }

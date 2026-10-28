@@ -8,9 +8,13 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     admitted: &AdmittedSession,
     command: ClientCommandView<'_>,
 ) -> Option<Dispatch> {
-    // Reserved activity commands cannot turn a client boss key into death, timeout or
-    // admission authority. Keep them refused until the complete Instance ownership flow.
-    if command.command_type != oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_COOLDOWNS {
+    // Reserved activity commands cannot turn a client boss key into death, timeout or admission
+    // authority. The reward-open command is a bounded private read, not a settlement command.
+    if !matches!(
+        command.command_type,
+        oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_COOLDOWNS
+            | oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_REWARD_OPEN
+    ) {
         return Some(Dispatch::Reply(
             crate::foundation::CommandStatus::Rejected,
             Vec::new(),

@@ -15,12 +15,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return GuildReply::Rejected;
         };
         if id == 0
-            || kind != wire::COMMAND_TYPE_BOSS_COOLDOWNS
+            || !matches!(kind, wire::COMMAND_TYPE_BOSS_COOLDOWNS | wire::COMMAND_TYPE_BOSS_REWARD_OPEN)
             || !admitted
                 .continuity
                 .selected_capabilities
                 .contains(wire::CAPABILITY_BOSS_ENCOUNTER_V1)
-            || wire::decode_cooldown_query(payload).is_err()
+            || (kind == wire::COMMAND_TYPE_BOSS_COOLDOWNS
+                && wire::decode_cooldown_query(payload).is_err())
+            || (kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN && !payload.is_empty())
             || fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
         {
@@ -45,11 +47,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return GuildReply::Rejected;
             }
         }
-        match self
-            .root
-            .read_boss_cooldown_list(self.character, self.holder, fence, payload)
-            .await
-        {
+        let result = if kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN {
+            self.root
+                .read_boss_reward_chest(self.character, self.holder, fence)
+                .await
+        } else {
+            self.root
+                .read_boss_cooldown_list(self.character, self.holder, fence, payload)
+                .await
+        };
+        match result {
             Ok(Some(bytes)) => GuildReply::Payload(bytes),
             Ok(None) => GuildReply::Rejected,
             Err(_) => GuildReply::Unavailable,
