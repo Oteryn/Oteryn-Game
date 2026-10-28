@@ -222,6 +222,19 @@ pub(super) fn place(
     runtime: &mut ChannelRuntimeV1,
     boot: Option<&NpcBoot>,
 ) -> Result<usize, BootError> {
+    let unix_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .and_then(|elapsed| i64::try_from(elapsed.as_millis()).ok())
+        .unwrap_or(0);
+    place_at(runtime, boot, unix_ms)
+}
+
+fn place_at(
+    runtime: &mut ChannelRuntimeV1,
+    boot: Option<&NpcBoot>,
+    unix_ms: i64,
+) -> Result<usize, BootError> {
     if let Some(catalogue_sha256) = catalogue_sha256(boot) {
         event(&format!(
             "event=npc_catalogue state=bound catalogue_sha256={catalogue_sha256}"
@@ -246,11 +259,6 @@ pub(super) fn place(
             ..
         }) => {
             let mut table = table.clone();
-            let unix_ms = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .ok()
-                .and_then(|elapsed| i64::try_from(elapsed.as_millis()).ok())
-                .unwrap_or(0);
             oteryn_gameplay_entities::rashid_schedule::rotate_placements(&mut table, unix_ms);
             let outcome = runtime
                 .place_npcs(&table, |key| admitted.contains(key), *production)
@@ -410,6 +418,48 @@ mod tests {
             oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
         )
         .expect("runtime")
+    }
+
+    #[test]
+    fn production_boot_rotates_rashid_at_the_berlin_server_save_boundary() {
+        const RASHID: &str = oteryn_gameplay_entities::rashid_schedule::RASHID_NPC_KEY;
+        let placements = (0..7)
+            .map(|day| {
+                oteryn_gameplay_entities::rashid_schedule::destination_at(
+                    1_704_704_400_000 + day * 86_400_000,
+                )
+                .placement
+            })
+            .collect();
+        let boot = NpcBoot::Place {
+            table: NpcPlacementTable {
+                npcs: vec![NpcPlacements {
+                    key: RASHID.into(),
+                    placements,
+                }],
+            },
+            catalogue_sha256: digest("rashid"),
+            admitted: BTreeSet::from([RASHID.to_owned()]),
+            production: true,
+            talk: Arc::default(),
+        };
+
+        // 2024-04-01 changes at 08:00 UTC because Berlin is on summer time.
+        for (unix_ms, expected) in [
+            (1_711_958_399_000, (32_328, 31_782, 6)),
+            (1_711_958_400_000, (32_207, 31_155, 7)),
+        ] {
+            let mut runtime = channel_runtime();
+            assert_eq!(
+                place_at(&mut runtime, Some(&boot), unix_ms).expect("placed"),
+                1
+            );
+            let npc = runtime.visible_entities().npcs[0];
+            assert_eq!(
+                (npc.position.x, npc.position.y, npc.position.floor),
+                expected
+            );
+        }
     }
 
     /// NPC-LOAD-1: a synthetic bundle with two NPCs boots two NPC actors bound to the Channel's
