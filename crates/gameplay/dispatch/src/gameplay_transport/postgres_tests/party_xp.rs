@@ -246,7 +246,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     for creature in runtime.visible_entities().creatures {
         let snapshot = runtime.companion_snapshot(creature.actor).map_err(debug)?;
         assert_eq!(snapshot.forge, None, "activation admits ordinary creatures");
-        assert_eq!(snapshot.maximum_health, snapshot.state.policy.maximum_health);
+        assert_eq!(
+            snapshot.maximum_health,
+            snapshot.state.policy.maximum_health
+        );
     }
     if case.forge() {
         // Forge selection is timed owner work, never a side effect of realizing a spawn.
@@ -564,8 +567,79 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     let first_id = first.current_character_lease().character_id();
     let second_id = second.current_character_lease().character_id();
     if matches!(case, Case::Modifiers) {
-        sqlx::query("INSERT INTO game_character_prey_slots(character_id,slot,state,creature_key,bonus_type,grade,bonus_percent,hunting_s_left,slot_epoch) VALUES(encode($1,'hex')::uuid,1,'ACTIVE','oteryn:creature.rat','XP',10,40,7200,1)")
-            .bind(second_id.as_bytes().as_slice()).execute(&h.pool).await?;
+        for (index, kind) in [(0, 1_u8), (1, 3_u8)] {
+            let (actor, session) = players[index];
+            let fence = crate::gameplay_transport::character_gameplay_fence::current(
+                &owner, session, false,
+            )
+            .await
+            .ok_or("prey fence")?;
+            // Start with a valid retained selection, then activate through the production command.
+            sqlx::query("INSERT INTO game_character_prey_slots(character_id,slot,state,creature_list,hunting_s_left,slot_epoch) VALUES(encode($1,'hex')::uuid,1,'SELECTION',ARRAY['oteryn:creature.rat'],0,1)").bind(fence.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
+            let occurrence = crate::gameplay_transport::npc_trade_command::derived(
+                b"prey:command:v1",
+                session,
+                900,
+            );
+            // Reproducible fixture entropy chooses grade 10 and this consumer's type.
+            use sha2::{Digest, Sha256};
+            let secret = (0..4096_u32)
+                .map(|n| Sha256::digest(n.to_be_bytes()).to_vec())
+                .find(|secret| {
+                    let value = |ordinal: u64| {
+                        let hash = Sha256::digest(
+                            [
+                                secret.as_slice(),
+                                occurrence.as_slice(),
+                                b"oteryn.prey.bonus.v1",
+                                &ordinal.to_be_bytes(),
+                            ]
+                            .concat(),
+                        );
+                        u64::from_be_bytes(hash[..8].try_into().expect("hash"))
+                    };
+                    value(0) % 4 == u64::from(kind - 1) && value(1) % 9 == 8
+                })
+                .ok_or("prey entropy")?;
+            sqlx::query("UPDATE game_prey_decision_root SET secret=$1")
+                .bind(secret)
+                .execute(&h.pool)
+                .await?;
+            let mut admitted = AdmittedSession {
+                game_session_id: session,
+                world_id: owner.world_id,
+                channel_id: owner.channel_id,
+                runtime_actor: Some(actor),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+                item_fence: Some(fence.item_fence()),
+            };
+            admitted.continuity.selected_capabilities=crate::gameplay_transport::capabilities::SelectedCapabilities::select(&crate::gameplay_transport::prey::offered(crate::gameplay_transport::connection::FreshAdmissionAuthority::offered_capabilities(&owner),true),&[6,140]).ok_or("prey selection")?;
+            let bytes = oteryn_protocol_oteryn::prey::encode_request(
+                &oteryn_protocol_oteryn::prey::Request::Select { slot: 1, index: 1 },
+            )
+            .map_err(debug)?;
+            let crate::gameplay_transport::guild_intent::GuildReply::Payload(bytes) =
+                owner.prey_wire(admitted, 900, &bytes).await
+            else {
+                return Err("prey selection refused".into());
+            };
+            let reply = oteryn_protocol_oteryn::prey::decode_reply(&bytes).map_err(debug)?;
+            assert_eq!((reply.slots[0].bonus, reply.slots[0].grade), (kind, 10));
+            let runtime = owner.runtime.lock().await;
+            assert_eq!(
+                owner.states.spell_states.lock().await.prey_percent(
+                    &runtime,
+                    actor,
+                    session,
+                    "oteryn:creature.rat",
+                    kind,
+                    owner.owner_now().get(),
+                ),
+                if kind == 1 { 25 } else { 40 }
+            );
+        }
         sqlx::query("UPDATE game_character_build_state SET stamina_minutes=840 WHERE character_id=encode($1,'hex')::uuid")
             .bind(second_id.as_bytes().as_slice()).execute(&h.pool).await?;
     }
