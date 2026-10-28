@@ -44,13 +44,7 @@ pub fn decode(payload: &[u8]) -> Result<CharacterInfoOperation, DecodeError> {
         };
         PageRequest::new(u16::from_le_bytes([*a, *b]), *limit).ok_or(DecodeError)
     };
-    let title = |raw| match raw {
-        1 => Ok(CharacterTitle::AdeptArmorer),
-        2 => Ok(CharacterTitle::AdeptEnhancer),
-        3 => Ok(CharacterTitle::Cartographer),
-        4 => Ok(CharacterTitle::RotationChampion),
-        _ => Err(DecodeError),
-    };
+    let title = |raw| CharacterTitle::from_id(raw).ok_or(DecodeError);
     match (tag, rest) {
         (0, bytes) => Ok(CharacterInfoOperation::QuerySelf(page(bytes)?)),
         (1, bytes) if bytes.len() == 19 => {
@@ -146,7 +140,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .unlock_character_title(self.character, self.holder, fence, title, now, expiry)
                     .await
                 {
-                    Ok(_) => CharacterInfoReply::Payload(vec![2, title as u8]),
+                    Ok(_) => CharacterInfoReply::Payload(vec![2, title.id()]),
                     Err(_) => CharacterInfoReply::Rejected,
                 }
             }
@@ -231,8 +225,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(_) => return CharacterInfoReply::Rejected,
         };
         bytes.push(u8::try_from(titles.earned.len()).unwrap_or(u8::MAX));
-        bytes.extend(titles.earned.into_iter().map(|(title, _)| title as u8));
-        bytes.push(titles.selected.map_or(0, |title| title as u8));
+        bytes.extend(titles.earned.into_iter().map(|(title, _)| title.id()));
+        bytes.push(titles.selected.map_or(0, CharacterTitle::id));
         CharacterInfoReply::Payload(bytes)
     }
 }
@@ -307,5 +301,24 @@ mod tests {
     #[test]
     fn selection_clear() {
         assert_eq!(decode(&[3, 0]), Ok(CharacterInfoOperation::Select(None)));
+    }
+    /// PAR-P12: the Global-named titles keep the registered wire ids 1-4.
+    #[test]
+    fn p12_global_titles_keep_wire_ids() {
+        for (raw, title) in [
+            (1, CharacterTitle::AdeptArmorer),
+            (2, CharacterTitle::AdeptEnhancer),
+            (3, CharacterTitle::Globetrotter),
+            (4, CharacterTitle::ReigningDromeChampion),
+        ] {
+            assert_eq!(decode(&[2, raw]), Ok(CharacterInfoOperation::Unlock(title)));
+            assert_eq!(
+                decode(&[3, raw]),
+                Ok(CharacterInfoOperation::Select(Some(title)))
+            );
+        }
+        assert_eq!(decode(&[2, 0]), Err(DecodeError));
+        assert_eq!(decode(&[2, 5]), Err(DecodeError));
+        assert_eq!(decode(&[3, 5]), Err(DecodeError));
     }
 }
