@@ -1,6 +1,10 @@
 //! VIP0 metadata bounds. Presence is deliberately owned by VIP-2.
 use std::collections::BTreeSet;
 
+/// Crystal/Canary clamp an edit icon to the highest client icon (`min(10, icon)`).
+pub fn icon(icon: u8) -> u8 {
+    icon.min(10)
+}
 /// Returns canonical metadata only when every accepted VIP0 bound holds.
 pub fn metadata(text: &str, icon: u8, groups: &[u8]) -> Option<String> {
     let text = text.trim();
@@ -38,6 +42,11 @@ mod tests {
             ("ok", 0, vec![9]),
         ] {
             assert!(metadata(text, icon, &groups).is_none());
+        }
+        // PAR-S04: Crystal `protocolgame.cpp:2297` / Canary `protocolgame.cpp:2858` clamp, never refuse.
+        for (raw, stored) in [(0, 0), (10, 10), (11, 10), (u8::MAX, 10)] {
+            assert_eq!(icon(raw), stored);
+            assert!(metadata("ok", icon(raw), &[]).is_some());
         }
         assert!(group_name(&"𐀀".repeat(25)).is_some());
         assert!(group_name(&"a".repeat(26)).is_none());
