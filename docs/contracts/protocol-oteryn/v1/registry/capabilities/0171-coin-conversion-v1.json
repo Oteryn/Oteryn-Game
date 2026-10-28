@@ -1,0 +1,14 @@
+{
+  "id": 171,
+  "name": "COIN_CONVERSION_V1",
+  "owner_decision": "GOLDCONV2-1; Crystal re-audit E03",
+  "owner": "durable carried-item owner and production USE router",
+  "requires": [
+    4,
+    15
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "PRODUCTION_OFFERED_CAPABILITIES: native item content and the durable carried-coin owner are required."
+}
