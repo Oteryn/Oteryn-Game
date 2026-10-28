@@ -1,7 +1,7 @@
 {
-  "mechanic": "0170-arena-v1",
+  "mechanic": "0170-arena",
   "kind": "handlers",
-  "id": "0170-arena-v1-unsupported",
+  "id": "0170-arena-unsupported",
   "status": "unsupported",
   "reason": "ARENA-1 is server-only; native client presentation is pending.",
   "commands": [
