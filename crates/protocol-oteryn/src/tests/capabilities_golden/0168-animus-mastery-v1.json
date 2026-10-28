@@ -1,0 +1,17 @@
+{
+  "id": 168,
+  "name": "ANIMUS_MASTERY_V1",
+  "constant": "animus_mastery::CAPABILITY_ANIMUS_MASTERY_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    232
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

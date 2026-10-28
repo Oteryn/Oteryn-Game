@@ -13,7 +13,7 @@ pub struct ExivaPreferences {
     pub allow_player_whitelist: bool,
     pub allow_guild_whitelist: bool,
     pub player_whitelist: Vec<[u8; 16]>,
-    pub guild_whitelist: Vec<u32>,
+    pub guild_whitelist: Vec<[u8; 16]>,
 }
 impl ExivaPreferences {
     /// Exact Canary Player::ExivaRestrictions constructor at pinned
@@ -37,7 +37,12 @@ impl ExivaPreferences {
             || self.guild_whitelist.len() > 4096
             || self.player_whitelist.windows(2).any(|w| w[0] >= w[1])
             || self.guild_whitelist.windows(2).any(|w| w[0] >= w[1])
-            || self.guild_whitelist.contains(&0)
+            || self
+                .guild_whitelist
+                .iter()
+                .any(|id| {
+                    oteryn_gameplay_domain::domain::guild::GuildId::from_bytes(*id).is_err()
+                })
             || self
                 .player_whitelist
                 .iter()
@@ -92,6 +97,22 @@ async fn relationship_allowed(
     caster: [u8; 16],
     target: [u8; 16],
 ) -> Result<bool, SpellItemError> {
+    if preferences.allow_guild_whitelist && !preferences.guild_whitelist.is_empty() {
+        let caster_guild: Option<Vec<u8>> = sqlx::query_scalar(
+            "SELECT uuid_send(guild_id) FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(caster.as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+        if caster_guild.is_some_and(|guild| {
+            preferences
+                .guild_whitelist
+                .iter()
+                .any(|allowed| guild == allowed.as_slice())
+        }) {
+            return Ok(true);
+        }
+    }
     if preferences.allow_own_guild {
         let same: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b USING(guild_id) WHERE a.character_id=encode($1,'hex')::uuid AND b.character_id=encode($2,'hex')::uuid)")
             .bind(caster.as_slice()).bind(target.as_slice()).fetch_one(&mut **tx).await?;

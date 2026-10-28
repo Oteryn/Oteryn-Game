@@ -73,10 +73,10 @@ pub(super) async fn exercise(
             .await?;
         match case {
             9 => {
-                sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Exiva Guild',2,9999999999,1,1)")
-                    .bind(id(120).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
-                sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,1),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,3,1)")
-                    .bind(id(41).as_slice()).bind(id(101).as_slice()).bind(id(120).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,'Caster Guild',2,9999999999,1,1),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,'Target Guild',2,9999999999,1,1)")
+                    .bind(id(120).as_slice()).bind(id(121).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,1),(encode($2,'hex')::uuid,encode($4,'hex')::uuid,1,1)")
+                    .bind(id(41).as_slice()).bind(id(101).as_slice()).bind(id(120).as_slice()).bind(id(121).as_slice()).execute(&mut *tx).await?;
             }
             10 => {
                 sqlx::query("INSERT INTO game_parties(party_id,world_id,leader_character_id,revision,next_seq) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,3)")
@@ -98,6 +98,10 @@ pub(super) async fn exercise(
     if case == 8 {
         let mut add = vec![1];
         add.extend(id(41));
+        commands.push((COMMAND_TYPE_EXIVA_SETTINGS, add));
+    } else if case == 9 {
+        let mut add = vec![3];
+        add.extend(id(120));
         commands.push((COMMAND_TYPE_EXIVA_SETTINGS, add));
     }
     let (results, _) = exchange(owner, &mut target, &commands, false, false).await?;
@@ -133,7 +137,7 @@ pub(super) async fn exercise(
     );
     let revision: String = sqlx::query_scalar("SELECT revision::text FROM game_character_spell_privacy WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(101).as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!(revision, if case == 8 { "2" } else { "1" });
+    assert_eq!(revision, if matches!(case, 8 | 9) { "2" } else { "1" });
     let payload = chat::encode_chat_intent(&chat::ChatIntent::Say {
         mode: chat::ChatSpeechMode::Say,
         text: "exiva \"Fixture Watcher\"".into(),
@@ -183,6 +187,10 @@ pub(super) async fn exercise(
     let payload = if case == 8 {
         let mut remove = vec![2];
         remove.extend(id(41));
+        remove
+    } else if case == 9 {
+        let mut remove = vec![4];
+        remove.extend(id(120));
         remove
     } else {
         vec![0, if matches!(case, 9..=11) { modes } else { 0 }]

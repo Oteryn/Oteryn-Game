@@ -1,0 +1,16 @@
+{
+  "id": 165,
+  "name": "HIRELING_V1",
+  "owner_decision": "HIRELING-1",
+  "owner": "House hireling",
+  "requires": [
+    3,
+    51
+  ],
+  "command_types": [
+    220
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "HIRELING-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 220 additionally requires a current admitted session in a House runtime owned by the character; without the capability selected, command type 220 is refused as unsupported."
+}
