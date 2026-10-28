@@ -83,4 +83,26 @@ mod tests {
             [21, 22, 23]
         );
     }
+
+    /// PAR-W11: Crystal `rotten_blood_boss_mechanics.lua:246` deals `ceil(maxHealth * 0.4)`
+    /// agony to each room player on the rotten-charge explosion; Oteryn keeps the flat 1250
+    /// from news 7852 regardless of the player's max health (DIFF, owner decision).
+    #[test]
+    fn w11_crystal_rotten_charge_damage_diverges_from_flat_news_value() {
+        let mut owner = owner();
+        let players = [target(31, 1)];
+        let hits = dispatch(
+            &mut owner,
+            RottenBloodEvent::RottenChargeDropped {
+                room_players: &players,
+            },
+        )
+        .expect("room consequence must dispatch");
+        let crystal = |max_health: u32| (max_health * 2).div_ceil(5);
+        assert_eq!(crystal(3_125), 1_250);
+        for max_health in [1_000, 3_122, 3_126, 20_000] {
+            assert_ne!(hits[0].amount, crystal(max_health));
+        }
+        assert_eq!(hits[0].amount, 1_250);
+    }
 }
