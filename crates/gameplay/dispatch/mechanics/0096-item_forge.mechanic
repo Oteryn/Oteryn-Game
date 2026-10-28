@@ -1,0 +1,8 @@
+name=item_forge
+commands=181
+transport=item_forge
+composed=item_forge
+authority=item_forge
+offer=45,item_forge::offered,item_forge_available
+[route]
+match routing::item_forge::route(authority, &session.admitted, command).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }

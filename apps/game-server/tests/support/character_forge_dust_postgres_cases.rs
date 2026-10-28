@@ -630,11 +630,20 @@ fn forged_balance_or_chain_is_refused() -> TestResult {
 }
 
 #[test]
-fn dust_limit_check_accepts_100_and_225_and_rejects_99_and_226() -> TestResult {
+fn dust_limit_check_accepts_d1230_stages_and_rejects_off_stage_limits() -> TestResult {
     run(async |admin| {
         let harness = Harness::create(admin, "limit").await?;
-        // `IMBFORGE0-RL-08`, the CHECK alone: the guards and foreign keys are off.
-        for (limit, accepted) in [(99, false), (100, true), (225, true), (226, false)] {
+        // `IMBFORGE0-RL-08`, the CHECK alone: the guards and foreign keys are off. Migration
+        // 0320 installs the D1230 stages `100 + 20*n` for `n` in 0..=225.
+        for (limit, accepted) in [
+            (99, false),
+            (100, true),
+            (110, false),
+            (120, true),
+            (225, false),
+            (4_600, true),
+            (4_620, false),
+        ] {
             let mut tx = harness.pool.begin().await?;
             tx.execute("SET LOCAL session_replication_role = replica")
                 .await?;

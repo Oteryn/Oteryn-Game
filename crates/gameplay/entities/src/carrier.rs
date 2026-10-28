@@ -1066,6 +1066,7 @@ pub struct ChannelRuntimeV1 {
     /// SPAWN-1a: the pending respawn occurrences of the realized spawn sources (§6.3).
     spawn_schedule: spawn::RespawnSchedule,
     boss_spawns: Vec<BossSpawn>,
+    daily_boost: Option<oteryn_gameplay_content::content::daily_boost::DailyBoostSelection>,
     forge_next_tick_micros: u64,
     forge_fiends: Vec<(ExactActorRef, Option<u64>)>,
     /// SPAWN-CEILINGS-1 (Codex 4243397472): the occurrences of `spawn_schedule` by (deadline,
@@ -1180,6 +1181,7 @@ impl ChannelRuntimeV1 {
                 ),
             spawn_schedule: spawn::RespawnSchedule::default(),
             boss_spawns: Vec::new(),
+            daily_boost: None,
             forge_next_tick_micros: 0,
             forge_fiends: Vec::new(),
             spawn_deadlines: BTreeSet::new(),

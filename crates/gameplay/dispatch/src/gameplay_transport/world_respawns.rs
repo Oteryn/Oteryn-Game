@@ -34,8 +34,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn run_world_respawns(&self, shutdown: &CancellationToken) -> RespawnExit {
         // A busy durability holder is transient; never stop the world's existing spawn loop.
         loop {
-            let Some(initialized) =
-                stopping_first(self.initialize_cyclopedia_respawn(), shutdown).await
+            let Some(initialized) = stopping_first(
+                async {
+                    self.initialize_daily_boost().await?;
+                    self.initialize_cyclopedia_respawn().await
+                },
+                shutdown,
+            )
+            .await
             else {
                 return RespawnExit::Shutdown;
             };
