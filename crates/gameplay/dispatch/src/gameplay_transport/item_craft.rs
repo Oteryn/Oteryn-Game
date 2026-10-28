@@ -168,3 +168,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         disposition(result)
     }
 }
+
+#[cfg(test)]
+#[path = "item_craft_crystal_parity_tests.rs"]
+mod crystal_parity_tests;
