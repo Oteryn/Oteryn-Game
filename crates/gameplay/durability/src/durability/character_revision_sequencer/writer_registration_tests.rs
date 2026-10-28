@@ -33,6 +33,7 @@ const FEE_WRITERS: &[&str] = &[
     "durability/item_timed_runtime/repair.rs",
     "durability/npc_purchase.rs",
     "durability/npc_travel/paid.rs",
+    "durability/prey/command.rs",
 ];
 
 /// The non-test part of a source file: from the first `#[cfg(test)]` that, after any other

@@ -123,6 +123,8 @@ pub(super) fn meaningful(
             .is_ok_and(|request| request.action != imbuement::ImbuementAction::Query),
         89 => task_board::decode_task_board_request(command.payload)
             .is_ok_and(|request| request.action != 0),
+        160 => oteryn_protocol_oteryn::prey::decode_request(command.payload)
+            .is_ok_and(|request| !matches!(request, oteryn_protocol_oteryn::prey::Request::Query)),
         9 => {
             use oteryn_protocol_oteryn::item_view::*;
             let selection = ItemMoveSelection {

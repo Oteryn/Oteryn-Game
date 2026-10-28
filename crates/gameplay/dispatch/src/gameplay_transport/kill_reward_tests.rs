@@ -1092,3 +1092,32 @@ fn a_requeued_entry_regains_its_pin_at_the_next_accepted_kill() {
     assert!(runtime.corpse_projection_pinned(first));
     assert!(runtime.corpse_projection_pinned(second));
 }
+
+#[test]
+fn prey_loot_death_snapshot_survives_replay_after_bonus_changes() {
+    let (runtime, creature) = runtime_with_killed_creature();
+    let queue = KillSettlementQueue::default();
+    assert_eq!(queue.prey_at_death(&runtime, creature, 40), 40);
+    assert_eq!(queue.prey_at_death(&runtime, creature, 0), 40);
+    assert_eq!(queue.prey_at_death(&runtime, creature, 25), 40);
+    let unboosted = KillSettlementQueue::default();
+    assert_eq!(unboosted.prey_at_death(&runtime, creature, 0), 0);
+    assert_eq!(unboosted.prey_at_death(&runtime, creature, 40), 0);
+    assert_eq!(queue.state().prey_loot.len(), 1);
+}
+
+#[test]
+fn prey_mutation_waits_for_captured_reward_settlement() {
+    let queue = KillSettlementQueue::default();
+    let entry = pending(1, 2, 1, 1);
+    let character = entry.facts.principal.character;
+    assert!(!queue.blocks_prey(character.as_bytes()));
+    assert!(matches!(queue.append(entry), AppendOutcome::Queued));
+    assert!(queue.blocks_prey(character.as_bytes()));
+    let TakeOutcome::Taken(taken) = queue.take(session(2), 1) else {
+        panic!("queued reward");
+    };
+    assert!(queue.blocks_prey(character.as_bytes()));
+    taken.finish();
+    assert!(!queue.blocks_prey(character.as_bytes()));
+}

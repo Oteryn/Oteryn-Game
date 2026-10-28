@@ -376,10 +376,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             states.monster_ai_cursor = (cursor + count) % swinging.len();
         }
         let activity = attack.shared_experience_cells();
-        for (target, lethal, at) in states.equipment_reflection_kills.drain(..) {
+        for (target, lethal, at) in std::mem::take(&mut states.equipment_reflection_kills) {
             super::kill_reward::record_creature_kill(
                 &mut runtime,
                 super::kill_reward::KillSink {
+                    prey: Some(&states),
                     queue: attack.kills(),
                     rewards: self.reward_table(),
                     activity: &activity,
