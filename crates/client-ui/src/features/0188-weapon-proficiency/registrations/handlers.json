@@ -1,0 +1,20 @@
+{
+  "mechanic": "0188-weapon-proficiency",
+  "kind": "handlers",
+  "id": "0188-weapon-proficiency-unsupported",
+  "status": "unsupported",
+  "reason": "WEAPPROF3 reserves the bounded wire contract; native presentation follows with the production mechanic.",
+  "commands": [
+    480,
+    481,
+    482,
+    483
+  ],
+  "not_applicable": {
+    "state": "Production mechanic pending.",
+    "protocol": "Production mechanic pending.",
+    "view": "Production mechanic pending.",
+    "input": "Production mechanic pending.",
+    "settings": "No persistent client settings."
+  }
+}

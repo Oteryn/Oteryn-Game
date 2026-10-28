@@ -1,0 +1,16 @@
+{
+  "id": 188,
+  "name": "WEAPON_PROFICIENCY_V1",
+  "owner_decision": "WEAPPROF3",
+  "owner": "Game Character Weapon Proficiency owner",
+  "requires": [],
+  "command_types": [
+    480,
+    481,
+    482,
+    483
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "WEAPPROF3: offered only by a World booted from a bundle."
+}

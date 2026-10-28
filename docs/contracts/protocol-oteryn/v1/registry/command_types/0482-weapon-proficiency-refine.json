@@ -1,0 +1,10 @@
+{
+  "id": 482,
+  "name": "WEAPON_PROFICIENCY_REFINE",
+  "owner_decision": "WEAPPROF3",
+  "capability": 188,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/weapon-proficiency-v1.md",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/weapon-proficiency-v1.md",
+  "max_payload_bytes": 192,
+  "max_result_payload_bytes": 8192
+}
