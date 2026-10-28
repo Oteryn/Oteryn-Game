@@ -357,6 +357,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     actor,
                     receipt.streak_after,
                 );
+                // Crystal/Global day five grants Premium characters an immediate
+                // temple teleport in addition to the converter.  Durability has
+                // already rechecked Premium and recorded the effect receipt, so
+                // only a newly committed claim may physically relocate the actor.
+                if view.lane_day == 5 && premium {
+                    let mut runtime = self.runtime.lock().await;
+                    let temple = runtime.respawn_position();
+                    if runtime
+                        .place_respawned_player(actor, command.game_session_id, temple)
+                        .is_err()
+                    {
+                        super::operator_event(
+                            "daily_reward_temple_teleport_failed reason=actor_not_current",
+                        );
+                    }
+                }
                 wire::DailyRewardResult {
                     disposition: 1,
                     transaction_id: Some(receipt.transaction_id),

@@ -408,6 +408,15 @@ async fn apply<G: DailyRewardPremiumGate>(
             .bind(i32::try_from(output.quantity).map_err(|_| DailyRewardClaimError::InvalidRequest)?)
             .bind(item.as_slice()).bind(charges.map(|c| c as i32)).execute(&mut **tx).await?;
     }
+    // Global's fifth Premium reward consists of the converter plus an immediate
+    // temple teleport.  The Channel owner performs the physical move only after
+    // this transaction commits; this line is its durable, replay-safe receipt.
+    if plan.lane_day == 5 && premium {
+        sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,quantity,status,delivering_transaction_id) VALUES(encode($1,'hex')::uuid,$2,'TEMPLE_TELEPORT',1,'DELIVERED',encode($1,'hex')::uuid)")
+            .bind(request.transaction_id.as_slice())
+            .bind(i16::try_from(plan.outputs.len()).map_err(|_| DailyRewardClaimError::InvalidRequest)?)
+            .execute(&mut **tx).await?;
+    }
     Ok(outcome)
 }
 

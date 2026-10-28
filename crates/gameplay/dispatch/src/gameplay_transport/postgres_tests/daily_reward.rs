@@ -388,6 +388,14 @@ fn scenario(premium: bool) -> TestResult {
                 Some(&1),
                 "day {day}: {end}; {values:?}"
             );
+            if day == 5 {
+                let runtime = owner.runtime.lock().await;
+                let position = runtime.read_actor_position(dependencies.actor).map_err(debug)?;
+                assert_eq!(position.position(), runtime.respawn_position());
+                let teleports: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_lines l JOIN game_character_daily_reward_claims c ON c.transaction_id=l.claim_id WHERE c.lane_day=5 AND l.kind='TEMPLE_TELEPORT' AND l.status='DELIVERED' AND l.delivering_transaction_id=c.transaction_id")
+                    .fetch_one(&harness.pool).await?;
+                assert_eq!(teleports, i64::from(premium));
+            }
             if matches!(day, 3 | 7) {
                 let (_, output) = serve(&owner, &mut admitted, &[(32, &picks)]).await?;
                 assert_eq!(
@@ -396,7 +404,7 @@ fn scenario(premium: bool) -> TestResult {
                 );
             }
         }
-        let lines:Vec<(i16,String,i32,String,Option<i32>)>=sqlx::query_as("SELECT c.lane_day,l.kind,l.quantity,l.status,l.charges FROM game_character_daily_reward_lines l JOIN game_character_daily_reward_claims c ON c.transaction_id=l.claim_id ORDER BY c.reset_epoch,l.line").fetch_all(&harness.pool).await?;
+        let lines:Vec<(i16,String,i32,String,Option<i32>)>=sqlx::query_as("SELECT c.lane_day,l.kind,l.quantity,l.status,l.charges FROM game_character_daily_reward_lines l JOIN game_character_daily_reward_claims c ON c.transaction_id=l.claim_id WHERE l.kind<>'TEMPLE_TELEPORT' ORDER BY c.reset_epoch,l.line").fetch_all(&harness.pool).await?;
         assert_eq!(lines.len(), 7);
         assert_eq!(lines[0].2, if premium { 10 } else { 5 });
         assert_eq!(lines[1].2, if premium { 10 } else { 5 });
