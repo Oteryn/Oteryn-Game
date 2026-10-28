@@ -221,6 +221,8 @@ impl LootPlanDeathKey {
 enum DrawKind {
     Chance,
     Quantity,
+    BoostedChance(u8),
+    BoostedQuantity(u8),
 }
 
 /// Plan a death's loot from its already-loaded, already-validated loot table.
@@ -232,6 +234,28 @@ pub fn plan_creature_loot(
     death_key: LootPlanDeathKey,
     loot_table_ref: &LootDefinitionRef,
     loot_table: &LootTableDefinition,
+) -> Result<LootPlan, LootPlanError> {
+    if let LootSelectionAlgorithm::DailyBoosted {
+        extra_rolls,
+        boosted_entries,
+    } = loot_table.algorithm
+    {
+        return plan_daily_boosted(
+            death_key,
+            loot_table_ref,
+            loot_table,
+            extra_rolls,
+            boosted_entries,
+        );
+    }
+    plan_roll(death_key, loot_table_ref, loot_table, 0)
+}
+
+fn plan_roll(
+    death_key: LootPlanDeathKey,
+    loot_table_ref: &LootDefinitionRef,
+    loot_table: &LootTableDefinition,
+    roll: u8,
 ) -> Result<LootPlan, LootPlanError> {
     if loot_table.algorithm != LootSelectionAlgorithm::IndependentBernoulliPpm {
         return Err(LootPlanError::UnsupportedAlgorithm);
@@ -265,14 +289,30 @@ pub fn plan_creature_loot(
             None => return Err(LootPlanError::InvalidProbability),
         };
 
-        let chance_draw =
-            deterministic_draw(death_key, loot_table_ref, draw_ordinal, DrawKind::Chance);
+        let chance_draw = deterministic_draw(
+            death_key,
+            loot_table_ref,
+            draw_ordinal,
+            if roll == 0 {
+                DrawKind::Chance
+            } else {
+                DrawKind::BoostedChance(roll)
+            },
+        );
         if !bernoulli_success(chance_draw, probability_ppm) {
             continue;
         }
 
-        let quantity_draw =
-            deterministic_draw(death_key, loot_table_ref, draw_ordinal, DrawKind::Quantity);
+        let quantity_draw = deterministic_draw(
+            death_key,
+            loot_table_ref,
+            draw_ordinal,
+            if roll == 0 {
+                DrawKind::Quantity
+            } else {
+                DrawKind::BoostedQuantity(roll)
+            },
+        );
         let quantity = quantity_in_range(quantity_draw, entry.min_count, entry.max_count);
         let purpose_key = entry.item.production_key.clone();
 
@@ -297,6 +337,57 @@ pub fn plan_creature_loot(
         loot_table: loot_table_ref.clone(),
         entries,
     })
+}
+
+// All rolls share the existing per-death draw, Item and plan-byte ceilings.
+// Distinct draw kinds domain-separate the extra rolls without widening those bounds.
+fn plan_daily_boosted(
+    death_key: LootPlanDeathKey,
+    table_ref: &LootDefinitionRef,
+    table: &LootTableDefinition,
+    extra_rolls: u8,
+    boosted_entries: usize,
+) -> Result<LootPlan, LootPlanError> {
+    if !(1..=3).contains(&extra_rolls) || boosted_entries > table.entries.len() {
+        return Err(LootPlanError::UnsupportedAlgorithm);
+    }
+    if table.entries.len() > COMBAT01_LOOT_PLAN_ENTRIES_MAX {
+        return Err(LootPlanError::TooManyTableEntries);
+    }
+    // Bounds above prove this arithmetic is at most 128; reject before cloning
+    // or drawing if this death would exceed its existing 32-draw budget.
+    let draws = 2 * (table.entries.len() + boosted_entries * usize::from(extra_rolls));
+    if draws > COMBAT01_LOOT_RNG_DRAWS_MAX {
+        return Err(LootPlanError::TooManyRngDraws);
+    }
+    let mut ordinary = table.clone();
+    ordinary.algorithm = LootSelectionAlgorithm::IndependentBernoulliPpm;
+    let mut plan = plan_creature_loot(death_key, table_ref, &ordinary)?;
+    ordinary.entries.truncate(boosted_entries);
+    for roll in 1..=extra_rolls {
+        let extra = plan_roll(death_key, table_ref, &ordinary, roll)?;
+        for mut entry in extra.entries {
+            if plan.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
+                return Err(LootPlanError::TooManyPlanItems);
+            }
+            // Each successful roll mints its own Item. Combining quantities would
+            // manufacture stacks of non-stackable equipment. The ordinal is also
+            // part of the durable MINT occurrence, so retries keep each roll distinct.
+            entry.draw_ordinal += u32::from(roll) * COMBAT01_LOOT_PLAN_ENTRIES_MAX as u32;
+            plan.entries.push(entry);
+        }
+    }
+    let mut bytes = charge_plan_bytes(0, header_footprint_bytes(table_ref))?;
+    for entry in &plan.entries {
+        bytes = charge_plan_bytes(
+            bytes,
+            entry_footprint_bytes(&entry.item, &entry.purpose_key),
+        )?;
+    }
+    if plan.entries.len() > COMBAT01_LOOT_PLAN_ITEMS_MAX {
+        return Err(LootPlanError::TooManyPlanItems);
+    }
+    Ok(plan)
 }
 
 fn is_surprise_bag(entry: &LootTableEntry) -> bool {
@@ -384,6 +475,8 @@ fn deterministic_draw(
     hasher.update([match kind {
         DrawKind::Chance => 0_u8,
         DrawKind::Quantity => 1_u8,
+        DrawKind::BoostedChance(roll) => 2 * roll,
+        DrawKind::BoostedQuantity(roll) => 2 * roll + 1,
     }]);
     let digest = hasher.finalize();
     let mut buf = [0_u8; 8];
@@ -738,5 +831,110 @@ mod tests {
             plan_creature_loot(death_key(1), &table_ref, &over_scale),
             Err(LootPlanError::InvalidProbability)
         );
+    }
+}
+
+#[cfg(test)]
+mod daily_boost_tests {
+    use super::*;
+
+    #[test]
+    fn daily_boost_extra_rolls_preserve_bounds_and_do_not_multiply_forge_drops()
+    -> Result<(), LootPlanError> {
+        let item = |key| LootDefinitionRef::new("Item", key, "definition-r1");
+        let reference = LootDefinitionRef::new("Loot", "oteryn:loot.rat", "definition-r1");
+        let mut table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls: 1,
+                boosted_entries: 1,
+            },
+            entries: vec![
+                LootTableEntry {
+                    item: item("oteryn:item.gold"),
+                    min_count: 1,
+                    max_count: 1,
+                    probability_ppm: Some(1_000_000),
+                },
+                LootTableEntry {
+                    item: item("oteryn:item.sliver"),
+                    min_count: 3,
+                    max_count: 3,
+                    probability_ppm: Some(1_000_000),
+                },
+            ],
+        };
+        let death = LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1);
+        let plan = plan_creature_loot(death, &reference, &table)?;
+        assert_eq!(
+            plan.entries.iter().map(|e| e.quantity).collect::<Vec<_>>(),
+            vec![1, 3, 1]
+        );
+        assert_eq!(plan_creature_loot(death, &reference, &table)?, plan);
+        table.algorithm = LootSelectionAlgorithm::DailyBoosted {
+            extra_rolls: 3,
+            boosted_entries: 1,
+        };
+        assert_eq!(
+            plan_creature_loot(death, &reference, &table)?
+                .entries
+                .iter()
+                .filter(|e| e.item.production_key == "oteryn:item.gold")
+                .map(|e| e.quantity)
+                .sum::<u32>(),
+            4
+        );
+        table.algorithm = LootSelectionAlgorithm::DailyBoosted {
+            extra_rolls: 4,
+            boosted_entries: 1,
+        };
+        assert_eq!(
+            plan_creature_loot(death, &reference, &table),
+            Err(LootPlanError::UnsupportedAlgorithm)
+        );
+        table.algorithm = LootSelectionAlgorithm::DailyBoosted {
+            extra_rolls: 1,
+            boosted_entries: 1,
+        };
+        table.entries = vec![table.entries[0].clone(); COMBAT01_LOOT_PLAN_ENTRIES_MAX];
+        assert_eq!(
+            plan_creature_loot(death, &reference, &table),
+            Err(LootPlanError::TooManyRngDraws)
+        );
+        table.entries = vec![table.entries[0].clone(); COMBAT01_LOOT_PLAN_ENTRIES_MAX + 1];
+        assert_eq!(
+            plan_creature_loot(death, &reference, &table),
+            Err(LootPlanError::TooManyTableEntries)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn daily_boost_uses_independent_rolls_instead_of_doubling_probability()
+    -> Result<(), LootPlanError> {
+        let reference = LootDefinitionRef::new("Loot", "oteryn:loot.rat", "definition-r1");
+        let table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls: 1,
+                boosted_entries: 1,
+            },
+            entries: vec![LootTableEntry {
+                item: LootDefinitionRef::new("Item", "oteryn:item.gold", "definition-r1"),
+                min_count: 1,
+                max_count: 1,
+                probability_ppm: Some(500_000),
+            }],
+        };
+        let mut seen = [false; 3];
+        for actor in 1..=100 {
+            let plan = plan_creature_loot(
+                LootPlanDeathKey::new([1; 16], [2; 16], 1, actor, 1),
+                &reference,
+                &table,
+            )?;
+            let quantity: u32 = plan.entries.iter().map(|e| e.quantity).sum();
+            seen[quantity as usize] = true;
+        }
+        assert_eq!(seen, [true; 3]);
+        Ok(())
     }
 }

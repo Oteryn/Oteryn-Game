@@ -1,0 +1,13 @@
+{
+  "id": 151,
+  "name": "DAILY_BOOST_V1",
+  "owner_decision": "BOOSTED-1",
+  "owner": "Game daily boost owner",
+  "requires": [],
+  "command_types": [
+    177
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Composed bundle World with eligible native creature and Archfoe pools; daily_boost_available. Query reads the committed World/reset epoch under the current Channel owner fence."
+}

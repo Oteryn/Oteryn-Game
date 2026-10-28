@@ -609,6 +609,7 @@ pub fn record_creature_kill(
         sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.into(),
         native_room_placement_context: pin.frame_binding_digest().to_vec(),
     };
+    let daily_boost = runtime.daily_boost().cloned();
     let mut owner = runtime.borrow_combat_death();
     if crate::combat::project_fixed_one_creature_death(&mut owner, target).is_err() {
         return;
@@ -652,6 +653,75 @@ pub fn record_creature_kill(
     if untracked {
         // The lethal hit is the untracked principal's own clocked damage.
         facts.principal_last_damage_at_ms = Some(facts.death_at_ms);
+    }
+    if let Some(choice) = daily_boost {
+        let boosted_creature = creature == choice.creature;
+        let boosted_boss = creature == choice.boss;
+        if boosted_creature {
+            let Ok(base) = u64::try_from(row.xp_amount.get()) else {
+                return;
+            };
+            let Ok(amount) = crate::content::daily_boost::apply_daily_boost(
+                base,
+                &creature,
+                &choice.creature,
+                (2, 1),
+            )
+            .and_then(|v| {
+                i64::try_from(v).map_err(|_| crate::content::daily_boost::DailyBoostError::Overflow)
+            }) else {
+                refuse("daily_boost_xp_overflow", &creature);
+                return;
+            };
+            Arc::make_mut(&mut row).xp_amount =
+                oteryn_simulation_determinism::ExactI64::new(amount);
+        }
+        if boosted_creature || boosted_boss {
+            let row = Arc::make_mut(&mut row);
+            if row.loot_table.algorithm
+                == crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm
+            {
+                // Canary's default boss bonus is +250%: two additional rolls and a
+                // deterministic third using the Reference inclusive 0..=100 draw.
+                let extra_rolls = if boosted_boss {
+                    use sha2::{Digest, Sha256};
+                    let mut hash = Sha256::new();
+                    hash.update(b"oteryn:daily-boost:boss-roll:v1");
+                    hash.update(facts.occurrence);
+                    let digest = hash.finalize();
+                    let draw = u64::from_be_bytes([
+                        digest[0], digest[1], digest[2], digest[3], digest[4], digest[5],
+                        digest[6], digest[7],
+                    ]);
+                    2 + u8::from(draw % 101 < 50)
+                } else {
+                    1
+                };
+                let boosted_entries = if boosted_boss {
+                    // Boss bonus rerolls equipment only, never gold, creature products or
+                    // other consumables. Stable partition keeps replay ordinals deterministic.
+                    row.loot_table.entries.sort_by_key(|entry| {
+                        !sink
+                            .rewards
+                            .is_daily_boss_equipment(&entry.item.production_key)
+                    });
+                    row.loot_table
+                        .entries
+                        .iter()
+                        .take_while(|entry| {
+                            sink.rewards
+                                .is_daily_boss_equipment(&entry.item.production_key)
+                        })
+                        .count()
+                } else {
+                    row.loot_table.entries.len()
+                };
+                row.loot_table.algorithm = crate::combat::LootSelectionAlgorithm::DailyBoosted {
+                    extra_rolls,
+                    boosted_entries,
+                };
+            }
+        }
     }
     if let Some((crate::domain::forge_creature::ForgeCreature::Fiendish, _difficulty)) = forge_kind
     {

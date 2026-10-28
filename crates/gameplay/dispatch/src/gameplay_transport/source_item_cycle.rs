@@ -105,6 +105,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn ensure_source_map_initialized(&self) -> bool {
+        if self.initialize_daily_boost().await.is_err() {
+            return false;
+        }
         #[cfg(test)]
         let stage = |name: &str| {
             if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
