@@ -1,0 +1,11 @@
+{
+  "id": 147,
+  "name": "EXIVA_SETTINGS_V1",
+  "owner_decision": "EXIVA-LIST-1",
+  "owner": "Game character spell privacy owner",
+  "requires": [],
+  "command_types": [169],
+  "state_domains": [],
+  "offered": true,
+  "offer_gate": "Every admitted character may edit only its own Exiva settings under the current session fence."
+}

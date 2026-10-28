@@ -1,0 +1,10 @@
+{
+  "id": 169,
+  "name": "EXIVA_SETTINGS",
+  "owner_decision": "EXIVA-LIST-1",
+  "capability": 147,
+  "payload_schema": "exiva-settings-v1.md#request",
+  "result_schema": "exiva-settings-v1.md#reply",
+  "max_payload_bytes": 17,
+  "max_result_payload_bytes": 1
+}

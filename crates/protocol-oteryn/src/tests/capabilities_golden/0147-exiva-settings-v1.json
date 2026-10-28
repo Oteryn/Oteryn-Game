@@ -1,0 +1,11 @@
+{
+  "id": 147,
+  "name": "EXIVA_SETTINGS_V1",
+  "constant": "exiva::CAPABILITY_EXIVA_SETTINGS_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [169],
+  "domains": [],
+  "supersedes": [],
+  "offers": { "production": true, "item_view": true, "bundle_world": true }
+}
