@@ -112,11 +112,20 @@ pub(super) async fn execute(
             .await
         {
             Ok(Some(row)) => row,
+            // Without a stash balance the item can still sit in depot or Inbox custody,
+            // whose retrieval stays rejected; only an item held nowhere is not found.
             Ok(None) => {
-                return Reply {
-                    outcome: Outcome::NotFound,
-                    retrieved: 0,
-                    results: Vec::new(),
+                return match owner
+                    .root
+                    .read_depot_search(owner.character, fence.character_id, client_id)
+                    .await
+                {
+                    Ok(None) => Reply {
+                        outcome: Outcome::NotFound,
+                        retrieved: 0,
+                        results: Vec::new(),
+                    },
+                    _ => rejected(),
                 };
             }
             Err(_) => return rejected(),
