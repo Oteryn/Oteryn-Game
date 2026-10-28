@@ -106,11 +106,10 @@ fn i14_unadmitted_crystal_consumables_are_pinned() {
 
 /// I03: Crystal `data/scripts/actions/items/spellbook.lua:25` registers these spellbook ids; using
 /// one opens a text dialog listing the user's vocation instant spells with a level or magic-level
-/// requirement, grouped and sorted by level. The item-use path admits only food and potion
-/// consumption, so an admitted spellbook resolves to `NothingToUse` and no spell list. MISSING,
-/// pinned until a spellbook dialog is accepted.
+/// requirement, grouped and sorted by level. Oteryn exposes the same server-authored content on
+/// the existing text-bearing LOOK result for the admitted source spellbook.
 #[test]
-fn i03_crystal_spellbook_use_has_no_spell_list() {
+fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'static str> {
     let controller = native();
     let state = controller
         .active()
@@ -134,4 +133,12 @@ fn i03_crystal_spellbook_use_has_no_spell_list() {
     }
     // Only 6120 is admitted; the basic spellbook 3059 and the other source ids are not.
     assert_eq!(admitted, vec![6120]);
+    let text = crate::gameplay_transport::item_look::spellbook_text(
+        state.spell_book(),
+        crate::spell::Vocation::Knight,
+    )
+    .ok_or("bounded spellbook text")?;
+    assert!(text.starts_with("Spells for Level "));
+    assert!(text.contains(" - "));
+    Ok(())
 }
