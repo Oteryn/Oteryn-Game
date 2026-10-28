@@ -169,6 +169,7 @@ impl QualifiedMutableSourcePlacement {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QualifiedNativeSpellWorld {
     scope: EngineeringStaticCellScope,
+    temple: LogicalCell,
     cells: BTreeMap<LogicalCell, Option<QualifiedSpellTile>>,
     immutable_tiles: BTreeMap<LogicalCell, QualifiedSpellTile>,
     pending_placements: Vec<QualifiedMutableSourcePlacement>,
@@ -177,6 +178,20 @@ pub struct QualifiedNativeSpellWorld {
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 impl QualifiedNativeSpellWorld {
+    /// The retained town's temple in this qualified map's native frame. Unknown tiles and
+    /// other floors never supply the protection-zone fact required for Wheel removal.
+    pub fn permits_wheel_removal(&self, cell: LogicalCell, radius: u32) -> bool {
+        cell.z == self.temple.z
+            && cell
+                .x
+                .abs_diff(self.temple.x)
+                .max(cell.y.abs_diff(self.temple.y))
+                <= radius
+            && self
+                .immutable_tiles
+                .get(&cell)
+                .is_some_and(|tile| tile.flags().protection_zone)
+    }
     pub fn native_item_binding(&self, id: u32) -> Option<&ProjectV2SourceIdentityBinding> {
         self.native_item_bindings.get(&id)
     }
@@ -539,6 +554,11 @@ pub fn qualify(
     }
     Ok(QualifiedNativeSpellWorld {
         scope,
+        temple: LogicalCell {
+            x: doc.source_town.temple[0] - doc.native_frame.origin_x,
+            y: doc.source_town.temple[1] - doc.native_frame.origin_y,
+            z: -doc.source_town.temple[2],
+        },
         cells,
         bounds: [-14, -15, 17, 16, -8, -5],
         bindings: doc.source_identity_bindings,

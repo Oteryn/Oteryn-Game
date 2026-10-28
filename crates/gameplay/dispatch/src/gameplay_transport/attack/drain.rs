@@ -99,10 +99,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .collect();
         let root = GameplayDecisionRoot::from_bytes(digest);
         let mut trained = TrainingDue::new();
-        for (target, lethal, at) in states.equipment_reflection_kills.drain(..) {
+        for (target, lethal, at) in std::mem::take(&mut states.equipment_reflection_kills) {
             crate::gameplay_transport::kill_reward::record_creature_kill(
                 &mut runtime,
                 crate::gameplay_transport::kill_reward::KillSink {
+                    prey: Some(&states),
                     queue: kills,
                     rewards: self.reward_table(),
                     activity: &activity_cells,
@@ -480,6 +481,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     } else {
                         landed
                     };
+                let prey = states.prey_percent(
+                    &runtime,
+                    entry.actor,
+                    entry.session,
+                    &race_key,
+                    1,
+                    now.get(),
+                );
+                let landed = super::super::prey::damage(landed, prey);
                 if landed <= 0 {
                     train_swing(
                         &mut states,
@@ -673,6 +683,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         kills,
                         self.reward_table(),
                         &activity_cells,
+                        &states,
                         target,
                         lethal,
                         now,
@@ -1235,6 +1246,7 @@ fn settle_kill(
     queue: &mut KillSettlementQueue,
     rewards: &crate::content::creature_reward::CreatureRewardTable,
     activity: &[SharedExperienceActivity],
+    states: &super::super::actor_spell::ChannelSpellStates,
     target: ExactActorRef,
     lethal: crate::combat::CapturedRewardPrincipal,
     now: SemanticTimeMicros,
@@ -1243,6 +1255,7 @@ fn settle_kill(
     crate::gameplay_transport::kill_reward::record_creature_kill(
         runtime,
         crate::gameplay_transport::kill_reward::KillSink {
+            prey: Some(states),
             queue,
             rewards,
             activity,

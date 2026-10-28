@@ -6,6 +6,8 @@ use crate::charm_wire::{
 
 pub const CAPABILITY_PREY_V1: u32 = 140;
 pub const COMMAND_TYPE_PREY: u32 = 160;
+/// The selected creature does not satisfy the admitted Prey loot budget. No mutation occurred.
+pub const STATUS_CONTENT_UNAVAILABLE: u8 = 8;
 // Oteryn wire budgets (not Canary packet sizes); the longest SelectAny needs 263 bytes.
 pub const MAX_REQUEST_BYTES: usize = 263;
 pub const MAX_REPLY_BYTES: usize = 8192;

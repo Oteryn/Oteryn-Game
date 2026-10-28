@@ -1324,6 +1324,7 @@ fn scenario_with_creature_charmed(
                 crate::gameplay_transport::kill_reward::record_creature_kill(
                     &mut runtime,
                     crate::gameplay_transport::kill_reward::KillSink {
+                        prey: None,
                         activity: &[],
                         queue: attack.kills(),
                         rewards: native.reward_table(),
