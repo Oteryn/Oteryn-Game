@@ -47,6 +47,8 @@ struct Door {
     /// The bundle placement key of the closed door entry.
     key: u64,
     locked: bool,
+    /// Crystal action id carried by the placed door; key items must match it exactly.
+    action: Option<u16>,
     closed_solid: bool,
     open_solid: bool,
     open: EntryFacts,
@@ -101,10 +103,12 @@ impl DoorBook {
         open_solid: bool,
         open: EntryFacts,
         locked: bool,
+        action: Option<u16>,
     ) {
         self.doors.push(Door {
             key,
             locked,
+            action,
             closed_solid,
             open_solid,
             open,
@@ -276,6 +280,82 @@ impl DoorBook {
                 Err(_) => DoorUse::Stale,
             },
         )
+    }
+
+    /// Applies a Crystal key action id to a key door. A matching key toggles the lock and the
+    /// visible open state in one revision; a wrong key changes nothing.
+    pub fn use_key(&self, key: u64, expected_revision: u64, action: u16) -> Option<DoorUse> {
+        let door = self.find(key)?;
+        let current = door.state.load(Ordering::Acquire);
+        if current != expected_revision {
+            return Some(DoorUse::Stale);
+        }
+        if matches!(door.action, None | Some(101 | 1001)) || door.action != Some(action) {
+            return Some(DoorUse::Locked);
+        }
+        let next = current.checked_add(1)?;
+        Some(
+            match door
+                .state
+                .compare_exchange(current, next, Ordering::AcqRel, Ordering::Acquire)
+            {
+                Ok(_) => {
+                    self.version.fetch_add(1, Ordering::AcqRel);
+                    DoorUse::Toggled {
+                        revision: next,
+                        open: current % 2 == 0,
+                    }
+                }
+                Err(_) => DoorUse::Stale,
+            },
+        )
+    }
+}
+
+#[cfg(test)]
+mod key_tests {
+    use super::*;
+    use oteryn_protocol_oteryn::world_map::MapDefinition;
+
+    fn open_facts() -> EntryFacts {
+        EntryFacts {
+            definition: MapDefinition::Item(std::num::NonZeroU32::MIN),
+            terrain_kind: None,
+            appearance_id: 1630,
+            blocks_projectile: false,
+            pickupable: false,
+            bound: false,
+            count: 1,
+            sub_type: 0,
+        }
+    }
+
+    #[test]
+    fn matching_key_toggles_and_wrong_or_reserved_keys_do_not() {
+        for door_action in [None, Some(101), Some(1001), Some(4322)] {
+            let mut doors = DoorBook::default();
+            doors.push(7, true, false, open_facts(), true, door_action);
+            doors.finish();
+            assert_eq!(doors.use_key(7, 0, 4321), Some(DoorUse::Locked));
+            assert_eq!(doors.revision(7), 0);
+        }
+
+        let mut doors = DoorBook::default();
+        doors.push(7, true, false, open_facts(), true, Some(4321));
+        doors.finish();
+        assert_eq!(
+            doors.use_key(7, 0, 4321),
+            Some(DoorUse::Toggled {
+                revision: 1,
+                open: true,
+            })
+        );
+        assert!(!doors.blocks(TilePos {
+            x: 0,
+            y: 0,
+            floor: 0
+        }));
+        assert_eq!(doors.use_key(7, 0, 4321), Some(DoorUse::Stale));
     }
 }
 

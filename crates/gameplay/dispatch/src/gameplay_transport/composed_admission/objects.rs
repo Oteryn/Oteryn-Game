@@ -1,6 +1,56 @@
 use super::*;
+use crate::gameplay_transport::connection::UseCommand;
+use crate::gameplay_transport::item_view::ItemKey;
+use crate::map::overlay::TilePos;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(in crate::gameplay_transport) async fn use_bundle_key(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        key: ItemKey,
+        target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
+    ) -> Option<UseOutcome> {
+        let map = self.bundle_map()?;
+        let ItemKey::MapBase {
+            bundle_digest,
+            placement_key,
+            reset_epoch,
+        } = key
+        else {
+            // Persisted key action ids require migration 0321 and are deliberately fail-closed
+            // until that instance metadata is present.
+            return None;
+        };
+        if bundle_digest != map.overlay.base().digest() || reset_epoch != self.reset_epoch {
+            return Some(UseOutcome::rejected());
+        }
+        let action = map.facts.action_at(placement_key)?;
+        let mut runtime = self.runtime.lock().await;
+        if self.states.spell_states.lock().await.is_dead(actor)
+            || !runtime
+                .player_control_facts(actor, command.game_session_id)
+                .is_ok_and(|facts| facts.control_loss.is_none())
+        {
+            return Some(UseOutcome::rejected());
+        }
+        let expected = runtime.borrow_movement_position().read(actor).ok()?;
+        let position = expected.position();
+        let actor_tile = TilePos {
+            x: u16::try_from(position.x).ok()?,
+            y: u16::try_from(position.y).ok()?,
+            floor: i8::try_from(position.floor).ok()?.checked_neg()?,
+        };
+        Some(map_door::use_key(
+            &map.overlay,
+            &map.facts,
+            runtime.content_pin().client_artifact_digest(),
+            actor_tile,
+            action,
+            target,
+        ))
+    }
+
     /// USE-WIRE-V1 reach (#162 5868482467): same floor, Chebyshev distance <=1 from any of the
     /// target's own collision cells, no line-of-sight check. A pure function so it is directly
     /// unit-testable independent of any Channel runtime: the qualified native entry room is too
