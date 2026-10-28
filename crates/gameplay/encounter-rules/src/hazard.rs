@@ -194,6 +194,20 @@ pub fn gnomprona_contains(x: i32, y: i32, floor: i16) -> bool {
                 || ((33630..=33672).contains(&x) && (32887..=32921).contains(&y))))
 }
 
+/// Creatures which Crystal's zone spawn callback deliberately leaves outside the hazard system.
+///
+/// Primal Menace forms share a name fragment upstream, while the other two exclusions are exact
+/// creature families. Oteryn production keys are normalized lowercase identifiers, so matching
+/// their final component preserves that distinction without making display names authoritative.
+pub fn creature_qualifies(definition_key: &str) -> bool {
+    let local = definition_key.rsplit([':', '/']).next().unwrap_or_default();
+    !local.contains("primal_menace")
+        && local != "fungosaurus"
+        && !local.ends_with(".fungosaurus")
+        && local != "primal_pack_beast"
+        && !local.ends_with(".primal_pack_beast")
+}
+
 /// Canary config.lua.dist:225-237 and player.cpp:3641-3645, 5513-5623.
 /// Loot is extra independent rolls, not a multiplier on each item's chance.
 pub fn provisional_effects(level: u16) -> Result<HazardAreaEffects, HazardError> {
@@ -270,6 +284,18 @@ mod tests {
             Err(HazardError::Overflow)
         );
         Ok(())
+    }
+
+    #[test]
+    fn primal_encounter_creatures_are_not_hazard_scaled() {
+        assert!(!creature_qualifies("oteryn:creature.the_primal_menace"));
+        assert!(!creature_qualifies(
+            "oteryn:creature.the_primal_menace_weak"
+        ));
+        assert!(!creature_qualifies("oteryn:creature.fungosaurus"));
+        assert!(!creature_qualifies("oteryn:creature.primal_pack_beast"));
+        assert!(creature_qualifies("oteryn:creature.primal_pack_beastling"));
+        assert!(creature_qualifies("oteryn:creature.gorerilla"));
     }
 
     fn fixture_area() -> HazardAreaDefinition {

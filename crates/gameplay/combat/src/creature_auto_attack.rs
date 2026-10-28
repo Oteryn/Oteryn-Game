@@ -1139,11 +1139,15 @@ impl AutoAttackOwner {
         let mut hazard_critical = false;
         let requested = {
             use oteryn_gameplay_encounter_rules::hazard::{
-                gnomprona_contains, provisional_effects,
+                creature_qualifies, gnomprona_contains, provisional_effects,
             };
             let a = from.position();
             let b = to.position();
-            if gnomprona_contains(a.x, a.y, a.floor) && gnomprona_contains(b.x, b.y, b.floor) {
+            let qualified = creature_qualifies(&source.creature_key);
+            if qualified
+                && gnomprona_contains(a.x, a.y, a.floor)
+                && gnomprona_contains(b.x, b.y, b.floor)
+            {
                 if let Some(level) =
                     crate::hazard::effective_level(runtime, facts.target, facts.session)
                 {

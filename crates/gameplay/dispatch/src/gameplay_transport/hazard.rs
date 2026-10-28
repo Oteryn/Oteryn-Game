@@ -150,14 +150,10 @@ pub(super) fn effects(
     target: crate::foundation::ExactActorRef,
 ) -> Option<oteryn_gameplay_encounters::bosses::hazard_primal::HazardAreaEffects> {
     use oteryn_gameplay_encounters::bosses::hazard_primal::{
-        gnomprona_contains, provisional_effects,
+        creature_qualifies, gnomprona_contains, provisional_effects,
     };
-    if runtime
-        .companion_snapshot_including_dead(target)
-        .ok()?
-        .state
-        .master
-        .is_some()
+    let creature = runtime.companion_snapshot_including_dead(target).ok()?;
+    if creature.state.master.is_some() || !creature_qualifies(&creature.state.policy.definition_key)
     {
         return None;
     }
