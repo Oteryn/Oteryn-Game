@@ -8,6 +8,10 @@ pub fn asks_to_trade(text: &ChatText) -> bool {
     oteryn_gameplay_npc::npc_talk::asks_to_trade(text.as_str())
 }
 
+pub(super) fn hireling_bank_entry() -> NpcTalkEntry {
+    NpcTalkEntry::new("Hireling", None).with_bank()
+}
+
 pub fn talk<K: Copy + PartialEq>(
     speaker: ChatPosition,
     text: &ChatText,

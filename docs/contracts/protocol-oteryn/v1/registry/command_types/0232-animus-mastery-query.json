@@ -1,0 +1,10 @@
+{
+  "id": 232,
+  "name": "ANIMUS_MASTERY_QUERY",
+  "owner_decision": "ANIMUS-1; Crystal re-audit W08",
+  "capability": 168,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/animus-mastery-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/animus-mastery-v1.md#reply",
+  "max_payload_bytes": 4,
+  "max_result_payload_bytes": 8192
+}
