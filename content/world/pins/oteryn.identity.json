@@ -3,7 +3,7 @@
   "world_schema_version": "reference-schema-v1",
   "content_revision": "tibia-news-bal-1-20261027-r1",
   "content_lock_digest": "cca9a6e0864e16128407e711f5ba04853f849eb784813f8adab523018d2d9e57",
-  "min_runtime_version": "2",
+  "min_runtime_version": "3",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"

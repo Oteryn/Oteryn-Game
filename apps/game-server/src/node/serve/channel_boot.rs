@@ -197,6 +197,26 @@ pub(super) async fn prepare_channel(
             .install_companion_policies(&mut channel_runtime)
             .map_err(|_| BootError::ContentActivation("active creature policies"))?;
     }
+    if let Some(world) = &bundle {
+        let spawns = world
+            .boss_spawns()
+            .into_iter()
+            .map(
+                |(key, creature, (x, y, floor), policy)| crate::foundation::BossSpawn {
+                    key,
+                    creature,
+                    position: crate::foundation::MovementLocalPosition { x, y, floor },
+                    policy,
+                    actor: None,
+                    cycle: 0,
+                    pending_claim: false,
+                },
+            )
+            .collect();
+        channel_runtime
+            .configure_boss_spawns(spawns)
+            .map_err(|_| BootError::Readiness("boss spawn configuration"))?;
+    }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot)?;
     let (spawned_monsters, spawn_windows) = match &bundle {

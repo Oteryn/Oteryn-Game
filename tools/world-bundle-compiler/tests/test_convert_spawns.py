@@ -18,16 +18,16 @@ class ConvertSpawnsTest(unittest.TestCase):
         cls.records = [
             r
             for name, text in sorted(cls.files.items())
-            if name != "index.json"
+            if name.startswith("spawns-")
             for r in json.loads(text)["records"]
         ]
         cls.held = json.loads(cs.HELD.read_text())["records"]
 
     def test_counts(self):
-        self.assertEqual(len(self.records), 54688)
-        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87844)
-        self.assertEqual(self.index["record_count"], 54688)
-        self.assertEqual(self.index["point_count"], 87844)
+        self.assertEqual(len(self.records), 54667)
+        self.assertEqual(sum(len(r["declaration"]["points"]) for r in self.records), 87795)
+        self.assertEqual(self.index["record_count"], 54667)
+        self.assertEqual(self.index["point_count"], 87795)
 
     def test_provenance_is_crystalserver(self):
         self.assertEqual(self.index["source"]["source_key"], "oteryn:source.crystalserver")
@@ -48,6 +48,22 @@ class ConvertSpawnsTest(unittest.TestCase):
     def test_canonical_tree_is_the_conversion(self):
         have = {p.name: p.read_text() for p in cs.OUT.glob("*.json")}
         self.assertEqual(have, self.files)
+
+    def test_boss_spawn1_sources_are_provenance_bound_and_have_one_policy(self):
+        bosses = json.loads(cs.BOSSES.read_bytes())["records"]
+        self.assertEqual(len(bosses), 10)
+        for record in bosses:
+            declaration = record["declaration"]
+            self.assertEqual(declaration["provenance"]["kind"], "canary-pin")
+            self.assertEqual(declaration["provenance"]["commit"], "47dfd51f45280a59a1d3e50ba7edd573d7234446")
+            for point in declaration["points"]:
+                self.assertEqual(len(point["boss_policy"]), 1)
+                self.assertNotIn("respawn_ms", point)
+        self.assertEqual(self.index["additional_sources"][0]["record_count"], 10)
+        held = json.loads(self.files["held-bosses.json"])["records"]
+        self.assertEqual(len(held), 59)
+        self.assertEqual(self.index["held_bosses"]["point_count"], 59)
+        self.assertTrue(all("boss_policy" not in row["point"] for row in held))
 
     def test_other_hash_fails_closed(self):
         with self.assertRaises(SystemExit):

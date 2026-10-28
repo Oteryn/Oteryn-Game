@@ -1443,11 +1443,13 @@ fn seeded_walks_send_the_bytes_recorded_before_the_viewport_optimisation() {
 // Re-recorded for bundle format v5 (SUBAREA-ADMIT-1): the fixture bundles' digests changed, and
 // a byte-by-byte comparison showed that only the 32-byte `MapViewHeaderV1.bundle_digest` of
 // the 283 payload-carrying updates differs from the v4 recording; update count and length are
-// unchanged.
+// unchanged. Re-recorded again for runtime compatibility 3 (BOSS-SPAWN-1): the fixture bundles'
+// default `identity.min_runtime_version` is `RUNTIME_VERSION`, so only their digest (and with it
+// `MapViewHeaderV1.bundle_digest`) changed; update count and length are unchanged.
 const GOLDEN: (usize, usize, &str) = (
     324,
     5_431_963,
-    "dd9033c2bc9ad2946e8020f2b18e3edb7693ec5c14e93e73e366c397df0deaca",
+    "e71b798e93e680047736ccee92bc6f5a3148a8cefc3d638b68f44e3b26fb2931",
 );
 
 // --- MAP01-VIEWPORT-US -------------------------------------------------------------------------

@@ -124,6 +124,7 @@ pub(super) fn dependencies(
                 y: 12,
                 direction: Direction::West,
                 respawn_ms: 60_000,
+                boss_policy: None,
             }],
         }],
     };

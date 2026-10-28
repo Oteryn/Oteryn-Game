@@ -29,6 +29,8 @@
 
 #![forbid(unsafe_code)]
 
+pub use oteryn_world_bundle::spawn::{BossChance, BossPolicy};
+
 mod activation;
 mod artifact;
 pub mod blessing_catalogue;

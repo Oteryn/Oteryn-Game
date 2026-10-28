@@ -3051,6 +3051,7 @@ mod tests {
             y: 5,
             direction: Direction::South,
             respawn_ms,
+            boss_policy: None,
         };
         let creature = |key: &str| Creature {
             key: key.into(),

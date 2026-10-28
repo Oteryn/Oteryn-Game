@@ -46,6 +46,8 @@ pub use runtime_actor_carrier::AttributeModifier;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::AttributeModifiers;
 #[allow(unused_imports)]
+pub use runtime_actor_carrier::BossSpawn;
+#[allow(unused_imports)]
 pub use runtime_actor_carrier::COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX;
 #[allow(unused_imports)]
 pub use runtime_actor_carrier::COMBAT01_DAMAGE_RECEIPTS_PER_CREATURE_GENERATION_MAX;

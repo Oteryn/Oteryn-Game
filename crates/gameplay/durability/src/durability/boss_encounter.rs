@@ -109,6 +109,8 @@ impl BossClock {
 #[derive(Debug, PartialEq, Eq)]
 pub enum BossClockClaim {
     Claimed(BossClock),
+    /// A committed clock snapshot used only to schedule the next owner timer.
+    Waiting(BossClock),
     Unchanged,
     CompareFailed,
 }
@@ -135,6 +137,35 @@ pub async fn claim_respawn_clock_in_transaction(
         return Err(BossClockError::InvalidInput);
     }
     expected.validate()?;
+    assert_clock_owner(tx, recovery, node, key, generation).await?;
+    // DB wall-clock milliseconds are portable across owners; process-local owner timer instants
+    // are deliberately not persisted. Resolve time after blocking authority locks.
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    let current = read_clock(tx, key)
+        .await?
+        .ok_or(BossClockError::MissingClock)?;
+    if current != *expected {
+        return Ok(BossClockClaim::CompareFailed);
+    }
+    let Some(next) = plan_claim(&current, generation, now)? else {
+        return Ok(BossClockClaim::Unchanged);
+    };
+    if !compare_and_set_clock(tx, key, &current, &next).await? {
+        return Ok(BossClockClaim::CompareFailed);
+    }
+    Ok(BossClockClaim::Claimed(next))
+}
+
+async fn assert_clock_owner(
+    tx: &mut Transaction<'_, Postgres>,
+    recovery: &CharacterRecoveryFenceV1,
+    node: &NodeIncarnationProof,
+    key: &BossClockKey,
+    generation: ScopeOwnershipGeneration,
+) -> Result<()> {
     assert_recovery_fence(tx, recovery).await?;
     lock_admission_relations(tx).await?;
     // Native assignment reads reject a materialized row not backed by the retained writer
@@ -167,25 +198,7 @@ pub async fn claim_respawn_clock_in_transaction(
     if !assigned || !prove_current_incarnation(tx, node).await? {
         return Err(BossClockError::AuthorityRejected);
     }
-    // DB wall-clock milliseconds are portable across owners; process-local owner timer instants
-    // are deliberately not persisted. Resolve time after blocking authority locks.
-    let now: i64 =
-        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
-            .fetch_one(&mut **tx)
-            .await?;
-    let current = read_clock(tx, key)
-        .await?
-        .ok_or(BossClockError::MissingClock)?;
-    if current != *expected {
-        return Ok(BossClockClaim::CompareFailed);
-    }
-    let Some(next) = plan_claim(&current, generation, now)? else {
-        return Ok(BossClockClaim::Unchanged);
-    };
-    if !compare_and_set_clock(tx, key, &current, &next).await? {
-        return Ok(BossClockClaim::CompareFailed);
-    }
-    Ok(BossClockClaim::Claimed(next))
+    Ok(())
 }
 
 pub async fn read_clock(
@@ -288,7 +301,7 @@ pub fn plan_respawn_death(
     max_s: u64,
 ) -> Result<BossClock> {
     clock.validate()?;
-    if clock.state != BossClockState::Alive || death_unix_ms < 0 || min_s > max_s {
+    if clock.state != BossClockState::Alive || death_unix_ms < 0 || min_s == 0 || min_s > max_s {
         return Err(BossClockError::InvalidInput);
     }
     let cycle = clock
@@ -408,3 +421,124 @@ mod cooldown_list;
 #[cfg(test)]
 #[path = "boss_encounter/preparation.rs"]
 mod preparation;
+
+impl super::DurabilityRoot {
+    /// One activation/timer pass. The current reset pointer and ownership are read under
+    /// their database locks, never supplied by content or an old process snapshot.
+    pub async fn activate_boss_clock(
+        &self,
+        authority: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        key: BossClockKey,
+        generation: ScopeOwnershipGeneration,
+        policy: oteryn_gameplay_content::content::BossPolicy,
+    ) -> Result<BossClockClaim> {
+        policy
+            .validate()
+            .map_err(|_| BossClockError::InvalidInput)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| BossClockError::AuthorityRejected)?;
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            use super::db::{begin_semantic_transaction, commit_semantic_transaction};
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            // Keep domain rejection inside the pass's DurabilityError envelope.
+            let result: Result<BossClockClaim> = async {
+                assert_clock_owner(&mut tx, &recovery, &node, &key, generation).await?;
+                let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
+                let reset: Option<(String,i64)> = sqlx::query_as("SELECT a.reset_epoch::text, floor(extract(epoch FROM e.activated_at)*1000)::bigint FROM game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid FOR SHARE OF a,e")
+                    .bind(key.world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+                let reset_initialized = reset.is_some();
+                let (epoch, reset_time) = match reset {
+                    Some((epoch,time)) => (epoch.parse().map_err(|_| BossClockError::InvalidStoredState)?, time),
+                    None => (0, now),
+                };
+                if matches!(policy, oteryn_gameplay_content::content::BossPolicy::AtReset { .. }) && !reset_initialized {
+                    // No actual reset owner yet: no invented reset or draw.
+                    return Ok(BossClockClaim::Unchanged);
+                }
+                let mut initial = BossClock { cycle: 0, state: BossClockState::Inactive,
+                    reset_epoch: 0, due_at_unix_ms: None, owner_generation: None };
+                if let oteryn_gameplay_content::content::BossPolicy::Respawn { min_s, max_s } = policy {
+                    let seconds = oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+                        draw(&key,0,"boss_respawn")?, min_s as i64, max_s as i64);
+                    initial.state = BossClockState::Due;
+                    initial.due_at_unix_ms = Some(seconds.checked_mul(1000).and_then(|d| now.checked_add(d)).ok_or(BossClockError::InvalidInput)?);
+                    initial.reset_epoch = epoch;
+                }
+                if let oteryn_gameplay_content::content::BossPolicy::AtReset { chance } = policy {
+                    let yes = oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(
+                        draw(&key,epoch,"boss_at_reset")?,0,(chance.denominator-1) as i64) < chance.numerator as i64;
+                    initial.reset_epoch = epoch;
+                    if yes { initial.state = BossClockState::Due; initial.due_at_unix_ms = Some(reset_time); }
+                }
+                sqlx::query("INSERT INTO game_boss_spawn_clocks(world_id,channel_id,spawn_key,cycle,state,reset_epoch,due_at,owner_generation) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,0,$4,$5::text::numeric,$6,NULL) ON CONFLICT DO NOTHING")
+                    .bind(key.world.as_bytes().as_slice()).bind(key.channel.as_bytes().as_slice()).bind(&key.spawn)
+                    .bind(initial.state.stored()).bind(initial.reset_epoch.to_string()).bind(initial.due_at_unix_ms).execute(&mut *tx).await?;
+                let mut clock = read_clock(&mut tx, &key).await?.ok_or(BossClockError::MissingClock)?;
+                if let oteryn_gameplay_content::content::BossPolicy::AtReset { chance } = policy {
+                    if let Some(next) = plan_reset(&key,&clock,epoch,reset_time,chance.numerator,chance.denominator)? {
+                        if !compare_and_set_clock(&mut tx,&key,&clock,&next).await? { return Ok(BossClockClaim::CompareFailed); }
+                        clock = next;
+                    }
+                    if let Some(next) = plan_claim(&clock,generation,now)? {
+                        if !compare_and_set_clock(&mut tx,&key,&clock,&next).await? { return Ok(BossClockClaim::CompareFailed); }
+                        return Ok(BossClockClaim::Claimed(next));
+                    }
+                    Ok(BossClockClaim::Unchanged)
+                } else {
+                    claim_respawn_clock_in_transaction(&mut tx,&recovery,&node,&key,generation,&clock).await
+                }
+            }.await;
+            let result = match result {
+                Ok(BossClockClaim::Unchanged) => {
+                    match read_clock(&mut tx,&key).await.map_err(|_| super::DurabilityError::InvalidStoredState)? {
+                        Some(clock) if clock.state != BossClockState::Alive => Ok(BossClockClaim::Waiting(clock)),
+                        _ => Ok(BossClockClaim::Unchanged),
+                    }
+                }
+                other => other,
+            };
+            if result.is_ok() { commit_semantic_transaction(tx,deadline).await?; }
+            Ok(result)
+        })).await?
+    }
+}
+
+/// Called only after the corpse receipt's replay check and current-generation check.
+/// A failure rolls the corpse and clock back together; replay returns before this call.
+pub(crate) async fn advance_death_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    key: &BossClockKey,
+    generation: ScopeOwnershipGeneration,
+    cycle: u64,
+    policy: oteryn_gameplay_content::content::BossPolicy,
+) -> Result<()> {
+    policy
+        .validate()
+        .map_err(|_| BossClockError::InvalidInput)?;
+    let clock = read_clock(tx, key)
+        .await?
+        .ok_or(BossClockError::MissingClock)?;
+    if clock.state != BossClockState::Alive
+        || clock.owner_generation != Some(generation)
+        || clock.cycle != cycle
+    {
+        return Err(BossClockError::AuthorityRejected);
+    }
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint")
+            .fetch_one(&mut **tx)
+            .await?;
+    let next = match policy {
+        oteryn_gameplay_content::content::BossPolicy::Respawn { min_s, max_s } => {
+            plan_respawn_death(key, &clock, now, min_s, max_s)?
+        }
+        oteryn_gameplay_content::content::BossPolicy::AtReset { .. } => plan_reset_death(&clock)?,
+    };
+    if !compare_and_set_clock(tx, key, &clock, &next).await? {
+        return Err(BossClockError::AuthorityRejected);
+    }
+    Ok(())
+}

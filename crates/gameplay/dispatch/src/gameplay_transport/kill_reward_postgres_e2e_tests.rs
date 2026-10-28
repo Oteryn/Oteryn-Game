@@ -64,6 +64,10 @@ pub(super) fn scenario_with_decay(reconcile: Option<bool>) -> TestResult {
 }
 
 type CharmSamples = Vec<(i64, u32)>;
+type KillScenarioSettings<'a> = (
+    Option<(&'a str, &'a mut CharmSamples)>,
+    Option<oteryn_gameplay_content::content::BossPolicy>,
+);
 
 #[test]
 fn charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_and_dodge()
@@ -111,7 +115,7 @@ fn scenario_with_charms(
     reconcile: Option<bool>,
     charm: Option<(&str, &mut CharmSamples)>,
 ) -> TestResult {
-    scenario_with_creature_charmed(reconcile, false, None, false, false, false, charm)
+    scenario_with_creature_charmed(reconcile, false, None, false, false, false, (charm, None))
 }
 
 pub(super) fn scenario_with_capacity(reconcile: Option<bool>, capacity: bool) -> TestResult {
@@ -225,7 +229,7 @@ fn scenario_with_creature_at_range(
         settle_radiant,
         ranged_spell,
         elemental_area,
-        None,
+        (None, None),
     )
 }
 
@@ -236,8 +240,9 @@ fn scenario_with_creature_charmed(
     settle_radiant: bool,
     ranged_spell: bool,
     elemental_area: bool,
-    charm: Option<(&str, &mut CharmSamples)>,
+    settings: KillScenarioSettings<'_>,
 ) -> TestResult {
+    let (charm, boss_policy) = settings;
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
     run(async |admin| {
@@ -396,9 +401,110 @@ fn scenario_with_creature_charmed(
                     .map_err(debug)?;
             }
         }
-        runtime
-            .realize_native_qualification_spawn(channel_pin, &creature_key, OPEN_RAT)
-            .map_err(debug)?;
+        if let Some(policy) = boss_policy {
+            use crate::durability::boss_encounter::{BossClockClaim, BossClockKey};
+            if matches!(
+                policy,
+                oteryn_gameplay_content::content::BossPolicy::AtReset { .. }
+            ) {
+                sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),'2026-10')")
+                    .bind(id(42).as_slice()).bind([1u8;32].as_slice()).execute(&harness.pool).await?;
+                sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
+                    .bind(id(42).as_slice())
+                    .execute(&harness.pool)
+                    .await?;
+            }
+            sqlx::query("INSERT INTO game_boss_spawn_clocks VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'boss_spawn1_fixture:0',0,1,0,0,NULL)")
+                .bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
+            use oteryn_world_bundle::spawn::{Creature, Direction, Period, Point, Source, Table};
+            let table = Table {
+                creatures: vec![Creature {
+                    key: creature_key.clone(),
+                    period: Period::All,
+                }],
+                sources: vec![Source {
+                    key: "boss_spawn1_fixture".into(),
+                    floor: 7,
+                    x: 1,
+                    y: 11,
+                    points: vec![Point {
+                        creature: 0,
+                        x: 1,
+                        y: 11,
+                        direction: Direction::North,
+                        respawn_ms: 0,
+                        boss_policy: Some(policy),
+                    }],
+                }],
+            };
+            let boss_world = crate::map::boot::tests::door_world()?.with_spawns_for_test(table);
+            let spawns = boss_world
+                .boss_spawns()
+                .into_iter()
+                .map(
+                    |(key, creature, (x, y, floor), policy)| crate::foundation::BossSpawn {
+                        key,
+                        creature,
+                        position: MovementLocalPosition { x, y, floor },
+                        policy,
+                        actor: None,
+                        cycle: 0,
+                        pending_claim: false,
+                    },
+                )
+                .collect();
+            runtime.configure_boss_spawns(spawns).map_err(debug)?;
+            let claim = harness
+                .root
+                .activate_boss_clock(
+                    &authority,
+                    &harness.node,
+                    BossClockKey {
+                        world,
+                        channel,
+                        spawn: "boss_spawn1_fixture:0".into(),
+                    },
+                    runtime.binding().scope_generation(),
+                    policy,
+                )
+                .await?;
+            let BossClockClaim::Claimed(clock) = claim else {
+                return Err("DUE boss not claimed".into());
+            };
+            let before = runtime.read_actor_position(actor).map_err(debug)?;
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(before, OPEN_RAT)
+                .map_err(debug)?;
+            assert!(
+                runtime
+                    .realize_boss_spawn("boss_spawn1_fixture:0", clock.cycle)
+                    .map_err(debug)?
+                    .is_none(),
+                "an occupied tile retains the committed claim"
+            );
+            assert!(runtime.boss_spawns()[0].pending_claim);
+            let before = runtime.read_actor_position(actor).map_err(debug)?;
+            runtime
+                .borrow_movement_position()
+                .commit_cardinal(before, OPEN_PLAYER)
+                .map_err(debug)?;
+            assert!(
+                runtime
+                    .realize_boss_spawn("boss_spawn1_fixture:0", clock.cycle)
+                    .map_err(debug)?
+                    .is_some()
+            );
+            assert!(
+                runtime
+                    .realize_boss_spawn("boss_spawn1_fixture:0", clock.cycle)
+                    .is_err()
+            );
+        } else {
+            runtime
+                .realize_native_qualification_spawn(channel_pin, &creature_key, OPEN_RAT)
+                .map_err(debug)?;
+        }
         if ranged_spell {
             // Unrelated committed sessions must not turn the single target cast into
             // an oversized area roster. They have no spell state or attack eligibility.
@@ -412,6 +518,14 @@ fn scenario_with_creature_charmed(
                     .initialize_first_entry_position(extra)
                     .map_err(debug)?;
             }
+        }
+        if boss_policy.is_some() {
+            let boss = runtime.boss_spawns()[0].actor.ok_or("boss actor")?;
+            assert_eq!(
+                runtime.creature_spawn_cell(boss),
+                Some(OPEN_RAT),
+                "boss AI retains its authored home without an ordinary respawn source"
+            );
         }
         let rat = {
             let creature = runtime
@@ -992,6 +1106,12 @@ fn scenario_with_creature_charmed(
         );
         assert_eq!(xp_receipts(&harness).await?, 0);
 
+        if boss_policy.is_some() {
+            owner
+                .boss_spawn_pass(&mut std::collections::BTreeMap::new())
+                .await
+                .map_err(debug)?;
+        }
         // The target is held (attacking state), then the real owner pass swings until the rat
         // dies; each pass is one swing interval later on the owner clock.
         {
@@ -1116,7 +1236,7 @@ fn scenario_with_creature_charmed(
         assert_eq!(xp_receipts(&harness).await?, 0);
         assert_eq!(corpse_receipts(&harness).await?, 0);
 
-        let replay = if settle_radiant {
+        let replay = if settle_radiant || boss_policy.is_some() {
             let attack = owner.states.attack.lock().await;
             let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
                 attack.kills().take(session, 2)
@@ -1127,6 +1247,29 @@ fn scenario_with_creature_charmed(
             let replay = (entry.facts, entry.target, entry.activity_observed_at);
             taken.requeue();
             Some(replay)
+        } else {
+            None
+        };
+        if boss_policy.is_some() {
+            let held = owner.root.try_issue_semantic_pass().map_err(debug)?;
+            assert!(
+                !owner
+                    .boss_spawn_pass(&mut std::collections::BTreeMap::new())
+                    .await
+                    .map_err(debug)?,
+                "holder contention defers the pass before transaction start"
+            );
+            owner.runtime.lock().await.owner_fence().map_err(debug)?;
+            drop(held);
+        }
+        let boss_death_lower = if boss_policy.is_some() {
+            Some(
+                sqlx::query_scalar::<_, i64>(
+                    "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+                )
+                .fetch_one(&harness.pool)
+                .await?,
+            )
         } else {
             None
         };
@@ -1217,6 +1360,31 @@ fn scenario_with_creature_charmed(
             )
             .await?;
         }
+        if let Some(policy) = boss_policy {
+            let row: (String,i16,Option<i64>,Option<String>) = sqlx::query_as("SELECT cycle::text,state,due_at,owner_generation::text FROM game_boss_spawn_clocks WHERE spawn_key='boss_spawn1_fixture:0'")
+                .fetch_one(&harness.pool).await?;
+            assert_eq!(row.0, "1", "one committed death despite reward replay");
+            assert!(row.3.is_none());
+            match policy {
+                oteryn_gameplay_content::content::BossPolicy::Respawn { min_s, max_s } => {
+                    assert_eq!(row.1, 1);
+                    let now: i64 = sqlx::query_scalar(
+                        "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+                    )
+                    .fetch_one(&harness.pool)
+                    .await?;
+                    assert!(
+                        (boss_death_lower.ok_or("death lower bound")? + (min_s as i64) * 1000
+                            ..=now + (max_s as i64) * 1000)
+                            .contains(&row.2.ok_or("due time")?)
+                    );
+                }
+                oteryn_gameplay_content::content::BossPolicy::AtReset { .. } => {
+                    assert_eq!(row.1, 3);
+                    assert!(row.2.is_none());
+                }
+            }
+        }
         let children = if capacity {
             super::summer_corpse_capacity::qualify(&mut owner, &harness).await?
         } else {
@@ -1255,4 +1423,48 @@ async fn corpse_receipts(harness: &Harness) -> TestResult<i64> {
     .bind(crate::durability::item_mint::CORPSE_MATERIALIZATION_PURPOSE_KEY)
     .fetch_one(&harness.pool)
     .await?)
+}
+
+#[test]
+fn boss_spawn1_respawn_death_and_replay_through_real_dispatch_postgres() -> TestResult {
+    scenario_thread::run("boss-spawn1-respawn", || {
+        scenario_with_creature_charmed(
+            None,
+            false,
+            None,
+            false,
+            false,
+            false,
+            (
+                None,
+                Some(oteryn_gameplay_content::content::BossPolicy::Respawn {
+                    min_s: 30,
+                    max_s: 60,
+                }),
+            ),
+        )
+    })
+}
+
+#[test]
+fn boss_spawn1_at_reset_death_and_replay_through_real_dispatch_postgres() -> TestResult {
+    scenario_thread::run("boss-spawn1-at-reset", || {
+        scenario_with_creature_charmed(
+            None,
+            false,
+            None,
+            false,
+            false,
+            false,
+            (
+                None,
+                Some(oteryn_gameplay_content::content::BossPolicy::AtReset {
+                    chance: oteryn_gameplay_content::content::BossChance {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                }),
+            ),
+        )
+    })
 }

@@ -1073,3 +1073,116 @@ fn boss_cooldown_atomic_group_replay_and_compensation_postgres() -> TestResult {
         result
     })
 }
+
+#[test]
+fn boss_spawn1_activation_reset_and_channel_independence_postgres() -> TestResult {
+    use crate::durability::runtime_scope_assignment as native;
+    let Some(admin) = native_fixture::configured_admin() else {
+        return Ok(());
+    };
+    native_fixture::runtime()?.block_on(async move {
+        let h = native_fixture::Harness::create(admin,"boss_spawn1",false).await?;
+        let result: TestResult = async {
+            let seal = h.recovery.seal_current().map_err(|e| format!("{e:?}"))?;
+            let authority = h.root.open_character_authority(&seal).await.map_err(|e| format!("{e:?}"))?;
+            let key = key();
+            let respawn = oteryn_gameplay_content::content::BossPolicy::Respawn { min_s:10,max_s:20 };
+            use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
+            let (controller,pin)=crate::content::native_gameplay::test_support::activated_loop_monster(key.world,false);
+            let active=controller.active().ok_or("active content")?;
+            let native_content=active.native_gameplay().ok_or("native content")?;
+            let make_runtime=|assignment: &native::RuntimeScopeAssignment| -> std::result::Result<crate::foundation::ChannelRuntimeV1,Box<dyn std::error::Error>> {
+                let content_pin=crate::content::channel_content_pin::ChannelContentPin::from_activation(
+                    key.world,pin.activation_sequence(),active.identity().server_artifact_digest(),active.identity().client_artifact_digest(),
+                    pin.frame_binding().digest(),pin.qualified_room().map_revision_digest(),(2,12,-7));
+                let mut runtime=crate::foundation::ChannelRuntimeV1::from_committed_assignment(
+                    key.world,key.channel,h.node.fact().node_id(),h.node.fact().registration_revision(),
+                    assignment.ownership_generation,assignment.source_revision,&assignment.decision_identity,4,content_pin).map_err(|e|format!("{e:?}"))?;
+                native_content.install_companion_policies(&mut runtime)?;
+                runtime.configure_boss_spawns(vec![crate::foundation::BossSpawn {
+                    key:key.spawn.clone(),creature:"oteryn:creature.rat".into(),
+                    position:crate::foundation::MovementLocalPosition { x:2,y:12,floor:-7 },
+                    policy:respawn,actor:None,cycle:0,pending_claim:false,
+                }]).map_err(|e|format!("{e:?}"))?;
+                Ok(runtime)
+            };
+
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(1),respawn).await?,BossClockClaim::Waiting(_)));
+            let mut tx = h.pool.begin().await?;
+            let initial = read_clock(&mut tx,&key).await?.ok_or("initial clock")?;
+            assert_eq!(initial.state,BossClockState::Due);
+            let now: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint").fetch_one(&mut *tx).await?;
+            assert!((now+9000..=now+20000).contains(&initial.due_at_unix_ms.ok_or("first timer")?));
+            tx.rollback().await?;
+            sqlx::query("UPDATE game_boss_spawn_clocks SET due_at=0").execute(&h.pool).await?;
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(1),respawn).await?,BossClockClaim::Claimed(_)));
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(1),respawn).await?,BossClockClaim::Unchanged);
+            let first_assignment=h.root.read_runtime_scope_assignment(native_fixture::scope()?).await.map_err(|e|format!("{e:?}"))?.ok_or("first assignment")?;
+            let mut first_runtime=make_runtime(&first_assignment)?;
+            let first_actor=first_runtime.realize_boss_spawn(&key.spawn,0).map_err(|e|format!("{e:?}"))?.ok_or("first actor")?;
+            let full=first_runtime.companion_snapshot(first_actor).map_err(|e|format!("{e:?}"))?.maximum_health;
+            first_runtime.set_test_creature_health(first_actor,1).map_err(|e|format!("{e:?}"))?;
+
+            // A separately assigned channel gets its own initial timer, independent of ALIVE.
+            let mut other = key.clone();other.channel=ChannelId::decode(&id(44))?;
+            sqlx::query("INSERT INTO game_control_scope_grants SELECT session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,operation FROM unnest(ARRAY[1,2,3]::smallint[]) AS operation")
+                .bind(other.world.as_bytes().as_slice()).bind(other.channel.as_bytes().as_slice()).execute(&h.pool).await?;
+            let outcome=h.writer.submit(&native::AssignmentRequest {
+                operation_key:native::OperationKey::from_bytes([91;32]),
+                actor:native::ControlActor::new("oteryn_test_admin").map_err(|e| format!("{e:?}"))?,
+                command:native::AssignmentCommand::Assign {
+                    scope:crate::foundation::RuntimeScopeRefV1::channel(other.world,other.channel),
+                    target:h.node.fact(),
+                },
+            }).await.map_err(|e| format!("{e:?}"))?;
+            assert!(matches!(outcome,native::AssignmentOutcome::Committed(_)));
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,other.clone(),generation(1),respawn).await?,BossClockClaim::Waiting(_)));
+            let mut tx=h.pool.begin().await?;
+            assert_eq!(read_clock(&mut tx,&key).await?.ok_or("first")?.state,BossClockState::Alive);
+            assert_eq!(read_clock(&mut tx,&other).await?.ok_or("second")?.state,BossClockState::Due);
+            tx.rollback().await?;
+            // The native assignment writer ends generation 1 before recovery can claim ALIVE.
+            let scope=native_fixture::scope()?;
+            let predecessor=h.root.read_runtime_scope_predecessor(scope).await.map_err(|e| format!("{e:?}"))?.ok_or("predecessor")?;
+            h.writer.submit(&native::AssignmentRequest {
+                operation_key:native::OperationKey::from_bytes([92;32]),
+                actor:native::ControlActor::new("oteryn_test_admin").map_err(|e| format!("{e:?}"))?,
+                command:native::AssignmentCommand::Replace { scope,predecessor,target:h.node.fact() },
+            }).await.map_err(|e| format!("{e:?}"))?;
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(2),respawn).await?,BossClockClaim::Claimed(_)));
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,key.clone(),generation(2),respawn).await?,BossClockClaim::Unchanged);
+            let new_assignment=h.root.read_runtime_scope_assignment(native_fixture::scope()?).await.map_err(|e|format!("{e:?}"))?.ok_or("new assignment")?;
+            let mut restarted=make_runtime(&new_assignment)?;
+            let recovered=restarted.realize_boss_spawn(&key.spawn,0).map_err(|e|format!("{e:?}"))?.ok_or("recovered actor")?;
+            assert_eq!(restarted.companion_snapshot(recovered).map_err(|e|format!("{e:?}"))?.health,full,"ended owner loses fight state and recovers full health");
+            assert!(restarted.realize_boss_spawn(&key.spawn,0).is_err(),"one actor in the recovered generation");
+
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),'2026-10')")
+                .bind(key.world.as_bytes().as_slice()).bind([1u8;32].as_slice()).execute(&h.pool).await?;
+            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)").bind(key.world.as_bytes().as_slice()).execute(&h.pool).await?;
+            let yes=oteryn_gameplay_content::content::BossPolicy::AtReset { chance:oteryn_gameplay_content::content::BossChance { numerator:1,denominator:1 } };
+            let mut reset_key=key.clone();reset_key.spawn="boss_spawn1.reset".into();
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),generation(2),yes).await?,BossClockClaim::Claimed(_)));
+            let mut tx=h.pool.begin().await?;
+            advance_death_in_transaction(&mut tx,&reset_key,generation(2),0,yes).await?;
+            tx.commit().await?;
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),generation(2),yes).await?,BossClockClaim::Waiting(BossClock { state:BossClockState::Inactive,.. })),"INACTIVE stays inactive in the same epoch");
+            sqlx::query("INSERT INTO game_world_reset_epochs SELECT world_id,1,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,clock_timestamp(),reset_month FROM game_world_reset_epochs WHERE reset_epoch=0").execute(&h.pool).await?;
+            sqlx::query("UPDATE game_world_reset_active SET reset_epoch=1").execute(&h.pool).await?;
+            assert!(matches!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),generation(2),yes).await?,BossClockClaim::Claimed(_)));
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,reset_key.clone(),generation(2),yes).await?,BossClockClaim::Unchanged,"one draw and installation per epoch");
+            let half=oteryn_gameplay_content::content::BossPolicy::AtReset { chance:oteryn_gameplay_content::content::BossChance { numerator:1,denominator:2 } };
+            let mut failed=key.clone();
+            for ordinal in 0..1000 {
+                failed.spawn=format!("boss_spawn1.failed.{ordinal}");
+                if oteryn_gameplay_domain::domain::uniform_draw::uniform_draw(draw(&failed,1,"boss_at_reset")?,0,1)==1 { break; }
+            }
+            let first=h.root.activate_boss_clock(&authority,&h.node,failed.clone(),generation(2),half).await?;
+            assert!(matches!(first,BossClockClaim::Waiting(BossClock { state:BossClockState::Inactive,.. })),"a failed nonzero chance draw remains inactive");
+            assert_eq!(h.root.activate_boss_clock(&authority,&h.node,failed,generation(2),yes).await?,first,"same epoch is never redrawn, even if content chance changes");
+            Ok(())
+        }.await;
+        h.cleanup().await?;
+        result
+    })
+}

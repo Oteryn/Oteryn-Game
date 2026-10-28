@@ -390,10 +390,22 @@ pub fn realize_spawns(
         }
         let mut points = Vec::with_capacity(source.points.len());
         for point in &source.points {
+            if let Some(creature) = families.creatures.get(&point.creature)
+                && point.boss_policy.is_some()
+                && (!creature.boss || creature.encounter_bound)
+            {
+                return Err(Error::Format(
+                    "boss policy requires an open-world boss".into(),
+                ));
+            }
             let (x, y, z) = point.cell;
             let reason = match families.creatures.get(&point.creature) {
                 None => Some(SpawnReason::UnboundCreature),
-                Some(creature) if creature.boss => Some(SpawnReason::Boss),
+                Some(creature) if creature.boss && point.boss_policy.is_none() => {
+                    return Err(Error::Format(
+                        "boss spawn requires a scheduling policy".into(),
+                    ));
+                }
                 Some(creature) if creature.encounter_bound => Some(SpawnReason::EncounterBound),
                 Some(creature) => {
                     let cell = facts.get(&point.cell).copied().unwrap_or_default();
@@ -468,6 +480,7 @@ pub fn realize_spawns(
                 y: point.cell.1,
                 direction: point.direction,
                 respawn_ms: point.respawn_ms,
+                boss_policy: point.boss_policy,
             });
         }
         report.realized_points += list.len();

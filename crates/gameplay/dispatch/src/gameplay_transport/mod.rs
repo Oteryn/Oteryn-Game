@@ -372,11 +372,14 @@ pub enum GameplayServeError {
     InvalidLimits,
     /// The TLS material cannot form a TLS 1.3 server configuration.
     InvalidTls(rustls::Error),
+    /// Boss activation or an owner timer failed closed; this generation cannot serve.
+    OwnerUnavailable,
 }
 
 impl std::fmt::Display for GameplayServeError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::OwnerUnavailable => formatter.write_str("gameplay owner unavailable"),
             Self::InvalidLimits => formatter.write_str("invalid gameplay listener limits"),
             Self::InvalidTls(error) => write!(formatter, "invalid gameplay TLS material: {error}"),
         }

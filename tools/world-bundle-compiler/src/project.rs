@@ -92,6 +92,7 @@ pub struct SpawnPoint {
     pub cell: LegacyPosition,
     pub direction: Direction,
     pub respawn_ms: u32,
+    pub boss_policy: Option<spawn::BossPolicy>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -290,7 +291,10 @@ struct PointRecord {
     cell: Cell,
     creature: String,
     direction: String,
+    #[serde(default)]
     respawn_ms: u32,
+    #[serde(default)]
+    boss_policy: Option<spawn::BossPolicy>,
 }
 
 #[derive(Deserialize)]
@@ -361,7 +365,14 @@ impl Families {
                         record.identity.key
                     )));
                 }
-                if !(spawn::MIN_RESPAWN_MS..=spawn::MAX_RESPAWN_MS).contains(&point.respawn_ms) {
+                if let Some(policy) = point.boss_policy {
+                    policy.validate()?;
+                    if point.respawn_ms != 0 {
+                        return Err(format("boss spawn uses ordinary respawn_ms"));
+                    }
+                } else if !(spawn::MIN_RESPAWN_MS..=spawn::MAX_RESPAWN_MS)
+                    .contains(&point.respawn_ms)
+                {
                     return limit("respawn delay outside CREATUREAI0-RL-13");
                 }
                 let direction = direction(&point.direction)?;
@@ -370,6 +381,7 @@ impl Families {
                     cell: (point.cell.x, point.cell.y, point.cell.floor),
                     direction,
                     respawn_ms: point.respawn_ms,
+                    boss_policy: point.boss_policy,
                 });
             }
             self.spawns.push(SpawnSource {

@@ -52,12 +52,137 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return RespawnExit::Shutdown;
             }
         }
-        drive(
-            self.runtime,
-            &MonotonicRespawnWake::from_origin(self.clock_origin),
-            shutdown,
-        )
+        let ordinary = async {
+            drive(
+                self.runtime,
+                &MonotonicRespawnWake::from_origin(self.clock_origin),
+                shutdown,
+            )
+            .await
+        };
+        tokio::pin!(ordinary);
+        let bosses = self.run_boss_spawns(shutdown);
+        tokio::pin!(bosses);
+        std::future::poll_fn(|cx| {
+            if let std::task::Poll::Ready(exit) = bosses.as_mut().poll(cx) {
+                return std::task::Poll::Ready(exit);
+            }
+            ordinary.as_mut().poll(cx)
+        })
         .await
+    }
+
+    pub(super) async fn boss_spawn_pass(
+        &self,
+        timers: &mut std::collections::BTreeMap<String, Option<tokio::time::Instant>>,
+    ) -> Result<bool, RespawnExit> {
+        use crate::durability::boss_encounter::{BossClockClaim, BossClockError, BossClockKey};
+        let mut checked_all = true;
+        let (binding, spawns) = {
+            let runtime = self.runtime.lock().await;
+            runtime.owner_fence().map_err(|_| RespawnExit::StaleOwner)?;
+            (runtime.binding(), runtime.boss_spawns().to_vec())
+        };
+        for spawn in spawns {
+            if timers
+                .get(&spawn.key)
+                .is_some_and(|due| due.is_none_or(|due| due > tokio::time::Instant::now()))
+            {
+                continue;
+            }
+            if let Some(actor) = spawn.actor {
+                let runtime = self.runtime.lock().await;
+                if runtime.companion_snapshot(actor).is_ok() {
+                    continue;
+                }
+            }
+            if spawn.pending_claim {
+                let mut runtime = self.runtime.lock().await;
+                if runtime.binding() != binding
+                    || runtime.realize_boss_spawn(&spawn.key, spawn.cycle).is_err()
+                {
+                    runtime.retire_owner_cycle();
+                    return Err(RespawnExit::StaleOwner);
+                }
+                continue;
+            }
+            let key = BossClockKey {
+                world: binding.world_id(),
+                channel: binding.channel_id(),
+                spawn: spawn.key.clone(),
+            };
+            let outcome = self
+                .root
+                .activate_boss_clock(
+                    self.character,
+                    self.holder,
+                    key,
+                    binding.scope_generation(),
+                    spawn.policy,
+                )
+                .await;
+            match outcome {
+                Ok(BossClockClaim::Claimed(clock)) => {
+                    let mut runtime = self.runtime.lock().await;
+                    if runtime.binding() != binding
+                        || runtime.realize_boss_spawn(&spawn.key, clock.cycle).is_err()
+                    {
+                        runtime.retire_owner_cycle();
+                        return Err(RespawnExit::StaleOwner);
+                    }
+                }
+                Ok(BossClockClaim::Waiting(clock)) => {
+                    let due = clock.due_at_unix_ms.and_then(|due| {
+                        let now = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .ok()?;
+                        let delay = (due as u128).saturating_sub(now.as_millis());
+                        tokio::time::Instant::now().checked_add(std::time::Duration::from_millis(
+                            u64::try_from(delay).ok()?,
+                        ))
+                    });
+                    timers.insert(spawn.key, due);
+                }
+                Ok(BossClockClaim::Unchanged | BossClockClaim::CompareFailed) => {}
+                Err(BossClockError::Unavailable(
+                    crate::durability::DurabilityError::RootUnavailable,
+                )) => {
+                    // This operation emits RootUnavailable at pass acquisition, before
+                    // any transaction begins. Normal holder contention is safe to retry.
+                    checked_all = false;
+                }
+                Err(_) => {
+                    // A commit can be uncertain. End this owner rather than inventing
+                    // a second installation from an ALIVE row of the same generation.
+                    self.runtime.lock().await.retire_owner_cycle();
+                    return Err(RespawnExit::StaleOwner);
+                }
+            }
+        }
+        Ok(checked_all)
+    }
+
+    async fn run_boss_spawns(&self, shutdown: &CancellationToken) -> RespawnExit {
+        // Portable database deadlines become process-local owner timers. An INACTIVE
+        // clock is parked for this owner; a new reset drains and replaces the owner.
+        let mut timers = std::collections::BTreeMap::<String, Option<tokio::time::Instant>>::new();
+        loop {
+            let pass = self.boss_spawn_pass(&mut timers);
+            match stopping_first(pass, shutdown).await {
+                None => return RespawnExit::Shutdown,
+                Some(Err(exit)) => return exit,
+                Some(Ok(_)) => {}
+            }
+            if stopping_first(
+                tokio::time::sleep(std::time::Duration::from_secs(1)),
+                shutdown,
+            )
+            .await
+            .is_none()
+            {
+                return RespawnExit::Shutdown;
+            }
+        }
     }
 }
 

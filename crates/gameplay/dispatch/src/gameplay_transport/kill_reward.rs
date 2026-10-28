@@ -598,6 +598,11 @@ pub fn record_creature_kill(
     let pin = runtime.content_pin();
     let hex = |bytes: [u8; 32]| bytes.iter().map(|b| format!("{b:02x}")).collect::<String>();
     let ground = DeathGroundContext {
+        boss_spawn: runtime
+            .boss_spawns()
+            .iter()
+            .find(|s| s.actor == Some(target))
+            .map(|s| (s.key.clone(), s.cycle, s.policy)),
         map_revision: format!("sha256:{}", hex(pin.map_revision_digest())),
         content_revision: format!("sha256:{}", hex(pin.server_artifact_digest())),
         ruleset_revision: crate::interaction_chest_use::entry_chest::RULESET_REVISION.into(),

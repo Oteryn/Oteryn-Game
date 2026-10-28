@@ -29,6 +29,7 @@ IMPORT = ROOT / "imports/crystalserver/summer-update"
 XML = IMPORT / "raw/data-global/world/world-monster.xml"
 HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
 HELD_SHA256 = "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57"
+BOSSES = Path(__file__).with_name("boss-spawns.json")
 FRAME = "global-target-2026-09-27"
 SHARD_SIZE = 2000
 SOURCE = {
@@ -72,6 +73,13 @@ def convert(xml: bytes) -> dict[str, str]:
     held_records = json.loads(held_bytes)["records"]
     held = {r["source_group_ordinal"] for r in held_records}
     known, seen, records = creature_keys(), {}, []
+    boss_keys = set()
+    for path in sorted(CREATURES.glob("creatures-*.json")):
+        for record in json.loads(path.read_text())["records"]:
+            details = record["authoring"]["profile"]["details"]
+            if details.get("bosstiary") is not None or details["system_eligibility"]["reward_boss"]:
+                boss_keys.add(record["definition"]["identity"]["key"])
+    held_bosses = []
     for ordinal, element in enumerate(ET.fromstring(xml)):
         cx, cy, cz = (int(element.get(k)) for k in ("centerx", "centery", "centerz"))
         base = f"oteryn:spawn.x{cx}_y{cy}_z{cz}"
@@ -96,6 +104,16 @@ def convert(xml: bytes) -> dict[str, str]:
                     "respawn_ms": int(point.get("spawntime")) * 1000,
                 }
             )
+        live_points = []
+        for point in points:
+            if point["creature"] in boss_keys:
+                held_bosses.append({"source": key, "point": point,
+                                    "reason": "boss scheduling policy not yet qualified"})
+            else:
+                live_points.append(point)
+        points = live_points
+        if not points:
+            continue
         records.append(
             {
                 "declaration": {
@@ -111,6 +129,21 @@ def convert(xml: bytes) -> dict[str, str]:
         name = f"spawns-{start:05d}-{start + len(part) - 1:05d}.json"
         shards.append(f"content/world/spawns/{name}")
         files[name] = dump({"coordinate_frame": FRAME, "family": "Spawn.Source", "records": part})
+    bosses_bytes = BOSSES.read_bytes()
+    bosses = json.loads(bosses_bytes)
+    if bosses["family"] != "Spawn.Source" or bosses["coordinate_frame"] != FRAME:
+        sys.exit("boss spawn authoring family or frame mismatch")
+    for record in bosses["records"]:
+        for point in record["declaration"]["points"]:
+            if point["creature"] not in known or "boss_policy" not in point or "respawn_ms" in point:
+                sys.exit("boss spawn must bind an admitted creature and only a boss policy")
+    held_name = "held-bosses.json"
+    files[held_name] = dump({"family": "Held.Spawn.Point", "coordinate_frame": FRAME,
+                             "records": held_bosses, "source": SOURCE})
+    boss_name = "spawns-boss-spawn1.json"
+    files[boss_name] = dump(bosses)
+    shards.append(f"content/world/spawns/{boss_name}")
+    all_records = records + bosses["records"]
     files["index.json"] = dump(
         {
             "coordinate_frame": FRAME,
@@ -122,13 +155,19 @@ def convert(xml: bytes) -> dict[str, str]:
                 "point_count": sum(r["point_count"] for r in held_records),
                 "sha256": HELD_SHA256,
             },
+            "held_bosses": {"path": f"content/world/spawns/{held_name}",
+                            "point_count": len(held_bosses),
+                            "sha256": hashlib.sha256((files[held_name]+"\n").encode()).hexdigest()},
             "population_state": "POPULATED",
-            "point_count": sum(len(r["declaration"]["points"]) for r in records),
-            "record_count": len(records),
+            "point_count": sum(len(r["declaration"]["points"]) for r in all_records),
+            "record_count": len(all_records),
             "schema": "OTERYN_FAMILY_INDEX/v1",
             "shard_size": SHARD_SIZE,
             "shards": shards,
             "source": SOURCE,
+            "additional_sources": [{"path": "tools/world-bundle-compiler/boss-spawns.json",
+                                    "sha256": hashlib.sha256(bosses_bytes).hexdigest(),
+                                    "record_count": len(bosses["records"])}],
         }
     )
     return {name: text + "\n" for name, text in files.items()}
