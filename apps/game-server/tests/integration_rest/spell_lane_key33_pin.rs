@@ -398,7 +398,7 @@ fn guarded_cast_writers_reserve_in_s_and_release_a_definite_rejection() {
         ),
         (
             "../../crates/gameplay/dispatch/src/gameplay_transport/world_item_cast.rs",
-            "Rejected(WORLD_ITEM_NEW_GRANT_REFUSED)|items::SpellItemError::FieldCapabilityRefused)=>{",
+            "Rejected(WORLD_ITEM_NEW_GRANT_REFUSED|\"no equipped main backpack\"|\"backpack capacity exceeded\")|items::SpellItemError::FieldCapabilityRefused)=>{",
             &[
                 "release_definitely_uncommitted_spell_batch(&attempt.physical)",
                 ".release_definitely_uncommitted(&attempt.presentation)",
