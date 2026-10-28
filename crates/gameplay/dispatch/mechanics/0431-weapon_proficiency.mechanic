@@ -1,0 +1,8 @@
+name=weapon_proficiency
+commands=480,481,482,483
+transport=pub weapon_proficiency
+composed=weapon_proficiency
+authority=weapon_proficiency
+offer=43,weapon_proficiency::offered,weapon_proficiency_available
+[route]
+routing::weapon_proficiency::route(authority, &session.admitted, command).await

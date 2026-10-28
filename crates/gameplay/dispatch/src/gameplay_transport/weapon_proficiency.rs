@@ -21,6 +21,119 @@ use oteryn_gameplay_domain::domain::weapon_proficiency::{
 };
 use sha2::{Digest, Sha256};
 
+use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
+use oteryn_protocol_oteryn::weapon_proficiency as wire;
+
+pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
+    let mut result: Vec<_> = base
+        .iter()
+        .copied()
+        .filter(|entry| entry.id != wire::CAPABILITY_WEAPON_PROFICIENCY_V1)
+        .collect();
+    if available {
+        let at = result.partition_point(|entry| entry.id < wire::CAPABILITY_WEAPON_PROFICIENCY_V1);
+        result.insert(
+            at,
+            OfferedCapability {
+                id: wire::CAPABILITY_WEAPON_PROFICIENCY_V1,
+                requires: &[],
+            },
+        );
+    }
+    result
+}
+
+macro_rules! authority_methods {
+    () => {
+        fn weapon_proficiency_available(&self) -> bool {
+            false
+        }
+        fn weapon_proficiency_command(
+            &self,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            _request: oteryn_protocol_oteryn::weapon_proficiency::Request,
+        ) -> impl std::future::Future<Output = Option<Vec<u8>>> {
+            async { None }
+        }
+    };
+}
+pub(super) use authority_methods;
+
+macro_rules! composed_methods {
+    () => {
+        fn weapon_proficiency_available(&self) -> bool {
+            self.bundle_map().is_some() && self.proficiency_catalogue.is_some()
+        }
+        async fn weapon_proficiency_command(
+            &self,
+            admitted: connection::AdmittedSession,
+            request: oteryn_protocol_oteryn::weapon_proficiency::Request,
+        ) -> Option<Vec<u8>> {
+            self.weapon_proficiency_wire(admitted, request).await
+        }
+    };
+}
+pub(super) use composed_methods;
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn weapon_proficiency_wire(
+        &self,
+        admitted: AdmittedSession,
+        request: wire::Request,
+    ) -> Option<Vec<u8>> {
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_WEAPON_PROFICIENCY_V1)
+        {
+            return None;
+        }
+        let fence = admitted.item_fence?;
+        if fence.game_session_id != admitted.game_session_id
+            || fence.connection_generation.get() != admitted.continuity.connection_generation
+        {
+            return None;
+        }
+        // WEAPPROF4 step 1 deliberately exposes the inert durable query first. Mutations are
+        // decoded and reach this owner, but remain typed refusals until their atomic writers are
+        // composed in the next step; no partial or session-local mutation is possible.
+        let wire::Request::Query = request else {
+            let revision = match request {
+                wire::Request::Select { track_revision, .. }
+                | wire::Request::Refine { track_revision, .. }
+                | wire::Request::Reshape { track_revision, .. } => track_revision,
+                wire::Request::Query => unreachable!(),
+            };
+            return wire::encode_result(1, revision, &[]);
+        };
+        let catalogue = self.proficiency_catalogue.as_ref()?;
+        let (tracks, _) = self
+            .root
+            .read_character_proficiency_with_definitions(
+                self.character,
+                fence.character_id,
+                None,
+                std::sync::Arc::clone(catalogue)
+                    as std::sync::Arc<
+                        dyn crate::durability::character_proficiency::ProficiencyDefinitions,
+                    >,
+            )
+            .await
+            .ok()?;
+        let tracks = tracks
+            .into_iter()
+            .map(|track| wire::Track {
+                item_key: track.state.item_key().to_owned(),
+                revision: track.committed_character_revision.get(),
+                progress: track.state.progress(),
+                selections: track.state.selections().to_vec(),
+            })
+            .collect::<Vec<_>>();
+        let body = wire::encode_tracks(&tracks)?;
+        wire::encode_result(0, 0, &body)
+    }
+}
+
 /// Immutable production adapter over the promoted proficiency catalogue.
 ///
 /// Construction validates the committed shards and bindings through the content importer.  The

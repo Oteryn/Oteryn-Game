@@ -9,6 +9,14 @@ pub const MAX_WEAPON_PROFICIENCY_PAYLOAD_BYTES: usize = 192;
 pub const MAX_WEAPON_PROFICIENCY_REPLY_BYTES: usize = 8192;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Track {
+    pub item_key: String,
+    pub revision: u64,
+    pub progress: u64,
+    pub selections: Vec<Option<u8>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Request {
     Query,
     Select {
@@ -99,6 +107,58 @@ pub fn encode_result(status: u8, revision: u64, payload: &[u8]) -> Option<Vec<u8
     (out.len() <= MAX_WEAPON_PROFICIENCY_REPLY_BYTES).then_some(out)
 }
 
+/// Encode the bounded query body. Integers are little endian and selections use `0xff` for an
+/// empty level; keeping this codec here prevents the server and native client from inventing
+/// parallel representations.
+pub fn encode_tracks(tracks: &[Track]) -> Option<Vec<u8>> {
+    let mut out = Vec::new();
+    out.extend_from_slice(&u16::try_from(tracks.len()).ok()?.to_le_bytes());
+    for track in tracks {
+        let key = track.item_key.as_bytes();
+        out.push(u8::try_from(key.len()).ok()?);
+        out.extend_from_slice(key);
+        out.extend_from_slice(&track.revision.to_le_bytes());
+        out.extend_from_slice(&track.progress.to_le_bytes());
+        out.push(u8::try_from(track.selections.len()).ok()?);
+        out.extend(
+            track
+                .selections
+                .iter()
+                .map(|choice| choice.unwrap_or(u8::MAX)),
+        );
+    }
+    (out.len() + 9 <= MAX_WEAPON_PROFICIENCY_REPLY_BYTES).then_some(out)
+}
+
+pub fn decode_tracks(mut input: &[u8]) -> Option<Vec<Track>> {
+    let (count, tail) = input.split_at_checked(2)?;
+    input = tail;
+    let count = u16::from_le_bytes(count.try_into().ok()?);
+    let mut tracks = Vec::with_capacity(usize::from(count));
+    for _ in 0..count {
+        let item_key = decode_key(&mut input)?;
+        let (revision, tail) = input.split_at_checked(8)?;
+        let revision = u64::from_le_bytes(revision.try_into().ok()?);
+        let (progress, tail) = tail.split_at_checked(8)?;
+        let progress = u64::from_le_bytes(progress.try_into().ok()?);
+        let (&selection_count, tail) = tail.split_first()?;
+        let (selections, tail) = tail.split_at_checked(usize::from(selection_count))?;
+        input = tail;
+        let selections = selections
+            .iter()
+            .copied()
+            .map(|choice| (choice != u8::MAX).then_some(choice))
+            .collect();
+        tracks.push(Track {
+            item_key,
+            revision,
+            progress,
+            selections,
+        });
+    }
+    input.is_empty().then_some(tracks)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -132,5 +192,15 @@ mod tests {
         ));
         assert!(decode_request(480, &[0]).is_none());
         assert!(encode_result(0, 7, &[0; 8184]).is_none());
+        let tracks = vec![Track {
+            item_key: "oteryn:item.tibia.i3295".into(),
+            revision: 9,
+            progress: 12_345,
+            selections: vec![Some(2), None],
+        }];
+        let encoded = encode_tracks(&tracks);
+        assert!(encoded.is_some());
+        let Some(encoded) = encoded else { return };
+        assert_eq!(decode_tracks(&encoded), Some(tracks));
     }
 }
