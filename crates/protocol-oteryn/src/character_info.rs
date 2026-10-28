@@ -248,4 +248,44 @@ mod tests {
         page.deaths[0].occurred_at_unix_ms = 100 - HISTORY_WINDOW_MS - 1;
         assert!(page.bounded(request, 100).is_none());
     }
+
+    /// PAR-P12: Crystal `game.cpp:323-411` registers 93 titles (ids 1-93); none of the four
+    /// Oteryn titles is among them. The closest Crystal analogues differ in id and lifetime:
+    /// Globetrotter (id 75, "Explored all map areas", not permanent) vs Cartographer, and
+    /// Reigning Drome Champion (id 33, highscore, re-checked) vs Rotation Champion.
+    #[test]
+    fn p12_crystal_title_registry_parity() {
+        let crystal_ids = 1..=93_u16;
+        let oteryn = [
+            CharacterTitle::AdeptArmorer,
+            CharacterTitle::AdeptEnhancer,
+            CharacterTitle::Cartographer,
+            CharacterTitle::RotationChampion,
+        ];
+        // Wire ids overlap Crystal ids 1-4 (Gold/Platinum/Crystal Hoarder, Beaststrider 1),
+        // so the same id names a different title: DIFF.
+        assert!(
+            oteryn
+                .iter()
+                .all(|title| crystal_ids.contains(&(*title as u16)))
+        );
+        assert_eq!(oteryn.len(), 4);
+        let all = TitleFacts {
+            weapon_mastery: true,
+            all_grade_three_mods: true,
+            all_map_areas_discovered: true,
+            rotation_winner: true,
+            next_rotation_unix_ms: Some(10),
+        };
+        // Cartographer is permanent; Crystal Globetrotter is not (DIFF).
+        assert_eq!(
+            qualify(CharacterTitle::Cartographer, all).lifetime,
+            TitleLifetime::Permanent
+        );
+        // Rotation Champion expires at the next rotation, like the Drome highscore title.
+        assert_eq!(
+            qualify(CharacterTitle::RotationChampion, all).lifetime,
+            TitleLifetime::Until(10)
+        );
+    }
 }
