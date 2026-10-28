@@ -28,3 +28,6 @@ mod experience_property_tests;
 
 #[cfg(test)]
 mod mana_training_property_tests;
+
+#[cfg(test)]
+mod regeneration_crystal_parity_tests;

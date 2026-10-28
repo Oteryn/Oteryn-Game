@@ -267,4 +267,123 @@ mod tests {
         assert_eq!(ended.soul_window(), None);
         assert_eq!(zoned(&mut ended, 241, false), 0);
     }
+
+    /// PAR-C10: Crystal `201189f8` soul regeneration as data. `Player:onGainExperience` adds
+    /// `CONDITION_SOUL` (4 min, +1 per `gainsoulticks`) below the maximum soul;
+    /// `ConditionSoul::addCondition` replaces the end and keeps the internal ticks;
+    /// `ConditionSoul::executeCondition` counts each 1 s think and gains outside a protection
+    /// zone; `Condition::executeCondition` removes it once its end time has passed. With
+    /// `final_gain` false the oracle skips a gain on that removing think (see below).
+    struct CrystalSoul {
+        soul: u32,
+        gain_ms: u32,
+        window: Option<(u64, u32)>,
+    }
+
+    impl CrystalSoul {
+        fn kill(&mut self, second: u64) {
+            if self.soul < 100 {
+                let internal = self.window.map_or(0, |(_, internal)| internal);
+                self.window = Some((second + 240, internal));
+            }
+        }
+
+        fn think(&mut self, second: u64, protection_zone: bool, final_gain: bool) -> u32 {
+            if let Some((end, mut internal)) = self.window {
+                internal += 1_000;
+                let removing = end < second;
+                if !protection_zone && internal >= self.gain_ms && (!removing || final_gain) {
+                    internal = 0;
+                    self.soul = (self.soul + 1).min(100);
+                }
+                self.window = (!removing).then_some((end, internal));
+            }
+            self.soul
+        }
+    }
+
+    #[test]
+    fn c10_soul_window_equals_crystal_condition_soul_except_the_removing_think() {
+        let mut seed = 0x2545_f491_u64;
+        let mut next = move |modulus: u64| {
+            seed = seed
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            (seed >> 33) % modulus
+        };
+        for scenario in 0..48 {
+            let fast = scenario % 2 == 1;
+            let start = [0, 50, 99, 100][scenario / 2 % 4];
+            let mut state = actor(start);
+            state.premium_current = fast;
+            let mut crystal = CrystalSoul {
+                soul: start,
+                gain_ms: if fast { 15_000 } else { 120_000 },
+                window: None,
+            };
+            let mut protection_zone = false;
+            for second in 1..1_200 {
+                if next(30) == 0 {
+                    protection_zone = !protection_zone;
+                }
+                let got = zoned(&mut state, second, protection_zone);
+                let expected = crystal.think(second, protection_zone, false);
+                assert_eq!(got, expected, "scenario {scenario}, second {second}");
+                if next(if fast { 400 } else { 60 }) == 0 {
+                    state.change_soul_window(open(fast), second * S);
+                    crystal.kill(second);
+                }
+                if next(150) == 0 {
+                    state.soul = state.soul.saturating_sub(20);
+                    crystal.soul = crystal.soul.saturating_sub(20);
+                }
+            }
+        }
+    }
+
+    /// Recorded divergence: Crystal still gains on the think that removes an expired window
+    /// (`executeCondition` gains before `Condition::executeCondition` checks the end time),
+    /// so a gain held in a protection zone is credited one second after the window ends.
+    /// Oteryn ends the window at 240 s and drops that gain.
+    #[test]
+    fn c10_a_gain_due_on_the_removing_think_is_the_recorded_crystal_divergence() {
+        let mut state = actor(0);
+        state.change_soul_window(open(false), 0);
+        let mut crystal = CrystalSoul {
+            soul: 0,
+            gain_ms: 120_000,
+            window: None,
+        };
+        crystal.kill(0);
+        for second in 1..=240 {
+            assert_eq!(
+                zoned(&mut state, second, second >= 120),
+                crystal.think(second, second >= 120, true)
+            );
+        }
+        assert_eq!(zoned(&mut state, 241, false), 0);
+        assert_eq!(crystal.think(241, false, true), 1);
+    }
+
+    /// Recorded divergence: Crystal and Canary only add the window on a kill whose experience
+    /// reaches the level; a smaller award leaves a running window alone. Oteryn's accepted
+    /// LOOP-VITALS-1 policy closes it (`SoulKillHook::CloseWindow`), as TibiaWiki `Soul Point`
+    /// (Global) describes: a weaker kill prevents the regeneration until a strong one.
+    #[test]
+    fn c10_a_sub_level_kill_closing_the_window_is_the_recorded_crystal_divergence() {
+        let mut state = actor(0);
+        state.change_soul_window(open(false), 0);
+        state.change_soul_window(SoulWindowChange::Close, 60);
+        let mut crystal = CrystalSoul {
+            soul: 0,
+            gain_ms: 120_000,
+            window: None,
+        };
+        crystal.kill(0);
+        for second in 1..=240 {
+            crystal.think(second, false, false);
+        }
+        assert_eq!(cycle(&mut state, 240), 0);
+        assert_eq!(crystal.soul, 2);
+    }
 }

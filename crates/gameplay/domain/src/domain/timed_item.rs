@@ -902,4 +902,57 @@ mod tests {
             1_000 + TIMEDITEM0B_RL_02_AMBIGUOUS_BOUND_MS + 1
         ));
     }
+
+    /// DONOR-F31-1: use the production lane across a stop/checkpoint/reload boundary.
+    /// Actual depot/mail custody is not supported for these items; this qualifies only
+    /// the active-budget accounting used before and after such an inactive interval.
+    #[test]
+    fn active_budget_survives_stop_and_reload_without_reset_or_double_charge() {
+        let mut lane = TimedItemLane::live_from_row(7, values(None, Some(1_000)), 0);
+        lane.advance(250);
+        lane.stop();
+        lane.advance(10_000);
+        let checkpoint = write_of(lane.next_step(10_250, TX1));
+        let stored = values(None, Some(750));
+        assert_eq!(checkpoint.expected_revision, 7);
+        assert_eq!(
+            checkpoint.kind,
+            LaneWriteKind::Checkpoint { values: stored }
+        );
+        lane.on_outcome(LaneWriteOutcome::NotCommitted)
+            .expect("issued");
+        // Retrying a stop must preserve both the snapshot and its idempotency key.
+        assert_eq!(lane.next_step(20_000, TX2), LaneStep::Write(checkpoint));
+        lane.on_outcome(LaneWriteOutcome::Committed)
+            .expect("issued");
+        assert_eq!(lane.revision(), 8);
+        assert_eq!(lane.next_step(20_001, TX2), LaneStep::Stopped);
+        lane.advance(100_000);
+        assert_eq!(lane.live_values(), stored);
+
+        // The durable integration case qualifies the row round trip separately.
+        let mut reloaded = TimedItemLane::live_from_row(8, stored, 500_000);
+        assert_eq!(reloaded.live_values(), stored);
+        assert_eq!(reloaded.next_step(500_000, TX2), LaneStep::Idle);
+        reloaded.advance(749);
+        assert_eq!(reloaded.live_values().remaining_ms(), Some(1));
+        assert_eq!(reloaded.next_step(500_749, TX2), LaneStep::Idle);
+        reloaded.advance(1);
+        let expiry = write_of(reloaded.next_step(500_750, TX2));
+        assert_eq!(expiry.expected_revision, 8);
+        assert_eq!(
+            expiry.kind,
+            LaneWriteKind::Expire {
+                reason: ExpireReason::TimeExhausted
+            }
+        );
+        assert_eq!(reloaded.next_step(500_751, TX1), LaneStep::Write(expiry));
+        reloaded
+            .on_outcome(LaneWriteOutcome::Committed)
+            .expect("issued");
+        for now in [500_751, 600_000, 1_000_000] {
+            reloaded.advance(1_000);
+            assert_eq!(reloaded.next_step(now, TX1), LaneStep::Expired);
+        }
+    }
 }
