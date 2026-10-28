@@ -959,3 +959,51 @@ mod tests {
 #[cfg(test)]
 #[path = "account_achievements_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[cfg(test)]
+mod count_bounds_tests {
+    #[test]
+    fn f26_borrowed_length_bounds() {
+        crate::count_bounds_tests::borrowed_length_bounds(super::read_bytes);
+    }
+}
+
+#[cfg(test)]
+mod string_count_bounds_tests {
+    #![allow(clippy::expect_used)]
+    use super::*;
+
+    #[test]
+    fn f26_each_string_limit_before_copy() {
+        for maximum in [
+            MAX_ACHIEVEMENT_KEY_BYTES,
+            MAX_ACHIEVEMENT_NAME_BYTES,
+            MAX_ACHIEVEMENT_DESCRIPTION_BYTES,
+        ] {
+            for length in [0, 1, maximum, maximum + 1] {
+                let mut input = Vec::new();
+                push_varint(&mut input, length as u64);
+                input.resize(input.len() + length, b'a');
+                let mut cursor = 0;
+                let result = read_string(&input, &mut cursor, maximum);
+                if length > maximum {
+                    assert_eq!(result, Err(AccountAchievementsError::LimitExceeded));
+                } else {
+                    let value = result.expect("supported string");
+                    assert_eq!(value.len(), length);
+                    assert!(value.capacity() <= maximum);
+                }
+            }
+            for length in [maximum as u64 + 1, u64::from(u32::MAX), u64::MAX] {
+                let mut input = Vec::new();
+                push_varint(&mut input, length);
+                let mut cursor = 0;
+                assert_eq!(
+                    read_string(&input, &mut cursor, maximum),
+                    Err(AccountAchievementsError::Malformed)
+                );
+                assert_eq!(cursor, input.len());
+            }
+        }
+    }
+}
