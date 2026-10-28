@@ -192,6 +192,11 @@ fn scenario() -> TestResult {
         else {
             return Err("cast facts".into());
         };
+        assert_eq!(
+            facts.vocation,
+            crate::spell::Vocation::Sorcerer,
+            "permanent promotion does not rewrite the Character's base vocation"
+        );
         {
             let mut runtime = deps.runtime.lock().await;
             runtime
@@ -272,11 +277,10 @@ fn scenario() -> TestResult {
             send(&owner, &mut admitted, &bytes).await?,
             reply(false, 1, points)?
         );
-        let allocated_vitals = owner
+        let (allocated_revision, allocated_vitals) = owner
             .observe_actor_vitals(deps.actor, session)
             .await
-            .ok_or("allocated vitals")?
-            .1;
+            .ok_or("allocated vitals")?;
         assert!(
             allocated_vitals.max_health > facts.max_health
                 || allocated_vitals.max_mana > facts.max_mana,
@@ -287,10 +291,25 @@ fn scenario() -> TestResult {
             reply(false, 1, points)?,
             "receipt replay retains the committed allocation"
         );
+        assert_eq!(
+            owner.observe_actor_vitals(deps.actor, session).await,
+            Some((allocated_revision, allocated_vitals)),
+            "receipt replay does not stack dedication or change vitals"
+        );
         owner.premium_coordinator = Some(&free);
         assert_eq!(
             send(&owner, &mut admitted, &[8, 0]).await?,
             reply(false, 1, points)?
+        );
+        let unpaid_vitals = owner
+            .observe_actor_vitals(deps.actor, session)
+            .await
+            .ok_or("unpaid vitals")?
+            .1;
+        assert_eq!(
+            (unpaid_vitals.max_health, unpaid_vitals.max_mana),
+            (facts.max_health, facts.max_mana),
+            "Premium loss removes dedication without changing the allocation"
         );
         let mut unpaid = request.clone();
         unpaid.occurrence = id(165);
@@ -308,6 +327,16 @@ fn scenario() -> TestResult {
         assert_eq!(
             send(&owner, &mut admitted, &[8, 0]).await?,
             reply(false, 1, points)?
+        );
+        let restored_vitals = owner
+            .observe_actor_vitals(deps.actor, session)
+            .await
+            .ok_or("restored vitals")?
+            .1;
+        assert_eq!(
+            (restored_vitals.max_health, restored_vitals.max_mana),
+            (allocated_vitals.max_health, allocated_vitals.max_mana),
+            "Premium restoration reapplies dedication without relogin"
         );
         let mut invalid = request.clone();
         invalid.occurrence = id(161);
@@ -378,6 +407,16 @@ fn scenario() -> TestResult {
             send(&restarted, &mut admitted, &[8, 0]).await?,
             reply(false, 1, points)?,
             "admission reloads the durable allocation"
+        );
+        let reloaded_vitals = restarted
+            .observe_actor_vitals(deps.actor, session)
+            .await
+            .ok_or("reloaded vitals")?
+            .1;
+        assert_eq!(
+            (reloaded_vitals.max_health, reloaded_vitals.max_mana),
+            (allocated_vitals.max_health, allocated_vitals.max_mana),
+            "reloaded allocation restores dedication in the stats owner"
         );
         reset.occurrence = id(163);
         assert_eq!(

@@ -8,7 +8,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: GameSessionId,
     ) -> bool {
-        let now = self.owner_now().get();
+        // Allocation checks this session's Premium owner too. The spell state's Premium
+        // cache can still be unset at entry or stale until the next spell-access refresh.
+        let premium = self.session_premium_gate(session).await.premium_current();
+        // Promotion is a separate permanent Character fact. Buying it does not replace
+        // the base vocation stored in the build or in the live spell state.
+        let promoted = match self.current_quest_fence(session).await {
+            Ok(Some(fence)) => self
+                .root
+                .read_promotion_for_session(self.character, self.holder, fence.item_fence())
+                .await
+                .unwrap_or(false),
+            _ => false,
+        };
         let runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
         let Some(state) = states.get(&runtime, actor, session) else {
@@ -28,15 +40,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             crate::spell::Vocation::Monk => "monk",
             crate::spell::Vocation::ExaltedMonk => "exalted_monk",
         };
-        let promoted = matches!(
-            facts.vocation,
-            crate::spell::Vocation::ElderDruid
-                | crate::spell::Vocation::MasterSorcerer
-                | crate::spell::Vocation::EliteKnight
-                | crate::spell::Vocation::RoyalPaladin
-                | crate::spell::Vocation::ExaltedMonk
-        );
-        let premium = state.hunting_premium_current(now);
         let bonuses = self
             .wheel_stat_bonuses(session, vocation, facts.level, promoted, premium)
             .unwrap_or_default();
