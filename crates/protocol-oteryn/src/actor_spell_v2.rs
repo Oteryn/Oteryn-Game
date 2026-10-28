@@ -500,3 +500,11 @@ mod effect_only_result_tests {
 #[cfg(test)]
 #[path = "actor_spell_v2_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[cfg(test)]
+mod count_bounds_tests {
+    #[test]
+    fn f26_borrowed_length_bounds() {
+        crate::count_bounds_tests::borrowed_length_bounds(super::bytes);
+    }
+}
