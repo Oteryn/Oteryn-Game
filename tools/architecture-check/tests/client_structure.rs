@@ -144,6 +144,27 @@ fn duplicate_unknown_misnamed_missing_and_unsupported_growth_fail() -> Result<()
 }
 
 #[test]
+fn per_mechanic_unsupported_baseline_files_count_once() -> Result<(), String> {
+    let f = Fixture::structure()?;
+    let file = "tools/architecture-check/client-unsupported-baseline.d/0057-cyclopedia-map.json";
+    f.json(file, &json!({"mechanic":"0057-cyclopedia-map"}))?;
+    rejected(&f, "duplicate unsupported baseline entry")?;
+    f.json(
+        "tools/architecture-check/client-unsupported-baseline.json",
+        &json!([]),
+    )?;
+    client_structure::validate(&f.0)?;
+    f.json(file, &json!({"mechanic":"1000-other"}))?;
+    rejected(&f, "unsupported baseline file content")?;
+    f.write(
+        "tools/architecture-check/client-unsupported-baseline.d/0057-cyclopedia-map.txt",
+        "",
+    )?;
+    rejected(&f, "unsupported baseline file")?;
+    Ok(())
+}
+
+#[test]
 fn feature_layout_and_versioned_directory_names_fail() -> Result<(), String> {
     let f = Fixture::structure()?;
     f.write(

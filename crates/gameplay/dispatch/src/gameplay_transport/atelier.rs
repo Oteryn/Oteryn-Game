@@ -14,7 +14,7 @@ pub fn dispatch_atelier(
     state.commit(expected_revision, action)
 }
 
-/// Server commands on the admitted Character owner. Wire allocation remains a separate task.
+/// Server commands on the admitted Character owner, shared by admission and the Wheel wire route.
 pub enum GemBuildCommand<'a> {
     Atelier(crate::durability::character_atelier::AtelierRequest<'a>),
     Wheel(crate::durability::character_wheel::WheelChangeRequest),
@@ -45,6 +45,18 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         command: GemBuildCommand<'_>,
     ) -> Result<GemBuildOutcome, crate::durability::character_progression::CharacterProgressionError>
     {
+        self.commit_wheel_client(session, command, false, None)
+            .await
+    }
+
+    pub(super) async fn commit_wheel_client(
+        &self,
+        session: crate::foundation::GameSessionId,
+        command: GemBuildCommand<'_>,
+        at_temple: bool,
+        expected: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+    ) -> Result<GemBuildOutcome, crate::durability::character_progression::CharacterProgressionError>
+    {
         use crate::durability::character_progression::CharacterProgressionError as Error;
         let ruleset = self.wheel_ruleset.as_ref().ok_or(Error::InvalidInput)?;
         let gate = self.premium_coordinator.ok_or(Error::InvalidInput)?;
@@ -53,6 +65,16 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .await
             .map_err(|_| Error::AuthorityRejected)?
             .ok_or(Error::AuthorityRejected)?;
+        if expected.is_some_and(|expected| {
+            expected.character_id != fence.character_id
+                || expected.game_session_id != fence.game_session_id
+                || expected.connection_generation != fence.connection_generation
+                || expected.character_lease_generation != fence.character_lease_generation
+                || expected.runtime_scope != fence.runtime_scope
+                || expected.scope_ownership_generation != fence.scope_ownership_generation
+        }) {
+            return Err(Error::AuthorityRejected);
+        }
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         // A failed or unknown commit must not leave a usable stale actor projection.
         self.states
@@ -86,7 +108,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     fence,
                     request,
                     std::sync::Arc::clone(ruleset),
-                    crate::durability::character_wheel::WheelChangeFacts { at_temple: false },
+                    crate::durability::character_wheel::WheelChangeFacts { at_temple },
                     gate,
                 )
                 .await?,
