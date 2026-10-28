@@ -44,6 +44,7 @@ mod compiler;
 pub mod creature_attack_geometry;
 pub mod creature_policy;
 pub mod creature_reward;
+pub mod daily_boost;
 pub mod daily_reward;
 mod digest;
 pub mod encounter_map_item;
