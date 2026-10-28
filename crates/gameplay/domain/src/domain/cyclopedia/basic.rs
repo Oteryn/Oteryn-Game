@@ -62,11 +62,27 @@ pub enum MapRefusal {
     InsufficientPool,
 }
 impl BasicArea {
+    /// Digest of the v1 catalogue whose progress representation remains readable by v2.
+    pub const V1_CONTENT_DIGEST: [u8; 32] = [
+        0x53, 0x1e, 0x1f, 0x8e, 0xa4, 0x89, 0xfe, 0xe4, 0xce, 0x6a, 0x52, 0xcb, 0x29, 0x32, 0x19,
+        0xd6, 0xd7, 0xe4, 0xc9, 0x9e, 0x64, 0xfd, 0x5d, 0x67, 0x12, 0x55, 0x03, 0x2c, 0xd6, 0xa3,
+        0xea, 0xf2,
+    ];
+
     pub fn content_digest() -> [u8; 32] {
         Sha256::digest(include_bytes!(
             "../../../../../../content/cyclopedia/basic-area.json"
         ))
         .into()
+    }
+
+    pub fn reads_content_digest(digest: &[u8]) -> bool {
+        digest == Self::content_digest() || digest == Self::V1_CONTENT_DIGEST
+    }
+
+    /// Global reports completed subareas divided by all subareas in the area.
+    pub fn discovery_percent(&self, progress: &MapProgress) -> u8 {
+        u8::from(progress.discovered) * 100
     }
 
     pub fn embedded() -> Option<Self> {
@@ -187,6 +203,25 @@ impl BasicArea {
 mod tests {
     #![allow(clippy::panic)]
     use super::*;
+    #[test]
+    fn catalogue_revision_compatibility_and_area_percentage_are_explicit() {
+        let Some(area) = BasicArea::embedded() else {
+            panic!("authored area")
+        };
+        assert!(BasicArea::reads_content_digest(
+            &BasicArea::V1_CONTENT_DIGEST
+        ));
+        assert!(BasicArea::reads_content_digest(&BasicArea::content_digest()));
+        assert!(!BasicArea::reads_content_digest(&[0; 32]));
+        assert_eq!(area.discovery_percent(&MapProgress::default()), 0);
+        assert_eq!(
+            area.discovery_percent(&MapProgress {
+                discovered: true,
+                exploration: None
+            }),
+            100
+        );
+    }
     #[test]
     fn cyclopedia_basic_progress_is_private_deterministic_and_seven_finds_complete() {
         let Some(area) = BasicArea::embedded() else {

@@ -24,7 +24,10 @@ fn revision(bytes: &[u8]) -> u64 {
     u64::from_le_bytes(bytes[1..9].try_into().expect("fixed result field"))
 }
 fn pool(bytes: &[u8]) -> u64 {
-    u64::from_le_bytes(bytes[11..19].try_into().expect("fixed result field"))
+    u64::from_le_bytes(bytes[12..20].try_into().expect("fixed result field"))
+}
+fn percentage(bytes: &[u8]) -> u8 {
+    bytes[11]
 }
 #[test]
 fn cyclopedia_postgres_real_dispatch() -> TestResult {
@@ -62,6 +65,15 @@ fn scenario() -> TestResult {
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
         support::seed(&h, world.base().digest()).await?;
+        // DISCOVERY3: a character row authored by the v1 catalogue remains readable.
+        // The next mutating action rewrites its owner digest to the current v2 catalogue.
+        sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,progress,occurrence,catalogue_digest) VALUES(encode($1,'hex')::uuid,$2,'{\"discovered\":false,\"exploration\":null}'::jsonb,encode($3,'hex')::uuid,$4)")
+            .bind(id(41).as_slice())
+            .bind(world.base().digest().as_slice())
+            .bind(id(91).as_slice())
+            .bind(crate::domain::cyclopedia::BasicArea::V1_CONTENT_DIGEST.as_slice())
+            .execute(&h.pool)
+            .await?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -156,6 +168,7 @@ fn scenario() -> TestResult {
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(initial[0], 0);
         assert_eq!(count(&initial), 0);
+        assert_eq!(percentage(&initial), 0);
         // Insufficient Premium is a typed refusal and writes no discovery state.
         owner.premium_coordinator = None;
         let (_, refused) = support::exchange(&owner, &mut admitted, 3, 73, &request(1, 0)).await?;
@@ -164,7 +177,7 @@ fn scenario() -> TestResult {
         let before_start = admitted;
         let (_, started) = support::exchange(&owner, &mut admitted, 4, 73, &request(1, 0)).await?;
         assert_eq!(started[0], 0);
-        assert_eq!(started[28], 0, "start excludes the game window");
+        assert_eq!(started[29], 0, "start excludes the game window");
         let progress: String =
             sqlx::query_scalar("SELECT progress::text FROM game_character_cyclopedia")
                 .fetch_one(&h.pool)
@@ -200,9 +213,22 @@ fn scenario() -> TestResult {
             return Err("start receipt".into());
         };
         assert_eq!(started, replay);
+        sqlx::query("UPDATE game_character_cyclopedia SET catalogue_digest=$1")
+            .bind(crate::domain::cyclopedia::BasicArea::V1_CONTENT_DIGEST.as_slice())
+            .execute(&h.pool)
+            .await?;
         let (_, shuffled) = support::exchange(&owner, &mut admitted, 5, 73, &request(2, 0)).await?;
         assert_eq!(shuffled[0], 0);
         assert!(revision(&shuffled) > revision(&started));
+        let catalogue_digest: Vec<u8> =
+            sqlx::query_scalar("SELECT catalogue_digest FROM game_character_cyclopedia")
+                .fetch_one(&h.pool)
+                .await?;
+        assert_eq!(
+            catalogue_digest,
+            crate::domain::cyclopedia::BasicArea::content_digest(),
+            "a v1 row is upgraded by the v2 mutating owner"
+        );
         let progress: String =
             sqlx::query_scalar("SELECT progress::text FROM game_character_cyclopedia")
                 .fetch_one(&h.pool)
@@ -242,10 +268,12 @@ fn scenario() -> TestResult {
             assert_eq!(found[0], 0);
             assert_eq!(count(&found), index as u8 + 1);
             assert_eq!(found[9], u8::from(index == 6));
+            assert_eq!(percentage(&found), if index == 6 { 100 } else { 0 });
         }
         let (_, discovered) = support::exchange(&owner, &mut admitted, 13, 72, &[]).await?;
         assert_eq!(discovered[9], 1);
-        assert_eq!(discovered[28], 0);
+        assert_eq!(percentage(&discovered), 100);
+        assert_eq!(discovered[29], 0);
         assert_eq!(
             support::exchange(&owner, &mut admitted, 14, 73, &request(4, 0))
                 .await?
@@ -253,7 +281,7 @@ fn scenario() -> TestResult {
             CommandStatus::Rejected
         );
         // Epoch-zero draw is server-owned. This World has no random winner at epoch zero.
-        assert_eq!(initial[27], 1, "fixture World must allow a donation");
+        assert_eq!(initial[28], 1, "fixture World must allow a donation");
         let before_donation = admitted;
         let (_, donated) =
             support::exchange_inventory(&owner, &mut admitted, 15, 73, &request(4, 15)).await?;
@@ -343,7 +371,7 @@ fn scenario() -> TestResult {
         );
         owner.reset_epoch = 1;
         let (_, epoch) = support::exchange(&owner, &mut admitted, 19, 72, &[]).await?;
-        assert_eq!(epoch[27], 2);
+        assert_eq!(epoch[28], 2);
         assert_eq!(pool(&epoch), 0);
         // PAR-W12: Crystal `discovery_system.lua:191` DONATION_GOAL = 10,000,000 (MATCH, `>=`).
         let (winner, before): (bool, i64) = sqlx::query_as(
