@@ -130,7 +130,7 @@ mod tests {
     }
 
     #[test]
-    fn active_content_mints_every_covet_reward_and_closes_other_bags() {
+    fn active_content_mints_every_reward_bag_output() {
         use crate::content::native_gameplay::test_support::{
             activated_with_item_keys, activated_with_loot_tables,
         };
@@ -143,21 +143,23 @@ mod tests {
         let active = controller.active().expect("active");
         let native = active.native_gameplay().expect("native");
         let bags = reward_bags().expect("overlay");
-        let covet = bags.iter().find(|b| b.playable).expect("playable bag");
-        let mut reached = std::collections::BTreeSet::new();
-        let mut cumulative = 0;
-        for reward in &covet.rewards {
-            let plan = reward_bag_conversion(native, &item(&covet.bag), cumulative)
-                .expect("admitted reward");
-            assert_eq!(plan.outputs.len(), 1);
-            assert_eq!(
-                (plan.outputs[0].0.production_key.as_str(), plan.outputs[0].1),
-                (reward.item.as_str(), 1)
-            );
-            reached.insert(reward.item.as_str());
-            cumulative += reward.weight;
+        assert_eq!(bags.iter().filter(|b| b.playable).count(), 3);
+        for bag in bags.iter().filter(|b| b.playable) {
+            let mut reached = std::collections::BTreeSet::new();
+            let mut cumulative = 0;
+            for reward in &bag.rewards {
+                let plan = reward_bag_conversion(native, &item(&bag.bag), cumulative)
+                    .expect("admitted reward");
+                assert_eq!(plan.outputs.len(), 1);
+                assert_eq!(
+                    (plan.outputs[0].0.production_key.as_str(), plan.outputs[0].1),
+                    (reward.item.as_str(), 1)
+                );
+                reached.insert(reward.item.as_str());
+                cumulative += reward.weight;
+            }
+            assert_eq!(reached.len(), bag.rewards.len());
         }
-        assert_eq!(reached.len(), covet.rewards.len());
         for bag in bags.iter().filter(|b| !b.playable) {
             assert!(reward_bag_conversion(native, &item(&bag.bag), 0).is_none());
         }

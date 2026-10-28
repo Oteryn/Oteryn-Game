@@ -48,6 +48,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // reward_bags.lua/items.xml/appearances.dat, with reward ids checked against Crystal ff7ede59.
     // 43884/43887 have speed_bonus=10; the other 25 profiles have speed_bonus=0.
     ("REWARD-BAG-1", 27),
+    // 36 more reward-bag profiles once Bag You Desire and Primal Bag are playable (same
+    // script and sources): 34082..=34099, 34109, 39147..=39149, 39151..=39154, 39177,
+    // 39180, 39183, 39186, 39546, 50149, 50159, 50188, 50240, 50254.
+    // 34097 has speed_bonus=15 and 34098 has speed_bonus=20; the other 34 have speed_bonus=0.
+    ("REWARD-BAG-2", 36),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),

@@ -12,3 +12,4 @@ pub mod house_transfer;
 pub mod last_position;
 
 pub mod house_management;
+pub mod house_podium;

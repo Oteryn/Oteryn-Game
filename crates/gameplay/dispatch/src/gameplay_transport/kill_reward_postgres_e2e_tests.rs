@@ -67,6 +67,7 @@ type CharmSamples = Vec<(i64, u32)>;
 type KillScenarioSettings<'a> = (
     Option<(&'a str, &'a mut CharmSamples)>,
     Option<oteryn_gameplay_content::content::BossPolicy>,
+    Option<&'a str>,
 );
 
 #[test]
@@ -115,7 +116,15 @@ fn scenario_with_charms(
     reconcile: Option<bool>,
     charm: Option<(&str, &mut CharmSamples)>,
 ) -> TestResult {
-    scenario_with_creature_charmed(reconcile, false, None, false, false, false, (charm, None))
+    scenario_with_creature_charmed(
+        reconcile,
+        false,
+        None,
+        false,
+        false,
+        false,
+        (charm, None, None),
+    )
 }
 
 pub(super) fn scenario_with_capacity(reconcile: Option<bool>, capacity: bool) -> TestResult {
@@ -229,7 +238,7 @@ fn scenario_with_creature_at_range(
         settle_radiant,
         ranged_spell,
         elemental_area,
-        (None, None),
+        (None, None, None),
     )
 }
 
@@ -242,7 +251,7 @@ fn scenario_with_creature_charmed(
     elemental_area: bool,
     settings: KillScenarioSettings<'_>,
 ) -> TestResult {
-    let (charm, boss_policy) = settings;
+    let (charm, boss_policy, daily_target) = settings;
     let holy_target =
         matches!(radiant, Some("paragon" | "templar")) && ranged_spell && !elemental_area;
     run(async |admin| {
@@ -345,7 +354,9 @@ fn scenario_with_creature_charmed(
             },
             |name| format!("oteryn:creature.radiant_{name}"),
         );
-        let expected_xp = if settle_radiant {
+        let expected_xp = if daily_target == Some("creature") {
+            10
+        } else if settle_radiant {
             native
                 .reward_table()
                 .row(&creature_key)
@@ -623,6 +634,52 @@ fn scenario_with_creature_charmed(
             room: &room,
         }.build();
         owner.active_generation = Some(active);
+        if let Some(target) = daily_target {
+            // Bootstrap the actual durable reset identity for this isolated source-world
+            // reward scenario. Production's bundle boot already owns this row.
+            let digest = room.map_revision_digest();
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'daily-boost-rewards',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),'2026-10')")
+                .bind(world.as_bytes().as_slice()).bind(digest.as_slice()).execute(&harness.pool).await?;
+            sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
+                .bind(world.as_bytes().as_slice())
+                .execute(&harness.pool)
+                .await?;
+            let permit = owner.spell_lane_permit().await.ok_or("daily permit")?;
+            let selection = owner
+                .root
+                .prepare_daily_boost(
+                    &authority,
+                    &harness.node,
+                    &permit,
+                    crate::durability::daily_boost::DailyBoostBinding {
+                        scope: crate::foundation::RuntimeScopeRefV1::channel(world, channel),
+                        generation: 1,
+                        bundle: digest,
+                        epoch: 0,
+                    },
+                    (
+                        vec![if target == "creature" {
+                            creature_key.clone()
+                        } else {
+                            "other creature".into()
+                        }],
+                        vec![if target == "boss" {
+                            creature_key.clone()
+                        } else {
+                            "other boss".into()
+                        }],
+                    ),
+                )
+                .await
+                .map_err(debug)?;
+            owner
+                .runtime
+                .lock()
+                .await
+                .install_daily_boost(selection)
+                .map_err(debug)?;
+        }
+
         owner.rooms = crate::gameplay_transport::SeamRooms::new(None, Some(&room));
         // In the past, so the owner clock already stands well after the swing clock's origin.
         owner.clock_origin = std::time::Instant::now()
@@ -1234,11 +1291,57 @@ fn scenario_with_creature_charmed(
                 .checked_sub(PASS)
                 .expect("a monotonic clock older than the passes");
         }
+        let mut daily_expected_loot = None;
+        if let Some(target) = daily_target {
+            let attack = owner.states.attack.lock().await;
+            let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
+                attack.kills().take(session, 2)
+            else {
+                return Err("daily boosted kill".into());
+            };
+            let entry = taken.entry().ok_or("daily entry")?;
+            assert_eq!(entry.row.xp_amount.get(), expected_xp);
+            let death = entry.facts.death;
+            let plan = oteryn_gameplay_items::loot_plan::plan_creature_loot(
+                oteryn_gameplay_items::loot_plan::LootPlanDeathKey::new(
+                    *death.world_id().as_bytes(),
+                    *death.channel_id().as_bytes(),
+                    death.scope_ownership_generation().get(),
+                    death.actor_local_id(),
+                    death.actor_local_generation(),
+                ),
+                &entry.row.loot_table_ref,
+                &entry.row.loot_table,
+            )
+            .map_err(debug)?;
+            daily_expected_loot = Some(
+                plan.entries
+                    .into_iter()
+                    .map(|e| (e.item.production_key, i64::from(e.quantity)))
+                    .collect::<Vec<_>>(),
+            );
+
+            match (target, entry.row.loot_table.algorithm) {
+                (
+                    "creature",
+                    crate::combat::LootSelectionAlgorithm::DailyBoosted { extra_rolls: 1, .. },
+                ) => {}
+                (
+                    "boss",
+                    crate::combat::LootSelectionAlgorithm::DailyBoosted {
+                        extra_rolls: 2 | 3, ..
+                    },
+                ) => {}
+                ("other", crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm) => {}
+                _ => return Err("daily boost affected wrong race".into()),
+            }
+            drop(taken);
+        }
         // No durable rewards exist before the reward drain.
         assert_eq!(xp_receipts(&harness).await?, 0);
         assert_eq!(corpse_receipts(&harness).await?, 0);
 
-        let replay = if settle_radiant || boss_policy.is_some() {
+        let replay = if settle_radiant || boss_policy.is_some() || daily_target.is_some() {
             let attack = owner.states.attack.lock().await;
             let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
                 attack.kills().take(session, 2)
@@ -1318,6 +1421,14 @@ fn scenario_with_creature_charmed(
             children >= 1,
             "{creature_key} commits a positive native loot plan"
         );
+
+        if let Some(expected) = daily_expected_loot {
+            let actual: Vec<(String,i64)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_corpse_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id ORDER BY r.draw_ordinal LIMIT 17").fetch_all(&harness.pool).await?;
+            assert_eq!(
+                actual, expected,
+                "daily loot rolls reach durable Item quantities"
+            );
+        }
 
         if let Some((facts, target, observed)) = replay {
             {
@@ -1451,6 +1562,7 @@ fn boss_spawn1_respawn_death_and_replay_through_real_dispatch_postgres() -> Test
                     min_s: 30,
                     max_s: 60,
                 }),
+                None,
             ),
         )
     })
@@ -1474,7 +1586,26 @@ fn boss_spawn1_at_reset_death_and_replay_through_real_dispatch_postgres() -> Tes
                         denominator: 1,
                     },
                 }),
+                None,
             ),
         )
+    })
+}
+
+#[test]
+fn daily_boost_real_kill_xp_loot_and_unselected_race_postgres() -> TestResult {
+    scenario_thread::run("daily-boost-rewards", || {
+        for target in ["creature", "boss", "other"] {
+            scenario_with_creature_charmed(
+                None,
+                false,
+                None,
+                false,
+                false,
+                false,
+                (None, None, Some(target)),
+            )?;
+        }
+        Ok(())
     })
 }

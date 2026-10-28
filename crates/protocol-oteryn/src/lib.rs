@@ -38,6 +38,7 @@ mod contract_registries;
 mod count_bounds_tests;
 pub mod creature_push;
 pub mod cyclopedia;
+pub mod daily_boost;
 pub mod daily_reward;
 pub mod damage_element;
 #[cfg(test)]
@@ -52,9 +53,11 @@ pub mod hazard;
 pub mod highscores;
 pub mod house;
 pub mod house_move_out;
+pub mod house_podium;
 pub mod house_transfer;
 pub mod imbuement;
 pub mod inspection;
+pub mod item_forge;
 pub mod item_look;
 pub mod item_view;
 pub mod logout;
@@ -80,6 +83,7 @@ pub mod spectate;
 pub mod spell_presentation_candidate;
 pub mod staff;
 pub mod stash;
+pub mod store;
 pub mod target_move;
 pub mod task_board;
 #[cfg(test)]

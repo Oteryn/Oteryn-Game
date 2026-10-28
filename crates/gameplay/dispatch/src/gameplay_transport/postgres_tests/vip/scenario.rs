@@ -207,12 +207,23 @@ pub(super) fn run_scenario() -> TestResult {
                     .0,
                 7
             );
-            assert_eq!(
-                command(&mut left, &mut a, &edit(entry, "bad", 11, false, &[]))
-                    .await?
-                    .0,
-                10
-            );
+            // PAR-S04: an icon above 10 is clamped to 10 like Crystal, never refused.
+            ok(
+                &mut left,
+                &mut a,
+                &edit(entry, "trusted friend", 3, true, &[2, 4]),
+            )
+            .await?;
+            let snapshot = view(&ok(&mut left, &mut a, &[8, 12]).await?)?;
+            assert_eq!(snapshot["entries"][0]["icon"], 3);
+            ok(
+                &mut left,
+                &mut a,
+                &edit(entry, "trusted friend", 11, true, &[2, 4]),
+            )
+            .await?;
+            let snapshot = view(&ok(&mut left, &mut a, &[8, 12]).await?)?;
+            assert_eq!(snapshot["entries"][0]["icon"], 10);
             ok(&mut left, &mut a, &numbered(6, group)).await?;
             let snapshot = view(&ok(&mut left, &mut a, &[8, 12]).await?)?;
             assert_eq!(snapshot["entries"][0]["groups"], json!([2]));

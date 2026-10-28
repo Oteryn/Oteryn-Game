@@ -6,6 +6,7 @@ pub mod guild_bank;
 pub mod market;
 pub mod npc_trade;
 pub mod player_trade;
+pub mod store;
 
 #[cfg(test)]
 mod bank_property_tests;
