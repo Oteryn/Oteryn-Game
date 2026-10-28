@@ -66,6 +66,7 @@ mod guild_bank_audit;
 pub mod guild_war;
 pub mod highscore_snapshot;
 pub mod house_disposition;
+pub mod house_hireling;
 pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_ownership;
