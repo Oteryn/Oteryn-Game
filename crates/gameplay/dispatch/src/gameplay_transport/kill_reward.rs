@@ -683,6 +683,27 @@ pub fn record_creature_kill(
         refuse("damage_shares_unavailable", &creature);
         return;
     };
+    if let Some(effects) =
+        super::hazard::effects(runtime, principal.actor, principal.session, target)
+    {
+        let Ok(base) = u64::try_from(row.xp_amount.get()) else {
+            return;
+        };
+        let Ok(amount) = effects.experience(base).and_then(|value| {
+            i64::try_from(value).map_err(|_| {
+                oteryn_gameplay_encounters::bosses::hazard_primal::HazardError::Overflow
+            })
+        }) else {
+            return;
+        };
+        Arc::make_mut(&mut row).xp_amount = oteryn_simulation_determinism::ExactI64::new(amount);
+        let entropy = u64::from_be_bytes(facts.occurrence[..8].try_into().unwrap_or_default());
+        let draw = crate::domain::uniform_draw::uniform_draw(entropy, 0, 100) as u32;
+        for _ in 0..effects.extra_loot_rolls(draw) {
+            let extra = row.loot_table.entries.clone();
+            Arc::make_mut(&mut row).loot_table.entries.extend(extra);
+        }
+    }
     let activity_at_death = match super::party_xp::capture_activity_at_death(
         runtime,
         principal.character,

@@ -114,8 +114,12 @@ pub fn decode_result(bytes: &[u8]) -> Result<MapResult, MapWireError> {
     {
         return Err(MapWireError);
     }
+    #[cfg(test)]
+    crate::count_bounds_tests::allocation(count);
     let mut visible = Vec::with_capacity(count);
     for point in bytes[29..].as_chunks::<5>().0 {
+        #[cfg(test)]
+        crate::count_bounds_tests::iteration();
         let pos = (
             u16::from_le_bytes([point[0], point[1]]),
             u16::from_le_bytes([point[2], point[3]]),

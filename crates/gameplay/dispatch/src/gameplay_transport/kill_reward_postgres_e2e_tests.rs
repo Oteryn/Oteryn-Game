@@ -1260,7 +1260,11 @@ fn scenario_with_creature_charmed(
                 "holder contention defers the pass before transaction start"
             );
             owner.runtime.lock().await.owner_fence().map_err(debug)?;
-            drop(held);
+            // Drop returns the sole holder in a spawned task. Await its observed return
+            // so immediate Deferred retries cannot starve that task on this runtime.
+            held.run(|_, _| Box::pin(async { Ok(()) }))
+                .await
+                .map_err(debug)?;
         }
         let boss_death_lower = if boss_policy.is_some() {
             Some(
@@ -1277,6 +1281,9 @@ fn scenario_with_creature_charmed(
         while owner.drain_kill_rewards(session).await != DrainOutcome::Drained {
             drains += 1;
             assert!(drains < 8, "the queued kill settles");
+            // A deferral for want of an idle root connection (the pass `held` above went back
+            // to the pool) only records ready demand; run the window before the next drain.
+            owner.root.maintain_ready_once().await.map_err(debug)?;
         }
         assert!(
             !owner

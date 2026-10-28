@@ -1,5 +1,6 @@
 //! Bounded asynchronous Platform directory client.
 
+pub mod gameplay_entry;
 pub mod native_login;
 
 use oteryn_foundation::{BoundedText, Cancellable, CancellationToken, cancellable};

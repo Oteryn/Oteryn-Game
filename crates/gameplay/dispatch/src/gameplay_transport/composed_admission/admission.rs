@@ -349,6 +349,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         if positioned {
             self.admit_progression_session(&mut admitted).await;
+            if matches!(
+                admitted.first_entry,
+                FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+            ) && !self.admit_hazard(admitted).await
+            {
+                admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
+            }
         }
         // DEATH-2b: a pending respawn that is not placed and consumed leaves the actor
         // input-ineligible, its pending row intact for the next admission.
