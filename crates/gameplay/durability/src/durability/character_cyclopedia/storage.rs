@@ -11,7 +11,7 @@ pub(super) async fn load(
         None => Ok(MapProgress::default()),
         Some(row) => {
             if row.try_get::<Vec<u8>, _>("bundle_digest")? != request.bundle
-                || row.try_get::<Vec<u8>, _>("catalogue_digest")? != BasicArea::content_digest()
+                || !BasicArea::reads_content_digest(&row.try_get::<Vec<u8>, _>("catalogue_digest")?)
             {
                 return Err(DurabilityError::InvalidStoredState);
             }
@@ -90,7 +90,7 @@ pub(super) async fn save(
     if advanced {
         let progress =
             serde_json::to_string(progress).map_err(|_| DurabilityError::InvalidStoredState)?;
-        sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,progress,occurrence,catalogue_digest) VALUES(encode($1,'hex')::uuid,$2,$3::text::jsonb,encode($4,'hex')::uuid,$5) ON CONFLICT(character_id) DO UPDATE SET progress=EXCLUDED.progress,occurrence=EXCLUDED.occurrence")
+        sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,progress,occurrence,catalogue_digest) VALUES(encode($1,'hex')::uuid,$2,$3::text::jsonb,encode($4,'hex')::uuid,$5) ON CONFLICT(character_id) DO UPDATE SET bundle_digest=EXCLUDED.bundle_digest,progress=EXCLUDED.progress,occurrence=EXCLUDED.occurrence,catalogue_digest=EXCLUDED.catalogue_digest")
             .bind(character).bind(request.bundle.as_slice()).bind(progress).bind(request.occurrence.as_slice()).bind(BasicArea::content_digest().as_slice()).execute(&mut ***tx).await?;
         sqlx::query("UPDATE game_character_roots SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid").bind(character).execute(&mut ***tx).await?;
         sqlx::query("UPDATE game_character_progression_state SET character_revision=character_revision+1 WHERE character_id=encode($1,'hex')::uuid").bind(character).execute(&mut ***tx).await?;
