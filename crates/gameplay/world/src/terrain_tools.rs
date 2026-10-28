@@ -91,7 +91,7 @@ pub fn dispatch<'a>(
 /// 47dfd51f and the pinned items.xml. Harvest plans are staged: the runtime must refuse them
 /// until their yield has an audited mint owner. Sickle parity remains UNVERIFIED.
 pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
-    vec![
+    let mut bindings = vec![
         TerrainToolBinding {
             tool: TerrainTool::Pick,
             target: 867,
@@ -122,6 +122,17 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             yield_item: None,
             decay: vec![DecayStep {
                 state: 3702,
+                after: Duration::from_secs(300),
+            }],
+        },
+        TerrainToolBinding {
+            tool: TerrainTool::Machete,
+            target: 17153,
+            required_action: None,
+            transformed: 17151,
+            yield_item: None,
+            decay: vec![DecayStep {
+                state: 17153,
                 after: Duration::from_secs(300),
             }],
         },
@@ -175,7 +186,22 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
                 },
             ],
         },
-    ]
+    ];
+    // Global's loose stone piles all open to their immediately following appearance. Keep this
+    // family data-driven so the production USE_WITH path applies the same custody, CAS, receipt,
+    // and deadline recovery as the large-hole mapping above.
+    bindings.extend([593, 606, 608, 21341].map(|target| TerrainToolBinding {
+        tool: TerrainTool::Shovel,
+        target,
+        required_action: None,
+        transformed: target + 1,
+        yield_item: None,
+        decay: vec![DecayStep {
+            state: target,
+            after: Duration::from_secs(600),
+        }],
+    }));
+    bindings
 }
 
 #[cfg(test)]
@@ -226,16 +252,21 @@ mod tests {
             .is_none()
         );
         let cases = [
+            ("oteryn:item.tibia.i3457", 593, 594),
+            ("oteryn:item.tibia.i3457", 606, 607),
+            ("oteryn:item.tibia.i5710", 608, 609),
             ("oteryn:item.tibia.i3457", 867, 868),
             ("oteryn:item.tibia.i5710", 867, 868),
             ("oteryn:item.tibia.i3456", 354, 394),
             ("oteryn:item.tibia.i3456", 867, 868),
             ("oteryn:item.tibia.i3308", 3696, 3695),
             ("oteryn:item.tibia.i3308", 3702, 3701),
+            ("oteryn:item.tibia.i3308", 17153, 17151),
             ("oteryn:item.tibia.i3308", 9001, 9002),
             ("oteryn:item.tibia.i3453", 3653, 3651),
             ("oteryn:item.tibia.i3293", 9020, 9021),
             ("oteryn:item.tibia.i3304", 9010, 9011),
+            ("oteryn:item.tibia.i3457", 21341, 21342),
         ];
         for (tool, target, transformed) in cases {
             assert_eq!(
