@@ -40,6 +40,12 @@ pub enum Operation {
     ReadCharacterCommandIntentV1,
     /// Character command receipt publication (same contract, §4.3).
     PublishCharacterCommandReceiptV1,
+    ListPendingStoreDeliveriesV1,
+    ReadStoreDeliveryIntentV1,
+    PublishStoreReceiptV1,
+    PurchaseStoreOfferV1,
+    ReadStoreBalanceV1,
+    ReadStoreHistoryV1,
     /// World highscores snapshot (`oteryn-game-public-projections-v1` §4.1).
     PublishWorldHighscoresV1,
     /// Character profile snapshot (same contract, §4.2).
@@ -72,6 +78,12 @@ impl Operation {
             Self::ListPendingCharacterCommandsV1 => super::character_commands::PENDING_PATH,
             Self::ReadCharacterCommandIntentV1 => super::character_commands::READ_PATH,
             Self::PublishCharacterCommandReceiptV1 => super::character_commands::RECEIPT_PATH,
+            Self::ListPendingStoreDeliveriesV1 => super::store::PENDING_PATH,
+            Self::ReadStoreDeliveryIntentV1 => super::store::READ_PATH,
+            Self::PublishStoreReceiptV1 => super::store::RECEIPT_PATH,
+            Self::PurchaseStoreOfferV1 => super::store::PURCHASE_PATH,
+            Self::ReadStoreBalanceV1 => super::store::BALANCE_PATH,
+            Self::ReadStoreHistoryV1 => super::store::HISTORY_PATH,
             Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_PATH,
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_PATH,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_PATH,
@@ -98,6 +110,12 @@ impl Operation {
             Self::PublishCharacterCommandReceiptV1 => {
                 super::character_commands::RECEIPT_REQUEST_BYTES
             }
+            Self::ListPendingStoreDeliveriesV1
+            | Self::ReadStoreDeliveryIntentV1
+            | Self::ReadStoreBalanceV1
+            | Self::ReadStoreHistoryV1 => super::store::READ_REQUEST_BYTES,
+            Self::PublishStoreReceiptV1 => super::store::RECEIPT_REQUEST_BYTES,
+            Self::PurchaseStoreOfferV1 => super::store::PURCHASE_REQUEST_BYTES,
             Self::PublishWorldHighscoresV1 => super::public_projections::HIGHSCORES_BYTES,
             Self::PublishCharacterProfileV1 => super::public_projections::PROFILE_BYTES,
             Self::PublishWorldOnlineV1 => super::public_projections::ONLINE_BYTES,
