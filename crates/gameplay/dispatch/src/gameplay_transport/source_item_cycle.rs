@@ -105,9 +105,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     pub(super) async fn ensure_source_map_initialized(&self) -> bool {
-        if self.initialize_daily_boost().await.is_err() {
-            return false;
-        }
         #[cfg(test)]
         let stage = |name: &str| {
             if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
@@ -123,6 +120,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return true;
         };
+        // BOOSTED-1 is best effort here: movement must not depend on the daily choice,
+        // and world_respawns retries it before spawns read it.
+        let _ = self.initialize_daily_boost().await;
         let Some(source) = self
             .active_generation
             .and_then(|active| active.native_gameplay())
