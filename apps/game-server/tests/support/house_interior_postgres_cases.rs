@@ -13,6 +13,9 @@ use crate::foundation::{CharacterId, WorldId};
 use crate::house_test_fixture::{self, TestResult};
 use sqlx::{Connection, PgConnection};
 
+#[path = "house_interior_postgres_cases/f28_house_acl.rs"]
+mod f28_house_acl;
+
 const HOUSE: &str = "oteryn:content.house.thais_1";
 const WORLD: &str = "01010101-0101-7101-8101-010101010101";
 const ACTOR: &str = "02020202-0202-7202-8202-020202020202";
