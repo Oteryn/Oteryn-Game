@@ -9,8 +9,8 @@ BEGIN
     WITH RECURSIVE tree(item_instance_id) AS (
         SELECT NEW.root_item_instance_id
         UNION
-        SELECT e.item_instance_id FROM game_item_nested_entries e
-          JOIN tree t ON e.parent_item_instance_id=t.item_instance_id
+        SELECT child.item_instance_id FROM game_item_nested_entries child
+          JOIN tree t ON child.parent_item_instance_id=t.item_instance_id
     ) SELECT count(*)::INTEGER INTO actual_count FROM tree;
     IF i.item_instance_id IS NULL OR e.item_instance_id IS NULL
        OR to_jsonb(i) IS DISTINCT FROM NEW.before_item OR to_jsonb(e) IS DISTINCT FROM NEW.source_entry
@@ -26,6 +26,37 @@ BEGIN
     NEW.occurred_at:=clock_timestamp();
     RETURN NEW;
 END $$;
+
+-- Preserve all current custody proofs and the Gold Pouch exception. Only a
+-- delivered, stamped MAIL parcel may retain nested contents in the Inbox;
+-- backpack and corpse child-location families remain forbidden there.
+DO $migration$
+DECLARE body TEXT; inbox_at INTEGER; reject_at INTEGER; inbox_body TEXT;
+        nested_check TEXT := 'OR EXISTS (SELECT 1 FROM game_item_nested_entries
+                        WHERE parent_item_instance_id = p_item)';
+BEGIN
+    body := pg_get_functiondef('game_item_location_exclusive(uuid)'::regprocedure);
+    inbox_at := position('IF EXISTS (SELECT 1 FROM game_item_character_inbox_locations WHERE item_instance_id = p_item)' IN body);
+    reject_at := position('THEN
+        RAISE EXCEPTION ''CharacterInbox item cannot have contents''' IN body);
+    IF inbox_at=0 OR reject_at<=inbox_at THEN
+        RAISE EXCEPTION 'mail requires the current Inbox location proof';
+    END IF;
+    inbox_body := substring(body FROM inbox_at FOR reject_at-inbox_at);
+    IF position(nested_check IN inbox_body)=0 THEN
+        RAISE EXCEPTION 'mail requires the nested Inbox contents check';
+    END IF;
+    inbox_body := replace(inbox_body, nested_check, 'OR (' || substring(nested_check FROM 4) || $arm$
+            AND NOT EXISTS (
+                SELECT 1 FROM game_mail_operations o
+                JOIN game_item_character_inbox_locations l ON l.item_instance_id=o.root_item_instance_id
+                JOIN game_item_instances i ON i.item_instance_id=l.item_instance_id
+                WHERE o.root_item_instance_id=p_item AND o.stamped_production_key='oteryn:item.tibia.i3504'
+                  AND i.definition_production_key=o.stamped_production_key
+                  AND l.character_id=o.recipient_character_id AND l.world_id=o.world_id
+                  AND i.world_id=o.world_id))$arm$);
+    EXECUTE overlay(body placing inbox_body FROM inbox_at FOR reject_at-inbox_at);
+END $migration$;
 
 CREATE OR REPLACE FUNCTION game_mail_posting_apply(
     p_mail UUID, p_session UUID, p_command NUMERIC, p_world UUID, p_channel UUID,

@@ -108,7 +108,11 @@ async fn post_with_qualification(
         CharacterId::from_bytes(recipient)?,
         item,
         qualified_parcel_tree,
-        STAMP,
+        if qualified_parcel_tree {
+            "oteryn:item.tibia.i3504"
+        } else {
+            STAMP
+        },
         b"fixture:mailbox",
         hash,
         native::id(211),
@@ -306,13 +310,62 @@ fn qualified_parcel_keeps_its_child_tree_in_recipient_inbox() -> TestResult {
 
         let mut tx = runtime_tx(h).await?;
         assert_eq!(
-            post_with_qualification(h, &mut tx, item, native::id(native::CHARACTER), 31, [1; 32], true).await?,
+            post_with_qualification(
+                h,
+                &mut tx,
+                item,
+                native::id(native::CHARACTER),
+                31,
+                [1; 32],
+                true
+            )
+            .await?,
             MailPostOutcome::Posted
         );
         tx.commit().await?;
         let state: (i32, i64, i64) = sqlx::query_as("SELECT o.item_count,(SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid),(SELECT count(*) FROM game_item_character_inbox_locations WHERE item_instance_id=encode($2,'hex')::uuid) FROM game_mail_operations o WHERE o.root_item_instance_id=encode($2,'hex')::uuid")
             .bind(child.as_slice()).bind(item.as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(state, (2, 1, 1));
+        Ok(())
+    })
+}
+
+#[test]
+fn mail_posting_inbox_parcel_without_receipt_cannot_have_contents() -> TestResult {
+    run("mail_post_unproven", async |h, item| {
+        // Deliberately invalid custody fixture: a parcel stamp alone must not
+        // authorize contents in the Inbox. The location proof runs normally.
+        let mut seed = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *seed)
+            .await?;
+        sqlx::query(
+            "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
+        )
+        .bind(item.as_slice())
+        .execute(&mut *seed)
+        .await?;
+        sqlx::query("UPDATE game_item_instances SET definition_production_key='oteryn:item.tibia.i3504' WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(item.as_slice()).execute(&mut *seed).await?;
+        sqlx::query("INSERT INTO game_item_character_inbox_locations(item_instance_id,world_id,character_id,ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1)")
+            .bind(item.as_slice()).bind(native::id(native::WORLD).as_slice()).bind(native::id(native::CHARACTER).as_slice()).execute(&mut *seed).await?;
+        sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+            .bind(native::id(230).as_slice()).bind(native::id(native::WORLD).as_slice()).bind(item.as_slice()).bind(native::id(231).as_slice()).execute(&mut *seed).await?;
+        seed.commit().await?;
+
+        let error = sqlx::query("SELECT game_item_location_exclusive(encode($1,'hex')::uuid)")
+            .bind(item.as_slice())
+            .execute(&h.pool)
+            .await
+            .expect_err("a stamped parcel without a MAIL receipt must fail custody proof");
+        let database = error
+            .as_database_error()
+            .ok_or("expected PostgreSQL error")?;
+        assert_eq!(database.code().as_deref(), Some("23514"));
+        assert_eq!(
+            database.message(),
+            "CharacterInbox item cannot have contents"
+        );
         Ok(())
     })
 }
