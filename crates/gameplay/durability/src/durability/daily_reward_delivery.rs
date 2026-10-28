@@ -50,6 +50,31 @@ pub struct DailyRewardView {
 }
 
 impl DurabilityRoot {
+    /// Load the durable streak for a fresh session projection. This is character data,
+    /// not current authority; the admission owner revalidates its session after this read.
+    pub async fn read_daily_reward_streak(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: crate::domain::CharacterId,
+        world_id: crate::foundation::WorldId,
+    ) -> Result<u32, DailyRewardClaimError> {
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DailyRewardClaimError::AuthorityRejected)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let streak: Option<i32> = sqlx::query_scalar(
+                "SELECT streak FROM public.game_character_daily_rewards WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid",
+            )
+            .bind(character_id.as_bytes().as_slice())
+            .bind(world_id.as_bytes().as_slice())
+            .fetch_optional(&mut *tx)
+            .await?;
+            Ok(Ok(u32::try_from(streak.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)?))
+        })).await?
+    }
+
     /// A current-session read; neither a caller epoch nor a local clock opens a window.
     pub async fn read_daily_reward_view(
         &self,

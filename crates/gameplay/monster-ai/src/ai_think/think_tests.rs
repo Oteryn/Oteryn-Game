@@ -6,6 +6,7 @@
 //! CREATURE-AI-1 §2.1: the think engine (targeting, steps, schedule) and its limits
 //! (`CREATUREAI0-RL-05`, `-06`, `-07`, `-18`).
 
+mod crystal_parity;
 pub(super) mod movement_fixtures;
 
 use super::behaviour_profile::{CREATUREAI0_PROPOSALS_PER_THINK, ProfileRefusal};

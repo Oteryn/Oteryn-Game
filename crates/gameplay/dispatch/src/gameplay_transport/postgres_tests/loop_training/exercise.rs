@@ -587,6 +587,7 @@ fn scenario() -> TestResult {
             },
             spent: 1,
             family: 3,
+            gain_per_charge: 7,
         };
         let context = crate::durability::loop_training::TrainingContext {
             rates: owner
