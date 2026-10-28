@@ -215,8 +215,8 @@ impl VipWrite {
         .bind(fence)
         .bind(self.command.to_string())
         .bind(&self.request)
-        .bind(if premium { 100_i32 } else { 20 })
-        .bind(if premium { 5_i32 } else { 0 })
+        .bind(vip_caps(premium).0)
+        .bind(vip_caps(premium).1)
         .fetch_one(&mut **tx)
         .await
         .map_err(Into::into)
@@ -232,4 +232,29 @@ fn uuid(bytes: &[u8; 16]) -> String {
         &h[16..20],
         &h[20..]
     )
+}
+/// (buddy entries, custom groups) the SQL owner admits for a free or premium account.
+fn vip_caps(premium: bool) -> (i32, i32) {
+    if premium { (100, 5) } else { (20, 0) }
+}
+#[cfg(test)]
+mod crystal_parity_tests {
+    /// PAR-S04: Crystal `player_vip.cpp:31-46` admits 20 buddies for a free account and
+    /// 100 for premium, and 8 groups for premium only (3 default + 5 custom), 0 for free.
+    #[test]
+    fn s04_crystal_vip_caps() {
+        let crystal_default_groups = 3;
+        for (premium, entries, groups) in [(false, 20, 0), (true, 100, 8)] {
+            let (cap, custom) = super::vip_caps(premium);
+            assert_eq!(cap, entries);
+            assert_eq!(
+                if premium {
+                    custom + crystal_default_groups
+                } else {
+                    custom
+                },
+                groups
+            );
+        }
+    }
 }
