@@ -84,17 +84,21 @@ impl RestingAreaSessions {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
-    use crate::foundation::{ActorSlotId, RuntimeGeneration};
+    use crate::foundation::{ChannelId, WorldId};
 
+    fn id(n: u8) -> [u8; 16] {
+        [1, 0, 0, 0, 0, n, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, n]
+    }
     fn actor() -> ExactActorRef {
-        ExactActorRef::new(
-            ActorSlotId::new(1).expect("slot"),
-            RuntimeGeneration::new(1).expect("generation"),
+        ExactActorRef::transport_fixture(
+            WorldId::decode(&id(1)).expect("world"),
+            ChannelId::decode(&id(2)).expect("channel"),
         )
     }
     fn session() -> GameSessionId {
-        GameSessionId::from_bytes([1; 16])
+        GameSessionId::decode(&id(4)).expect("session")
     }
 
     #[test]
@@ -111,6 +115,6 @@ mod tests {
         for _ in 0..179 {
             owner.cadence(session(), actor(), true, 1000, 120);
         }
-        assert_eq!(owner.cadence(session(), actor(), true, 1000, 120).0, true);
+        assert!(owner.cadence(session(), actor(), true, 1000, 120).0);
     }
 }
