@@ -110,6 +110,7 @@ pub(super) fn use_door(
     content_generation: [u8; 32],
     actor: TilePos,
     occupied: impl FnOnce(TilePos) -> bool,
+    actor_level: u32,
     target: &WorldObjectTarget,
 ) -> UseOutcome {
     let source = MapViewSource {
@@ -140,7 +141,12 @@ pub(super) fn use_door(
         };
     }
     let occupied = occupied(resolved.pos);
-    match doors.toggle(resolved.placement_key, target.expected_revision, occupied) {
+    match doors.toggle(
+        resolved.placement_key,
+        target.expected_revision,
+        occupied,
+        actor_level,
+    ) {
         Some(DoorUse::Toggled { .. }) => outcome(UseDisposition::Committed),
         Some(DoorUse::Locked) => outcome(UseDisposition::Locked),
         Some(DoorUse::Stale) => outcome(UseDisposition::StaleState),
@@ -225,6 +231,7 @@ mod tests {
             GENERATION,
             actor,
             |pos| others.contains(&pos),
+            u32::MAX,
             t,
         )
     }
@@ -527,6 +534,7 @@ mod tests {
                 GENERATION,
                 actor_tile,
                 |door| doorway_occupied(runtime, actor, actor_tile, door),
+                u32::MAX,
                 &target(digest, key, revision),
             )
             .disposition
