@@ -202,6 +202,7 @@ const INVENTORY: &[Entry] = &[
         state: Gate::SourceWorldBranch,
         calls: &[
             ("gameplay_transport/attack.rs", 1),
+            ("gameplay_transport/bed_sleep_production.rs", 1),
             ("gameplay_transport/composed_admission/objects.rs", 2),
             ("gameplay_transport/creature_push.rs", 1),
             ("gameplay_transport/paced_movement.rs", 1),

@@ -338,4 +338,39 @@ mod tests {
             UseDisposition::StaleState
         );
     }
+
+    #[test]
+    fn refused_fluid_transfer_does_not_lose_the_source_liquid() {
+        let mut state = State::default();
+        state.inventory.insert(
+            1,
+            Item {
+                definition: "vial".into(),
+                amount: 10,
+                liquid: Some("water".into()),
+                hit_points: 0,
+            },
+        );
+        state.inventory.insert(
+            2,
+            Item {
+                definition: "vial".into(),
+                amount: 10,
+                liquid: Some("oil".into()),
+                hit_points: 0,
+            },
+        );
+        let before = state.clone();
+
+        assert_eq!(
+            dispatch(
+                &mut state,
+                Some(auth(true)),
+                &cmd(Action::PourContainer, 1, Some(2), 0),
+                &rules(),
+            ),
+            UseDisposition::NothingToUse
+        );
+        assert_eq!(state, before);
+    }
 }

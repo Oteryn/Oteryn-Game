@@ -241,6 +241,16 @@
       "news_id": 9039
     }
   ],
+  "reference_overrides": [
+    {
+      "creature": "ichgahal",
+      "field": "health",
+      "before": 350000,
+      "after": 600000,
+      "source": "https://tibia.fandom.com/wiki/Ichgahal?oldid=1208394",
+      "note": "TibiaWiki hp; the sibling Rotten Blood bosses Chagorz, Murcion and Vemiath already carry 600000 (PAR-W11)."
+    }
+  ],
   "gold_gain": [
     {
       "creature": "oozing_corpus",

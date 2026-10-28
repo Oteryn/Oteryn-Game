@@ -174,6 +174,11 @@ impl BundleFacts {
                     .palette
                     .get(item.palette as usize)
                     .map_or(PaletteDoor::No, |entry| entry.door);
+                let required_level = self.palette.get(item.palette as usize).and_then(|entry| {
+                    super::door_registry::level_door_of(u32::from(entry.facts.appearance_id))
+                        .and(item.attrs.action)
+                        .and_then(|action| u32::from(action).checked_sub(1000))
+                });
                 // Preserve the source House and door numbers before ordinary Channel door
                 // classification deliberately seals House doors.
                 if tile.house != 0
@@ -189,11 +194,14 @@ impl BundleFacts {
                 // A dropped teleport is a bound, non-materialized placement, never a door.
                 let dropped =
                     key.is_some_and(|key| manifest.dropped_teleports.binary_search(&key).is_ok());
-                // Only source key doors may use an action number without a quest binding.
-                // All other attributes retain their existing owner and remain sealed here.
+                // Key and level door actions are interpreted by this owner. Quest and other
+                // bindings retain their existing owner and remain sealed here.
                 let key_action = matches!(door, PaletteDoor::Pair { key_door: true, .. })
                     && !bound_without_action(&item.attrs);
-                let door = if dropped || (bound(&item.attrs) && !key_action) {
+                let level_action = required_level.is_some()
+                    && item.attrs.unique.is_none()
+                    && item.attrs.door.is_none();
+                let door = if dropped || (bound(&item.attrs) && !key_action && !level_action) {
                     PaletteDoor::No
                 } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
                     // A house door belongs to the house runtime, never to the channel DoorBook.
@@ -223,6 +231,7 @@ impl BundleFacts {
                             open,
                             locked,
                             item.attrs.action,
+                            required_level,
                         );
                     }
                     PaletteDoor::Sealed => {
@@ -671,6 +680,7 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     let key_door = super::door_registry::key_door_of(closed);
     let Some(open) = key_door
         .map(|(open, _)| open)
+        .or_else(|| super::door_registry::level_door_of(closed))
         .or_else(|| door::open_of(closed))
     else {
         return PaletteDoor::Sealed;

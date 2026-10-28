@@ -62,6 +62,9 @@ def bind_definitions(root: Path, generated: dict[str, bytes]):
                 resistance = next(row for row in source["resistances"] if row["damage_type"] == element)
                 native = next(row for row in target["resistances"] if row["damage_type"] == element)
                 native["percent"] = resistance["percent"]
+        for override in json.loads(ledger.read_bytes()).get("reference_overrides", []):
+            key = "oteryn:creature." + override["creature"]
+            native_profiles[key][override["field"]] = canonical_profiles[key][override["field"]]
     explicit_reference_levels(creatures)
     creatures["source_definitions_sha256"] = definition_digest(root)
     result[CREATURES] = canonical(creatures) + b"\n"
