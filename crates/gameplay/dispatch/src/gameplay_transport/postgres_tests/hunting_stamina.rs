@@ -246,6 +246,26 @@ pub(super) async fn qualify(
         xp.2 / 2,
         "the live stamina penalty applies before checkpoint"
     );
+    let corpses: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_mint_receipts \
+         WHERE corpse_top_damage_character_id=encode($1,'hex')::uuid",
+    )
+    .bind(item.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(corpses >= 1, "the low-stamina kill still materialises its corpse");
+    let corpse_loot: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_corpse_container_entries e \
+         JOIN game_item_mint_receipts r ON r.item_instance_id=e.parent_item_instance_id \
+         WHERE r.corpse_top_damage_character_id=encode($1,'hex')::uuid",
+    )
+    .bind(item.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        corpse_loot, 0,
+        "the highest-damage owner in the final fourteen stamina hours receives no monster loot"
+    );
     assert_eq!(
         owner.save_hunting_stamina(actor, session).await,
         TrainingSave::Saved
