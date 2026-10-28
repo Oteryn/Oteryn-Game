@@ -8,10 +8,13 @@ use crate::durability::character_revision_sequencer::CharacterRevisionSequencer;
 use crate::durability::character_wheel::WheelRuleset;
 use crate::durability::npc_purchase::PurchaseOutcome;
 use crate::foundation::ConnectionGeneration;
+use crate::foundation::{MessageType, decode_wire_envelope};
+use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
 use oteryn_gameplay_progression::atelier::{AtelierAction, AtelierState, FragmentKind, GemQuality};
 use oteryn_gameplay_progression::wheel::WheelDomain;
 use oteryn_gameplay_progression::wheel_gem_data::WheelGemData;
 use std::sync::Arc;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[path = "atelier/fixture.rs"]
 pub(super) mod fixture;
@@ -35,6 +38,33 @@ async fn stored(h: &Harness) -> TestResult<AtelierState> {
     let json: serde_json::Value = sqlx::query_scalar("SELECT state_json FROM game_character_atelier_state WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     Ok(serde_json::from_value(json)?)
+}
+
+async fn send_atelier(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    kind: u32,
+    payload: &[u8],
+) -> TestResult<Vec<u8>> {
+    let command_id = admitted.continuity.next_command_id;
+    let frame = oteryn_protocol_oteryn::encode_client_command(
+        admitted.continuity.connection_generation,
+        &oteryn_protocol_oteryn::ClientCommandValue { command_id, command_type: kind, payload },
+    ).map_err(debug)?;
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    client.write_all(&(frame.len() as u32).to_be_bytes()).await?;
+    client.write_all(&frame).await?;
+    client.shutdown().await?;
+    let end = Box::pin(serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS)).await;
+    let mut output = Vec::new(); client.read_to_end(&mut output).await?;
+    if let ConnectionEnd::AdmittedThenDisconnected(current) | ConnectionEnd::AdmittedThenClosed(current, _) = end { *admitted = current; }
+    let length = u32::from_be_bytes(output[..4].try_into()?) as usize;
+    let envelope = decode_wire_envelope(&output[4..4 + length]).map_err(debug)?;
+    assert_eq!(envelope.message_type(), MessageType::CommandResult);
+    let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
+    assert_eq!(result.command_id, command_id);
+    assert_eq!(result.status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    Ok(result.payload.to_vec())
 }
 
 fn scenario() -> TestResult {
@@ -95,6 +125,16 @@ fn scenario() -> TestResult {
         assert_eq!(initial.gems.len(), 8);
         assert_eq!(initial.gold, 0);
         assert!(initial.unrevealed.is_empty() && initial.fragments.is_empty());
+        let mut admitted = dependencies.admitted;
+        let query = send_atelier(&owner, &mut admitted, oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_QUERY, &[]).await?;
+        assert!(!query.is_empty());
+        let gem = *initial.gems.keys().next().ok_or("initial gem")?;
+        let lock = oteryn_protocol_oteryn::atelier::encode_set_lock(&oteryn_protocol_oteryn::atelier::SetLockRequest {
+            occurrence: id(199), expected_revision: initial.revision, gem: gem.to_be_bytes(), locked: true,
+        }).map_err(debug)?;
+        let reply = send_atelier(&owner, &mut admitted, oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_SET_LOCK, &lock).await?;
+        assert!(!reply.is_empty());
+        assert!(stored(&h).await?.gems[&gem].locked);
         for domain in [
             WheelDomain::Green,
             WheelDomain::Red,
