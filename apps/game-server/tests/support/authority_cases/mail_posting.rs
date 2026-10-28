@@ -95,6 +95,7 @@ async fn post(
         fence.character_id,
         CharacterId::from_bytes(recipient)?,
         item,
+        false,
         STAMP,
         b"fixture:mailbox",
         hash,

@@ -14,6 +14,9 @@ const CHARACTER: [u8; 16] = [
     0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x71, 0x11, 0x91, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
 ];
 
+#[path = "tests/cleanup_saturation.rs"]
+mod cleanup_saturation;
+
 // Textual includes keep the original gameplay_transport::tests paths and shared fixtures.
 include!("tests/admission_results.rs");
 include!("tests/objects.rs");

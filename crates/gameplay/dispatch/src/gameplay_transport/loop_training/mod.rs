@@ -89,7 +89,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .any(|key| index.definition_ref("Item", key, "definition-r1").is_some())
             || !rates
                 .dummies
-                .iter()
+                .keys()
                 .any(|key| index.definition_ref("Item", key, "definition-r1").is_some())
         {
             return None;
