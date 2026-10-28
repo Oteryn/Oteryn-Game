@@ -827,7 +827,10 @@ async fn field_scenario_inner(
     }
     let mut inventory = vec![(format!("oteryn:item.tibia.i{rune}"), 3)];
     if matches!(output, 2128 | 2130) {
-        inventory.push((format!("oteryn:item.tibia.i{}", if scenario == Scenario::SecretMachete { 9594 } else { 3308 }), 1));
+        inventory.push((
+            format!("oteryn:item.tibia.i{}", if scenario == Scenario::SecretMachete { 9594 } else { 3308 }),
+            1,
+        ));
     }
     seed_main_backpack(
         &harness,
