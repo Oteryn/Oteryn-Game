@@ -120,3 +120,11 @@ pub(crate) fn read_result_enum(input: &[u8], maximum: usize) -> WireResult<u32> 
     }
     Ok(value)
 }
+
+#[cfg(test)]
+mod count_bounds_tests {
+    #[test]
+    fn f26_borrowed_length_bounds() {
+        crate::count_bounds_tests::borrowed_length_bounds(super::read_bytes);
+    }
+}
