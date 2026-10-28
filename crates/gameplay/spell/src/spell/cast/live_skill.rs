@@ -13,6 +13,14 @@ pub struct SwingSkills {
 }
 
 impl PlayerSpellState {
+    /// One durable skill with current condition adjustments applied.
+    pub fn live_skill(&self, index: usize, now_us: u64) -> Option<u32> {
+        let owned = self.owned_skills?;
+        self.owned_skill_adjustments(now_us)
+            .ok()?
+            .adjust_skill(u32::from(*owned.get(index)?), index)
+    }
+
     /// The live swing skills at `now_us`: the durable skills loaded at admission with the live
     /// condition adjustments. `Some(None)` when no durable build was loaded, which fresh
     /// admission refuses, so the caller keeps the ATTACK-1 starting skill. `None` (no swing) when
