@@ -747,6 +747,21 @@ pub struct CreatureDeathBestiaryInput {
     pub race: Option<BestiaryRace>,
 }
 
+/// Global Animus Mastery: +2% raw species XP, plus 0.1% per ten completed
+/// species, capped at another +2%. Non-mastered species receive no bonus.
+#[must_use]
+pub fn animus_mastery_experience(base: u64, completed: usize, species_mastered: bool) -> u64 {
+    if !species_mastered {
+        return base;
+    }
+    let bonus_basis_points = 200_u64
+        + u64::try_from(completed / 10)
+            .unwrap_or(u64::MAX)
+            .saturating_mul(10)
+            .min(200);
+    base.saturating_add(base.saturating_mul(bonus_basis_points) / 10_000)
+}
+
 /// A kill the Bestiary descendant settled without an error.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CombatBestiaryOutcome {
@@ -902,6 +917,16 @@ async fn settle_bestiary(
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn animus_multiplier_is_species_scoped_steps_and_caps() {
+        assert_eq!(animus_mastery_experience(10_000, 200, false), 10_000);
+        assert_eq!(animus_mastery_experience(10_000, 0, true), 10_200);
+        assert_eq!(animus_mastery_experience(10_000, 9, true), 10_200);
+        assert_eq!(animus_mastery_experience(10_000, 10, true), 10_210);
+        assert_eq!(animus_mastery_experience(10_000, 200, true), 10_400);
+        assert_eq!(animus_mastery_experience(10_000, 2_000, true), 10_400);
+    }
 
     #[test]
     fn reward_principal_count_accepts_one_and_rejects_zero_or_two() {
