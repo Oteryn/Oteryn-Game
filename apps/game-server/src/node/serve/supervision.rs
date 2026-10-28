@@ -11,6 +11,7 @@ pub(super) struct Serving<'a, 'f, 's> {
     pub(super) shutdown: &'a CancellationToken,
     pub(super) last_position_flush: &'a crate::gameplay_transport::LastPositionFlush,
     pub(super) reset_epoch: u64,
+    pub(super) generation: u64,
     pub(super) signalled: &'a CancellationToken,
 }
 
@@ -26,6 +27,7 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         shutdown,
         last_position_flush,
         reset_epoch,
+        generation,
         signalled,
     } = serving;
     let root = owners.root;
@@ -59,23 +61,26 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     let mut projection = pin!(both(
         both(
             both(
-                highscores_loop(root, material.world, achievements, &loops_stop),
                 both(
-                    super::super::guild_scheduler::run(
-                        root,
-                        authority,
-                        proof,
-                        material.world,
-                        &loops_stop
-                    ),
-                    super::super::market_scheduler::run(
-                        root,
-                        authority,
-                        proof,
-                        material.world,
-                        &loops_stop
-                    ),
-                )
+                    highscores_loop(root, material.world, achievements, &loops_stop),
+                    both(
+                        super::super::guild_scheduler::run(
+                            root,
+                            authority,
+                            proof,
+                            material.world,
+                            &loops_stop
+                        ),
+                        super::super::market_scheduler::run(
+                            root,
+                            authority,
+                            proof,
+                            material.world,
+                            &loops_stop
+                        ),
+                    )
+                ),
+                super::super::raid_scheduler::run(root, material.channel, generation, &loops_stop,)
             ),
             account_characters_loop(
                 root,

@@ -103,3 +103,35 @@ fn i14_unadmitted_crystal_consumables_are_pinned() {
         assert!(policy_of(state, id).is_none(), "item {id}");
     }
 }
+
+/// I03: Crystal `data/scripts/actions/items/spellbook.lua:25` registers these spellbook ids; using
+/// one opens a text dialog listing the user's vocation instant spells with a level or magic-level
+/// requirement, grouped and sorted by level. The item-use path admits only food and potion
+/// consumption, so an admitted spellbook resolves to `NothingToUse` and no spell list. MISSING,
+/// pinned until a spellbook dialog is accepted.
+#[test]
+fn i03_crystal_spellbook_use_has_no_spell_list() {
+    let controller = native();
+    let state = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .expect("native gameplay");
+    let mut admitted = Vec::new();
+    for id in [
+        3059, 6120, 8072, 8073, 8074, 8075, 8076, 8090, 11691, 14769, 16107, 20088, 21400, 22755,
+        25699, 29431, 20089, 20090, 34153,
+    ] {
+        if let Some(policy) = policy_of(state, id) {
+            assert!(
+                !matches!(
+                    policy.record().semantics.consumption,
+                    ReferenceItemField::Known(_)
+                ),
+                "spellbook {id} carries no consumption the item-use path acts on"
+            );
+            admitted.push(id);
+        }
+    }
+    // Only 6120 is admitted; the basic spellbook 3059 and the other source ids are not.
+    assert_eq!(admitted, vec![6120]);
+}
