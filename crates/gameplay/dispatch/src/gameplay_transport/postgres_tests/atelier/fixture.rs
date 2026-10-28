@@ -81,7 +81,7 @@ fn choose_vocation(occurrence: u8, vocation: &str) -> String {
     )
 }
 
-pub(super) async fn eligible(pool: &sqlx::PgPool) -> TestResult {
+pub(in crate::gameplay_transport) async fn eligible(pool: &sqlx::PgPool) -> TestResult {
     for statement in [
         award(90, 1, (50, 1000), (LEVEL, EXPERIENCE)),
         choose_vocation(91, "sorcerer"),
@@ -96,7 +96,7 @@ pub(super) async fn eligible(pool: &sqlx::PgPool) -> TestResult {
 use crate::durability::item_fee_burn::test_support::{item, request};
 use crate::durability::npc_purchase::{NpcPurchaseRequest, PurchaseService};
 use crate::foundation::{CommandId, CommandRef};
-pub(super) async fn prepare(h: &Harness) -> TestResult<NpcPurchaseRequest> {
+pub(in crate::gameplay_transport) async fn prepare(h: &Harness) -> TestResult<NpcPurchaseRequest> {
     let mut tx = h.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
@@ -197,7 +197,7 @@ pub(super) async fn paid_assets(h: &Harness) -> TestResult {
     Ok(())
 }
 
-pub(super) async fn higher_level(h: &Harness) -> TestResult {
+pub(in crate::gameplay_transport) async fn higher_level(h: &Harness) -> TestResult {
     let revision:String=sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
     sqlx::raw_sql(sqlx::AssertSqlSafe(award(
         246,
