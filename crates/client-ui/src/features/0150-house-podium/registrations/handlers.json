@@ -1,0 +1,19 @@
+{
+  "mechanic": "0150-house-podium",
+  "kind": "handlers",
+  "id": "0150-house-podium-unsupported",
+  "status": "unsupported",
+  "reason": "Native editor and projection rendering are not yet migrated.",
+  "commands": [
+    174,
+    175,
+    176
+  ],
+  "not_applicable": {
+    "state": "Server authoritative.",
+    "protocol": "Codec is owned by protocol-oteryn.",
+    "view": "Pending native projection renderer.",
+    "input": "Pending native editor.",
+    "settings": "No client setting."
+  }
+}
