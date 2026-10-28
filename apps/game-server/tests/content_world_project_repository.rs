@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         400,
-        "cca9a6e0864e16128407e711f5ba04853f849eb784813f8adab523018d2d9e57",
+        "7a9f42d2293d74eabde3f51840b160e4372d982fe412a5020c1f4c8c66479998",
     ),
     (
         "definitions/declarations.json",
         27_600_259,
-        "520b20b1f1d62e1882570b1899f9013dcfcecefa4562a867effee7204784e63c",
+        "949746ad0a2d1304ca5a1ec75ae4cd707650c1e24d4017a0733af52ca4fa5809",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1951,
-        "d202bdbc630d48f52fbc8407de4385d729cf9beb71629e67ad59616f410d50b1",
+        "d3dc24e84973177ffe29ac8fb17f49fb633c0a3287d9b51c5cb0c2132c01f6c1",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         402,
-        "f6c484a8c8bf3181bf91cd85245a67b45c17c10c745dc6cc29bca266056c5298",
+        "aa1db70f8e67a3224d4c899d1cc4b0db15df2bd60158400d1d1307f478cdc6e1",
     ),
     (
         "provenance/imports.json",
         6_771_443,
-        "d8026c56aa5251f77c000450cab3d26ca4ebcd46ac1f31921cd7e775a02b7d9f",
+        "d70737a155a5210947b9889cc2dee719ce72815b8189f2120b6ee06ec54a4f5c",
     ),
     (
         "provenance/sources.json",
@@ -138,7 +138,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "219b7b7882b8a8b3c259b0e4e79c0fc05c6711c6cbaf21a34bd1f75e97452234";
+const TREE_SHA256: &str = "7f59cd14fc07a110f03d7f4a811b59f690b7143791798d5a5bc074f679312c8a";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;

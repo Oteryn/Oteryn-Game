@@ -1,0 +1,20 @@
+{
+  "id": 165,
+  "name": "HIRELING_V1",
+  "constant": "hireling::CAPABILITY_HIRELING_V1",
+  "requires": [
+    3,
+    51
+  ],
+  "acceptance_requires": false,
+  "commands": [
+    220
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}
