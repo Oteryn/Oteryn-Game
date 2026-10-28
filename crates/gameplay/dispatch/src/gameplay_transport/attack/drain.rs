@@ -297,6 +297,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }) else {
                     continue;
                 };
+                let damage = super::super::hazard::outgoing_damage(
+                    &runtime,
+                    entry.actor,
+                    entry.session,
+                    target,
+                    damage,
+                    (swing.lineage.command_id().get(), ordinal),
+                );
                 if !runtime.contains_live_creature(target) {
                     let black = if extension {
                         self.pvp_target_legal(
