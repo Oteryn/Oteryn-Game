@@ -55,6 +55,10 @@ impl CurrentHousePresence<'_> {
     pub fn entry(&self) -> LogicalCell {
         self.house.entry()
     }
+    /// Canonical reservation cell for either physical half of an authored bed.
+    pub fn bed_head_at(&self, cell: LogicalCell) -> Option<LogicalCell> {
+        self.house.bed_head_at(cell)
+    }
 }
 impl crate::durability::spell_house_abi::house_presence_seal::Sealed for CurrentHousePresence<'_> {}
 impl crate::durability::spell_house_abi::HousePresenceProof for CurrentHousePresence<'_> {

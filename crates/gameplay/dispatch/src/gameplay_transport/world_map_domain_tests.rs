@@ -48,6 +48,7 @@ struct BundleChannel {
     overlay: Option<WorldObjectOverlayEntry>,
     use_outcome: UseOutcome,
     doors: Option<(ChannelOverlay, crate::map::facts::BundleFacts)>,
+    level: u32,
 }
 
 impl BundleChannel {
@@ -67,6 +68,7 @@ impl BundleChannel {
             overlay: None,
             use_outcome: UseOutcome::rejected(),
             doors: None,
+            level: u32::MAX,
         }
     }
 
@@ -117,6 +119,7 @@ impl FreshAdmissionAuthority for BundleChannel {
                 [7; 32],
                 self.position.get(),
                 |pos| pos == self.position.get(),
+                self.level,
                 &target,
             );
         }
@@ -622,7 +625,9 @@ fn key_door_channel(appearance: u32, attrs: Attrs, house: u32) -> BundleChannel 
     use crate::map::boot::tests::bundle_with_items;
     use crate::map::facts::{BundleFacts, ItemDefinition};
     let closed = format!("oteryn:item.tibia.i{appearance}");
-    let (bytes, mut pins) = bundle_with_items(&closed, "oteryn:item.tibia.i1000");
+    let open_appearance = if appearance == 1646 { 1647 } else { 1000 };
+    let open = format!("oteryn:item.tibia.i{open_appearance}");
+    let (bytes, mut pins) = bundle_with_items(&closed, &open);
     let mut bundle = bundle::read(&bytes).expect("bundle");
     let tile = bundle.sectors[0]
         .tiles
@@ -640,15 +645,15 @@ fn key_door_channel(appearance: u32, attrs: Attrs, house: u32) -> BundleChannel 
         Some(ItemDefinition {
             reference: nz(if id == appearance {
                 1
-            } else if id == 1000 {
+            } else if id == open_appearance {
                 2
             } else {
                 id + 1
             }),
-            solid: Some(!matches!(id, 1630 | 1639 | 20445 | 4911 | 1000)),
-            blocks_projectile: !matches!(id, 1630 | 1639 | 20445 | 4911 | 1000),
-            pickupable: id == 1000,
-            door: id != 1000,
+            solid: Some(id != open_appearance && !matches!(id, 1630 | 1639 | 20445 | 4911)),
+            blocks_projectile: id != open_appearance && !matches!(id, 1630 | 1639 | 20445 | 4911),
+            pickupable: id == open_appearance,
+            door: id != open_appearance,
         })
     })
     .expect("palette facts");
@@ -660,6 +665,51 @@ fn key_door_channel(appearance: u32, attrs: Attrs, house: u32) -> BundleChannel 
     owner.position.set(tp(7, 0, -7));
     owner.doors = Some((ChannelOverlay::new(base, world(), channel()), facts));
     owner
+}
+
+#[test]
+fn level_door_predicate_through_use_dispatch() -> TestResult {
+    use oteryn_protocol_oteryn::world_object::decode_use_result;
+    run(async {
+        for (level, expected) in [
+            (24, UseDisposition::Locked),
+            (25, UseDisposition::Committed),
+        ] {
+            let mut channel = key_door_channel(
+                1646,
+                Attrs {
+                    action: Some(1025),
+                    ..Attrs::default()
+                },
+                0,
+            );
+            channel.level = level;
+            let (overlay, _) = channel.doors.as_ref().expect("doors");
+            let mut placement = overlay.base().digest().to_vec();
+            placement.extend_from_slice(&crate::map::boot::tests::door_key().to_be_bytes());
+            let payload = encode_use_intent(&WorldObjectTarget {
+                placement,
+                expected_revision: 0,
+            })
+            .expect("use intent");
+            let sent = serve(
+                &channel,
+                session(
+                    BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    &[4, 6, 11, 15, 18],
+                    SessionContinuity::FRESH,
+                ),
+                &[command(1, 1, COMMAND_TYPE_USE_INTENT, &payload)],
+                NO_HOLD,
+            )
+            .await;
+            assert_eq!(
+                decode_use_result(&sent.results[0]).expect("use result"),
+                expected
+            );
+        }
+        Ok(())
+    })
 }
 
 #[test]

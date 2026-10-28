@@ -71,7 +71,13 @@ struct Harness {
 impl Harness {
     async fn create(admin_url: String, tag: &str) -> TestResult<Self> {
         if !admin_url.starts_with("postgresql://oteryn_test_admin:")
-            || !admin_url.ends_with("@127.0.0.1:5432/postgres")
+            || !admin_url.rsplit_once('@').is_some_and(|(_, host)| {
+                host.strip_prefix("127.0.0.1:")
+                    .and_then(|rest| rest.strip_suffix("/postgres"))
+                    .is_some_and(|port| {
+                        port.bytes().all(|b| b.is_ascii_digit()) && port.parse::<u16>().is_ok()
+                    })
+            })
         {
             return Err("unsafe PostgreSQL test admin URL".into());
         }

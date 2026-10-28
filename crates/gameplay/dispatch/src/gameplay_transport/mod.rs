@@ -13,6 +13,7 @@ mod automatic_spell_progression;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
+mod bed_sleep_production;
 mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
