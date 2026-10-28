@@ -82,6 +82,7 @@ struct PaletteFacts {
 struct Placement {
     palette: u32,
     bound: bool,
+    dropped: bool,
     count: u8,
     sub_type: u16,
     // MAP-PICKUP-1: preserve the original attributes separately from the wire normalization.
@@ -233,6 +234,7 @@ impl BundleFacts {
                 let placement = Placement {
                     palette: item.palette,
                     bound: dropped || bound(&item.attrs),
+                    dropped,
                     count: item
                         .attrs
                         .count
@@ -254,6 +256,7 @@ impl BundleFacts {
                 let plain = Placement {
                     palette: item.palette,
                     bound: false,
+                    dropped: false,
                     count: 1,
                     sub_type: 0,
                     attrs: Attrs::default(),
@@ -322,6 +325,60 @@ impl BundleFacts {
         }
     }
 
+    /// A tool may use an ordinary placement or its explicit action number; every other authored
+    /// attribute, dropped teleport, door and House tile stays with its existing owner.
+    pub fn terrain_tool_action(&self, key: u64) -> Option<Option<u16>> {
+        let (pos, _) = view::placement_of(key)?;
+        if self.house_tile(pos) || self.doors.contains(key) {
+            return None;
+        }
+        let Some(placement) = self
+            .placements
+            .binary_search_by_key(&key, |(key, _)| *key)
+            .ok()
+            .map(|i| &self.placements[i].1)
+        else {
+            return Some(None);
+        };
+        if placement.dropped || bound_without_action(&placement.attrs) {
+            return None;
+        }
+        Some(placement.attrs.action)
+    }
+
+    /// Install a durable terrain projection under the Channel owner lock. Repeated snapshots
+    /// are idempotent; an older completion cannot overwrite a newer visible revision.
+    pub fn install_terrain_state(&self, key: u64, revision: u64, after: EntryFacts) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if revision == 0
+            || self.house_tile(pos)
+            || self.doors.contains(key)
+            || (after.bound && self.terrain_tool_action(key) != Some(Some(101)))
+            || after.pickupable
+            || after.count != 1
+            || after.sub_type != 0
+        {
+            return false;
+        }
+        let Ok(mut states) = self.rotations.lock() else {
+            return false;
+        };
+        if let Some((current, facts)) = states.get(&key) {
+            if *current > revision {
+                return true;
+            }
+            if *current == revision {
+                return *facts == after;
+            }
+        } else if states.len() >= super::overlay::OVERLAY_BUDGET_BYTES / 512 {
+            return false;
+        }
+        Arc::make_mut(&mut states).insert(key, (revision, after));
+        true
+    }
+
     /// Commits a rotation resolved by the Channel owner from admitted Content. Fixed furniture
     /// only: pickup and house custody never acquire a changed definition through this overlay.
     /// The expected revision and facts are compared together, so a retry cannot rotate twice.
@@ -387,6 +444,7 @@ impl BundleFacts {
                 plain = Placement {
                     palette: self.unique_index(id)?,
                     bound: false,
+                    dropped: false,
                     count: 1,
                     sub_type: 0,
                     attrs: Attrs::default(),
@@ -776,6 +834,40 @@ mod tests {
     use super::*;
     use crate::foundation::{ChannelId, WorldId};
     use crate::map::boot::{boot, tests as fixture};
+
+    #[test]
+    fn terrain_tool_action_never_admits_a_dropped_teleport_or_unique_binding() {
+        let key = placement_key(
+            TilePos {
+                x: 7,
+                y: 0,
+                floor: -7,
+            },
+            1,
+        )
+        .expect("placement");
+        let mut facts = BundleFacts::default();
+        facts.placements.push((
+            key,
+            Placement {
+                palette: 0,
+                bound: true,
+                dropped: true,
+                count: 1,
+                sub_type: 0,
+                attrs: Attrs {
+                    action: Some(101),
+                    ..Attrs::default()
+                },
+                pickup: Err(pickup::Ineligible::NotPickupable),
+            },
+        ));
+        assert_eq!(facts.terrain_tool_action(key), None);
+        facts.placements[0].1.dropped = false;
+        assert_eq!(facts.terrain_tool_action(key), Some(Some(101)));
+        facts.placements[0].1.attrs.unique = Some(1);
+        assert_eq!(facts.terrain_tool_action(key), None);
+    }
 
     fn item_solid(key: &str) -> bool {
         let entry = PaletteEntry {

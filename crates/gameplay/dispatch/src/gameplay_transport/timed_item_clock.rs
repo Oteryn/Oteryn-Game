@@ -54,6 +54,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         next.store(now.saturating_add(1_000), Ordering::Relaxed);
 
         self.drain_corpse_deadlines().await;
+        self.refresh_terrain_tools().await;
 
         let sessions = {
             let runtime = self.runtime.lock().await;

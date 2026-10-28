@@ -35,6 +35,7 @@ pub mod prey;
 pub mod quest_world_callback;
 pub mod raid_schedule;
 pub mod staff;
+pub mod terrain_tool;
 pub mod vip;
 // End sorted module declarations.
 
