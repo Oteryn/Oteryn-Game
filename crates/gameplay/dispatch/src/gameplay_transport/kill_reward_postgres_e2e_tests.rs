@@ -379,6 +379,10 @@ fn scenario_with_creature_charmed(
             };
             assert_eq!(expected_xp, exact, "{creature_key} exact native XP");
         }
+        // The queued kill row carries the native XP; the fresh level-1 Character is then
+        // awarded the Global low-level bonus of 100%.
+        let queued_xp = expected_xp;
+        let expected_xp = 2 * expected_xp;
         if settle_radiant {
             // Select a positive real occurrence without changing a drop probability.
             // Roll back unused player reservations to advance the reusable creature
@@ -1298,7 +1302,7 @@ fn scenario_with_creature_charmed(
                 return Err("daily boosted kill".into());
             };
             let entry = taken.entry().ok_or("daily entry")?;
-            assert_eq!(entry.row.xp_amount.get(), expected_xp);
+            assert_eq!(entry.row.xp_amount.get(), queued_xp);
             let death = entry.facts.death;
             let plan = oteryn_gameplay_items::loot_plan::plan_creature_loot(
                 oteryn_gameplay_items::loot_plan::LootPlanDeathKey::new(
