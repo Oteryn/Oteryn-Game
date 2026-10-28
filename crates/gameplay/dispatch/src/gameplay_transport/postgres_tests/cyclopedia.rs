@@ -338,6 +338,13 @@ fn scenario() -> TestResult {
         let (_, epoch) = support::exchange(&owner, &mut admitted, 19, 72, &[]).await?;
         assert_eq!(epoch[27], 2);
         assert_eq!(pool(&epoch), 0);
+        // PAR-W12: Crystal `discovery_system.lua:191` DONATION_GOAL = 10,000,000 (MATCH, `>=`).
+        let (winner, before): (bool, i64) = sqlx::query_as(
+            "SELECT donation_winner,pool_before FROM game_world_cyclopedia_epochs WHERE epoch=1",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!((winner, before), (true, 10_000_000));
         let (_, frozen_pool) =
             support::exchange(&owner, &mut admitted, 20, 73, &request(4, 1)).await?;
         assert_eq!(
