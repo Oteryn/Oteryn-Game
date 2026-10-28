@@ -396,6 +396,17 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
+    /// HIRELING4: a carried hireling lamp is qualified by the gameplay owner before the
+    /// ordinary food/potion path. `None` means that the item is not a lamp.
+    fn use_hireling_item(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _item: ItemKey,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     /// BAGS-USE-1: field 5, resolved by the owner against the complete carried tree.
     fn use_item_by_definition(
         &self,

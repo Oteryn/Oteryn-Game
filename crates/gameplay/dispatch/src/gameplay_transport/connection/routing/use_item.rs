@@ -219,7 +219,22 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                     (_, Some(key), _) if consumable => {
                         let outcome = tokio::time::timeout(
                             std::time::Duration::from_secs(10),
-                            authority.use_item_completion(
+                            async {
+                                if let Some(outcome) = authority
+                                    .use_hireling_item(
+                                        actor,
+                                        UseCommand {
+                                            game_session_id: admitted.game_session_id,
+                                            command_id: command.command_id,
+                                            item_fence: admitted.item_fence,
+                                        },
+                                        key,
+                                    )
+                                    .await
+                                {
+                                    return Some(outcome);
+                                }
+                                authority.use_item_completion(
                                 actor,
                                 UseCommand {
                                     game_session_id: admitted.game_session_id,
@@ -227,7 +242,8 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                                     item_fence: admitted.item_fence,
                                 },
                                 key,
-                            ),
+                                ).await
+                            },
                         ).await.ok().flatten()?;
                         Dispatch::Use(outcome)
                     },

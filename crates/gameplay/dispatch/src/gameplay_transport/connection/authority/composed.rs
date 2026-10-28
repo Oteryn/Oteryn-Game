@@ -601,6 +601,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Some(self.use_item(actor, command, item).await)
     }
 
+    async fn use_hireling_item(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        item: item_view::ItemKey,
+    ) -> Option<connection::UseOutcome> {
+        self.use_hireling_lamp(actor, command, item).await
+    }
+
     async fn use_item_by_definition(
         &self,
         actor: ExactActorRef,

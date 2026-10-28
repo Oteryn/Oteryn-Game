@@ -1,7 +1,15 @@
 //! Owner-only, durable house hireling summon and bank-service actor projection.
-use super::{ComposedFreshAdmission, capabilities::OfferedCapability, connection::AdmittedSession};
+use super::{
+    ComposedFreshAdmission,
+    capabilities::OfferedCapability,
+    connection::{AdmittedSession, EarnedNotice, UseCommand, UseOutcome},
+    item_view::ItemKey,
+};
 use crate::foundation::{MovementFacing, NpcPlacement};
 use oteryn_protocol_oteryn::hireling as wire;
+use oteryn_protocol_oteryn::world_object::UseDisposition;
+
+const HIRELING_LAMP: &str = "oteryn:item.tibia.i29432";
 
 pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<OfferedCapability> {
     let mut offers: Vec<_> = base
@@ -120,5 +128,86 @@ pub(super) async fn execute(
         Some(true)
     } else {
         Some(false)
+    }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Crystal's lamp action enters through ordinary carried-item USE. Oteryn's accepted
+    /// hireling model keeps the durable identity rather than consuming or recreating it; the
+    /// lamp therefore acts only as the placement control for that identity.
+    pub(super) async fn use_hireling_lamp(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        command: UseCommand,
+        item: ItemKey,
+    ) -> Option<UseOutcome> {
+        let ItemKey::Instance(item_id) = item else {
+            return None;
+        };
+        let fence = command.item_fence?;
+        let inventory = self
+            .root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+            .ok()?;
+        let is_lamp = inventory
+            .backpack
+            .iter()
+            .flat_map(|bag| &bag.entries)
+            .chain(inventory.nested.iter().map(|(_, entry)| entry))
+            .any(|entry| {
+                entry.item.item_instance_id == item_id
+                    && entry.item.definition.production_key == HIRELING_LAMP
+            });
+        if !is_lamp {
+            return None;
+        }
+        let state = {
+            let runtime = self.runtime.lock().await;
+            runtime
+                .house_actor_state(actor, command.game_session_id)
+                .ok()?
+        };
+        let position = (
+            u16::try_from(state.position.x).ok()?,
+            u16::try_from(state.position.y).ok()?,
+            i8::try_from(state.position.floor).ok()?,
+        );
+        let active = self
+            .root
+            .commit_house_hireling(
+                fence,
+                &state.house,
+                command.command_id,
+                Some(position),
+                false,
+                false,
+            )
+            .await
+            .ok()?;
+        let Some((x, y, floor)) = active else {
+            return Some(UseOutcome::rejected());
+        };
+        let key = format!("oteryn:npc.hireling-bank:{}", state.house);
+        let mut runtime = self.runtime.lock().await;
+        runtime.remove_dynamic_npc(&key).ok()?;
+        runtime
+            .place_dynamic_npc(
+                &key,
+                NpcPlacement {
+                    x,
+                    y,
+                    floor,
+                    direction: MovementFacing::South,
+                },
+            )
+            .ok()?;
+        Some(UseOutcome {
+            disposition: UseDisposition::Committed,
+            committed: None,
+            earned: EarnedNotice::NoneEarned,
+            gate_message_id: None,
+            refusal_detail: None,
+        })
     }
 }
