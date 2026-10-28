@@ -9,11 +9,6 @@
     "bytes": 26175,
     "central_registrations": 0
   },
-  "apps/client/src/lib.rs": {
-    "lines": 1149,
-    "bytes": 45972,
-    "central_registrations": 0
-  },
   "apps/client/src/play.rs": {
     "lines": 180,
     "bytes": 6859,
