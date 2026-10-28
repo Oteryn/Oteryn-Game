@@ -92,6 +92,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         map: &crate::map::boot::BundleMap,
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
+        // The spell owner holds the admission-qualified Character facts and refreshes them on
+        // durable level-up. Missing facts fail closed for a level door while ordinary doors do
+        // not consult the value.
+        let actor_level = self
+            .states
+            .spell_states
+            .lock()
+            .await
+            .actors
+            .iter()
+            .find(|(candidate, candidate_session, _)| {
+                *candidate == actor && *candidate_session == session
+            })
+            .map_or(0, |(_, _, state)| state.character_facts().level);
         let mut runtime = self.runtime.lock().await;
         if self.states.spell_states.lock().await.is_dead(actor) {
             return UseOutcome::rejected();
@@ -158,6 +172,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.content_pin().client_artifact_digest(),
             actor_tile,
             |door| map_door::doorway_occupied(&runtime, actor, actor_tile, door),
+            actor_level,
             target,
         )
     }
