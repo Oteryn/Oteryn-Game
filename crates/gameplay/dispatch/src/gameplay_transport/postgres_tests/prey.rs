@@ -134,16 +134,8 @@ fn scenario() -> TestResult {
             .active_generation
             .and_then(|a| a.native_gameplay())
             .ok_or("native")?;
-        let index = state.slots[0]
-            .creatures
-            .iter()
-            .position(|key| {
-                native
-                    .reward_table()
-                    .row(key)
-                    .is_ok_and(|r| r.loot_table.entries.len() <= 7)
-            })
-            .ok_or("supported drawn creature")?;
+        // Every listed creature is selectable, so the last one stands for all.
+        let index = state.slots[0].creatures.len() - 1;
         let select = wire::encode_request(&wire::Request::Select {
             slot: 1,
             index: (index + 1) as u8,
@@ -180,16 +172,7 @@ fn scenario() -> TestResult {
             exchange(&owner, &mut admitted, &[(6, &reroll)]).await?[0].0,
             CommandStatus::Rejected
         );
-        let index = rerolled.slots[0]
-            .creatures
-            .iter()
-            .position(|key| {
-                native
-                    .reward_table()
-                    .row(key)
-                    .is_ok_and(|r| r.loot_table.entries.len() <= 7)
-            })
-            .ok_or("supported reroll creature")?;
+        let index = rerolled.slots[0].creatures.len() - 1;
         let select_again = wire::encode_request(&wire::Request::Select {
             slot: 1,
             index: (index + 1) as u8,
@@ -321,17 +304,6 @@ fn scenario() -> TestResult {
                 .await?,
             12
         );
-        // Oversized source tables are explicit content refusals, never skipped bonus rolls.
-        let unsupported = wire::encode_request(&wire::Request::SelectAny {
-            slot: 1,
-            creature: "oteryn:creature.dragon".into(),
-        })
-        .map_err(debug)?;
-        let command = admitted.continuity.next_command_id;
-        let values = exchange(&owner, &mut admitted, &[(command, &unsupported)]).await?;
-        let refused = wire::decode_reply(&values[0].1).map_err(debug)?;
-        assert_eq!(refused.status, wire::STATUS_CONTENT_UNAVAILABLE);
-        assert_eq!(refused.wildcard_balance, 12);
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
                 "SELECT count(*) FROM game_account_prey_wildcard_entries WHERE kind='SPEND'"
@@ -340,16 +312,24 @@ fn scenario() -> TestResult {
             .await?,
             0
         );
+        // A creature without a <=7-entry loot row is still preyable, as in Tibia: the
+        // improved-loot bonus only adds no extra roll for it (PREY-0 R4 budget).
+        assert!(
+            !native
+                .reward_table()
+                .row("oteryn:creature.dragon")
+                .is_ok_and(|r| r.loot_table.entries.len() <= 7)
+        );
         let any = wire::encode_request(&wire::Request::SelectAny {
             slot: 1,
-            creature: "oteryn:creature.rat".into(),
+            creature: "oteryn:creature.dragon".into(),
         })
         .map_err(debug)?;
         let command = admitted.continuity.next_command_id;
         let values = exchange(&owner, &mut admitted, &[(command, &any)]).await?;
         assert_eq!(values[0].0, CommandStatus::Accepted);
         let chosen = wire::decode_reply(&values[0].1).map_err(debug)?;
-        assert_eq!(chosen.slots[0].selected, "oteryn:creature.rat");
+        assert_eq!(chosen.slots[0].selected, "oteryn:creature.dragon");
         assert_eq!(chosen.wildcard_balance, 7);
         // Each expiry checkpoints the actual native hunting signal, then debits atomically.
         for (option, cost) in [(2, 5), (1, 1)] {
