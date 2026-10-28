@@ -825,6 +825,7 @@ mod tests {
 #[derive(Debug, Clone)]
 pub struct RawCastDurableFacts {
     pub account: [u8; 16],
+    pub loyalty_points: u32,
     pub equipment: EquipmentSnapshot,
     pub build: super::character_build::DurableBuildState,
     pub level: u32,
@@ -847,6 +848,7 @@ pub async fn read_raw_cast_facts_in_transaction(
     let raw = read_lifecycle_facts_in_transaction(tx, authority).await?;
     Ok(RawCastDurableFacts {
         account: raw.account,
+        loyalty_points: raw.loyalty_points,
         equipment: raw.equipment,
         build: raw.build,
         level: raw.level,
@@ -859,6 +861,9 @@ async fn read_lifecycle_facts_in_transaction(
     authority: &EquipmentAuthority,
 ) -> Result<RawLifecycleDurableFacts> {
     let equipment = read_equipment_in_transaction(tx, authority).await?;
+    let loyalty: i64 = sqlx::query_scalar("SELECT COALESCE((SELECT loyalty_points FROM game_account_loyalty_projections WHERE account_id=encode($1,'hex')::uuid),0)")
+        .bind(authority.account.as_slice()).fetch_one(&mut **tx).await?;
+    let loyalty_points = u32::try_from(loyalty).map_err(|_| rejected("corrupt account loyalty"))?;
     let row=sqlx::query("SELECT vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
         .bind(authority.fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?.ok_or(EquipmentError::Rejected("current classed Character build"))?;
     let skills = [
@@ -890,6 +895,7 @@ async fn read_lifecycle_facts_in_transaction(
         u32::try_from(level).map_err(|_| EquipmentError::Rejected("Character level bound"))?;
     Ok(RawLifecycleDurableFacts {
         account: authority.account,
+        loyalty_points,
         equipment,
         build,
         level,
@@ -951,6 +957,7 @@ impl DurabilityRoot {
 #[derive(Debug, Clone)]
 pub struct RawLifecycleDurableFacts {
     pub account: [u8; 16],
+    pub loyalty_points: u32,
     pub equipment: EquipmentSnapshot,
     pub build: super::character_build::DurableBuildState,
     pub level: u32,

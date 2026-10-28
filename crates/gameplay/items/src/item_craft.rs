@@ -16,6 +16,36 @@ pub struct CookingConversion {
     pub outputs: Vec<(TypedDefinitionRef, u32)>,
 }
 
+/// The first reachable Global fishing slice: a normal rod and worm on an admitted water tile
+/// consumes one worm and produces one fish. Dispatch owns the skill-scaled catch decision;
+/// durability revalidates all three definitions before mutating inventory.
+pub fn fishing_conversion(
+    native: &NativeGameplayState,
+    tool: &TypedDefinitionRef,
+    bait: &TypedDefinitionRef,
+    water: &TypedDefinitionRef,
+) -> Option<CookingConversion> {
+    use crate::fishing::{FISH, FISHING_ROD, WORM, is_water};
+    if tool.production_key != FISHING_ROD
+        || bait.production_key != WORM
+        || !is_water(&water.production_key)
+    {
+        return None;
+    }
+    let output = native.item_policy_for_source_id(3578)?.record();
+    (output.production_definition.production_key == FISH).then(|| CookingConversion {
+        recipe: "oteryn:fishing.global.standard".into(),
+        outputs: vec![(
+            TypedDefinitionRef {
+                family: output.production_definition.family.clone(),
+                production_key: output.production_definition.production_key.clone(),
+                revision_ref: output.production_definition.revision_ref.clone(),
+            },
+            1,
+        )],
+    })
+}
+
 /// Resolve a fixed cooking row from server-owned data and this generation's exact item policies.
 /// Each conversion consumes one USED unit and mints every output with a fresh identity.
 pub fn cooking_conversion(

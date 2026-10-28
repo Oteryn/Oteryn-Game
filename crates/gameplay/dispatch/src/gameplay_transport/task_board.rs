@@ -148,7 +148,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// The board tracks of the session's current quest copy; `None` while the copy is unusable.
-    fn task_board_tracks(
+    pub(super) fn task_board_tracks(
         &self,
         session: GameSessionId,
     ) -> Option<std::collections::BTreeMap<String, i64>> {

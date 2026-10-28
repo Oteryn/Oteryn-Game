@@ -28,7 +28,9 @@ pub const FORGE_PROTECTION_PERCENT: u8 = 50;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ForgeOperation {
     Fusion { boost: bool, protect: bool },
+    ConvergenceFusion,
     Transfer,
+    ConvergenceTransfer,
 }
 
 /// Supplied facts only. The live writer must resolve and lock these instances.
@@ -106,6 +108,19 @@ impl TryFrom<ForgeRequest<'_>> for ForgeQuote {
                     },
                 )
             }
+            ForgeOperation::ConvergenceFusion => {
+                if request.target.profile.classification != 4
+                    || request.source.profile.classification != 4
+                {
+                    return Err(ForgeRuleError::Shape(
+                        ForgeShapeError::ConvergenceRequiresClassFour,
+                    ));
+                }
+                let tier = target
+                    .fusion_target_tier(source)
+                    .map_err(ForgeRuleError::Shape)?;
+                (tier, tier.get(), 0, 100)
+            }
             ForgeOperation::Transfer => {
                 let tier = target
                     .transfer_target_tier(source)
@@ -114,13 +129,27 @@ impl TryFrom<ForgeRequest<'_>> for ForgeQuote {
                 let price = price(request.target.profile.classification, tier.get())?;
                 (tier, request.source.tier.get(), price.transfer_cores, 100)
             }
+            ForgeOperation::ConvergenceTransfer => {
+                let tier = target
+                    .convergence_transfer_target_tier(source)
+                    .map_err(ForgeRuleError::Shape)?;
+                let row = price(request.target.profile.classification, tier.get())?;
+                (tier, tier.get(), row.transfer_cores, 100)
+            }
+        };
+        let row = price(request.target.profile.classification, price_tier)?;
+        let (gold, dust) = match request.operation {
+            ForgeOperation::ConvergenceFusion => {
+                (row.convergence_fusion_gold, CONVERGENCE_FUSION_DUST)
+            }
+            ForgeOperation::ConvergenceTransfer => {
+                (row.convergence_transfer_gold, CONVERGENCE_TRANSFER_DUST)
+            }
+            ForgeOperation::Fusion { .. } => (row.gold, NORMAL_FUSION_DUST),
+            ForgeOperation::Transfer => (row.gold, NORMAL_TRANSFER_DUST),
         };
         Ok(Self {
-            cost: ForgeCost {
-                gold: price(request.target.profile.classification, price_tier)?.gold,
-                dust: FORGE_DUST_COST,
-                cores,
-            },
+            cost: ForgeCost { gold, dust, cores },
             success_percent,
             operation: request.operation,
             original_tier: request.target.tier,
@@ -210,6 +239,9 @@ impl TryFrom<ForgeAttempt> for ForgePlan {
         ) && attempt.protection_roll < FORGE_PROTECTION_PERCENT
         {
             Some(quote.original_tier)
+        } else if matches!(quote.operation, ForgeOperation::ConvergenceFusion) {
+            // Guaranteed convergence cannot reach the failure branch.
+            return Err(ForgeRuleError::InvalidRoll);
         } else {
             quote
                 .original_tier
