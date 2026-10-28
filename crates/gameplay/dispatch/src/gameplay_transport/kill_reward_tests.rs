@@ -48,6 +48,27 @@ fn row(drops: usize) -> Arc<CreatureRewardRow> {
     })
 }
 
+#[test]
+fn final_fourteen_stamina_hours_remove_every_planned_monster_drop() {
+    for minutes in [0, 1, 839, 840] {
+        let mut table = row(3).loot_table.clone();
+        apply_hunting_stamina_to_loot(&mut table, Some(minutes));
+        assert!(table.entries.is_empty(), "stamina minute {minutes}");
+    }
+    for minutes in [841, 2_340, 2_341, 2_520] {
+        let mut table = row(3).loot_table.clone();
+        apply_hunting_stamina_to_loot(&mut table, Some(minutes));
+        assert_eq!(table.entries.len(), 3, "stamina minute {minutes}");
+    }
+    let mut table = row(3).loot_table.clone();
+    apply_hunting_stamina_to_loot(&mut table, None);
+    assert_eq!(
+        table.entries.len(),
+        3,
+        "an absent live owner remains fail-neutral"
+    );
+}
+
 /// One projected death on its own Channel (`channel` keys it), principal `session_seed` at
 /// lease generation `lease`.
 fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKillSettlement {
