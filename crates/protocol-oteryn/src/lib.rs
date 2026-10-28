@@ -43,6 +43,7 @@ pub mod damage_element;
 #[cfg(test)]
 mod decoder_fuzz_support;
 pub mod depot;
+pub mod depot_search;
 pub mod exiva;
 pub mod guild;
 pub mod guild_bank;

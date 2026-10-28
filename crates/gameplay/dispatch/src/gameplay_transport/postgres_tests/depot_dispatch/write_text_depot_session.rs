@@ -77,6 +77,75 @@ pub(super) async fn exercise(
             assert_eq!(reply.entries[0].ordinal, 1);
             assert_eq!(reply.entries[0].count, 100);
         }
+        // Search also loses disclosure authority if reconnect wins while its SELECT waits.
+        for displaced in [true, false] {
+            let mut blocker = pool.begin().await?;
+            sqlx::query("LOCK TABLE game_item_character_depot_locations IN ACCESS EXCLUSIVE MODE")
+                .execute(&mut *blocker)
+                .await?;
+            let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                .fetch_one(&mut *blocker)
+                .await?;
+            let payload = oteryn_protocol_oteryn::depot_search::encode_request(
+                oteryn_protocol_oteryn::depot_search::Request::Search { client_id: 3031 },
+            )
+            .map_err(debug)?;
+            let frame = oteryn_protocol_oteryn::encode_client_command(
+                1,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id: 6 - u64::from(displaced),
+                    command_type: oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH,
+                    payload: &payload,
+                },
+            )?;
+            client.write_u32(u32::try_from(frame.len())?).await?;
+            client.write_all(&frame).await?;
+            tokio::time::timeout(std::time::Duration::from_secs(5), async {
+                loop {
+                    let blocked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND $1=ANY(pg_blocking_pids(pid)))")
+                        .bind(pid).fetch_one(pool).await?;
+                    if blocked {return Ok::<(),sqlx::Error>(());}
+                    tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+                }
+            }).await??;
+            if displaced {
+                sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation+1 WHERE game_session_id=encode($1,'hex')::uuid")
+                    .bind(session.as_bytes().as_slice()).execute(pool).await?;
+            }
+            blocker.commit().await?;
+            loop {
+                let frame = read_frame(&mut client).await?;
+                let envelope = oteryn_protocol_oteryn::decode_wire_envelope(&frame)?;
+                if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
+                    let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                    assert_eq!(result.command_id, 6 - u64::from(displaced));
+                    assert_eq!(
+                        result.status,
+                        oteryn_protocol_oteryn::CommandStatus::Accepted
+                    );
+                    let reply = oteryn_protocol_oteryn::depot_search::decode_reply(result.payload)
+                        .map_err(debug)?;
+                    if displaced {
+                        assert_eq!(
+                            reply.outcome,
+                            oteryn_protocol_oteryn::depot_search::Outcome::Rejected
+                        );
+                        assert!(reply.results.is_empty());
+                    } else {
+                        assert_eq!(
+                            reply.outcome,
+                            oteryn_protocol_oteryn::depot_search::Outcome::Found
+                        );
+                        assert_eq!(reply.results[0].depot, 100);
+                    }
+                    break;
+                }
+            }
+            if displaced {
+                sqlx::query("UPDATE game_durability_reconnect_sessions SET current_generation=current_generation-1 WHERE game_session_id=encode($1,'hex')::uuid")
+                    .bind(session.as_bytes().as_slice()).execute(pool).await?;
+            }
+        }
         let receipts: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_item_loop_move_receipts WHERE depot_town=0 AND depot_box=17",
         )
