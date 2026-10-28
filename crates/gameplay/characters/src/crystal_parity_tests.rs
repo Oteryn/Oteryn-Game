@@ -275,7 +275,7 @@ fn c15_stamina_bands_equal_crystal_final_bonus_stamina_without_other_modifiers()
         for premium in [false, true] {
             for share in (0..=1_000).chain([123_456_789, 9_007_199_254]) {
                 assert_eq!(
-                    hunting_experience(share, 0, 0, stamina, premium),
+                    hunting_experience(share, 0, 0, stamina, premium, 51),
                     Ok(crystal(share, stamina, premium)),
                     "share {share}, stamina {stamina}, premium {premium}"
                 );
@@ -289,6 +289,15 @@ fn c15_prey_and_boost_rounding_is_the_recorded_d118_divergence() {
     // Crystal `onGainExperience`: `ceil(exp * (100 + prey) / 100)`, then
     // `exp * (1 + boost / 100 + lowLevel / 100) * stamina`, truncated once. Oteryn floors each
     // D118 step. These pins name the divergence; they are not adopted.
-    assert_eq!(hunting_experience(1, 5, 0, 2000, false), Ok(1)); // Crystal ceil(1.05) = 2
-    assert_eq!(hunting_experience(1, 0, 50, 2520, true), Ok(1)); // Crystal 1 * 1.5 * 1.5 = 2.25 -> 2
+    assert_eq!(hunting_experience(1, 5, 0, 2000, false, 51), Ok(1)); // Crystal ceil(1.05) = 2
+    assert_eq!(hunting_experience(1, 0, 50, 2520, true, 51), Ok(1)); // Crystal 1 * 1.5 * 1.5 = 2.25 -> 2
+}
+
+#[test]
+fn c14_low_level_bonus_follows_global_not_crystal_config() {
+    // Crystal `getFinalLowLevelBonus`: flat `lowLevelBonusExp = 50` for levels 1-50. Global
+    // declines linearly from 100% to 0% at level 50; Oteryn follows Global (owner, PAR-C14).
+    assert_eq!(hunting_experience(100, 0, 0, 2000, false, 1), Ok(200)); // Crystal 150
+    assert_eq!(hunting_experience(100, 0, 0, 2000, false, 26), Ok(150)); // Crystal 150
+    assert_eq!(hunting_experience(100, 0, 0, 2000, false, 50), Ok(100)); // Crystal 150
 }
