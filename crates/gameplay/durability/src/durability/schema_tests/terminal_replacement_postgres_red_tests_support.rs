@@ -115,7 +115,14 @@ impl IsolatedDatabase {
     async fn create(test_name: &str) -> Result<Self, Box<dyn Error>> {
         let admin_url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
         if !(admin_url.starts_with("postgresql://oteryn_test_admin:")
-            && (admin_url.contains("@127.0.0.1:5432/") || admin_url.contains("@localhost:5432/"))
+            && admin_url.rsplit_once('@').is_some_and(|(_, host)| {
+                host.strip_prefix("127.0.0.1:")
+                    .or_else(|| host.strip_prefix("localhost:"))
+                    .and_then(|rest| rest.strip_suffix("/postgres"))
+                    .is_some_and(|port| {
+                        port.bytes().all(|b| b.is_ascii_digit()) && port.parse::<u16>().is_ok()
+                    })
+            })
             && admin_url.ends_with("/postgres")
             && !admin_url.contains(['?', '#', '\n', '\r']))
         {
