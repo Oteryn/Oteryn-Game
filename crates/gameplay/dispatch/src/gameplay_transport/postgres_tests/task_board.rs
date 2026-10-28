@@ -39,7 +39,8 @@ const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
     floor: -7,
 };
 const PASS: Duration = Duration::from_secs(3);
-const RAT_XP: i64 = 5;
+// 5 rat XP, doubled by the level-1 Global low-level bonus.
+const RAT_XP: i64 = 2 * 5;
 
 #[test]
 fn task_board_real_dispatch_selects_credits_a_real_kill_and_claims_once() -> TestResult {

@@ -1169,10 +1169,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .filter(|r| r.0 == second_id.as_bytes())
         .map(|r| r.1)
         .sum::<i64>();
+    // Every Character here is level 1: the Global low-level bonus (+100%) doubles each award.
     if matches!(case, Case::Inactive) {
-        assert_eq!((first_award, second_award), (5, 0));
+        assert_eq!((first_award, second_award), (10, 0));
     } else if matches!(case, Case::Concurrent) {
-        assert_eq!((first_award, second_award), (11, 11));
+        assert_eq!((first_award, second_award), (22, 22));
     } else if matches!(case, Case::Foreign) {
         let foreign = third
             .as_ref()
@@ -1184,11 +1185,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .filter(|r| r.0 == foreign.as_bytes())
             .map(|r| r.1)
             .sum::<i64>();
-        assert_eq!((first_award, second_award, award), (2, 2, 1));
+        assert_eq!((first_award, second_award, award), (4, 4, 2));
     } else if matches!(case, Case::Exhausted) {
-        assert_eq!((first_award, second_award), (4, 0));
+        assert_eq!((first_award, second_award), (8, 0));
     } else if matches!(case, Case::Pz) {
-        assert!(first_award + second_award <= 5);
+        assert!(first_award + second_award <= 10);
         let shared: bool = sqlx::query_scalar("SELECT shared FROM game_party_kill_xp_receipts")
             .fetch_one(&h.pool)
             .await?;
@@ -1197,9 +1198,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         assert_eq!(
             (first_award, second_award),
             if matches!(case, Case::Modifiers) {
-                (3, 2)
+                (6, 4)
             } else {
-                (4, 4)
+                (8, 8)
             }
         );
     }
