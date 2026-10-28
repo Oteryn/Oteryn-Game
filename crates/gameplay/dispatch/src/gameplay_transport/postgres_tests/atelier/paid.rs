@@ -48,7 +48,7 @@ pub(super) async fn exercise(
             resources: Some(resources.clone()),
         };
         let outcome = owner
-            .commit_gem_build(session, GemBuildCommand::Atelier(request.clone()))
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request.clone()))
             .await
             .map_err(debug)?;
         assert!(
@@ -68,7 +68,7 @@ pub(super) async fn exercise(
         assert!(revealed.unrevealed.is_empty() && revealed.fragments.is_empty());
         let fp = footprint(h).await?;
         let replay = owner
-            .commit_gem_build(session, GemBuildCommand::Atelier(request.clone()))
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request.clone()))
             .await
             .map_err(debug)?;
         assert!(
@@ -94,7 +94,7 @@ pub(super) async fn exercise(
     };
     assert!(matches!(
         owner
-            .commit_gem_build(session, GemBuildCommand::Atelier(conflict))
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(conflict))
             .await,
         Err(CharacterProgressionError::ConflictingOccurrence)
     ));
@@ -106,7 +106,7 @@ pub(super) async fn exercise(
         resources: Some(resources.clone()),
     };
     let outcome = owner
-        .commit_gem_build(session, GemBuildCommand::Atelier(fresh))
+        .execute_gem_atelier(session, GemBuildCommand::Atelier(fresh))
         .await
         .map_err(debug)?;
     assert!(
@@ -131,7 +131,7 @@ pub(super) async fn exercise(
     };
     assert!(matches!(
         owner
-            .commit_gem_build(session, GemBuildCommand::Atelier(stale))
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(stale))
             .await
             .map_err(debug)?,
         GemBuildOutcome::Atelier(AtelierOutcome::Refused)
@@ -158,7 +158,7 @@ pub(super) async fn exercise(
     };
     assert!(matches!(
         owner
-            .commit_gem_build(session, GemBuildCommand::Atelier(refused))
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(refused))
             .await
             .map_err(debug)?,
         GemBuildOutcome::Atelier(AtelierOutcome::Refused)
@@ -177,7 +177,7 @@ pub(super) async fn exercise(
             resources: Some(resources.clone()),
         };
         let outcome = owner
-            .commit_gem_build(session, GemBuildCommand::Atelier(request))
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request))
             .await
             .map_err(debug)?;
         assert!(
@@ -207,7 +207,7 @@ pub(super) async fn exercise(
         vessels: Some([None, Some(green), None, None]),
     };
     assert!(
-        matches!(owner.commit_gem_build(session,GemBuildCommand::Wheel(wrong)).await.map_err(debug)?,GemBuildOutcome::Wheel(ref change) if matches!(**change,WheelCommitOutcome::Refused(_)))
+        matches!(owner.execute_gem_atelier(session,GemBuildCommand::Wheel(wrong)).await.map_err(debug)?,GemBuildOutcome::Wheel(ref change) if matches!(**change,WheelCommitOutcome::Refused(_)))
     );
     let mut points = [0; 36];
     points[14] = 11;
@@ -219,7 +219,7 @@ pub(super) async fn exercise(
         vessels: Some([Some(green), None, None, None]),
     };
     let outcome = owner
-        .commit_gem_build(session, GemBuildCommand::Wheel(wheel))
+        .execute_gem_atelier(session, GemBuildCommand::Wheel(wheel))
         .await
         .map_err(debug)?;
     assert!(
@@ -242,7 +242,7 @@ pub(super) async fn exercise(
             .vessel
     );
     let replay = owner
-        .commit_gem_build(session, GemBuildCommand::Wheel(wheel))
+        .execute_gem_atelier(session, GemBuildCommand::Wheel(wheel))
         .await
         .map_err(debug)?;
     assert!(matches!(
@@ -259,7 +259,7 @@ pub(super) async fn exercise(
     };
     assert!(matches!(
         owner
-            .commit_gem_build(session, GemBuildCommand::Wheel(over))
+            .execute_gem_atelier(session, GemBuildCommand::Wheel(over))
             .await
             .map_err(debug)?,
         GemBuildOutcome::Wheel(ref change) if matches!(**change, WheelCommitOutcome::Refused(crate::durability::character_wheel::WheelRefusal::OverPoints))
@@ -273,7 +273,7 @@ pub(super) async fn exercise(
     };
     assert!(matches!(
         owner
-            .commit_gem_build(session, GemBuildCommand::Atelier(blocked))
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(blocked))
             .await
             .map_err(debug)?,
         GemBuildOutcome::Atelier(AtelierOutcome::Refused)
@@ -286,7 +286,7 @@ pub(super) async fn exercise(
         vessels: Some([None; 4]),
     };
     let outcome = owner
-        .commit_gem_build(session, GemBuildCommand::Wheel(remove))
+        .execute_gem_atelier(session, GemBuildCommand::Wheel(remove))
         .await
         .map_err(debug)?;
     assert!(
@@ -306,7 +306,7 @@ pub(super) async fn exercise(
         resources: None,
     };
     owner
-        .commit_gem_build(session, GemBuildCommand::Atelier(unlock))
+        .execute_gem_atelier(session, GemBuildCommand::Atelier(unlock))
         .await
         .map_err(debug)?;
     let switch = AtelierRequest {
@@ -316,7 +316,7 @@ pub(super) async fn exercise(
         resources: Some(resources.clone()),
     };
     let outcome = owner
-        .commit_gem_build(session, GemBuildCommand::Atelier(switch))
+        .execute_gem_atelier(session, GemBuildCommand::Atelier(switch))
         .await
         .map_err(debug)?;
     assert!(
@@ -337,7 +337,7 @@ pub(super) async fn exercise(
         resources: Some(resources),
     };
     let outcome = owner
-        .commit_gem_build(session, GemBuildCommand::Atelier(dismantle.clone()))
+        .execute_gem_atelier(session, GemBuildCommand::Atelier(dismantle.clone()))
         .await
         .map_err(debug)?;
     assert!(
@@ -359,7 +359,7 @@ pub(super) async fn exercise(
     );
     let fp = footprint(h).await?;
     owner
-        .commit_gem_build(session, GemBuildCommand::Atelier(dismantle))
+        .execute_gem_atelier(session, GemBuildCommand::Atelier(dismantle))
         .await
         .map_err(debug)?;
     assert_eq!(footprint(h).await?, fp);
@@ -387,7 +387,7 @@ pub(super) async fn exercise(
     full[14] = 11;
     wheel.slots = WheelSlots::new(full).map_err(debug)?;
     let outcome = owner
-        .commit_gem_build(session, GemBuildCommand::Wheel(wheel))
+        .execute_gem_atelier(session, GemBuildCommand::Wheel(wheel))
         .await
         .map_err(debug)?;
     assert!(
@@ -425,7 +425,7 @@ pub(super) async fn exercise(
             })),
         };
         let outcome = owner
-            .commit_gem_build(session, GemBuildCommand::Atelier(request))
+            .execute_gem_atelier(session, GemBuildCommand::Atelier(request))
             .await
             .map_err(debug)?;
         assert!(
@@ -463,7 +463,7 @@ pub(super) async fn exercise(
         })),
     };
     let outcome = owner
-        .commit_gem_build(session, GemBuildCommand::Atelier(dismantle))
+        .execute_gem_atelier(session, GemBuildCommand::Atelier(dismantle))
         .await
         .map_err(debug)?;
     assert!(
@@ -501,7 +501,7 @@ pub(super) async fn exercise(
     let mut replay = requests.remove(0);
     replay.resources = None;
     let outcome = owner
-        .commit_gem_build(session, GemBuildCommand::Atelier(replay))
+        .execute_gem_atelier(session, GemBuildCommand::Atelier(replay))
         .await
         .map_err(debug)?;
     assert!(matches!(
