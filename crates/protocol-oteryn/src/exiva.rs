@@ -7,12 +7,15 @@ pub enum Operation {
     SetModes,
     AddPlayer,
     RemovePlayer,
+    AddGuild,
+    RemoveGuild,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Request {
     pub operation: Operation,
     pub modes: u8,
     pub player: Option<[u8; 16]>,
+    pub guild: Option<[u8; 16]>,
 }
 impl Request {
     pub fn decode(bytes: &[u8]) -> Option<Self> {
@@ -21,6 +24,7 @@ impl Request {
                 operation: Operation::SetModes,
                 modes: *modes,
                 player: None,
+                guild: None,
             }),
             [operation @ (1 | 2), rest @ ..] if rest.len() == 16 => Some(Self {
                 operation: if *operation == 1 {
@@ -30,6 +34,17 @@ impl Request {
                 },
                 modes: 0,
                 player: Some(rest.try_into().ok()?),
+                guild: None,
+            }),
+            [operation @ (3 | 4), rest @ ..] if rest.len() == 16 => Some(Self {
+                operation: if *operation == 3 {
+                    Operation::AddGuild
+                } else {
+                    Operation::RemoveGuild
+                },
+                modes: 0,
+                player: None,
+                guild: Some(rest.try_into().ok()?),
             }),
             _ => None,
         }
@@ -54,8 +69,17 @@ mod tests {
                 Some(Request {
                     operation,
                     modes: 0,
-                    player: Some(player)
+                    player: Some(player),
+                    guild: None
                 })
+            );
+        }
+        for (tag, operation) in [(3, Operation::AddGuild), (4, Operation::RemoveGuild)] {
+            let mut bytes = vec![tag];
+            bytes.extend(player);
+            assert_eq!(
+                Request::decode(&bytes).map(|r| (r.operation, r.guild)),
+                Some((operation, Some(player)))
             );
         }
         assert!(Request::decode(&[0, 32]).is_none());
