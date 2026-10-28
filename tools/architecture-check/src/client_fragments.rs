@@ -16,6 +16,37 @@ pub(crate) fn read(path: &Path) -> Result<Value, String> {
         .map_err(|e| format!("{}: {e}", path.display()))
 }
 
+/// The frozen JSON list plus one `client-unsupported-baseline.d/<mechanic>.json` per newer
+/// mechanic, so parallel capability branches add files instead of editing one shared list.
+fn unsupported_baseline(root: &Path) -> Result<Vec<String>, String> {
+    let mut names: Vec<String> =
+        read(&root.join("tools/architecture-check/client-unsupported-baseline.json"))?
+            .as_array()
+            .ok_or("unsupported baseline array")?
+            .iter()
+            .filter_map(Value::as_str)
+            .map(str::to_owned)
+            .collect();
+    for path in listing(&root.join("tools/architecture-check/client-unsupported-baseline.d"))? {
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .filter(|_| path.extension().is_some_and(|e| e == "json"))
+            .ok_or_else(|| format!("unsupported baseline file: {}", path.display()))?;
+        if read(&path)? != json!({ "mechanic": stem }) {
+            return Err(format!(
+                "unsupported baseline file content: {}",
+                path.display()
+            ));
+        }
+        if names.iter().any(|n| n == stem) {
+            return Err(format!("duplicate unsupported baseline entry: {stem}"));
+        }
+        names.push(stem.to_owned());
+    }
+    Ok(names)
+}
+
 pub(crate) fn listing(dir: &Path) -> Result<Vec<PathBuf>, String> {
     if !dir.exists() {
         return Ok(Vec::new());
@@ -180,13 +211,8 @@ pub(crate) fn scan(root: &Path) -> Result<(Vec<Value>, Vec<Value>), String> {
     if covered != facts.keys().map(String::as_str).collect() {
         return Err("mechanic coverage must include every server capability".into());
     }
-    let baseline = read(&root.join("tools/architecture-check/client-unsupported-baseline.json"))?;
-    let baseline: BTreeSet<_> = baseline
-        .as_array()
-        .ok_or("unsupported baseline array")?
-        .iter()
-        .filter_map(Value::as_str)
-        .collect();
+    let baseline = unsupported_baseline(root)?;
+    let baseline: BTreeSet<_> = baseline.iter().map(String::as_str).collect();
     let unsupported: BTreeSet<_> = coverage
         .iter()
         .filter(|e| e["status"] == "unsupported")

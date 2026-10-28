@@ -82,7 +82,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &mut None,
         ) {
             Ok(Some(receipt)) => {
-                self.record_spell_kills(&mut runtime, std::iter::once(&receipt))
+                self.record_spell_kills(&mut runtime, &states, std::iter::once(&receipt))
                     .await;
                 NativeCastDispatch::Outcome(super::super::actor_spell::SpellCastOutcome {
                     disposition: SpellCastDisposition::Cast,
