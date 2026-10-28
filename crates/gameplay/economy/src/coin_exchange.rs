@@ -75,6 +75,54 @@ pub struct ItemExchangePlan {
     pub remove_converter: bool,
 }
 
+/// The two persistent definitions used by a Magic Gold Converter.  Activation is a definition
+/// transform, not a charge-bearing conversion; consequently toggling never spends a charge.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MagicConverterState {
+    Inactive,
+    Active,
+}
+
+impl MagicConverterState {
+    pub const fn toggled(self) -> Self {
+        match self {
+            Self::Inactive => Self::Active,
+            Self::Active => Self::Inactive,
+        }
+    }
+}
+
+/// Select the first carried full stack that an active Magic Gold Converter may upgrade.
+/// Traversal order belongs to the durable carried-container owner; this rule deliberately returns
+/// only a plan and cannot consume a charge on an ineligible stack or an inactive converter.
+pub fn qualify_magic_auto_upgrade(
+    state: MagicConverterState,
+    carried: impl IntoIterator<Item = (Coin, u64)>,
+    charges_before: u32,
+    free_slots_after_input: usize,
+    output_can_merge: bool,
+) -> Result<Option<ItemExchangePlan>, ExchangeRefusal> {
+    if state == MagicConverterState::Inactive {
+        return Ok(None);
+    }
+    if charges_before == 0 {
+        return Err(ExchangeRefusal::InvalidAmount);
+    }
+    for (coin, quantity) in carried {
+        if matches!(coin, Coin::Gold | Coin::Platinum) && quantity == 100 {
+            return qualify_item_use(
+                coin,
+                quantity,
+                ExchangeUse::MagicGoldConverter { charges_before },
+                free_slots_after_input,
+                output_can_merge,
+            )
+            .map(Some);
+        }
+    }
+    Ok(None)
+}
+
 /// Qualifies a single conversion. Direct use converts full gold/platinum stacks up; smaller
 /// platinum stacks and every crystal stack change one coin down. Converter modes retain the
 /// draft's qualification only; production currently applies plain coin use. Callers must apply
@@ -283,6 +331,63 @@ mod tests {
                 ExchangeUse::GoldConverter { charges_before: 0 },
                 1,
                 false,
+            ),
+            Err(ExchangeRefusal::InvalidAmount)
+        );
+    }
+
+    #[test]
+    fn magic_toggle_is_charge_free_and_auto_upgrade_selects_one_stack() {
+        assert_eq!(
+            MagicConverterState::Inactive.toggled(),
+            MagicConverterState::Active
+        );
+        assert_eq!(
+            MagicConverterState::Active.toggled(),
+            MagicConverterState::Inactive
+        );
+        let carried = [
+            (Coin::Crystal, 100),
+            (Coin::Gold, 99),
+            (Coin::Platinum, 100),
+        ];
+        assert_eq!(
+            qualify_magic_auto_upgrade(MagicConverterState::Active, carried, 2, 1, false),
+            Ok(Some(ItemExchangePlan {
+                exchange: ExchangePlan {
+                    input: (Coin::Platinum, 100),
+                    output: (Coin::Crystal, 1),
+                },
+                charges_after: Some(1),
+                remove_converter: false,
+            }))
+        );
+    }
+
+    #[test]
+    fn magic_auto_upgrade_refusals_never_manufacture_a_charge_spend() {
+        let ineligible = [(Coin::Gold, 99), (Coin::Crystal, 100)];
+        assert_eq!(
+            qualify_magic_auto_upgrade(MagicConverterState::Active, ineligible, 5, 1, false),
+            Ok(None)
+        );
+        assert_eq!(
+            qualify_magic_auto_upgrade(
+                MagicConverterState::Inactive,
+                [(Coin::Gold, 100)],
+                5,
+                1,
+                false
+            ),
+            Ok(None)
+        );
+        assert_eq!(
+            qualify_magic_auto_upgrade(
+                MagicConverterState::Active,
+                [(Coin::Gold, 100)],
+                0,
+                1,
+                false
             ),
             Err(ExchangeRefusal::InvalidAmount)
         );
