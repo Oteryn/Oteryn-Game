@@ -357,7 +357,7 @@ fn fence_matches(reservation: &Reservation, node: &NodeIncarnationProof) -> bool
 
 /// The fenced generation is the current assignment of the fenced scope, held
 /// by `node`, whose incarnation is current.
-async fn fence_is_live(
+pub(crate) async fn fence_is_live(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     fence: &CorpseDecayFence,
     node: &NodeIncarnationProof,

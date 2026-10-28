@@ -5,6 +5,9 @@ use crate::charm_wire::{
 
 pub const CAPABILITY_BOSS_ENCOUNTER_V1: u32 = 117;
 pub const COMMAND_TYPE_BOSS_COOLDOWNS: u32 = 133;
+pub const COMMAND_TYPE_BOSS_LEVER: u32 = 178;
+pub const COMMAND_TYPE_BOSS_DEFEATED: u32 = 179;
+pub const COMMAND_TYPE_BOSS_TIMEOUT: u32 = 180;
 pub const MAX_BOSS_KEY_BYTES: usize = 512;
 pub const COOLDOWN_PAGE_SIZE: usize = 64;
 pub const MAX_QUERY_BYTES: usize = 515;
@@ -15,6 +18,10 @@ pub struct BossCooldownEntry {
     pub boss_key: String,
     pub available_at_unix_ms: u64,
 }
+
+// Reserved wire proposals; no production activity owner exists yet.
+#[path = "boss_encounter_staged.rs"]
+mod staged;
 
 /// An empty cursor starts a list; subsequent cursors are the last key of a full page.
 /// Unknown/repeated fields, invalid keys and oversized requests fail closed.
