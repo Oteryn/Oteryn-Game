@@ -1,6 +1,6 @@
 # Exiva settings v1
 
-Capability 147 owns command 169. The command edits only the admitted character's durable
+Capability 147 owns command 170. The command edits only the admitted character's durable
 Find Person privacy state.
 
 ## Request

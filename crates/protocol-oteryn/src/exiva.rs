@@ -1,6 +1,6 @@
-//! Target-owned Exiva settings command 169.
+//! Target-owned Exiva settings command 170.
 pub const CAPABILITY_EXIVA_SETTINGS_V1: u32 = 147;
-pub const COMMAND_TYPE_EXIVA_SETTINGS: u32 = 169;
+pub const COMMAND_TYPE_EXIVA_SETTINGS: u32 = 170;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Operation {
