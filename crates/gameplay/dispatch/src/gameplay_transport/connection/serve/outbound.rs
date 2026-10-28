@@ -216,6 +216,33 @@ where
                 }
             }
         }
+        Dispatch::Reply(_, payload)
+            if command.command_type
+                == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH
+                && oteryn_protocol_oteryn::depot_search::decode_reply(&payload).is_ok_and(
+                    |reply| {
+                        reply.outcome == oteryn_protocol_oteryn::depot_search::Outcome::Retrieved
+                    },
+                ) =>
+        {
+            let Some(view) = session.item_view.as_mut() else {
+                return Err(ServeEnd::Disconnected);
+            };
+            if item_use_view_refresh::refresh(
+                stream,
+                authority,
+                session.actor,
+                &mut session.admitted,
+                view,
+                session.container_views.as_mut(),
+                &mut session.sequence,
+            )
+            .await
+            .is_none()
+            {
+                return Err(ServeEnd::Disconnected);
+            }
+        }
         Dispatch::ItemMove(outcome, deltas, _) => {
             effects::item_move(stream, authority, session, outcome, deltas).await?;
         }
