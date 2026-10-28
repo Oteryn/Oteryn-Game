@@ -107,13 +107,15 @@ fn is_npc_placement_family_file(locator: &str) -> bool {
             || (name.starts_with("placements-") && name.ends_with(".json"))
     })
 }
-/// The `Spawn.Source` family (SPAWN-CONTENT-1; CREATURE-AI-0 section 6.1): its index and shards
-/// sit in `spawns/`, a successor directory that is not a contract tree node and holds no legacy
-/// locator. `convert_spawns.py --check` pins their bytes and
+/// The `Spawn.Source` family (SPAWN-CONTENT-1; CREATURE-AI-0 section 6.1): its index, held boss
+/// points (BOSS-SPAWN-1) and shards sit in `spawns/`, a successor directory that is not a contract
+/// tree node and holds no legacy locator. `convert_spawns.py --check` pins their bytes and
 /// `validate_materialized_game_tree.py` pins the index against the files on disk.
 fn is_spawn_family_file(locator: &str) -> bool {
     locator.strip_prefix("spawns/").is_some_and(|name| {
-        name == "index.json" || (name.starts_with("spawns-") && name.ends_with(".json"))
+        name == "index.json"
+            || name == "held-bosses.json"
+            || (name.starts_with("spawns-") && name.ends_with(".json"))
     })
 }
 fn is_unshared_successor_shard(locator: &str) -> bool {

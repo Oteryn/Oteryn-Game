@@ -171,9 +171,13 @@ impl NpcTalkBook {
                         None,
                         dialogue.keywords.clone(),
                     )
-                } else if reference.key == "oteryn:npc.mayor_pocaro" && npc.services.is_empty() {
+                } else if matches!(
+                    reference.key.as_str(),
+                    "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
+                ) && npc.services.is_empty()
+                {
                     // SUMMER: the model's historical `bank_dialogue` carrier holds the
-                    // admitted messages for every Dialogue-backed NPC. Only this Mayor's
+                    // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
                     // literal, single-line lore is qualified here. Quest callbacks and
                     // multipart/stateful branches remain outside the talk consumer.
                     let Some(dialogue) = &npc.bank_dialogue else {
@@ -536,7 +540,7 @@ mod summer_dialogue_tests {
     use super::*;
 
     #[test]
-    fn summer_population_mayor_book_retains_only_literal_admitted_topics() {
+    fn summer_population_lore_book_retains_only_literal_admitted_topics() {
         let content =
             std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content"));
         let catalogue = crate::content::NpcDataCatalogue::load(
@@ -547,34 +551,33 @@ mod summer_dialogue_tests {
         .expect("catalogue");
         let model = catalogue.service_model_for_project().expect("model");
         let book = NpcTalkBook::from_model(&model);
-        let mayor = book
-            .get("oteryn:npc.mayor_pocaro")
-            .expect("admitted Mayor lore");
-        assert!(mayor.admitted_dialogue);
-        assert!(mayor.offers.is_empty());
-        assert!(mayor.dialogue_keywords.iter().all(literal_keyword));
-        let source = model
-            .npcs()
-            .iter()
-            .find(|(reference, _)| reference.key == "oteryn:npc.mayor_pocaro")
-            .and_then(|(_, npc)| npc.bank_dialogue.as_ref())
-            .expect("authored Dialogue");
-        let held = source
-            .keywords
-            .iter()
-            .filter(|keyword| !literal_keyword(keyword))
-            .collect::<Vec<_>>();
-        assert!(
-            !held.is_empty(),
-            "the source has multipart branches outside this slice"
-        );
-        for keyword in held {
+        for key in ["oteryn:npc.mayor_pocaro", "oteryn:npc.wayland_smythers"] {
+            let npc = book.get(key).expect("admitted Summer lore");
+            assert!(npc.admitted_dialogue);
+            assert!(npc.offers.is_empty());
+            assert!(npc.dialogue_keywords.iter().all(literal_keyword));
+            let source = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+                .and_then(|(_, npc)| npc.bank_dialogue.as_ref())
+                .expect("authored Dialogue");
+            let held = source
+                .keywords
+                .iter()
+                .filter(|keyword| !literal_keyword(keyword))
+                .collect::<Vec<_>>();
             assert!(
-                !mayor
-                    .dialogue_keywords
-                    .iter()
-                    .any(|admitted| admitted.key == keyword.key)
+                !held.is_empty(),
+                "the source has multipart branches outside this slice"
             );
+            for keyword in held {
+                assert!(
+                    !npc.dialogue_keywords
+                        .iter()
+                        .any(|admitted| admitted.key == keyword.key)
+                );
+            }
         }
         // NPC-TRAVEL-1 already exposes Corsarah's passage service. That talk entry
         // must not admit her authored Dialogue through the Mayor's lore consumer.
