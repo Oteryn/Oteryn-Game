@@ -521,6 +521,9 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     pub achievements: &'a crate::achievement_catalogue::AchievementCatalogue,
     // Keep the same imported catalogue resident for every connection served by this owner.
     pub imported_charms: &'a crate::content::charm_source::CanonicalCharmCatalogue,
+    /// Promoted Weapon Proficiency definitions used by runtime and durable validation.
+    pub proficiency_catalogue:
+        Option<std::sync::Arc<weapon_proficiency::ProductionProficiencyCatalogue>>,
     /// Origin of the owner clock cooldowns are measured on: process-local and monotonic, never a
     /// client or wall-clock time (spell cast §2).
     pub clock_origin: std::time::Instant,
