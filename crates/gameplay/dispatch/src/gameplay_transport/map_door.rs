@@ -149,6 +149,42 @@ pub(super) fn use_door(
     }
 }
 
+/// Uses a source-authored key action id on a door target.
+pub(super) fn use_key(
+    overlay: &ChannelOverlay,
+    facts: &BundleFacts,
+    content_generation: [u8; 32],
+    actor: TilePos,
+    key_action: u16,
+    target: &WorldObjectTarget,
+) -> UseOutcome {
+    let source = MapViewSource {
+        overlay,
+        facts,
+        content_generation,
+        reset_epoch: 0,
+    };
+    let resolved = match resolve_map_target(&source, target, |_| None::<()>) {
+        Ok(resolved) => resolved,
+        Err(MapTargetRefusal::StateRevisionMismatch) => {
+            return outcome(UseDisposition::StaleState);
+        }
+        Err(MapTargetRefusal::Use(disposition)) => return outcome(disposition),
+    };
+    if !reachable(actor, resolved.pos) {
+        return outcome(UseDisposition::TooFar);
+    }
+    match facts
+        .doors()
+        .use_key(resolved.placement_key, target.expected_revision, key_action)
+    {
+        Some(DoorUse::Toggled { .. }) => outcome(UseDisposition::Committed),
+        Some(DoorUse::Locked) => outcome(UseDisposition::KeyMismatch),
+        Some(DoorUse::Stale) => outcome(UseDisposition::StaleState),
+        _ => outcome(UseDisposition::NothingToUse),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::expect_used, clippy::panic)]

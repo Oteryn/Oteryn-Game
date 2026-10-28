@@ -48,6 +48,26 @@ mod tests {
 
     const RESET: i64 = 1_800_000_000_000;
 
+    /// PAR-W05: Crystal `201189f8` `global_server_save.lua:21-52` broadcasts
+    /// `globalServerSaveNotifyDuration` (5) at the save event, then every 60 s
+    /// 4, 3, 2, 1, and saves 60 s after the last one. Crystal's 06:00 config default is a
+    /// DIFF against Oteryn's 10:00 Europe/Berlin calendar (`world_reset.rs`).
+    #[test]
+    fn w05_crystal_server_save_warning_cadence() {
+        let started = RESET - 60 * MINUTE_MS;
+        let mut sent = Vec::new();
+        for second in 0..=10 * 60 {
+            let now = RESET - 10 * MINUTE_MS + second * 1000;
+            if let Some(minutes) = server_save_warning_due(RESET, now, started)
+                && sent.last().is_none_or(|(_, last)| *last != minutes)
+            {
+                sent.push(((RESET - now) / 1000, minutes));
+            }
+        }
+        assert_eq!(sent, [(300, 5), (240, 4), (180, 3), (120, 2), (60, 1)]);
+        assert_eq!(server_save_warning_due(RESET, RESET, started), None);
+    }
+
     #[test]
     fn server_save_warning_counts_down_each_minute_from_five_to_one() {
         let started = RESET - 10 * MINUTE_MS;
