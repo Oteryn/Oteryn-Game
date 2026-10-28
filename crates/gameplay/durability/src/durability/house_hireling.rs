@@ -10,8 +10,13 @@ impl DurabilityRoot {
         command: u64,
         position: Option<(u16, u16, i8)>,
         dismiss: bool,
+        purchase: bool,
     ) -> Result<Option<(u16, u16, i8)>, DurabilityError> {
-        if house.is_empty() || command == 0 || position.is_some() == dismiss {
+        if house.is_empty()
+            || command == 0
+            || (purchase && (position.is_some() || dismiss))
+            || (position.is_some() && dismiss)
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
         let house = house.to_owned();
@@ -30,10 +35,16 @@ impl DurabilityRoot {
                     Some((u16::try_from(row.try_get::<i32,_>("x")?).map_err(|_| DurabilityError::InvalidStoredState)?, u16::try_from(row.try_get::<i32,_>("y")?).map_err(|_| DurabilityError::InvalidStoredState)?, i8::try_from(row.try_get::<i16,_>("floor")?).map_err(|_| DurabilityError::InvalidStoredState)?))
                 } else { None }
             } else {
-                let current: Option<(i32,i32,i16)> = if dismiss {
+                if purchase {
+                    sqlx::query("INSERT INTO game_hireling_identities(world_id,owner_character_id) SELECT world_id,character_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT(world_id,owner_character_id) DO NOTHING")
+                        .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
+                }
+                let current: Option<(i32,i32,i16)> = if purchase {
+                    None
+                } else if dismiss {
                     sqlx::query_as("DELETE FROM game_house_hirelings WHERE world_id=(SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) AND house_key=$2 RETURNING x,y,floor").bind(fence.character_id.as_bytes().as_slice()).bind(&house).fetch_optional(&mut *tx).await?
                 } else if let Some((x,y,floor)) = position {
-                    sqlx::query_as("INSERT INTO game_house_hirelings(world_id,house_key,owner_character_id,x,y,floor) VALUES((SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid),$2,encode($1,'hex')::uuid,$3,$4,$5) ON CONFLICT(world_id,house_key) DO UPDATE SET owner_character_id=EXCLUDED.owner_character_id,x=EXCLUDED.x,y=EXCLUDED.y,floor=EXCLUDED.floor RETURNING x,y,floor").bind(fence.character_id.as_bytes().as_slice()).bind(&house).bind(i32::from(x)).bind(i32::from(y)).bind(i16::from(floor)).fetch_optional(&mut *tx).await?
+                    sqlx::query_as("INSERT INTO game_house_hirelings(world_id,house_key,owner_character_id,hireling_id,x,y,floor) SELECT r.world_id,$2,r.character_id,h.hireling_id,$3,$4,$5 FROM game_character_roots r JOIN game_hireling_identities h USING(world_id) WHERE r.character_id=encode($1,'hex')::uuid AND h.owner_character_id=r.character_id ON CONFLICT(world_id,house_key) DO UPDATE SET owner_character_id=EXCLUDED.owner_character_id,hireling_id=EXCLUDED.hireling_id,x=EXCLUDED.x,y=EXCLUDED.y,floor=EXCLUDED.floor RETURNING x,y,floor").bind(fence.character_id.as_bytes().as_slice()).bind(&house).bind(i32::from(x)).bind(i32::from(y)).bind(i16::from(floor)).fetch_optional(&mut *tx).await?
                 } else {
                     sqlx::query_as("SELECT x,y,floor FROM game_house_hirelings WHERE world_id=(SELECT world_id FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid) AND house_key=$2").bind(fence.character_id.as_bytes().as_slice()).bind(&house).fetch_optional(&mut *tx).await?
                 };

@@ -460,7 +460,7 @@ fn scenario() -> TestResult {
             .await?;
         assert_eq!(count, 6);
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[6, 40, 49, 99])
+            SelectedCapabilities::select(owner.offered_capabilities(), &[6, 40, 49, 99, 165])
                 .ok_or("Guildhall classification capability")?;
         let guildhall_page = send(
             &restarted,
@@ -477,6 +477,41 @@ fn scenario() -> TestResult {
         );
         // Field 11 carries the qualified Guildhall class (enum value 3).
         assert!(guildhall_page.windows(2).any(|field| field == [88, 3]));
+        // The wire command reaches the composed owner and admits exactly one durable identity.
+        assert_eq!(
+            send(
+                &restarted,
+                &mut admitted,
+                oteryn_protocol_oteryn::hireling::COMMAND_TYPE_HIRELING,
+                &oteryn_protocol_oteryn::hireling::Request::Purchase.encode(),
+            )
+            .await?,
+            (CommandStatus::Accepted, vec![0])
+        );
+        let identity: (String, i32) = sqlx::query_as(
+            "SELECT hireling_id::text,outfit_id FROM game_hireling_identities WHERE owner_character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(identity.1, 1);
+        assert_eq!(
+            send(
+                &restarted,
+                &mut admitted,
+                oteryn_protocol_oteryn::hireling::COMMAND_TYPE_HIRELING,
+                &oteryn_protocol_oteryn::hireling::Request::Purchase.encode(),
+            )
+            .await?,
+            (CommandStatus::Accepted, vec![0])
+        );
+        let identities: (i64, String) = sqlx::query_as(
+            "SELECT (SELECT count(*) FROM game_hireling_identities WHERE owner_character_id=encode($1,'hex')::uuid),hireling_id::text FROM game_hireling_identities WHERE owner_character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(identities, (1, identity.0));
         drop(replayed);
         drop(restarted);
         drop(owner);

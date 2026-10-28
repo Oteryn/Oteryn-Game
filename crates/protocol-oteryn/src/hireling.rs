@@ -1,10 +1,11 @@
-//! HIRELING-1 bounded summon/query command.
+//! HIRELING-1 bounded purchase/summon/query command.
 pub const CAPABILITY_HIRELING_V1: u32 = 165;
 pub const COMMAND_TYPE_HIRELING: u32 = 220;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Request {
     Query,
+    Purchase,
     Summon { x: u16, y: u16, floor: i8 },
     Dismiss,
 }
@@ -13,6 +14,7 @@ impl Request {
     pub fn decode(bytes: &[u8]) -> Option<Self> {
         match bytes {
             [0] => Some(Self::Query),
+            [3] => Some(Self::Purchase),
             [1, x0, x1, y0, y1, floor] => Some(Self::Summon {
                 x: u16::from_be_bytes([*x0, *x1]),
                 y: u16::from_be_bytes([*y0, *y1]),
@@ -25,6 +27,7 @@ impl Request {
     pub fn encode(self) -> Vec<u8> {
         match self {
             Self::Query => vec![0],
+            Self::Purchase => vec![3],
             Self::Summon { x, y, floor } => {
                 let [x0, x1] = x.to_be_bytes();
                 let [y0, y1] = y.to_be_bytes();
@@ -42,6 +45,7 @@ mod tests {
     fn canonical_requests_round_trip() {
         for request in [
             Request::Query,
+            Request::Purchase,
             Request::Summon {
                 x: 7,
                 y: 9,
@@ -52,6 +56,6 @@ mod tests {
             assert_eq!(Request::decode(&request.encode()), Some(request));
         }
         assert_eq!(Request::decode(&[1, 0]), None);
-        assert_eq!(Request::decode(&[3]), None);
+        assert_eq!(Request::decode(&[4]), None);
     }
 }

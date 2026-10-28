@@ -89,6 +89,7 @@ pub(super) async fn execute(
         wire::Request::Summon { x, y, floor } => Some((x, y, floor)),
         _ => None,
     };
+    let purchase = matches!(request, wire::Request::Purchase);
     let active = owner
         .root
         .commit_house_hireling(
@@ -97,6 +98,7 @@ pub(super) async fn execute(
             command,
             position,
             matches!(request, wire::Request::Dismiss),
+            purchase,
         )
         .await
         .ok()?;
