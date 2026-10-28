@@ -1,0 +1,13 @@
+{
+  "id": 170,
+  "name": "ARENA_V1",
+  "owner_decision": "ARENA-1; Crystal re-audit W17",
+  "owner": "Admitted channel session and shared boss/instance admission owners",
+  "requires": [],
+  "command_types": [
+    240
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "ARENA-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 240 returns the server-owned Svargrond challenge catalogue to an admitted session with current channel runtime authority; without the capability selected, command type 240 is refused as unsupported."
+}

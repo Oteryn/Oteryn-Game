@@ -414,6 +414,7 @@ fn qualify_current_cast_facts(
         equipment_revision: equipment.revision,
     };
     let mut projections = access_owner.read_current(&binding, now_micros)?;
+    projections.loyalty_points = raw.loyalty_points;
     // Only an exact current projection survives. The transaction loader supplies the Wheel
     // owner read; missing/stale allocation or expired Premium never becomes a zero-stage grant.
     projections.wheel = projections.wheel.filter(|wheel| {
@@ -776,6 +777,7 @@ mod wheel_projection_tests {
         ];
         let raw = crate::durability::character_equipment::RawCastDurableFacts {
             account: [6; 16],
+            loyalty_points: 0,
             equipment: crate::durability::character_equipment::EquipmentSnapshot {
                 character: expected.character,
                 content_digest: expected.content_digest,
