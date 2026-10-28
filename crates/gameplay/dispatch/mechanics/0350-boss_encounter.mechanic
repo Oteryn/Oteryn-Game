@@ -1,5 +1,5 @@
 name=boss_encounter
-commands=133
+commands=133,178,179,180
 transport=boss_encounter
 composed=boss_encounter
 authority=boss_encounter

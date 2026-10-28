@@ -116,4 +116,100 @@ mod tests {
         assert!(bear.effects(4).is_none());
         Ok(())
     }
+
+    /// Crystal `201189f8` `data-global/scripts/actions/mounts/mounts.lua` rows shared with
+    /// Oteryn: (item id, CHANCE, BREAK, FAIL_MSG actions). Recorded source data.
+    const CRYSTAL_SHARED: &[(u32, u8, bool, &[u8])] = &[
+        (5907, 20, true, &[1, 2, 3]),
+        (12308, 25, true, &[1, 2, 3]),
+        (12260, 40, true, &[1, 3]),
+        (12318, 40, true, &[1, 2]),
+        (12547, 40, true, &[1]),
+        (12548, 40, true, &[1, 2, 3]),
+        (16155, 30, true, &[1, 2]),
+        (12307, 40, true, &[1, 3]),
+        (12546, 40, true, &[1]),
+        (12550, 40, true, &[2, 3]),
+        (28791, 20, false, &[1]),
+        (19136, 40, false, &[1, 3]),
+        (31576, 30, false, &[1]),
+        (30171, 20, false, &[2, 4]),
+        (16153, 30, true, &[1, 2, 3]),
+        (30170, 20, false, &[2, 4]),
+        (14143, 30, true, &[1, 3]),
+        (16154, 30, true, &[1, 2, 3]),
+        (14142, 30, true, &[1, 3]),
+        (12306, 20, true, &[1, 2]),
+        (16251, 100, false, &[]),
+        (27605, 30, true, &[2, 4]),
+        (21439, 30, false, &[2, 4]),
+        (12549, 40, true, &[4]),
+        (12509, 40, true, &[1, 2]),
+        (20274, 30, true, &[1, 3]),
+        (24960, 30, false, &[1, 3]),
+        (12519, 40, true, &[1, 3]),
+        (12311, 15, true, &[1, 3]),
+        (12304, 40, true, &[1]),
+        (12320, 40, true, &[1, 2]),
+        (21186, 30, true, &[2, 4]),
+        (17858, 30, true, &[1, 3]),
+        (34258, 50, true, &[1, 2]),
+    ];
+
+    fn rule_for(item: u32) -> Vec<&'static TamingRule> {
+        let key = format!("oteryn:item.tibia.i{item}");
+        rules().iter().filter(|r| r.item_key == key).collect()
+    }
+
+    /// S06: every shared Crystal row has the same chance, break flag and failure actions, and
+    /// `effects` reproduces Crystal `doFailAction` (RUN removes the creature, BREAK and ALL
+    /// lose the item only when BREAK is set, success always consumes the item).
+    #[test]
+    fn s06_crystal_taming_rows_and_fail_actions() -> Result<(), &'static str> {
+        for &(item, chance, brk, actions) in CRYSTAL_SHARED {
+            let found = rule_for(item);
+            assert_eq!(found.len(), 1, "item {item}");
+            let rule = found[0];
+            assert_eq!(rule.chance, chance, "item {item}");
+            assert_eq!(rule.break_item, brk, "item {item}");
+            let ours: Vec<u8> = rule.failures.iter().map(|f| f.action).collect();
+            assert_eq!(ours, actions, "item {item}");
+            // Crystal: success iff math.random(100) <= CHANCE.
+            let edge = u64::try_from((u128::from(chance) << 64).div_ceil(100)).unwrap_or(u64::MAX);
+            assert_eq!(rule.decide(0), 0, "item {item}");
+            if chance < 100 {
+                assert_eq!(rule.decide(edge - 1), 0, "item {item}");
+                assert_ne!(rule.decide(edge), 0, "item {item}");
+            } else {
+                assert_eq!(rule.decide(u64::MAX), 0, "item {item}");
+            }
+            assert_eq!(rule.effects(0).map(|e| (e.0, e.1)), Some((true, true)));
+            for (index, &action) in actions.iter().enumerate() {
+                let outcome = u8::try_from(index + 1).map_err(|_| "outcome")?;
+                let (lose_item, remove_creature, _) = rule.effects(outcome).ok_or("failure row")?;
+                assert_eq!(lose_item, brk && matches!(action, 2 | 4), "item {item}");
+                assert_eq!(remove_creature, matches!(action, 1 | 4), "item {item}");
+            }
+        }
+        Ok(())
+    }
+
+    /// S06 divergences pinned until the owner decides: Crystal's Wild Horse (12802) branch
+    /// tames on 3/100 and flees on 3/100 of the rest; Oteryn keeps the Canary 15% row. Crystal
+    /// rows Battlefrazzle 52638, Giant Beaver 39548, tin lizzard 12305, uniwheel 12801,
+    /// wind-up loco 37397 and Foxmouse 43901 have no Oteryn rule.
+    #[test]
+    fn s06_crystal_taming_divergences_are_pinned() {
+        let horse = rule_for(12802);
+        let oats: Vec<_> = horse
+            .iter()
+            .filter(|r| r.creature_key == "oteryn:creature.wild_horse")
+            .collect();
+        assert_eq!(oats.len(), 1);
+        assert_eq!(oats[0].chance, 15);
+        assert!(oats[0].break_item);
+        for item in [52638, 39548, 12305, 12801, 37397, 43901] {
+            assert!(rule_for(item).is_empty(), "item {item}");
+        }
+    }
 }

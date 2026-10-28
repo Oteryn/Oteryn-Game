@@ -122,3 +122,4 @@ mod cancellation;
 pub mod guild_jobs;
 mod guild_scheduler;
 mod market_scheduler;
+mod raid_scheduler;
