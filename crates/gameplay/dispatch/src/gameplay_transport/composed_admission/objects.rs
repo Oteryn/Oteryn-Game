@@ -93,7 +93,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> UseOutcome {
         let mut runtime = self.runtime.lock().await;
-        if self.states.spell_states.lock().await.is_dead(actor) {
+        // Read the canonical actor-local Character facts through their owner, after taking the
+        // runtime lock. `ChannelSpellStates::get` re-proves this exact actor/session against the
+        // current runtime generation; a stale slot or superseded session therefore contributes
+        // neither a level nor a door mutation. Keep the guard through the toggle so a level-up,
+        // death or actor replacement cannot race the predicate.
+        let spell_states = self.states.spell_states.lock().await;
+        if spell_states.is_dead(actor) {
             return UseOutcome::rejected();
         }
         // The USE's own GameSession must still be the actor's bound session with no control
@@ -105,6 +111,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return UseOutcome::rejected();
         }
+        // Missing canonical facts fail closed for a level door. Plain doors do not attach a
+        // required level, so zero remains immaterial to their rule.
+        let actor_level = spell_states
+            .get(&runtime, actor, session)
+            .map_or(0, |state| state.character_facts().level);
         // Admission is taken under the owner lock that also covers the commit below, and the
         // owner pass resets the turn cap under the same lock, so an act is counted in the turn
         // that commits it and its order is the owner lock's.
@@ -158,6 +169,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime.content_pin().client_artifact_digest(),
             actor_tile,
             |door| map_door::doorway_occupied(&runtime, actor, actor_tile, door),
+            actor_level,
             target,
         )
     }

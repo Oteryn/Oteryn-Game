@@ -756,6 +756,17 @@ fn page(payload: &[u8]) -> TestResult<CooldownPage> {
             26 => {
                 next = std::str::from_utf8(bytes(payload, &mut at)?)?.to_owned();
             }
+            34 => {
+                // Bosstiary progress shares the authority-consistent snapshot. Cooldown
+                // assertions below deliberately ignore its independently tested contents.
+                let _ = bytes(payload, &mut at)?;
+            }
+            40 => {
+                let _ = varint(payload, &mut at)?;
+            }
+            50 => {
+                let _ = bytes(payload, &mut at)?;
+            }
             _ => return Err("unknown result field".into()),
         }
     }
@@ -929,6 +940,13 @@ fn scenario(history_probe: HistoryProbe) -> TestResult {
         assert!(now > 0);
         assert!(entries.is_empty() && next.is_empty());
         let fence = admitted.item_fence.ok_or("fence")?;
+        sqlx::query(
+            "INSERT INTO game_character_bosstiary_progress(character_id,boss_key,kill_count,boss_points) \
+             VALUES(encode($1,'hex')::uuid,'oteryn:boss.progress',20,30)",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
         // Seed admission outcomes through the admin connection. This test qualifies the
         // dispatched read, not a boss-admission writer. Deadlines include expired rows.
         for i in 0..66 {
@@ -939,6 +957,12 @@ fn scenario(history_probe: HistoryProbe) -> TestResult {
         }
         let (status, payload) = exchange(&owner, &mut admitted, 2, &[]).await?;
         assert_eq!(status, CommandStatus::Accepted);
+        assert!(
+            payload
+                .windows(b"oteryn:boss.progress".len())
+                .any(|window| window == b"oteryn:boss.progress")
+        );
+        assert!(payload.windows(2).any(|window| window == [40, 30]));
         let (now, entries, next) = page(&payload)?;
         assert!(now > 0);
         assert_eq!(entries.len(), 64);

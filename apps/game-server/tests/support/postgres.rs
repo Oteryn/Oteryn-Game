@@ -181,7 +181,7 @@ pub fn validate_admin_url(value: &str) -> Result<(), IsolatedPostgresError> {
     let options = PgConnectOptions::from_str(value)
         .map_err(|_error| IsolatedPostgresError::UnsafeAdminUrl)?;
     if !matches!(options.get_host(), "127.0.0.1" | "localhost")
-        || options.get_port() != 5432
+        || options.get_port() == 0
         || options.get_socket().is_some()
         || options.get_username() != "oteryn_test_admin"
         || options.get_database() != Some("postgres")

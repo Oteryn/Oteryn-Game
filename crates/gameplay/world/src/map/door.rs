@@ -49,6 +49,7 @@ struct Door {
     locked: bool,
     /// Crystal action id carried by the placed door; key items must match it exactly.
     action: Option<u16>,
+    required_level: Option<u32>,
     closed_solid: bool,
     open_solid: bool,
     open: EntryFacts,
@@ -96,6 +97,7 @@ pub struct DoorBook {
 }
 
 impl DoorBook {
+    #[allow(clippy::too_many_arguments, reason = "one authored door record")]
     pub fn push(
         &mut self,
         key: u64,
@@ -104,11 +106,13 @@ impl DoorBook {
         open: EntryFacts,
         locked: bool,
         action: Option<u16>,
+        required_level: Option<u32>,
     ) {
         self.doors.push(Door {
             key,
             locked,
             action,
+            required_level,
             closed_solid,
             open_solid,
             open,
@@ -251,13 +255,25 @@ impl DoorBook {
     /// revision. `occupied` is whether an actor stands on the door's tile: it keeps an open door
     /// from closing. The change is one compare-and-swap, so concurrent `USE`s of a revision
     /// commit once. `None` when `key` is no door.
-    pub fn toggle(&self, key: u64, expected_revision: u64, occupied: bool) -> Option<DoorUse> {
+    pub fn toggle(
+        &self,
+        key: u64,
+        expected_revision: u64,
+        occupied: bool,
+        actor_level: u32,
+    ) -> Option<DoorUse> {
         let door = self.find(key)?;
         let current = door.state.load(Ordering::Acquire);
         if current != expected_revision {
             return Some(DoorUse::Stale);
         }
         if door.locked {
+            return Some(DoorUse::Locked);
+        }
+        if door
+            .required_level
+            .is_some_and(|required| actor_level < required)
+        {
             return Some(DoorUse::Locked);
         }
         let closing = current % 2 == 1;
@@ -334,14 +350,14 @@ mod key_tests {
     fn matching_key_toggles_and_wrong_or_reserved_keys_do_not() {
         for door_action in [None, Some(101), Some(1001), Some(4322)] {
             let mut doors = DoorBook::default();
-            doors.push(7, true, false, open_facts(), true, door_action);
+            doors.push(7, true, false, open_facts(), true, door_action, None);
             doors.finish();
             assert_eq!(doors.use_key(7, 0, 4321), Some(DoorUse::Locked));
             assert_eq!(doors.revision(7), 0);
         }
 
         let mut doors = DoorBook::default();
-        doors.push(7, true, false, open_facts(), true, Some(4321));
+        doors.push(7, true, false, open_facts(), true, Some(4321), None);
         doors.finish();
         assert_eq!(
             doors.use_key(7, 0, 4321),
