@@ -781,6 +781,7 @@ pub fn record_creature_kill(
                     min_count: count,
                     max_count: count,
                     probability_ppm: Some(1_000_000),
+                    unique: false,
                 });
         }
     }

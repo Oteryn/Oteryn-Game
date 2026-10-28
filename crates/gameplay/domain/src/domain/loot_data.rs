@@ -60,6 +60,9 @@ pub struct LootTableEntry {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
+    /// Reward-boss loot that may be awarded at most once for this death, even when a
+    /// daily boosted-boss roll would otherwise select it again.
+    pub unique: bool,
 }
 
 /// Mirrors `content::reference_playable::ReferenceLootDefinition`: the

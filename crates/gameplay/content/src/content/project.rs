@@ -930,6 +930,8 @@ pub struct LootEntryDocument {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
+    #[serde(default)]
+    pub unique: bool,
 }
 
 impl LootEntryDocument {
@@ -940,6 +942,7 @@ impl LootEntryDocument {
             min_count: self.min_count,
             max_count: self.max_count,
             probability_ppm: self.probability_ppm,
+            unique: self.unique,
         })
     }
 }

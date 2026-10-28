@@ -475,6 +475,7 @@ fn rat_loot_table() -> LootTableDefinition {
             min_count: 1,
             max_count: 1,
             probability_ppm: Some(1_000_000),
+            unique: false,
         }],
     }
 }

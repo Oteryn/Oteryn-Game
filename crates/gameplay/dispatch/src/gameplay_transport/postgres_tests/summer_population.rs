@@ -211,6 +211,7 @@ fn summer_population_all_six_execute_exact_pinned_loot_plans_and_replay() -> Tes
                     min_count: e.min_count,
                     max_count: e.max_count,
                     probability_ppm: e.probability_ppm,
+                    unique: false,
                 })
                 .collect(),
         };

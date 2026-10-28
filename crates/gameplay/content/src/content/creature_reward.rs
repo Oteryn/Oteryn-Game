@@ -171,6 +171,8 @@ pub struct SectionLootEntry {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
+    #[serde(default)]
+    pub unique: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -432,6 +434,7 @@ fn row(
                             min_count: entry.min_count,
                             max_count: entry.max_count,
                             probability_ppm: entry.probability_ppm,
+                            unique: entry.unique,
                         })
                         .ok_or(NoSettlementReason::LootItemInadmissible)
                 })

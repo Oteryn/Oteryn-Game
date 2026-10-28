@@ -905,6 +905,7 @@ pub struct ReferenceLootEntry {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
+    pub unique: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

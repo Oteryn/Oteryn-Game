@@ -1314,8 +1314,8 @@ fn scenario_with_creature_charmed(
             .map_err(debug)?;
             daily_expected_loot = Some(
                 plan.entries
-                    .into_iter()
-                    .map(|e| (e.item.production_key, i64::from(e.quantity)))
+                    .iter()
+                    .map(|e| (e.item.production_key.clone(), i64::from(e.quantity)))
                     .collect::<Vec<_>>(),
             );
 
@@ -1347,6 +1347,20 @@ fn scenario_with_creature_charmed(
                             ordinal < boosted_entries,
                             "only the stable equipment prefix receives boss extra rolls"
                         );
+                        if ordinal < boosted_entries {
+                            assert!(
+                                loot.unique,
+                                "production boss equipment preserves its unique-loot flag"
+                            );
+                            assert_eq!(
+                                plan.entries
+                                    .iter()
+                                    .filter(|drop| drop.item == loot.item)
+                                    .count(),
+                                usize::from(plan.entries.iter().any(|drop| drop.item == loot.item)),
+                                "a unique boss item is present at most once after extra rolls"
+                            );
+                        }
                     }
                 }
                 ("other", crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm) => {}

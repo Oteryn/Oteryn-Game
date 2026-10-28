@@ -367,6 +367,17 @@ fn plan_daily_boosted(
     for roll in 1..=extra_rolls {
         let extra = plan_roll(death_key, table_ref, &ordinary, roll)?;
         for mut entry in extra.entries {
+            // Global reward-boss `unique` entries participate in the base roll and in the
+            // boosted roll, but a second success must not award the same unique item twice.
+            let source = &ordinary.entries[entry.draw_ordinal as usize];
+            if source.unique
+                && plan
+                    .entries
+                    .iter()
+                    .any(|accepted| accepted.item == entry.item)
+            {
+                continue;
+            }
             if plan.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
                 return Err(LootPlanError::TooManyPlanItems);
             }
@@ -520,6 +531,7 @@ mod tests {
                 min_count,
                 max_count,
                 probability_ppm,
+                unique: false,
             }],
         }
     }
@@ -533,6 +545,7 @@ mod tests {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(probability_ppm),
+                    unique: false,
                 })
                 .collect(),
         }
@@ -547,12 +560,14 @@ mod tests {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(356_433),
+                    unique: false,
                 },
                 LootTableEntry {
                     item: item_ref("oteryn:item.tibia.i3031"),
                     min_count: 1,
                     max_count: 4,
                     probability_ppm: Some(903_036),
+                    unique: false,
                 },
             ],
         }
@@ -676,6 +691,7 @@ mod tests {
                 min_count: 1,
                 max_count: 1,
                 probability_ppm: Some(1_000_000),
+                unique: false,
             })
             .collect();
         let table = LootTableDefinition {
@@ -710,12 +726,14 @@ mod tests {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(0),
+                    unique: false,
                 },
                 LootTableEntry {
                     item: item_ref("oteryn:item.chance.always"),
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(1_000_000),
+                    unique: false,
                 },
             ],
         };
@@ -839,6 +857,33 @@ mod daily_boost_tests {
     use super::*;
 
     #[test]
+    fn boosted_boss_never_duplicates_a_unique_drop() -> Result<(), LootPlanError> {
+        let unique =
+            LootDefinitionRef::new("Item", "oteryn:item.unique-boss-armor", "definition-r1");
+        let table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls: 3,
+                boosted_entries: 1,
+            },
+            entries: vec![LootTableEntry {
+                item: unique.clone(),
+                min_count: 1,
+                max_count: 1,
+                probability_ppm: Some(1_000_000),
+                unique: true,
+            }],
+        };
+        let plan = plan_creature_loot(
+            LootPlanDeathKey::new([7; 16], [8; 16], 1, 1, 1),
+            &LootDefinitionRef::new("Loot", "oteryn:loot.unique-boss", "definition-r1"),
+            &table,
+        )?;
+        assert_eq!(plan.entries.len(), 1);
+        assert_eq!(plan.entries[0].item, unique);
+        Ok(())
+    }
+
+    #[test]
     fn daily_boost_extra_rolls_preserve_bounds_and_do_not_multiply_forge_drops()
     -> Result<(), LootPlanError> {
         let item = |key| LootDefinitionRef::new("Item", key, "definition-r1");
@@ -854,12 +899,14 @@ mod daily_boost_tests {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(1_000_000),
+                    unique: false,
                 },
                 LootTableEntry {
                     item: item("oteryn:item.sliver"),
                     min_count: 3,
                     max_count: 3,
                     probability_ppm: Some(1_000_000),
+                    unique: false,
                 },
             ],
         };
@@ -922,6 +969,7 @@ mod daily_boost_tests {
                 min_count: 1,
                 max_count: 1,
                 probability_ppm: Some(500_000),
+                unique: false,
             }],
         };
         let mut seen = [false; 3];

@@ -41,6 +41,7 @@ fn row(drops: usize) -> Arc<CreatureRewardRow> {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(1_000_000),
+                    unique: false,
                 })
                 .collect(),
         },
@@ -110,6 +111,7 @@ fn pending_with_ordinary_surprise_bag() -> PendingKillSettlement {
         min_count: 1,
         max_count: 1,
         probability_ppm: Some(1_000_000),
+        unique: false,
     });
     pending
 }
