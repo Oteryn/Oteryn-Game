@@ -10,7 +10,9 @@ use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use crate::domain::CharacterId;
 use oteryn_protocol_oteryn::character_info::PageRequest;
-use oteryn_protocol_oteryn::character_info::{CharacterTitle, TitleFacts, qualified_selection};
+use oteryn_protocol_oteryn::character_info::{
+    CharacterTitle, TitleFacts, TitleLifetime, qualified_selection, qualify,
+};
 use sqlx::Row;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,13 +23,23 @@ pub struct CharacterTitleState {
 }
 
 fn decode_title(value: i16) -> Result<CharacterTitle, CharacterAuthorityError> {
-    match value {
-        1 => Ok(CharacterTitle::AdeptArmorer),
-        2 => Ok(CharacterTitle::AdeptEnhancer),
-        3 => Ok(CharacterTitle::Cartographer),
-        4 => Ok(CharacterTitle::RotationChampion),
-        _ => Err(CharacterAuthorityError::Rejected),
-    }
+    u8::try_from(value)
+        .ok()
+        .and_then(CharacterTitle::from_id)
+        .ok_or(CharacterAuthorityError::Rejected)
+}
+
+/// Stored ids of the conditional titles whose predicate no longer holds. Global revokes these
+/// titles (Adept Enhancer, Globetrotter) instead of keeping them earned.
+fn revoked_conditional_titles(facts: TitleFacts) -> Vec<i16> {
+    CharacterTitle::ALL
+        .into_iter()
+        .filter(|title| {
+            let qualification = qualify(*title, facts);
+            qualification.lifetime == TitleLifetime::Conditional && !qualification.eligible
+        })
+        .map(|title| i16::from(title.id()))
+        .collect()
 }
 
 impl DurabilityRoot {
@@ -135,10 +147,11 @@ impl DurabilityRoot {
             }
             let rows = sqlx::query("SELECT title,expires_at_unix_ms FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND (expires_at_unix_ms IS NULL OR expires_at_unix_ms>$2) ORDER BY title FOR UPDATE")
                 .bind(character.as_bytes().as_slice()).bind(now_unix_ms).fetch_all(&mut *tx).await?;
+            let revoked = revoked_conditional_titles(facts);
             let mut earned = Vec::with_capacity(rows.len());
             for row in rows {
                 let title = match decode_title(row.try_get("title")?) { Ok(title) => title, Err(error) => return Ok(Err(error)) };
-                if title != CharacterTitle::AdeptEnhancer || facts.all_grade_three_mods {
+                if !revoked.contains(&i16::from(title.id())) {
                     earned.push((title, row.try_get("expires_at_unix_ms")?));
                 }
             }
@@ -161,9 +174,9 @@ impl DurabilityRoot {
             }
             // The selected reference is cleared first, then conditional earned state
             // is revoked in the same locked transaction (Global's manage(false)).
-            if !facts.all_grade_three_mods {
-                sqlx::query("DELETE FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=2")
-                    .bind(character.as_bytes().as_slice()).execute(&mut *tx).await?;
+            if !revoked.is_empty() {
+                sqlx::query("DELETE FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=ANY($2)")
+                    .bind(character.as_bytes().as_slice()).bind(&revoked).execute(&mut *tx).await?;
             }
             commit_semantic_transaction(tx, deadline).await?;
             Ok(Ok(CharacterTitleState { earned, selected: qualified, revision }))
@@ -200,7 +213,7 @@ impl DurabilityRoot {
                      VALUES(encode($1,'hex')::uuid,$2,$3,$4) ON CONFLICT DO NOTHING",
                 )
                 .bind(character.as_bytes().as_slice())
-                .bind(title as i16)
+                .bind(i16::from(title.id()))
                 .bind(earned_at_unix_ms)
                 .bind(expires_at_unix_ms)
                 .execute(&mut *tx)
@@ -241,7 +254,7 @@ impl DurabilityRoot {
                      RETURNING revision",
                     )
                     .bind(character.as_bytes().as_slice())
-                    .bind(title.map(|value| value as i16))
+                    .bind(title.map(|value| i16::from(value.id())))
                     .fetch_one(&mut *tx)
                     .await?;
                     commit_semantic_transaction(tx, deadline).await?;
@@ -253,5 +266,39 @@ impl DurabilityRoot {
                 })
             })
             .await?
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// PAR-P12: stored ids stay readable after the Global rename, and both Global
+    /// non-permanent conditional titles are revoked when their predicate fails.
+    #[test]
+    fn p12_stored_ids_decode_and_conditional_titles_revoke() {
+        for (stored, title) in [
+            (1, CharacterTitle::AdeptArmorer),
+            (2, CharacterTitle::AdeptEnhancer),
+            (3, CharacterTitle::Globetrotter),
+            (4, CharacterTitle::ReigningDromeChampion),
+        ] {
+            assert!(matches!(decode_title(stored), Ok(decoded) if decoded == title));
+        }
+        for invalid in [0, 5, -1, 256] {
+            assert!(matches!(
+                decode_title(invalid),
+                Err(CharacterAuthorityError::Rejected)
+            ));
+        }
+        assert_eq!(revoked_conditional_titles(TitleFacts::default()), [2, 3]);
+        let all = TitleFacts {
+            weapon_mastery: true,
+            all_grade_three_mods: true,
+            all_map_areas_discovered: true,
+            drome_rota_top_five: true,
+            next_rotation_unix_ms: Some(1),
+        };
+        assert!(revoked_conditional_titles(all).is_empty());
     }
 }

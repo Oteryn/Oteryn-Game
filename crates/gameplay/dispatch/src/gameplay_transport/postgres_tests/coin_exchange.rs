@@ -169,6 +169,28 @@ fn scenario() -> TestResult {
             .await;
         assert_eq!(greeted.disposition, NpcIntentDisposition::Ok);
         next += 1;
+        // Crystal checks bank-account commands before exchange topics. A balance request made
+        // while an exchange is waiting for its amount must therefore cancel that exchange and
+        // reach the existing durable Bank owner, rather than produce an insufficient-coin line.
+        for (text, expected) in [
+            ("change gold", "How many platinum coins would you like to get?"),
+            ("balance", "Your account balance is 100000 gold."),
+        ] {
+            tokio::time::sleep(std::time::Duration::from_millis(260)).await;
+            let outcome = owner
+                .npc_talk(
+                    dependencies.actor,
+                    command(next),
+                    NpcTalkIntent {
+                        npc_actor: npc,
+                        text: text.into(),
+                    },
+                )
+                .await;
+            assert_eq!(outcome.disposition, NpcIntentDisposition::Ok, "{text}");
+            assert_eq!(outcome.conversation.ok_or("reply")?.lines, [expected]);
+            next += 1;
+        }
         // Four real dialogues, whole-stack room, merge, insufficient funds, full bag, zero amount.
         for (round, input, count, receiver, fill, words, expected, input_after, output_after) in [
             (

@@ -94,6 +94,21 @@ pub(super) async fn execute(
             Operation::RemovePlayer => {
                 preferences.player_whitelist.retain(|id| Some(*id) != request.player);
             }
+            Operation::AddGuild => {
+                let guild = request.guild.ok_or(DurabilityError::InvalidStoredState)?;
+                let known: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_roots source JOIN game_guilds guild ON guild.world_id=source.world_id WHERE source.character_id=encode($1,'hex')::uuid AND guild.guild_id=encode($2,'hex')::uuid AND guild.state<>4)")
+                    .bind(authority.character_id_bytes().as_slice()).bind(guild.as_slice()).fetch_one(&mut *tx).await?;
+                if !known { return Ok(false); }
+                preferences.guild_whitelist.push(guild);
+                preferences.guild_whitelist.sort_unstable();
+                preferences.guild_whitelist.dedup();
+                if preferences.guild_whitelist.len() > 100 {
+                    return Ok(false);
+                }
+            }
+            Operation::RemoveGuild => {
+                preferences.guild_whitelist.retain(|id| Some(*id) != request.guild);
+            }
         }
         crate::durability::spell_privacy::write_exiva_preferences_in_transaction(
             &mut tx, &authority, revision, &preferences,

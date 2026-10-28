@@ -1,0 +1,8 @@
+name=animus_mastery
+commands=232
+transport=animus_mastery
+composed=animus_mastery
+authority=animus_mastery
+offer=42,animus_mastery::offered,animus_mastery_available
+[route]
+routing::animus_mastery::route(authority, &session.admitted, command).await

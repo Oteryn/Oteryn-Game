@@ -356,3 +356,87 @@ fn forge_reference_conversions_and_d1230_dust_cap() -> Result<(), String> {
     assert!(DustLimit::new(4601).is_err());
     Ok(())
 }
+
+#[test]
+fn convergence_is_class_four_guaranteed_and_uses_global_prices() -> Result<(), ForgeRuleError> {
+    let item = definition("forge:a");
+    let other = definition("forge:b");
+    for (tier, fusion_gold, transfer_gold, transfer_cores) in [
+        (1, 55_000_000, 65_000_000, 1),
+        (5, 875_000_000, 2_000_000_000, 15),
+        (10, 125_000_000_000, 300_000_000_000, 85),
+    ] {
+        let fusion = ForgeQuote::try_from(request(
+            &item,
+            4,
+            tier - 1,
+            ForgeOperation::ConvergenceFusion,
+        )?)?;
+        assert_eq!(
+            fusion.cost,
+            ForgeCost {
+                gold: fusion_gold,
+                dust: 130,
+                cores: 0
+            }
+        );
+        let plan = ForgePlan::try_from(ForgeAttempt {
+            quote: fusion,
+            resources: ForgeResources {
+                dust: ForgeDustBalance::new(
+                    160,
+                    DustLimit::from_upgrade_count(3)
+                        .map_err(|_| ForgeRuleError::InsufficientDust)?,
+                )
+                .map_err(|_| ForgeRuleError::InsufficientDust)?,
+                ..resources()?
+            },
+            success_roll: 99,
+            protection_roll: 99,
+        })?;
+        assert!(plan.success);
+        assert_eq!(plan.target_tier.get(), tier);
+        assert_eq!(plan.source_tier, None);
+
+        if tier >= 2 {
+            let mut transfer = request(&item, 4, 0, ForgeOperation::ConvergenceTransfer)?;
+            transfer.target.definition = &other;
+            transfer.source.tier = ItemTier::new(tier).ok_or(ForgeRuleError::InvalidClassCap)?;
+            let quote = ForgeQuote::try_from(transfer)?;
+            assert_eq!(
+                quote.cost,
+                ForgeCost {
+                    gold: transfer_gold,
+                    dust: 160,
+                    cores: transfer_cores
+                }
+            );
+            assert_eq!(quote.target_tier.get(), tier);
+        }
+    }
+    for operation in [
+        ForgeOperation::ConvergenceFusion,
+        ForgeOperation::ConvergenceTransfer,
+    ] {
+        let mut invalid = request(
+            &item,
+            3,
+            if matches!(operation, ForgeOperation::ConvergenceTransfer) {
+                0
+            } else {
+                1
+            },
+            operation,
+        )?;
+        if matches!(operation, ForgeOperation::ConvergenceTransfer) {
+            invalid.source.tier = ItemTier::new(2).ok_or(ForgeRuleError::InvalidClassCap)?;
+        }
+        assert_eq!(
+            ForgeQuote::try_from(invalid),
+            Err(ForgeRuleError::Shape(
+                ForgeShapeError::ConvergenceRequiresClassFour
+            ))
+        );
+    }
+    Ok(())
+}
