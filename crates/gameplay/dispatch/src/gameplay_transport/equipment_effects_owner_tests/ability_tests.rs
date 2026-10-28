@@ -18,8 +18,6 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("FORGECREATURE", 1),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
-    // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
-    ("TIMEDITEMS2-1", 2),
     // The wooden chairs 2358..=2361 (tools/content-migration/item_transform_profiles.py).
     // All have speed_bonus=0.
     ("ITEM-TRANSFORM-1", 4),
@@ -55,6 +53,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 39180, 39183, 39186, 39546, 50149, 50159, 50188, 50240, 50254.
     // 34097 has speed_bonus=15 and 34098 has speed_bonus=20; the other 34 have speed_bonus=0.
     ("REWARD-BAG-2", 36),
+    // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
+    ("TIMEDITEMS2-1", 2),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),

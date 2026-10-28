@@ -157,7 +157,7 @@ fn equipment_effects_sum_before_clamp_and_application() -> Result<(), Box<dyn st
 }
 
 #[test]
-fn equipment_effects_timed_own_slot_is_active_while_wrong_slot_and_extra_are_inactive()
+fn equipment_effects_timed_speed_only_contributes_in_own_slot()
 -> Result<(), Box<dyn std::error::Error>> {
     let abilities = vec![
         ItemAbility::Speed(20),
@@ -184,13 +184,10 @@ fn equipment_effects_timed_own_slot_is_active_while_wrong_slot_and_extra_are_ina
     let extra = input(EquipmentSlot::Ammo, abilities);
     let effects = derive_equipment_effects(vec![timed, wrong, extra]).ok_or("valid slots")?;
     assert_eq!(effects.speed, 20);
-    assert_eq!(effects.suppressions, [AbilitySuppression::Drown].into());
-    assert_eq!(effects.skills[&AbilitySkill::Axe], 3);
-    assert_eq!(effects.stat_flats[&AbilityStat::MaxHealth], 10);
-    assert_eq!(
-        effects.protections[&ReferenceResistanceKind::Fire],
-        percent(5, 1)
-    );
+    assert!(effects.suppressions.is_empty());
+    assert!(effects.skills.is_empty());
+    assert!(effects.stat_flats.is_empty());
+    assert!(effects.protections.is_empty());
     assert_eq!(effects.light, Some((7, 3)));
     let mut timed_extra = input(
         EquipmentSlot::Ammo,
