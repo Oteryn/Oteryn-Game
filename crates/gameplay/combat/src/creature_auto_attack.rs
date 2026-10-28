@@ -496,6 +496,7 @@ pub struct AutoAttackOwner {
     entries: Vec<Entry>,
     pub blocks: Vec<DefenseBudget>,
     selections: Vec<AiSelection>,
+    hazard_criticals: Vec<(ExactActorRef, GameSessionId, u64)>,
 }
 /// Current accepted AI selection; its occurrence comes from the existing ThinkSequenceTracker.
 struct AiSelection {
@@ -1133,6 +1134,58 @@ impl AutoAttackOwner {
                     .map_err(|_| AttackError::InvalidPlan)
             })
             .transpose()?;
+        self.hazard_criticals
+            .retain(|(actor, session, _)| runtime.player_control_facts(*actor, *session).is_ok());
+        let mut hazard_critical = false;
+        let requested = {
+            use oteryn_gameplay_encounter_rules::hazard::{
+                gnomprona_contains, provisional_effects,
+            };
+            let a = from.position();
+            let b = to.position();
+            if gnomprona_contains(a.x, a.y, a.floor) && gnomprona_contains(b.x, b.y, b.floor) {
+                if let Some(level) =
+                    crate::hazard::effective_level(runtime, facts.target, facts.session)
+                {
+                    let effects =
+                        provisional_effects(level).map_err(|_| AttackError::InvalidPlan)?;
+                    let last = self
+                        .hazard_criticals
+                        .iter()
+                        .find(|(actor, session, _)| {
+                            *actor == facts.target && *session == facts.session
+                        })
+                        .map_or(0, |(_, _, last)| *last);
+                    let chance = deterministic_decision_u64(
+                        root,
+                        id,
+                        "hazard_critical",
+                        source.entry_index as u64,
+                    )
+                    .map_err(|_| AttackError::InvalidPlan)?
+                        % 1_000_000;
+                    hazard_critical = now.get().saturating_sub(last) >= 2_000_000
+                        && !source_critical.is_some_and(|event| event.critical)
+                        && effects.creature_critical(chance as u32);
+                    let base = if hazard_critical {
+                        effects.critical_damage(u64::from(requested))
+                    } else {
+                        Ok(u64::from(requested))
+                    }
+                    .map_err(|_| AttackError::NumericOverflow)?;
+                    u32::try_from(
+                        effects
+                            .creature_damage(base)
+                            .map_err(|_| AttackError::NumericOverflow)?,
+                    )
+                    .map_err(|_| AttackError::NumericOverflow)?
+                } else {
+                    requested
+                }
+            } else {
+                requested
+            }
+        };
         // Source-default bonus is ZERO; preserve actual base requested HP. Dynamic boosts/VFX remain qualified gaps.
         let mut remaining = requested;
         let mut budget_next = None;
@@ -1264,6 +1317,18 @@ impl AutoAttackOwner {
                     session: facts.session,
                     budget,
                 }),
+            }
+        }
+        if hazard_critical {
+            if let Some((_, _, last)) = self
+                .hazard_criticals
+                .iter_mut()
+                .find(|(actor, session, _)| *actor == facts.target && *session == facts.session)
+            {
+                *last = now.get();
+            } else {
+                self.hazard_criticals
+                    .push((facts.target, facts.session, now.get()));
             }
         }
         Ok(SwingOutcome {

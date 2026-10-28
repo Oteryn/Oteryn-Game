@@ -1,0 +1,81 @@
+{
+  "schema": "OTERYN_HAZARD_AREAS/v1",
+  "source": {
+    "crystal": "201189f871d23597b82caf88fd611454a2ddefb8",
+    "canary": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+  },
+  "areas": [
+    {
+      "key": "hazard.gnomprona-gardens",
+      "minimum_level": 1,
+      "maximum_level": 12,
+      "crystal_effects": [
+        "critical",
+        "dodge",
+        "damage_boost",
+        "defense_boost",
+        "primal_pods"
+      ],
+      "coefficients": {
+        "critical_chance_per_10000": 750,
+        "critical_interval_ms": 2000,
+        "critical_bonus_base_per_10000": 5000,
+        "critical_bonus_per_level_after_first_per_10000": 25,
+        "damage_per_level_per_10000": 200,
+        "defense_per_level_per_10000": 0,
+        "dodge_per_level_per_10000": 85,
+        "xp_percent_per_level": 3.5,
+        "extra_loot_roll_percent_per_level": 4,
+        "pod_spawn_per_level_per_10000": 87,
+        "pod_damage_percent": 5,
+        "pod_safe_ms": 2000,
+        "pod_spawn_ms": 4000
+      },
+      "status": "PROVISIONAL_CANARY_NOT_VERIFIED_AGAINST_GLOBAL",
+      "from_position": [
+        33502,
+        32740,
+        13
+      ],
+      "to_position": [
+        33796,
+        32996,
+        15
+      ],
+      "excluded_areas": [
+        [
+          [
+            33633,
+            32915,
+            15
+          ],
+          [
+            33649,
+            32928,
+            15
+          ]
+        ],
+        [
+          [
+            33630,
+            32887,
+            15
+          ],
+          [
+            33672,
+            32921,
+            15
+          ]
+        ]
+      ]
+    }
+  ],
+  "primal_ordeal": {
+    "boss": "The Primal Menace",
+    "minimum_character_level": 500,
+    "fresh_activity_instance": true,
+    "hazard_level_requirement": null,
+    "status": "PARTIAL_SHARED_ACTIVITY_ADMISSION_NOT_WIRED"
+  },
+  "note": "Pinned Canary config.lua.dist:223-237 supplies defaults; player.cpp:3641-3645 and 5513-5623 supplies formulas. Loot is independent extra rolls, not increased per-item probability. Geometry is hazard_primal.lua:1-21. A hazard-level entry gate is UNVERIFIED and is not invented. See HAZARD2-FINAL.md for runtime coverage and gaps."
+}
