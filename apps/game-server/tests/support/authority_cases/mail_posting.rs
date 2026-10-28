@@ -8,7 +8,7 @@ use crate::durability::mail::{
 use crate::item_transfer_postgres_cases as native;
 use oteryn_gameplay_domain::domain::{CharacterId, WorldId};
 
-const STAMP: &str = "fixture:mail.stamped";
+const STAMP: &str = "oteryn:item.tibia.i3506";
 
 fn run(
     tag: &'static str,
@@ -68,6 +68,18 @@ async fn post(
     command: u64,
     hash: [u8; 32],
 ) -> TestResult<MailPostOutcome> {
+    post_with_qualification(h, tx, item, recipient, command, hash, false).await
+}
+
+async fn post_with_qualification(
+    h: &native::Harness,
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    item: [u8; 16],
+    recipient: [u8; 16],
+    command: u64,
+    hash: [u8; 32],
+    qualified_parcel_tree: bool,
+) -> TestResult<MailPostOutcome> {
     sqlx::query("RESET ROLE").execute(&mut **tx).await?;
     let fence = native::fence()?;
     assert!(
@@ -95,7 +107,7 @@ async fn post(
         fence.character_id,
         CharacterId::from_bytes(recipient)?,
         item,
-        false,
+        qualified_parcel_tree,
         STAMP,
         b"fixture:mailbox",
         hash,
@@ -276,6 +288,31 @@ fn mail_posting_nonempty_parcel_is_refused_without_removal() -> TestResult {
         assert_eq!(footprint(h, item).await?, before);
         let count:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(count, 1);
+        Ok(())
+    })
+}
+
+#[test]
+fn qualified_parcel_keeps_its_child_tree_in_recipient_inbox() -> TestResult {
+    run("mail_post_parcel", async |h, item| {
+        let child = native::id(230);
+        let mut seed = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *seed)
+            .await?;
+        sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($4,'hex')::uuid)")
+            .bind(child.as_slice()).bind(native::id(native::WORLD).as_slice()).bind(item.as_slice()).bind(native::id(231).as_slice()).execute(&mut *seed).await?;
+        seed.commit().await?;
+
+        let mut tx = runtime_tx(h).await?;
+        assert_eq!(
+            post_with_qualification(h, &mut tx, item, native::id(native::CHARACTER), 31, [1; 32], true).await?,
+            MailPostOutcome::Posted
+        );
+        tx.commit().await?;
+        let state: (i32, i64, i64) = sqlx::query_as("SELECT o.item_count,(SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid),(SELECT count(*) FROM game_item_character_inbox_locations WHERE item_instance_id=encode($2,'hex')::uuid) FROM game_mail_operations o WHERE o.root_item_instance_id=encode($2,'hex')::uuid")
+            .bind(child.as_slice()).bind(item.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(state, (2, 1, 1));
         Ok(())
     })
 }
