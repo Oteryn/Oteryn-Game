@@ -20,7 +20,8 @@ pub struct TrainingRates {
     pub exercise_gains: [u64; 8],
     pub vocations: Vec<VocationRate>,
     pub statues: BTreeMap<String, usize>,
-    pub dummies: Vec<String>,
+    /// Production item key to the donor's integer percentage (100 public, 110 house).
+    pub dummies: BTreeMap<String, u16>,
     pub weapons: BTreeMap<String, usize>,
 }
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -58,6 +59,10 @@ impl TrainingRates {
                 .iter()
                 .any(|v| *v == 0 || *v > 1000)
             || rates.statues.values().any(|family| *family > 5)
+            || rates
+                .dummies
+                .values()
+                .any(|percentage| !matches!(percentage, 100 | 110))
             || rates.weapons.values().any(|family| *family > 6)
             || rates.vocations.iter().enumerate().any(|(i, v)| {
                 v.vocation.is_empty()
@@ -73,6 +78,31 @@ impl TrainingRates {
             return Err(TrainingUnavailable);
         }
         Ok(rates)
+    }
+
+    /// Crystal converts the Lua numeric gain to an integer for every charge. This means the
+    /// 110% house-dummy multiplier raises 600 mana to 660, while 7.7 skill tries truncates to 7.
+    pub fn exercise_gain(
+        &self,
+        family: usize,
+        dummy_percentage: u16,
+    ) -> Result<u64, TrainingUnavailable> {
+        let base = *self
+            .exercise_gains
+            .get(family)
+            .filter(|gain| **gain > 0)
+            .ok_or(TrainingUnavailable)?;
+        if !self
+            .dummies
+            .values()
+            .any(|value| *value == dummy_percentage)
+        {
+            return Err(TrainingUnavailable);
+        }
+        base.checked_mul(u64::from(dummy_percentage))
+            .map(|gain| gain / u64::from(self.percent_scale))
+            .filter(|gain| *gain > 0)
+            .ok_or(TrainingUnavailable)
     }
 
     pub fn offline_gain(
