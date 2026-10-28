@@ -1260,7 +1260,11 @@ fn scenario_with_creature_charmed(
                 "holder contention defers the pass before transaction start"
             );
             owner.runtime.lock().await.owner_fence().map_err(debug)?;
-            drop(held);
+            // Drop returns the sole holder in a spawned task. Await its observed return
+            // so immediate Deferred retries cannot starve that task on this runtime.
+            held.run(|_, _| Box::pin(async { Ok(()) }))
+                .await
+                .map_err(debug)?;
         }
         let boss_death_lower = if boss_policy.is_some() {
             Some(
