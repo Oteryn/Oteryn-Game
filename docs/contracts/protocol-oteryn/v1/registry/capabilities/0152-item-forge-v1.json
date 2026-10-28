@@ -7,5 +7,5 @@
   "command_types": [181],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "The composed native DustLimit/history owner with a current Character item fence. Item operations remain staged and are rejected; migration 0320 has no runtime execution grant."
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle Worlds only. The composed native DustLimit/history owner with a current Character item fence. Item operations remain staged and are rejected; migration 0320 has no runtime execution grant."
 }
