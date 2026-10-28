@@ -49,21 +49,39 @@ async fn send_atelier(
     let command_id = admitted.continuity.next_command_id;
     let frame = oteryn_protocol_oteryn::encode_client_command(
         admitted.continuity.connection_generation,
-        &oteryn_protocol_oteryn::ClientCommandValue { command_id, command_type: kind, payload },
-    ).map_err(debug)?;
+        &oteryn_protocol_oteryn::ClientCommandValue {
+            command_id,
+            command_type: kind,
+            payload,
+        },
+    )
+    .map_err(debug)?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    client.write_all(&(frame.len() as u32).to_be_bytes()).await?;
+    client
+        .write_all(&(frame.len() as u32).to_be_bytes())
+        .await?;
     client.write_all(&frame).await?;
     client.shutdown().await?;
     let end = Box::pin(serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS)).await;
-    let mut output = Vec::new(); client.read_to_end(&mut output).await?;
-    if let ConnectionEnd::AdmittedThenDisconnected(current) | ConnectionEnd::AdmittedThenClosed(current, _) = end { *admitted = current; }
+    // The client reads to EOF, which arrives only once the server half is closed.
+    drop(server);
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
+    if let ConnectionEnd::AdmittedThenDisconnected(current)
+    | ConnectionEnd::AdmittedThenClosed(current, _) = end
+    {
+        *admitted = current;
+    }
     let length = u32::from_be_bytes(output[..4].try_into()?) as usize;
     let envelope = decode_wire_envelope(&output[4..4 + length]).map_err(debug)?;
     assert_eq!(envelope.message_type(), MessageType::CommandResult);
-    let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
+    let result =
+        oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
     assert_eq!(result.command_id, command_id);
-    assert_eq!(result.status, oteryn_protocol_oteryn::CommandStatus::Accepted);
+    assert_eq!(
+        result.status,
+        oteryn_protocol_oteryn::CommandStatus::Accepted
+    );
     Ok(result.payload.to_vec())
 }
 
@@ -125,16 +143,6 @@ fn scenario() -> TestResult {
         assert_eq!(initial.gems.len(), 8);
         assert_eq!(initial.gold, 0);
         assert!(initial.unrevealed.is_empty() && initial.fragments.is_empty());
-        let mut admitted = dependencies.admitted;
-        let query = send_atelier(&owner, &mut admitted, oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_QUERY, &[]).await?;
-        assert!(!query.is_empty());
-        let gem = *initial.gems.keys().next().ok_or("initial gem")?;
-        let lock = oteryn_protocol_oteryn::atelier::encode_set_lock(&oteryn_protocol_oteryn::atelier::SetLockRequest {
-            occurrence: id(199), expected_revision: initial.revision, gem: gem.to_be_bytes(), locked: true,
-        }).map_err(debug)?;
-        let reply = send_atelier(&owner, &mut admitted, oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_SET_LOCK, &lock).await?;
-        assert!(!reply.is_empty());
-        assert!(stored(&h).await?.gems[&gem].locked);
         for domain in [
             WheelDomain::Green,
             WheelDomain::Red,
@@ -339,6 +347,40 @@ fn scenario() -> TestResult {
             Some("23514")
         );
         tx.rollback().await?;
+        // The wire commands go through the composed connection: a query, then an unlock and a
+        // re-lock of the gem locked above, each committed with the current Atelier revision.
+        let mut admitted = dependencies.admitted;
+        let query = send_atelier(
+            &owner,
+            &mut admitted,
+            oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_QUERY,
+            &[],
+        )
+        .await?;
+        assert!(!query.is_empty());
+        for (occurrence, locked) in [(230, false), (231, true)] {
+            let lock = oteryn_protocol_oteryn::atelier::encode_set_lock(
+                &oteryn_protocol_oteryn::atelier::SetLockRequest {
+                    occurrence: id(occurrence),
+                    expected_revision: stored(&h).await?.revision,
+                    gem,
+                    locked,
+                },
+            )
+            .map_err(debug)?;
+            let reply = send_atelier(
+                &owner,
+                &mut admitted,
+                oteryn_protocol_oteryn::atelier::COMMAND_TYPE_ATELIER_SET_LOCK,
+                &lock,
+            )
+            .await?;
+            assert!(!reply.is_empty());
+            assert_eq!(
+                stored(&h).await?.gems[&u128::from_be_bytes(gem)].locked,
+                locked
+            );
+        }
         migration_reapplication(&h).await?;
         paid::exercise(&owner, &h).await?;
         migration_reapplication(&h).await?;
