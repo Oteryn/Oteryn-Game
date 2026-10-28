@@ -53,8 +53,15 @@ fn stash_session_dispatch_conserves_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            scenario_with_premium(true, false, false, false, false, Some(EntitlementState::Active))
-                .map_err(|e| e.to_string())
+            scenario_with_premium(
+                true,
+                false,
+                false,
+                false,
+                false,
+                Some(EntitlementState::Active),
+            )
+            .map_err(|e| e.to_string())
         })?
         .join()
         .map_err(|_| "Premium stash e2e panicked")?
@@ -66,8 +73,15 @@ fn stash_session_dispatch_expired_premium_stows_withdraws_and_replays() -> TestR
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(|| {
-            scenario_with_premium(true, false, false, false, false, Some(EntitlementState::Expired))
-                .map_err(|e| e.to_string())
+            scenario_with_premium(
+                true,
+                false,
+                false,
+                false,
+                false,
+                Some(EntitlementState::Expired),
+            )
+            .map_err(|e| e.to_string())
         })?
         .join()
         .map_err(|_| "expired Premium stash e2e panicked")?
@@ -472,7 +486,7 @@ fn scenario_with_premium(
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37])
+            SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37, 62, 153])
                 .ok_or("selected")?;
         assert!(
             admitted
@@ -585,6 +599,15 @@ fn scenario_with_premium(
                 .ok_or("page race deposit")?;
             assert_eq!(moved.reply.outcome, DepotOutcome::Moved);
             assert_eq!(moved.items, vec![(1, carried.ok_or("carried")?)]);
+            let search = harness
+                .root
+                .read_depot_search(&authority, fence.character_id, 3031)
+                .await?
+                .ok_or("depot search result")?;
+            assert_eq!(
+                (search.client_id, search.depot, search.stash, search.inbox),
+                (3031, 100, 0, 0)
+            );
             write_text_depot_session::exercise(&owner, admitted, &harness.pool, deposit).await?;
             drop(owner);
             drop(authority);
@@ -618,9 +641,49 @@ fn scenario_with_premium(
                     ..browse
                 },
             ),
-            (4, withdraw),
-            (5, withdraw),
+            (9, withdraw),
+            (10, withdraw),
         ] {
+            if command_id == 9 {
+                use oteryn_protocol_oteryn::depot_search::{self as search, Request};
+                for (id, request) in [
+                    (4, Request::Search { client_id: 3031 }),
+                    (5, Request::Detail { client_id: 3031 }),
+                    (
+                        6,
+                        Request::Search {
+                            client_id: u32::MAX,
+                        },
+                    ),
+                    (
+                        7,
+                        Request::Retrieve {
+                            client_id: 3031,
+                            all: false,
+                        },
+                    ),
+                    (
+                        8,
+                        Request::Retrieve {
+                            client_id: 3031,
+                            all: true,
+                        },
+                    ),
+                ] {
+                    let payload = search::encode_request(request).map_err(debug)?;
+                    let frame = oteryn_protocol_oteryn::encode_client_command(
+                        1,
+                        &oteryn_protocol_oteryn::ClientCommandValue {
+                            command_id: id,
+                            command_type: search::COMMAND_TYPE_DEPOT_SEARCH,
+                            payload: &payload,
+                        },
+                    )
+                    .map_err(debug)?;
+                    input.extend(u32::try_from(frame.len())?.to_be_bytes());
+                    input.extend(frame);
+                }
+            }
             let payload = encode_depot_intent(intent).map_err(debug)?;
             let frame = oteryn_protocol_oteryn::encode_client_command(
                 1,
@@ -637,6 +700,7 @@ fn scenario_with_premium(
         let (end, output) =
             super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
         let mut replies = Vec::new();
+        let mut search_replies = Vec::new();
         let mut cursor = output.as_slice();
         while !cursor.is_empty() {
             let length =
@@ -647,12 +711,53 @@ fn scenario_with_premium(
             if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
                     .map_err(debug)?;
+                if (4..=8).contains(&result.command_id) {
+                    assert_eq!(
+                        result.status,
+                        oteryn_protocol_oteryn::CommandStatus::Accepted
+                    );
+                    search_replies.push(
+                        oteryn_protocol_oteryn::depot_search::decode_reply(result.payload)
+                            .map_err(debug)?,
+                    );
+                    continue;
+                }
                 replies.push((
                     result.status,
                     decode_depot_reply(result.payload).map_err(debug)?,
                 ));
             }
         }
+        use oteryn_protocol_oteryn::depot_search::{Outcome, TierCount};
+        assert_eq!(search_replies.len(), 5, "{end}");
+        assert_eq!(
+            search_replies.iter().map(|r| r.outcome).collect::<Vec<_>>(),
+            [
+                Outcome::Found,
+                Outcome::Found,
+                Outcome::NotFound,
+                Outcome::Rejected,
+                Outcome::Rejected
+            ]
+        );
+        assert_eq!(search_replies[0], search_replies[1]);
+        let found = search_replies[0].results.first().ok_or("search result")?;
+        assert_eq!(
+            (found.client_id, found.depot, found.stash, found.inbox),
+            (3031, 100, 0, 0)
+        );
+        assert_eq!(
+            found.tiers,
+            [TierCount {
+                tier: 0,
+                count: 100
+            }]
+        );
+        assert!(
+            search_replies[2..]
+                .iter()
+                .all(|r| r.retrieved == 0 && r.results.is_empty())
+        );
         assert_eq!(replies.len(), 5, "{end}");
         assert_eq!(
             replies.iter().map(|(_, r)| r.outcome).collect::<Vec<_>>(),
@@ -716,7 +821,7 @@ fn scenario_with_premium(
                 deps.actor,
                 UseCommand {
                     game_session_id: session,
-                    command_id: 6,
+                    command_id: 11,
                     item_fence: Some(fence),
                 },
                 DepotIntent {
@@ -758,7 +863,7 @@ fn scenario_with_premium(
                 deps.actor,
                 UseCommand {
                     item_fence: Some(stale),
-                    command_id: 7,
+                    command_id: 12,
                     ..replay_command
                 },
                 deposit,
@@ -775,7 +880,7 @@ fn scenario_with_premium(
             .depot(
                 deps.actor,
                 UseCommand {
-                    command_id: 9,
+                    command_id: 14,
                     ..replay_command
                 },
                 deposit,
@@ -790,7 +895,7 @@ fn scenario_with_premium(
             .depot(
                 deps.actor,
                 UseCommand {
-                    command_id: 10,
+                    command_id: 15,
                     ..replay_command
                 },
                 browse,
@@ -805,7 +910,7 @@ fn scenario_with_premium(
             .depot(
                 deps.actor,
                 UseCommand {
-                    command_id: 11,
+                    command_id: 16,
                     ..replay_command
                 },
                 DepotIntent {
@@ -833,7 +938,7 @@ fn scenario_with_premium(
             .depot(
                 deps.actor,
                 UseCommand {
-                    command_id: 8,
+                    command_id: 13,
                     ..replay_command
                 },
                 browse,

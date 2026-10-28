@@ -1,4 +1,4 @@
-//! COIN-EXCHANGE-1: command-retained banker conversion of carried coins only.
+//! Command-retained banker and native item-use conversion of carried coins only.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_equipment::assert_current_equipment_in_transaction;
 use super::db::begin_type2_transaction;
@@ -10,7 +10,7 @@ use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::currency::Coin;
 use crate::foundation::CommandRef;
-use oteryn_gameplay_economy::coin_exchange::{CoinExchange, ExchangeRefusal, qualify};
+use oteryn_gameplay_economy::coin_exchange::{CoinExchange, ExchangeRefusal, ExchangeUse, qualify, qualify_item_use};
 use serde_json::{Value, json};
 use sqlx::Row;
 
@@ -52,8 +52,8 @@ fn from_code(value: i16) -> Result<CoinExchange, DurabilityError> {
 }
 
 impl DurabilityRoot {
-    /// Accept under current NPC authority, or resume the original retained command. Acceptance
-    /// commits before execution so a lost reply never consumes the dialogue without recovery.
+    /// Accept a banker request or one exact item-use source, or resume its retained command.
+    /// Acceptance commits before execution; the source binding separates item USE from NPC replay.
     #[allow(clippy::too_many_arguments)]
     pub async fn exchange_carried_coins<C: ItemLoopContent>(
         &self,
@@ -63,6 +63,7 @@ impl DurabilityRoot {
         fence: CurrentCharacterItemFence,
         command: CommandRef,
         request: Option<CoinExchangeRequest>,
+        source: Option<[u8; 16]>,
         content: Option<&C>,
         coins: Option<[TypedDefinitionRef; 3]>,
     ) -> Result<Option<CoinExchangeReceipt>, DurabilityError> {
@@ -80,6 +81,14 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &record).await?;
             lock(&mut tx, command).await?;
             let existing = read(&mut tx, command).await?;
+            if let Some(row) = existing.as_ref() {
+                let stored: Option<Vec<u8>> = row.try_get("item_source")?;
+                if stored.as_deref() != source.as_ref().map(|id| id.as_slice()) {
+                    // NPC resume must never execute or acknowledge an item-use receipt.
+                    if source.is_none() { tx.commit(deadline).await?; return Ok(None); }
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+            }
             if existing.is_none() {
                 let Some(request) = request.as_ref() else { tx.commit(deadline).await?; return Ok(None); };
                 let content = content.ok_or(DurabilityError::Unavailable)?;
@@ -87,8 +96,8 @@ impl DurabilityRoot {
                     return Err(DurabilityError::InvalidStoredState);
                 }
                 assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
-                sqlx::query("INSERT INTO game_coin_exchange_receipts(transaction_id,game_session_id,command_id,character_id,world_id,content_digest,exchange,amount,npc_identity,npc_generation,npc_key,catalogue_revision,conversation_revision) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric,$8,$9::text::numeric,$10,$11::text::numeric,$12::text::numeric)")
-                    .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(content.loop_content_digest().as_slice()).bind(code(request.exchange)).bind(request.amount.to_string()).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(&request.npc_key).bind(request.catalogue_revision.to_string()).bind(request.conversation_revision.to_string()).execute(&mut **tx).await?;
+                sqlx::query("INSERT INTO game_coin_exchange_receipts(transaction_id,game_session_id,command_id,character_id,world_id,content_digest,exchange,amount,npc_identity,npc_generation,npc_key,catalogue_revision,conversation_revision,item_source) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric,$8,$9::text::numeric,$10,$11::text::numeric,$12::text::numeric,CASE WHEN $13::bytea IS NULL THEN NULL ELSE encode($13,'hex')::uuid END)")
+                    .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(content.loop_content_digest().as_slice()).bind(code(request.exchange)).bind(request.amount.to_string()).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(&request.npc_key).bind(request.catalogue_revision.to_string()).bind(request.conversation_revision.to_string()).bind(source.as_ref().map(|id| id.as_slice())).execute(&mut **tx).await?;
             }
             // The immutable accepted request survives a timeout or process loss after this commit.
             tx.commit(deadline).await?;
@@ -115,7 +124,7 @@ impl DurabilityRoot {
                 }
                 assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
                 let transaction: String = row.try_get("transaction_id")?;
-                let (outcome, inputs, outputs) = plan(&mut tx, fence, exchange, amount, content, coins).await?;
+                let (outcome, inputs, outputs) = plan(&mut tx, fence, exchange, amount, source, content, coins).await?;
                 result = match outcome { Ok(()) => 1, Err(ExchangeRefusal::InvalidAmount) => 2, Err(ExchangeRefusal::InsufficientCoins) => 3, Err(ExchangeRefusal::NoRoom) => 4 };
                 sqlx::query("UPDATE game_coin_exchange_receipts SET result=$2,inputs=$3,outputs=$4 WHERE transaction_id=$1::uuid")
                     .bind(&transaction).bind(result).bind(json!(inputs)).bind(json!(outputs)).execute(&mut **tx).await?;
@@ -145,16 +154,18 @@ async fn read(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     command: CommandRef,
 ) -> Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
-    Ok(sqlx::query("SELECT transaction_id::text,uuid_send(character_id) AS character,content_digest,exchange,amount::text,npc_identity,npc_generation::text,npc_key,catalogue_revision::text,conversation_revision::text,result FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric FOR UPDATE")
+    Ok(sqlx::query("SELECT transaction_id::text,uuid_send(character_id) AS character,content_digest,exchange,amount::text,npc_identity,npc_generation::text,npc_key,catalogue_revision::text,conversation_revision::text,result,uuid_send(item_source) AS item_source FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric FOR UPDATE")
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut ***tx).await?)
 }
 
 type Plan = (Result<(), ExchangeRefusal>, Vec<Value>, Vec<Value>);
+#[allow(clippy::too_many_arguments)]
 async fn plan<C: ItemLoopContent>(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     fence: CurrentCharacterItemFence,
     exchange: CoinExchange,
     amount: u64,
+    source: Option<[u8; 16]>,
     content: &C,
     coins: &[TypedDefinitionRef; 3],
 ) -> Result<Plan, DurabilityError> {
@@ -207,7 +218,15 @@ async fn plan<C: ItemLoopContent>(
         }
         let count = u64::try_from(row.try_get::<i64, _>("quantity")?)
             .map_err(|_| DurabilityError::InvalidStoredState)?;
-        if coin == Some(initial.input.0) {
+        let item_id = super::character_progression::uuid_text(&item)?;
+        let selected = source.is_none_or(|id| item_id == id);
+        if coin == Some(initial.input.0) && selected {
+            if source.is_some() {
+                let selected = qualify_item_use(initial.input.0, count, ExchangeUse::Coin, usize::MAX, true);
+                if amount != 1 || !selected.is_ok_and(|p| p.exchange == initial) {
+                    return refuse(ExchangeRefusal::InvalidAmount);
+                }
+            }
             available = available
                 .checked_add(count)
                 .ok_or(DurabilityError::InvalidStoredState)?;
