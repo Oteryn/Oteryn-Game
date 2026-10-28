@@ -35,6 +35,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
+mod coin_exchange;
 mod premium_purchase;
 mod service_context;
 pub(super) use premium_purchase::resume_npc_talk;
@@ -48,6 +49,7 @@ struct SessionNpc {
     // D1103: confirmation and retained receipt intent use this existing session owner.
     vocation: Option<super::vocation_choice::NpcVocationConversation>,
     bank: Option<PendingBank>,
+    exchange: Option<coin_exchange::Pending>,
     premium: Option<premium_purchase::PendingPurchase>,
 }
 
@@ -153,6 +155,7 @@ impl NpcConversations {
             && let Some(state) = sessions.get_mut(&session)
         {
             state.bank = None;
+            state.exchange = None;
         }
     }
 
@@ -568,7 +571,7 @@ pub(super) async fn npc_bank_talk(
     let reference = CommandId::new(command.command_id)
         .ok()
         .map(|id| CommandRef::new(session, id));
-    let _trade_permit = if yes {
+    let _trade_permit = if intent.text.to_ascii_lowercase().contains("yes") {
         let Some(permit) = admission.spell_lane_permit().await else {
             return unknown();
         };
@@ -592,6 +595,18 @@ pub(super) async fn npc_bank_talk(
     if ordinary.disposition != NpcIntentDisposition::Ok {
         admission.states.npc_conversations.cancel_bank(session);
         return ordinary;
+    }
+    if let Some(step) = coin_exchange::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return coin_exchange::apply(
+            admission,
+            actor,
+            command,
+            intent,
+            step,
+            _trade_permit.as_ref(),
+        )
+        .await;
     }
     if let Some(step) = premium_purchase::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
