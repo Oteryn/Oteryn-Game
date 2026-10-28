@@ -5,8 +5,11 @@
 //! trust root with ALPN `oteryn-game/1`, and rejects any other or absent negotiated ALPN before a
 //! single Foundation frame is sent (FND-02: an ALPN mismatch terminates the connection). The
 //! returned [`TcpTlsStream`] is the byte stream an `oteryn_session::Session` admits over; this
-//! crate holds no admission, envelope or codec logic. A later QUIC adapter sits beside it and
-//! produces its own `SessionStream` without changing the session crate.
+//! connection module composes session admission without implementing envelopes or codecs.
+//! A later QUIC adapter sits beside it and produces its own `SessionStream` without changing
+//! the session crate.
+
+pub mod connection;
 
 use oteryn_session::{ALPN_OTERYN_GAME_V1, SessionStream};
 use rustls::pki_types::pem::PemObject;
