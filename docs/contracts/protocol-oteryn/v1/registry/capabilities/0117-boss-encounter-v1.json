@@ -2,9 +2,12 @@
   "id": 117,
   "name": "BOSS_ENCOUNTER_V1",
   "owner_decision": "BOSS-ENCOUNTER-1 owner decisions 23/24, 2026-10-26",
-  "owner": "The shared per-character boss cooldown list read path. Activity admission, Bosstiary progress and Reward Chest delivery are not advertised by this capability.",
+  "owner": "Shared per-character boss cooldown reads and hazard-level selection. Activity admission, Bosstiary progress and Reward Chest delivery are not advertised by this capability.",
   "requires": [],
-  "command_types": [133],
+  "command_types": [
+    133,
+    169
+  ],
   "state_domains": [],
   "offered": true
 }
