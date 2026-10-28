@@ -79,9 +79,7 @@ pub fn reward_bag_conversion(
     if record.production_definition.family != used.family || !record.admission.materializable {
         return None;
     }
-    let bag = reward_bags()?
-        .iter()
-        .find(|bag| bag.playable && bag.bag == used.production_key)?;
+    let bag = playable_bag(reward_bags()?, &used.production_key)?;
     let reward = select_reward(&bag.rewards, draw)?;
     let id = reward
         .item
@@ -99,6 +97,10 @@ pub fn reward_bag_conversion(
     })
 }
 
+fn playable_bag<'a>(bags: &'a [RewardBag], key: &str) -> Option<&'a RewardBag> {
+    bags.iter().find(|bag| bag.playable && bag.bag == key)
+}
+
 #[cfg(test)]
 #[allow(clippy::expect_used)]
 mod tests {
@@ -113,18 +115,33 @@ mod tests {
     }
 
     #[test]
-    fn overlay_admits_only_the_covet_bag_with_canary_weights() {
+    fn overlay_admits_all_three_bags_with_canary_weights() {
         let bags = reward_bags().expect("overlay parses");
-        let playable: Vec<_> = bags.iter().filter(|b| b.playable).collect();
-        assert_eq!(playable.len(), 1);
-        let covet = playable[0];
-        assert_eq!(
-            (covet.constant.as_str(), covet.bag.as_str()),
-            ("BAG_YOU_COVET", "oteryn:item.tibia.i43895")
-        );
-        assert_eq!(covet.rewards.len(), 26);
-        assert_eq!(covet.rewards.iter().map(|r| r.weight).sum::<u64>(), 55_010);
-        assert!(covet.rewards.iter().all(|r| r.weight > 0));
+        assert_eq!(bags.len(), 3);
+        for (bag, (constant, key, count, total)) in bags.iter().zip([
+            ("BAG_YOU_DESIRE", "oteryn:item.tibia.i34109", 21, 81_000),
+            ("PRIMAL_BAG", "oteryn:item.tibia.i39546", 14, 54_000),
+            ("BAG_YOU_COVET", "oteryn:item.tibia.i43895", 26, 55_010),
+        ]) {
+            assert!(bag.playable);
+            assert_eq!((bag.constant.as_str(), bag.bag.as_str()), (constant, key));
+            assert_eq!(bag.rewards.len(), count);
+            assert_eq!(bag.rewards.iter().map(|r| r.weight).sum::<u64>(), total);
+            assert!(bag.rewards.iter().all(|r| r.weight > 0));
+        }
+    }
+
+    #[test]
+    fn unplayable_reward_bag_stays_closed_even_with_valid_rewards() {
+        let key = "oteryn:item.tibia.i34109";
+        let bags = [RewardBag {
+            constant: "SYNTHETIC_UNPLAYABLE".into(),
+            bag: key.into(),
+            playable: false,
+            rewards: vec![reward(1)],
+        }];
+        assert!(select_reward(&bags[0].rewards, 0).is_some());
+        assert!(playable_bag(&bags, key).is_none());
     }
 
     #[test]
