@@ -20,6 +20,7 @@ pub mod actor_spell_v2;
 pub mod analyser;
 pub mod animus_mastery;
 pub mod appearance;
+pub mod arena;
 pub mod attack;
 pub mod bed;
 pub mod bestiary;
