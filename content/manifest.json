@@ -582,8 +582,7 @@
       "path": "content/items/definitions/items-34000-34042.json"
     },
     {
-      "path": "content/items/definitions/spell-native-profiles.json",
-      "sha256": "7604d5792023a92cab8ad59b1576da8b56a226207c4680b727e1b64876714bbe"
+      "path": "content/items/definitions/spell-native-profiles.json"
     },
     {
       "path": "content/items/index.json"
