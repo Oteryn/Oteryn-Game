@@ -17,9 +17,10 @@ pub struct EquipmentEffectInput<'a> {
 }
 
 impl EquipmentEffectInput<'_> {
-    /// Only untimed abilities in the designated slot contribute speed; ammo supplies light only.
+    /// Abilities in the designated slot contribute while worn, including timed equipment;
+    /// ammo remains light-only. Timed lifetime is enforced by the durable timed-item owner.
     pub fn contributes_speed(&self) -> bool {
-        !self.profile.timed && self.in_own_slot && self.slot != EquipmentSlot::Ammo
+        self.in_own_slot && self.slot != EquipmentSlot::Ammo
     }
 }
 

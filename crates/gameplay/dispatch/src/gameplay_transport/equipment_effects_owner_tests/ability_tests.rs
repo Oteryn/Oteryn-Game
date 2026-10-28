@@ -18,6 +18,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("FORGECREATURE", 1),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
+    // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
+    ("TIMEDITEMS2-1", 2),
     // The wooden chairs 2358..=2361 (tools/content-migration/item_transform_profiles.py).
     // All have speed_bonus=0.
     ("ITEM-TRANSFORM-1", 4),
@@ -142,6 +144,20 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         .collect()
     );
+    Ok(())
+}
+
+#[test]
+fn equipment_effects_owner_time_ring_grants_speed_only_in_ring_slot() -> TestResult {
+    let content = native(&input()?)?;
+    for slot in 1..=10 {
+        let equipment = snapshot(&content, "oteryn:item.tibia.i3090", slot);
+        assert_eq!(
+            speed_term(&equipment, &content),
+            Some(if slot == 8 { 30 } else { 0 }),
+            "slot {slot}"
+        );
+    }
     Ok(())
 }
 
