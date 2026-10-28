@@ -1,5 +1,30 @@
 [
   {
+    "item_key": "oteryn:item.tibia.i5907",
+    "creature_key": "oteryn:creature.bear",
+    "mount_key": "oteryn:content.mount.war_bear",
+    "grant_key": "oteryn:taming.war_bear",
+    "chance": 20,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The bear ran away."
+      },
+      {
+        "action": 2,
+        "text": "Oh no! The slingshot broke."
+      },
+      {
+        "action": 3,
+        "text": "The bear is trying to hit you with its claws."
+      }
+    ],
+    "success_text": "You have tamed the war bear.",
+    "achievement_key": "oteryn:achievement/bearbaiting",
+    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:5"
+  },
+  {
     "item_key": "oteryn:item.tibia.i12260",
     "creature_key": "oteryn:creature.boar",
     "mount_key": "oteryn:content.mount.rapid_boar",
@@ -36,6 +61,23 @@
     "success_text": "You have tamed the skeleton.",
     "achievement_key": "oteryn:achievement/out_of_the_stone_age",
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:45"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12305",
+    "creature_key": "oteryn:item.inoperative_tin_lizzard",
+    "mount_key": "oteryn:content.mount.tin_lizzard",
+    "grant_key": "oteryn:taming.tin_lizzard",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 2,
+        "text": "The key broke inside."
+      }
+    ],
+    "success_text": "You wind up the tin lizzard.",
+    "achievement_key": "oteryn:achievement/knock_on_wood",
+    "source": "crystal:201189f8:data-global/scripts/actions/mounts/mounts.lua:25"
   },
   {
     "item_key": "oteryn:item.tibia.i12306",
@@ -305,6 +347,27 @@
     "success_text": "You have tamed the white deer.",
     "achievement_key": "oteryn:achievement/friend_of_elves",
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:14"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i12801",
+    "creature_key": "oteryn:item.inoperative_uniwheel",
+    "mount_key": "oteryn:content.mount.uniwheel",
+    "grant_key": "oteryn:taming.uniwheel",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 3,
+        "text": "The oil have no effect."
+      },
+      {
+        "action": 2,
+        "text": "Splosh! It looks like most of the special oil this can was holding was spilt without any effect."
+      }
+    ],
+    "success_text": "Vroooomratatatatatatat. The strange wheel seems to vibrate and slowly starts turning continuously.",
+    "achievement_key": "oteryn:achievement/stuntman",
+    "source": "crystal:201189f8:data-global/scripts/actions/mounts/mounts.lua:26"
   },
   {
     "item_key": "oteryn:item.tibia.i12802",
@@ -666,6 +729,18 @@
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:38"
   },
   {
+    "item_key": "oteryn:item.tibia.i21897",
+    "creature_key": "oteryn:construction.glooth_glider",
+    "mount_key": "oteryn:content.mount.glooth_glider",
+    "grant_key": "oteryn:taming.glooth_glider",
+    "chance": 100,
+    "break_item": false,
+    "failures": [],
+    "success_text": "You successfully constructed a Glooth Glider!",
+    "achievement_key": "oteryn:achievement/fabled_construction",
+    "source": "crystal:201189f8:data-global/scripts/actions/mounts/mounts.lua:17"
+  },
+  {
     "item_key": "oteryn:item.tibia.i24960",
     "creature_key": "oteryn:creature.stone_rhino",
     "mount_key": "oteryn:content.mount.stone_rhino",
@@ -806,28 +881,70 @@
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:50"
   },
   {
-    "item_key": "oteryn:item.tibia.i5907",
-    "creature_key": "oteryn:creature.bear",
-    "mount_key": "oteryn:content.mount.war_bear",
-    "grant_key": "oteryn:taming.war_bear",
-    "chance": 20,
-    "break_item": true,
+    "item_key": "oteryn:item.tibia.i37397",
+    "creature_key": "oteryn:item.wind_up_loco",
+    "mount_key": "oteryn:content.mount.wind_up_loco",
+    "grant_key": "oteryn:taming.wind_up_loco",
+    "chance": 100,
+    "break_item": false,
+    "failures": [],
+    "success_text": "You wind the small locomotive up. It starts to move ... and grows!",
+    "achievement_key": "oteryn:achievement/engine_driver",
+    "source": "crystal:201189f8:data-global/scripts/actions/mounts/mounts.lua:42"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i39548",
+    "creature_key": "oteryn:creature.giant_beaver",
+    "mount_key": "oteryn:content.mount.giant_beaver_mount",
+    "grant_key": "oteryn:taming.giant_beaver",
+    "chance": 40,
+    "break_item": false,
     "failures": [
       {
         "action": 1,
-        "text": "The bear ran away."
-      },
-      {
-        "action": 2,
-        "text": "Oh no! The slingshot broke."
+        "text": "The giant beaver ran away."
       },
       {
         "action": 3,
-        "text": "The bear is trying to hit you with its claws."
+        "text": "The giant beaver is ignoring you."
       }
     ],
-    "success_text": "You have tamed the war bear.",
-    "achievement_key": "oteryn:achievement/bearbaiting",
-    "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:5"
+    "success_text": "You tamed the giant beaver.",
+    "achievement_key": "oteryn:achievement/beaver_away",
+    "source": "crystal:201189f8:data-global/scripts/actions/mounts/mounts.lua:16"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i43901",
+    "creature_key": "oteryn:creature.foxmouse",
+    "mount_key": "oteryn:content.mount.foxmouse_mount",
+    "grant_key": "oteryn:taming.foxmouse",
+    "chance": 100,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The foxmouse ran away."
+      }
+    ],
+    "success_text": "You have tamed the foxmouse.",
+    "achievement_key": "oteryn:achievement/like_fox_and_mouse",
+    "source": "crystal:201189f8:data-global/scripts/actions/mounts/mounts.lua:45"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i52638",
+    "creature_key": "oteryn:creature.battlefrazzle",
+    "mount_key": "oteryn:content.mount.battlefrazzle",
+    "grant_key": "oteryn:taming.battlefrazzle",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 2,
+        "text": "The tamed frazzlemaw devours the rare fish but otherwise takes no notice of your advancement."
+      }
+    ],
+    "success_text": "The tamed frazzlemaw hungers for fish and this one is a particular rare treat. You command this one now, take good care of it!",
+    "achievement_key": "oteryn:achievement/natural_born_cowboy",
+    "source": "crystal:201189f8:data-global/scripts/actions/mounts/mounts.lua:8"
   }
 ]

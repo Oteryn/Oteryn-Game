@@ -72,7 +72,8 @@ pub fn rules() -> &'static [TamingRule] {
                 || rule.failures.len() > 3
                 || (rule.chance != 100 && rule.failures.is_empty())
                 || rule.failures.iter().any(|f| !(1..=4).contains(&f.action))
-                || !rule.source.starts_with("canary:")
+                || !(rule.source.starts_with("canary:")
+                    || rule.source.starts_with("crystal:201189f8:"))
             {
                 return Vec::new();
             }
@@ -87,7 +88,7 @@ mod tests {
 
     #[test]
     fn mount_taming_bear_threshold_and_reference_effects() -> Result<(), &'static str> {
-        assert_eq!(rules().len(), 44);
+        assert_eq!(rules().len(), 51);
         let bear = rules()
             .iter()
             .find(|r| r.item_key == "oteryn:item.tibia.i5907")
@@ -194,22 +195,24 @@ mod tests {
         Ok(())
     }
 
-    /// S06 divergences pinned until the owner decides: Crystal's Wild Horse (12802) branch
-    /// tames on 3/100 and flees on 3/100 of the rest; Oteryn keeps the Canary 15% row. Crystal
-    /// rows Battlefrazzle 52638, Giant Beaver 39548, tin lizzard 12305, uniwheel 12801,
-    /// wind-up loco 37397 and Foxmouse 43901 have no Oteryn rule.
+    /// S06: the complete Crystal taming catalogue is admitted, including item targets and
+    /// Glooth Glider construction. Dispatch owners still fail closed unless their target kind is
+    /// available through the production route.
     #[test]
-    fn s06_crystal_taming_divergences_are_pinned() {
-        let horse = rule_for(12802);
-        let oats: Vec<_> = horse
-            .iter()
-            .filter(|r| r.creature_key == "oteryn:creature.wild_horse")
-            .collect();
-        assert_eq!(oats.len(), 1);
-        assert_eq!(oats[0].chance, 15);
-        assert!(oats[0].break_item);
-        for item in [52638, 39548, 12305, 12801, 37397, 43901] {
-            assert!(rule_for(item).is_empty(), "item {item}");
+    fn s06_crystal_omitted_rows_are_admitted() {
+        for (item, chance) in [
+            (52638, 40),
+            (39548, 40),
+            (12305, 40),
+            (12801, 40),
+            (37397, 100),
+            (43901, 100),
+            (21897, 100),
+        ] {
+            let found = rule_for(item);
+            assert_eq!(found.len(), 1, "item {item}");
+            assert_eq!(found[0].chance, chance, "item {item}");
+            assert!(found[0].source.starts_with("crystal:201189f8:"));
         }
     }
 }
