@@ -34,6 +34,8 @@ pub mod command_replay;
 pub mod container_sort;
 pub mod container_tree;
 mod contract_registries;
+#[cfg(test)]
+mod count_bounds_tests;
 pub mod creature_push;
 pub mod cyclopedia;
 pub mod daily_reward;
@@ -44,6 +46,7 @@ pub mod depot;
 pub mod guild;
 pub mod guild_bank;
 pub mod guild_war;
+pub mod hazard;
 pub mod highscores;
 pub mod house;
 pub mod house_move_out;

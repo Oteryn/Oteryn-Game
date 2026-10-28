@@ -75,16 +75,16 @@ pub fn qualify(
     let input_count = per_output
         .checked_mul(output_count)
         .ok_or(ExchangeRefusal::InvalidAmount)?;
+    let (output_coin, output_per_exchange) = exchange.output();
+    let output_count = output_per_exchange
+        .checked_mul(output_count)
+        .ok_or(ExchangeRefusal::InvalidAmount)?;
     if available_input < input_count {
         return Err(ExchangeRefusal::InsufficientCoins);
     }
     if !output_can_merge && free_slots_after_input == 0 {
         return Err(ExchangeRefusal::NoRoom);
     }
-    let (output_coin, output_per_exchange) = exchange.output();
-    let output_count = output_per_exchange
-        .checked_mul(output_count)
-        .ok_or(ExchangeRefusal::InvalidAmount)?;
     Ok(ExchangePlan {
         input: (input_coin, input_count),
         output: (output_coin, output_count),
@@ -138,6 +138,19 @@ mod tests {
         );
         assert_eq!(
             qualify(CoinExchange::GoldToPlatinum, u64::MAX, u64::MAX, 1, true),
+            Err(ExchangeRefusal::InvalidAmount)
+        );
+    }
+    #[test]
+    fn coin_exchange_whole_input_stack_and_existing_receiver_make_room() {
+        assert!(qualify(CoinExchange::GoldToPlatinum, 1, 100, 1, false).is_ok());
+        assert!(qualify(CoinExchange::GoldToPlatinum, 1, 100, 0, true).is_ok());
+        assert_eq!(
+            qualify(CoinExchange::GoldToPlatinum, 0, 100, 1, false),
+            Err(ExchangeRefusal::InvalidAmount)
+        );
+        assert_eq!(
+            qualify(CoinExchange::PlatinumToGold, u64::MAX, u64::MAX, 0, false),
             Err(ExchangeRefusal::InvalidAmount)
         );
     }

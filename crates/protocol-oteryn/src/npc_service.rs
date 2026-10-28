@@ -515,3 +515,16 @@ pub fn decode_npc_trade_window(payload: &[u8]) -> WireResult<NpcTradeWindow> {
 #[cfg(test)]
 #[path = "npc_service_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod count_bounds_tests {
+    use super::*;
+    #[test]
+    fn f26_owned_text_bounds() {
+        crate::count_bounds_tests::owned_text_bounds(
+            read_text,
+            &[MAX_TALK_TEXT_BYTES, MAX_REPLY_LINE_BYTES],
+            false,
+        );
+    }
+}

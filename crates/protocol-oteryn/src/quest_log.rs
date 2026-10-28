@@ -482,3 +482,16 @@ fn varint_len(value: usize) -> usize {
 #[cfg(test)]
 #[path = "quest_log_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod count_bounds_tests {
+    use super::*;
+    #[test]
+    fn f26_owned_text_bounds() {
+        crate::count_bounds_tests::owned_text_bounds(
+            read_string,
+            &[MAX_MISSION_NAME_BYTES, MAX_JOURNAL_TEXT_BYTES],
+            true,
+        );
+    }
+}
