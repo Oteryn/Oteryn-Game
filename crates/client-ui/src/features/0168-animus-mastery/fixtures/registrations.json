@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0168-animus-mastery",
+    "kind": "handlers",
+    "id": "0168-animus-mastery-unsupported",
+    "status": "unsupported",
+    "reason": "ANIMUS-1 is server-only; native client presentation is pending.",
+    "commands": [
+      232
+    ],
+    "not_applicable": {
+      "state": "Server-only slice.",
+      "protocol": "Server-only slice.",
+      "view": "Server-only slice.",
+      "input": "Server-only slice.",
+      "settings": "Server-only slice."
+    }
+  }
+]
