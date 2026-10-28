@@ -15,6 +15,13 @@ pub enum CommittedRaidAction {
 }
 
 impl DurabilityRoot {
+    pub async fn query_raid_schedule(
+        &self,
+        channel: ChannelId,
+    ) -> Result<oteryn_protocol_oteryn::raid_schedule::RaidScheduleState, DurabilityError> {
+        self.try_issue_semantic_pass()?.run(move |holder,deadline|Box::pin(async move{let mut tx=begin_semantic_transaction(holder,deadline).await?;let row=sqlx::query("SELECT f.raid_key,r.state,r.committed_steps,(SELECT count(*) FROM game_world_raid_creatures c WHERE c.firing_id=r.firing_id AND c.channel_id=r.channel_id AND c.state=1)::text FROM game_world_raid_channel_runs r JOIN game_world_raid_firings f USING(firing_id) JOIN game_runtime_scope_assignments a ON a.world_id=f.world_id AND a.channel_id=r.channel_id AND a.assignment_state=2 WHERE r.channel_id=encode($1,'hex')::uuid ORDER BY f.fired_at_ms DESC,f.firing_id DESC LIMIT 1").bind(channel.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;let state=if let Some(row)=row{oteryn_protocol_oteryn::raid_schedule::RaidScheduleState{raid_key:row.try_get(0)?,running:row.try_get::<i16,_>(1)?==1,committed_steps:u32::try_from(row.try_get::<i32,_>(2)?).map_err(|_|DurabilityError::InvalidStoredState)?,active_creatures:row.try_get::<String,_>(3)?.parse().map_err(|_|DurabilityError::InvalidStoredState)?}}else{oteryn_protocol_oteryn::raid_schedule::RaidScheduleState{raid_key:String::new(),running:false,committed_steps:0,active_creatures:0}};commit_semantic_transaction(tx,deadline).await?;Ok(state)})).await
+    }
+
     /// Advances at most one action. The channel assignment row is the independent
     /// current-authority fact; the persisted run generation is only expected evidence.
     pub async fn advance_raid_run(

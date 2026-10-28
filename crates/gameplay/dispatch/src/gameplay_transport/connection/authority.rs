@@ -959,6 +959,13 @@ pub trait FreshAdmissionAuthority {
         async { Some(Err(())) }
     }
 
+    fn raid_schedule(
+        &self,
+        _command: UseCommand,
+    ) -> impl Future<Output = crate::gameplay_transport::raid_schedule::Reply> {
+        async { Some(Err(())) }
+    }
+
     /// RANK-1 (HS-WIRE-1): one `HIGHSCORES_QUERY_V1` page of `world`'s persisted snapshot for
     /// the Character the admitted `session` controls. The transport passes the session's World
     /// and GameSession, never values from the payload.
