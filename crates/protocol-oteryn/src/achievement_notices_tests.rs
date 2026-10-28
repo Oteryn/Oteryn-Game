@@ -186,7 +186,7 @@ fn registry_binds_the_notice_wire_ids_and_limits() {
     let capability = only("capabilities", CAPABILITY_ACHIEVEMENT_NOTICES_V1);
     assert_eq!(capability["name"], "ACHIEVEMENT_NOTICES_V1");
     assert_eq!(capability["offered"], false);
-    assert_eq!(capability["command_types"], serde_json::json!([]));
+    assert_eq!(capability["command_types"], serde_json::json!([10]));
     assert_eq!(
         capability["state_domains"],
         serde_json::json!([STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES])
@@ -196,7 +196,8 @@ fn registry_binds_the_notice_wire_ids_and_limits() {
             .as_array()
             .expect("command types")
             .iter()
-            .all(|command| command["capability"] != CAPABILITY_ACHIEVEMENT_NOTICES_V1)
+            .any(|command| command["id"] == 10
+                && command["capability"] == CAPABILITY_ACHIEVEMENT_NOTICES_V1)
     );
 
     let domain = only("state_domains", STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES);

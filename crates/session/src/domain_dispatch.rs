@@ -23,6 +23,9 @@ impl<S: SessionStream> Session<S> {
             }
         }
         match domain_id {
+            oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES => {
+                crate::achievement_notices::apply(self, server_sequence, payload)
+            }
             16 => crate::quest_log_transport::apply(self, server_sequence, delta),
             23 => crate::tutorial_notices::apply(self, server_sequence, payload),
             17 => crate::map_transport::apply(self, server_sequence, payload),

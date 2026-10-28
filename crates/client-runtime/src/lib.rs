@@ -2,6 +2,14 @@
 
 pub mod connection;
 
+/// Achievement notice values validated by the session transport.
+pub mod achievement_notices {
+    pub use oteryn_session::account_achievements::{
+        AccountAchievementsQuery, encode_account_achievements_query,
+    };
+    pub use oteryn_session::{AchievementEarned, AchievementWatermark};
+}
+
 use oteryn_foundation::CancellationToken;
 use std::fmt::{self, Display, Formatter};
 use std::future::Future;

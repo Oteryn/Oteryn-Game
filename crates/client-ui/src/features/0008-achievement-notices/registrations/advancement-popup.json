@@ -1,0 +1,7 @@
+{
+  "mechanic": "0008-achievement-notices",
+  "kind": "panels",
+  "id": "achievement-advancement-popup",
+  "status": "supported",
+  "entry": "mod.rs::advancement_popup"
+}

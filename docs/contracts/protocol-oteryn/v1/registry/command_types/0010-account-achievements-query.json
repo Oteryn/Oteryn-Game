@@ -5,5 +5,6 @@
   "payload_schema": "docs/contracts/protocol-oteryn/v1/account_achievements_v1.proto#AccountAchievementsQuery",
   "result_schema": "docs/contracts/protocol-oteryn/v1/account_achievements_v1.proto#AccountAchievementsResult",
   "max_payload_bytes": 6,
-  "max_result_payload_bytes": 32788
+  "max_result_payload_bytes": 32788,
+  "capability": 8
 }

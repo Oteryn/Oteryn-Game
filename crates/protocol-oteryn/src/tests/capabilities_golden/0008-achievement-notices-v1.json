@@ -4,7 +4,9 @@
   "constant": "achievement_notices::CAPABILITY_ACHIEVEMENT_NOTICES_V1",
   "requires": [],
   "acceptance_requires": false,
-  "commands": [],
+  "commands": [
+    10
+  ],
   "domains": [
     13
   ],

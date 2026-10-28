@@ -16,12 +16,15 @@
 //! holds no codec of its own, only the glue that ties one admission to its join-snapshot decode
 //! and its command/sequence discipline. Every admission or codec error fails closed.
 
+mod achievement_notices;
 mod appearance_state;
 mod depot;
 mod domain_dispatch;
 mod gated_command;
 mod map_transport;
 mod quest_log_transport;
+pub use oteryn_protocol_oteryn::account_achievements;
+pub use oteryn_protocol_oteryn::achievement_notices::{AchievementEarned, AchievementWatermark};
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
 /// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
@@ -626,6 +629,8 @@ pub const MAX_QUEUED_EVENTS: usize = 256;
 /// session's domain store (FND-02 §14, §15), in the order it was applied.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SessionEvent {
+    /// Domain 13: a newly earned account achievement. Duplicate grants produce no delta.
+    AchievementEarned(AppliedDelta<AchievementEarned>),
     /// Domain 16: the requested view and tracked lines, replaced whole.
     QuestLog(AppliedDelta<quest_log::QuestLog>),
     Appearance(AppliedDelta<AppearanceUpdate>),
@@ -660,6 +665,9 @@ impl SessionEvent {
     #[must_use]
     pub const fn domain_id(&self) -> u32 {
         match self {
+            Self::AchievementEarned(_) => {
+                oteryn_protocol_oteryn::achievement_notices::STATE_DOMAIN_ACCOUNT_ACHIEVEMENT_NOTICES
+            }
             Self::QuestLog(_) => quest_log::STATE_DOMAIN_QUEST_LOG,
             Self::Appearance(_) => oteryn_protocol_oteryn::appearance::STATE_DOMAIN_APPEARANCE,
             Self::TutorialNotice(_) => 23,
@@ -1283,6 +1291,7 @@ impl<S: SessionStream> Session<S> {
         }
         quest_log_transport::validate_join(&selected_capabilities, &gated_snapshots)?;
         tutorial_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
+        achievement_notices::validate_join(&selected_capabilities, &gated_snapshots)?;
         let map_header = map_transport::validate_join(
             &selected_capabilities,
             &gated_snapshots,

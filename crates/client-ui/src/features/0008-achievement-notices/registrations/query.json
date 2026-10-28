@@ -1,0 +1,12 @@
+{
+  "mechanic": "0008-achievement-notices",
+  "kind": "handlers",
+  "id": "0008-achievement-notices-query",
+  "status": "supported",
+  "commands": [
+    10
+  ],
+  "direction": "client_to_server",
+  "capability": 8,
+  "entry": "protocol.rs::request"
+}
