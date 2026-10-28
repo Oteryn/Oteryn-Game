@@ -120,3 +120,32 @@ fn daily_reward_reset_day_uses_local_ten_am_with_checked_arithmetic() {
         Err(DailyRewardRuleError::InvalidResetTime)
     );
 }
+
+// Crystal 201189f8 data/modules/scripts/daily_reward/daily_reward.lua (Canary 47dfd51f same),
+// read as reference data: the reward day wraps after day 7 independently of the streak
+// (:262-268); a missed day is covered only when the held jokers cover the whole gap (:318),
+// otherwise the streak restarts (:325) and the reward day continues; at most 3 jokers (:308).
+// DIFF: Crystal also wipes the held jokers on an uncovered gap; Oteryn spends none.
+#[test]
+fn crystal_reward_day_streak_and_joker_rules() -> Result<(), DailyRewardRuleError> {
+    assert_eq!(JOKERS_MAX, 3);
+    let mut state = DailyRewardState::default();
+    let mut days = Vec::new();
+    for epoch in 1..=8 {
+        let advance = advance_daily_reward(state, epoch, 0)?;
+        days.push(advance.claimed_lane_day);
+        state = advance.next;
+    }
+    assert_eq!(days, [1, 2, 3, 4, 5, 6, 7, 1]);
+    assert_eq!(state.streak, 8);
+    for (gap, jokers, streak, spent) in [(1, 1, 9, 1), (3, 3, 9, 3), (2, 1, 1, 0), (4, 3, 1, 0)] {
+        let advance = advance_daily_reward(state, 8 + gap + 1, jokers)?;
+        assert_eq!(advance.claimed_lane_day, 2, "gap {gap}");
+        assert_eq!(
+            (advance.next.streak, advance.jokers_spent),
+            (streak, spent),
+            "gap {gap} jokers {jokers}"
+        );
+    }
+    Ok(())
+}

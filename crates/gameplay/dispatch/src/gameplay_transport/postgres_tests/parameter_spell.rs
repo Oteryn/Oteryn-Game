@@ -44,6 +44,9 @@ fn parameter_spell_protected_exiva_real_session_postgres() -> TestResult {
     scenario(3)
 }
 
+#[path = "parameter_spell/exiva_settings.rs"]
+mod exiva_settings;
+
 pub(super) fn scenario(case: u8) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
@@ -227,9 +230,11 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
             .map_err(debug)?;
     }
     let target_session = GameSessionId::decode(&id(110)).map_err(debug)?;
-    if !matches!(case, 1 | 5 | 6) {
-        observer::initialize(&deps, &owner).await?;
-    }
+    let target_actor = if !matches!(case, 1 | 5 | 6) {
+        Some(observer::initialize(&deps, &owner).await?)
+    } else {
+        None
+    };
     sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1),(encode($2,'hex')::uuid,1)").bind(id(41).as_slice()).bind(id(101).as_slice()).execute(&h.pool).await?;
     if matches!(case, 4..=6) {
         let mut tx = h.pool.begin().await?;
@@ -290,6 +295,16 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[6, 7])
             .ok_or("chat capabilities")?;
+    if case >= 7 {
+        return exiva_settings::exercise(
+            &h,
+            &owner,
+            admitted,
+            target_actor.ok_or("target actor")?,
+            case,
+        )
+        .await;
+    }
     let before = owner
         .observe_vitals(actor, session)
         .await
@@ -590,6 +605,25 @@ async fn exchange(
     replay: bool,
     feedback_expected: bool,
 ) -> TestResult<WireResults> {
+    exchange_from(
+        owner,
+        admitted,
+        commands,
+        replay,
+        feedback_expected,
+        admitted.continuity.next_command_id,
+    )
+    .await
+}
+
+async fn exchange_from(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    commands: &[(u32, Vec<u8>)],
+    replay: bool,
+    feedback_expected: bool,
+    first_command_id: u64,
+) -> TestResult<WireResults> {
     let session = *admitted;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let serving = async move { serve_admitted(&mut server, session, owner, IDLE_LIVENESS).await };
@@ -605,8 +639,7 @@ async fn exchange(
         let mut results = Vec::new();
         let mut feedback = Vec::new();
         for (offset, (kind, payload)) in commands.iter().enumerate() {
-            let command_id =
-                session.continuity.next_command_id + if replay { 0 } else { offset as u64 };
+            let command_id = first_command_id + if replay { 0 } else { offset as u64 };
             let frame = encode_client_command(
                 session.continuity.connection_generation,
                 &ClientCommandValue {
