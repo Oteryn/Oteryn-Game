@@ -43,6 +43,7 @@ pub mod damage_element;
 #[cfg(test)]
 mod decoder_fuzz_support;
 pub mod depot;
+pub mod depot_search;
 pub mod exiva;
 pub mod guild;
 pub mod guild_bank;
@@ -87,6 +88,7 @@ mod tests;
 pub mod timed_item;
 pub mod tutorial_notices;
 pub mod vip;
+pub mod wheel;
 pub mod world_clock;
 pub mod world_event;
 pub mod world_interaction;

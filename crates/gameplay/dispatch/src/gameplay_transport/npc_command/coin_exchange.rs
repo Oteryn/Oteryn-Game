@@ -288,6 +288,7 @@ async fn execute(
             fence,
             reference,
             request,
+            None,
             weights.as_ref(),
             coins,
         )

@@ -10,6 +10,7 @@ pub struct SharedExperienceMember {
     pub level: u32,
     pub x: i32,
     pub y: i32,
+    pub z: i32,
     /// Promoted vocations have already been normalized by the consuming owner.
     pub vocation: u8,
     pub activity: Option<SharedExperienceActivityObservation>,
@@ -101,6 +102,7 @@ pub fn shared_experience_share(
         u64::from(m.level) * 3 < u64::from(highest) * 2
             || m.x.abs_diff(leader.x) > 30
             || m.y.abs_diff(leader.y) > 30
+            || m.z.abs_diff(leader.z) > 1
             || !m.activity.is_some_and(shared_experience_active)
     }) {
         return Ok(None);

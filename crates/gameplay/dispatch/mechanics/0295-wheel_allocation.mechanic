@@ -1,0 +1,10 @@
+name=wheel_allocation
+commands=161
+transport=wheel_allocation
+composed=wheel_allocation
+authority=wheel_allocation
+[route]
+match routing::wheel_allocation::route(authority, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

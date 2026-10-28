@@ -7,10 +7,40 @@ import copy
 import hashlib
 import json
 
+# Accepted EXERCISE0 item structures. The training ruleset may list more weapons (for
+# example the 50-charge training weapons); those get no structural overlay here.
+EXERCISE0_ITEMS = frozenset((
+    'oteryn:item.tibia.i28552',
+    'oteryn:item.tibia.i28553',
+    'oteryn:item.tibia.i28554',
+    'oteryn:item.tibia.i28555',
+    'oteryn:item.tibia.i28556',
+    'oteryn:item.tibia.i28557',
+    'oteryn:item.tibia.i35279',
+    'oteryn:item.tibia.i35280',
+    'oteryn:item.tibia.i35281',
+    'oteryn:item.tibia.i35282',
+    'oteryn:item.tibia.i35283',
+    'oteryn:item.tibia.i35284',
+    'oteryn:item.tibia.i35285',
+    'oteryn:item.tibia.i35286',
+    'oteryn:item.tibia.i35287',
+    'oteryn:item.tibia.i35288',
+    'oteryn:item.tibia.i35289',
+    'oteryn:item.tibia.i35290',
+    'oteryn:item.tibia.i44065',
+    'oteryn:item.tibia.i44066',
+    'oteryn:item.tibia.i44067',
+    'oteryn:item.tibia.i50294',
+    'oteryn:item.tibia.i50295',
+))
+
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
     config = json.loads((root / 'rulesets/training/provisional-v1.json').read_bytes())
-    wanted = set(config['weapons'])
+    if not EXERCISE0_ITEMS <= set(config['weapons']):
+        raise ValueError('TRAINING_ITEM_RECORD_SET')
+    wanted = set(EXERCISE0_ITEMS)
     bindings = {row['target']['key']: row for row in json.loads(
         (root / 'imports/crystalserver/bindings/items.json').read_bytes())['bindings']}
     sources = {}

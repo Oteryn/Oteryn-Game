@@ -206,6 +206,7 @@ const INVENTORY: &[Entry] = &[
             ("gameplay_transport/creature_push.rs", 1),
             ("gameplay_transport/paced_movement.rs", 1),
             ("gameplay_transport/paced_movement/autowalk.rs", 1),
+            ("gameplay_transport/wheel_allocation.rs", 1),
         ],
     },
 ];
@@ -704,6 +705,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     ("gameplay_transport/postgres_tests/player_trade.rs", 2),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
+    ("gameplay_transport/postgres_tests/wheel_allocation.rs", 3),
     ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),
     ("node/serve.rs", 1),
     ("qualification.rs", 1),
