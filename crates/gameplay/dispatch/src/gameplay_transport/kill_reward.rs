@@ -1361,6 +1361,18 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
+        // Existing fenced equipment is authoritative. Read it before the spell lane and
+        // revision slot; an unavailable snapshot fails closed rather than inventing ownership.
+        let talisman_equipped =
+            super::equipment_move::read_current_equipment(admission, self.fence.game_session_id)
+                .await
+                .is_some_and(|equipment| {
+                    equipment.items.iter().any(|item| {
+                        item.slot == 10
+                            && item.definition.production_key
+                                == oteryn_gameplay_quests::quest::task_board::TALISMAN_ITEM
+                    })
+                });
         // Lock order (SPELL-LOCK-2 §1.2): the lane before the revision slot; the corpse loot
         // mint is a key-33 writer. `None` retries with no side effect while the lane is fenced.
         let Some(permit) = admission.spell_lane_permit().await else {
@@ -1414,12 +1426,23 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             expected_character_revision,
             ..self.fence
         };
-        let Ok(loot_table) = admission.tutorial_corruptor_table(fence, entry).await else {
+        let Ok(mut loot_table) = admission.tutorial_corruptor_table(fence, entry).await else {
             return SettleReport {
                 verdict: SettleVerdict::Retry,
                 no_progression: false,
             };
         };
+        if let Some(race) = &entry.row.race
+            && let Some(tracks) = admission.task_board_tracks(self.fence.game_session_id)
+        {
+            let bonus = oteryn_gameplay_quests::quest::task_board::active_talisman_bonus(
+                &tracks,
+                race.key(),
+                talisman_equipped,
+                2,
+            );
+            apply_talisman_loot_bonus(&mut loot_table, bonus);
+        }
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             corpse_item: entry.row.corpse_item.clone(),
             loot_table_ref: entry.row.loot_table_ref.clone(),
@@ -1506,6 +1529,30 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let report = classify(&entry.creature, &outcome);
         release_settled_corpse(&mut runtime, entry, report.verdict);
         report
+    }
+}
+
+/// Spoils increases every independent loot chance by its hundredths-of-percent bonus. The
+/// multiplication rounds up, matching Global's combat bonus rounding, and guaranteed drops cap
+/// at the planner's one-million ppm scale.
+fn apply_talisman_loot_bonus(
+    table: &mut oteryn_gameplay_items::loot_plan::LootTableDefinition,
+    bonus_hundredths: i64,
+) {
+    let Ok(bonus) = u64::try_from(bonus_hundredths) else {
+        return;
+    };
+    if bonus == 0 {
+        return;
+    }
+    for entry in &mut table.entries {
+        if let Some(chance) = entry.probability_ppm {
+            let scaled = u64::from(chance)
+                .saturating_mul(10_000_u64.saturating_add(bonus))
+                .saturating_add(9_999)
+                / 10_000;
+            entry.probability_ppm = Some(u32::try_from(scaled.min(1_000_000)).unwrap_or(1_000_000));
+        }
     }
 }
 #[cfg(test)]
