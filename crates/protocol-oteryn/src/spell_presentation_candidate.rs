@@ -449,9 +449,13 @@ pub fn decode_batch(bytes: &[u8]) -> Result<Batch, Error> {
     if count > MAX_EVENTS {
         return Err(Error::Limit);
     }
+    #[cfg(test)]
+    crate::count_bounds_tests::allocation(count);
     let mut events = Vec::with_capacity(count);
     let mut seen = BTreeSet::new();
     for _ in 0..count {
+        #[cfg(test)]
+        crate::count_bounds_tests::iteration();
         let len = usize::from(r.u8()?);
         let event = decode_event(r.bytes(len)?)?;
         if !seen.insert((event.decision_ordinal, event.emission_ordinal)) {
@@ -545,8 +549,12 @@ pub fn decode_cooldowns(bytes: &[u8]) -> Result<Cooldowns, Error> {
     if count > MAX_COOLDOWNS {
         return Err(Error::Limit);
     }
+    #[cfg(test)]
+    crate::count_bounds_tests::allocation(count);
     let mut entries = Vec::with_capacity(count);
     for _ in 0..count {
+        #[cfg(test)]
+        crate::count_bounds_tests::iteration();
         let kind = match r.u8()? {
             1 => CooldownKind::Spell,
             2 => CooldownKind::Group,
@@ -658,3 +666,49 @@ mod tests {
 #[cfg(test)]
 #[path = "spell_presentation_candidate_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[cfg(test)]
+mod count_bounds_tests {
+    #![allow(clippy::expect_used)]
+    use super::*;
+
+    #[test]
+    fn f26_event_length_and_checked_reader_arithmetic() {
+        for length in [
+            0u8,
+            1,
+            (MAX_EVENT_BYTES - 1) as u8,
+            MAX_EVENT_BYTES as u8,
+            u8::MAX,
+        ] {
+            for backed in [false, true] {
+                let mut input = vec![length];
+                if backed {
+                    input.resize(1 + usize::from(length), 0);
+                }
+                let mut reader = Read {
+                    bytes: &input,
+                    at: 0,
+                };
+                let n = usize::from(reader.u8().expect("length prefix"));
+                let body = reader.bytes(n);
+                assert_eq!(body.is_ok(), length == 0 || backed);
+                if let Ok(body) = body {
+                    assert_eq!(body.as_ptr(), input[1..].as_ptr());
+                    assert_eq!(reader.at, input.len());
+                    let result = decode_event(body);
+                    if usize::from(length) >= MAX_EVENT_BYTES {
+                        assert_eq!(result, Err(Error::Limit));
+                    } else {
+                        assert_eq!(result, Err(Error::Malformed), "zero body is not an event");
+                    }
+                } else {
+                    assert_eq!(reader.at, 1);
+                }
+            }
+        }
+        let mut reader = Read { bytes: &[], at: 1 };
+        assert_eq!(reader.bytes(usize::MAX), Err(Error::Limit));
+        assert_eq!(reader.at, 1);
+    }
+}

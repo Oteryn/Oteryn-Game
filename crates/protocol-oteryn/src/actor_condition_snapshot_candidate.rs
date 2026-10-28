@@ -281,3 +281,44 @@ mod tests {
 #[cfg(test)]
 #[path = "actor_condition_snapshot_candidate_fuzz_tests.rs"]
 mod fuzz_tests;
+
+#[cfg(test)]
+mod count_bounds_tests {
+    #![allow(clippy::expect_used)]
+    use super::*;
+
+    #[test]
+    fn f26_key_length_bounds_before_copy() {
+        for length in [
+            0u16,
+            1,
+            MAX_KEY_BYTES as u16,
+            MAX_KEY_BYTES as u16 + 1,
+            u16::MAX,
+        ] {
+            for backed in [false, true] {
+                let mut input = length.to_be_bytes().to_vec();
+                if backed {
+                    input.resize(2 + usize::from(length), b'a');
+                }
+                let mut reader = Reader {
+                    input: &input,
+                    at: 0,
+                };
+                let result = reader.key();
+                let admitted = (1..=MAX_KEY_BYTES).contains(&usize::from(length)) && backed;
+                assert_eq!(result.is_ok(), admitted);
+                if length == 0 || usize::from(length) > MAX_KEY_BYTES {
+                    assert_eq!(result, Err(Error::Limit));
+                }
+                if let Ok(key) = result {
+                    assert_eq!(key.len(), usize::from(length));
+                    assert!(key.capacity() <= MAX_KEY_BYTES);
+                    assert_eq!(reader.at, input.len());
+                } else {
+                    assert_eq!(reader.at, 2, "reject after prefix, before body/copy");
+                }
+            }
+        }
+    }
+}

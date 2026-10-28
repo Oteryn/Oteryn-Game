@@ -34,6 +34,8 @@ pub mod command_replay;
 pub mod container_sort;
 pub mod container_tree;
 mod contract_registries;
+#[cfg(test)]
+mod count_bounds_tests;
 pub mod creature_push;
 pub mod cyclopedia;
 pub mod daily_reward;

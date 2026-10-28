@@ -566,3 +566,16 @@ fn no_spatial(f: &LineFields) -> bool {
 #[cfg(test)]
 #[path = "chat_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod count_bounds_tests {
+    use super::*;
+    #[test]
+    fn f26_owned_text_bounds() {
+        crate::count_bounds_tests::owned_text_bounds(
+            read_text,
+            &[MAX_CHAT_NAME_BYTES, MAX_CHAT_TEXT_BYTES],
+            false,
+        );
+    }
+}
