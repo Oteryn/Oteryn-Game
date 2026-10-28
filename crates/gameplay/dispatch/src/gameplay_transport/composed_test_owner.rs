@@ -28,6 +28,7 @@ pub(super) struct ComposedTestOwner<'a, 'f, 's> {
 impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
     pub(super) fn build(self) -> ComposedFreshAdmission<'a, 'f, 's> {
         ComposedFreshAdmission {
+            proficiency_catalogue: None,
             server_motd: "",
             reset_epoch: 0,
             emit: |_, _| {},
