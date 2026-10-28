@@ -381,4 +381,92 @@ mod tests {
         assert_eq!(door.selector.unique, Some(3020));
         Ok(())
     }
+
+    /// PAR-W15: lever/step callbacks against Crystal `201189f8`
+    /// (`quests/behemoth/action-lever.lua`, `others/actions_hellgate_lever.lua`,
+    /// `liquid_black/movements_shortcut.lua`). Oteryn floors are stored as `-z`.
+    #[test]
+    fn w15_crystal_world_callback_parity() -> Result<(), String> {
+        let callbacks = load()?;
+        let find = |suffix: &str| {
+            callbacks
+                .iter()
+                .find(|c| c.key.ends_with(suffix))
+                .ok_or(suffix.to_string())
+        };
+        let row = |x: u16, y: u16, floor: i8, n: u16| -> Vec<Position> {
+            (0..n).map(|i| Position { x: x + i, y, floor }).collect()
+        };
+        // Behemoth: uid 30009, one-way lever 2772 -> 2773, removes wall 1791 at
+        // 33295..=33299, 31677, 15. MATCH.
+        let behemoth = find("behemoth")?;
+        assert_eq!(behemoth.trigger, Trigger::Use);
+        assert_eq!(behemoth.selector.unique, Some(30009));
+        assert_eq!(
+            (behemoth.lever, behemoth.reversible),
+            (Some([2772, 2773]), false)
+        );
+        assert_eq!(
+            behemoth
+                .passages
+                .iter()
+                .map(|p| p.position)
+                .collect::<Vec<_>>(),
+            row(33295, 31677, -15, 5)
+        );
+        assert!(
+            behemoth
+                .passages
+                .iter()
+                .all(|p| p.appearance == 1791 && p.replacement.is_none())
+        );
+        // Hellgate bridge: aid 50027, reversible lever, water 622 <-> bridge 5770 at
+        // 32627..=32629, 31699, 10. MATCH. DIFF: Crystal also moves a creature standing on
+        // the bridge to 32630, 31699, 10; the Oteryn record has no creature push.
+        let hellgate = find("hellgate-bridge")?;
+        assert_eq!(hellgate.selector.action, Some(50027));
+        assert_eq!(
+            (hellgate.lever, hellgate.reversible),
+            (Some([2772, 2773]), true)
+        );
+        assert_eq!(
+            hellgate
+                .passages
+                .iter()
+                .map(|p| p.position)
+                .collect::<Vec<_>>(),
+            row(32627, 31699, -10, 3)
+        );
+        assert!(
+            hellgate
+                .passages
+                .iter()
+                .all(|p| p.appearance == 622 && p.replacement == Some(5770))
+        );
+        assert_eq!(hellgate.teleport, None);
+        // Liquid Black shortcut: aid 57746 step-in, Visitor >= 4 sets 5 and teleports to
+        // 33478, 31314, 7, otherwise pushes back. MATCH (the track's maximum is 5).
+        let shortcut = find("liquid-black-shortcut")?;
+        assert_eq!(shortcut.trigger, Trigger::StepIn);
+        assert_eq!(shortcut.selector.action, Some(57746));
+        assert_eq!(
+            shortcut.teleport,
+            Some(Position {
+                x: 33478,
+                y: 31314,
+                floor: -7
+            })
+        );
+        assert_eq!(
+            (
+                shortcut.storage[0].minimum,
+                shortcut.storage[0].set,
+                shortcut.return_on_failure
+            ),
+            (4, 5, true)
+        );
+        // MISSING: the Annihilator lever (Crystal `annihilator.lua`, uid 30015).
+        assert!(callbacks.iter().all(|c| c.selector.unique != Some(30015)));
+        Ok(())
+    }
 }
