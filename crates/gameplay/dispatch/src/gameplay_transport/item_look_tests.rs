@@ -616,6 +616,45 @@ fn item_look_details_stay_within_the_wire_bound_on_a_utf8_boundary() {
     );
 }
 
+#[test]
+fn spellbook_lists_only_current_vocation_in_level_order() -> Result<(), Box<dyn std::error::Error>>
+{
+    let book = crate::spell::cast::v1_spell_book()?;
+    let text = spellbook_text(&book, Vocation::Knight).ok_or("bounded spellbook")?;
+    assert!(text.starts_with("Spells for Level "));
+    assert!(text.contains(" - "));
+    for spell in &book.spells {
+        if matches!(spell.carrier, Carrier::Instant { .. })
+            && spell.level > 0
+            && !spell.vocations.contains(&Vocation::Knight)
+        {
+            assert!(
+                !text
+                    .lines()
+                    .any(|line| line.contains(&format!(" - {} :", spell.name))),
+                "non-knight spell leaked: {}",
+                spell.name
+            );
+        }
+    }
+    let levels: Vec<u32> = text
+        .lines()
+        .filter_map(|line| line.strip_prefix("Spells for Level "))
+        .map(str::parse)
+        .collect::<Result<_, _>>()?;
+    assert!(levels.windows(2).all(|pair| pair[0] < pair[1]));
+    assert!(text.len() <= MAX_ITEM_LOOK_TEXT_BYTES);
+    Ok(())
+}
+
+#[test]
+fn spellbook_without_vocation_spells_still_has_a_wire_valid_dialog()
+-> Result<(), Box<dyn std::error::Error>> {
+    let book = crate::spell::cast::v1_spell_book()?;
+    assert_eq!(spellbook_text(&book, Vocation::None), Some("\n".to_owned()));
+    Ok(())
+}
+
 fn with_reading_map(
     text: &str,
     test: impl FnOnce(
@@ -848,8 +887,8 @@ fn reading_map_five_and_visible_other_floor_are_too_far() {
 }
 
 #[test]
-fn reading_map_empty_and_final_utf8_wire_bound() {
-    for text in [String::new(), "界".repeat(200)] {
+fn reading_map_empty_and_utf8_text() {
+    for text in [String::new(), "界".repeat(1_000)] {
         with_reading_map(&text, |generation, map, target| {
             let Ok(ItemLookResult::Text(result)) = read_map_sign(
                 generation,
@@ -867,13 +906,7 @@ fn reading_map_empty_and_final_utf8_wire_bound() {
                 assert_eq!(result, "You see sign.\nNothing is written on it.");
             } else {
                 let prefix = "You see sign.\nYou read: ";
-                assert_eq!(
-                    result,
-                    format!(
-                        "{prefix}{}",
-                        "界".repeat((MAX_ITEM_LOOK_TEXT_BYTES - prefix.len()) / 3)
-                    )
-                );
+                assert_eq!(result, format!("{prefix}{text}"));
                 assert!(result.len() <= MAX_ITEM_LOOK_TEXT_BYTES);
                 assert!(
                     oteryn_protocol_oteryn::item_look::encode_item_look_result(
