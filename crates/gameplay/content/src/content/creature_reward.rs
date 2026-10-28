@@ -72,9 +72,51 @@ impl NoSettlementReason {
 pub struct CreatureRewardTable {
     rows: HashMap<String, Result<Arc<CreatureRewardRow>, NoSettlementReason>>,
     forge_sliver: Option<LootDefinitionRef>,
+    daily_boss_equipment: HashSet<String>,
 }
 
 impl CreatureRewardTable {
+    /// Equipment membership comes from this generation's admitted Item policies.
+    pub fn is_daily_boss_equipment(&self, key: &str) -> bool {
+        self.daily_boss_equipment.contains(key)
+    }
+
+    pub(crate) fn with_daily_boss_equipment(
+        mut self,
+        items: Option<&super::native_gameplay::ItemProfilesDocument>,
+    ) -> Self {
+        use super::{
+            ReferenceEquipmentSlot as Slot, ReferenceItemField as F, ReferenceWeaponType as Weapon,
+        };
+        if let Some(items) = items {
+            for item in &items.records {
+                let weapon = matches!(&item.semantics.weapon, F::Known(weapon)
+                    if matches!(weapon.weapon_type, F::Known(Weapon::Axe | Weapon::Club | Weapon::Distance | Weapon::Shield | Weapon::Spellbook | Weapon::Sword | Weapon::Wand)));
+                let quiver = matches!(&item.semantics.container, F::Known(container) if matches!(container.capacity, F::Known(1..)));
+                let equipment = matches!(&item.semantics.equipment, F::Known(equipment)
+                if matches!(&equipment.patterns, F::Known(patterns)
+                    if patterns.iter().any(|p| match p.primary_slot {
+                        F::Known(Slot::Head | Slot::Torso | Slot::Legs | Slot::Feet | Slot::Amulet | Slot::Ring) => true,
+                        F::Known(Slot::Weapon | Slot::Shield) => weapon,
+                        F::Known(Slot::Extra) => quiver,
+                        _ => false,
+                    })));
+                // Canary monster.lua equipmentBags, constants.lua:8-10 @47dfd51f.
+                let bag = matches!(
+                    item.production_definition.production_key.as_str(),
+                    "oteryn:item.tibia.i34109"
+                        | "oteryn:item.tibia.i39546"
+                        | "oteryn:item.tibia.i43895"
+                );
+                if equipment || bag {
+                    self.daily_boss_equipment
+                        .insert(item.production_definition.production_key.clone());
+                }
+            }
+        }
+        self
+    }
+
     /// The existing corpse loot admission owns the materializable Forge resource too.
     pub fn forge_sliver(&self) -> Option<&LootDefinitionRef> {
         self.forge_sliver.as_ref()
@@ -330,7 +372,11 @@ impl CreatureRewardTable {
             .iter()
             .find(|facts| facts.item.key == "oteryn:item.tibia.i37109" && facts.materializable)
             .map(|facts| facts.item.lower());
-        Self { rows, forge_sliver }
+        Self {
+            rows,
+            forge_sliver,
+            daily_boss_equipment: HashSet::new(),
+        }
     }
 }
 

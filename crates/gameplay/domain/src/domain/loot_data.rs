@@ -42,6 +42,12 @@ impl LootDefinitionRef {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LootSelectionAlgorithm {
     IndependentBernoulliPpm,
+    /// Daily boost: up to three additional independent rolls of the original entries.
+    /// Appended Forge drops are outside `boosted_entries` and roll once.
+    DailyBoosted {
+        extra_rolls: u8,
+        boosted_entries: usize,
+    },
     WeightedSingleSelection,
     GuaranteedEntries,
     NestedGroups,

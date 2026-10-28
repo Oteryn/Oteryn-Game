@@ -1,4 +1,5 @@
 //! Reference data only, not Content activation.
+//! Values remain UNVERIFIED against Global where no public value exists.
 //! https://github.com/opentibiabr/canary/blob/04b83b512114bfd888000d6e1433ed8ecaec7c5b/data/scripts/systems/item_tiers.lua
 
 pub const FORGE_CLASS_CAPS: [u8; 5] = [0, 1, 2, 3, 10];
@@ -40,3 +41,12 @@ pub const FORGE_REFERENCE_PRICES: [ForgeReferencePrice; 16] = [
     row(4, 9, 8_000_000_000, 60),
     row(4, 10, 15_000_000_000, 85),
 ];
+
+/// Candidate resource identities; UNVERIFIED until native Content admission.
+pub const FORGE_SLIVER_KEY: &str = "oteryn:item.tibia.i37109";
+pub const EXALTED_CORE_KEY: &str = "oteryn:item.tibia.i37110";
+pub const NORMAL_FUSION_DUST: u32 = 100;
+pub const CONVERGENCE_FUSION_DUST: u32 = 130;
+pub const NORMAL_TRANSFER_DUST: u32 = 100;
+pub const CONVERGENCE_TRANSFER_DUST: u32 = 160;
+pub const NORMAL_FUSION_SUCCESS_PERCENT: u8 = 50;

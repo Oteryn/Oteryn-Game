@@ -9,6 +9,7 @@ pub mod boss_encounter;
 pub mod character_hazard;
 pub mod character_known_spells;
 pub mod creature_source_items;
+pub mod daily_boost;
 pub mod daily_reward;
 pub mod daily_reward_claim;
 pub mod daily_reward_delivery;

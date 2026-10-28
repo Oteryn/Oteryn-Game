@@ -703,6 +703,23 @@ impl ChannelRuntimeV1 {
             .map(|index| &self.carrier.spawns[index])
             .ok_or(CarrierError::UnknownSpawnSource)
     }
+    /// Install only the durable epoch choice; repeated installation never compounds rates.
+    pub fn install_daily_boost(
+        &mut self,
+        selection: oteryn_gameplay_content::content::daily_boost::DailyBoostSelection,
+    ) -> Result<(), CarrierError> {
+        self.owner_fence()?;
+        self.daily_boost = Some(selection);
+        Ok(())
+    }
+
+    /// The committed World choice used when capturing a kill, before retryable settlement.
+    pub fn daily_boost(
+        &self,
+    ) -> Option<&oteryn_gameplay_content::content::daily_boost::DailyBoostSelection> {
+        self.daily_boost.as_ref()
+    }
+
     /// Apply the current World epoch's area membership to home-spawn timing only.
     /// Reassignment is idempotent; raids, summons and other non-home actors have no point.
     pub fn apply_cyclopedia_respawn(
@@ -726,9 +743,17 @@ impl ChannelRuntimeV1 {
         &self,
         point: spawn::SpawnPoint,
     ) -> Result<spawn::PointTiming, CarrierError> {
-        self.spawn_realization(point)?
-            .definition
-            .timing(usize::from(point.ordinal))
+        let definition = &self.spawn_realization(point)?.definition;
+        let ordinal = usize::from(point.ordinal);
+        let mut timing = definition.timing(ordinal)?;
+        if self.daily_boost.as_ref().is_some_and(|choice| {
+            choice.creature == definition.points[ordinal].creature_target_identity
+        }) {
+            // Canary spawn_monster.cpp:26,381-389 @47dfd51f: boost rate 2,
+            // with the same one-second minimum after applying rates.
+            timing.respawn_delay_micros = (timing.respawn_delay_micros / 2).max(1_000_000);
+        }
+        Ok(timing)
     }
     pub(super) fn spawn_cell(
         &self,
@@ -1209,5 +1234,111 @@ impl ChannelActorCarrier {
         state.live = Some(ExactActorRef(actor));
         state.attempt = 0;
         Ok(ExactActorRef(actor))
+    }
+}
+
+#[cfg(test)]
+mod daily_boost_tests {
+    use super::*;
+
+    #[test]
+    fn daily_boost_respawn_is_race_scoped_and_idempotent() -> Result<(), CarrierError> {
+        let id = |seed: u8| {
+            let mut bytes = [seed; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes
+        };
+        let world = oteryn_gameplay_foundation::foundation::WorldId::decode(&id(1))
+            .map_err(|_| CarrierError::InvalidAssignmentBinding)?;
+        let pin = oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::from_activation(world,1,[1;32],[2;32],[3;32],[4;32],(100,100,7));
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            oteryn_gameplay_foundation::foundation::ChannelId::decode(&id(2))
+                .map_err(|_| CarrierError::InvalidAssignmentBinding)?,
+            oteryn_gameplay_foundation::foundation::NodeId::decode(&id(3))
+                .map_err(|_| CarrierError::InvalidAssignmentBinding)?,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            4,
+            pin,
+        )?;
+        runtime.realize_activation_spawns(vec![
+            (
+                vec![(101, 100, 7)],
+                60_000,
+                5_000,
+                "oteryn:creature.rat".into(),
+                20,
+            ),
+            (
+                vec![(102, 100, 7)],
+                60_000,
+                5_000,
+                "oteryn:creature.wolf".into(),
+                20,
+            ),
+        ])?;
+        let choice = oteryn_gameplay_content::content::daily_boost::DailyBoostSelection {
+            reset_epoch: 0,
+            creature: "oteryn:creature.rat".into(),
+            boss: "oteryn:creature.boss".into(),
+        };
+        for _ in 0..2 {
+            runtime.install_daily_boost(choice.clone())?;
+            assert_eq!(
+                runtime
+                    .spawn_timing(spawn::SpawnPoint {
+                        source: 0,
+                        ordinal: 0
+                    })?
+                    .respawn_delay_micros,
+                30_000_000
+            );
+            assert_eq!(
+                runtime
+                    .spawn_timing(spawn::SpawnPoint {
+                        source: 1,
+                        ordinal: 0
+                    })?
+                    .respawn_delay_micros,
+                60_000_000
+            );
+        }
+        // Exercise the boundary on the same authored point without exceeding the
+        // one-window realization budget in this deliberately small fixture.
+        runtime.carrier.spawns[0].definition.points[0].respawn_delay_micros = 1_000_000;
+        assert_eq!(
+            runtime
+                .spawn_timing(spawn::SpawnPoint {
+                    source: 0,
+                    ordinal: 0
+                })?
+                .respawn_delay_micros,
+            1_000_000
+        );
+        runtime.carrier.spawns[0].definition.points[0].respawn_delay_micros = 60_000_000;
+        runtime.apply_cyclopedia_respawn(|_, _| true)?;
+        assert_eq!(
+            runtime
+                .spawn_timing(spawn::SpawnPoint {
+                    source: 0,
+                    ordinal: 0
+                })?
+                .respawn_delay_micros,
+            15_000_000
+        );
+        assert_eq!(
+            runtime
+                .spawn_timing(spawn::SpawnPoint {
+                    source: 1,
+                    ordinal: 0
+                })?
+                .respawn_delay_micros,
+            30_000_000
+        );
+        Ok(())
     }
 }

@@ -87,7 +87,7 @@ async fn exchange_with_delta(
         .map_err(|error| format!("cyclopedia command {id}/{kind} ended {ended:?}: {error}").into())
 }
 
-pub(super) fn world(
+pub(in super::super) fn world(
     deps: &Dependencies,
     generation: &crate::content::ActiveGeneration,
 ) -> TestResult<crate::map::boot::BundleWorld> {
