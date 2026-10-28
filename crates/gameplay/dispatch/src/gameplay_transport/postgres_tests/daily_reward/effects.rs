@@ -171,8 +171,8 @@ pub(super) async fn kills_before_and_at_expiry(
                 .await?;
         assert_eq!(
             xp,
-            if expired { 12 } else { 7 },
-            "daily boost changes real rat XP from 5 to 7, then expires"
+            if expired { 22 } else { 12 },
+            "level 1: 5 rat XP * (100% + 50% boost + 100% low-level) = 12, then 12 + 5 * 2 = 22"
         );
     }
     Ok(())

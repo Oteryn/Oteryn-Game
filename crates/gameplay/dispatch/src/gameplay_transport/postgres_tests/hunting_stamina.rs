@@ -243,8 +243,8 @@ pub(super) async fn qualify(
     assert!(xp.2 > 0);
     assert_eq!(
         xp.1,
-        xp.2 / 2,
-        "the live stamina penalty applies before checkpoint"
+        xp.2 * 2 / 2,
+        "level 1 doubles the share; the live stamina penalty halves it before checkpoint"
     );
     assert_eq!(
         owner.save_hunting_stamina(actor, session).await,

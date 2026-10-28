@@ -697,7 +697,8 @@ fn scenario() -> TestResult {
             assert!(drains < 8, "the queued kill settles");
         }
         let killed = ledger(&h).await?;
-        assert_eq!((killed.xp_receipts, killed.experience), (1, 5));
+        // 5 rat XP, doubled by the level-1 Global low-level bonus.
+        assert_eq!((killed.xp_receipts, killed.experience), (1, 10));
         assert_eq!(killed.corpse_mints, 1);
         // Replay of the settlement: the drained queue settles nothing again.
         assert_eq!(
