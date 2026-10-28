@@ -146,4 +146,45 @@ mod tests {
             Err("invalid native House member name")
         ));
     }
+
+    /// S05 parity with Crystal `201189f8` `AccessList::parseList` (`src/map/house/house.cpp`
+    /// 647-699): `#` comments, empty lines and lines over 100 characters are skipped, a lone `*`
+    /// admits everyone, any other line with `!`, `*` or `?` is skipped, and names are members.
+    /// Recorded divergences: Crystal resolves `@guild` and `rank@guild` lines, strips characters
+    /// outside `[a-zA-Z' *!@#]` and silently drops names over 30 characters; Oteryn refuses
+    /// them.
+    #[test]
+    fn s05_crystal_access_list_lines() {
+        let ignored = |line: &str| matches!(parse_list_line(line), Ok(HouseListLine::Ignore));
+        for line in [
+            "",
+            "\t",
+            "#comment",
+            "  # indented",
+            "Bob!",
+            "B*b",
+            "Bo?",
+            "*Bob",
+        ] {
+            assert!(ignored(line), "{line:?}");
+        }
+        assert!(ignored(&"a".repeat(101)));
+        assert!(matches!(parse_list_line("*"), Ok(HouseListLine::Everyone)));
+        assert!(matches!(
+            parse_list_line("  Knight Bob  "),
+            Ok(HouseListLine::Member(_))
+        ));
+        for line in ["@guild", "leader@guild", "Bob2", &"a".repeat(31)] {
+            assert!(parse_list_line(line).is_err(), "{line:?}");
+        }
+        // Crystal admits a Subowner to the Guest list only; the Owner edits every list.
+        for list in [HouseList::Guest, HouseList::Subowner, HouseList::Door(7)] {
+            assert!(permission(HouseAccess::Owner, list));
+            assert_eq!(
+                permission(HouseAccess::Subowner, list),
+                list == HouseList::Guest
+            );
+            assert!(!permission(HouseAccess::Guest, list));
+        }
+    }
 }

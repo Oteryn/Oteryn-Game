@@ -6,7 +6,10 @@
   "reason": "CLIENT-STRUCT-1 installs guards only; feature migration is pending.",
   "commands": [
     133,
-    169
+    169,
+    178,
+    179,
+    180
   ],
   "not_applicable": {
     "state": "Unsupported until the owning mechanic migration.",
