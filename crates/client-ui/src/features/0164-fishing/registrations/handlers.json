@@ -4,9 +4,7 @@
   "id": "0164-fishing-unsupported",
   "status": "unsupported",
   "reason": "Server capability stub; native client fishing input is not migrated.",
-  "commands": [
-    31
-  ],
+  "commands": [],
   "not_applicable": {
     "state": "Server-only delivery.",
     "protocol": "Uses existing item-use-with wire.",
