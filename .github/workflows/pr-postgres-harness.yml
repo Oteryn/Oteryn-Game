@@ -3,6 +3,12 @@ name: PR PostgreSQL harness
 # Early signal only: runs the Merge Queue PostgreSQL harness on pull requests
 # that can change what it runs (the game-server crate and its path
 # dependencies), so its failures show before the queue.
+# Grouped runs (owner decision 2026-10-28): the harness runs only on pull
+# requests labelled `heavy-tests` - a finished mechanic, or one batch pull
+# request that merges several finished ones - instead of on every push of
+# every pull request. Adding the label starts a run; later pushes to a
+# labelled pull request run it again. Protected main still runs every
+# PostgreSQL lane after each merge (merge-group-gate.yml on push to main).
 # It is not the PR gate (merge-gate.yml) and not a required check; the Merge
 # Queue (merge-group-gate.yml) keeps the exact-candidate qualification and
 # runs the full workspace suite and every PostgreSQL lane once (D1471). The
@@ -25,7 +31,7 @@ on:
     branches:
       - main
     # Drafts are still being authored; the harness runs once the PR is ready.
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review, labeled]
     # Everything the game-server PostgreSQL targets link: the targets and the
     # library PostgreSQL tests exercise game-server code well beyond
     # durability/** (combat, pickup, transport, interaction, catalogues), so
@@ -54,15 +60,23 @@ on:
 permissions: {}
 
 concurrency:
-  group: pr-postgres-harness-${{ github.event.pull_request.number }}
+  # Adding any other label must not cancel a running harness, so those
+  # (skipped) runs get a group of their own.
+  group: pr-postgres-harness-${{ github.event.pull_request.number }}${{ (github.event.action == 'labeled' && github.event.label.name != 'heavy-tests') && format('-label-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 jobs:
   build:
     name: PR early signal / Durability PostgreSQL harness build
     # Early signal for authors only: drafts and Dependabot bumps wait for the
-    # Merge Queue, which runs the same targets on the exact candidate.
-    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
+    # Merge Queue, which runs the same targets on the exact candidate. Only
+    # pull requests labelled `heavy-tests` run it, and a `labeled` event only
+    # when that label is the one added.
+    if: >-
+      github.event.pull_request.draft == false
+      && github.event.pull_request.user.login != 'dependabot[bot]'
+      && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
+      && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
