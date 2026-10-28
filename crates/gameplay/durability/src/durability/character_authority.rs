@@ -152,6 +152,31 @@ impl DurabilityRoot {
         })).await?
     }
 
+    /// Immutable creation sex, read beneath the reconciled Character authority.
+    pub async fn read_character_sex(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        character_id: CharacterId,
+    ) -> std::result::Result<crate::domain::appearance::Sex, DurabilityError> {
+        let character = *character_id.as_bytes();
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_semantic_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &recovery).await?;
+            let sex: Option<i16> = sqlx::query_scalar("SELECT sex FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1")
+                .bind(character.as_slice()).fetch_optional(&mut *tx).await?.flatten();
+            let sex = match sex {
+                Some(1) => crate::domain::appearance::Sex::Female,
+                Some(2) => crate::domain::appearance::Sex::Male,
+                _ => return Err(DurabilityError::InvalidStoredState),
+            };
+            commit_semantic_transaction(tx, deadline).await?;
+            Ok(sex)
+        })).await
+    }
+
     /// The interpretation stored on the active Character root `character_id`, under the
     /// reconciled recovery fence: its profile, ruleset, content and starter template revisions.
     /// A progression binding is built from the root's own revisions, never from the newest
