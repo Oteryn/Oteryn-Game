@@ -130,14 +130,36 @@ fn setup(
     AttackFacts,
     GameplayDecisionRoot,
 ) {
+    setup_at(
+        name,
+        far,
+        MovementLocalPosition {
+            x: 100,
+            y: 100,
+            floor: 7,
+        },
+    )
+}
+
+fn setup_at(
+    name: &str,
+    far: bool,
+    origin: MovementLocalPosition,
+) -> (
+    ChannelRuntimeV1,
+    ChannelSpellStates,
+    MeleeSource,
+    AttackFacts,
+    GameplayDecisionRoot,
+) {
     let (mut runtime, target, session) = runtime_with_player(0x71);
     runtime
         .initialize_movement_test_position(
             target,
             MovementLocalPosition {
-                x: 100,
-                y: 100,
-                floor: 7,
+                x: origin.x,
+                y: origin.y,
+                floor: origin.floor,
             },
         )
         .expect("actual position");
@@ -153,9 +175,9 @@ fn setup(
     let issuer = runtime
         .admit_monster_lab_creature(
             MovementLocalPosition {
-                x: if far { 110 } else { 101 },
-                y: 100,
-                floor: 7,
+                x: origin.x + if far { 10 } else { 1 },
+                y: origin.y,
+                floor: origin.floor,
             },
             &key,
             i64::try_from(health).expect("source health bound"),
@@ -1079,4 +1101,59 @@ fn reference_level_melee_native_source_scales_only_in_the_overridden_area() {
         );
         assert!(hit.damage.is_some());
     }
+}
+
+#[test]
+fn hazard_live_melee_level_scaling_area_exclusion_and_replay() {
+    let hit = |level, at| {
+        let (mut runtime, mut states, source, facts, root) =
+            setup_at("1st_mate_ratticus", false, at);
+        runtime
+            .install_hazard_level(facts.target, facts.session, level)
+            .expect("durable projection");
+        let mut owner = owner(&runtime, &source, facts);
+        let first = owner
+            .fixture_swing(
+                &mut runtime,
+                &mut states,
+                &source,
+                facts,
+                1,
+                revisions(),
+                &root,
+                clock(2_000_000),
+            )
+            .expect("hazard live melee");
+        let replay = owner
+            .fixture_swing(
+                &mut runtime,
+                &mut states,
+                &source,
+                facts,
+                1,
+                revisions(),
+                &root,
+                clock(2_000_000),
+            )
+            .expect("hazard replay");
+        assert_eq!(first, replay);
+        first.requested
+    };
+    let inside = MovementLocalPosition {
+        x: 33520,
+        y: 32871,
+        floor: 15,
+    };
+    let excluded = MovementLocalPosition {
+        x: 33640,
+        y: 32920,
+        floor: 15,
+    };
+    let plain = hit(1, excluded);
+    assert_eq!(plain, hit(12, excluded));
+    let one = hit(1, inside);
+    let twelve = hit(12, inside);
+    assert!(one >= plain * 102 / 100);
+    assert!(twelve >= plain * 124 / 100);
+    assert!(twelve > one);
 }
