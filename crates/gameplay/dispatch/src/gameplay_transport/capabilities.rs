@@ -112,9 +112,11 @@ pub(super) const BUNDLE_WORLD_UNTIMED_OFFERED_CAPABILITIES: &[OfferedCapability]
     &BUNDLE_WORLD_UNTIMED_ARRAY;
 
 /// Bound of one session's selection. A test keeps the production offered set within it.
-/// CAPCAP-1 raised it from 32 to 64; it stays within the protocol capability count (128).
-pub const SELECTED_CAPACITY: usize = 64;
-const _: () = assert!(SELECTED_CAPACITY <= oteryn_protocol_oteryn::MAX_CAPABILITY_COUNT);
+/// CAPCAP-1 raised it from 32 to 64 and CAPCAP-2 to 112. It stays below the protocol capability
+/// count (128), so a closure that fits the wire but not the selection still fails as
+/// `SelectionUnavailable` rather than as a closure limit.
+pub const SELECTED_CAPACITY: usize = 112;
+const _: () = assert!(SELECTED_CAPACITY < oteryn_protocol_oteryn::MAX_CAPABILITY_COUNT);
 
 /// One GameSession's selected capabilities: strictly ascending, each offered by the server at
 /// fresh admission. `Copy` so it travels with the session's continuity.
