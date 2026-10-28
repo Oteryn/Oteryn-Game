@@ -2,8 +2,9 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-// Oteryn defaults, not Reference-qualified: one authored area/subarea, eight
+// Oteryn defaults, not Reference-qualified: one authored area/subarea, seven
 // positions, exact-tile finding, no speed contribution, donation before random draw.
+// The seven-position target and four-tile spacing match the production discovery source.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BasicArea {
@@ -15,6 +16,7 @@ pub struct BasicArea {
     pub radius: i32,
     pub pool_limit: usize,
     pub generated_count: usize,
+    pub min_poi_spacing: u32,
     pub found_radius: i32,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -76,9 +78,10 @@ impl BasicArea {
             && value.subarea == 1
             && value.radius == 32
             && value.pool_limit == 128
-            && value.generated_count == 8
+            && value.generated_count == 7
+            && value.min_poi_spacing == 4
             && value.found_radius == 0
-            && value.revision == "oteryn-cyclopedia-basic-v1"
+            && value.revision == "oteryn-cyclopedia-basic-v2"
             && value.qualification == "Oteryn default, not Reference-qualified"
             && !value.name.is_empty())
         .then_some(value)
@@ -97,7 +100,7 @@ impl BasicArea {
             || pool.iter().enumerate().any(|(i, p)| pool[..i].contains(p))
             || pool.len() > self.pool_limit
             || state.exploration.as_ref().is_some_and(|e| {
-                e.points.len() != self.generated_count
+                !matches!(e.points.len(), 7 | 8)
                     || e.points
                         .iter()
                         .enumerate()
@@ -125,7 +128,7 @@ impl BasicArea {
                     .filter(|p| !p.in_window(at))
                     .map(|p| {
                         let mut hash = Sha256::new();
-                        hash.update(b"cyclopedia_poi:oteryn-basic-v1");
+                        hash.update(b"cyclopedia_poi:oteryn-basic-v2");
                         hash.update(occurrence);
                         hash.update(p.x.to_be_bytes());
                         hash.update(p.y.to_be_bytes());
@@ -134,17 +137,23 @@ impl BasicArea {
                     })
                     .collect();
                 candidates.sort_unstable();
-                if candidates.len() < self.generated_count {
+                let mut points = Vec::with_capacity(self.generated_count);
+                for (_, point) in candidates {
+                    if points.iter().all(|selected: &Point| {
+                        selected.floor != point.floor
+                            || selected.x.abs_diff(point.x) >= self.min_poi_spacing
+                            || selected.y.abs_diff(point.y) >= self.min_poi_spacing
+                    }) {
+                        points.push(point);
+                        if points.len() == self.generated_count {
+                            break;
+                        }
+                    }
+                }
+                if points.len() < self.generated_count {
                     return Err(MapRefusal::InsufficientPool);
                 }
-                state.exploration = Some(Exploration {
-                    points: candidates
-                        .into_iter()
-                        .take(self.generated_count)
-                        .map(|(_, p)| p)
-                        .collect(),
-                    found: 0,
-                });
+                state.exploration = Some(Exploration { points, found: 0 });
                 Ok(true)
             }
             MapAction::Find => {
@@ -183,7 +192,7 @@ mod tests {
         let Some(area) = BasicArea::embedded() else {
             panic!("authored area")
         };
-        let pool: Vec<_> = (20..40)
+        let pool: Vec<_> = (20..60)
             .map(|x| Point {
                 x,
                 y: 10,
@@ -218,6 +227,16 @@ mod tests {
         let Some(exploration) = state.exploration.clone() else {
             panic!("active exploration")
         };
+        assert_eq!(exploration.points.len(), 7);
+        for (index, point) in exploration.points.iter().enumerate() {
+            for other in &exploration.points[..index] {
+                assert!(
+                    point.floor != other.floor
+                        || point.x.abs_diff(other.x) >= area.min_poi_spacing
+                        || point.y.abs_diff(other.y) >= area.min_poi_spacing
+                );
+            }
+        }
         let point = exploration.points[0];
         let elsewhere = Point { floor: -6, ..point };
         assert_eq!(

@@ -171,7 +171,14 @@ fn scenario() -> TestResult {
                 .await?;
         let progress: crate::domain::cyclopedia::MapProgress = serde_json::from_str(&progress)?;
         let first_points = progress.exploration.ok_or("durable exploration")?.points;
-        assert_eq!(first_points.len(), 8);
+        assert_eq!(first_points.len(), 7);
+        assert!(first_points.iter().enumerate().all(|(index, point)| {
+            first_points[..index].iter().all(|other| {
+                point.floor != other.floor
+                    || point.x.abs_diff(other.x) >= 4
+                    || point.y.abs_diff(other.y) >= 4
+            })
+        }));
         // Simulate process state replacement and a lost ACK. The Channel keeps the GameSession's
         // command stream (SESSION-INGRESS-1), which replays the retained result; the same
         // command still reaches PostgreSQL through the native receipt.
