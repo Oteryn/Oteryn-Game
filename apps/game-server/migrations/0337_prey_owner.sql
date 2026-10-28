@@ -29,8 +29,14 @@ CREATE TABLE IF NOT EXISTS game_character_prey_receipts (
 GRANT SELECT, INSERT, UPDATE ON game_character_prey_slots TO oteryn_game_runtime;
 GRANT SELECT, INSERT ON game_character_prey_receipts TO oteryn_game_runtime;
 
-CREATE OR REPLACE VIEW game_character_prey_revision_chain WITH (security_invoker=true) AS
- SELECT * FROM game_character_hazard_revision_chain
+-- Extend the hazard chain in place: the guard keeps naming it, so 0332 stays re-runnable.
+CREATE OR REPLACE VIEW game_character_hazard_revision_chain WITH (security_invoker=true) AS
+ SELECT * FROM game_character_atelier_revision_chain
+ UNION ALL
+ SELECT character_id,original_character_revision,committed_character_revision,
+ level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,
+ content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision
+ FROM game_character_hazard_receipts WHERE committed_character_revision IS NOT NULL
  UNION ALL
  SELECT character_id,original_character_revision,committed_character_revision,
  level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,
@@ -38,12 +44,8 @@ CREATE OR REPLACE VIEW game_character_prey_revision_chain WITH (security_invoker
  FROM game_character_prey_receipts;
 DO $$ DECLARE body TEXT; BEGIN
  SELECT pg_get_functiondef('game_character_progression_consistency_guard()'::regprocedure) INTO STRICT body;
- IF position('game_character_prey_revision_chain' IN body)=0 THEN
-  IF position('game_character_hazard_revision_chain' IN body)=0 THEN RAISE EXCEPTION 'missing Character receipt chain'; END IF;
-  EXECUTE replace(body,'game_character_hazard_revision_chain','game_character_prey_revision_chain');
- END IF;
+ IF position('game_character_hazard_revision_chain' IN body)=0 THEN RAISE EXCEPTION 'missing Character receipt chain'; END IF;
 END $$;
-GRANT SELECT ON game_character_prey_revision_chain TO oteryn_game_runtime;
 REVOKE ALL ON game_character_prey_receipts FROM PUBLIC;
 DROP TRIGGER IF EXISTS game_prey_receipt_stamp ON game_character_prey_receipts;
 CREATE TRIGGER game_prey_receipt_stamp BEFORE INSERT ON game_character_prey_receipts
