@@ -108,6 +108,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells, actor)
                     == Some(true);
             let stamina = states.live_stamina(actor, game_session_id).unwrap_or(2520);
+            let premium = states
+                .get(&runtime, actor, game_session_id)
+                .is_some_and(|state| state.hunting_premium_current(self.owner_now().get()));
             let soul_interval = states
                 .get(&runtime, actor, game_session_id)
                 .map_or(120, |state| {
@@ -121,6 +124,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 game_session_id,
                 actor,
                 inside,
+                premium,
                 stamina,
                 soul_interval,
             );

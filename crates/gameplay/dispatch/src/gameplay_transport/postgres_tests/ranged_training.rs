@@ -283,8 +283,26 @@ fn scenario(item: u32, family: usize) -> TestResult {
         assert_eq!(result.disposition, 1, "{result:?}");
         assert_eq!(result.charges, 500);
         owner.clock_origin -= Duration::from_secs(2);
+        let status = crate::gameplay_transport::loop_training::wire::dispatch(
+            &owner,
+            admitted,
+            UseCommand {
+                command_id: 2,
+                ..command
+            },
+            67,
+            &[8, 2],
+            Some(&items),
+        )
+        .await
+        .ok_or("status")?;
+        assert_eq!(status.disposition, 1);
+        assert_eq!(
+            status.charges, 499,
+            "the real dispatch status reports the charge consumed by the elapsed tick"
+        );
         let stopped = crate::gameplay_transport::loop_training::wire::dispatch(&owner, admitted,
-            UseCommand { command_id: 2, ..command }, 67, &[8, 3], Some(&items)).await.ok_or("stop")?;
+            UseCommand { command_id: 3, ..command }, 67, &[8, 3], Some(&items)).await.ok_or("stop")?;
         assert_eq!(stopped.disposition, 2);
         assert_eq!(stopped.charges, 499);
         let stored: (i64, i64) = sqlx::query_as("SELECT distance_tries,mana_spent FROM game_character_build_state").fetch_one(&h.pool).await?;

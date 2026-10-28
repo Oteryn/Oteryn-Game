@@ -180,7 +180,10 @@ impl NpcConversations {
         intent: &NpcTalkIntent,
     ) -> Option<(u64, u64, String)> {
         let context = self.current_npc(chat, runtime, actor, session, intent)?;
-        chat.npc_talk()?.get(&context.2)?.bank().then_some(context)
+        let book = chat.npc_talk()?;
+        (book.get(&context.2).is_some_and(|entry| entry.bank())
+            || context.2.starts_with("oteryn:npc.hireling-bank:"))
+        .then_some(context)
     }
 
     pub fn bank_reply(intent: &NpcTalkIntent, line: String) -> NpcTalkOutcome {
@@ -488,7 +491,13 @@ impl NpcConversations {
                 text.as_str(),
             );
         }
-        let Some(entry) = runtime.npc_key(npc.actor).and_then(|key| book.get(key)) else {
+        let hireling_bank = super::npc_talk::hireling_bank_entry();
+        let Some(entry) = runtime.npc_key(npc.actor).and_then(|key| {
+            book.get(key).or_else(|| {
+                key.starts_with("oteryn:npc.hireling-bank:")
+                    .then_some(&hireling_bank)
+            })
+        }) else {
             // A placed NPC with no talk entry (a Dialogue-backed NPC) is silent.
             return NpcTalkOutcome::only(Disposition::NoConversation);
         };
@@ -559,7 +568,7 @@ pub(super) async fn npc_bank_talk(
 ) -> NpcTalkOutcome {
     use super::bank_npc::{self, BankNpcIntent};
     use crate::durability::bank::{BankError, BankNpcSource};
-    use crate::foundation::{CommandId, CommandRef, RuntimeScopeRefV1};
+    use crate::foundation::{CommandId, CommandRef};
     let session = command.game_session_id;
     let yes = intent.text.trim_matches(' ').eq_ignore_ascii_case("yes");
     let unknown = || NpcTalkOutcome {
@@ -623,9 +632,7 @@ pub(super) async fn npc_bank_talk(
     let (Some(fence), Some(reference)) = (command.item_fence, reference) else {
         return rejected();
     };
-    let RuntimeScopeRefV1::Channel { world_id, .. } = fence.runtime_scope else {
-        return rejected();
-    };
+    let world_id = fence.runtime_scope.world_id();
     let Ok(world) = crate::domain::WorldId::from_bytes(*world_id.as_bytes()) else {
         return rejected();
     };

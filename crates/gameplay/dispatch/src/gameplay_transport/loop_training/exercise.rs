@@ -24,13 +24,22 @@ impl Run {
         (admitted.runtime_actor == Some(self.actor) && admitted.item_fence == Some(self.fence))
             .then_some(true)
     }
+
+    fn remaining_charges(&self) -> u32 {
+        remaining_charges(self.durable.charges, self.spent)
+    }
 }
+fn remaining_charges(durable: u32, pending: u32) -> u32 {
+    durable.saturating_sub(pending)
+}
+
 fn occurrence() -> Option<BuildOccurrence> {
     let mut bytes = crate::gameplay_transport::SecureIdentifiers::random::<16>()?;
     bytes[6] = (bytes[6] & 15) | 0x70;
     bytes[8] = (bytes[8] & 63) | 0x80;
     BuildOccurrence::from_bytes(bytes).ok()
 }
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// Cadence and every actor-end save share the same pending checkpoint/reconciliation owner.
     pub(in crate::gameplay_transport) async fn training_before_save(
@@ -386,8 +395,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         .and_then(|state| state.last_weapon.as_ref())
                         .map_or(0, |weapon| weapon.charges)
                 },
-                |run| run.durable.charges,
+                Run::remaining_charges,
             ),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn status_charge_count_includes_uncheckpointed_ticks() {
+        assert_eq!(super::remaining_charges(500, 0), 500);
+        assert_eq!(super::remaining_charges(500, 1), 499);
+        assert_eq!(super::remaining_charges(1, 2), 0);
     }
 }
