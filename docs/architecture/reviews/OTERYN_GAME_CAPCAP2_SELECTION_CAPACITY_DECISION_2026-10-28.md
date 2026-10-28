@@ -29,6 +29,13 @@ https://github.com/Oteryn/Oteryn-Game/pull/2643.
    - a closure of `MAX_CAPABILITY_COUNT + 1` is refused as `ClosureLimitExceeded`;
    - a session selection over the capacity is refused, never truncated.
 
+## Test stack
+
+At 112 the debug build of `a_say_reaches_the_session_in_range_and_not_the_one_out_of_range`
+overflows the default test thread stack: it joins three lingering sessions in one future. The test
+now runs on a 64 MiB thread, as other dispatch tests already do. Only the test's stack changes; its
+assertions stay the same.
+
 ## Why 112 and not 128
 
 At 128 the selection bound would equal the wire bound. A closure one above the selection capacity
