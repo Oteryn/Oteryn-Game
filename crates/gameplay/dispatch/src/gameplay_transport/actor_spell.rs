@@ -96,6 +96,7 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    pub(super) prey: Vec<super::prey::LivePrey>,
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
     pub(in crate::gameplay_transport) actors: Vec<(ExactActorRef, GameSessionId, PlayerSpellState)>,
@@ -269,6 +270,7 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            prey: Vec::new(),
             hunting_stamina: Vec::new(),
             owner_wake: Default::default(),
             actors: Vec::new(),
@@ -1365,6 +1367,17 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
             return None;
         }
 
+        let percent = runtime.companion_snapshot(source).ok().map_or(0, |s| {
+            self.prey_percent(
+                runtime,
+                target,
+                session,
+                &s.state.policy.definition_key,
+                2,
+                facts.now,
+            )
+        });
+        let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
         if definitions.is_empty() {
             return self.apply_attack_damage(
                 runtime,

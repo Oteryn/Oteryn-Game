@@ -171,7 +171,6 @@ impl ChannelRuntimeV1 {
     }
 
     /// Whether `actor`'s committed death is still projected and retained in this generation.
-    #[cfg(any(test, feature = "test-support"))]
     pub fn retains_corpse_projection(&self, actor: ExactActorRef) -> bool {
         self.carrier.retains_corpse_projection(actor)
     }

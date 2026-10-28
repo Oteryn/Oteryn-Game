@@ -1,4 +1,4 @@
-//! HUNT-1 schema qualification; no unadmitted draw or direct runtime writer.
+//! PREY storage qualification, including the fenced PREY-LIVE-1 writer grants.
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, TestResult, configured_admin, id, runtime,
 };
@@ -59,10 +59,25 @@ async fn roundtrip(h: &Harness) -> TestResult {
     assert_eq!(count, 1);
     let privileges = sqlx::query("SELECT has_table_privilege(current_user,'game_character_prey_slots','INSERT') AS insert_allowed,has_any_column_privilege(current_user,'game_character_prey_slots','UPDATE') AS update_allowed,has_table_privilege(current_user,'game_account_prey_unlocks','INSERT') AS unlock_allowed")
         .fetch_one(&mut *tx).await?;
-    assert!(!privileges.try_get::<bool, _>("insert_allowed")?);
-    assert!(!privileges.try_get::<bool, _>("update_allowed")?);
+    assert!(privileges.try_get::<bool, _>("insert_allowed")?);
+    assert!(privileges.try_get::<bool, _>("update_allowed")?);
     assert!(!privileges.try_get::<bool, _>("unlock_allowed")?);
     tx.rollback().await?;
+    // Runtime table grants do not permit bypassing the fenced receipt owner.
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_prey_slots SET free_reroll_at=1 WHERE character_id=encode($1,'hex')::uuid AND slot=1").bind(id(CHARACTER).as_slice()).execute(&mut *tx).await?;
+    let rejected = tx.commit().await;
+    assert!(
+        matches!(rejected,Err(ref e) if e.as_database_error().and_then(|e|e.code()).as_deref()==Some("23514"))
+    );
+    let deadline: i64 =
+        sqlx::query_scalar("SELECT free_reroll_at FROM game_character_prey_slots WHERE slot=1")
+            .fetch_one(&h.pool)
+            .await?;
+    assert_eq!(deadline, 72005);
     // No state write here advances the Character root or manufactures a receipt.
     assert_eq!(h.root_revision().await?, "1");
     Ok(())

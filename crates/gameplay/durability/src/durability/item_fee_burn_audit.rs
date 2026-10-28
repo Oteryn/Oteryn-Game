@@ -95,6 +95,8 @@ pub enum FeeBurnCauseV1 {
     GemSwitchDomain(OneItemNpcPurchaseV1),
     #[prost(message, tag = "11")]
     GemGradeUp(OneItemNpcPurchaseV1),
+    #[prost(message, tag = "12")]
+    PreyListReroll(OneItemNpcPurchaseV1),
     // End tag-sorted variants.
 }
 
@@ -122,6 +124,7 @@ pub struct OneItemFeeBurnCauseV1 {
             9, // GemReveal
             10, // GemSwitchDomain
             11, // GemGradeUp
+            12, // PreyListReroll
         )
     )]
     pub cause: Option<FeeBurnCauseV1>,
