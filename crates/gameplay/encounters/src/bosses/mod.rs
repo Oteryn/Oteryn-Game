@@ -8,6 +8,7 @@ pub mod herald_of_fire;
 pub mod icicle;
 pub mod native_combat;
 pub mod resilience;
+mod room;
 pub mod rotten_blood;
 pub mod rum_barrel;
 pub mod seven_encounters;
