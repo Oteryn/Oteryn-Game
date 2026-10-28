@@ -1,0 +1,11 @@
+{
+  "id": 152,
+  "name": "ITEM_FORGE_V1",
+  "constant": "item_forge::CAPABILITY_ITEM_FORGE_V1",
+  "requires": [14],
+  "acceptance_requires": false,
+  "commands": [181],
+  "domains": [],
+  "supersedes": [],
+  "offers": {"production": false, "item_view": false, "bundle_world": true}
+}

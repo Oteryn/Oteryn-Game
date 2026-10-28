@@ -1,4 +1,4 @@
-//! Native-only private continuation tests. The canonical Character-authority target supplies
+//! Native DustLimit tests against installed migration 0320. The canonical Character-authority target supplies
 //! the real library modules and item_transfer_postgres_cases harness. The root runs these
 //! only through the authorized shared PostgreSQL route (D1329), never an agent-owned server.
 use crate::domain::{CharacterId, CharacterRevision};
@@ -22,9 +22,8 @@ use native::{Harness, TestResult, debug};
 use std::{future::Future, pin::Pin};
 
 const CONTENT: [u8; 32] = [0x37; 32];
-// Exact copy of the unnumbered proposal. Publication replaces this fixture include with the
-// finally allocated installed migration; until then it is applied only to this fresh test DB.
-const APPEND_SQL: &str = include_str!("forge_dust_limit_migration.sql");
+// The same installed production migration is used for negative migration preflight cases.
+const APPEND_SQL: &str = include_str!("../../migrations/0320_item_forge_live.sql");
 
 fn occurrence(family: u8, index: u16) -> [u8; 16] {
     let mut value = native::id(family);
@@ -64,10 +63,12 @@ where
                 "exact PostgreSQL 18.6 qualification required"
             );
             eprintln!("FORGE-LIMIT-PG: case={tag} server_version_num={version}");
-            if install {
-                let mut tx = harness.pool.begin().await?;
-                sqlx::raw_sql(APPEND_SQL).execute(&mut *tx).await?;
-                tx.commit().await?;
+            if !install {
+                // Reconstruct the legacy dust-limit CHECK for the migration refusal fixture.
+                // Its corrupt histories fail the preflight before any new-object DDL; the
+                // already installed reservation tables cannot influence these assertions.
+                sqlx::raw_sql("ALTER TABLE game_character_forge_dust DROP CONSTRAINT game_character_forge_dust_limit_range, ADD CONSTRAINT game_character_forge_dust_limit_range CHECK(dust_limit BETWEEN 100 AND 225)")
+                    .execute(&harness.pool).await?;
             }
             activate(&harness, 1, None, CONTENT).await?;
             case(&harness).await

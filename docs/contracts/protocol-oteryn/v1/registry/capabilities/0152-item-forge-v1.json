@@ -1,0 +1,11 @@
+{
+  "id": 152,
+  "name": "ITEM_FORGE_V1",
+  "owner_decision": "FORGE-LIVE-1",
+  "owner": "Game Exaltation Forge owner",
+  "requires": [14],
+  "command_types": [181],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "The composed native DustLimit/history owner with a current Character item fence. Item operations remain staged and are rejected; migration 0320 has no runtime execution grant."
+}

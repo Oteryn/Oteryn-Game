@@ -16,6 +16,9 @@
 //! D1230 `LIMIT_RAISE` owner below reserves and commits its own closed receipt. `CONVERT` and
 //! the remaining Forge causes still require their separate native admission.
 
+#[path = "item_forge_live.rs"]
+mod live;
+
 use super::DurabilityError;
 use super::character_progression::{CurrentCharacterGameplayFence, uuid_text};
 use super::item_mint_audit::check_uuid_v7;
