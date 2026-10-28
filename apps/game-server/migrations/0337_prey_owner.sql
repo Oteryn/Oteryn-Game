@@ -30,7 +30,7 @@ GRANT SELECT, INSERT, UPDATE ON game_character_prey_slots TO oteryn_game_runtime
 GRANT SELECT, INSERT ON game_character_prey_receipts TO oteryn_game_runtime;
 
 CREATE OR REPLACE VIEW game_character_prey_revision_chain WITH (security_invoker=true) AS
- SELECT * FROM game_character_atelier_revision_chain
+ SELECT * FROM game_character_hazard_revision_chain
  UNION ALL
  SELECT character_id,original_character_revision,committed_character_revision,
  level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,
@@ -39,8 +39,8 @@ CREATE OR REPLACE VIEW game_character_prey_revision_chain WITH (security_invoker
 DO $$ DECLARE body TEXT; BEGIN
  SELECT pg_get_functiondef('game_character_progression_consistency_guard()'::regprocedure) INTO STRICT body;
  IF position('game_character_prey_revision_chain' IN body)=0 THEN
-  IF position('game_character_atelier_revision_chain' IN body)=0 THEN RAISE EXCEPTION 'missing Character receipt chain'; END IF;
-  EXECUTE replace(body,'game_character_atelier_revision_chain','game_character_prey_revision_chain');
+  IF position('game_character_hazard_revision_chain' IN body)=0 THEN RAISE EXCEPTION 'missing Character receipt chain'; END IF;
+  EXECUTE replace(body,'game_character_hazard_revision_chain','game_character_prey_revision_chain');
  END IF;
 END $$;
 GRANT SELECT ON game_character_prey_revision_chain TO oteryn_game_runtime;

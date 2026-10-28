@@ -30,7 +30,7 @@ fn scenario() -> TestResult {
         eprintln!("PREY_POSTGRES_STARTED");
         // Deliberate reapplication must retain constraints, roles and the private draw root.
         sqlx::raw_sql(include_str!(
-            "../../../../../../apps/game-server/migrations/0318_prey_owner.sql"
+            "../../../../../../apps/game-server/migrations/0337_prey_owner.sql"
         ))
         .execute(&h.pool)
         .await?;
