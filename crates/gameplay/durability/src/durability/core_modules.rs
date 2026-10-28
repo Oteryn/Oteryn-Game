@@ -51,6 +51,7 @@ pub mod chat_text;
 pub mod coin_exchange;
 pub mod content_activation;
 mod db;
+pub mod depot_search;
 pub mod equipment_policy_abi;
 mod field_capability_port;
 pub mod forge;

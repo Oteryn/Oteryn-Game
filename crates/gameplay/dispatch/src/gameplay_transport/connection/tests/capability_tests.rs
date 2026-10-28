@@ -134,3 +134,76 @@ fn prey_unoffered_command_is_refused_by_real_dispatch() -> Result<(), Box<dyn Er
         Ok(())
     })
 }
+
+#[test]
+fn depot_search_without_negotiated_capability_is_refused_by_real_dispatch()
+-> Result<(), Box<dyn Error>> {
+    use oteryn_protocol_oteryn::depot_search::{
+        self, CAPABILITY_DEPOT_SEARCH_V1, COMMAND_TYPE_DEPOT_SEARCH,
+    };
+    run(async {
+        use super::super::super::capabilities::{
+            BUNDLE_WORLD_OFFERED_CAPABILITIES, ITEM_VIEW_OFFERED_CAPABILITIES,
+            PRODUCTION_OFFERED_CAPABILITIES,
+        };
+        for (offered, supported) in [
+            (PRODUCTION_OFFERED_CAPABILITIES, &[153][..]),
+            (ITEM_VIEW_OFFERED_CAPABILITIES, &[153][..]),
+            (BUNDLE_WORLD_OFFERED_CAPABILITIES, &[][..]),
+            (BUNDLE_WORLD_OFFERED_CAPABILITIES, &[153][..]),
+        ] {
+            let selected = SelectedCapabilities::select(offered, supported).ok_or("selection")?;
+            assert!(!selected.as_slice().contains(&CAPABILITY_DEPOT_SEARCH_V1));
+            assert!(!selected.command_selected(COMMAND_TYPE_DEPOT_SEARCH));
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                commands: RefCell::new(Vec::new()),
+                overlay: None,
+                watermark: None,
+                outcome: UseOutcome {
+                    disposition: UseDisposition::NothingToUse,
+                    committed: None,
+                    earned: EarnedNotice::NoneEarned,
+                    gate_message_id: None,
+                    refusal_detail: None,
+                },
+            };
+            let admitted = AdmittedSession {
+                continuity: SessionContinuity {
+                    selected_capabilities: selected,
+                    ..SessionContinuity::FRESH
+                },
+                ..positioned()?
+            };
+            for payload in [
+                depot_search::encode_request(depot_search::Request::Search { client_id: 3031 })
+                    .map_err(|e| format!("{e:?}"))?,
+                vec![255],
+            ] {
+                let mut command = Vec::new();
+                scalar(&mut command, 1, 1);
+                scalar(&mut command, 2, u64::from(COMMAND_TYPE_DEPOT_SEARCH));
+                bytes(&mut command, 4, &payload);
+                let command = envelope(7, ADMITTED_GENERATION, &command);
+                let (_, frames) = drive_session(&authority, admitted, &[command]).await?;
+                let mut results = 0;
+                for frame in &frames {
+                    let envelope = oteryn_protocol_oteryn::decode_wire_envelope(frame)?;
+                    if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult
+                    {
+                        let result =
+                            oteryn_protocol_oteryn::decode_command_result(envelope.payload())?;
+                        assert_eq!(result.command_id, 1);
+                        assert_eq!(result.status, CommandStatus::Rejected);
+                        assert!(result.payload.is_empty());
+                        results += 1;
+                    }
+                }
+                assert_eq!(results, 1);
+                assert!(authority.uses.borrow().is_empty());
+                assert!(authority.commands.borrow().is_empty());
+            }
+        }
+        Ok(())
+    })
+}

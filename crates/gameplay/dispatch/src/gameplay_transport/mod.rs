@@ -26,6 +26,7 @@ mod character_progression_binding_tests;
 pub mod charm;
 mod chat_intent;
 mod chat_relay;
+mod coin_use;
 mod combat_lock_fact;
 mod composed_admission;
 #[cfg(test)]
