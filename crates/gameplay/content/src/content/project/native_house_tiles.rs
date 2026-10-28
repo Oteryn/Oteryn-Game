@@ -23,6 +23,16 @@ pub struct NativeHousePlacement {
     /// Source door numbers are scoped to one House; native physical cells are
     /// already qualified by this map. No unqualified source coordinates survive.
     pub doors: BTreeMap<u32, String>,
+    /// Active fixed bed parts in this House. Both parts are named so the runtime can
+    /// resolve either visible map item to one canonical reservation head.
+    #[serde(default)]
+    pub beds: Vec<NativeHouseBedPair>,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeHouseBedPair {
+    pub head_cell: String,
+    pub partner_cell: String,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QualifiedHouseTiles {
@@ -35,6 +45,7 @@ pub struct QualifiedHousePlacement {
     cells: BTreeSet<LogicalCell>,
     entry: LogicalCell,
     doors: BTreeMap<LogicalCell, u32>,
+    beds: BTreeMap<LogicalCell, LogicalCell>,
 }
 impl QualifiedHousePlacement {
     pub fn house(&self) -> &ProjectV2DefinitionRef {
@@ -51,6 +62,10 @@ impl QualifiedHousePlacement {
     }
     pub fn door_at(&self, cell: LogicalCell) -> Option<u32> {
         self.doors.get(&cell).copied()
+    }
+    /// Resolves either reciprocal part to the canonical sleeper reservation cell.
+    pub fn bed_head_at(&self, cell: LogicalCell) -> Option<LogicalCell> {
+        self.beds.get(&cell).copied()
     }
 }
 impl QualifiedHouseTiles {
@@ -112,7 +127,7 @@ impl QualifiedHouseTiles {
         let mut houses = Vec::new();
         for authored in &document.houses {
             if authored.house.family!=ProjectV2Family::House || !authored.house.key.starts_with("oteryn:content.house.")
-                || !identities.insert(&authored.house.key) || authored.cells.is_empty() || authored.cells.len()>4096 || authored.doors.len()>1024
+                || !identities.insert(&authored.house.key) || authored.cells.is_empty() || authored.cells.len()>4096 || authored.doors.len()>1024 || authored.beds.len()>1024
                 || !state.declarations.iter().any(|d|matches!(d,ProjectV2Declaration::House{identity,..} if identity.key==authored.house.key && identity.revision==authored.house.revision)) { return Err(invalid()); }
             let mut placed = BTreeSet::new();
             for key in &authored.cells {
@@ -133,11 +148,25 @@ impl QualifiedHouseTiles {
                     return Err(invalid());
                 }
             }
+            let mut beds = BTreeMap::new();
+            for bed in &authored.beds {
+                let head = position(&bed.head_cell)?;
+                let partner = position(&bed.partner_cell)?;
+                if head == partner
+                    || !placed.contains(&head)
+                    || !placed.contains(&partner)
+                    || beds.insert(head, head).is_some()
+                    || beds.insert(partner, head).is_some()
+                {
+                    return Err(invalid());
+                }
+            }
             houses.push(QualifiedHousePlacement {
                 house: authored.house.clone(),
                 cells: placed,
                 entry,
                 doors,
+                beds,
             });
         }
         Ok(Self {
@@ -164,6 +193,40 @@ impl QualifiedHouseTiles {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+    #[test]
+    fn reciprocal_parts_resolve_to_one_reservation_head() {
+        let head = LogicalCell {
+            x: 10,
+            y: 20,
+            z: -7,
+        };
+        let partner = LogicalCell {
+            x: 10,
+            y: 21,
+            z: -7,
+        };
+        let placement = QualifiedHousePlacement {
+            house: ProjectV2DefinitionRef {
+                family: ProjectV2Family::House,
+                key: "oteryn:content.house.fixture".to_owned(),
+                revision: "fixture-1".to_owned(),
+            },
+            cells: [head, partner].into_iter().collect(),
+            entry: LogicalCell { x: 9, y: 20, z: -7 },
+            doors: BTreeMap::new(),
+            beds: [(head, head), (partner, head)].into_iter().collect(),
+        };
+        assert_eq!(placement.bed_head_at(head), Some(head));
+        assert_eq!(placement.bed_head_at(partner), Some(head));
+        assert_eq!(
+            placement.bed_head_at(LogicalCell {
+                x: 11,
+                y: 20,
+                z: -7
+            }),
+            None
+        );
+    }
     #[test]
     fn omission_retains_unknown_on_actual_accepted_room() {
         let world = oteryn_protocol_oteryn::WorldId::decode(&[
