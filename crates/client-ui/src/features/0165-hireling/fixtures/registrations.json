@@ -1,8 +1,8 @@
 [
   {
-    "mechanic": "0165-hireling-v1",
+    "mechanic": "0165-hireling",
     "kind": "handlers",
-    "id": "0165-hireling-v1-unsupported",
+    "id": "0165-hireling-unsupported",
     "status": "unsupported",
     "reason": "Server capability stub; native client hireling summon and dismiss input is not migrated.",
     "commands": [
