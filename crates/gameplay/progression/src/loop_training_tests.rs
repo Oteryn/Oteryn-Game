@@ -87,3 +87,69 @@ fn loop_training_configuration_byte_boundary() {
     bytes.push(b' ');
     assert!(TrainingRates::from_json(&bytes).is_err());
 }
+
+#[test]
+fn crystal_exercise_dummy_percentages_match_per_charge_integer_conversion() {
+    let rates = rates();
+    assert_eq!(rates.exercise_gain(0, 100), Ok(600));
+    assert_eq!(rates.exercise_gain(0, 110), Ok(660));
+    for family in 1..=6 {
+        assert_eq!(rates.exercise_gain(family, 100), Ok(7));
+        assert_eq!(rates.exercise_gain(family, 110), Ok(7));
+    }
+    assert!(rates.exercise_gain(7, 100).is_err());
+    assert!(rates.exercise_gain(0, 105).is_err());
+}
+
+#[test]
+fn crystal_offline_hourly_rates_cover_every_vocation_and_skill() {
+    let mut rates = rates();
+    rates.enabled = true;
+    for vocation in &rates.vocations {
+        let expected_magic =
+            3_600_000_u64 * u64::from(vocation.mana_amount) / u64::from(vocation.top_mana_ticks_ms);
+        assert_eq!(
+            rates.offline_gain(&vocation.vocation, 0, 3_600),
+            Ok(expected_magic),
+            "{} magic",
+            vocation.vocation
+        );
+        for family in 1..=6 {
+            let expected = 3_600_000_u64
+                / (u64::from(vocation.top_attack_ms) * u64::from(rates.offline_divisors[family]));
+            assert_eq!(
+                rates.offline_gain(&vocation.vocation, family, 3_600),
+                Ok(expected),
+                "{} family {family}",
+                vocation.vocation
+            );
+        }
+    }
+}
+
+#[test]
+fn crystal_and_canary_training_item_populations_are_complete() {
+    let rates = rates();
+    let ids = |keys: Vec<&String>| {
+        keys.into_iter()
+            .map(|key| key.rsplit('i').next().unwrap().parse::<u32>().unwrap())
+            .collect::<std::collections::BTreeSet<_>>()
+    };
+    assert_eq!(
+        ids(rates.statues.keys().collect()),
+        [16198, 16199, 16200, 16201, 16202, 50296].into()
+    );
+    assert_eq!(
+        ids(rates.dummies.keys().collect()),
+        [28558, 28559, 28560, 28561, 28562, 28563, 28564, 28565].into()
+    );
+    assert_eq!(
+        ids(rates.weapons.keys().collect()),
+        [
+            28540, 28541, 28542, 28543, 28544, 28545, 28552, 28553, 28554, 28555, 28556, 28557,
+            35279, 35280, 35281, 35282, 35283, 35284, 35285, 35286, 35287, 35288, 35289, 35290,
+            44064, 44065, 44066, 44067, 50292, 50293, 50294, 50295,
+        ]
+        .into()
+    );
+}

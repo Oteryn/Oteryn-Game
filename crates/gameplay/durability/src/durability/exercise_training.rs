@@ -37,6 +37,7 @@ pub struct ExerciseCheckpoint {
     pub before: TrainingWeapon,
     pub spent: u32,
     pub family: usize,
+    pub gain_per_charge: u64,
 }
 #[derive(Debug, Clone)]
 pub struct ExerciseCommitted {
@@ -99,6 +100,7 @@ impl DurabilityRoot {
             let binding=Sha256::new().chain_update(request.weapon).chain_update(request.before.revision.to_be_bytes())
                 .chain_update(request.before.charges.to_be_bytes()).chain_update(request.spent.to_be_bytes())
                 .chain_update(u64::try_from(request.family).map_err(unavailable)?.to_be_bytes())
+                .chain_update(request.gain_per_charge.to_be_bytes())
                 .chain_update(fence.character_id.as_bytes()).chain_update(context.formula.digest())
                 .chain_update(request.definition.definition.family.as_bytes()).chain_update([0])
                 .chain_update(request.definition.definition.production_key.as_bytes()).chain_update([0])
@@ -125,10 +127,11 @@ impl DurabilityRoot {
                 tx.commit(deadline).await?;return Ok(result);
             }
             if !context.rates.enabled || request.family>6 || request.spent==0 || request.spent>request.before.charges
+                || !context.rates.dummies.values().any(|percentage| context.rates.exercise_gain(request.family,*percentage)==Ok(request.gain_per_charge))
                 || request.definition.full.remaining_ms().is_some() {return Err(DurabilityError::Unavailable);}
             assert_gameplay_fence(&mut tx,&fence,&node).await?.map_err(unavailable)?;
             let before=load_build(&mut tx,fence.character_id).await?;
-            let gain=context.rates.exercise_gains[request.family].checked_mul(u64::from(request.spent)).ok_or(DurabilityError::Unavailable)?;
+            let gain=request.gain_per_charge.checked_mul(u64::from(request.spent)).ok_or(DurabilityError::Unavailable)?;
             let after=add_gain(&before,&context.formula,request.family,gain).map_err(unavailable)?;
             let remaining=request.before.charges-request.spent;
             let state=item_timed_state::load_timed_state(&mut tx,&request.weapon).await.map_err(unavailable)?;
@@ -156,7 +159,7 @@ impl DurabilityRoot {
                      $9::text::numeric,$10,$11,$12,$13::text::numeric)")
                 .bind(request.occurrence.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.weapon.as_slice()).bind(binding)
                 .bind(revision.get().to_string()).bind(i32::try_from(request.before.charges).map_err(unavailable)?).bind(i32::try_from(remaining).map_err(unavailable)?)
-                .bind(weapon_revision.to_string()).bind(i16::try_from(request.family).map_err(unavailable)?).bind(i64::try_from(gain).map_err(unavailable)?).bind(i64::try_from(context.rates.exercise_gains[request.family]).map_err(unavailable)?).bind(request.before.revision.to_string()).execute(&mut **tx).await?;
+                .bind(weapon_revision.to_string()).bind(i16::try_from(request.family).map_err(unavailable)?).bind(i64::try_from(gain).map_err(unavailable)?).bind(i64::try_from(request.gain_per_charge).map_err(unavailable)?).bind(request.before.revision.to_string()).execute(&mut **tx).await?;
             tx.commit(deadline).await?;
             Ok(ExerciseCommitted {revision,build:after,weapon:TrainingWeapon {revision:weapon_revision,charges:remaining}})
         }) }).await
