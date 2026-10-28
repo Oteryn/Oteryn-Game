@@ -1,0 +1,13 @@
+{
+  "id": 164,
+  "name": "FISHING_V1",
+  "owner_decision": "FISHING-1; Crystal re-audit M09",
+  "owner": "Channel item-use router and fenced Character item owner",
+  "requires": [
+    11
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Server fishing uses the existing admitted USE-with-map route; client support remains explicitly unsupported."
+}

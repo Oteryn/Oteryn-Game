@@ -1,0 +1,17 @@
+{
+  "mechanic": "0164-fishing",
+  "kind": "handlers",
+  "id": "0164-fishing-unsupported",
+  "status": "unsupported",
+  "reason": "Server capability stub; native client fishing input is not migrated.",
+  "commands": [
+    31
+  ],
+  "not_applicable": {
+    "state": "Server-only delivery.",
+    "protocol": "Uses existing item-use-with wire.",
+    "view": "Server-only delivery.",
+    "input": "Native client fishing input is pending.",
+    "settings": "No fishing settings are exposed."
+  }
+}
