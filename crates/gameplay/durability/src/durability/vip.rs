@@ -33,10 +33,9 @@ pub struct VipWrite {
 }
 
 fn canonical(request: &Request) -> Value {
+    let icon = crate::domain::vip::icon(request.icon);
     let text = match request.operation {
-        Operation::Edit => {
-            crate::domain::vip::metadata(&request.text, request.icon, &request.groups)
-        }
+        Operation::Edit => crate::domain::vip::metadata(&request.text, icon, &request.groups),
         Operation::GroupAdd | Operation::GroupRename => {
             crate::domain::vip::group_name(&request.text)
         }
@@ -44,7 +43,7 @@ fn canonical(request: &Request) -> Value {
     };
     // An invalid shape still reaches the receipted REJECTED path and consumes its rate token.
     json!({"op":request.operation as u8,"number":request.number,"text":text.as_deref().unwrap_or(&request.text),
-        "icon":request.icon,"notify":request.notify,"groups":request.groups,"valid":text.is_some() && request.number <= i64::MAX as u64})
+        "icon":icon,"notify":request.notify,"groups":request.groups,"valid":text.is_some() && request.number <= i64::MAX as u64})
 }
 fn rejected() -> Value {
     json!({"code":10,"revision":0,"number":0,"wait":0})
