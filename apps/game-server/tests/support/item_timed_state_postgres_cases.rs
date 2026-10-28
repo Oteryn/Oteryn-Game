@@ -1128,3 +1128,135 @@ fn the_checkpoint_shape_at_max_and_max_plus_one() -> TestResult {
         timed.cleanup().await
     })
 }
+
+/// DONOR-F31-1: the real durable boundary, without inventing unsupported depot/mail moves.
+#[test]
+fn f31_active_budget_checkpoint_reload_and_expiry_are_not_double_charged() -> TestResult {
+    use crate::domain::timed_item::{LaneStep, LaneWriteKind, LaneWriteOutcome, TimedItemLane};
+
+    run(async |admin| {
+        let timed = Timed::create(admin, "f31_reload").await?;
+        let mut lane = TimedItemLane::live_from_row(0, values(None, Some(RING_MS))?, 0);
+        lane.advance(250);
+        lane.stop();
+        lane.advance(10_000);
+        let LaneStep::Write(checkpoint) = lane.next_step(10_250, id(1)) else {
+            return Err("no stop checkpoint".into());
+        };
+        let LaneWriteKind::Checkpoint { values: snapshot } = checkpoint.kind else {
+            return Err("stop did not checkpoint".into());
+        };
+        assert_eq!(snapshot.remaining_ms(), Some(RING_MS - 250));
+        let request = TimedCheckpointRequest {
+            expected_revision: checkpoint.expected_revision,
+            transaction_id: checkpoint.transaction_id,
+            values: snapshot,
+            ..ring(0, 1, RING_MS - 250)?
+        };
+        assert_eq!(
+            timed.checkpoint(1, &request).await.map_err(debug)?,
+            TimedWriteOutcome::Written { revision: 1 }
+        );
+        assert_eq!(
+            timed.checkpoint(1, &request).await.map_err(debug)?,
+            TimedWriteOutcome::AlreadyCommitted { revision: 1 }
+        );
+        lane.on_outcome(LaneWriteOutcome::Committed)
+            .map_err(debug)?;
+        assert_eq!(lane.next_step(10_251, id(2)), LaneStep::Stopped);
+
+        // Independent reads of committed rows, not a copied test-only durable struct.
+        for _ in 0..3 {
+            let row = timed.state(RING).await?.ok_or("no timed row")?;
+            assert_eq!(
+                row,
+                StoredTimedState {
+                    revision: 1,
+                    values: Some(snapshot),
+                    deadline_at: None,
+                }
+            );
+        }
+        assert_eq!(timed.records().await?, 1);
+        let row = timed.state(RING).await?.ok_or("no timed row")?;
+        let mut reloaded =
+            TimedItemLane::live_from_row(row.revision, row.values.ok_or("spent row")?, 500_000);
+        assert_eq!(reloaded.next_step(500_000, id(10)), LaneStep::Idle);
+        reloaded.advance(RING_MS - 251);
+        assert_eq!(reloaded.live_values().remaining_ms(), Some(1));
+        let before_expiry = 500_000 + RING_MS - 251;
+        let LaneStep::Write(checkpoint) = reloaded.next_step(before_expiry, id(2)) else {
+            return Err("no checkpoint after active interval".into());
+        };
+        assert_eq!(
+            checkpoint.kind,
+            LaneWriteKind::Checkpoint {
+                values: values(None, Some(1))?
+            }
+        );
+        let checkpoint_request = TimedCheckpointRequest {
+            expected_revision: checkpoint.expected_revision,
+            transaction_id: checkpoint.transaction_id,
+            ..ring(1, 2, 1)?
+        };
+        assert_eq!(
+            timed
+                .checkpoint(1, &checkpoint_request)
+                .await
+                .map_err(debug)?,
+            TimedWriteOutcome::Written { revision: 2 }
+        );
+        reloaded
+            .on_outcome(LaneWriteOutcome::Committed)
+            .map_err(debug)?;
+        assert_eq!(
+            timed.state(RING).await?.ok_or("no row")?.values,
+            Some(values(None, Some(1))?)
+        );
+        assert!(timed.envelopes(11).await?.is_empty());
+        reloaded.advance(1);
+        let LaneStep::Write(expiry) = reloaded.next_step(before_expiry + 1, id(10)) else {
+            return Err("no expiry at zero".into());
+        };
+        assert_eq!(
+            expiry.kind,
+            LaneWriteKind::Expire {
+                reason: ExpireReason::TimeExhausted
+            }
+        );
+        let request = TimedExpiryRequest {
+            expected_revision: expiry.expected_revision,
+            transaction_id: expiry.transaction_id,
+            ..ring_expiry(2, 10, Some(worn_ring()))?
+        };
+        assert_eq!(
+            timed.expire(1, &request).await.map_err(debug)?,
+            TimedWriteOutcome::Written { revision: 3 }
+        );
+        assert_eq!(
+            timed.expire(1, &request).await.map_err(debug)?,
+            TimedWriteOutcome::AlreadyCommitted { revision: 3 }
+        );
+        reloaded
+            .on_outcome(LaneWriteOutcome::Committed)
+            .map_err(debug)?;
+        assert_eq!(
+            reloaded.next_step(before_expiry + 2, id(20)),
+            LaneStep::Expired
+        );
+        assert_eq!(timed.envelopes(11).await?.len(), 1);
+        assert_eq!(timed.records().await?, 3);
+        assert_eq!(
+            timed.state(RING).await?,
+            Some(StoredTimedState {
+                revision: 3,
+                values: None,
+                deadline_at: None,
+            })
+        );
+        assert!(timed.expire(1, &ring_expiry(3, 20, None)?).await.is_err());
+        assert_eq!(timed.records().await?, 3);
+        assert_eq!(timed.envelopes(11).await?.len(), 1);
+        timed.cleanup().await
+    })
+}

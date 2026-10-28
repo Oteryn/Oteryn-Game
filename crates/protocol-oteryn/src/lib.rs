@@ -47,6 +47,7 @@ pub mod depot;
 pub mod guild;
 pub mod guild_bank;
 pub mod guild_war;
+pub mod hazard;
 pub mod highscores;
 pub mod house;
 pub mod house_move_out;

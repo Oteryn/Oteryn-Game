@@ -78,6 +78,7 @@ mod equipment_reflection;
 mod fixtures;
 
 mod forge_creature;
+mod hazard;
 
 #[path = "carrier/monster_summon_admission.rs"]
 mod monster_summon_admission;
