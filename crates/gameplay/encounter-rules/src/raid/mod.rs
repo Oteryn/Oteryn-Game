@@ -3,10 +3,12 @@
 
 mod calendar;
 mod definition;
+mod runner;
 mod schedule;
 
 pub use calendar::{CalendarDay, CalendarSelector};
 pub use definition::{Announcement, AnnouncementKind, RaidDefinition, RaidPolicy, Wave, WaveEntry};
+pub use runner::{RaidRunAction, RaidRunCursor, RaidRunStep};
 pub use schedule::{Firing, FiringState, RaidAction, RaidSchedule, RaidTransition};
 
 pub const CHECK_INTERVAL_MS: i64 = 60_000;
