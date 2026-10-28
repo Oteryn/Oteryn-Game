@@ -48,6 +48,7 @@ pub mod character_tutorial;
 pub mod character_wheel;
 pub mod charm_state;
 pub mod chat_text;
+pub mod coin_exchange;
 pub mod content_activation;
 mod db;
 pub mod equipment_policy_abi;

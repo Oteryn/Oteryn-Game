@@ -318,5 +318,8 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     if let Some(outcome) = resume_premium_talk(admission, actor, command).await {
         return Some(outcome);
     }
+    if let Some(outcome) = super::coin_exchange::resume(admission, actor, command).await {
+        return Some(outcome);
+    }
     super::resume_bank_talk(admission, actor, command).await
 }
