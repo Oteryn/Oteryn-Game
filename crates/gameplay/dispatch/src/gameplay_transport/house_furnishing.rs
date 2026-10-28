@@ -1,4 +1,6 @@
 //! WRAP-1 House-owned furniture and fluid transitions.
+// Rules slice: the House intent route wires `dispatch` in the follow-up; until then only tests call it.
+#![cfg_attr(not(test), allow(dead_code))]
 
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::BTreeMap;
@@ -110,10 +112,9 @@ impl State {
                 );
             }
             Action::WeaponHit => {
-                let item = self
-                    .house
-                    .get_mut(&command.source)
-                    .expect("source was resolved");
+                let Some(item) = self.house.get_mut(&command.source) else {
+                    return UseDisposition::NothingToUse;
+                };
                 if item.hit_points > rule.amount {
                     item.hit_points -= rule.amount;
                 } else {
