@@ -216,6 +216,16 @@ fn field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers() -> Test
 }
 
 #[test]
+fn field_runes_postgres_secret_agent_tool_removes_wild_growth() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            field_scenario(admin, 3156, 1, 2130, true, false, false, Scenario::SecretMachete)
+                .await
+        })
+    })
+}
+
+#[test]
 fn field_runes_postgres_missing_extension_cannot_pay_or_create() -> TestResult {
     large_stack(|| run(async |admin| field_case(admin, 3164, 0, 2135, false, false, false).await))
 }
@@ -242,6 +252,7 @@ enum Scenario {
     Hardcore,
     SelfHardcore,
     SelfOpen,
+    SecretMachete,
     NoPvp,
     PzTick,
     NoPvpTick,
@@ -816,7 +827,7 @@ async fn field_scenario_inner(
     }
     let mut inventory = vec![(format!("oteryn:item.tibia.i{rune}"), 3)];
     if matches!(output, 2128 | 2130) {
-        inventory.push(("oteryn:item.tibia.i3308".to_owned(), 1));
+        inventory.push((format!("oteryn:item.tibia.i{}", if scenario == Scenario::SecretMachete { 9594 } else { 3308 }), 1));
     }
     seed_main_backpack(
         &harness,
@@ -898,7 +909,8 @@ async fn field_scenario_inner(
             .ok_or_else(|| "inventory definition".into())
     };
     let rune_definition = inventory_definition(rune)?;
-    let machete_definition = inventory_definition(3308)?;
+    let machete_id = if scenario == Scenario::SecretMachete { 9594 } else { 3308 };
+    let machete_definition = inventory_definition(machete_id)?;
     let casting = async {
         let mut handle = None;
         let mut field_handle = None;
@@ -1285,7 +1297,7 @@ async fn field_scenario_inner(
                 }
             }
             if matches!(output, 2128 | 2130) {
-                let tool:(i16,i64)=sqlx::query_as("SELECT lifecycle,quantity::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3308'").fetch_one(&harness.pool).await?;
+                let tool:(i16,i64)=sqlx::query_as("SELECT lifecycle,quantity::bigint FROM game_item_instances WHERE definition_production_key=$1").bind(format!("oteryn:item.tibia.i{machete_id}")).fetch_one(&harness.pool).await?;
                 assert_eq!(
                     tool,
                     (1, 1),

@@ -23,7 +23,13 @@ impl TerrainTool {
         Some(match key {
             "oteryn:item.tibia.i3457" | "oteryn:item.tibia.i5710" => Self::Shovel,
             "oteryn:item.tibia.i3456" => Self::Pick,
-            "oteryn:item.tibia.i3308" => Self::Machete,
+            // Global permits both machetes and the three Secret Agent Tools.  Crystal's
+            // shared onUseMachete path is also reached by tool gear (9594/9596/9598).
+            "oteryn:item.tibia.i3308"
+            | "oteryn:item.tibia.i3330"
+            | "oteryn:item.tibia.i9594"
+            | "oteryn:item.tibia.i9596"
+            | "oteryn:item.tibia.i9598" => Self::Machete,
             "oteryn:item.tibia.i3453" => Self::Scythe,
             "oteryn:item.tibia.i3293" => Self::Sickle,
             "oteryn:item.tibia.i3304" => Self::Crowbar,
@@ -262,6 +268,8 @@ mod tests {
             ("oteryn:item.tibia.i3308", 3696, 3695),
             ("oteryn:item.tibia.i3308", 3702, 3701),
             ("oteryn:item.tibia.i3308", 17153, 17151),
+            ("oteryn:item.tibia.i3330", 17153, 17151),
+            ("oteryn:item.tibia.i9594", 17153, 17151),
             ("oteryn:item.tibia.i3308", 9001, 9002),
             ("oteryn:item.tibia.i3453", 3653, 3651),
             ("oteryn:item.tibia.i3293", 9020, 9021),
