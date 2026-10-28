@@ -379,6 +379,9 @@ async fn apply<G: DailyRewardPremiumGate>(
     let premium = gate
         .current(tx, super::item_mint::uuid_text(&account)?)
         .await?;
+    if !valid_quantities(plan, premium) {
+        return Err(DailyRewardClaimError::InvalidRequest);
+    }
     let joker = super::daily_reward_jokers::grant(tx, fence, request).await?;
     let outcome = write_claim(tx, fence, request, joker.balance, premium).await?;
     let DailyRewardClaimOutcome::Committed(receipt) = &outcome else {
@@ -406,4 +409,22 @@ async fn apply<G: DailyRewardPremiumGate>(
             .bind(item.as_slice()).bind(charges.map(|c| c as i32)).execute(&mut **tx).await?;
     }
     Ok(outcome)
+}
+
+/// Premium quantity selection is revalidated beside the authoritative entitlement read.
+/// This prevents a stale client/session projection from committing the larger item grant.
+fn valid_quantities(plan: &DailyRewardDeliveryPlan, premium: bool) -> bool {
+    let total = plan
+        .outputs
+        .iter()
+        .try_fold(0_u32, |total, output| total.checked_add(output.quantity));
+    match (plan.lane_day, total) {
+        (1 | 2, Some(total)) => total == if premium { 10 } else { 5 },
+        (4, Some(total)) => total == if premium { 20 } else { 10 },
+        (6, Some(total)) => total == if premium { 2 } else { 1 },
+        // Day 5 currently has its unconditional converter output. Effect-only days
+        // remain empty and are validated by the outer delivery-plan checks.
+        (3 | 5 | 7, _) => true,
+        _ => false,
+    }
 }

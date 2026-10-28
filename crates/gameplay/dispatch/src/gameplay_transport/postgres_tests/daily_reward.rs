@@ -233,6 +233,9 @@ fn scenario(premium: bool) -> TestResult {
         let mut owner = dependencies.owner(&harness, &authority);
         if premium {
             owner.premium_coordinator = Some(&coordinator);
+            // This fixture builds the composed owner below the login route; mirror the
+            // production admission registration that binds the session to its account.
+            owner.admit_premium(id(40), dependencies.admitted.game_session_id);
         }
         owner.active_generation = generation.active();
         dependencies.initialize(&owner).await;
@@ -270,7 +273,8 @@ fn scenario(premium: bool) -> TestResult {
                 .contains(wire::CAPABILITY_DAILY_REWARD_V1)
         );
         epoch(&harness, 1).await?;
-        let potion = pick("oteryn:item.tibia.i266", 5)?;
+        let potion_quantity = if premium { 10 } else { 5 };
+        let potion = pick("oteryn:item.tibia.i266", potion_quantity)?;
         let shrine = oteryn_protocol_oteryn::world_object::encode_use_intent(
             &oteryn_protocol_oteryn::world_object::WorldObjectTarget {
                 placement: b"oteryn:placement/daily-reward-shrine".to_vec(),
@@ -314,7 +318,7 @@ fn scenario(premium: bool) -> TestResult {
         );
         unrelated_custody_event(&harness).await?;
         let quantity:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE minted_transaction_id=encode($1,'hex')::uuid").bind(&first_id).fetch_one(&harness.pool).await?;
-        assert_eq!(quantity, 5);
+        assert_eq!(quantity, i64::from(potion_quantity));
         // Same-session new connection bytes settle a lost acknowledgement: the retained
         // result replays and the reserved CommandId never becomes a second claim.
         let last = admitted.continuity.next_command_id - 1;
@@ -355,8 +359,8 @@ fn scenario(premium: bool) -> TestResult {
             epoch(&harness, day).await?;
             let picks = match day {
                 2 => potion.clone(),
-                4 => pick("oteryn:item.tibia.i266", 10)?,
-                6 => pick("oteryn:item.tibia.i28540", 1)?,
+                4 => pick("oteryn:item.tibia.i266", if premium { 20 } else { 10 })?,
+                6 => pick("oteryn:item.tibia.i28540", if premium { 2 } else { 1 })?,
                 _ => Vec::new(),
             };
             if matches!(day, 3 | 7) {
@@ -394,6 +398,10 @@ fn scenario(premium: bool) -> TestResult {
         }
         let lines:Vec<(i16,String,i32,String,Option<i32>)>=sqlx::query_as("SELECT c.lane_day,l.kind,l.quantity,l.status,l.charges FROM game_character_daily_reward_lines l JOIN game_character_daily_reward_claims c ON c.transaction_id=l.claim_id ORDER BY c.reset_epoch,l.line").fetch_all(&harness.pool).await?;
         assert_eq!(lines.len(), 7);
+        assert_eq!(lines[0].2, if premium { 10 } else { 5 });
+        assert_eq!(lines[1].2, if premium { 10 } else { 5 });
+        assert_eq!(lines[3].2, if premium { 20 } else { 10 });
+        assert_eq!(lines[5].2, if premium { 2 } else { 1 });
         assert_eq!(
             lines[2],
             (

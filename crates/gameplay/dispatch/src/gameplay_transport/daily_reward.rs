@@ -306,7 +306,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .character_facts()
                 .vocation
         };
-        let Some(mut plan) = plan(native, &content, view.lane_day, &claim, vocation) else {
+        // The selection wall and the durable commit both consult the same Premium owner.
+        // Durability rechecks the entitlement in its transaction before accepting these
+        // quantities, so a revocation between selection and commit cannot mint Premium value.
+        let premium = self
+            .session_premium_gate(command.game_session_id)
+            .await
+            .premium_current();
+        let Some(mut plan) = plan(
+            native,
+            &content,
+            view.lane_day,
+            &claim,
+            vocation,
+            premium,
+        ) else {
             return refusal(3);
         };
         plan.content_revision = native
@@ -365,6 +379,7 @@ fn plan(
     day: u8,
     claim: &wire::DailyRewardClaim,
     vocation: crate::spell::Vocation,
+    premium: bool,
 ) -> Option<DailyRewardDeliveryPlan> {
     let mut plan = DailyRewardDeliveryPlan {
         lane_day: day,
@@ -376,9 +391,9 @@ fn plan(
     };
     let total: u32 = claim.picks.iter().map(|p| p.count).sum();
     let expected = match day {
-        1 | 2 => 5,
-        4 => 10,
-        6 => 1,
+        1 | 2 => if premium { 10 } else { 5 },
+        4 => if premium { 20 } else { 10 },
+        6 => if premium { 2 } else { 1 },
         3 | 5 | 7 => 0,
         _ => return None,
     };
