@@ -1,6 +1,54 @@
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Installs the current Wheel maxima in the live vitals owner. Re-reading current actor
+    /// eligibility makes allocation, Premium and level/promotion transitions converge here.
+    pub(in crate::gameplay_transport) async fn refresh_wheel_vitals(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let now = self.owner_now().get();
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        let Some(state) = states.get(&runtime, actor, session) else {
+            return false;
+        };
+        let facts = state.character_facts();
+        let vocation = match facts.vocation {
+            crate::spell::Vocation::None => "none",
+            crate::spell::Vocation::Druid => "druid",
+            crate::spell::Vocation::ElderDruid => "elder_druid",
+            crate::spell::Vocation::Sorcerer => "sorcerer",
+            crate::spell::Vocation::MasterSorcerer => "master_sorcerer",
+            crate::spell::Vocation::Knight => "knight",
+            crate::spell::Vocation::EliteKnight => "elite_knight",
+            crate::spell::Vocation::Paladin => "paladin",
+            crate::spell::Vocation::RoyalPaladin => "royal_paladin",
+            crate::spell::Vocation::Monk => "monk",
+            crate::spell::Vocation::ExaltedMonk => "exalted_monk",
+        };
+        let promoted = matches!(
+            facts.vocation,
+            crate::spell::Vocation::ElderDruid
+                | crate::spell::Vocation::MasterSorcerer
+                | crate::spell::Vocation::EliteKnight
+                | crate::spell::Vocation::RoyalPaladin
+                | crate::spell::Vocation::ExaltedMonk
+        );
+        let premium = state.hunting_premium_current(now);
+        let bonuses = self
+            .wheel_stat_bonuses(session, vocation, facts.level, promoted, premium)
+            .unwrap_or_default();
+        states
+            .get_mut(&runtime, actor, session)
+            .is_some_and(|state| {
+                state
+                    .apply_wheel_maximum_bonus(bonuses.max_health, bonuses.max_mana)
+                    .is_ok()
+            })
+    }
+
     /// WHEEL-0 §4 "Wheel reset" and "Load": the admission Wheel reset in the Character's
     /// revision slot, then the session's allocation. A failed load fails the session's Wheel
     /// closed (every stage 0), never the login.

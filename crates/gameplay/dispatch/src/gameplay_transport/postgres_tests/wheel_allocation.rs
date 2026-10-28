@@ -272,6 +272,16 @@ fn scenario() -> TestResult {
             send(&owner, &mut admitted, &bytes).await?,
             reply(false, 1, points)?
         );
+        let allocated_vitals = owner
+            .observe_actor_vitals(deps.actor, session)
+            .await
+            .ok_or("allocated vitals")?
+            .1;
+        assert!(
+            allocated_vitals.max_health > facts.max_health
+                || allocated_vitals.max_mana > facts.max_mana,
+            "the production allocation route installs dedication in the stats owner"
+        );
         assert_eq!(
             send(&owner, &mut admitted, &bytes).await?,
             reply(false, 1, points)?,
@@ -378,6 +388,16 @@ fn scenario() -> TestResult {
             )
             .await?,
             reply(false, 2, [0; 36])?
+        );
+        let reset_vitals = restarted
+            .observe_actor_vitals(deps.actor, session)
+            .await
+            .ok_or("reset vitals")?
+            .1;
+        assert_eq!(
+            (reset_vitals.max_health, reset_vitals.max_mana),
+            (facts.max_health, facts.max_mana),
+            "replacement removes dedication from the existing stats wire"
         );
         assert_eq!(
             send(&restarted, &mut admitted, &[8, 0, 24, 1]).await?.0,
