@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0165-hireling-v1",
+    "kind": "handlers",
+    "id": "0165-hireling-v1-unsupported",
+    "status": "unsupported",
+    "reason": "Server capability stub; native client hireling summon and dismiss input is not migrated.",
+    "commands": [
+      220
+    ],
+    "not_applicable": {
+      "state": "Server-only delivery.",
+      "protocol": "Command 220 replies with one status byte.",
+      "view": "The hireling is shown as an ordinary NPC.",
+      "input": "Native client hireling input is pending.",
+      "settings": "No hireling settings are exposed."
+    }
+  }
+]
