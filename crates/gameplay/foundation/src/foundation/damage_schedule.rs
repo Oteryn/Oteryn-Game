@@ -236,3 +236,7 @@ fn geometric(
     total(&result)?;
     Some(result)
 }
+
+#[cfg(test)]
+#[path = "damage_schedule_crystal_parity_tests.rs"]
+mod crystal_parity_tests;
