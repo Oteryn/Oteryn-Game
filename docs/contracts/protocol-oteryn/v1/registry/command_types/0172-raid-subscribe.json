@@ -1,0 +1,10 @@
+{
+  "id": 172,
+  "name": "RAID_SUBSCRIBE",
+  "owner_decision": "RAIDS-WIRE-1",
+  "capability": 149,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/raid-schedule-v1.md#subscribe",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/raid-schedule-v1.md#subscribe-result",
+  "max_payload_bytes": 1,
+  "max_result_payload_bytes": 1
+}

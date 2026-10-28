@@ -20,6 +20,22 @@ CREATE TABLE game_world_raid_step_receipts (
         ON DELETE RESTRICT
 );
 
+-- A realization is the durable, replay-safe identity of one raid creature.  The
+-- runtime actor is ephemeral; recovery never inserts this source twice.
+CREATE TABLE game_world_raid_creatures (
+    firing_id UUID NOT NULL,
+    channel_id UUID NOT NULL,
+    wave SMALLINT NOT NULL CHECK (wave >= 0),
+    entry SMALLINT NOT NULL CHECK (entry >= 0),
+    creature_index SMALLINT NOT NULL CHECK (creature_index >= 0),
+    creature_key TEXT NOT NULL CHECK (creature_key <> ''),
+    anchor_key TEXT NOT NULL CHECK (anchor_key <> ''),
+    state SMALLINT NOT NULL DEFAULT 1 CHECK (state IN (1, 2)), -- ALIVE, CLEANED
+    PRIMARY KEY (firing_id, channel_id, wave, entry, creature_index),
+    FOREIGN KEY (firing_id, channel_id) REFERENCES game_world_raid_channel_runs(firing_id, channel_id)
+        ON DELETE RESTRICT
+);
+
 -- A channel generation never takes over an older run. It marks that run LOST
 -- instead (BOSS-RAID-0 §4.4); terminal runs cannot reacquire runtime authority.
 CREATE FUNCTION game_raid_channel_run_immutable() RETURNS trigger
@@ -39,8 +55,11 @@ END $$;
 CREATE TRIGGER raid_channel_run_immutable BEFORE UPDATE ON game_world_raid_channel_runs
     FOR EACH ROW EXECUTE FUNCTION game_raid_channel_run_immutable();
 
-REVOKE ALL ON game_world_raid_channel_runs, game_world_raid_step_receipts FROM PUBLIC;
-GRANT SELECT, INSERT ON game_world_raid_channel_runs, game_world_raid_step_receipts TO oteryn_game_runtime;
+REVOKE ALL ON game_world_raid_channel_runs, game_world_raid_step_receipts,
+    game_world_raid_creatures FROM PUBLIC;
+GRANT SELECT, INSERT ON game_world_raid_channel_runs, game_world_raid_step_receipts,
+    game_world_raid_creatures TO oteryn_game_runtime;
 GRANT UPDATE (committed_steps, state, updated_at_ms)
     ON game_world_raid_channel_runs TO oteryn_game_runtime;
+GRANT UPDATE (state) ON game_world_raid_creatures TO oteryn_game_runtime;
 REVOKE ALL ON FUNCTION game_raid_channel_run_immutable() FROM PUBLIC;

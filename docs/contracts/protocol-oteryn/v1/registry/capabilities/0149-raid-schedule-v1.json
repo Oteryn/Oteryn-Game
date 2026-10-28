@@ -1,0 +1,15 @@
+{
+  "id": 149,
+  "name": "RAID_SCHEDULE_V1",
+  "owner_decision": "RAIDS-WIRE-1",
+  "owner": "Game raid owner",
+  "requires": [],
+  "command_types": [
+    171,
+    172,
+    173
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "Server-driven raid announcements require no client command; schedule inspection remains unoffered until native UI support."
+}
