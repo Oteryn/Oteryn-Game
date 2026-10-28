@@ -42,6 +42,17 @@ pub struct Run {
     pub subarea: u32,
 }
 
+/// A half-open horizontal run whose cells require Premium at login. These cells are authored
+/// world facts, not a client claim; the bundle digest covers the sorted run list.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PremiumRun {
+    pub floor: i8,
+    pub y: u16,
+    pub begin: u16,
+    pub end: u16,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Table {
@@ -51,9 +62,23 @@ pub struct Table {
     pub masks: Vec<Mask>,
     /// Sorted by (floor, y, begin); disjoint, including across subareas.
     pub runs: Vec<Run>,
+    /// Sorted, disjoint paid-region cells. Empty in synthetic fixtures and worlds without one.
+    #[serde(default)]
+    pub premium_runs: Vec<PremiumRun>,
 }
 
 impl Table {
+    /// Whether a native position belongs to a Premium-only region.
+    #[must_use]
+    pub fn is_premium(&self, x: u16, y: u16, floor: i8) -> bool {
+        let at = self
+            .premium_runs
+            .partition_point(|r| (r.floor, r.y, r.begin) <= (floor, y, x));
+        self.premium_runs
+            .get(at.saturating_sub(1))
+            .is_some_and(|r| r.floor == floor && r.y == y && (r.begin..r.end).contains(&x))
+    }
+
     /// The region and subarea at a native position. Missing coverage stays unknown.
     pub fn resolve(&self, x: u16, y: u16, floor: i8) -> Option<(u32, u32)> {
         let at = self
@@ -169,6 +194,20 @@ impl Table {
                 return Err(fail("mask provenance or counts"));
             }
         }
+        let mut previous: Option<&PremiumRun> = None;
+        for run in &self.premium_runs {
+            if run.begin >= run.end
+                || !world.contains(run.begin, run.y, run.floor)
+                || !world.contains(run.end - 1, run.y, run.floor)
+                || previous.is_some_and(|p| {
+                    (p.floor, p.y, p.begin) >= (run.floor, run.y, run.begin)
+                        || (p.floor == run.floor && p.y == run.y && p.end > run.begin)
+                })
+            {
+                return Err(fail("premium run bounds, overlap or order"));
+            }
+            previous = Some(run);
+        }
         Ok(())
     }
 }
@@ -213,6 +252,12 @@ mod tests {
                 end: 23,
                 subarea: 109,
             }],
+            premium_runs: vec![PremiumRun {
+                floor: -7,
+                y: 11,
+                begin: 24,
+                end: 27,
+            }],
         }
     }
     fn world() -> Extent {
@@ -233,6 +278,9 @@ mod tests {
         assert_eq!(valid.resolve(22, 10, -7), Some((23, 109)));
         assert_eq!(valid.resolve(23, 10, -7), None);
         assert_eq!(valid.resolve(20, 10, -6), None);
+        assert!(valid.is_premium(24, 11, -7));
+        assert!(valid.is_premium(26, 11, -7));
+        assert!(!valid.is_premium(27, 11, -7));
         let mut invalid = Vec::new();
         let mut t = valid.clone();
         t.runs.push(t.runs[0]);

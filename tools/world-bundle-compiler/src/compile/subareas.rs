@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::io::{BufReader, Cursor, Write};
 use std::path::Path;
 
-use oteryn_world_bundle::subarea::{self, Area, Mask, Run, Table};
+use oteryn_world_bundle::subarea::{self, Area, Mask, PremiumRun, Run, Table};
 use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -15,6 +15,54 @@ const MAX_INPUT: usize = 16 << 20;
 const MAX_ASSET: usize = 64 << 10;
 const MAX_PIXELS: usize = 1 << 20;
 const MAX_BMP: usize = MAX_PIXELS * 4 + 122;
+
+// Crystal 201189f, data/XML/specialtiles.xml. These are compatibility data (one cell and one
+// inclusive rectangle), normalized into the bundle's half-open native runs. Keeping the source
+// coordinates at compilation makes paid-region membership immutable and digest-covered.
+const PREMIUM_RUNS: &[PremiumRun] = &[
+    PremiumRun {
+        floor: -7,
+        y: 32231,
+        begin: 32367,
+        end: 32368,
+    },
+    PremiumRun {
+        floor: -7,
+        y: 32239,
+        begin: 32358,
+        end: 32364,
+    },
+    PremiumRun {
+        floor: -7,
+        y: 32240,
+        begin: 32358,
+        end: 32364,
+    },
+    PremiumRun {
+        floor: -7,
+        y: 32241,
+        begin: 32358,
+        end: 32364,
+    },
+    PremiumRun {
+        floor: -7,
+        y: 32242,
+        begin: 32358,
+        end: 32364,
+    },
+    PremiumRun {
+        floor: -7,
+        y: 32243,
+        begin: 32358,
+        end: 32364,
+    },
+    PremiumRun {
+        floor: -7,
+        y: 32244,
+        begin: 32358,
+        end: 32364,
+    },
+];
 
 fn fail(what: impl std::fmt::Display) -> Error {
     Error::Format(format!("subarea admission: {what}"))
@@ -424,7 +472,9 @@ pub(super) fn realize(
 ) -> Result<Table, Error> {
     let source = &input.families.subareas;
     if source.tiles.is_empty() {
-        return Ok(source.table.clone());
+        let mut table = source.table.clone();
+        add_premium_regions(&mut table, &input.world);
+        return Ok(table);
     }
     let mut wanted: BTreeSet<_> = source.tiles.keys().copied().collect();
     for &p in source.tiles.keys() {
@@ -471,6 +521,7 @@ pub(super) fn realize(
         }
     }
     let mut table = source.table.clone();
+    add_premium_regions(&mut table, &input.world);
     let mut positions: Vec<_> = seen
         .into_iter()
         .map(|(x, y, z)| (-(z as i8), y, x))
@@ -504,6 +555,15 @@ pub(super) fn realize(
         m.admitted_tiles = counts.get(&m.subarea).copied().unwrap_or(0);
     }
     Ok(table)
+}
+
+fn add_premium_regions(table: &mut Table, world: &oteryn_world_bundle::bundle::Extent) {
+    table
+        .premium_runs
+        .extend(PREMIUM_RUNS.iter().copied().filter(|run| {
+            world.contains(run.begin, run.y, run.floor)
+                && world.contains(run.end - 1, run.y, run.floor)
+        }));
 }
 
 #[cfg(test)]

@@ -544,6 +544,14 @@ pub struct BundleMap {
     pub spell_tiles: Arc<BundleSpellTiles>,
 }
 
+impl BundleMap {
+    /// World-owner lookup used by admission; Channel overlays cannot alter this classification.
+    #[must_use]
+    pub fn is_premium_region(&self, position: TilePos) -> bool {
+        self.overlay.is_premium_region(position)
+    }
+}
+
 /// The collision of a Channel's movement cells over a world bundle: a tile is Walkable when it
 /// is enterable, Blocked when it exists but is not, and Absent outside the map.
 #[derive(Debug, Clone)]
@@ -864,8 +872,44 @@ pub mod tests {
             id,
             terrain: None,
         };
+        let hash = "a".repeat(64);
         let manifest = Manifest {
-            subareas: Default::default(),
+            subareas: oteryn_world_bundle::subarea::Table {
+                client_version: "15.30".into(),
+                candidate_sha256: hash.clone(),
+                areas: vec![
+                    oteryn_world_bundle::subarea::Area {
+                        id: 1,
+                        key: "oteryn:content.area.region.fixture".into(),
+                        name: "Fixture".into(),
+                        parent: None,
+                        source_record_sha256: hash.clone(),
+                    },
+                    oteryn_world_bundle::subarea::Area {
+                        id: 2,
+                        key: "oteryn:content.area.subregion.fixture".into(),
+                        name: "Fixture paid region".into(),
+                        parent: Some(1),
+                        source_record_sha256: hash.clone(),
+                    },
+                ],
+                masks: vec![oteryn_world_bundle::subarea::Mask {
+                    subarea: 2,
+                    asset: format!("content/assets/files/subarea-0002-{hash}.bmp.lzma"),
+                    compressed_sha256: hash.clone(),
+                    bmp_sha256: hash.clone(),
+                    source_record_sha256: hash,
+                    source_tiles: 1,
+                    admitted_tiles: 0,
+                }],
+                runs: Vec::new(),
+                premium_runs: vec![oteryn_world_bundle::subarea::PremiumRun {
+                    floor: -7,
+                    y: 0,
+                    begin: 0,
+                    end: 1,
+                }],
+            },
             format: bundle::FORMAT.into(),
             min_reader_version: bundle::VERSION,
             projection_class: "server".into(),
@@ -941,6 +985,33 @@ pub mod tests {
             production: false,
         };
         (bytes, pins)
+    }
+
+    #[test]
+    fn bundle_world_owner_exposes_digest_covered_premium_region() -> Result<(), Box<dyn Error>> {
+        let (data, pins) = bundle();
+        let world_id = WorldId::decode(&id(1))?;
+        let channel_id = ChannelId::decode(&id(2))?;
+        let world = boot(&data, &self::pins(pins, 2), world_id, channel_id, items)?;
+        let room = crate::content::qualify_native_entry_room(world_id)?;
+        let cells = world.movement_cells(room.movement_cells())?;
+        let index = match cells.index() {
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
+                index
+            }
+            _ => return Err("bundle world did not own bundle collision index".into()),
+        };
+        assert!(index.map().is_premium_region(TilePos {
+            x: 0,
+            y: 0,
+            floor: -7,
+        }));
+        assert!(!index.map().is_premium_region(TilePos {
+            x: 1,
+            y: 0,
+            floor: -7,
+        }));
+        Ok(())
     }
 
     /// MAP-FLOOR-1: two floors of one row, whose palette keys are real appearance ids, so the

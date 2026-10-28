@@ -343,6 +343,13 @@ pub struct ChannelOverlay {
 }
 
 impl ChannelOverlay {
+    /// Immutable paid-region classification owned by the shared World bundle.
+    #[must_use]
+    pub fn is_premium_region(&self, position: TilePos) -> bool {
+        self.base
+            .is_premium_region(position.x, position.y, position.floor)
+    }
+
     /// An empty overlay with the default budget.
     pub fn new(base: Arc<WorldBase>, world_id: WorldId, channel_id: ChannelId) -> Self {
         Self::with_budget(base, world_id, channel_id, OVERLAY_BUDGET_BYTES)

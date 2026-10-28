@@ -259,6 +259,12 @@ impl<'a> TileView<'a> {
 }
 
 impl WorldBase {
+    /// Bundle-authored Premium-only membership at a native map position.
+    #[must_use]
+    pub fn is_premium_region(&self, x: u16, y: u16, floor: i8) -> bool {
+        self.subareas.is_premium(x, y, floor)
+    }
+
     /// The verified bundle digest.
     pub fn digest(&self) -> [u8; 32] {
         self.digest

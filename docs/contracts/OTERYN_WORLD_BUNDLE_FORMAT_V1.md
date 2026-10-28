@@ -580,6 +580,12 @@ bad order, overlaps, out-of-world runs, unknown ids, malformed hashes, bad paren
 and counts that disagree with the runs. Lookup is a binary search over these runs;
 unknown coverage remains unknown. The empty/default table is only for synthetic
 fixtures; the repository compiler always loads and verifies the source catalogue.
+
+The same digest-covered table carries `premium_runs`, sorted disjoint half-open horizontal
+runs `{floor,y,begin,end}`. They classify Crystal's pinned special-tile compatibility data as
+Premium-only login regions. The reader rejects unordered, overlapping or out-of-world runs.
+The shared immutable `WorldBase`, its Channel overlay owner and `BundleMap` expose membership;
+mutable overlays and clients cannot add or remove it.
 Limits SUBAREA-RL-01 through SUBAREA-RL-10 bound input bytes, LZMA memory/output,
 areas, masks, runs, tiles and the read-only command result.
 
