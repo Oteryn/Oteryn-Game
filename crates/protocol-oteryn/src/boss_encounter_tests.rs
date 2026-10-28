@@ -1,3 +1,4 @@
+use super::staged::*;
 use super::*;
 
 #[test]
@@ -61,5 +62,20 @@ fn boss_cooldown_codec_bounds() -> Result<(), Error> {
         )
         .is_err()
     );
+    Ok(())
+}
+
+#[test]
+fn boss_lever_wire_never_accepts_client_policy() -> Result<(), Error> {
+    let encoded = encode_boss_key("oteryn:boss.test")?;
+    assert_eq!(decode_boss_key(&encoded)?.boss_key, "oteryn:boss.test");
+    let mut extra = encoded.clone();
+    push_varint_field(&mut extra, 2, 5);
+    assert!(decode_boss_key(&extra).is_err());
+    assert!(decode_boss_key(&[]).is_err());
+    assert!(encode_boss_key("unqualified").is_err());
+    let receipt = encode_instance_receipt(&[7; 16], i64::MAX as u64)?;
+    assert!(!receipt.is_empty());
+    assert!(encode_instance_receipt(&[7; 16], u64::MAX).is_err());
     Ok(())
 }

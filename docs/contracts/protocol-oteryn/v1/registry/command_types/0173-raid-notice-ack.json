@@ -1,0 +1,10 @@
+{
+  "id": 173,
+  "name": "RAID_NOTICE_ACK",
+  "owner_decision": "RAIDS-WIRE-1",
+  "capability": 149,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/raid-schedule-v1.md#notice-ack",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/raid-schedule-v1.md#notice-ack-result",
+  "max_payload_bytes": 16,
+  "max_result_payload_bytes": 1
+}

@@ -21,3 +21,17 @@ message BossCooldownListV1 {
   // concurrent admissions may appear on later queries, no snapshot is promised.
   string next_after_boss_key = 3;
 }
+
+// Reserved staged commands 178 (lever), 179 (defeated), 180 (timeout).
+// Every request remains refused: the activity handoff, InstanceRuntime and
+// return/recovery owner are not installed. Capability 117 also retains hazard 169.
+// The client supplies no party, policy, position, level, cooldown, death or timeout facts.
+message BossLeverRequestV1 { string boss_key = 1; }
+message BossInstanceReceiptV1 {
+  bytes instance_id = 1; // opaque 16-byte UUID
+  uint64 deadline_unix_ms = 2;
+}
+// Reserved terminal schemas are not client authority to manufacture a death or timeout.
+// A future runtime owner must bind the exact instance, live boss generation and occurrence.
+message BossTerminalRequestV1 { string boss_key = 1; }
+message BossTerminalResultV1 { bool settled = 1; }

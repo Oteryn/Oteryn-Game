@@ -1,0 +1,21 @@
+[
+  {
+    "mechanic": "0149-raid-schedule",
+    "kind": "handlers",
+    "id": "0149-raid-schedule-unsupported",
+    "status": "unsupported",
+    "reason": "Server-driven raid play is supported; native schedule inspection UI is pending.",
+    "commands": [
+      171,
+      172,
+      173
+    ],
+    "not_applicable": {
+      "state": "Unsupported.",
+      "protocol": "Unsupported.",
+      "view": "Unsupported.",
+      "input": "Unsupported.",
+      "settings": "Unsupported."
+    }
+  }
+]
