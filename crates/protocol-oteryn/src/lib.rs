@@ -81,6 +81,7 @@ pub mod spectate;
 pub mod spell_presentation_candidate;
 pub mod staff;
 pub mod stash;
+pub mod store;
 pub mod target_move;
 pub mod task_board;
 #[cfg(test)]

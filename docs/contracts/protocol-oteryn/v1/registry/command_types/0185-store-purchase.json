@@ -1,0 +1,10 @@
+{
+  "id": 185,
+  "name": "STORE_PURCHASE",
+  "owner_decision": "Oteryn-v2 Store purchase delivery contract (Platform PR 1625), STORE-WIRE-1",
+  "capability": 154,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/store-v1.md#StorePurchaseRequestV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/store-v1.md#StorePurchaseResultV1",
+  "max_payload_bytes": 512,
+  "max_result_payload_bytes": 64
+}

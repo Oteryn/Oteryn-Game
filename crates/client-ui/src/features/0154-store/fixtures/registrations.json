@@ -1,0 +1,22 @@
+[
+  {
+    "mechanic": "0154-store",
+    "kind": "handlers",
+    "id": "0154-store-unsupported",
+    "status": "unsupported",
+    "reason": "STORE-WIRE-1 registers codecs only; native Store UI and dispatch are pending.",
+    "commands": [
+      183,
+      184,
+      185,
+      186
+    ],
+    "not_applicable": {
+      "state": "Unsupported until the owning mechanic migration.",
+      "protocol": "Unsupported until the owning mechanic migration.",
+      "view": "Unsupported until the owning mechanic migration.",
+      "input": "Unsupported until the owning mechanic migration.",
+      "settings": "Unsupported until the owning mechanic migration."
+    }
+  }
+]
