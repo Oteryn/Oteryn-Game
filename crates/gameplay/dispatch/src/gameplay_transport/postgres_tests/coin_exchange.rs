@@ -479,6 +479,11 @@ async fn seed(
         .execute(&mut *tx)
         .await?;
         entries.push(base + 2);
+        if key == input {
+            // Domain 9 displays newest ordinals first. The wire helper selects the first
+            // matching definition, so keep the intended source ahead of a same-coin sibling.
+            entries.swap(0, 1);
+        }
     }
     for n in 0..fill {
         let offset = 3 + n;
@@ -557,8 +562,41 @@ fn coin_use_scenario() -> TestResult {
         let index = native.item_index().ok_or("index")?;
         let channel_pin = ChannelContentPin::from_activation(world, pin.activation_sequence(), pin.identity().server_artifact_digest(), pin.identity().client_artifact_digest(), pin.frame_binding().digest(), pin.qualified_room().map_revision_digest(), (2, 0, 7));
         let deps = Dependencies::with_content(channel_pin, crate::content::qualify_native_entry_room(world).map_err(debug)?, crate::spell::cast::v1_spell_book().map_err(debug)?)?;
+        // Item USE and its NotPossible result require the bundle-world capability offer.
+        // Supply the real map snapshot required by that offer, rather than a room-only owner.
+        let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
+        let bag = "oteryn:item.tibia.i2854";
+        let gold = "oteryn:item.tibia.i3031";
+        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+            (bag, reference(bag).ok_or("bag definition")?.get() - 1),
+            (gold, reference(gold).ok_or("gold definition")?.get() - 1),
+        );
+        let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+        let map = crate::map::boot::boot(
+            &bytes,
+            &crate::map::boot::BootPins {
+                map_revision: crate::map::overlay::map_revision(&base),
+                bundle: pins,
+                start: crate::map::overlay::TilePos { x: 2, y: 0, floor: -7 },
+            },
+            deps.admitted.world_id,
+            deps.admitted.channel_id,
+            |key| {
+                let policy = native.item_policy(key, "definition-r1")?.record();
+                let crate::content::ReferenceItemField::Known(physical) = &policy.semantics.physical else { return None; };
+                Some(crate::map::facts::ItemDefinition {
+                    reference: reference(key)?,
+                    solid: policy.attributes.blocks_movement,
+                    blocks_projectile: policy.attributes.blocks_projectile.unwrap_or(true),
+                    pickupable: physical.pickupable == crate::content::ReferenceItemField::Known(true),
+                    door: false,
+                })
+            },
+        ).map_err(debug)?;
+        let cells = map.movement_cells(deps.room.movement_cells()).map_err(debug)?;
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
+        owner.movement_cells = &cells;
         deps.initialize(&owner).await;
         deps.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
         let fence = owner.current_quest_fence(deps.admitted.game_session_id).await.map_err(|_| "fence")?.ok_or("fence")?.item_fence();
@@ -570,9 +608,15 @@ fn coin_use_scenario() -> TestResult {
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[4,6,11,15,18]).ok_or("capabilities")?;
+        assert!(admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
+        ));
+        assert!(admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::world_object::CAPABILITY_WORLD_INTERACTION_V1,
+        ));
         let intent = UseIntent { target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("handle")?), use_with: None, use_with_map_item: None, use_with_position: None };
         let payload = encode_item_use_intent(&intent).map_err(debug)?;
-        for (round, input, count, receiver, fill, expected, remaining, output, output_count) in [
+        for (command_index, (round, input, count, receiver, fill, expected, remaining, output, output_count)) in [
             (0, "3031", 100, None, 19, UseDisposition::Committed, 0, "3035", 1),
             (1, "3035", 100, None, 0, UseDisposition::Committed, 0, "3043", 1),
             (2, "3035", 2, None, 0, UseDisposition::Committed, 1, "3031", 100),
@@ -581,7 +625,7 @@ fn coin_use_scenario() -> TestResult {
             (5, "3031", 99, Some(("3031",1)), 0, UseDisposition::NotPossible, 99, "3035", 0),
             (6, "3031", 100, Some(("3035",99)), 18, UseDisposition::Committed, 0, "3035", 100),
             (8, "3035", 2, None, 7, UseDisposition::NotPossible, 2, "3031", 0),
-        ] {
+        ].into_iter().enumerate() {
             seed(&h, round, input, count, receiver, fill).await?;
             // A level-one character has free slots but cannot carry the heavy inventory.
             let previous_level: i64 = sqlx::query_scalar("SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
@@ -596,9 +640,12 @@ fn coin_use_scenario() -> TestResult {
             let before = h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("before")?;
             let key = format!("oteryn:item.tibia.i{input}");
             let definition = index.definition_ref("Item", &key, "definition-r1").ok_or("coin definition")?;
-            let command_id = u64::from(round)+1;
+            let command_id = u64::try_from(command_index)? + 1;
             let (end, result, _) = super::item_craft::exchange(&owner, admitted, command_id, &payload, Some(definition)).await?;
             assert_eq!(result, expected, "round {round}");
+            let retained_source: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(item_source) FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string()).fetch_one(&h.pool).await?;
+            assert_eq!(retained_source, source, "round {round} exact source");
             let after = h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("after")?;
             let source_quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(source.as_slice()).fetch_one(&h.pool).await?;
             assert_eq!(source_quantity, remaining);
@@ -609,7 +656,8 @@ fn coin_use_scenario() -> TestResult {
             // retired inputs, and cannot borrow another stack or replay a bank command.
             let mut restarted = deps.owner(&h, &authority);
             restarted.active_generation = Some(active);
-            let replay = restarted.use_item_completion(deps.actor, UseCommand { game_session_id: fence.game_session_id, command_id, item_fence: Some(fence) }, ItemKey::Instance(source)).await.ok_or("replay")?;
+            restarted.movement_cells = &cells;
+            let replay = restarted.use_item_completion(deps.actor, UseCommand { game_session_id: fence.game_session_id, command_id, item_fence: Some(fence) }, ItemKey::Instance(source)).await.ok_or_else(|| format!("round {round} replay"))?;
             assert_eq!(replay.disposition, expected);
             assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("replayed")?, after);
             if round == 8 {
@@ -625,19 +673,20 @@ fn coin_use_scenario() -> TestResult {
         seed(&h, 7, "3031", 100, None, 0).await?;
         let before = h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("failure before")?;
         sqlx::raw_sql("CREATE FUNCTION goldconvr_test_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected conversion failure'; END $$; CREATE CONSTRAINT TRIGGER goldconvr_test_failure AFTER UPDATE ON game_coin_exchange_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION goldconvr_test_failure();").execute(&h.pool).await?;
-        let command = UseCommand { game_session_id: fence.game_session_id, command_id: 8, item_fence: Some(fence) };
+        let command = UseCommand { game_session_id: fence.game_session_id, command_id: 9, item_fence: Some(fence) };
         let mut stale = fence;
         stale.character_lease_generation += 1;
         assert!(owner.use_item_completion(deps.actor, UseCommand { item_fence: Some(stale), ..command }, ItemKey::Instance(id(222))).await.is_none());
-        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_coin_exchange_receipts WHERE command_id=8").fetch_one(&h.pool).await?, 0);
+        assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_coin_exchange_receipts WHERE command_id=9").fetch_one(&h.pool).await?, 0);
         assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("stale unchanged")?, before);
         assert!(owner.use_item_completion(deps.actor, command, ItemKey::Instance(id(222))).await.is_none());
         assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("failure after")?, before);
-        let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_coin_exchange_receipts WHERE result=0 AND command_id=8").fetch_one(&h.pool).await?;
+        let pending: i64 = sqlx::query_scalar("SELECT count(*) FROM game_coin_exchange_receipts WHERE result=0 AND command_id=9").fetch_one(&h.pool).await?;
         assert_eq!(pending, 1);
         sqlx::raw_sql("DROP TRIGGER goldconvr_test_failure ON game_coin_exchange_receipts; DROP FUNCTION goldconvr_test_failure();").execute(&h.pool).await?;
         let mut restarted = deps.owner(&h, &authority);
         restarted.active_generation = Some(active);
+        restarted.movement_cells = &cells;
         assert!(restarted.resume_npc_bank(deps.actor, command).await.is_none());
         assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("bank cannot resume use")?, before);
         // A different source under the same command is rejected before executing the pending use.
@@ -652,7 +701,7 @@ fn coin_use_scenario() -> TestResult {
         assert_eq!(restarted.use_item_completion(deps.actor, command, ItemKey::Instance(id(222))).await.ok_or("recovered replay")?.disposition, UseDisposition::Committed);
         assert_eq!(h.root.read_character_backpack(&authority, fence.character_id).await?.ok_or("recovered unchanged")?, after);
         assert!(restarted.resume_npc_bank(deps.actor, command).await.is_none());
-        assert!(sqlx::query("UPDATE game_coin_exchange_receipts SET item_source=encode($1,'hex')::uuid WHERE command_id=8").bind(id(221).as_slice()).execute(&h.pool).await.is_err());
+        assert!(sqlx::query("UPDATE game_coin_exchange_receipts SET item_source=encode($1,'hex')::uuid WHERE command_id=9").bind(id(221).as_slice()).execute(&h.pool).await.is_err());
         drop(restarted);
         sqlx::raw_sql(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../apps/game-server/migrations/0336_item_coin_conversion.sql"))).execute(&h.pool).await?;
         eprintln!("POSTGRES_COMPLETED goldconvr");
