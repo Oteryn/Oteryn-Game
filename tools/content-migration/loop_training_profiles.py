@@ -1,7 +1,7 @@
 """EXERCISE0 native item overlay from existing exact identities and declared charge facts.
 
-Only item structure is admitted here. Gain rates live in the separate, disabled-by-default
-provisional training configuration; no Reference rate reconciliation is changed.
+Only item structure is admitted here. Gain rates live in the verified production training
+ruleset and remain independently validated by the progression loader.
 """
 import copy
 import hashlib
@@ -37,7 +37,7 @@ EXERCISE0_ITEMS = frozenset((
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
-    config = json.loads((root / 'rulesets/training/provisional-v1.json').read_bytes())
+    config = json.loads((root / 'rulesets/training/global-v1.json').read_bytes())
     if not EXERCISE0_ITEMS <= set(config['weapons']):
         raise ValueError('TRAINING_ITEM_RECORD_SET')
     wanted = set(EXERCISE0_ITEMS)

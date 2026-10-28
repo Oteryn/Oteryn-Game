@@ -2,16 +2,14 @@
 use super::*;
 fn rates() -> TrainingRates {
     TrainingRates::from_json(include_bytes!(
-        "../../../../rulesets/training/provisional-v1.json"
+        "../../../../rulesets/training/global-v1.json"
     ))
     .unwrap()
 }
 #[test]
-fn loop_training_gate_and_unknown_vocation_fail_closed() {
-    let mut rates = rates();
-    assert!(!rates.enabled);
-    assert!(rates.offline_gain("knight", 3, 600).is_err());
-    rates.enabled = true;
+fn loop_training_verified_rates_and_unknown_vocation_fail_closed() {
+    let rates = rates();
+    assert!(rates.enabled);
     assert_eq!(rates.offline_gain("knight", 3, 600), Ok(150));
     assert_eq!(rates.offline_gain("paladin", 5, 600), Ok(75));
     assert_eq!(rates.offline_gain("sorcerer", 0, 600), Ok(600));
@@ -69,7 +67,7 @@ fn loop_training_pool_delay_cap_restore_and_short_pool() {
 #[test]
 fn loop_training_configuration_refuses_unknown_fields_and_zero_divisors() {
     let mut value: serde_json::Value = serde_json::from_slice(include_bytes!(
-        "../../../../rulesets/training/provisional-v1.json"
+        "../../../../rulesets/training/global-v1.json"
     ))
     .unwrap();
     value["offline_divisors"][3] = serde_json::json!(0);
@@ -81,7 +79,7 @@ fn loop_training_configuration_refuses_unknown_fields_and_zero_divisors() {
 
 #[test]
 fn loop_training_configuration_byte_boundary() {
-    let mut bytes = include_bytes!("../../../../rulesets/training/provisional-v1.json").to_vec();
+    let mut bytes = include_bytes!("../../../../rulesets/training/global-v1.json").to_vec();
     bytes.resize(32768, b' ');
     assert!(TrainingRates::from_json(&bytes).is_ok());
     bytes.push(b' ');
@@ -103,8 +101,7 @@ fn crystal_exercise_dummy_percentages_match_per_charge_integer_conversion() {
 
 #[test]
 fn crystal_offline_hourly_rates_cover_every_vocation_and_skill() {
-    let mut rates = rates();
-    rates.enabled = true;
+    let rates = rates();
     for vocation in &rates.vocations {
         let expected_magic =
             3_600_000_u64 * u64::from(vocation.mana_amount) / u64::from(vocation.top_mana_ticks_ms);

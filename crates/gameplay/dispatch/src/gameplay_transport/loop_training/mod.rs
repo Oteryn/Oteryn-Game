@@ -33,21 +33,10 @@ impl TrainingRuntime {
 impl Default for TrainingRuntime {
     fn default() -> Self {
         let config = TrainingRates::from_json(include_bytes!(
-            "../../../../../../rulesets/training/provisional-v1.json"
+            "../../../../../../rulesets/training/global-v1.json"
         ))
         .ok()
-        .and_then(|mut rates| {
-            // Explicit operator opt-in; absence and every other value keep the shipped gate closed.
-            if std::env::var("OTERYN_ENABLE_PROVISIONAL_TRAINING")
-                .ok()
-                .as_deref()
-                != Some("1")
-            {
-                return None;
-            }
-            rates.enabled = true;
-            Some(Arc::new(rates))
-        });
+        .map(Arc::new);
         Self {
             config,
             sessions: Mutex::new(HashMap::new()),

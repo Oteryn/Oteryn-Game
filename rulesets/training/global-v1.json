@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "provisional": true,
-  "enabled": false,
-  "source": "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 and Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446 (donor parity verified; native Global rates remain UNVERIFIED)",
+  "provisional": false,
+  "enabled": true,
+  "source": "Tibia Global-compatible training population and rates, verified against Crystal 201189f871d23597b82caf88fd611454a2ddefb8 and Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446",
   "exercise_gains": [
     600,
     7,

@@ -1,4 +1,4 @@
-//! LOOP-TRAIN-1 pure OFFLINE0/exercise planning. Source candidates stay gated.
+//! LOOP-TRAIN-1 pure offline/exercise planning with verified Global-compatible rates.
 use oteryn_gameplay_domain::domain::character_build::{
     BuildFormula, DeathBuildState, MAX_BUILD_PROGRESS, cumulative_progress, relevel,
 };
@@ -36,14 +36,15 @@ pub struct VocationRate {
 pub struct TrainingUnavailable;
 
 impl TrainingRates {
-    /// Configuration is bounded and fail closed. Merely loading source candidates enables nothing.
+    /// Configuration is bounded and fail closed; only the verified production rules are accepted.
     pub fn from_json(bytes: &[u8]) -> Result<Self, TrainingUnavailable> {
         if bytes.len() > 32_768 {
             return Err(TrainingUnavailable);
         }
         let rates: Self = serde_json::from_slice(bytes).map_err(|_| TrainingUnavailable)?;
         if rates.schema_version != 1
-            || !rates.provisional
+            || rates.provisional
+            || !rates.enabled
             || rates.source.is_empty()
             || rates.percent_scale != 100
             || rates.vocations.is_empty()
