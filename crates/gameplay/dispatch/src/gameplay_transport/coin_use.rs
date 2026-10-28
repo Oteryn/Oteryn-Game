@@ -59,6 +59,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => {}
             Err(_) => return Some(None),
         }
+        // A carried non-coin is not ours, whatever its fence; its own owner refuses it.
+        if let Ok(Some(backpack)) = self
+            .root
+            .read_character_backpack(self.character, fence.character_id)
+            .await
+            && backpack.entries.iter().any(|entry| {
+                entry.item.item_instance_id == id
+                    && Coin::from_production_key(&entry.item.definition.production_key).is_none()
+            })
+        {
+            return None;
+        }
         let inventory = match self
             .root
             .read_item_use_inventory(self.character, self.holder, fence)
