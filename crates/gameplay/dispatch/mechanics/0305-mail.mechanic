@@ -1,0 +1,9 @@
+name=mail
+commands=124
+composed=mail
+authority=mail
+[route]
+match routing::mail::route(authority, &session.admitted, command, &session.item_view).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

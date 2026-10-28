@@ -6,10 +6,92 @@
 //! serialize this state through the existing Character proficiency writer.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
-use oteryn_gameplay_domain::domain::weapon_proficiency::{
-    ProficiencyKillContributor, ProficiencySelectionShape, proficiency_kill_credit,
+use crate::durability::character_proficiency::{
+    ProficiencyDefinitions, ResolvedProficiencyDefinition,
 };
+use oteryn_gameplay_content::content::{
+    ImportedWeaponProficiencyData, ProjectV2ProficiencyThresholdClass,
+    import_committed_weapon_proficiency_data,
+};
+use oteryn_gameplay_domain::domain::weapon_proficiency::{
+    ProficiencyKillContributor, ProficiencySelectionShape, ProficiencyThresholdClass,
+    proficiency_kill_credit,
+};
+use sha2::{Digest, Sha256};
+
+/// Immutable production adapter over the promoted proficiency catalogue.
+///
+/// Construction validates the committed shards and bindings through the content importer.  The
+/// durability writer therefore resolves requests against repository-owned content rather than
+/// trusting definition identities or shapes supplied by a gameplay caller.
+#[derive(Debug)]
+pub struct ProductionProficiencyCatalogue {
+    data: ImportedWeaponProficiencyData,
+    digest: [u8; 32],
+}
+
+impl ProductionProficiencyCatalogue {
+    pub fn embedded() -> Option<Arc<Self>> {
+        let data = import_committed_weapon_proficiency_data().ok()?;
+        let encoded = serde_json::to_vec(&data).ok()?;
+        Some(Arc::new(Self {
+            data,
+            digest: Sha256::digest(encoded).into(),
+        }))
+    }
+
+    fn resolved(&self, item_key: &str) -> Option<ResolvedProficiencyDefinition> {
+        let binding = self.data.bindings().get(item_key)?;
+        let definition = self.data.definitions().get(&binding.profile_binding.key)?;
+        let threshold = match binding.threshold_class {
+            ProjectV2ProficiencyThresholdClass::Standard => ProficiencyThresholdClass::Standard,
+            ProjectV2ProficiencyThresholdClass::Knight => ProficiencyThresholdClass::Knight,
+            ProjectV2ProficiencyThresholdClass::Crossbow => ProficiencyThresholdClass::Crossbow,
+        };
+        let counts = definition
+            .levels
+            .iter()
+            .map(|level| u8::try_from(level.perks.len()).ok())
+            .collect::<Option<Vec<_>>>()?;
+        Some(ResolvedProficiencyDefinition {
+            canonical_item_key: binding.item.key.clone(),
+            definition_key: definition.identity.key.clone(),
+            definition_revision: definition.identity.revision.clone(),
+            shape: ProficiencySelectionShape::new(threshold, &counts).ok()?,
+        })
+    }
+}
+
+impl ProficiencyDefinitions for ProductionProficiencyCatalogue {
+    fn content_revision(&self) -> &str {
+        "weapon-proficiency-progression-r1"
+    }
+
+    fn digest(&self) -> [u8; 32] {
+        self.digest
+    }
+
+    fn active_weapon_count(&self) -> usize {
+        self.data.bindings().len()
+    }
+
+    fn resolve_weapon(&self, item_key: &str) -> Option<ResolvedProficiencyDefinition> {
+        self.resolved(item_key)
+    }
+
+    fn retained_definition(
+        &self,
+        item_key: &str,
+        definition_key: &str,
+        revision: &str,
+    ) -> Option<ProficiencySelectionShape> {
+        let resolved = self.resolved(item_key)?;
+        (resolved.definition_key == definition_key && resolved.definition_revision == revision)
+            .then_some(resolved.shape)
+    }
+}
 
 /// Exact aggregate of selected perks read by the existing combat/stat stages.
 /// Fractions use one denominator and are truncated once after summation.
@@ -143,6 +225,24 @@ mod tests {
                 omega_numerator: 20,
             },
         }
+    }
+
+    #[test]
+    fn production_catalogue_resolves_promoted_weapon_for_durable_writer() {
+        let catalogue = ProductionProficiencyCatalogue::embedded().expect("committed catalogue");
+        let binding = catalogue.data.bindings().values().next().expect("binding");
+        let resolved = catalogue
+            .resolve_weapon(&binding.item.key)
+            .expect("promoted definition");
+        assert_eq!(resolved.canonical_item_key, binding.item.key);
+        assert_eq!(
+            catalogue.retained_definition(
+                &resolved.canonical_item_key,
+                &resolved.definition_key,
+                &resolved.definition_revision,
+            ),
+            Some(resolved.shape)
+        );
     }
 
     #[test]

@@ -25,7 +25,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             self.premium_coordinator,
         ) {
             let _ = self
-                .commit_gem_build(
+                .execute_gem_atelier(
                     session,
                     super::super::atelier::GemBuildCommand::Atelier(
                         crate::durability::character_atelier::AtelierRequest::initialize(

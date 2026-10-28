@@ -269,6 +269,10 @@ pub fn held_credit_release(
 mod tests;
 
 #[cfg(test)]
+#[path = "market_crystal_parity_tests.rs"]
+mod crystal_parity_tests;
+
+#[cfg(test)]
 #[path = "market_reference_tests.rs"]
 mod reference_tests;
 

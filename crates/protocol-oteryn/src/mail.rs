@@ -101,21 +101,22 @@ pub fn encode_intent(intent: &MailIntent) -> Result<Vec<u8>, MailWireError> {
 mod tests {
     use super::*;
     #[test]
-    fn mail_registry_keeps_offers_disabled() -> Result<(), serde_json::Error> {
+    fn mail_registry_offers_the_production_owner() -> Result<(), serde_json::Error> {
         let registry: serde_json::Value = serde_json::from_str(include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../docs/contracts/protocol-oteryn/v1/registry/capabilities/0115-mail-v1.json"
         )))?;
         let capability: serde_json::Value =
             serde_json::from_str(include_str!("../capabilities/0115-mail-v1.json"))?;
-        assert_eq!(registry["offered"], false);
+        assert_eq!(registry["offered"], true);
         assert_eq!(registry["id"], CAPABILITY_MAIL_V1);
         assert_eq!(
             registry["command_types"],
             serde_json::json!([COMMAND_TYPE_MAIL])
         );
-        for offer in ["production", "item_view", "bundle_world"] {
-            assert_eq!(capability["offers"][offer], false);
+        assert_eq!(capability["offers"]["production"], false);
+        for offer in ["item_view", "bundle_world"] {
+            assert_eq!(capability["offers"][offer], true);
         }
         Ok(())
     }
