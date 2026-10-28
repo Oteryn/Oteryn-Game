@@ -186,6 +186,29 @@ mod tests {
         assert!(!promotion_benefit_current(false, false));
     }
 
+    /// PAR-P20 against Crystal `201189f8` (`login.lua` promotion block, `Player::getLostPercent`,
+    /// `vocations.xml` soul): a Free login demotes the vocation but keeps the `promoted` flag, a
+    /// Premium login restores it, so the promotion is never lost and only its benefits lapse.
+    #[test]
+    fn crystal_premium_lapse_suspends_but_keeps_the_promotion()
+    -> Result<(), crate::domain::death::PveDeathError> {
+        use crate::domain::death::death_experience_loss;
+        // Level 100: (100 + 50) x 50 x (100^2 - 500 + 8) / 100 = 713_100 base loss.
+        let free = death_experience_loss(100, 0, promotion_benefit_current(true, false))?;
+        let premium = death_experience_loss(100, 0, promotion_benefit_current(true, true))?;
+        assert_eq!(free, 713_100);
+        assert_eq!(free, death_experience_loss(100, 0, false)?);
+        // Crystal `percentReduction += 0.30` for a promoted vocation.
+        assert_eq!(premium, 499_170);
+        // Demoted vocation soul 100, promoted 200; a lapse clamps at once.
+        assert_eq!(soul_maximum(false), 100);
+        assert_eq!(soul_maximum(true), 200);
+        assert_eq!(apply_account_transition(200, false), 100);
+        // Renewal restores the benefit without a new promotion purchase.
+        assert!(promotion_benefit_current(true, true));
+        Ok(())
+    }
+
     #[test]
     fn the_soul_maximum_follows_the_current_account_type() {
         assert_eq!(soul_maximum(true), 200);

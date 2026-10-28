@@ -1,7 +1,81 @@
 //! Composition for MAIL_V1 through the same admitted command dispatch boundary.
 
+use super::{ComposedFreshAdmission, connection::AdmittedSession, item_view::ItemKey};
 use oteryn_gameplay_durability::durability::mail::{MailPostOutcome, MailPostRefusal};
 use oteryn_protocol_oteryn::mail::{MailIntent, MailOutcome, decode_intent};
+
+macro_rules! authority_methods {
+    () => {
+        fn mail_command(
+            &self,
+            _admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            _command_id: u64,
+            _payload: &[u8],
+            _item: Option<$crate::gameplay_transport::item_view::ItemKey>,
+            _mailbox: Option<$crate::gameplay_transport::item_view::ItemKey>,
+        ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::mail::MailOutcome>> {
+            async { None }
+        }
+    };
+}
+pub(super) use authority_methods;
+macro_rules! composed_methods {
+    () => {
+        async fn mail_command(
+            &self,
+            admitted: $crate::gameplay_transport::connection::AdmittedSession,
+            command_id: u64,
+            payload: &[u8],
+            item: Option<$crate::gameplay_transport::item_view::ItemKey>,
+            mailbox: Option<$crate::gameplay_transport::item_view::ItemKey>,
+        ) -> Option<oteryn_protocol_oteryn::mail::MailOutcome> {
+            $crate::gameplay_transport::mail::execute(
+                self, admitted, command_id, payload, item, mailbox,
+            )
+            .await
+        }
+    };
+}
+pub(super) use composed_methods;
+
+pub(super) async fn execute(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    command_id: u64,
+    payload: &[u8],
+    item: Option<ItemKey>,
+    mailbox: Option<ItemKey>,
+) -> Option<MailOutcome> {
+    if !admitted
+        .continuity
+        .selected_capabilities
+        .contains(u32::from(oteryn_protocol_oteryn::mail::CAPABILITY_MAIL_V1))
+    {
+        return Some(MailOutcome::Rejected);
+    }
+    let (
+        Some(fence),
+        Ok(MailIntent::Post { .. }),
+        Some(ItemKey::Instance(item)),
+        Some(ItemKey::MapBase { placement_key, .. }),
+    ) = (admitted.item_fence, decode_intent(payload), item, mailbox)
+    else {
+        return Some(MailOutcome::Rejected);
+    };
+    owner
+        .root
+        .post_admitted_mail(
+            owner.character,
+            owner.holder,
+            fence,
+            command_id,
+            item,
+            placement_key,
+        )
+        .await
+        .ok()
+        .map(wire_post_outcome)
+}
 
 /// The transport owns decoding only. The implementation owns handle reach,
 /// Content and session fencing, replay, and the atomic database transaction.

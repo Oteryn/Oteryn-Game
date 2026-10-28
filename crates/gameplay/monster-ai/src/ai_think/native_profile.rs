@@ -22,6 +22,14 @@ pub(crate) fn project_native(
     if records.next().is_some() {
         return Err(ProfileRefusal::Invalid);
     }
+    project_native_record(record)
+}
+
+/// The projection of one admitted native creature record (the source digest already checked).
+pub(crate) fn project_native_record(
+    record: &crate::content::native_gameplay::CreatureProfileRecord,
+) -> Result<CreatureBehaviourProfile, behaviour_profile::ProfileRefusal> {
+    use behaviour_profile::ProfileRefusal;
     let Some(Data::Behavior(behavior)) = record.behavior.as_ref().map(|p| &p.data) else {
         return Err(ProfileRefusal::Missing);
     };
