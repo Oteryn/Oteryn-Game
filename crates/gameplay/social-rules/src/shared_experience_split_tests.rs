@@ -169,7 +169,11 @@ fn w14_crystal_shared_experience_parity() {
     members[1].y = 30;
     for (dz, shared) in [(-2, false), (-1, true), (1, true), (2, false)] {
         members[1].z = dz;
-        assert_eq!(split(&members, 101).map(|s| s.is_some()), Ok(shared), "{dz}");
+        assert_eq!(
+            split(&members, 101).map(|s| s.is_some()),
+            Ok(shared),
+            "{dz}"
+        );
     }
     // Vocation bonus: Crystal {1.20, 1.35, 1.70, 2.00}; Oteryn (= Canary
     // 0.1n^2 - 0.2n + 1.3, capped at 2.0, = official Tibia manual +20/30/60/100%)
