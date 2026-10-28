@@ -44,9 +44,7 @@ use std::sync::{Arc, Weak};
 use tokio::time::{Duration, Instant};
 
 use super::ComposedFreshAdmission;
-use super::weapon_proficiency::{
-    LiveProficiencyTrack, ProficiencyAttackEffects, WeaponProficiencyDispatch,
-};
+use super::weapon_proficiency::WeaponProficiencyDispatch;
 use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
@@ -1334,16 +1332,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             let mut owner = WeaponProficiencyDispatch::default();
             for stored in tracks {
-                if let Some(resolved) = catalogue.resolve_weapon(stored.state.item_key()) {
-                    owner.install_track(
-                        resolved.canonical_item_key,
-                        LiveProficiencyTrack {
-                            shape: resolved.shape,
-                            progress: u32::try_from(stored.state.progress()).unwrap_or(u32::MAX),
-                            selections: stored.state.selections().to_vec(),
-                            effects: ProficiencyAttackEffects::default(),
-                        },
-                    );
+                if let Some(track) = catalogue.live_track(&stored) {
+                    owner.install_track(stored.state.item_key().to_owned(), track);
                 }
             }
             if let Ok(mut sessions) = self.states.proficiencies.lock() {
