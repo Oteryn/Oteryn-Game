@@ -14,6 +14,7 @@ fn run() -> Result<(), String> {
         "docs/contracts/protocol-oteryn/v1/registry/command_types",
         "tools/architecture-check/client-fragment.schema.json",
         "tools/architecture-check/client-unsupported-baseline.json",
+        "tools/architecture-check/client-unsupported-baseline.d",
         "tools/architecture-check/src/client_fragments.rs",
         "tools/architecture-check/src/client_fragments",
     ] {

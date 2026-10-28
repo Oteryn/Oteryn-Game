@@ -36,7 +36,9 @@ build errors.
 
 The architecture command lists every server mechanic's status. All 62 initial
 mechanics are explicitly unsupported. Removing coverage or adding an
-unsupported mechanic beyond `client-unsupported-baseline.json` fails. As a
+unsupported mechanic beyond `client-unsupported-baseline.json` and
+`client-unsupported-baseline.d/<mechanic>.json` (one file per newer mechanic,
+content `{"mechanic": "<mechanic>"}`) fails. As a
 mechanic gains support, the guard requires removing its unsupported baseline
 entry in the same change, so it cannot regress. The baseline is a migration ceiling, not a
 second server registry.
