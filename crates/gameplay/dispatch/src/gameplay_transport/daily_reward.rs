@@ -253,6 +253,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(view) => view,
             Err(_) => return refusal(5),
         };
+        self.states
+            .resting_areas
+            .install(command.game_session_id, actor, view.streak);
         let Some(claim) = claim else {
             return wire::DailyRewardWall {
                 lane_day: view.lane_day,
@@ -334,12 +337,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
         {
-            Ok(DailyRewardClaimOutcome::Committed(receipt)) => wire::DailyRewardResult {
-                disposition: 1,
-                transaction_id: Some(receipt.transaction_id),
+            Ok(DailyRewardClaimOutcome::Committed(receipt)) => {
+                self.states.resting_areas.install(
+                    command.game_session_id,
+                    actor,
+                    receipt.streak_after,
+                );
+                wire::DailyRewardResult {
+                    disposition: 1,
+                    transaction_id: Some(receipt.transaction_id),
+                }
+                .encode()
+                .ok()
             }
-            .encode()
-            .ok(),
             Ok(DailyRewardClaimOutcome::AlreadyClaimed(_)) => refusal(2),
             Err(DailyRewardClaimError::BindingMismatch) => refusal(6),
             Err(DailyRewardClaimError::InvalidRequest) => refusal(3),

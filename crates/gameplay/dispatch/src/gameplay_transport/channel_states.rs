@@ -57,6 +57,7 @@ pub struct ChannelSessionStates {
     /// and resume. Never held across an await.
     pub quest_sessions: std::sync::Mutex<std::collections::HashMap<GameSessionId, QuestSession>>,
     pub(super) quest_callbacks: super::quest_callbacks::PendingCallbacks,
+    pub(super) resting_areas: super::resting_area::RestingAreaSessions,
     /// PARITY-EVENT-CALLBACKS-1: the currently due server-save countdown minute.
     pub(super) server_save: super::server_save_countdown::ServerSaveCountdownHub,
     /// VITALS-SOUL-1: the soul hook of each settled kill, applied on the killer's cadence.
