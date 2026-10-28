@@ -1277,6 +1277,9 @@ fn scenario_with_creature_charmed(
         while owner.drain_kill_rewards(session).await != DrainOutcome::Drained {
             drains += 1;
             assert!(drains < 8, "the queued kill settles");
+            // A deferral for want of an idle root connection (the pass `held` above went back
+            // to the pool) only records ready demand; run the window before the next drain.
+            owner.root.maintain_ready_once().await.map_err(debug)?;
         }
         assert!(
             !owner
