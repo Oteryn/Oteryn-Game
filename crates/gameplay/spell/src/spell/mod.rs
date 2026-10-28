@@ -30,6 +30,8 @@ pub mod food_regeneration;
 pub use oteryn_gameplay_content::content::spell_data::formula;
 pub mod harmony;
 #[cfg(test)]
+mod harmony_crystal_parity_tests;
+#[cfg(test)]
 mod harmony_tests;
 
 pub mod magnitude_owner;
