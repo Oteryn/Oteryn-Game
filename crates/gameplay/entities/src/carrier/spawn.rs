@@ -317,6 +317,33 @@ mod tests {
     }
 
     #[test]
+    fn warning_and_blocked_successor_match_crystal_spawn_timing() {
+        // Crystal 201189f8 `spawn_monster.hpp:110` / Canary 47dfd51f `spawn_monster.hpp:97`:
+        // the spawn warning is 3 x 1,400 ms before admission.
+        assert_eq!(SPAWN_WARNING_MICROS, 3 * 1_400_000);
+        // Crystal `spawn_monster.cpp:356-366`: a blocked blockable point restamps `lastSpawn`
+        // and waits one full interval.
+        let mut schedule = RespawnSchedule::default();
+        schedule.creature_gone(POINT, timing(true), 0).unwrap();
+        assert_eq!(
+            schedule.run_warning_step(POINT, timing(true), true, DELAY),
+            Ok(RespawnOutcome::Blocked {
+                successor_due_micros: 2 * DELAY
+            })
+        );
+        // DIFF (recorded, D115): Crystal `spawn_monster.cpp:376-378` spawns a blockable point
+        // with no player in view at once, with no warning; Oteryn warns first as for every point.
+        let mut schedule = RespawnSchedule::default();
+        schedule.creature_gone(POINT, timing(true), 0).unwrap();
+        assert_eq!(
+            schedule.run_warning_step(POINT, timing(true), false, DELAY),
+            Ok(RespawnOutcome::Warned {
+                admit_due_micros: DELAY + SPAWN_WARNING_MICROS
+            })
+        );
+    }
+
+    #[test]
     fn interest_blocks_a_blockable_point_with_a_successor_one_full_delay_later() {
         let mut schedule = RespawnSchedule::default();
         schedule.creature_gone(POINT, timing(true), 0).unwrap();

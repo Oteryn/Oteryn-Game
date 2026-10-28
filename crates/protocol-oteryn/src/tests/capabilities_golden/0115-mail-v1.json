@@ -13,7 +13,7 @@
   "supersedes": [],
   "offers": {
     "production": false,
-    "item_view": false,
-    "bundle_world": false
+    "item_view": true,
+    "bundle_world": true
   }
 }
