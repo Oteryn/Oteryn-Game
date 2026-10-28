@@ -65,15 +65,6 @@ fn scenario() -> TestResult {
             .movement_cells(deps.room.movement_cells())
             .map_err(debug)?;
         support::seed(&h, world.base().digest()).await?;
-        // DISCOVERY3: a character row authored by the v1 catalogue remains readable.
-        // The next mutating action rewrites its owner digest to the current v2 catalogue.
-        sqlx::query("INSERT INTO game_character_cyclopedia(character_id,bundle_digest,progress,occurrence,catalogue_digest) VALUES(encode($1,'hex')::uuid,$2,'{\"discovered\":false,\"exploration\":null}'::jsonb,encode($3,'hex')::uuid,$4)")
-            .bind(id(41).as_slice())
-            .bind(world.base().digest().as_slice())
-            .bind(id(91).as_slice())
-            .bind(crate::domain::cyclopedia::BasicArea::V1_CONTENT_DIGEST.as_slice())
-            .execute(&h.pool)
-            .await?;
         let pin = ChannelContentPin::from_activation(
             deps.admitted.world_id,
             1,
@@ -213,6 +204,8 @@ fn scenario() -> TestResult {
             return Err("start receipt".into());
         };
         assert_eq!(started, replay);
+        // DISCOVERY3: a character row authored by the v1 catalogue remains readable.
+        // The next mutating action rewrites its owner digest to the current v2 catalogue.
         sqlx::query("UPDATE game_character_cyclopedia SET catalogue_digest=$1")
             .bind(crate::domain::cyclopedia::BasicArea::V1_CONTENT_DIGEST.as_slice())
             .execute(&h.pool)
