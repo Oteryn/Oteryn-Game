@@ -385,7 +385,11 @@ fn lower(
             && (*delay != 0
                 || effects
                     .iter()
-                    .any(|e| !matches!(e, ResolvedEffect::Damage { .. })))
+                    .any(|e| !matches!(e, ResolvedEffect::Damage { .. })
+                        && !(matches!(spell.carrier, crate::spell::Carrier::Rune { item: 3165, .. })
+                            && matches!(e, ResolvedEffect::ResolvedOther { profile, .. }
+                                if profile.operation == "condition"
+                                    && profile.condition.as_ref().is_some_and(|c| c.kind == "paralyze")))))
     }) {
         return Err(SpellCastDisposition::TargetIllegal);
     }

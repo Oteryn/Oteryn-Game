@@ -123,6 +123,16 @@ fn target(
     original: UseIntent,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
 ) -> Result<(SpellTarget, LegacyRuneUse), UseDisposition> {
+    // docs/reference/spells/utility-runes-2026-10-29.md:10: a creature
+    // target must not turn into the movable item underneath that creature.
+    if original.use_with.is_some()
+        && matches!(
+            spell.carrier,
+            crate::spell::Carrier::Rune { item: 3178, .. }
+        )
+    {
+        return Err(UseDisposition::TargetIllegal);
+    }
     let caster = runtime
         .read_actor_position(actor)
         .map_err(|_| UseDisposition::Rejected)?;
@@ -144,6 +154,18 @@ fn target(
             .map(|c| EntityRef {
                 identity: a.placement_identity(),
                 generation: c.generation,
+            })
+            .or_else(|| {
+                matches!(
+                    spell.carrier,
+                    crate::spell::Carrier::Rune { item: 3165, .. }
+                )
+                .then(|| entities.players.iter().find(|p| p.actor == a))
+                .flatten()
+                .map(|p| EntityRef {
+                    identity: a.placement_identity(),
+                    generation: p.generation,
+                })
             })
     };
     let creature = if let Some(wanted) = original.use_with {
@@ -296,9 +318,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let spell = policy
                 .and_then(|p| p.record().production_binding.external_id.parse().ok())
                 .and_then(|id| self.spells.rune(id));
-            let Some(spell) = spell
-                .filter(|s| oteryn_gameplay_spell_rules::dispatch_plans::rune_use::direct_rune(s))
-            else {
+            let Some(spell) = spell.filter(|s| {
+                oteryn_gameplay_spell_rules::dispatch_plans::rune_use::direct_rune(s)
+                    || matches!(
+                        s.carrier,
+                        crate::spell::Carrier::Rune {
+                            item: 3165 | 3177 | 3178,
+                            ..
+                        }
+                    )
+            }) else {
                 if intent.use_with.is_none() && intent.use_with_position.is_none() {
                     return Some(
                         self.use_backpack_item(actor, command, ItemKey::Instance(instance))
@@ -311,7 +340,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !matches!(
                     spell.carrier,
                     crate::spell::Carrier::Rune {
-                        item: 3174 | 3188,
+                        item: 3165 | 3174 | 3177 | 3178 | 3188 | 3197,
                         ..
                     }
                 )

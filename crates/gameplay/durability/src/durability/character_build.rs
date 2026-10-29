@@ -494,7 +494,7 @@ pub(super) async fn apply_build_in_transaction(
     };
     let character = fence.character_id.as_bytes().as_slice();
     let state = sqlx::query(
-        "SELECT character_revision::text, profile_revision, ruleset_revision, \
+        "SELECT character_revision::text, level, profile_revision, ruleset_revision, \
                                 content_revision \
                            FROM game_character_progression_state \
                           WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
@@ -671,6 +671,28 @@ pub(super) async fn apply_build_in_transaction(
         .await?;
     if row.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
+    }
+    if request.cause == BuildCause::VocationChoice {
+        let level = u32::try_from(state.try_get::<i64, _>("level")?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
+            request.after.vocation(), level,
+            oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+            oteryn_protocol_oteryn::actor_spell::MAX_SOUL,
+        ).ok_or(DurabilityError::InvalidStoredState)?;
+        // Same transaction and replay boundary as the build receipt. No position row means
+        // admission already starts at maxima (0084); otherwise keep the cell/rest snapshot.
+        // Advance the projection order key so pre-choice captures cannot undo the refill.
+        sqlx::query(
+            "UPDATE game_character_last_positions SET health = $2, mana = $3, \
+             character_lease_generation = $4::text::numeric(20,0), write_sequence = write_sequence + 1 \
+             WHERE character_id = encode($1,'hex')::uuid \
+             AND character_lease_generation <= $4::text::numeric(20,0)"
+        ).bind(character)
+            .bind(i32::try_from(health).map_err(|_| DurabilityError::InvalidStoredState)?)
+            .bind(i32::try_from(mana).map_err(|_| DurabilityError::InvalidStoredState)?)
+            .bind(fence.character_lease_generation.to_string())
+            .execute(&mut **tx).await?;
     }
     if request.cause == BuildCause::Training && offline.after.stamina_minutes < offline.before.stamina_minutes {
         sqlx::query("SELECT game_hunting_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
