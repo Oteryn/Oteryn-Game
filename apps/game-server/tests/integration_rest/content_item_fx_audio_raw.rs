@@ -81,7 +81,8 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     batches.retain(|b| b.batch_id != raw::BATCH_ID);
     // #1807 adds 4 monster-full-mechanics batches and 4 crystal reimport states, measured.
     // #2546 adds the official creature-balance batch without reimport states.
-    assert_eq!(batches.len(), 31);
+    // #2673 adds the drown-protection item batch without reimport states.
+    assert_eq!(batches.len(), 32);
     assert_eq!(
         batches
             .iter()
@@ -91,7 +92,7 @@ fn existing_all_twenty_six_batches_preserved_idempotently_and_conflict_atomic() 
     );
     let prior = batches.clone();
     assert_eq!(raw::append(&mut batches), Ok(296));
-    assert_eq!(&batches[..31], prior.as_slice());
+    assert_eq!(&batches[..32], prior.as_slice());
     let once = batches.clone();
     assert_eq!(raw::append(&mut batches), Ok(0));
     assert_eq!(batches, once);
