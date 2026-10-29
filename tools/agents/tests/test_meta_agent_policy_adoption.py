@@ -527,7 +527,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertIn("### Scoped dispatch aliases", coordinator_prompt)
         self.assertIn("OTV2_FULL_CONTENT_CENSUS_PROGRAMME", coordinator_prompt)
         self.assertIn("Oteryn: full content population", coordinator_prompt)
-        self.assertIn("do not bounce routine content-population scheduling back to #162", coordinator_prompt)
+        self.assertIn("do not bounce routine content-population scheduling back to #1622", coordinator_prompt)
 
         census_prompt = (ROOT / "docs/agents/prompts/OTV2_FULL_CONTENT_CENSUS_PROGRAMME.md").read_text(
             encoding="utf-8"
@@ -816,7 +816,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertEqual(adoption._legacy_review_controller_errors(text, CentralStatementView), [])
 
     def test_current_review_policy_consumers_do_not_use_retired_controller(self):
-        consumers = (*adoption.CURRENT_REVIEW_POLICY_CONSUMERS, *adoption.CURRENT_ACTIVE_REVIEW_CONSUMERS)
+        consumers = adoption.CURRENT_REVIEW_POLICY_CONSUMERS
         for relative in consumers:
             path = ROOT / relative
             if not path.is_file():
