@@ -1,8 +1,8 @@
 # Mechanics status on main
 
-The 2026-10-27 table below is a snapshot and is no longer updated. The current per-element status is the [Crystal game-mechanics re-audit](../../architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md); a PR that changes a mechanic updates its row there.
+The 2026-10-27 table below is a snapshot and is no longer updated. The current per-element status is the [Crystal game-mechanics re-audit](../../architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md). A mechanic PR does not edit that ledger: one docs PR per wave updates the rows the wave changed, each with `file:line` evidence on `main`.
 
-Check here before writing or allocating a mechanic card; reuse the existing owners. Update the row in the PR that changes its state. A reachable slice does not mean the entire mechanic is complete: read **what remains** and the card's unchanged acceptance criteria.
+Check here before writing or allocating a mechanic card; reuse the existing owners. A reachable slice does not mean the entire mechanic is complete: read **what remains** and the card's unchanged acceptance criteria.
 
 Audited 2026-10-27 against local `main` at `dda5b9ff4f76cbf743f6fb58b4fd512059f2c93a`. Every evidence path below was opened in that tree. **RUNTIME** means a real client command/capability reaches a mechanic slice; **BACKEND** means a durable owner or pure rules/validated definitions exist without that mechanic's client path; **NONE** means no retained mechanic implementation. **SUPPORTED** means the native client can issue or consume the mechanic; **UNSUPPORTED-FRAGMENT** means its numbered client feature directory is only a registration/fixture placeholder; **NONE** means no client implementation. A codec, refusal stub, historical PR, unactivated candidate, or unsupported client fragment alone does not establish support. This is a repository snapshot, not live deployment or PR/CI authority.
 

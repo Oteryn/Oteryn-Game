@@ -127,7 +127,7 @@ This source is deliberately promoted to a **first-class bulk Reference data sour
 Access (2026-09-28): both wikis block page fetches from the containers (Cloudflare).
 
 - **TibiaWiki (Fandom):** read it through the MediaWiki API only (`https://tibia.fandom.com/api.php`), which answers the containers. Request the revision at the target date (`prop=revisions&rvprop=ids|timestamp|content&rvslots=main&rvstart=<target date>&rvdir=older`), batch up to 50 titles per request, and record page id and revision id. Never fetch `/wiki/` HTML pages.
-- **TibiaWiki BR:** the containers cannot reach it. Collect the pages a batch needs and fetch them in one run on a GitHub-hosted runner (as `wiki_br_capture.py` does). Do not retry from the session.
+- **TibiaWiki BR:** the containers cannot reach it. Collect the pages a batch needs and fetch them in one run on a GitHub-hosted runner (as the three capture tools do: `tools/content-schema/monster-authoring/wiki_br_capture.py` via `.github/workflows/monster-wiki-capture.yml`, `tools/content-schema/npc-authoring/wiki_br.py` via `.github/workflows/npc-tibiawiki-br-capture.yml` and `tools/content-schema/house-authoring/wiki_br_houses.py` via `.github/workflows/house-tibiawiki-br-capture.yml`). Do not retry from the session.
 - After one failed attempt, switch to the route above instead of retrying. Record a missing value as `UNKNOWN` with the unreachable source named.
 
 Use aggressively for high-volume static/semi-static content extraction:

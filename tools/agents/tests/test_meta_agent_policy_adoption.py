@@ -364,8 +364,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             "ChannelId",
             "session-generation",
             "repository-native GitHub APIs",
-            "Default ordinary Work authoring uses repository-native high-level API writes",
-            "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
+            "Default ordinary Work authoring uses local Git with the repository merge drivers",
+            "AUTHORING -> FREEZE_SHA -> VALIDATE -> squash merge -> post-merge gate",
             "Missing Git CLI, credentials or push capability is not a Remote Desktop reason",
             "explicitly return to AUTHORING before any further write",
         ):
@@ -377,12 +377,12 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         self.assertEqual(binding["authority_commit"], PUBLICATION_INTEGRITY_AUTHORITY)
         text = (ROOT / "docs/agents/AGENTS.md").read_text(encoding="utf-8")
         for value in (
-            "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
-            "Default ordinary authoring is repository-native high-level API mutation",
+            "AUTHORING -> FREEZE_SHA -> VALIDATE -> squash merge -> post-merge gate",
+            "Default ordinary authoring is local Git with the repository merge drivers",
             "After the final authoring write",
             "freeze that exact remote SHA",
             "explicitly return to AUTHORING before any further write",
-            "only then may high-level API writes create a successor head",
+            "only then may writes create a successor head",
             "Missing Git credentials or push capability must not trigger Remote Desktop",
             "Never treat ancestry-only `force=false` ref movement",
             "connector-compatible Git Data mode remains a special control-plane route",
@@ -393,8 +393,8 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
     def test_work_coordinator_preflights_mutating_execution_before_dispatch(self):
         root_text = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
         for value in (
-            "AUTHORING -> FREEZE_SHA -> VALIDATE -> MQ",
-            "Default ordinary Work authoring uses repository-native high-level API writes",
+            "AUTHORING -> FREEZE_SHA -> VALIDATE -> squash merge -> post-merge gate",
+            "Default ordinary Work authoring uses local Git with the repository merge drivers",
             "Missing Git CLI, credentials or push capability is not a Remote Desktop reason",
             "only the active control plane may select an API-native **new candidate** route permitted by the bound META policy",
         ):
