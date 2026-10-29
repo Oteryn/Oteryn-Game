@@ -47,6 +47,11 @@ mod tests {
                     Some([5, 0, 0, 0]),
                 )
                 .ok_or("admitted actor")?;
+            states
+                .get_mut(&runtime, actor, session)
+                .ok_or("actor")?
+                .apply_owner_premium_transition(true, Some(u64::MAX))
+                .map_err(|error| format!("{error:?}"))?;
             let projection = RestingAreaSessions::default();
             projection.install(session, actor, streak);
             let soul_before = states
@@ -54,15 +59,20 @@ mod tests {
                 .ok_or("actor")?
                 .vitals()
                 .soul;
-            for _ in 0..120 {
+            for second in 1..=120 {
                 let (_, soul_due) = projection.cadence(session, actor, true, true, 2520, 120);
-                states.apply_resting_regeneration(
-                    &runtime,
-                    actor,
-                    session,
-                    projection.streak(session, actor).ok_or("daily streak")?,
-                    soul_due,
-                );
+                let state = states.get_mut(&runtime, actor, session).ok_or("actor")?;
+                state.set_resting_streak(streak);
+                crate::spell::actor_conditions::tick(
+                    state,
+                    second * 1_000,
+                    oteryn_gameplay_foundation::foundation::condition::TickFacts {
+                        in_protection_zone: true,
+                        standing_on_field: None,
+                    },
+                )
+                .map_err(|error| format!("{error:?}"))?;
+                states.apply_resting_soul(&runtime, actor, session, soul_due);
             }
             let vitals = states
                 .get(&runtime, actor, session)
@@ -70,8 +80,8 @@ mod tests {
                 .vitals();
             assert_eq!((vitals.health, vitals.mana), expected, "streak {streak}");
             assert_eq!(vitals.soul, soul_before + u32::from(streak >= 7));
-            // Both source stamina intervals: 3 minutes up to 2340, then 6 minutes.
-            for (stamina, interval) in [(2340, 180), (2341, 360)] {
+            // The stamina model recovers the top three hours at six minutes per minute.
+            for (stamina, interval) in [(2339, 180), (2340, 360), (2341, 360)] {
                 projection.install(session, actor, streak);
                 for _ in 1..interval {
                     assert!(
