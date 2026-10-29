@@ -69,6 +69,7 @@ pub(super) async fn recover_retiring(
         "World reset record",
         material.config.boot_pass_deadline(),
         boot_step_retryable,
+        root_busy,
         || root.retiring_world_reset(material.world),
     )
     .await

@@ -1334,6 +1334,11 @@ fn boot_step_retryable(error: &crate::durability::DurabilityError) -> bool {
     )
 }
 
+/// Whether a boot step only found the single holder busy.
+const fn root_busy(error: &crate::durability::DurabilityError) -> bool {
+    matches!(error, crate::durability::DurabilityError::RootUnavailable)
+}
+
 /// [`boot_step_retryable`] for the Character authority open.
 fn character_authority_retryable(
     error: &crate::durability::character_authority::CharacterAuthorityError,
@@ -1359,6 +1364,7 @@ async fn with_retries<T, E, F, Fut>(
     step: &str,
     deadline: Duration,
     retryable: impl Fn(&E) -> bool,
+    busy: impl Fn(&E) -> bool,
     mut operation: F,
 ) -> Result<T, E>
 where
@@ -1385,7 +1391,20 @@ where
         event(&boot_step_retry_line(step, runs, &error));
         root.request_ready();
         let _ = root.maintain_ready_once().await;
-        backoff(&mut attempt).await;
+        if busy(&error) {
+            // The maintenance window waited its turn for the holder and returned it to idle:
+            // retry now, not after a backoff that a background pass outruns (NODEBOOT-1). If
+            // another pass took the holder again, retry when it is returned.
+            if !root.is_ready() {
+                let now = tokio::time::Instant::now();
+                let delay = retry_delay(attempt, None);
+                attempt = attempt.saturating_add(1);
+                root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + delay)
+                    .await;
+            }
+        } else {
+            backoff(&mut attempt).await;
+        }
     }
 }
 
@@ -1424,9 +1443,14 @@ async fn establish_custody(
     evidence: &FreshEvidenceSource,
 ) -> Result<(), BootError> {
     let deadline = material.config.boot_pass_deadline();
-    let stored = with_retries(root, "read", deadline, boot_step_retryable, || {
-        root.read_native_admission_source_registration()
-    })
+    let stored = with_retries(
+        root,
+        "read",
+        deadline,
+        boot_step_retryable,
+        root_busy,
+        || root.read_native_admission_source_registration(),
+    )
     .await
     .map_err(|_| BootError::SourceCustody("read"))?;
     match (stored, &material.s2) {
@@ -1448,9 +1472,14 @@ async fn establish_custody(
             };
             if let Err(error) = initialized {
                 // An initialization whose response was lost: compare exactly.
-                let after = with_retries(root, "initialize", deadline, boot_step_retryable, || {
-                    root.read_native_admission_source_registration()
-                })
+                let after = with_retries(
+                    root,
+                    "initialize",
+                    deadline,
+                    boot_step_retryable,
+                    root_busy,
+                    || root.read_native_admission_source_registration(),
+                )
                 .await
                 .ok()
                 .flatten();
@@ -1470,14 +1499,24 @@ async fn establish_custody(
         }
         (Some(_), None) => {}
     }
-    with_retries(root, "custody claim", deadline, boot_step_retryable, || {
-        root.claim_native_admission_source_custody(proof)
-    })
+    with_retries(
+        root,
+        "custody claim",
+        deadline,
+        boot_step_retryable,
+        root_busy,
+        || root.claim_native_admission_source_custody(proof),
+    )
     .await
     .map_err(|_| BootError::SourceCustody("custody claim"))?;
-    with_retries(root, "descriptor", deadline, boot_step_retryable, || {
-        root.register_native_admission_descriptor(proof, material.descriptor.clone())
-    })
+    with_retries(
+        root,
+        "descriptor",
+        deadline,
+        boot_step_retryable,
+        root_busy,
+        || root.register_native_admission_descriptor(proof, material.descriptor.clone()),
+    )
     .await
     .map_err(|_| BootError::SourceCustody("descriptor"))?;
     for attempt in 0..PENDING_RECONCILE_ATTEMPTS {
@@ -2488,6 +2527,7 @@ async fn boot_and_serve(
         "staff trust configuration",
         config.boot_pass_deadline(),
         boot_step_retryable,
+        root_busy,
         || root.configure_staff(config.staff.clone()),
     )
     .await
@@ -2510,6 +2550,7 @@ async fn boot_and_serve(
         "character authority open",
         config.boot_pass_deadline(),
         character_authority_retryable,
+        holder_busy,
         || root.open_character_authority(seal),
     )
     .await
@@ -3549,5 +3590,60 @@ mod tests {
         ];
         let unique: std::collections::BTreeSet<_> = codes.iter().collect();
         assert_eq!(unique.len(), codes.len());
+    }
+
+    /// NODEBOOT-1: a boot step retried by [`with_retries`] gets the holder although a
+    /// background pass takes it back within a millisecond of each return, as the boot-time
+    /// highscore, guild and market passes did before the custody claim.
+    #[test]
+    fn a_boot_step_gets_a_holder_that_background_passes_keep_busy()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{self as fixture, Harness};
+        let Some(admin) = fixture::configured_admin() else {
+            return Ok(());
+        };
+        fixture::runtime()?.block_on(async {
+            let harness = Harness::create(admin, "boot_step_busy_holder", true).await?;
+            let root = harness.root.clone();
+            let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let background = tokio::spawn({
+                let root = root.clone();
+                let stop = std::sync::Arc::clone(&stop);
+                async move {
+                    while !stop.load(std::sync::atomic::Ordering::Acquire) {
+                        if let Ok(pass) = root.try_issue_semantic_pass() {
+                            let _ = pass
+                                .run(|_holder, _deadline| {
+                                    Box::pin(async {
+                                        tokio::time::sleep(Duration::from_millis(300)).await;
+                                        Ok(())
+                                    })
+                                })
+                                .await;
+                        }
+                        tokio::time::sleep(Duration::from_millis(1)).await;
+                    }
+                }
+            });
+            tokio::time::sleep(Duration::from_millis(20)).await;
+            let result = with_retries(
+                &root,
+                "busy holder",
+                Duration::from_secs(2),
+                boot_step_retryable,
+                root_busy,
+                || async {
+                    root.try_issue_semantic_pass()?
+                        .run(|_holder, _deadline| Box::pin(async { Ok(()) }))
+                        .await
+                },
+            )
+            .await;
+            stop.store(true, std::sync::atomic::Ordering::Release);
+            background.await?;
+            harness.cleanup().await?;
+            assert!(result.is_ok(), "{result:?}");
+            Ok(())
+        })
     }
 }
