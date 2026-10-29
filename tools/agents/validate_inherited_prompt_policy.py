@@ -33,9 +33,6 @@ RETIRED_REVIEW_CONTROLLER_RE = re.compile(
 CURRENT_REVIEW_POLICY_CONSUMERS = (
     "docs/agents/OWNER_FUNDED_AI_POLICY.md",
 )
-CURRENT_ACTIVE_REVIEW_CONSUMERS = (
-    "docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md",
-)
 
 
 def _request(url: str, *, timeout: float = 30.0) -> object:
@@ -355,12 +352,8 @@ def validate() -> list[str]:
             policy=policy,
         ))
         prompt_paths = _reusable_prompt_paths(lifecycle)
-        present_active_review_consumers = (
-            relative for relative in CURRENT_ACTIVE_REVIEW_CONSUMERS
-            if (ROOT / relative).is_file()
-        )
         review_consumers = dict.fromkeys(
-            (*prompt_paths, *CURRENT_REVIEW_POLICY_CONSUMERS, *present_active_review_consumers)
+            (*prompt_paths, *CURRENT_REVIEW_POLICY_CONSUMERS)
         )
         for relative in prompt_paths:
             prompt_errors = central.validate_task_prompt_text(

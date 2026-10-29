@@ -27,7 +27,7 @@ For ordinary same-repository PR events targeting a prepared branch, this workflo
 
 `Oteryn-v2` is a public repository. GitHub push rulesets are available for private/internal repositories (and eligible fork networks), not for an ordinary public repository. A push ruleset also applies repository-wide and therefore does not use branch `ref_name` targeting. The failed post-merge run after PR #238 proved this platform boundary when GitHub rejected the attempted public push ruleset.
 
-For the current public repository the policy strategy is **`explicit_owner_authorization_plus_merge_queue`** (`control_plane_protection` in `.github/repository-policy.json`). GitHub does not enforce Code Owner review; a control-plane change needs the owner's explicit authorization for that exact change, recorded on the coordination Issue, a green `Merge authority audit` on the exact head, and the Merge Queue. The base-branch `.github/CODEOWNERS` records the owner of the control-plane paths:
+For the current public repository the policy strategy is **`explicit_owner_authorization_plus_squash_pull_request`** (`control_plane_protection` in `.github/repository-policy.json`). GitHub does not enforce Code Owner review; a control-plane change needs the owner's explicit authorization for that exact change, recorded on the coordination Issue, a green `Merge authority audit` on the exact head, and a squash merge of the pull request (the merge queue is off, owner decision PR #2319). The base-branch `.github/CODEOWNERS` records the owner of the control-plane paths:
 
 - `.github/CODEOWNERS` itself;
 - `.github/workflows/`;

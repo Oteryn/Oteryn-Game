@@ -127,6 +127,6 @@ and the per-entry audit reports. Production activation remains false.
 
 Task: `OTV2-20261002-spell-import-r22`.
 
-## Source-closure reference data (r27, r28)
+## Source-closure reference data (r28; r27 removed)
 
-`r27-source-closure/` and `r28-source-closure/` are reference evidence only. They hold source-first spell and monster closure data generated from Canary and Crystal sources, captured in #1755 and landed here byte-identical to that head. They grant no runtime admission, define no gameplay and are not Game truth; each directory's own README describes its contents and limits.
+`r28-source-closure/` is reference evidence only; the earlier `r27-source-closure/` was removed because r28 supersedes it (regenerated at later pins, not byte-identical), and it can be recovered with `git show 329f78f8:docs/reference/spells/r27-source-closure/<path>`. It holds source-first spell and monster closure data generated from Canary and Crystal sources, captured in #1755 and landed here byte-identical to that head. It grants no runtime admission, defines no gameplay and is not Game truth; its own README describes its contents and limits.

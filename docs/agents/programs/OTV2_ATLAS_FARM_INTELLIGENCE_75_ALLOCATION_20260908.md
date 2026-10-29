@@ -89,7 +89,7 @@ The future sole #75 worker may own only these paths:
 docs/contracts/OTERYN_GAME_ATLAS_FARM_INTELLIGENCE_V1.md
 tools/game-atlas-farm-intelligence/**
 docs/agents/tasks/active/OTV2-20260908-atlas-farm-intelligence-75.md
-docs/superpowers/plans/2026-09-08-atlas-farm-intelligence-75.md
+removed 2026-10-29; see `git show 329f78f8:docs/superpowers/plans/2026-09-08-atlas-farm-intelligence-75.md`
 ```
 
 The new tool subtree includes its producer, validator, focused tests and bounded generated test fixtures only. It does not include another repository's data or proprietary/publication-forbidden assets.
