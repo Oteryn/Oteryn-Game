@@ -25,6 +25,12 @@ fn hunting_stamina_postgres_logout_login_preserves_pending_minutes() -> TestResu
             states.load_stamina(&runtime,deps.actor,deps.admitted.game_session_id,2520);
             states.hunting_activity(&runtime,deps.actor,deps.admitted.game_session_id,0);
             states.hunting_activity(&runtime,deps.actor,deps.admitted.game_session_id,60_000_000);
+            // docs/reference/hunting-stamina.md:15-17: activity without kill XP spends no stamina.
+            assert_eq!(states.live_stamina(deps.actor,deps.admitted.game_session_id),Some(2520));
+            assert!(!states.stamina_to_flush(deps.actor,deps.admitted.game_session_id));
+            states.hunting_experience(&runtime,deps.actor,deps.admitted.game_session_id,60_000_000);
+            assert_eq!(states.live_stamina(deps.actor,deps.admitted.game_session_id),Some(2519));
+            assert!(states.stamina_to_flush(deps.actor,deps.admitted.game_session_id));
         }
         assert_eq!(h.root.read_hunting_stamina(&authority,character).await.map_err(debug)?,2520);
         assert_eq!(owner.logout_session(deps.admitted).await,
