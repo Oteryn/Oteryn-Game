@@ -86,6 +86,24 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             };
             self.checkpoint_timed_equipment(actor, session, false).await;
         }
+        let converters: Vec<GameSessionId> = {
+            let mut active = self.states.timed_items.magic_converters.lock().await;
+            active.retain(|session, _| present.contains(session));
+            active.keys().copied().collect()
+        };
+        for session in converters {
+            let Some(_permit) = self.spell_lane_permit().await else {
+                return;
+            };
+            if !self.tick_magic_converter(session).await {
+                self.states
+                    .timed_items
+                    .magic_converters
+                    .lock()
+                    .await
+                    .remove(&session);
+            }
+        }
     }
 
     /// Caller holds the spell lane. Pending ambiguous requests retain their identity and

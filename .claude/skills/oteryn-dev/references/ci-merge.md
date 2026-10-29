@@ -6,9 +6,9 @@ authorised; this file only says how the flow behaves.
 ## How the gate works now
 
 - `game-gate` (from `.github/workflows/merge-gate.yml`) is the only required
-  check. It is an aggregator: it turns red within seconds when any selected
-  sub-job fails. Never diagnose `game-gate` or `Merge gate / validate`; open
-  the failing leaf job.
+  check. It is an aggregator that turns red within seconds when any selected
+  sub-job fails, so the cause is always in the failing leaf job: open that,
+  not `game-gate` or `Merge gate / validate`.
 - There is no merge queue (owner decision, since 2026-10-23). `merge-group-gate.yml`
   ("Game Merge Queue gate") runs on **push to main** after every merge: full
   workspace tests, every PostgreSQL lane, Windows client, node boot, Server
@@ -35,9 +35,7 @@ authorised; this file only says how the flow behaves.
 touches node startup, stack size, the dispatch runtime, integration tests,
 or `content/` and `imports/` (the integration tests count their files) must
 run the matching tests locally (`local-checks.md`) because CI will
-only report them once `main` is already red. In the week after the queue
-was switched off, about 9 in 10 post-merge runs failed, almost all on
-these three jobs.
+only report them once `main` is already red.
 
 ## Merge conditions
 
@@ -57,8 +55,11 @@ A PR is mergeable when all of these hold on its **current** head SHA:
 2. For a game-server change: all six PostgreSQL partitions green on that same
    head (root `AGENTS.md`: merge only a head whose own CI is green, the
    PostgreSQL legs included). The one exception is the owner's grouping
-   decision: a member of a batch PR whose six partitions are green on the
-   same `main`, with its own `game-gate` green.
+   decision (2026-10-29, also stated in root `AGENTS.md`): a member of a batch
+   PR whose six partitions are green on the same `main`, with its own
+   `game-gate` green, merged right after the other members with no other
+   game-server merge in between (so the final `main` is the tree the batch
+   tested).
 3. Changes whose paths select no PostgreSQL leg (client, docs, tools/CI,
    test-only fixes of `main`) need only (1); their own CI is then complete.
 
@@ -83,16 +84,17 @@ Any output is a P0 for the PR that merged second.
    If yes, it is not this PR's. Land the main fix first and then merge
    `origin/main` into the waiting PRs; say so once on each PR. Port the fix
    into a branch only when that branch must merge before the fix can, and then
-   as an exact cherry-pick of the fix commit. In October 2026 single fixes were
-   re-committed by hand into up to 15 PRs each (68 duplicate commits in 300
-   PRs); each copy costs a CI cycle and a later conflict. Before writing a new main fix, search the open PRs and recent
-   branches for one that already exists (title, changed file, the constant or
-   test name); a second PR for the same fix wastes a CI cycle and conflicts
-   with the first.
+   as an exact cherry-pick of the fix commit; a hand-made copy costs a CI cycle
+   and a later conflict in every PR it lands in. Before writing a new main
+   fix, search the open PRs and recent branches for one that already exists
+   (title, changed file, the constant or test name), and claim it in the
+   coordinator's STATE so nobody writes a second copy.
 4. Otherwise it is this PR's failure. Common causes, in the order they show
    up in this repo's history:
-   - `main` moved (by far the most common): merge `origin/main` and rebuild
-     before reading anything else.
+   - `main` moved under the PR (by far the most common): CI tests the PR
+     merged with `main`, so something `main` added breaks it. Merge
+     `origin/main`, rebuild and reproduce before reading anything else; this
+     is one of the merges *Before every push* allows.
    - Migration, capability or command number taken on `main` in the meantime:
      renumber yours (`mechanic.md`, *Before writing code*).
    - Stale content pins or digests (`pin-check`), see `content-world.md`.
@@ -119,10 +121,27 @@ python3 tools/content-migration/regenerate_content.py --resolve   # = tools/merg
   driver has produced duplicates before.
 - Generated files (world pins, digests, derived registries) are regenerated,
   never hand-merged or hand-edited.
-- Never rebase, amend or force-push a shared branch. A merge commit keeps
-  every other checkout valid.
+- Bring `main` in with a merge commit: it keeps every other checkout valid.
 - Only a real edit-versus-edit conflict in hand-written logic stops for a
   person.
+
+## Before every push
+
+A red or cancelled run costs a full gate cycle (about 12 minutes) and, with
+`heavy-tests`, about 30 more.
+
+- Run the fast checks the gate runs, locally, on the exact tree you will push:
+  `cargo fmt --all --check`, strict Clippy and the unit tests of every changed
+  crate, plus the content and pin regeneration when you touched content
+  (`local-checks.md` has the commands).
+- Push once, when all of them pass. Collect follow-up fixes into the next push
+  instead of pushing each one; a new push cancels the run in progress.
+- Merge `origin/main` into the branch only when it conflicts, when the PR is
+  red because `main` moved (*Reading a red check*), or once right before it is
+  labelled `heavy-tests` or goes into a batch; not after every merge to
+  `main`. Check for conflicts without merging:
+  `git merge-tree --write-tree origin/main HEAD` (non-zero exit = conflict).
+- Compile and test locally; CI confirms, it does not explore.
 
 ## Many PRs at once
 
@@ -130,9 +149,11 @@ python3 tools/content-migration/regenerate_content.py --resolve   # = tools/merg
   PR waits longer.
 - Several finished mechanics that each touch game-server code: open one batch
   PR that merges their heads onto a fresh `main` (try the merge locally
-  first), label only the batch `heavy-tests`, and merge the members one by one
-  once the batch is green on that same `main`. Then close the batch.
-- After each merge to `main`, check every open PR for a new conflict before
-  doing anything else; a PR that conflicts gets no CI.
-- Never leave a red or conflicted PR you own without either a pushed fix or
-  one comment naming the failing check and what blocks it.
+  first), label only the batch `heavy-tests`, and once it is green merge the
+  members one by one, back to back (*Merge conditions*, 2). Then close the
+  batch.
+- After each merge to `main`, check every open PR for a new conflict with
+  `git merge-tree` before doing anything else, and fix only real conflicts; a
+  PR that conflicts gets no CI.
+- Every red or conflicted PR you own gets either a pushed fix or one comment
+  naming the failing check and what blocks it.

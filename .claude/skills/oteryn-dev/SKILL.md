@@ -1,6 +1,6 @@
 ---
 name: oteryn-dev
-description: How work lands in Oteryn-Game - from claiming migration/capability/command numbers and building a Tibia mechanic, through local cargo/clippy/PostgreSQL/pin checks, to CI, merge conflicts, batch PRs and merging, plus delegating slices to Codex or subagents. Use for any implementation, fix, review, push, CI or merge work in this repository, including a red game-gate, a pin-check or digest failure, a migration-number clash, a conflicted PR, or writing a packet for another agent, even when the request names none of these.
+description: Router for landing a change in Oteryn-Game - the path from task card to merge, the rules that hold at every step, claiming migration/capability/command numbers, building a mechanic's file set, local checks, pins, CI, conflicts, batches and merging, and which other oteryn skill to load. Load first for any change to this repository, including a red game-gate, a pin-check failure, a number clash or a conflicted PR.
 ---
 
 # Landing work in Oteryn-Game
@@ -11,56 +11,70 @@ authorised (root `AGENTS.md`, *Repository boundaries*). Machine contracts win
 over this text (`docs/agents/BUILD_TEST_MATRIX.md`, *Machine authority*); if
 they disagree, fix this skill in the same change.
 
+## The skills and when to load them
+
+| skill | load when |
+|---|---|
+| `oteryn-dev` (this) | any change: the path below, the rules, the scripts |
+| `oteryn-coding` | before writing Rust, SQL or test code |
+| `oteryn-debugging` | something fails or misbehaves, before a fix |
+| `oteryn-review` | before landing or marking ready; when review findings arrive |
+| `oteryn-verify` | before any claim: done, fixed, green, mergeable |
+| `oteryn-waves` | planning more than one change, delegating, landing a batch |
+
 ## The path of one change
 
 | Step | What | Read |
 |---|---|---|
+| 0 | Find the code: locate with `rg`, read line ranges, delegate wide searches | `references/navigation.md` |
 | 1 | Task card, nearest `AGENTS.md`, reference rules | `references/content-world.md` (*Reference sources*) |
-| 2 | Claim migration / capability / command / offer numbers against `main` **and open PRs** | `references/mechanic.md` |
-| 3 | Implement; new capability file set, migrations, tests in mounted dirs | `references/mechanic.md` |
-| 4 | Content, imports or pins touched: regenerate, pin-check | `references/content-world.md` |
-| 5 | Merge `origin/main`, then local checks for the changed paths | `references/local-checks.md` |
-| 6 | PR from the template with a parity table; DONE or a named PARTIAL | `references/mechanic.md` (*The PR*) |
-| 7 | CI, red checks, conflicts, `heavy-tests`, batch PRs, merge | `references/ci-merge.md` |
-| - | Handing a slice to Codex or a subagent, or taking a diff back | `references/delegation.md` |
+| 2 | Claim migration / capability / command / offer numbers against `main` **and open PRs** | `references/mechanic.md`, `scripts/next-free-numbers.py` |
+| 3 | Write the check that goes red, then the code; capability file set, migrations, tests in mounted dirs | `oteryn-coding`, `references/mechanic.md` |
+| 4 | Content, imports or pins touched: regenerate, pin-check, integration counts | `references/content-world.md` |
+| 5 | Local checks for the changed paths, including jobs CI runs only after the merge | `references/local-checks.md` |
+| 6 | Review your own diff; PR from the template with a parity table; DONE or a named PARTIAL | `oteryn-review`, `references/mechanic.md` (*The PR*) |
+| 7 | One push; CI, red checks, conflicts, `heavy-tests`, batch, merge | `references/ci-merge.md` |
 
 Read only the reference for the step you are on. Step 5 is never skipped:
 a push without it usually costs a full CI cycle and a second push.
 
+A worker running from a packet (`.claude/agents/`, Codex, a child session)
+does steps 0-6 and the push its packet allows, then reports; step 7 belongs
+to the coordinator.
+
 ## Rules that hold at every step
 
-These are stated once here; the references do not repeat them.
+The references point here instead of repeating these.
 
-- A mechanic is DONE only as the mechanics ledger defines it (the file
-  `docs/agents/tasks/MECHANICS_STATUS.md` points to); rules, storage, caller,
-  wire command, client registration and tests are the checklist. Anything
-  less is "slice done" / PARTIAL. Count progress from the ledger's totals and
-  update its row in the PR that changes it.
-- One mechanic = one branch = one PR.
-- Never skip, `#[ignore]`, weaken, quarantine or delete a test to get green.
-- Never hand-edit a generated pin, digest or derived registry; regenerate it.
-- Never edit a merged migration; fix forward with a new one.
-- Never rebase, amend or force-push a shared branch, push an empty commit, or
-  close and reopen a PR to start CI. Re-run a job at most once, and only for
-  an infrastructure death or a known lock-timeout signature
-  (`references/ci-merge.md`).
-- A green check on an older head says nothing about the current head.
-- Edit `.github/workflows/**`, `.github/repository-policy.json` or
-  `tools/repository/**` only with the owner's consent for that change.
-- Never read or print credentials, tokens, `.env` files or a database URL
-  (`set +x` before exporting one in a script).
-- Never connect to or probe CipSoft game or login servers, and never bypass
-  a site's protections (captcha, Cloudflare, login, spoofed user agent).
-- No new third-party dependency without the custody review its `Cargo.toml`
-  change triggers.
-- Large data JSON under `content/`, `imports/`, `docs/agents/evidence/` is
-  often one multi-megabyte line: locate with `rg -l`, extract with `jq` or
-  Python, never print it.
-- Evidence and scratch output stay out of git when they are larger than a
-  few MB or are archives (`*.tar.gz`): `docs/agents/` already holds about
-  540 MB, and every clone and cloud session pays for it.
-- Another agent's report is a claim; re-run its validation before it reaches
-  a branch.
+- A mechanic is DONE as the mechanics ledger defines it (the file
+  `docs/agents/tasks/MECHANICS_STATUS.md` points to); anything less is
+  "slice done" / PARTIAL. Report progress from the ledger's totals. Mechanic
+  PRs leave the ledger alone; one docs PR per wave updates its rows (owner
+  decision, 2026-10-29; `references/mechanic.md`).
+- One mechanic = one branch = one PR, merged when DONE; the one exception is
+  an `a`/`b` split (`references/mechanic.md`).
+- Tests stay as strict as they were: a red test is fixed, not skipped,
+  ignored, quarantined, loosened or deleted.
+- Generated pins, digests and derived registries are regenerated by their
+  generator (`references/content-world.md`).
+- A merged migration is history: fix forward with a new one.
+- Shared branches only move forward by new commits; CI starts from a real
+  push. Re-run a job at most once, and only for an infrastructure death or a
+  known lock-timeout signature (`references/ci-merge.md`).
+- A green check counts for the head SHA it ran on, nothing else.
+- `.github/workflows/**`, `.github/repository-policy.json` and
+  `tools/repository/**` change only with the owner's consent for that change.
+- Credentials, tokens, `.env` files and database URLs stay unread and
+  unprinted (`set +x` before exporting a URL in a script).
+- CipSoft game and login servers are off limits, and so is getting around any
+  site's protections (captcha, Cloudflare, login, spoofed user agent).
+- A new third-party dependency goes through the custody review its
+  `Cargo.toml` change triggers.
+- Read line ranges, not files (`references/navigation.md`).
+- Evidence and scratch output larger than a few MB, and archives
+  (`*.tar.gz`), stay out of git; every clone and cloud session pays for them.
+- Claims need fresh evidence (`oteryn-verify`); another agent's report is a
+  claim.
 
 ## Scripts
 

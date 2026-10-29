@@ -2,28 +2,34 @@
 
 ## What "done" means
 
-A mechanic is **DONE** only when every element it is made of is done: rules,
-durable storage, the in-game caller that reaches it, the wire command, the
-client registration and tests that exercise each of those. A slice that ships
-rules without a caller, or a command nobody can send, is **PARTIAL**. Say
-"slice done", never "mechanic complete", until every element is done, and
-count mechanics, not PRs, when reporting progress.
-
 The progress ledger is the file `docs/agents/tasks/MECHANICS_STATUS.md` points
 to in its first paragraph (on 2026-10-29: the Crystal re-audit,
-`docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md`, with
-rows marked `DONE`, `PARTIAL`, `MISSING`, `OWNER-EXCLUDED`, `OUT-OF-SCOPE`).
-Follow that pointer rather than a remembered path: the ledger has moved once
-already, and the 2026-10-27 table in `MECHANICS_STATUS.md` is now a frozen
-snapshot. Use the ledger's own words and definitions so reports and the table
-agree, report progress from its totals line, and update the mechanic's row in
-the PR that changes its state. The element list above is the checklist for
-reaching the ledger's `DONE`, not a second definition.
+`docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md`, rows
+`DONE`, `PARTIAL`, `MISSING`, `OWNER-EXCLUDED`, `OUT-OF-SCOPE`). Follow the
+pointer, not a remembered path: the ledger has moved before. Its definitions
+are the only ones: a row is `DONE` when a production path and relevant tests
+exist for the bounded slice the row names, with no missing connection; it
+does not require a native-client UI. Anything less is `PARTIAL`: say "slice
+done", count mechanics rather than PRs, and report from the ledger's totals
+line.
 
-- One mechanic = one branch = one PR. Merge it when the mechanic is DONE.
-- Partial work stays on a branch without a PR. A PARTIAL slice gets a PR only
-  when the owner asked for that slice; its title and parity table say PARTIAL
-  and name the missing elements.
+To reach `DONE`, check that the row's slice has each element it needs: rules,
+durable storage, the in-game caller that reaches it, the wire command, and
+tests that exercise them. Client registration belongs to the slice only when
+the row names client behaviour.
+
+Mechanic PRs do not edit the ledger, because every one of them would conflict
+on it: after each wave one docs PR updates the wave's rows with donor and
+Oteryn file:line evidence (owner decision, 2026-10-29). A keyword grep is not
+evidence.
+
+- One mechanic = one branch = one PR, merged when the mechanic is DONE.
+- Exception (owner decision, 2026-10-29): a mechanic that needs more than one
+  migration, or server and client together, splits into `a` then `b`. Slice
+  `a` merges as a named PARTIAL (title and parity table say PARTIAL and name
+  what `b` adds); `b` starts from `main` after `a` merges, never stacked.
+- Any other partial work stays on a branch without a PR, unless the owner
+  asked for that slice.
 - Behaviour must match the reference (`content-world.md`, *Reference
   sources*). Record every rule in the PR's parity table with its source, and
   write `N/A` with a reason for rows that do not apply.
@@ -51,8 +57,9 @@ reaching the ledger's `DONE`, not a second definition.
 3. Check that the selected-capability capacity still has room
    (`SELECTED_CAPACITY` in
    `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs`) counting
-   the capabilities of open PRs too. It has been raised again and again
-   (32, 64, 112, 120: CAPCAP-1, CAPCAP-2); if it is full, search open PRs for
+   the capabilities of open PRs too. It has been raised several times
+   (32, 64, 112: CAPCAP-1, CAPCAP-2; a raise to 120, #2685, closed unmerged);
+   if it is full, search open PRs for
    a pending raise and depend on it instead of opening another one.
    `SELECTED_CAPACITY` must stay below `MAX_CAPABILITY_COUNT`
    (`crates/protocol-oteryn/src/lib.rs`, 128 at the time of writing); when a
@@ -90,16 +97,15 @@ command touches these and nothing shared:
 
 ## Migrations
 
-- One new file `apps/game-server/migrations/<NNNN>_<name>.sql`. Never edit a
-  merged migration; fix forward with a new one.
+- One new file `apps/game-server/migrations/<NNNN>_<name>.sql`.
 - Every new table:
   ```sql
   REVOKE ALL ON <table> FROM PUBLIC;
   GRANT SELECT, INSERT, UPDATE ON <table> TO oteryn_game_runtime;   -- DELETE only if the owner deletes rows
   GRANT SELECT ON <table> TO oteryn_game_control;
   ```
-- Extend an existing guard chain function instead of replacing it; keep the
-  migration re-runnable and use NULL-safe comparisons (`IS DISTINCT FROM`).
+- How to write the SQL itself (guard chains, NULL-safe comparisons, locks,
+  indexes): `oteryn-coding`, *PostgreSQL and migrations*.
 
 ## Tests without shared-file edits
 
@@ -113,32 +119,12 @@ Put new test files in the auto-mounted directories (root `AGENTS.md`,
 Do not add a new `tests/*_postgres.rs` target. A PostgreSQL case returns
 `Ok(())` when `OTERYN_TEST_POSTGRES_ADMIN_URL` is absent.
 
-A test must exercise the change: it fails on the tree before your change and
-reaches the code path you added (a PostgreSQL test that never calls the new
-query proves nothing). Record golden count changes explicitly; never loosen
-an assertion to fit.
+Record golden count changes explicitly in the PR.
 
-## Code rules that CI and review keep catching
+## Code and test rules
 
-- Read actor state only through its owner under the runtime lock, and re-prove
-  the exact actor and session generation before writing (`session-generation`
-  fencing).
-- Best-effort enrichment (boosts, statistics, cosmetics) never fails movement
-  or combat; fail closed only on authority.
-- A refused path rolls back what it started (inventory full, a pending
-  exchange cancelled).
-- No `expect`/`unwrap` in production code. An unwired rules slice carries the
-  `dead_code` allowance with a reason, and its PR says PARTIAL.
-- Insert registrations in sorted position, never at the end of a file.
-- A test that drives a full connection, dispatch scenario or PostgreSQL case
-  runs on a dedicated thread with at least a 64 MiB stack
-  (`std::thread::Builder::new().stack_size(64 << 20)`), as about 80 test files
-  already do. Default-stack overflows in CI were fixed one by one (the
-  FLOOR-STACK-1 fix was copied into 8 PRs) and show up only on some runners.
-- Tests never depend on wall-clock timing: drive timers with paused or
-  virtual time, wait on an explicit readiness signal instead of a sleep, and
-  treat a busy durable holder as retryable. DEFLAKE-1..4 (2026-10-29) and the
-  field-runes barrier fixes (copied into 15 PRs) were all this.
+How to write the code and its tests (scope, Rust, async, PostgreSQL, stack
+size, timing) is the `oteryn-coding` skill; load it before writing code.
 
 ## The PR
 
@@ -146,10 +132,10 @@ an assertion to fit.
   five validation checkboxes verbatim, and add a `## Parity table` section.
 - Validation lists what actually ran, with pass counts; unchecked boxes say
   why.
-- Before the first push: merge current `origin/main`, then run the local checks
-  (`local-checks.md`). Add the `heavy-tests` label only when the mechanic is
-  DONE (`ci-merge.md`).
+- Before the first push run the local checks (`local-checks.md`); merge
+  `origin/main` only as *Before every push* in `ci-merge.md` says. Add the
+  `heavy-tests` label only when the mechanic is DONE (`ci-merge.md`).
 - Never edit the PR body after opening it; post the tested head SHA and any
   changed validation as a comment.
-- A mechanic PR that changes a row's state carries the ledger update
-  (*What "done" means*).
+- The PR description names the ledger row it moves and to which state, so the
+  wave's docs PR can collect it (*What "done" means*).

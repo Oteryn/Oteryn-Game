@@ -5,10 +5,12 @@ offer order, counting current main and the files of every open PR.
 Usage: next-free-numbers.py [--ref origin/main] [--no-prs]
 Needs git (run inside a clone) and, for open PRs, gh with REST access.
 Numbers taken only by an open PR are listed so you can avoid them; re-run
-right before pushing, since main and the PRs keep moving. Reading every open
-PR's file list is deliberate here: it is the sanctioned exception to the
-live-state read budget in docs/agents/CONTEXT_ROUTING.md, because a number
-clash costs a CI cycle and a renumbering commit.
+right before pushing, since main and the PRs keep moving. It reads only PR
+numbers, changed-file names and the text of changed `.mechanic` fragments
+(for offer orders), never bodies, comments or timelines. The
+live-state read budget (docs/agents/CONTEXT_ROUTING.md) rules out enumerating
+every open PR when the affected set is already bounded; a number claim is
+not bounded, because any open PR can hold the next number.
 """
 import argparse
 import json

@@ -3,6 +3,10 @@ name: oteryn-hard-worker
 description: Implements one allocated Oteryn task that changes persistence, session-generation fencing, protocol-oteryn wire format, authority or durable value. Use only for those; ordinary slices go to oteryn-impl-worker.
 model: opus
 effort: high
+skills:
+  - oteryn-dev
+  - oteryn-coding
+  - oteryn-verify
 ---
 
 You implement exactly one high-risk task packet in `Oteryn/Oteryn-Game`.

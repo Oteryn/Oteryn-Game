@@ -16,7 +16,7 @@ name: PR PostgreSQL harness
 # once into two nextest archives (the registered E2E targets and the
 # PostgreSQL-backed library tests); the partition jobs only download the
 # archives and run them against PostgreSQL, so nothing is compiled twice and
-# the six count partitions together run every test exactly once.
+# the six planned partitions together run every test exactly once.
 #
 # OTERYN_SELF_HOSTED_PG=on runs the six partitions on the Molehill runners
 # against a throwaway native PostgreSQL 18 cluster per job instead of the
@@ -289,7 +289,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-    # Each partition runs a disjoint count slice of both archives; together the six run every test once.
+    # Each partition runs a disjoint planned share of both archives; together the six run every test once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
       fail-fast: false
@@ -496,9 +496,13 @@ jobs:
           test "$(git -C "$PG_SOURCE" rev-parse HEAD)" = "$EXPECTED_SHA"
           test "$("$PG_RUN" git -C "$PG_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      # The partition is taken from the matrix position and size, so the slices always cover the
-      # whole archive whatever the matrix length; the label must agree with the position.
-      - name: Resolve partition
+      # Count slices leave a few multi-minute tests wherever their names fall, so one partition ran
+      # twice as long as another. Every partition lists both archives and computes the same plan:
+      # tests by estimated duration, longest first, each to the least-loaded partition. Each listed
+      # test lands in exactly one partition whatever the estimates say; a stale estimate only costs
+      # balance. The partition is the matrix position and size, so the plan covers the whole
+      # archive whatever the matrix length; the label must agree with the position.
+      - name: Plan partition
         id: partition
         env:
           LABEL: ${{ matrix.partition }}
@@ -508,24 +512,89 @@ jobs:
           set -euo pipefail
           [[ "$JOB_INDEX" =~ ^[0-9]+$ && "$JOB_TOTAL" =~ ^[1-9][0-9]*$ ]]
           test "$LABEL" = "$((JOB_INDEX + 1))"
-          echo "spec=count:$((JOB_INDEX + 1))/${JOB_TOTAL}" >> "$GITHUB_OUTPUT"
+          plan="$RUNNER_TEMP/pg-plan"
+          mkdir -p "$plan"
+          for archive in pg-e2e pg-lib; do
+            "$PG_RUN" cargo-nextest nextest list --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \
+              --workspace-remap "$PG_WORKSPACE" --message-format json > "$plan/$archive.json"
+          done
+          python3 - "$plan" "$JOB_INDEX" "$JOB_TOTAL" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          plan = pathlib.Path(sys.argv[1])
+          index, total = int(sys.argv[2]), int(sys.argv[3])
+          # Seconds on the hosted runners (runs 40822979326 and 40830721372) for the tests far above
+          # the rest; any other test is estimated from its name.
+          slow = {
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::rune_use_bridge::rune_use_bridge_postgres_real_dispatch_casts_once_and_reloads_one_debit': 490,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::kill_reward_e2e::summer_radiant_all_six_kills_settle_and_decay_on_postgres': 460,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::kill_reward_e2e::summer_radiant_all_six_execute_attacks_through_the_production_owner': 440,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_equipped_step_tick_charges_and_mantra': 430,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_real_dispatch_casts_fields_walls_and_bombs': 350,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::kill_reward_e2e::charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_and_dodge': 290,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::kill_reward_e2e::daily_boost_real_kill_xp_loot_and_unselected_race_postgres': 220,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::ranged_attack::ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free': 200,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_protection_zone_refuses_fields_and_barriers_without_payment': 180,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_energy_and_poison_hit_players_and_creatures': 170,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_player_legality_and_death': 170,
+              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers': 150,
+              'oteryn-gameplay-dispatch gameplay_transport::attack::tests::attack_chase_budget_tests::resumed_drains_keep_planned_occupancy_in_both_caller_orders_before_and_after_commit': 150,
+              'oteryn-game-server::character_authority_postgres house_interior_postgres_cases::house_uncommitted_apply_rechecks_independent_current_authority': 120,
+          }
+
+
+          def estimate(case):
+              return slow.get(' '.join(case), 20 if 'postgres' in case[1] else 2)
+
+
+          priorities = []
+          for archive in ('pg-e2e', 'pg-lib'):
+              listing = json.loads((plan / f'{archive}.json').read_text())
+              cases = sorted(
+                  (suite['binary-id'], name)
+                  for suite in listing['rust-suites'].values()
+                  for name, case in suite['testcases'].items()
+                  if case['filter-match']['status'] == 'matches'
+              )
+              shares, load = [[] for _ in range(total)], [0] * total
+              for case in sorted(cases, key=lambda case: (-estimate(case), case)):
+                  share = min(range(total), key=lambda i: (load[i], i))
+                  shares[share].append(case)
+                  load[share] += estimate(case)
+              assigned = sorted(case for share in shares for case in share)
+              if not cases or assigned != cases or len(set(cases)) != len(cases) or not all(shares):
+                  raise SystemExit(f'{archive}: the plan does not run every listed test exactly once')
+              (plan / f'{archive}.filters').write_text(
+                  ''.join(f'--filterset=binary_id(={b}) & test(={n})\n' for b, n in sorted(shares[index]))
+              )
+              priorities += [case for case in shares[index] if ' '.join(case) in slow]
+              print(f'{archive}: {len(shares[index])} of {len(cases)} tests, estimate {load[index]}s')
+          # The long tests start first, so none of them begins near the end of the partition.
+          (plan / 'priority.toml').write_text(''.join(
+              f"[[profile.default.overrides]]\nfilter = 'binary_id(={b}) & test(={n})'\n"
+              f"priority = {min(100, slow[' '.join((b, n))] // 5)}\n"
+              for b, n in priorities
+          ))
+          PY
 
       - name: Run registered PostgreSQL E2E targets
-        env:
-          PARTITION_SPEC: ${{ steps.partition.outputs.spec }}
         run: |
           set -euo pipefail
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"
           "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \
-            --workspace-remap "$PG_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
+            --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
 
       - name: Run PostgreSQL-backed library tests
         if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
-        env:
-          PARTITION_SPEC: ${{ steps.partition.outputs.spec }}
         run: |
           set -euo pipefail
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
           "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
-            --workspace-remap "$PG_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
+            --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
 
       - name: Stop ephemeral PostgreSQL 18
         if: always() && runner.environment == 'self-hosted'
