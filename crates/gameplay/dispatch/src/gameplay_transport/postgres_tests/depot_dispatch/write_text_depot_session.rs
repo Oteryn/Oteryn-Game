@@ -14,7 +14,7 @@ pub(super) async fn exercise(
         &mut server,
         admitted,
         owner,
-        crate::gameplay_transport::connection::IDLE_LIVENESS,
+        SCENARIO_LIVENESS,
     );
     let exchange = async {
         loop {

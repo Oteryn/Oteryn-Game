@@ -20,13 +20,23 @@ use crate::durability::premium_fence::EntitlementState;
 use crate::foundation::{ChannelRuntimeV1, CommandId, CommandRef, MovementLocalPosition};
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
+    FirstEntryOutcome, FreshAdmissionAuthority, LivenessPolicy, UseCommand,
 };
 use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts};
 use crate::gameplay_transport::item_view::{ItemKey, ItemViewContinuity, SessionItemView};
 use crate::map::boot::{BootPins, boot, tests as bundle_fixture};
 use crate::map::facts::ItemDefinition;
 use oteryn_protocol_oteryn::depot::*;
+
+/// The wire scenarios below run owner-side checks (SQL fixtures, lock waits, moves) while the
+/// test client is not reading or acking the wire, so under CI load the idle cadence ends the
+/// session mid-exchange and the client then waits out the exchange timeout. Liveness is not
+/// under test here (`idle_kick` and the connection tests own it): the probe interval outlasts
+/// every exchange timeout.
+const SCENARIO_LIVENESS: LivenessPolicy = LivenessPolicy {
+    interval: std::time::Duration::from_secs(600),
+    missed_limit: 3,
+};
 
 #[test]
 fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> TestResult {

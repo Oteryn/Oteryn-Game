@@ -16,7 +16,7 @@ pub(super) async fn dispatch(
         &mut server,
         admitted,
         owner,
-        crate::gameplay_transport::connection::IDLE_LIVENESS,
+        SCENARIO_LIVENESS,
     );
     let exchange = async {
         let mut root = None;
