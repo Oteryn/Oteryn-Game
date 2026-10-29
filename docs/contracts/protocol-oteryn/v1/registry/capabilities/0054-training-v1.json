@@ -14,5 +14,5 @@
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Only a bundle with admitted native training content and explicit OTERYN_ENABLE_PROVISIONAL_TRAINING=1 opt-in. Shipped data enabled=false. Rates PROVISIONAL / GATED OFF; no Reference runtime selection is inferred."
+  "offer_gate": "Only a bundle with admitted native training content and a training ruleset with enabled: true. Shipped rulesets/training/provisional-v1.json is enabled by the owner decision 2026-10-29, WAVE_A_PLAN §9 Q3. Rates remain PROVISIONAL with named open values in docs/agents/tasks/LOOP-TRAIN-1.md; no Reference runtime selection is inferred."
 }

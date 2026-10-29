@@ -60,29 +60,58 @@ Client UI is outside this allocation.
 |---|---|---|
 | Only Current Premium may select a statue skill and log out | Accepted OFFLINE0 §6; `training-content-1/facts.json`, `training.offline` | Real command 66 resolves a pinned same-floor reachable PZ statue, refuses houses/PvP/PvE locks/cooldown and commits selection with logout; Free and NotActivated refused in PG |
 | Next login settles once after at least 600 seconds offline | Accepted OFFLINE0 §§3–5 | Immutable DB session clock + explicit predecessor, latest build-carrying logout check, capped pool/time, clearing selection, shielding/native curves and stamina; crash/missing predecessor grants no offline gain |
-| Offline gain coefficients and percent scale | OFFLINE0 candidate formula; Reference `gameplay-source-reconciliation.json` withdrawal of runtime selection | **PROVISIONAL / GATED OFF**; all coefficients loaded from `rulesets/training/provisional-v1.json`; native formula used for progress/percent |
+| Offline gain coefficients and percent scale | OFFLINE0 candidate formula; Reference `gameplay-source-reconciliation.json` withdrawal of runtime selection | **PROVISIONAL / ENABLED (2026-10-29)**; vocation/skill inputs loaded from `rulesets/training/provisional-v1.json`; Global offline coefficients in progression; native formula used for progress/percent |
 | Exercise starts on a public dummy, ticks every two seconds and retires on the last charge | Accepted EXERCISE0 §§2–5; staged item charges PROVEN | Real command 67 starts/status/stops; cadence catches up at most 30 ticks, checkpoints at 60 seconds/level/stop, and composes charge/build/last-charge retirement in one TX; 500-charge PG scenario passes |
-| Exercise gain per charge | Retained Canary `52550d5` training/vocation sources; reconciliation records melee/bow conflicts and unqualified final magic gain | **PROVISIONAL / GATED OFF**; data values 600 mana / 7 skill tries are test-enabled candidates, never claimed Reference-qualified |
+| Exercise gain per charge | Retained Canary `52550d5` training/vocation sources; reconciliation records melee/bow conflicts and unqualified final magic gain | **PROVISIONAL / ENABLED (2026-10-29)**; data values 600 mana / 7 skill tries remain donor candidates with the named Global gaps below |
 | Inventory sources and item selection | EXERCISE0 ordinary carried charge weapons | Basic path accepts direct main-backpack entries and public non-house dummies; nested/equipment sources refuse. 23 known item profiles admitted; regular wraps 50293 remain unavailable because source movable fact is UNKNOWN |
 | Training interruptions and durability | EXERCISE0 §§3–5 | Activity other than chat/look/status stops training; actor-end saves flush; old connection generation cannot stop the current run; unknown saves block control-loss detachment; exact pending checkpoint survives an unknown outcome in-process; restart reloads committed gain/charges without restarting training |
 
-### Owner-selected implementation gate (2026-10-23)
+### Owner-selected implementation gate (2026-10-29, WAVE-B/B1)
 
-The owner-delegated decision selects option A **with a gate**. Implement the basic
-server path using data-loaded rates. OFFLINE0 formula coefficients and retained
-Canary exercise gains remain **PROVISIONAL / GATED OFF** in shipped configuration.
-Tests explicitly enable provisional training. The Reference reconciliation record
-is unchanged; this task does not claim Reference-qualified rates. The previous
-rate-selection owner question is resolved. No paid Reference measurement or
-external review is triggered by this local worker.
+Owner decision WAVE_A_PLAN §9 Q3 opens training in the shipped configuration.
+`rulesets/training/provisional-v1.json` has `enabled: true`; the environment opt-in
+has been removed. The ruleset's `enabled` flag controls availability through the
+existing training context, including capability 54 and commands 66–67. Native item
+policies, pinned statue/dummy definitions and a native training formula remain required.
+Runtime uses `protocol-oteryn`, distinct World/Channel scope and existing session-generation
+fencing. Tests also retain explicit unavailable/disabled configuration coverage.
 
-Shipped `rulesets/training/provisional-v1.json` has `enabled: false`. The server's only
-operator opt-in is **`OTERYN_ENABLE_PROVISIONAL_TRAINING=1`**; absence or any other value
-keeps capability 54 unoffered and both admission settlement and training commands disabled.
-Tests inject enabled data explicitly. Native item policies, pinned statue/dummy definitions
-and a native training formula are still required after opt-in. No Reference reconciliation
-record was edited. Runtime uses `protocol-oteryn`, distinct World/Channel scope, and existing
-session-generation fencing.
+Global source check (2026-10-29): TibiaWiki's MediaWiki API returned Exercise Weapons
+and Offline Training (redirecting to Training School). The retained official manual
+`docs/reference/tibia-manual/{products,characters}.md` confirms the mechanisms but gives
+no exact training gains. The exact Crystal pin remains
+`201189f871d23597b82caf88fd611454a2ddefb8`. No site protection was bypassed and no live
+game/login server was contacted. Evidence classes: Wiki `TIBIAWIKI_STRUCTURED`,
+retained official manual `CIPSOFT_OFFICIAL`, Crystal `OTS_HYPOTHESIS_ONLY`.
+
+**Named open values: non-magic exercise gains (including fractional accumulation and
+house-dummy rounding), and independent Global confirmation of per-vocation ticks.**
+Exercise/vocation candidates remain unchanged and `provisional: true`.
+The Wiki specifies fractional melee/wrap gains, conflicting bow rates on the same page,
+and shielding rates different from Crystal's uniform integer 7. It does not establish
+Global's integer per-charge conversion/accumulation rule. The Wiki offline table takes
+priority over Crystal: distance now gains 12 tries/minute (two tries per five attack
+turns), and magic gains 50% of promoted mana regeneration. Changing durable fractional
+accounting is outside this gate-opening packet. Per the packet's fallback, these unresolved values
+remain donor values; this is activation with named open values, not full Global parity.
+The Reference reconciliation record is unchanged. Publication/review belong to the coordinator.
+
+| Value | Shipped value | Global evidence / open discrepancy | Source |
+|---|---|---|---|
+| Exercise magic | 600 mana/charge | 600 | [Exercise Weapons API](https://tibia.fandom.com/api.php?action=parse&page=Exercise_Weapons&prop=wikitext&format=json); Crystal `data/scripts/actions/items/exercise_training_weapons.lua:114` |
+| Exercise fist/club/sword/axe | 7 tries/charge | 7.2 hits; integer accumulation open | Same Wiki API, Types of Weapons; Crystal exercise script `:116` |
+| Exercise distance | 7 tries/charge | Page conflicts: 3.6, 2.16 blood / 4.32 miss hits; open | Same Wiki API, introduction and Types of Weapons; Crystal exercise script `:116` |
+| Exercise shielding | 7 tries/charge | 14.4 blocks; integer accumulation open | Same Wiki API, 7,200 blocks / 500 charges; Crystal exercise script `:116` |
+| Dummy percentages / scale | 100 public, 110 expert / 100 | +10% expert confirmed; integer rounding open | Same Wiki API; Crystal exercise script `:111–116` |
+| Top attack interval, all 11 vocations | 2000 ms | Donor-confirmed; Wiki melee 15 tries/min corroborates offline rate | Crystal `data/XML/vocations.xml:10–151`; [Training School API](https://tibia.fandom.com/api.php?action=parse&page=Training_School&prop=wikitext&format=json), Mathematics |
+| Mana amount, all vocations | 2 | Donor-confirmed; independent Global confirmation open | Crystal `data/XML/vocations.xml:10–151`; retained manual has no rate |
+| Top mana ticks: none / knight / elite knight | 6000 ms | Donor-confirmed; independent Global confirmation open | Crystal `data/XML/vocations.xml:10,62,123`; offline script `:55–69` |
+| Top mana ticks: sorcerer / druid / both promotions | 2000 ms | Donor-confirmed; independent Global confirmation open | Crystal vocations `:75,91`; offline script `:55–69` |
+| Top mana ticks: paladin / monk / both promotions | 3000 ms | Donor-confirmed; independent Global confirmation open | Crystal vocations `:107,151`; offline script `:55–69` |
+| Offline divisors by family 0–7 / magic coefficient | [1,2,2,2,2,5,4,0], distance numerator 2 / magic 1/2 | Melee/fist 15/min; distance 12/min (formerly 7.5); magic 50% (formerly 100%) | Training School API, Mathematics; Crystal `data/scripts/creaturescripts/player/offline_training.lua:60–69` |
+| OFFLINE0 pool / minimum logout / elapsed cap | 43200 s / 600 s / 21 days | First two corroborated; 21-day cap donor-only | Training School API, Offline Training; Crystal offline script `:5,14,19–28` |
+| OFFLINE0 restoration / shielding | elapsed minus trained / trained seconds ÷4 on skill update | Restoration and 15 shielding/min corroborated; donor condition retained | Training School API; Crystal offline script `:22–25,77–78` |
+| Statue/weapon family maps, reserved family 7 gain 0 | Unchanged | Item content excluded; donor mappings retained | Crystal `data/scripts/actions/objects/skill_trainer.lua:1–7` and exercise script `:3–40`; existing pinned training content; no new profiles or placements |
 
 ## Implementation locations
 
@@ -120,8 +149,9 @@ Settlement arithmetic:
 - Selected skill with `d<600` consumes/restores no pool; else `t=min(d,pool,43200)` trains and
   restores `d-t` (cap 43200). `t<60` grants no tries. All settlement plans clear the skill.
   No skill → pool restores `d`.
-- Rates: top-vocation base attack speed ×2 fist/melee, ×4 distance; magic uses current-vocation
-  mana amount and top-vocation ticks with 1-second zero-tick fallback. Level change adds
+- Rates: top-vocation base attack speed ×2 fist/melee; distance earns two tries per five
+  attack turns. Magic uses 50% of current-vocation mana amount / top-vocation ticks,
+  with the existing 1-second zero-tick fallback. Level change adds
   `floor(t/4)` shielding via native relevel; same-level percent changes come from a typed native
   Content port (no guessed rounding). Missing source facts refuse before mutation and preserve
   selected skill/pool.
@@ -169,13 +199,13 @@ Writer obligations:
 
 ## Unfinished / deliberately gated
 
-- Rate reconciliation remains **PROVISIONAL / GATED OFF**, as directed. Production activation needs
-  the separate accepted Reference rate decision; this work does not grant it.
+- Rate reconciliation remains **PROVISIONAL / ENABLED** under the 2026-10-29 owner decision;
+  named Global value gaps are listed above. The environment opt-in is removed.
 - Full EXERCISE0 inventory parity: nested/equipment sources, movement/trade of an already checkpointed
   timed item (existing ITEM-LOOP guard), regular wraps 50293 with UNKNOWN movable evidence,
   house/expert dummies, NPC sales and additional world placements are not implemented here.
   Unsupported sources/targets fail closed. Known statue/dummy definitions and public placements can
-  be used with the opt-in; the PG mini World proves both target types through real dispatch.
+  be used with the shipped ruleset; the PG mini World proves both target types through real dispatch.
 - No client UI, publication, frozen candidate, independent exact-head review or GitHub CI evidence.
   The owner prohibited commits/pushes; the standalone worker produced the reviewable local diff only.
 - No load-contention failure is deferred to CI. All three own filtered PG cases passed together.
