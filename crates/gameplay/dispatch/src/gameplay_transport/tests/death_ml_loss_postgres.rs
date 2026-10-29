@@ -294,10 +294,10 @@ async fn die_respawn_relog(h: &Harness) -> TestResult {
         .map_err(debug)?;
     assert!(matches!(chosen, BuildCommitOutcome::Committed(_)));
 
-    // Experience to three level 50 losses (L = 112,900 unblessed, unpromoted): 2 to 3.
+    // Experience to three level 50 losses (L = 117,700 unblessed, unpromoted): 2 to 3.
     let loss =
         u64::try_from(crate::domain::death::death_experience_loss(50, 0, false).map_err(debug)?)?;
-    assert_eq!(loss, 112_900);
+    assert_eq!(loss, 117_700);
     let total = 3 * loss;
     let award = h
         .root

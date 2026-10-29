@@ -303,8 +303,8 @@ mod death_experience_tests {
     use super::*;
 
     #[test]
-    fn progression_death_uses_total_experience_below_24() -> Result<(), ProgressionCalculationError>
-    {
+    fn progression_death_uses_next_level_span_at_every_level()
+    -> Result<(), ProgressionCalculationError> {
         let context = ProgressionRevisionContext {
             profile: (),
             ruleset: (),
@@ -319,29 +319,45 @@ mod death_experience_tests {
             reward_revision: (),
             death_policy_revision: (),
             declared_difference_revision: (),
-            thresholds: std::array::from_fn::<_, 24, _>(|index| {
+            thresholds: std::array::from_fn::<_, 2000, _>(|index| {
                 let level = index as u32 + 1;
-                let l = i64::from(level);
                 LevelThreshold {
                     level,
                     minimum_experience: ExactI64::new(
-                        (50 * l * l * l - 300 * l * l + 850 * l - 600) / 3,
+                        super::super::death::canonical_experience_threshold(level)
+                            .unwrap_or(u128::MAX) as i64,
                     ),
                 }
             }),
-            terminal_exclusive_experience: ExactI64::new(204_800),
+            terminal_exclusive_experience: ExactI64::new(133_133_600_000),
             death_loss_numerator: 1,
             death_loss_denominator: 1,
             death_loss_rounding: RoundingMode::Floor,
         };
-        for (level, experience, base) in [
-            (1, 99, 9),
-            (8, 4_299, 429),
-            (23, 156_299, 15_629),
-            (24, 179_499, 17_168),
+        for (level, experience, losses) in [
+            (1, 0, [100, 70, 44, 14]),
+            (10, 9_300, [3_700, 2_590, 1_628, 518]),
+            (23, 156_200, [23_200, 16_240, 10_208, 3_248]),
+            (24, 179_400, [25_400, 17_780, 11_176, 3_556]),
+            (50, 1_847_300, [117_700, 82_390, 51_788, 16_478]),
+            (
+                400,
+                1_050_779_800,
+                [7_940_200, 5_558_140, 3_493_688, 1_111_628],
+            ),
+            (
+                2000,
+                132_933_899_800,
+                [199_700_200, 139_790_140, 87_868_088, 27_958_028],
+            ),
         ] {
-            for blessings in [0, 5] {
-                for promoted in [false, true] {
+            for (blessings, promoted, loss) in [
+                (0, false, losses[0]),
+                (0, true, losses[1]),
+                (7, false, losses[2]),
+                (7, true, losses[3]),
+            ] {
+                for experience in [experience, experience + 99] {
                     let snapshot = CurrentProgressionSnapshot {
                         level,
                         total_experience: ExactI64::new(experience),
@@ -357,9 +373,7 @@ mod death_experience_tests {
                     };
                     let outcome =
                         calculate_progression(&snapshot, &context, &(), &operation, &policy)?;
-                    let expected = base
-                        * (100 - 8 * i64::from(blessings) - if promoted { 30 } else { 0 })
-                        / 100;
+                    let expected = loss.min(experience);
                     assert_eq!(
                         outcome.death_experience_lost.get(),
                         expected,
