@@ -5,8 +5,7 @@ use std::collections::BTreeMap;
 fn tutorial_current_world_compiles_twice_and_accepts_the_islet_start() -> Result<(), Error> {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let identity = derive_identity(&root, "oteryn")?;
-    let bytes = build_twice(&root, &identity)?;
-    let registry = registry(&root, &project(&root)?)?.0;
+    let (bytes, registry) = build_twice(&root, &identity)?;
     check(
         &bytes,
         EntryStart {

@@ -8,7 +8,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use super::{Input, KeyResolver, cell_facts, native_floor};
+use super::{Facts, Input, native_floor};
 use crate::{Error, project::LegacyPosition};
 
 const MAX_INPUT: usize = 16 << 20;
@@ -417,20 +417,26 @@ fn neighbours((x, y, z): LegacyPosition) -> impl Iterator<Item = LegacyPosition>
     .flatten()
 }
 
+/// The cells `realize` reads: every source tile and its neighbours.
+pub(super) fn cells(input: &Input<'_>) -> BTreeSet<LegacyPosition> {
+    let tiles = &input.families.subareas.tiles;
+    let mut wanted: BTreeSet<_> = tiles.keys().copied().collect();
+    for &p in tiles.keys() {
+        wanted.extend(neighbours(p));
+    }
+    wanted
+}
+
+/// The admitted subarea table, from `facts` of at least the `cells` of `input`.
 pub(super) fn realize(
     input: &Input<'_>,
-    resolver: &dyn KeyResolver,
     report: &super::NpcReport,
+    facts: &Facts,
 ) -> Result<Table, Error> {
     let source = &input.families.subareas;
     if source.tiles.is_empty() {
         return Ok(source.table.clone());
     }
-    let mut wanted: BTreeSet<_> = source.tiles.keys().copied().collect();
-    for &p in source.tiles.keys() {
-        wanted.extend(neighbours(p));
-    }
-    let facts = cell_facts(input, resolver, &wanted)?;
     let walkable = |p: &LegacyPosition| {
         input.world.contains(p.0, p.1, -(p.2 as i8))
             && facts.get(p).is_some_and(|c| {
