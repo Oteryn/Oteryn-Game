@@ -22,7 +22,10 @@ pub const ITEM_LOOK_CAPABILITY_ID: Option<u32> = Some(28);
 pub const ITEM_LOOK_COMMAND_ID: Option<u32> = Some(30);
 
 /// D1143's result text limit in UTF-8 bytes, excluding the existing wire envelope framing.
-pub const MAX_ITEM_LOOK_TEXT_BYTES: usize = 512;
+/// Long enough for Global-style spellbook dialogs while remaining well below the command
+/// result envelope. Ordinary item descriptions and readable map text keep their own bounded
+/// production paths.
+pub const MAX_ITEM_LOOK_TEXT_BYTES: usize = 16_384;
 
 /// Actual session negotiation must supply this selection; default retains legacy bytes.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
