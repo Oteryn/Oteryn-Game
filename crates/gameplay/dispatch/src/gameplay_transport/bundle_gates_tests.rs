@@ -145,6 +145,14 @@ const INVENTORY: &[Entry] = &[
         calls: &[("gameplay_transport/parameter_cast.rs", 5)],
     },
     Entry {
+        gate: "parameter cast and its commit: vertical move",
+        plan: "`vertical_move` parameter cast",
+        accessor: "gate_parameter_cast",
+        key: "vertical_move",
+        state: Gate::AllocatedOpen { task: "WAVE-A/M11" },
+        calls: &[],
+    },
+    Entry {
         gate: "parameter cast and its commit: creature appearance",
         plan: "`creature_appearance` parameter cast",
         accessor: "gate_parameter_cast",
@@ -152,14 +160,6 @@ const INVENTORY: &[Entry] = &[
         state: Gate::AllocatedOpen {
             task: "WAVE-A2/C17c",
         },
-        calls: &[],
-    },
-    Entry {
-        gate: "parameter cast and its commit: vertical move",
-        plan: "`vertical_move` parameter cast",
-        accessor: "gate_parameter_cast",
-        key: "vertical_move",
-        state: Gate::AllocatedOpen { task: "WAVE-A/M11" },
         calls: &[],
     },
     // `house_access`: SPELL-RT-WORLD-1 of the MAGIC-SUMMON-1 graph.
