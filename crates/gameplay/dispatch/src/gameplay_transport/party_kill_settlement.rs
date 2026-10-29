@@ -158,12 +158,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             slots.push(slot);
         }
         let runtime = self.runtime.lock().await;
-        let states = self.states.spell_states.lock().await;
+        let mut states = self.states.spell_states.lock().await;
         let attack = self.states.attack.lock().await;
         let mut ctx = (
             self,
             &*runtime,
-            &*states,
+            &mut *states,
             &*attack,
             entry,
             Some(members),
@@ -216,6 +216,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| DurabilityError::Unavailable)?
                     {
                         party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
+                        publish_stamina(states, runtime, previous, entry, &awards);
                         return Ok(Ok(awards));
                     }
                     let current = plan_shared_xp_in_transaction(
@@ -237,7 +238,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     for (request, current) in members.iter_mut().zip(&current.members) {
                         request.request.amount =
                             oteryn_simulation_determinism::ExactI64::new(current.share);
-                        request.live_stamina = states.live_stamina(current.actor, current.session);
+                        request.live_stamina = if current.share > 0 {
+                            states.stamina_after_experience(
+                                current.actor,
+                                current.session,
+                                entry
+                                    .activity_observed_at
+                                    .ok_or(DurabilityError::InvalidStoredState)?
+                                    .get(),
+                            )
+                        } else {
+                            states.live_stamina(current.actor, current.session)
+                        };
                         request.premium = current.premium;
                         request.forge_dust = forge_dust_for_member(entry, states, _attack, current);
                         request.shared = current.shared;
@@ -289,6 +301,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         Err(error) => return Ok(Err(error)),
                     };
                     party_kill_xp::commit_party_kill_transaction(tx, deadline).await?;
+                    publish_stamina(states, runtime, &current, entry, &awards);
                     Ok(Ok(awards))
                 })
             })
@@ -382,4 +395,26 @@ fn forge_dust_for_member(
         floor_delta: u8::try_from(position.floor.abs_diff(forge.origin.floor)).unwrap_or(u8::MAX),
     });
     eligible.then(|| forge.kind.dust(forge.roll))
+}
+
+// All recipients (including shared party members) use the same committed kill timestamp.
+fn publish_stamina(
+    states: &mut super::actor_spell::ChannelSpellStates,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    plan: &PartyXpPlan,
+    entry: &PendingKillSettlement,
+    awards: &[party_kill_xp::PartyKillXpAward],
+) {
+    let Some(now) = entry.activity_observed_at else {
+        return;
+    };
+    for member in &plan.members {
+        if member.share > 0
+            && awards
+                .iter()
+                .any(|award| award.character == member.character)
+        {
+            states.hunting_experience(runtime, member.actor, member.session, now.get());
+        }
+    }
 }

@@ -8,6 +8,7 @@ use crate::durability::spell_items_abi::SpellItemOperation;
 use crate::gameplay_transport::spell_presentations::{
     CueTarget, LocatedCueRequest, QualifiedCueTile,
 };
+use crate::map::boot::BundleCollisionIndexExt;
 use crate::spell::combat_batch::{OwnerCombatChange, OwnerCombatEffect};
 use crate::spell::native::CompiledNativeSpellPlanExt;
 use oteryn_gameplay_spell_rules::native_items::{
@@ -195,6 +196,42 @@ pub(super) async fn prepare(
         SpellTarget::AttackTarget => return Err(SpellCastDisposition::TargetIllegal),
         _ => return Err(SpellCastDisposition::TargetRequired),
     };
+    if profile.spell()["execution"]["native_behavior"]["parameters"]["operation"] == "disintegrate"
+    {
+        // docs/reference/spells/utility-runes-2026-10-29.md:17: protect
+        // another house's property. This caster owns the Channel, not a House.
+        let cells = room.movement_cells();
+        let house = match cells.index() {
+            crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(index) => {
+                use crate::map::view::MapFacts;
+                let pos = crate::map::overlay::TilePos {
+                    x: u16::try_from(target.x).map_err(|_| SpellCastDisposition::TargetIllegal)?,
+                    y: u16::try_from(target.y).map_err(|_| SpellCastDisposition::TargetIllegal)?,
+                    floor: target
+                        .floor
+                        .checked_neg()
+                        .and_then(|f| i8::try_from(f).ok())
+                        .ok_or(SpellCastDisposition::TargetIllegal)?,
+                };
+                index.map().facts.pinned().house_tile(pos)
+            }
+            _ => cells
+                .house_tiles()
+                .house_at(
+                    cells.scope(),
+                    crate::content::LogicalCell {
+                        x: target.x,
+                        y: target.y,
+                        z: i32::from(target.floor),
+                    },
+                )
+                .map_err(|_| SpellCastDisposition::NotAvailable)?
+                .is_some(),
+        };
+        if house {
+            return Err(SpellCastDisposition::TargetIllegal);
+        }
+    }
     let mut tiles = BTreeMap::new();
     tiles.insert(
         origin,

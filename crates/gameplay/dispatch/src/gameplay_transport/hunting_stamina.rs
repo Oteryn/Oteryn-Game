@@ -11,7 +11,7 @@ use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{
     ChannelRuntimeV1, ExactActorRef, GameSessionId, GameSessionState, RuntimeScopeRefV1,
 };
-use oteryn_gameplay_characters::stamina::HuntingClock;
+use oteryn_gameplay_characters::stamina::{HuntingActivityClock, HuntingClock};
 
 #[derive(Debug)]
 pub(super) struct LiveStamina {
@@ -20,6 +20,8 @@ pub(super) struct LiveStamina {
     minutes: u16,
     durable: u16,
     clock: HuntingClock,
+    experience_started: bool,
+    prey_clock: HuntingActivityClock,
     pending_gain: Option<(BuildOccurrence, u16, u16)>,
     pending_debit: Option<(BuildOccurrence, u16, u16)>,
 }
@@ -31,6 +33,17 @@ impl ChannelSpellStates {
         actor: ExactActorRef,
         session: GameSessionId,
         minutes: u16,
+    ) {
+        self.load_stamina_at(runtime, actor, session, minutes, 0);
+    }
+
+    pub(super) fn load_stamina_at(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        minutes: u16,
+        now: u64,
     ) {
         self.hunting_stamina.retain(|state| {
             runtime
@@ -45,7 +58,7 @@ impl ChannelSpellStates {
             {
                 // Admission settlement may regenerate before the first hunting event.
                 // A same-session reconnect must preserve live spending and replay state.
-                if state.clock == HuntingClock::default()
+                if !state.experience_started
                     && state.pending_gain.is_none()
                     && state.pending_debit.is_none()
                     && state.minutes == state.durable
@@ -59,7 +72,9 @@ impl ChannelSpellStates {
                     session,
                     minutes,
                     durable: minutes,
-                    clock: HuntingClock::default(),
+                    clock: HuntingClock::new(now),
+                    experience_started: false,
+                    prey_clock: HuntingActivityClock::default(),
                     pending_gain: None,
                     pending_debit: None,
                 });
@@ -82,13 +97,50 @@ impl ChannelSpellStates {
             .iter_mut()
             .find(|s| s.actor == actor && s.session == session)
         {
-            let (hunting_minutes, next) = state.clock.activity(now, u16::MAX);
-            let spent = hunting_minutes.min(state.minutes);
-            state.clock = next;
-            state.minutes -= spent;
+            // Damage activity continues to drive Prey time, never character stamina.
+            let (hunting_minutes, next) = state.prey_clock.activity(now, u16::MAX);
+            state.prey_clock = next;
             self.prey_hunting_tick(actor, session, u32::from(hunting_minutes) * 60);
         }
     }
+    /// Preview under the same runtime/state guards as the kill XP transaction.
+    pub(super) fn stamina_after_experience(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: u64,
+    ) -> Option<u16> {
+        let state = self
+            .hunting_stamina
+            .iter()
+            .find(|s| s.actor == actor && s.session == session)?;
+        Some(state.minutes - state.clock.activity(now, state.minutes).0)
+    }
+
+    /// Publish only after the XP transaction commits or reconciles. Its original death time
+    /// is already behind the new deadline on replay, so retries cannot spend twice.
+    pub(super) fn hunting_experience(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        now: u64,
+    ) {
+        if runtime.owner_fence().is_err() || self.get(runtime, actor, session).is_none() {
+            return;
+        }
+        if let Some(state) = self
+            .hunting_stamina
+            .iter_mut()
+            .find(|s| s.actor == actor && s.session == session)
+        {
+            let (spent, next) = state.clock.activity(now, state.minutes);
+            state.minutes -= spent;
+            state.clock = next;
+            state.experience_started |= spent > 0;
+        }
+    }
+
     pub(super) fn live_stamina(&self, actor: ExactActorRef, session: GameSessionId) -> Option<u16> {
         self.hunting_stamina
             .iter()
@@ -367,8 +419,7 @@ mod tests {
             )
             .expect("player");
         states.load_stamina(&runtime, actor, session, 841);
-        states.hunting_activity(&runtime, actor, session, 0);
-        states.hunting_activity(&runtime, actor, session, 60_000_000);
+        states.hunting_experience(&runtime, actor, session, 1_000_000);
         states.load_stamina(&runtime, actor, session, 841);
         assert_eq!(states.live_stamina(actor, session), Some(840));
         // This adapter also serves PvP swings; only its monster caller records activity.
@@ -399,6 +450,83 @@ mod tests {
         }
         assert_eq!(states.live_stamina(actor, session), Some(840));
     }
+    #[test]
+    #[allow(clippy::expect_used)] // Content and actor setup must succeed in this unit fixture.
+    fn hunting_stamina_no_kill_in_protection_zone_never_drains() {
+        use crate::foundation::{ChannelContentPin, NodeId};
+        use crate::map::boot::tests::{floor_items, floor_pins, teleport_bundle};
+        use oteryn_simulation_determinism::SemanticTimeMicros;
+        let (template, _, session) = fixture::runtime_with_player(147);
+        let world = template.binding().world_id();
+        let channel = template.binding().channel_id();
+        let room = crate::content::qualify_native_entry_room(world).expect("room");
+        let (bytes, pins) = teleport_bundle();
+        let map = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
+            .expect("map");
+        let cells = map.movement_cells(room.movement_cells()).expect("cells");
+        let mut node = [147; 16];
+        node[6] = 0x70;
+        node[8] = 0x80;
+        let pin = ChannelContentPin::from_activation(
+            world,
+            1,
+            room.compiled().server_digest(),
+            room.compiled().client_digest(),
+            map.frame_binding_digest(world),
+            map.map_revision_digest(),
+            (5, 1, 8),
+        );
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            NodeId::decode(&node).expect("node"),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            2,
+            pin,
+        )
+        .expect("runtime");
+        let reservation = runtime.reserve_fresh_session(session).expect("reservation");
+        let actor = runtime.commit_fresh_session(reservation).expect("actor");
+        runtime
+            .initialize_first_entry_position(actor)
+            .expect("position");
+        assert_eq!(
+            super::super::actor_spell::qualified_protection_zone(&mut runtime, &cells, actor),
+            Some(true)
+        );
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                fixture::FACTS,
+                (0, 0),
+                SemanticTimeMicros::from_micros(0),
+            )
+            .expect("state");
+        states.load_stamina(&runtime, actor, session, 2520);
+        for second in [1, 30, 61, 122, 3600] {
+            states.tick_in_environment(
+                &mut runtime,
+                &cells,
+                actor,
+                session,
+                SemanticTimeMicros::from_micros(second * 1_000_000),
+            );
+            assert_eq!(states.live_stamina(actor, session), Some(2520));
+            assert!(!states.stamina_to_flush(actor, session));
+        }
+        // Monster damage activity must not consume stamina either.
+        for second in [3601, 3631, 3661] {
+            states.hunting_activity(&runtime, actor, session, second * 1_000_000);
+            assert_eq!(states.live_stamina(actor, session), Some(2520));
+        }
+    }
+
     #[test]
     #[allow(clippy::expect_used)]
     fn retained_resting_gain_does_not_hide_a_later_hunting_debit() {
