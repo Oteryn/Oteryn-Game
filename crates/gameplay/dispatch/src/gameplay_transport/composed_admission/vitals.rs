@@ -6,6 +6,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         game_session_id: GameSessionId,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        self.refresh_wheel_vitals(actor, game_session_id).await;
         let restored = pvp_live::tracked(
             &*self.states.spell_states.lock().await,
             actor,
@@ -67,6 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         self.refresh_level_up_vitals(actor, game_session_id).await;
+        self.refresh_wheel_vitals(actor, game_session_id).await;
         if self
             .active_generation
             .and_then(|active| active.native_gameplay())
