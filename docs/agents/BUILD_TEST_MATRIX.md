@@ -91,7 +91,7 @@ The canonical full-gate workflow is `.github/workflows/merge-group-gate.yml`. Th
 
 ### PR early-signal PostgreSQL harness
 
-`.github/workflows/pr-postgres-harness.yml` is an early signal, not the PR gate (`merge-gate.yml`) and not a required check. It runs the six PostgreSQL partitions on a PR only while the PR carries the `heavy-tests` label (owner decision 2026-10-28, PR #2678): a finished mechanic, or one batch PR that merges several finished ones. Adding the label starts a run and later pushes re-run it. Protected `main` still runs every PostgreSQL lane after each merge.
+`.github/workflows/pr-postgres-harness.yml` is an early signal, not the PR gate (`merge-gate.yml`) and not a required check. It runs the twelve PostgreSQL partitions on a PR only while the PR carries the `heavy-tests` label (owner decision 2026-10-28, PR #2678): a finished mechanic, or one batch PR that merges several finished ones. Adding the label starts a run and later pushes re-run it. Protected `main` still runs every PostgreSQL lane after each merge.
 
 | Exact queue classification | Selected jobs |
 |---|---|

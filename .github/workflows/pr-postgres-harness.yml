@@ -16,9 +16,9 @@ name: PR PostgreSQL harness
 # once into two nextest archives (the registered E2E targets and the
 # PostgreSQL-backed library tests); the partition jobs only download the
 # archives and run them against PostgreSQL, so nothing is compiled twice and
-# the six planned partitions together run every test exactly once.
+# the twelve planned partitions together run every test exactly once.
 #
-# OTERYN_SELF_HOSTED_PG=on runs the six partitions on the Molehill runners
+# OTERYN_SELF_HOSTED_PG=on runs the twelve partitions on the Molehill runners
 # against a throwaway native PostgreSQL 18 cluster per job instead of the
 # hosted service container; turn it off or delete it when the PC is offline.
 # Forks and Dependabot always stay hosted. The build job stays hosted: the
@@ -291,12 +291,12 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-    # Each partition runs a disjoint planned share of both archives; together the six run every test once.
+    # Each partition runs a disjoint planned share of both archives; together the twelve run every test once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
       fail-fast: false
       matrix:
-        partition: [1, 2, 3, 4, 5, 6]
+        partition: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     # An empty image skips the service container on Molehill, which starts its own cluster below.
     services:
       postgres:
@@ -527,38 +527,26 @@ jobs:
             "$PG_RUN" cargo-nextest nextest list --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \
               --workspace-remap "$PG_WORKSPACE" --message-format json > "$plan/$archive.json"
           done
-          python3 - "$plan" "$JOB_INDEX" "$JOB_TOTAL" <<'PY'
+          python3 - "$plan" "$JOB_INDEX" "$JOB_TOTAL" "$GITHUB_WORKSPACE/tools/ci/pg_test_durations.json" <<'PY'
           import json
           import pathlib
           import sys
 
           plan = pathlib.Path(sys.argv[1])
           index, total = int(sys.argv[2]), int(sys.argv[3])
-          # Seconds on the hosted runners (runs 40822979326 and 40830721372) for the tests far above
-          # the rest; any other test is estimated from its name.
-          slow = {
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::rune_use_bridge::rune_use_bridge_postgres_real_dispatch_casts_once_and_reloads_one_debit': 490,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::kill_reward_e2e::summer_radiant_all_six_kills_settle_and_decay_on_postgres': 460,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::kill_reward_e2e::summer_radiant_all_six_execute_attacks_through_the_production_owner': 440,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_equipped_step_tick_charges_and_mantra': 430,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_real_dispatch_casts_fields_walls_and_bombs': 350,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::kill_reward_e2e::charm_wire_missing_snapshot_preserves_combat_and_assignment_changes_damage_and_dodge': 290,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::kill_reward_e2e::daily_boost_real_kill_xp_loot_and_unselected_race_postgres': 220,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::ranged_attack::ranged_attack_postgres_out_of_range_no_ammunition_and_no_mana_are_free': 200,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_protection_zone_refuses_fields_and_barriers_without_payment': 180,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_energy_and_poison_hit_players_and_creatures': 170,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_player_legality_and_death': 170,
-              'oteryn-gameplay-dispatch gameplay_transport::monk_save::postgres_tests::field_runes::field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers': 150,
-              'oteryn-gameplay-dispatch gameplay_transport::attack::tests::attack_chase_budget_tests::resumed_drains_keep_planned_occupancy_in_both_caller_orders_before_and_after_commit': 150,
-              'oteryn-game-server::character_authority_postgres house_interior_postgres_cases::house_uncommitted_apply_rechecks_independent_current_authority': 120,
-          }
+          # Longest observed seconds on the hosted runners for every test at or above 30 s, from
+          # tools/ci/pg_test_durations.py over recent partition logs; other tests are estimated from
+          # their name (means of the shorter tests in the same logs).
+          slow = json.loads(pathlib.Path(sys.argv[4]).read_text())
 
 
           def estimate(case):
-              return slow.get(' '.join(case), 20 if 'postgres' in case[1] else 2)
+              return slow.get(' '.join(case), 5 if 'postgres' in case[1] else 1)
 
 
-          priorities = []
+          # Each partition runs the E2E share and then the library share, so the load carries over
+          # from one archive to the next instead of starting both plans on the same partitions.
+          priorities, load = [], [0] * total
           for archive in ('pg-e2e', 'pg-lib'):
               listing_path = plan / f'{archive}.json'
               if not listing_path.exists():
@@ -571,7 +559,7 @@ jobs:
                   for name, case in suite['testcases'].items()
                   if case['filter-match']['status'] == 'matches'
               )
-              shares, load = [[] for _ in range(total)], [0] * total
+              shares = [[] for _ in range(total)]
               for case in sorted(cases, key=lambda case: (-estimate(case), case)):
                   share = min(range(total), key=lambda i: (load[i], i))
                   shares[share].append(case)
