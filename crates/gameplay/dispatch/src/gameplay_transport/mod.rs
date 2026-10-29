@@ -1183,11 +1183,50 @@ const FRESH_ADMISSION_ROUNDS: u32 = 3;
 const RECONCILE_ATTEMPTS: u32 = 5;
 const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
 
-/// Whether a fresh-admission step that ended on a proven noncommit is retried. Only an
-/// unavailable outcome (such as a busy durability holder) is transient, and only while
-/// rounds remain; a rejection or a classified refusal is final.
-fn fresh_round_retries(refusal: AdmissionRefusal, last: bool) -> bool {
-    !last && refusal == AdmissionRefusal::Unavailable
+/// The retry budget of one fresh admission or resume (DEFLAKE-2). Every durable pass shares
+/// the single, non-blocking durability holder, which background passes also take, so a busy
+/// holder fails a step at once with nothing written. Such an `Unavailable` step is retried
+/// until the next attempt would start past [`crate::durability::ROOT_RECOVERY_WINDOW`] from
+/// the attempt's start. A round left stale by concurrent owner evidence keeps its own bound
+/// of [`FRESH_ADMISSION_ROUNDS`] rounds. A rejection or a classified refusal is final.
+struct AdmissionRetryBudget {
+    deadline: tokio::time::Instant,
+    backoff: Duration,
+    stale_rounds: u32,
+}
+
+impl AdmissionRetryBudget {
+    fn new(game_session_id: &GameSessionId) -> Self {
+        Self {
+            deadline: tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW,
+            backoff: fresh_admission_backoff(game_session_id),
+            stale_rounds: 1,
+        }
+    }
+
+    /// Whether a step that ended on `refusal` is retried. Only an unavailable outcome (such
+    /// as a busy durability holder) is transient: it waits one backoff, unless the retry
+    /// would start past the window, which fails closed at once.
+    async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
+        if refusal != AdmissionRefusal::Unavailable
+            || tokio::time::Instant::now() + self.backoff >= self.deadline
+        {
+            return false;
+        }
+        tokio::time::sleep(self.backoff).await;
+        true
+    }
+
+    /// Whether a round left stale by concurrent owner evidence is retried: it waits one
+    /// backoff while rounds remain.
+    async fn retries_stale(&mut self) -> bool {
+        if self.stale_rounds >= FRESH_ADMISSION_ROUNDS {
+            return false;
+        }
+        self.stale_rounds += 1;
+        tokio::time::sleep(self.backoff).await;
+        true
+    }
 }
 
 /// The fresh-admission retry backoff: the base plus up to 63 ms taken from the random

@@ -20,27 +20,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| malformed)?;
         // Every durable pass shares the single, non-blocking durability holder, so a
         // concurrent pass (another attempt, or the node's background work) fails a
-        // pass at once with nothing written. Such a busy holder is retried, bounded,
-        // with a per-attempt backoff so concurrent attempts do not stay in lockstep.
-        let backoff = fresh_admission_backoff(&attempt.game_session_id);
-        let retry = move || async move {
-            tokio::time::sleep(backoff).await;
-        };
-        let mut read_round = 0;
+        // pass at once with nothing written. Such a busy holder is retried within the
+        // root recovery window, with a per-attempt backoff so concurrent attempts do not
+        // stay in lockstep.
+        let mut budget = AdmissionRetryBudget::new(&attempt.game_session_id);
         let record = loop {
-            read_round += 1;
             match self
                 .root
                 .read_current_character(self.character, character_id)
                 .await
             {
                 Ok(record) => break record,
-                Err(CharacterAuthorityError::Unavailable(_))
-                    if fresh_round_retries(Unavailable, read_round >= FRESH_ADMISSION_ROUNDS) =>
-                {
-                    retry().await;
+                Err(CharacterAuthorityError::Unavailable(_)) => {
+                    if !budget.retries_unavailable(Unavailable).await {
+                        return Err(Unavailable);
+                    }
                 }
-                Err(CharacterAuthorityError::Unavailable(_)) => return Err(Unavailable),
                 Err(_) => return Err(Rejected),
             }
         };
@@ -60,11 +55,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // socket) may refresh the owner evidence between this attempt's publication,
         // composition and commit, leaving it stale. Such a round is retried from fresh
         // evidence, bounded; the grant replay key still admits at most one GameSession.
-        let mut round = 0;
         let mut premium_entry = None;
         let (request, reservation) = loop {
-            round += 1;
-            let last = round >= FRESH_ADMISSION_ROUNDS;
             // D4: the five-second source-age bound requires evidence fetched for
             // this attempt; S2 custody retains it and the composition decides.
             if self
@@ -78,10 +70,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
                 .is_err()
             {
-                if last {
+                if !budget.retries_unavailable(Unavailable).await {
                     return Err(Unavailable);
                 }
-                retry().await;
                 continue;
             }
             let now = unix_seconds().ok_or(Unavailable)?;
@@ -93,12 +84,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(
                     GuardPublicationDisposition::Applied | GuardPublicationDisposition::Existing,
                 ) => {}
-                Ok(GuardPublicationDisposition::Stale | GuardPublicationDisposition::Conflict)
-                | Err(_) => {
-                    if last {
+                Ok(GuardPublicationDisposition::Stale | GuardPublicationDisposition::Conflict) => {
+                    if !budget.retries_stale().await {
                         return Err(Unavailable);
                     }
-                    retry().await;
+                    continue;
+                }
+                Err(_) => {
+                    if !budget.retries_unavailable(Unavailable).await {
+                        return Err(Unavailable);
+                    }
                     continue;
                 }
             }
@@ -107,10 +102,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .compose_fresh_admission(self.character, self.holder, &subject)
                 .await
             else {
-                if last {
+                if !budget.retries_unavailable(Unavailable).await {
                     return Err(Unavailable);
                 }
-                retry().await;
                 continue;
             };
             let facts = verify_fresh_grant_durability_v1(
@@ -189,11 +183,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             // A busy holder on the assignment read reserves nothing: retry the round.
             let reservation = match self.reserve_runtime_player(attempt.game_session_id).await {
                 Ok(reservation) => reservation,
-                Err(refusal) if fresh_round_retries(refusal, last) => {
-                    retry().await;
-                    continue;
+                Err(refusal) => {
+                    if budget.retries_unavailable(refusal).await {
+                        continue;
+                    }
+                    return Err(refusal);
                 }
-                Err(refusal) => return Err(refusal),
             };
             let outcome = self
                 .root
@@ -227,9 +222,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
                 ) => {}
                 // The owner evidence moved after composition: proven noncommit.
-                Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority) if !last => {
+                Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority)
+                    if budget.stale_rounds < FRESH_ADMISSION_ROUNDS =>
+                {
                     self.rollback_runtime_player(reservation).await?;
-                    retry().await;
+                    budget.retries_stale().await;
                     continue;
                 }
                 // N8: proven noncommits FND-04A names a row for.
@@ -262,8 +259,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             // No receipt under the admission locks proves noncommit (for
                             // example a commit refused on a busy holder): retry the round;
                             // the grant replay key still admits at most one GameSession.
-                            if fresh_round_retries(refusal, last) {
-                                retry().await;
+                            if budget.retries_unavailable(refusal).await {
                                 continue;
                             }
                             return Err(refusal);

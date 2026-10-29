@@ -12,6 +12,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // trays 3464/8198; flour/dough/wheat 3603..=3605; cake 6276/6277;
     // chocolate 8018/8019; garlic 8194/8196/8199. All have speed_bonus=0.
     ("CRAFT-1", 22),
+    // PAR-I11 baking (content/craft/runtime-item-profiles.json): the cookie tray 8020 and the
+    // cookie 3598, from Crystal ff7ede59 items.xml. Both have speed_bonus=0.
+    ("CRAFT-2", 2),
     // ENERGY-RING-1 admits the inactive 3051 and active 3088 through the timed pipeline.
     ("ENERGY-RING-1", 2),
     // The sliver 37109 (tools/content-migration/forge_creature_profiles.py), speed_bonus=0.
