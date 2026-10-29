@@ -629,7 +629,10 @@ fn coin_use_scenario() -> TestResult {
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[4,6,11,15,18]).ok_or("capabilities")?;
+        admitted.continuity.selected_capabilities = SelectedCapabilities::select(owner.offered_capabilities(), &[4,6,11,15,18,171]).ok_or("capabilities")?;
+        assert!(admitted.continuity.selected_capabilities.contains(
+            oteryn_protocol_oteryn::coin_conversion::CAPABILITY_COIN_CONVERSION_V1,
+        ));
         assert!(admitted.continuity.selected_capabilities.contains(
             oteryn_protocol_oteryn::world_object::CAPABILITY_ITEM_USE_V1,
         ));
