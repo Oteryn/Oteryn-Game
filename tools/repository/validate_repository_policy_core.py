@@ -309,7 +309,6 @@ def main() -> int:
         "deletion",
         "required_linear_history",
         "pull_request",
-        "merge_queue",
         "required_status_checks",
         "non_fast_forward",
     }
