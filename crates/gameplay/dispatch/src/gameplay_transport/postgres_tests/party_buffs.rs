@@ -35,6 +35,59 @@ fn party_buffs_real_dispatch_applies_values_and_duration_only_in_range_postgres(
         .map_err(|_| "party buff thread panicked")??;
     Ok(())
 }
+
+fn open_party_world(
+    world: WorldId,
+    channel: ChannelId,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    use crate::map::boot;
+    use oteryn_world_bundle::{bundle, writer};
+
+    // The captured Thalom slice is only 32 tiles wide. Use a longer open row so
+    // the distant member has real ground beyond the 36-tile party spell range.
+    let (bytes, mut pins) = boot::tests::bundle();
+    let mut data = bundle::read(&bytes).map_err(debug)?;
+    data.manifest.world.max_x = 64;
+    data.manifest.palette.truncate(1);
+    data.manifest.palette[0].key = "oteryn:item.tibia.i100".into();
+    let sector = data.sectors.first().ok_or("party ground sector")?;
+    let ground = sector.tiles.first().ok_or("party ground tile")?.clone();
+    data.sectors = (0..=1)
+        .map(|sx| writer::Sector {
+            floor: -7,
+            sx,
+            sy: 0,
+            tiles: (1..=40)
+                .filter(|x| x / oteryn_world_bundle::sector::SECTOR_SIZE == sx)
+                .map(|x| {
+                    let mut tile = ground.clone();
+                    tile.x = x;
+                    tile
+                })
+                .collect(),
+        })
+        .collect();
+    let bytes = writer::write(&data.manifest, &data.sectors, &data.spawns).map_err(debug)?;
+    pins.digest = bundle::read(&bytes).map_err(debug)?.digest;
+    let base = crate::map::load(&bytes, &pins).map_err(debug)?;
+    Ok(boot::boot(
+        &bytes,
+        &boot::BootPins {
+            bundle: pins,
+            map_revision: crate::map::overlay::map_revision(&base),
+            start: crate::map::overlay::TilePos {
+                x: 1,
+                y: 0,
+                floor: -7,
+            },
+        },
+        world,
+        channel,
+        |_| None,
+    )
+    .map_err(debug)?)
+}
+
 async fn scenario(h: &Harness) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
@@ -57,28 +110,38 @@ async fn scenario(h: &Harness) -> TestResult {
         .map_err(debug)?;
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
-    let (controller, pin) = super::death_ml_loss_composed::production_generation_with_source(
-        world,
-        "content-1",
-        Some(include_bytes!(
-            "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
-        )),
-    )?;
+    let (controller, pin) =
+        super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
     let active = controller.active().ok_or("active")?;
     let native = active.native_gameplay().ok_or("native")?;
-    let room = pin.qualified_room().clone();
-    // This captured open-ground area has no walls in either party spell's footprint.
+    let bundle = open_party_world(world, channel)?;
+    let cells = bundle
+        .movement_cells(pin.qualified_room().movement_cells())
+        .map_err(debug)?;
     let position = MovementLocalPosition {
-        x: 0,
-        y: -14,
-        floor: -7,
+        x: 1,
+        y: 0,
+        floor: 7,
     };
+    let room = pin
+        .qualified_room()
+        .bundle_view(
+            cells,
+            bundle.frame_binding_digest(world),
+            bundle.map_revision_digest(),
+            crate::content::NativeEntryStart {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            },
+        )
+        .ok_or("party ground room")?;
     let pin = ChannelContentPin::from_activation(
         world,
         pin.activation_sequence(),
         pin.identity().server_artifact_digest(),
         pin.identity().client_artifact_digest(),
-        pin.frame_binding().digest(),
+        room.frame_binding().digest(),
         room.map_revision_digest(),
         (position.x, position.y, position.floor),
     );
@@ -325,10 +388,11 @@ async fn scenario(h: &Harness) -> TestResult {
     // docs/reference/spells/r21-local-candidate/bundles/instant-enlighten_party/manifest.json:100,440
     // Train retains +3 fist: Global Fandom F1182927, accepted owner decision D213.
     // docs/reference/spells/r21-local-candidate/bundles/instant-train_party/manifest.json:452
-    // Membership was established while visible; move one member beyond either spell's range.
+    // Membership was established while visible; 38 east steps put member 2 beyond both
+    // casters' 36-tile Chebyshev range, while member 1 remains one step east.
     {
         let mut runtime = owner.runtime.lock().await;
-        for (actor, steps) in [(players[1].0, 1), (players[2].0, 13)] {
+        for (actor, steps) in [(players[1].0, 1), (players[2].0, 38)] {
             let mut snapshot = runtime.read_actor_position(actor).map_err(debug)?;
             for _ in 0..steps {
                 let mut next = snapshot.position();
