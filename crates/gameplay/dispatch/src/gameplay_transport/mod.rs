@@ -116,6 +116,7 @@ mod pvp_live;
 mod quest_admission;
 mod quest_callbacks;
 mod quest_log_source;
+mod raid_schedule;
 mod resting_area;
 mod resume;
 mod reward_bag_use;

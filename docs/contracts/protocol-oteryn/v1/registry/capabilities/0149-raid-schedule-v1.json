@@ -11,5 +11,5 @@
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "Server-driven raid announcements require no client command; schedule inspection remains unoffered until native UI support."
+  "offer_gate": "RAIDS-2: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Command type 171 is a read-only view of the admitted channel's latest raid run; raid firing, waves and cleanup stay server-owned, and command types 172 and 173 remain reserved and unrouted."
 }
