@@ -216,37 +216,13 @@ jobs:
 
       # Only protected-main source may produce the shared compilation cache.
       # A cache hit never substitutes for exact-candidate MQ qualification.
-      # The cache keeps dependency and library artifacts. Workspace test executables (profile.test,
-      # listed by replaying the fresh `test --no-run` above) and incremental directories are
-      # dropped: they are most of target/, and a consumer relinks the ones it runs.
-      - name: Trim test executables and incremental cache and mark its source commit
+      - name: Trim incremental cache and mark its source commit
         if: github.ref == 'refs/heads/main' && github.ref_protected
         shell: bash
         run: |
           set -euo pipefail
           du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
           find target -type d -name incremental -prune -exec rm -rf -- {} +
-          cargo +1.99.1 test --locked --workspace --no-run --message-format=json > "$RUNNER_TEMP/test-artifacts.jsonl"
-          python - "$RUNNER_TEMP/test-artifacts.jsonl" <<'PY'
-          import json
-          import sys
-          from pathlib import Path
-
-          deps = (Path.cwd() / 'target/debug/deps').resolve(strict=True)
-          removed = 0
-          for line in Path(sys.argv[1]).read_text(encoding='utf-8').splitlines():
-              message = json.loads(line)
-              if message.get('reason') != 'compiler-artifact' or not message['profile']['test']:
-                  continue
-              executable = Path(message['executable'] or '')
-              if executable.parent.resolve() != deps:
-                  raise SystemExit(f'unexpected test executable location: {executable}')
-              executable.unlink(missing_ok=True)
-              removed += 1
-          if removed == 0:
-              raise SystemExit('no workspace test executable listed; refusing to save an untrimmed cache')
-          print(f'removed {removed} workspace test executables')
-          PY
           git rev-parse HEAD > target/.oteryn-cache-source-sha
           du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
 

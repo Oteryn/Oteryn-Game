@@ -111,7 +111,7 @@ def shared_cache_completion_regressions() -> None:
     assert linux is not None
     steps = re.split(r"(?m)^      - name: ", linux)[1:]
     names = [step.splitlines()[0] for step in steps]
-    trim = names.index("Trim test executables and incremental cache and mark its source commit")
+    trim = names.index("Trim incremental cache and mark its source commit")
     save = names.index("Save trimmed cache from protected main after compilation")
     for name in (
         "Build workspace", "Strict Clippy", "Compile workspace tests without executing them",
@@ -130,17 +130,6 @@ def shared_cache_completion_regressions() -> None:
     assert fence in steps[trim] and fence in steps[save]
     assert "git rev-parse HEAD > target/.oteryn-cache-source-sha" in steps[trim]
     assert "-name incremental -prune" in steps[trim]
-    # Only workspace test executables (profile.test, listed by Cargo itself) leave the cache, only
-    # from target/debug/deps, and a listing that names none fails instead of saving untrimmed.
-    for fragment in (
-        'cargo +1.99.1 test --locked --workspace --no-run --message-format=json > "$RUNNER_TEMP/test-artifacts.jsonl"\n',
-        "if message.get('reason') != 'compiler-artifact' or not message['profile']['test']:\n",
-        "if executable.parent.resolve() != deps:\n",
-        "raise SystemExit(f'unexpected test executable location: {executable}')\n",
-        "raise SystemExit('no workspace test executable listed; refusing to save an untrimmed cache')\n",
-    ):
-        assert fragment in steps[trim], fragment
-    assert steps[trim].index("git rev-parse HEAD > target/.oteryn-cache-source-sha") > steps[trim].index("executable.unlink(missing_ok=True)")
     # Superseded main pushes cancel their cache build; nothing else shares the group.
     assert "concurrency:\n  group: rust-protected-main-cache-${{ github.ref }}\n  cancel-in-progress: true\n" in source
     key = re.search(r"(?m)^          key: (.+)$", steps[save]).group(1)
@@ -180,12 +169,8 @@ def shared_cache_completion_regressions() -> None:
     assert core.validate_post_merge_rust(source) == []
     # The protected-main producer only compiles tests. Full test execution is
     # retained in MQ; cache hits never stand in for candidate qualification.
-    test_commands = re.findall(r"cargo \+1\.99\.1 test [^\n]*", source)
-    assert test_commands == [
-        "cargo +1.99.1 test --locked --workspace --no-run",
-        'cargo +1.99.1 test --locked --workspace --no-run --message-format=json > "$RUNNER_TEMP/test-artifacts.jsonl"',
-    ], test_commands
-    assert "nextest" not in source
+    test_commands = re.findall(r"(?m)^        run: (cargo .+ test .+)$", source)
+    assert test_commands == ["cargo +1.99.1 test --locked --workspace --no-run"]
     assert "services:" not in source and "runs-on: windows" not in source
     assert not re.search(r"(?m)^  (durability-postgres|windows):$", source)
     assert "github.ref == 'refs/heads/main' && github.ref_protected" in linux
@@ -198,7 +183,6 @@ def shared_cache_completion_regressions() -> None:
     for mutation in (
         early_save,
         source.replace("--workspace --no-run", "--workspace"),
-        source.replace("not message['profile']['test']", "False"),
         source.replace("  cancel-in-progress: true\n", "  cancel-in-progress: false\n"),
         source.replace(fence.strip(), "if: always()"),
         source.replace("      - name: Strict Clippy\n", "      - name: Removed Clippy\n"),
