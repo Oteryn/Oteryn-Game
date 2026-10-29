@@ -601,6 +601,17 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         Some(self.use_item(actor, command, item).await)
     }
 
+    async fn use_coin_converter(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        converter: item_view::ItemKey,
+        coin: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        self.use_gold_converter(actor, command, converter, coin)
+            .await
+    }
+
     async fn use_item_by_definition(
         &self,
         actor: ExactActorRef,
