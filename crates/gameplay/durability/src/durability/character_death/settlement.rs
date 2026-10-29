@@ -30,14 +30,7 @@ impl DurabilityRoot {
             .await?
             .map(|death| death.original_character_revision);
         self.settle_player_death_in_slot(
-            &mut slot,
-            authority,
-            node,
-            fence,
-            request,
-            original,
-            None,
-            None,
+            &mut slot, authority, node, fence, request, original, None, None, None,
         )
         .await
     }
@@ -66,7 +59,7 @@ impl DurabilityRoot {
         training: Option<DeathTrainingFlush<'_>>,
     ) -> Result<CommittedCharacterDeath> {
         self.settle_player_death_with_training_inner(
-            sequencer, authority, node, fence, request, training, None, None,
+            sequencer, authority, node, fence, request, training, None, None, None,
         )
         .await
     }
@@ -96,6 +89,7 @@ impl DurabilityRoot {
             training,
             Some(formula),
             None,
+            None,
         )
         .await
     }
@@ -118,10 +112,40 @@ impl DurabilityRoot {
         formula: Option<&dyn BuildFormula>,
         premium: Option<&dyn promotion::DeathPremiumOwner>,
     ) -> Result<CommittedCharacterDeath> {
+        self.settle_runtime_player_death_with_items(
+            sequencer, authority, node, fence, request, formula, premium, None,
+        )
+        .await
+    }
+
+    /// Production death selection uses the Channel's active gameplay decision root.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "existing death inputs plus the owner decision root"
+    )]
+    pub async fn settle_runtime_player_death_with_items<const N: usize>(
+        &self,
+        sequencer: &CharacterRevisionSequencer,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: CharacterDeathRequest<N>,
+        formula: Option<&dyn BuildFormula>,
+        premium: Option<&dyn promotion::DeathPremiumOwner>,
+        selection_root: Option<[u8; 32]>,
+    ) -> Result<CommittedCharacterDeath> {
         let formula =
             formula.filter(|formula| formula.content_revision() == request.context.content);
         self.settle_player_death_with_training_inner(
-            sequencer, authority, node, fence, request, None, formula, premium,
+            sequencer,
+            authority,
+            node,
+            fence,
+            request,
+            None,
+            formula,
+            premium,
+            selection_root,
         )
         .await
     }
@@ -140,6 +164,7 @@ impl DurabilityRoot {
         training: Option<DeathTrainingFlush<'_>>,
         formula: Option<&dyn BuildFormula>,
         premium: Option<&dyn promotion::DeathPremiumOwner>,
+        selection_root: Option<[u8; 32]>,
     ) -> Result<CommittedCharacterDeath> {
         validate_request(&fence, &request)?;
         let mut slot = sequencer.acquire(fence.character_id).await;
@@ -203,7 +228,15 @@ impl DurabilityRoot {
         // owner's newly loaded current formula is only for a new occurrence.
         let formula = if original.is_some() { None } else { formula };
         self.settle_player_death_in_slot(
-            &mut slot, authority, node, fence, request, original, formula, premium,
+            &mut slot,
+            authority,
+            node,
+            fence,
+            request,
+            original,
+            formula,
+            premium,
+            selection_root,
         )
         .await
     }
@@ -222,6 +255,7 @@ impl DurabilityRoot {
         original: Option<CharacterRevision>,
         formula: Option<&dyn BuildFormula>,
         premium: Option<&dyn promotion::DeathPremiumOwner>,
+        selection_root: Option<[u8; 32]>,
     ) -> Result<CommittedCharacterDeath> {
         let outcome = match self
             .commit_death_in_slot(
@@ -233,6 +267,7 @@ impl DurabilityRoot {
                 original,
                 formula,
                 premium,
+                selection_root,
             )
             .await
         {
@@ -254,7 +289,15 @@ impl DurabilityRoot {
                 )
                 .await?;
                 self.commit_death_in_slot(
-                    slot, authority, node, fence, request, None, formula, premium,
+                    slot,
+                    authority,
+                    node,
+                    fence,
+                    request,
+                    None,
+                    formula,
+                    premium,
+                    selection_root,
                 )
                 .await?
             }
@@ -273,7 +316,15 @@ impl DurabilityRoot {
                 )
                 .await?;
                 self.commit_death_in_slot(
-                    slot, authority, node, fence, request, None, formula, premium,
+                    slot,
+                    authority,
+                    node,
+                    fence,
+                    request,
+                    None,
+                    formula,
+                    premium,
+                    selection_root,
                 )
                 .await?
             }
@@ -298,9 +349,18 @@ impl DurabilityRoot {
         original: Option<CharacterRevision>,
         formula: Option<&dyn BuildFormula>,
         premium: Option<&dyn promotion::DeathPremiumOwner>,
+        selection_root: Option<[u8; 32]>,
     ) -> Result<CharacterDeathOutcome> {
         slot.commit_premium_death(
-            self, authority, node, fence, request, formula, original, premium,
+            self,
+            authority,
+            node,
+            fence,
+            request,
+            formula,
+            original,
+            premium,
+            selection_root,
         )
         .await
     }
