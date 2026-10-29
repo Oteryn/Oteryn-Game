@@ -27,7 +27,8 @@ pub enum Resolution {
     Unknown,
 }
 
-pub trait KeyResolver {
+/// `Sync` so that [`compile`] and [`equivalence`] can read the families on their own thread.
+pub trait KeyResolver: Sync {
     fn resolve(&self, key: &str) -> Resolution;
 
     /// The terrain semantics of a resolved key (format v2): `Some` for a route to a Terrain
@@ -275,6 +276,9 @@ struct CellFacts {
 /// OTBM `TILESTATE_PROTECTIONZONE`.
 const FLAG_PROTECTION_ZONE: u32 = 1;
 
+/// Cell facts by project-frame position.
+type Facts = BTreeMap<LegacyPosition, CellFacts>;
+
 /// Facts of every wanted project-frame cell, from the regions and the key resolver. A terrain
 /// record that is not classified yet marks its cell `unclassified` instead of failing, so the
 /// parity report can list it; [`compile`] fails on it before this point.
@@ -282,7 +286,7 @@ fn cell_facts(
     input: &Input<'_>,
     resolver: &dyn KeyResolver,
     wanted: &BTreeSet<LegacyPosition>,
-) -> Result<BTreeMap<LegacyPosition, CellFacts>, Error> {
+) -> Result<Facts, Error> {
     let (mut facts, mut budget) = (BTreeMap::new(), bundle::BUNDLE_BUDGET);
     if wanted.is_empty() {
         return Ok(facts);
@@ -301,56 +305,100 @@ fn cell_facts(
             _ => None,
         })
         .collect();
+    // The wanted cells as one bit per cell of each sector that holds one. Every region is
+    // still decoded and checked; only the tiles of those sectors are looked at.
+    let size = crate::sector::SECTOR_SIZE;
+    let bit = |x: u16, y: u16| usize::from(y % size) * usize::from(size) + usize::from(x % size);
+    let mut sectors = BTreeMap::<(u8, u16, u16), [u64; 16]>::new();
+    for &(x, y, z) in wanted {
+        let at = bit(x, y);
+        sectors.entry((z, x / size, y / size)).or_default()[at / 64] |= 1 << (at % 64);
+    }
     for data in input.regions {
         let region = b3::decode_region(data, bundle::TILE_LIMITS, &mut budget)?;
-        for tile in region.sectors.iter().flat_map(|(_, _, tiles)| tiles) {
-            let at = (tile.x, tile.y, region.z);
-            if !wanted.contains(&at) {
+        for (sx, sy, tiles) in &region.sectors {
+            let Some(cells) = sectors.get(&(region.z, *sx, *sy)) else {
                 continue;
-            }
-            let mut cell = CellFacts {
-                tile: true,
-                pz: tile.flags & FLAG_PROTECTION_ZONE != 0,
-                teleport: input.families.teleports.contains_key(&at),
-                house: tile.house != 0,
-                ..CellFacts::default()
             };
-            for item in &tile.items {
-                if matches!(item.attrs.teleport, Some(to) if to != (0, 0, 0)) {
-                    cell.teleport = true;
-                }
-                let Some(Some((terrain, change, solid, stated, border))) =
-                    kinds.get(item.palette as usize)
-                else {
+            for tile in tiles {
+                let at = bit(tile.x, tile.y);
+                if cells[at / 64] & (1 << (at % 64)) == 0 {
                     continue;
-                };
-                cell.floor_change |= *change;
-                let top = item.depth == 0;
-                // The game server's `terrain_floor`: the World's grounds, and borders the
-                // catalogue proves walkable, are Item entries without a solidity fact that do
-                // not block by themselves (`map/facts.rs`).
-                let floor = matches!(terrain, Ok(Some(t)) if match t.kind {
-                    bundle::TerrainKind::Ground => true,
-                    bundle::TerrainKind::Border => *border,
-                    _ => false,
-                });
-                cell.block_solid |= top && *solid && (*stated || !floor);
-                match terrain {
-                    Err(_) => cell.unclassified = true,
-                    Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Ground => {
-                        let walkable = terrain.walkable == Some(true);
-                        cell.ground = Some(cell.ground.unwrap_or(false) | walkable);
-                    }
-                    Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Wall => {
-                        cell.wall |= top;
-                    }
-                    Ok(_) => {}
                 }
+                let at = (tile.x, tile.y, region.z);
+                let mut cell = CellFacts {
+                    tile: true,
+                    pz: tile.flags & FLAG_PROTECTION_ZONE != 0,
+                    teleport: input.families.teleports.contains_key(&at),
+                    house: tile.house != 0,
+                    ..CellFacts::default()
+                };
+                for item in &tile.items {
+                    if matches!(item.attrs.teleport, Some(to) if to != (0, 0, 0)) {
+                        cell.teleport = true;
+                    }
+                    let Some(Some((terrain, change, solid, stated, border))) =
+                        kinds.get(item.palette as usize)
+                    else {
+                        continue;
+                    };
+                    cell.floor_change |= *change;
+                    let top = item.depth == 0;
+                    // The game server's `terrain_floor`: the World's grounds, and borders the
+                    // catalogue proves walkable, are Item entries without a solidity fact that do
+                    // not block by themselves (`map/facts.rs`).
+                    let floor = matches!(terrain, Ok(Some(t)) if match t.kind {
+                        bundle::TerrainKind::Ground => true,
+                        bundle::TerrainKind::Border => *border,
+                        _ => false,
+                    });
+                    cell.block_solid |= top && *solid && (*stated || !floor);
+                    match terrain {
+                        Err(_) => cell.unclassified = true,
+                        Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Ground => {
+                            let walkable = terrain.walkable == Some(true);
+                            cell.ground = Some(cell.ground.unwrap_or(false) | walkable);
+                        }
+                        Ok(Some(terrain)) if terrain.kind == bundle::TerrainKind::Wall => {
+                            cell.wall |= top;
+                        }
+                        Ok(_) => {}
+                    }
+                }
+                facts.insert(at, cell);
             }
-            facts.insert(at, cell);
         }
     }
     Ok(facts)
+}
+
+/// The facts of every cell the spawn, NPC and subarea families read, from one pass over the
+/// regions. Each family looks up only its own cells, which hold the facts `cell_facts` gives
+/// for that family's cells alone.
+fn family_facts(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Facts, Error> {
+    let mut wanted = spawn_cells(input.families);
+    wanted.extend(npc_cells(input.families));
+    wanted.extend(subareas::cells(input));
+    cell_facts(input, resolver, &wanted)
+}
+
+/// The cells of every spawn point.
+fn spawn_cells(families: &Families) -> BTreeSet<LegacyPosition> {
+    families
+        .spawns
+        .iter()
+        .flat_map(|source| source.points.iter().map(|point| point.cell))
+        .collect()
+}
+
+/// The cells of every NPC placement and travel destination.
+fn npc_cells(families: &Families) -> BTreeSet<LegacyPosition> {
+    families
+        .npc_placements
+        .iter()
+        .map(|p| p.cell)
+        .chain(families.routes.iter().map(|r| r.destination))
+        .collect()
 }
 
 /// Realizes the spawn family against the cells it stands on: the table the bundle holds and
@@ -359,13 +407,24 @@ pub fn realize_spawns(
     input: &Input<'_>,
     resolver: &dyn KeyResolver,
 ) -> Result<(spawn::Table, SpawnReport), Error> {
+    spawns_with(input, resolver, None)
+}
+
+/// [`realize_spawns`], reading the cells from `facts` when given (`family_facts`).
+fn spawns_with(
+    input: &Input<'_>,
+    resolver: &dyn KeyResolver,
+    facts: Option<&Facts>,
+) -> Result<(spawn::Table, SpawnReport), Error> {
     let families = input.families;
-    let wanted: BTreeSet<LegacyPosition> = families
-        .spawns
-        .iter()
-        .flat_map(|source| source.points.iter().map(|point| point.cell))
-        .collect();
-    let facts = cell_facts(input, resolver, &wanted)?;
+    let owned;
+    let facts = match facts {
+        Some(facts) => facts,
+        None => {
+            owned = cell_facts(input, resolver, &spawn_cells(families))?;
+            &owned
+        }
+    };
     let mut report = SpawnReport {
         sources: families.spawns.len(),
         points: families.spawns.iter().map(|s| s.points.len()).sum(),
@@ -656,6 +715,16 @@ pub fn realize_npcs(
     resolver: &dyn KeyResolver,
     spawns: &spawn::Table,
 ) -> Result<(npc::Table, NpcReport), Error> {
+    npcs_with(input, resolver, spawns, None)
+}
+
+/// [`realize_npcs`], reading the cells from `facts` when given (`family_facts`).
+fn npcs_with(
+    input: &Input<'_>,
+    resolver: &dyn KeyResolver,
+    spawns: &spawn::Table,
+    facts: Option<&Facts>,
+) -> Result<(npc::Table, NpcReport), Error> {
     let families = input.families;
     let mut keys = BTreeSet::new();
     let mut floors = Vec::with_capacity(families.npc_placements.len());
@@ -671,13 +740,14 @@ pub fn realize_npcs(
     for route in &families.routes {
         within(&input.world, route.destination, "travel destination")?;
     }
-    let wanted: BTreeSet<LegacyPosition> = families
-        .npc_placements
-        .iter()
-        .map(|p| p.cell)
-        .chain(families.routes.iter().map(|r| r.destination))
-        .collect();
-    let facts = cell_facts(input, resolver, &wanted)?;
+    let owned;
+    let facts = match facts {
+        Some(facts) => facts,
+        None => {
+            owned = cell_facts(input, resolver, &npc_cells(families))?;
+            &owned
+        }
+    };
     let spawn_cells: BTreeSet<LegacyPosition> = spawns
         .sources
         .iter()
@@ -927,6 +997,48 @@ impl State<'_> {
 
 /// Compiles B3 regions into one server World Bundle, deterministically and failing closed.
 pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled, Error> {
+    // The families read only the input, so they are realized beside the base map; a base map
+    // error still wins over a family error.
+    std::thread::scope(|scope| {
+        let families = scope.spawn(|| realize_families(input, resolver));
+        let base = base_map(input, resolver);
+        let families = families
+            .join()
+            .map_err(|_| Error::Format("the family realization panicked".into()));
+        assemble(input, base?, families??)
+    })
+}
+
+/// The spawn, NPC and subarea families of `input`, each from one shared [`family_facts`]. The
+/// subarea table stays a result: a production hold of the NPC report wins over its error.
+fn realize_families(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Realized, Error> {
+    let facts = family_facts(input, resolver)?;
+    let (spawns, spawn_report) = spawns_with(input, resolver, Some(&facts))?;
+    let (npcs, npc_report) = npcs_with(input, resolver, &spawns, Some(&facts))?;
+    let subareas = subareas::realize(input, &npc_report, &facts);
+    Ok(Realized {
+        spawns,
+        spawn_report,
+        npcs,
+        npc_report,
+        subareas,
+    })
+}
+
+/// What [`realize_families`] gives [`assemble`].
+struct Realized {
+    spawns: spawn::Table,
+    spawn_report: SpawnReport,
+    npcs: npc::Table,
+    npc_report: NpcReport,
+    subareas: Result<oteryn_world_bundle::subarea::Table, Error>,
+}
+
+/// The base-map sectors of `input` with the compiler state they leave.
+fn base_map<'a>(
+    input: &'a Input<'a>,
+    resolver: &'a dyn KeyResolver,
+) -> Result<(State<'a>, Vec<Sector>), Error> {
     let mut state = State {
         input,
         resolver,
@@ -951,17 +1063,21 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
             "Transition record from {from:?} has no teleport attribute on the map"
         )));
     }
-    let remap: BTreeMap<u32, u32> = state
-        .used
-        .keys()
-        .zip(0u32..)
-        .map(|(k, i)| (*k, i))
-        .collect();
+    // Source palette index to bundle palette index, `u32::MAX` for an unused one.
+    let mut remap = vec![u32::MAX; input.palette.len()];
+    for (k, i) in state.used.keys().zip(0u32..) {
+        if let Some(slot) = remap.get_mut(*k as usize) {
+            *slot = i;
+        }
+    }
     let sectors: Vec<Sector> = sectors
         .into_iter()
         .map(|((floor, sy, sx), mut tiles)| {
             for item in tiles.iter_mut().flat_map(|tile| tile.items.iter_mut()) {
-                item.palette = remap.get(&item.palette).copied().unwrap_or(u32::MAX);
+                item.palette = remap
+                    .get(item.palette as usize)
+                    .copied()
+                    .unwrap_or(u32::MAX);
             }
             Sector {
                 floor,
@@ -971,8 +1087,22 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
             }
         })
         .collect();
-    let (spawns, spawn_report) = realize_spawns(input, resolver)?;
-    let (npcs, npc_report) = realize_npcs(input, resolver, &spawns)?;
+    Ok((state, sectors))
+}
+
+/// The bundle of `input` from its base map and families.
+fn assemble(
+    input: &Input<'_>,
+    (state, sectors): (State<'_>, Vec<Sector>),
+    families: Realized,
+) -> Result<Compiled, Error> {
+    let Realized {
+        spawns,
+        spawn_report,
+        npcs,
+        npc_report,
+        subareas,
+    } = families;
     if input.build_class == BuildClass::Production {
         if let Some(held) = npc_report.held.first() {
             return Err(Error::Family(format!(
@@ -989,7 +1119,7 @@ pub fn compile(input: &Input<'_>, resolver: &dyn KeyResolver) -> Result<Compiled
     }
     let skipped: BTreeSet<String> = state.diagnostics.iter().map(|d| d.key.clone()).collect();
     let manifest = Manifest {
-        subareas: subareas::realize(input, resolver, &npc_report)?,
+        subareas: subareas?,
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,
         projection_class: "server".into(),
@@ -1048,6 +1178,20 @@ pub fn equivalence(
     input: &Input,
     resolver: &dyn KeyResolver,
     bundle: &[u8],
+) -> Result<Equivalence, Error> {
+    // The family cell facts read only the input, so they are gathered beside the tile proof.
+    std::thread::scope(|scope| {
+        let facts = scope.spawn(|| family_facts(input, resolver));
+        prove(input, resolver, bundle, facts)
+    })
+}
+
+/// [`equivalence`], with the `facts` of [`family_facts`] gathered on their own thread.
+fn prove(
+    input: &Input,
+    resolver: &dyn KeyResolver,
+    bundle: &[u8],
+    facts: std::thread::ScopedJoinHandle<'_, Result<Facts, Error>>,
 ) -> Result<Equivalence, Error> {
     let read = bundle::read(bundle)?;
     let differs = |what: String| Err(Error::Format(format!("equivalence: {what}")));
@@ -1122,11 +1266,14 @@ pub fn equivalence(
     if records_met.len() != families.teleports.len() {
         return differs("a Transition record meets no teleport attribute".into());
     }
-    let (spawns, _) = realize_spawns(input, resolver)?;
+    let facts = facts
+        .join()
+        .map_err(|_| Error::Format("the family cell facts panicked".into()))??;
+    let (spawns, _) = spawns_with(input, resolver, Some(&facts))?;
     if read.spawns != spawns {
         return differs("spawn family is not the one derived from the input".into());
     }
-    let (npcs, npc_report) = realize_npcs(input, resolver, &spawns)?;
+    let (npcs, npc_report) = npcs_with(input, resolver, &spawns, Some(&facts))?;
     if read.npcs != npcs {
         return differs("NPC family is not the one derived from the input".into());
     }
@@ -1145,7 +1292,7 @@ pub fn equivalence(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let expected = Manifest {
-        subareas: subareas::realize(input, resolver, &npc_report)?,
+        subareas: subareas::realize(input, &npc_report, &facts)?,
         format: bundle::FORMAT.into(),
         min_reader_version: bundle::VERSION,
         projection_class: "server".into(),

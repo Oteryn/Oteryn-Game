@@ -114,7 +114,7 @@ Mandatory self-review must be clean. When independent review is required by the 
 
 ## Closeout
 
-Do not close the lifecycle from enqueue/submission or an unverified merge result. Closeout begins only after the bound META policy's governed Merge Queue integration succeeds and protected-main readback confirms the accepted candidate is integrated.
+Do not close the lifecycle from a merge request/submission or an unverified merge result. Closeout begins only after the squash merge succeeds, the post-merge full gate is green and protected-main readback confirms the accepted candidate is integrated.
 
 After that protected-main readback:
 
