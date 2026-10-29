@@ -4,7 +4,7 @@ use crate::spell::cast::{CharacterCastFacts, PlayerSpellState};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 #[test]
-fn first_vocation_vitals_preserve_pools_conditions_cooldowns_and_replay() {
+fn first_vocation_vitals_refill_pools_preserve_conditions_cooldowns_and_replay() {
     let formula = formula();
     let before = DurableBuildState::default();
     let mut state = PlayerSpellState::new(
@@ -55,7 +55,10 @@ fn first_vocation_vitals_preserve_pools_conditions_cooldowns_and_replay() {
                 SemanticTimeMicros::from_micros(0),
             )
             .unwrap();
-        assert_eq!((next.health, next.mana, next.soul), (70, 30, 100));
+        assert_eq!(
+            (next.health, next.mana, next.soul),
+            (max_health, max_mana, 100)
+        );
         assert_eq!(next.conditions, state.conditions);
         assert_eq!(next.cooldowns, state.cooldowns);
         assert_eq!((next.regen_health_ms, next.regen_mana_ms), (2000, 1000));
@@ -94,7 +97,7 @@ fn first_vocation_vitals_preserve_pools_conditions_cooldowns_and_replay() {
         );
         let mut dead = state.clone();
         dead.health = 0;
-        assert_eq!(
+        assert!(
             dead.after_first_vocation(
                 &before,
                 &after,
@@ -102,9 +105,7 @@ fn first_vocation_vitals_preserve_pools_conditions_cooldowns_and_replay() {
                 &formula,
                 SemanticTimeMicros::from_micros(1)
             )
-            .unwrap()
-            .health,
-            0
+            .is_none()
         );
         let mut replay_with_training = next.clone();
         replay_with_training
@@ -123,5 +124,74 @@ fn first_vocation_vitals_preserve_pools_conditions_cooldowns_and_replay() {
             ),
             Some(replay_with_training)
         );
+    }
+}
+
+#[test]
+fn first_vocation_vitals_refill_at_levels_8_9_20_50_for_two_choices() {
+    let formula = formula();
+    let before = DurableBuildState::default();
+    for (level, old_health, old_mana, knight, druid) in [
+        (8, 185, 90, (185, 90), (185, 90)),
+        (9, 190, 95, (200, 95), (190, 120)),
+        (20, 245, 150, (365, 150), (245, 450)),
+        (50, 395, 300, (815, 300), (395, 1350)),
+    ] {
+        let mut state = PlayerSpellState::new(
+            CharacterCastFacts {
+                vocation: Vocation::None,
+                level,
+                magic_level: 0,
+                max_health: old_health,
+                max_mana: old_mana,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .unwrap();
+        state.load_owned_build(&before).unwrap();
+        state.restore_saved_vitals(1, 0);
+        state.stance_key = Some("protector".into());
+        for (key, vocation, (max_health, max_mana)) in [
+            ("knight", Vocation::Knight, knight),
+            ("druid", Vocation::Druid, druid),
+        ] {
+            let after =
+                crate::durability::character_build::convert_vocation(&formula, &before, key)
+                    .unwrap();
+            let facts = CharacterCastFacts {
+                vocation,
+                max_health,
+                max_mana,
+                ..state.facts
+            };
+            let next = state
+                .after_first_vocation(
+                    &before,
+                    &after,
+                    facts,
+                    &formula,
+                    SemanticTimeMicros::from_micros(0),
+                )
+                .unwrap();
+            assert_eq!(
+                (next.vitals().health, next.vitals().mana),
+                (max_health, max_mana)
+            );
+            assert_eq!(next.stance_key, state.stance_key);
+            let mut spent = next.clone();
+            spent.restore_saved_vitals(1, 0);
+            assert_eq!(
+                spent.after_first_vocation(
+                    &before,
+                    &after,
+                    facts,
+                    &formula,
+                    SemanticTimeMicros::from_micros(1)
+                ),
+                Some(spent.clone())
+            );
+        }
     }
 }
