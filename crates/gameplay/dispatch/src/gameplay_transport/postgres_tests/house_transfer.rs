@@ -49,6 +49,145 @@ fn scenario() -> TestResult {
         Err(panic) => std::panic::resume_unwind(panic),
     }
 }
+/// NODEBOOT-1: a same-session resume whose PREPARE meets a busy holder waits for it instead
+/// of closing once it may have written (the node-boot `same-session resume diverged: Closed`).
+#[test]
+fn a_same_session_resume_waits_for_a_busy_holder_at_prepare_postgres() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| resume_scenario().map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "busy-holder resume thread panicked")??;
+    Ok(())
+}
+fn resume_scenario() -> TestResult {
+    let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
+        return Ok(());
+    };
+    let rt = crate::bestiary_postgres_harness::runtime()?;
+    let h = rt.block_on(Harness::create_with_admission_seed(
+        admin,
+        "resume_busy_holder",
+        true,
+        false,
+    ))?;
+    let result =
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| rt.block_on(resume_case(&h))));
+    let cleanup = rt.block_on(h.cleanup());
+    match result {
+        Ok(result) => {
+            result?;
+            cleanup
+        }
+        Err(panic) => std::panic::resume_unwind(panic),
+    }
+}
+async fn resume_case(h: &Harness) -> TestResult {
+    let recovery_source = RecoverySource::start(h).await?;
+    prepare_owned_session(h).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let authority = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let deps = Dependencies::new()?;
+    let mut owner = deps.owner(h, &authority);
+    owner.evidence = &recovery_source.evidence;
+    deps.initialize(&owner).await;
+    owner
+        .runtime
+        .lock()
+        .await
+        .initialize_first_entry_position(deps.actor)
+        .map_err(debug)?;
+    let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session_at(deps.admitted.game_session_id)
+        .await?;
+    let mut admitted = deps.admitted;
+    admitted.first_entry = FirstEntryOutcome::Positioned;
+    admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[86]).ok_or("selection")?;
+    owner.states.command_ingress.admit(admitted.game_session_id);
+    // The served connection ends at once; its loss is recorded as the listener records it.
+    let (mut server, client) = tokio::io::duplex(1 << 20);
+    drop(client);
+    let admitted = match serve_admitted(&mut server, admitted, &owner, IDLE_LIVENESS).await {
+        ConnectionEnd::AdmittedThenDisconnected(s) | ConnectionEnd::AdmittedThenClosed(s, _) => s,
+        end => return Err(format!("served end: {end:?}").into()),
+    };
+    assert_eq!(
+        owner
+            .lose_control_for_cause(admitted, std::time::Duration::ZERO, None)
+            .await,
+        crate::gameplay_transport::connection::ControlLossResult::Recorded
+    );
+    let token = RecoverySource::token(7)?;
+    // The held runtime stops the resume after its pre-PREPARE reads; the holder is taken
+    // before the runtime is released, so PREPARE is the first pass that finds it busy.
+    let runtime = owner.runtime.lock().await;
+    let mut resume = std::pin::pin!(resume_same_session(
+        &owner,
+        admitted.game_session_id,
+        &token,
+        10
+    ));
+    if let Ok(early) =
+        tokio::time::timeout(std::time::Duration::from_millis(500), resume.as_mut()).await
+    {
+        return Err(format!("the resume did not wait for the runtime: {early:?}").into());
+    }
+    let busy = hold_holder(&h.root, std::time::Duration::from_millis(300))?;
+    drop(runtime);
+    let resumed = resume.await;
+    busy.await??;
+    let resumed = resumed?;
+    assert_eq!(resumed.game_session_id, admitted.game_session_id);
+    assert_eq!(resumed.continuity.connection_generation, 2);
+    let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
+        .current_session_at(admitted.game_session_id)
+        .await?;
+    assert_eq!(current.session_state(), crate::foundation::GameSessionState::Active);
+    Ok(())
+}
+async fn resume_same_session(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    source: crate::foundation::GameSessionId,
+    token: &str,
+    transport: u8,
+) -> TestResult<AdmittedSession> {
+    let mut body = Vec::new();
+    bytes(&mut body, 1, source.as_bytes());
+    bytes(&mut body, 2, token.as_bytes());
+    body.extend([24, 0]);
+    scalar(&mut body, 4, 1);
+    scalar(&mut body, 5, 1);
+    scalar(&mut body, 6, 1);
+    scalar(&mut body, 7, 86);
+    bytes(&mut body, 8, b"resume-busy-holder-test");
+    let mut frame = vec![8, MessageType::ClientResume as u8];
+    bytes(&mut frame, 4, &body);
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    let admitted = crate::gameplay_transport::connection::admit_frame(
+        &mut server,
+        &frame,
+        owner,
+        &RecoveryIdentifiers(transport),
+    )
+    .await
+    .map_err(|e| format!("same-session resume {e:?}"))?;
+    drop(server);
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
+    let n = u32::from_be_bytes(output.get(..4).ok_or("no reply")?.try_into()?) as usize;
+    let envelope = decode_wire_envelope(&output[4..4 + n]).map_err(debug)?;
+    assert_eq!(envelope.message_type(), MessageType::ServerResumeAccepted);
+    Ok(admitted)
+}
 async fn case(h: &Harness) -> TestResult {
     let recovery_source = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;

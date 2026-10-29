@@ -31,6 +31,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let mut wrote = false;
                 let resumed = self
                     .resume_lost(
+                        &budget,
                         connection::ResumeAttempt {
                             game_session_id: attempt.game_session_id,
                             recovery_material: attempt.recovery_material,
