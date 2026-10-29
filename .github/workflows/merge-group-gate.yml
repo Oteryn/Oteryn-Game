@@ -8,9 +8,12 @@ on:
 
 permissions: {}
 
+# A merge-group run is keyed by its exact candidate. Push runs share one group per ref, so a
+# newer main push supersedes an older one: the newer SHA contains every earlier one, and its
+# candidate job widens the qualified range back to the last main SHA whose gate succeeded.
 concurrency:
-  group: game-merge-group-${{ github.event.merge_group.head_sha || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'merge_group' }}
+  group: game-merge-group-${{ github.event_name == 'push' && format('push-{0}', github.ref) || github.event.merge_group.head_sha }}
+  cancel-in-progress: true
 
 jobs:
   candidate:
@@ -19,7 +22,9 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+      actions: read
     outputs:
+      base_sha: ${{ steps.base.outputs.sha }}
       rust: ${{ steps.lanes.outputs.rust }}
       windows: ${{ steps.lanes.outputs.windows }}
       surface: ${{ steps.lanes.outputs.surface }}
@@ -49,18 +54,91 @@ jobs:
           [[ "$HEAD_SHA" == "$GITHUB_SHA_VALUE" ]]
           [[ "$HEAD_SHA" != "$BASE_SHA" ]]
 
+      # A superseded push run never finished qualifying its SHA, so a push is qualified against the
+      # newest main SHA whose push run of this workflow succeeded and that is a strict ancestor of
+      # this one. If that cannot be proven, the base stays the push's own parent and every lane
+      # below is selected (qualified=false).
+      - name: Resolve last qualified protected base
+        id: base
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          QUEUE_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          API_URL: ${{ github.api_url }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.request
+
+          event = os.environ['EVENT_NAME']
+          head = os.environ['HEAD_SHA'].strip().lower()
+          sha_pattern = re.compile(r'[0-9a-f]{40}')
+
+          def api(path):
+              request = urllib.request.Request(
+                  f"{os.environ['API_URL']}/repos/{os.environ['REPOSITORY']}{path}",
+                  headers={
+                      'Accept': 'application/vnd.github+json',
+                      'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+                      'X-GitHub-Api-Version': '2022-11-28',
+                  },
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          if event == 'merge_group':
+              base, qualified = os.environ['QUEUE_BASE_SHA'].strip().lower(), 'true'
+          else:
+              base, qualified = os.environ['PUSH_BEFORE_SHA'].strip().lower(), 'false'
+              try:
+                  runs = api(
+                      '/actions/workflows/merge-group-gate.yml/runs'
+                      '?branch=main&event=push&status=success&exclude_pull_requests=true&per_page=100'
+                  )['workflow_runs']
+                  compared = 0
+                  for run in runs:
+                      candidate = str(run.get('head_sha', '')).lower()
+                      if (
+                          run.get('event') != 'push' or run.get('head_branch') != 'main'
+                          or run.get('conclusion') != 'success'
+                          or sha_pattern.fullmatch(candidate) is None or candidate == head
+                      ):
+                          continue
+                      compared += 1
+                      if compared > 20:
+                          break
+                      compare = api(f'/compare/{candidate}...{head}')
+                      if compare.get('status') == 'ahead' and compare.get('behind_by') == 0:
+                          base, qualified = candidate, 'true'
+                          break
+              except Exception as error:
+                  print(f'Last qualified base unavailable, selecting every lane: {error!r}')
+          if sha_pattern.fullmatch(base) is None or base == head:
+              raise SystemExit('invalid qualified base')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'sha={base}\nqualified={qualified}\n')
+          print(f'Qualified base {base} (qualified={qualified}) for {head}')
+          PY
+
       - name: Check out protected-base classifier input
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.merge_group.base_sha || github.event.before }}
-          fetch-depth: 0
+          ref: ${{ steps.base.outputs.sha }}
           persist-credentials: false
 
       - name: Classify trusted merge-group lanes
         id: lanes
         shell: bash
         env:
-          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+          BASE_QUALIFIED: ${{ steps.base.outputs.qualified }}
           HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
@@ -91,6 +169,8 @@ jobs:
               )
 
           try:
+              if os.environ.get('BASE_QUALIFIED') != 'true':
+                  raise ValueError('unqualified protected base')
               if re.fullmatch(r'[0-9a-f]{40}', base) is None or re.fullmatch(r'[0-9a-f]{40}', head) is None:
                   raise ValueError('invalid merge-group identity')
               if base == head:
@@ -223,17 +303,17 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.merge_group.head_sha || github.sha }}
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Validate candidate repository contracts
         shell: bash
         env:
-          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
           HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
           git cat-file -e "${BASE_SHA}^{commit}"
           git diff --check "$BASE_SHA" "$HEAD_SHA"
           python tools/agents/validate_governance.py
@@ -243,6 +323,7 @@ jobs:
 
   dependency_review:
     name: Merge Queue / dependency review
+    needs: candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -252,11 +333,14 @@ jobs:
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
-          base-ref: ${{ github.event.merge_group.base_sha || github.event.before }}
+          base-ref: ${{ needs.candidate.outputs.base_sha }}
           head-ref: ${{ github.event.merge_group.head_sha || github.sha }}
 
+  # On push to main, codeql.yml analyses the same SHA (python, actions and rust); only the
+  # merge queue, which codeql.yml does not cover, runs this copy.
   codeql:
     name: Merge Queue / CodeQL (${{ matrix.language }})
+    if: github.event_name == 'merge_group'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
@@ -276,12 +360,12 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           languages: ${{ matrix.language }}
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: /language:${{ matrix.language }}-merge-queue
 
@@ -383,7 +467,7 @@ jobs:
         run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
 
       - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -562,7 +646,7 @@ jobs:
 
       - name: Fetch exact merge-group base for PostgreSQL custody
         env:
-          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+          BASE_SHA: ${{ needs.candidate.outputs.base_sha }}
         run: |
           set -euo pipefail
           [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
@@ -573,7 +657,7 @@ jobs:
         run: rustup toolchain install 1.99.1 --profile minimal
 
       - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -610,7 +694,7 @@ jobs:
       - name: Archive registered PostgreSQL E2E targets
         shell: bash
         env:
-          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
+          BASE_SHA: ${{ needs.candidate.outputs.base_sha }}
           HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}
         run: |
           set -euo pipefail
@@ -1005,7 +1089,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.merge_group.head_sha || github.sha }}
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Verify exact merge-group SHA
@@ -1030,7 +1113,7 @@ jobs:
       # The qualification builds game-server in target/debug; protected-main artifacts make
       # that build incremental. A cache hit never substitutes for running the qualification.
       - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -1082,7 +1165,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.merge_group.head_sha || github.sha }}
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Verify exact merge-group SHA
@@ -1107,7 +1189,7 @@ jobs:
       # The qualification builds game-server in target/debug; protected-main artifacts make
       # that build incremental. A cache hit never substitutes for running the qualification.
       - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -1143,6 +1225,7 @@ jobs:
       - name: Require every applicable Merge Queue qualification layer
         shell: bash
         env:
+          EVENT_NAME: ${{ github.event_name }}
           CANDIDATE: ${{ needs.candidate.result }}
           DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
           CODEQL: ${{ needs.codeql.result }}
@@ -1166,9 +1249,15 @@ jobs:
             RUST_REQUIRED=true
             WINDOWS_REQUIRED=true
           fi
-          for result in "$CANDIDATE" "$DEPENDENCY_REVIEW" "$CODEQL"; do
+          for result in "$CANDIDATE" "$DEPENDENCY_REVIEW"; do
             test "$result" = success
           done
+          # codeql.yml analyses every push to main; only a push may skip this copy.
+          if [[ "${EVENT_NAME:-}" == "push" ]]; then
+            [[ "$CODEQL" == success || "$CODEQL" == skipped ]]
+          else
+            test "$CODEQL" = success
+          fi
           if [[ "${ATLAS_FULLWORLD_REQUIRED:-}" == "false" ]]; then
             [[ "${ATLAS_FULLWORLD:-}" == success || "${ATLAS_FULLWORLD:-}" == skipped ]]
           else

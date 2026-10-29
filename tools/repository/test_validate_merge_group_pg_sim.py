@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "d4f8458055f1e84669cfd739738566c8edf966ff"
+APPROVED = "b4388b06ee2a93398399e1ca691b8bc08bfb9005"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -304,7 +304,7 @@ def main() -> int:
     original = GATE.read_text(encoding="utf-8")
     assert core.git_blob_sha(original.encode()) == APPROVED, "queue protected blob pin drifted"
     assert "  push:\n    branches: [main]\n" in original, "post-merge push to main trigger missing"
-    assert "cancel-in-progress: ${{ github.event_name == 'merge_group' }}" in original
+    assert "concurrency:\n  group: game-merge-group-${{ github.event_name == 'push' && format('push-{0}', github.ref) || github.event.merge_group.head_sha }}\n  cancel-in-progress: true\n" in original
     assert core.main() == 0, "approved queue workflow must pass full policy"
     _atlas_queue_canaries(original, core)
     _world_bundle_queue_canaries(original, core)
@@ -317,7 +317,7 @@ def main() -> int:
         "      rust: ${{ steps.lanes.outputs.rust }}",
         "      windows: ${{ steps.lanes.outputs.windows }}",
         "      - name: Check out protected-base classifier input",
-        "          ref: ${{ github.event.merge_group.base_sha || github.event.before }}",
+        "          ref: ${{ steps.base.outputs.sha }}",
         "      - name: Classify trusted merge-group lanes",
         "path.startswith('docs/architecture/') and path.endswith('.md')",
         "result = {'rust': 'false', 'windows': 'false', 'surface': 'architecture-docs'}",
@@ -344,7 +344,7 @@ def main() -> int:
     postgres = core.indented_yaml_mapping_block(original, "durability_postgres_build", 2)
     assert postgres is not None
     for fragment in (
-        "          BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}",
+        "          BASE_SHA: ${{ needs.candidate.outputs.base_sha }}",
         "          HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
         '            if git cat-file -e "$BASE_SHA:$path" 2>/dev/null; then',
         '            if git cat-file -e "$HEAD_SHA:$path" 2>/dev/null; then',
