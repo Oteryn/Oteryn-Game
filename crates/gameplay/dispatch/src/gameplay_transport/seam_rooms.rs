@@ -67,6 +67,7 @@ impl<'a> SeamRooms<'a> {
     pub fn gate_parameter_cast(&self, key: &str) -> Option<&'a QualifiedNativeEntryRoom> {
         match key {
             "locate_message" => self.combat,
+            "creature_appearance" => self.combat,
             _ => self.qualified,
         }
     }
