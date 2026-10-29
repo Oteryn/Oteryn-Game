@@ -9,7 +9,9 @@ use crate::durability::character_wheel::WheelRuleset;
 use crate::durability::npc_purchase::PurchaseOutcome;
 use crate::foundation::ConnectionGeneration;
 use crate::foundation::{MessageType, decode_wire_envelope};
-use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+use crate::gameplay_transport::connection::{
+    ConnectionEnd, FreshAdmissionAuthority, IDLE_LIVENESS, serve_admitted,
+};
 use oteryn_gameplay_progression::atelier::{AtelierAction, AtelierState, FragmentKind, GemQuality};
 use oteryn_gameplay_progression::wheel::WheelDomain;
 use oteryn_gameplay_progression::wheel_gem_data::WheelGemData;
@@ -68,21 +70,36 @@ async fn send_atelier(
     let mut output = Vec::new();
     client.read_to_end(&mut output).await?;
     if let ConnectionEnd::AdmittedThenDisconnected(current)
-    | ConnectionEnd::AdmittedThenClosed(current, _) = end
+    | ConnectionEnd::AdmittedThenClosed(current, _) = &end
     {
-        *admitted = current;
+        *admitted = *current;
     }
-    let length = u32::from_be_bytes(output[..4].try_into()?) as usize;
-    let envelope = decode_wire_envelope(&output[4..4 + length]).map_err(debug)?;
-    assert_eq!(envelope.message_type(), MessageType::CommandResult);
-    let result =
-        oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
-    assert_eq!(result.command_id, command_id);
-    assert_eq!(
-        result.status,
-        oteryn_protocol_oteryn::CommandStatus::Accepted
-    );
-    Ok(result.payload.to_vec())
+    // A playable session streams its snapshot first; the command answers with its
+    // CommandResult and never with a ProtocolError.
+    let mut cursor = 0;
+    while cursor < output.len() {
+        let length = u32::from_be_bytes(output[cursor..cursor + 4].try_into()?) as usize;
+        let envelope =
+            decode_wire_envelope(&output[cursor + 4..cursor + 4 + length]).map_err(debug)?;
+        cursor += 4 + length;
+        assert_ne!(
+            envelope.message_type(),
+            MessageType::ProtocolError,
+            "command {kind}: {:?}",
+            oteryn_protocol_oteryn::decode_protocol_error(envelope.payload())
+        );
+        if envelope.message_type() == MessageType::CommandResult {
+            let result =
+                oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
+            assert_eq!(result.command_id, command_id);
+            assert_eq!(
+                result.status,
+                oteryn_protocol_oteryn::CommandStatus::Accepted
+            );
+            return Ok(result.payload.to_vec());
+        }
+    }
+    Err(format!("Atelier command {kind} result missing: {end:?}").into())
 }
 
 fn scenario() -> TestResult {
@@ -349,7 +366,40 @@ fn scenario() -> TestResult {
         tx.rollback().await?;
         // The wire commands go through the composed connection: a query, then an unlock and a
         // re-lock of the gem locked above, each committed with the current Atelier revision.
+        // The wire path needs what a real admission leaves: a positioned actor (an unplayable
+        // session is only held), the durable session's item fence and the negotiated Wheel
+        // allocation capability; without them the server refuses the command.
+        {
+            let mut runtime = dependencies.runtime.lock().await;
+            runtime
+                .initialize_first_entry_position(dependencies.actor)
+                .map_err(debug)?;
+            runtime
+                .bind_attacker_lease(
+                    dependencies.actor,
+                    session,
+                    crate::foundation::CharacterLease::new(
+                        crate::foundation::CharacterId::decode(fence.character_id.as_bytes())
+                            .map_err(debug)?,
+                        fence.character_lease_generation,
+                    )
+                    .map_err(debug)?,
+                )
+                .map_err(debug)?;
+        }
+        let (current, _) =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                .current_session_at(session)
+                .await?;
         let mut admitted = dependencies.admitted;
+        admitted.first_entry = crate::gameplay_transport::connection::FirstEntryOutcome::Positioned;
+        admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+        admitted.continuity.selected_capabilities =
+            crate::gameplay_transport::capabilities::SelectedCapabilities::select(
+                owner.offered_capabilities(),
+                &[oteryn_protocol_oteryn::atelier::CAPABILITY_WHEEL_ALLOCATION_V1],
+            )
+            .ok_or("Wheel allocation capability")?;
         let query = send_atelier(
             &owner,
             &mut admitted,
