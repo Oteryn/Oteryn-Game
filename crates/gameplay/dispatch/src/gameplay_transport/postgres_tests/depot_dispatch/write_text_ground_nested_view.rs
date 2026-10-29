@@ -365,12 +365,12 @@ pub(super) async fn dispatch_ground(
         // The connection retains its actual advertised handle and open views.
         // A historical successful open must not bypass current root reach.
         let next_command = if nested.is_some() { 3 } else { 2 };
-        move_actor(owner, actor, &[6, 5]).await?;
+        move_actor(owner, actor, &mut client, &[6, 5]).await?;
         client
             .write_all(&open(next_command, selected_handle)?)
             .await?;
         read_outcome(&mut client, next_command, ContainerViewOutcome::TooFar).await?;
-        move_actor(owner, actor, &[6, 7]).await?;
+        move_actor(owner, actor, &mut client, &[6, 7]).await?;
         client
             .write_all(&open(next_command + 1, selected_handle)?)
             .await?;
@@ -701,18 +701,35 @@ pub(super) async fn read_views(
     }
 }
 
+/// Fixture moves bypass STEP, so open views stay open, but the live connection's visibility
+/// cadence still publishes the map. A two-tile jump needs a map snapshot, which a running
+/// connection does not send: it ends the session. Move one tile at a time and wait for the
+/// cadence's domain 17 delta before the next tile, so the cadence never sees a jump.
 async fn move_actor(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
+    client: &mut tokio::io::DuplexStream,
     steps: &[i32],
 ) -> TestResult {
-    let mut runtime = owner.runtime.lock().await;
-    let mut movement = runtime.borrow_movement_position();
     for &x in steps {
-        let snapshot = movement.read(actor).map_err(debug)?;
-        movement
-            .commit_cardinal(snapshot, MovementLocalPosition { x, y: 0, floor: 7 })
-            .map_err(debug)?;
+        {
+            let mut runtime = owner.runtime.lock().await;
+            let mut movement = runtime.borrow_movement_position();
+            let snapshot = movement.read(actor).map_err(debug)?;
+            movement
+                .commit_cardinal(snapshot, MovementLocalPosition { x, y: 0, floor: 7 })
+                .map_err(debug)?;
+        }
+        loop {
+            let frame = read_frame(client).await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            if envelope.message_type() == MessageType::StateDelta
+                && oteryn_protocol_oteryn::decode_state_delta(envelope.payload())?.domain_id
+                    == oteryn_protocol_oteryn::world_map::STATE_DOMAIN_WORLD_MAP_VIEW
+            {
+                break;
+            }
+        }
     }
     Ok(())
 }
