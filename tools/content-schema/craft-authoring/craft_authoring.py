@@ -31,7 +31,7 @@ DIRECTORY = "content/craft/"
 INDEX = DIRECTORY + "index.json"
 CATALOGUE = DIRECTORY + "recipes.json"
 SOURCES = DIRECTORY + "sources.json"
-SNAPSHOT_SHA256 = "a503fa38c9f22fd9695433d97dfe9e2528cf61f368e54ed059851cbf82b58cde"
+SNAPSHOT_SHA256 = "62cf16d9367b55e489da0e5f22e794f5b4b20ad7618dc865e59192cc4fc9997b"
 XML_SHA256 = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
 CURVE = {"base": 10000, "per_skill": 597, "skill_offset": 10,
          "minimum": 10000, "maximum": 50000, "roll_scale": 1000, "roll_max": 100}
@@ -124,6 +124,14 @@ def build():
         row(f"cookies-{oven}", "baking", (42, 44), 8198,
             {"kind": "map_item", "definition": item(oven)},
             [operand("USED", 8198, "TRANSFORM_TO", output=3464)], fixed(output(8199, 12)))
+        row(f"cookie-tray-{oven}", "baking", (42, 44), 8020,
+            {"kind": "map_item", "definition": item(oven)},
+            [operand("USED", 8020, "TRANSFORM_TO", output=3464)], fixed(output(3598, 12)))
+        # Canary global omits the plain cookie tray; Crystal baking.lua and TibiaWiki (Baking Tray
+        # (Cookie), revision 1008370) bake it into 12 cookies and an empty tray.
+        recipes[-1]["recipe"]["source"]["differences"].append(
+            "C1 adopts the cookie tray 8020 from Crystal 201189f8 baking.lua and TibiaWiki revision 1008370; "
+            "the pinned Canary global script omits it")
     row("sugar-oat", "baking", (49, 51), 5466, {"kind": "carried"},
         [operand("USED", 5466, "TRANSFORM_TO", output=12802), operand("TARGET", 3605, "CONSUME")], fixed())
     # The accepted C1 explicitly adopts this branch although the upstream action id list omits 5466.

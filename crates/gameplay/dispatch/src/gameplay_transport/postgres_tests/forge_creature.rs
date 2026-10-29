@@ -126,8 +126,8 @@ pub(super) async fn assert_receipts(h: &Harness, case: Case) -> TestResult {
     .await?;
     if matches!(case, Case::ForgeReplay) {
         assert_eq!(
-            awarded_xp, 20,
-            "5 rat XP * fiendish 2x, then 30% two-vocation bonus: ceil(10 * 1.3 / 2) = 7 per member; Premium stamina: floor(7 * 1.5) = 10 each, 20 total"
+            awarded_xp, 42,
+            "5 rat XP * fiendish 2x, then 30% two-vocation bonus: ceil(10 * 1.3 / 2) = 7 per member; level 1 low-level bonus: 7 * 2 = 14; Premium stamina: floor(14 * 1.5) = 21 each, 42 total"
         );
     }
     let entries: Vec<(i64, i64, i64, i64)> = sqlx::query_as("SELECT amount,lost_amount,balance_before,balance_after FROM game_character_forge_dust_entries WHERE cause_occurrence_id<>encode($1,'hex')::uuid ORDER BY balance_before LIMIT 3")

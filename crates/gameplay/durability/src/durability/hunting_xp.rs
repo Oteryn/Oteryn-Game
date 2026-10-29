@@ -11,6 +11,8 @@ pub struct HuntingXpModifiers {
     pub prey_percent: i16,
     pub xp_boost_percent: i16,
     pub stamina_minutes: i32,
+    /// Level before this kill, for the Global low-level bonus.
+    pub level: u32,
 }
 
 /// Caller owns the fenced Character root lock before reading its typed hunting children.
@@ -23,6 +25,11 @@ pub(super) async fn read_in_transaction(
     let stamina: Option<i32> = sqlx::query_scalar(
         "SELECT stamina_minutes FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    // The fenced root lock already serializes level writers; the XP commit locks this row later.
+    // A Character without progression state has no XP commit to bonus; level 50 adds nothing.
+    let level: Option<i64> = sqlx::query_scalar(
+        "SELECT level FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
     // OFFLINE-0 §3 defines this absent-build-row seed. Reading it never creates a build
     // row or invents a hunting tick; build/stamina writers own that lifecycle.
     let mut result = HuntingXpModifiers {
@@ -33,6 +40,11 @@ pub(super) async fn read_in_transaction(
         xp_boost_percent: sqlx::query_scalar("SELECT CASE WHEN l.effect_started_at<=public.game_daily_effect_now() AND l.effect_expires_at>public.game_daily_effect_now() THEN 50::smallint ELSE 0::smallint END FROM public.game_character_daily_reward_claims c JOIN public.game_character_daily_reward_lines l ON l.claim_id=c.transaction_id WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid AND c.lane_day=7 AND l.kind='XP_BOOST' AND l.status='DELIVERED' ORDER BY c.reset_epoch DESC LIMIT 1")
             .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?.unwrap_or(0),
         stamina_minutes: stamina.unwrap_or(2520),
+        level: level
+            .map(u32::try_from)
+            .transpose()
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+            .unwrap_or(50),
     };
     let rows = sqlx::query(
         "SELECT p.slot,p.slot_epoch,p.grade,p.bonus_type,p.bonus_percent,p.state,\

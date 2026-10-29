@@ -12,6 +12,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // trays 3464/8198; flour/dough/wheat 3603..=3605; cake 6276/6277;
     // chocolate 8018/8019; garlic 8194/8196/8199. All have speed_bonus=0.
     ("CRAFT-1", 22),
+    // PAR-I11 baking (content/craft/runtime-item-profiles.json): the cookie tray 8020 and the
+    // cookie 3598, from Crystal ff7ede59 items.xml. Both have speed_bonus=0.
+    ("CRAFT-2", 2),
     // ENERGY-RING-1 admits the inactive 3051 and active 3088 through the timed pipeline.
     ("ENERGY-RING-1", 2),
     // The sliver 37109 (tools/content-migration/forge_creature_profiles.py), speed_bonus=0.
@@ -53,6 +56,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 39180, 39183, 39186, 39546, 50149, 50159, 50188, 50240, 50254.
     // 34097 has speed_bonus=15 and 34098 has speed_bonus=20; the other 34 have speed_bonus=0.
     ("REWARD-BAG-2", 36),
+    // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
+    ("TIMEDITEMS2-1", 2),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),
@@ -142,6 +147,20 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         .collect()
     );
+    Ok(())
+}
+
+#[test]
+fn equipment_effects_owner_time_ring_grants_speed_only_in_ring_slot() -> TestResult {
+    let content = native(&input()?)?;
+    for slot in 1..=10 {
+        let equipment = snapshot(&content, "oteryn:item.tibia.i3090", slot);
+        assert_eq!(
+            speed_term(&equipment, &content),
+            Some(if slot == 8 { 30 } else { 0 }),
+            "slot {slot}"
+        );
+    }
     Ok(())
 }
 

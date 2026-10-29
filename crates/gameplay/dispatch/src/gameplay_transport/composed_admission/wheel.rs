@@ -1,6 +1,73 @@
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Installs the current Wheel maxima in the live vitals owner. Re-reading current actor
+    /// eligibility makes allocation, Premium and level/promotion transitions converge here.
+    pub(in crate::gameplay_transport) async fn refresh_wheel_vitals(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        // Without a current allocation there are no Wheel effects to qualify. In particular,
+        // observing vitals must not take the root's sole holder away from death reconciliation.
+        // Still apply zero bonuses below so a removed/stale allocation clears old maxima.
+        let current_allocation = self
+            .states
+            .wheel_sessions
+            .lock()
+            .ok()
+            .is_some_and(|sessions| {
+                sessions
+                    .get(&session)
+                    .and_then(Option::as_ref)
+                    .is_some_and(|allocation| allocation.current)
+            });
+        // Allocation checks this session's Premium owner too. The spell state's Premium
+        // cache can still be unset at entry or stale until the next spell-access refresh.
+        let premium =
+            current_allocation && self.session_premium_gate(session).await.premium_current();
+        // Promotion is a separate permanent Character fact. Buying it does not replace
+        // the base vocation stored in the build or in the live spell state.
+        let promoted = current_allocation
+            && match self.current_quest_fence(session).await {
+                Ok(Some(fence)) => self
+                    .root
+                    .read_promotion_for_session(self.character, self.holder, fence.item_fence())
+                    .await
+                    .unwrap_or(false),
+                _ => false,
+            };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        let Some(state) = states.get(&runtime, actor, session) else {
+            return false;
+        };
+        let facts = state.character_facts();
+        let vocation = match facts.vocation {
+            crate::spell::Vocation::None => "none",
+            crate::spell::Vocation::Druid => "druid",
+            crate::spell::Vocation::ElderDruid => "elder_druid",
+            crate::spell::Vocation::Sorcerer => "sorcerer",
+            crate::spell::Vocation::MasterSorcerer => "master_sorcerer",
+            crate::spell::Vocation::Knight => "knight",
+            crate::spell::Vocation::EliteKnight => "elite_knight",
+            crate::spell::Vocation::Paladin => "paladin",
+            crate::spell::Vocation::RoyalPaladin => "royal_paladin",
+            crate::spell::Vocation::Monk => "monk",
+            crate::spell::Vocation::ExaltedMonk => "exalted_monk",
+        };
+        let bonuses = self
+            .wheel_stat_bonuses(session, vocation, facts.level, promoted, premium)
+            .unwrap_or_default();
+        states
+            .get_mut(&runtime, actor, session)
+            .is_some_and(|state| {
+                state
+                    .apply_wheel_maximum_bonus(bonuses.max_health, bonuses.max_mana)
+                    .is_ok()
+            })
+    }
+
     /// WHEEL-0 §4 "Wheel reset" and "Load": the admission Wheel reset in the Character's
     /// revision slot, then the session's allocation. A failed load fails the session's Wheel
     /// closed (every stage 0), never the login.

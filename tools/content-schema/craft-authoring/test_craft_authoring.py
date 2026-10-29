@@ -14,7 +14,7 @@ class CraftAuthoringTests(unittest.TestCase):
         first = craft.outputs()
         self.assertEqual(craft.canonical_bytes(first), craft.canonical_bytes(craft.outputs()))
         self.assertEqual(craft.content_command(check=True), 0)
-        self.assertEqual(len(first[craft.CATALOGUE]["records"]), 125)
+        self.assertEqual(len(first[craft.CATALOGUE]["records"]), 129)
 
     def test_source_snapshot_substitution_is_rejected(self):
         with mock.patch.object(craft, "SNAPSHOT_SHA256", "0" * 64):
@@ -58,6 +58,7 @@ class CraftAuthoringTests(unittest.TestCase):
         self.assertEqual(sum(k.startswith("bake-") for k in by_key), 16)
         self.assertEqual(sum(k.startswith("mill-") for k in by_key), 8)
         self.assertEqual(sum(k.startswith("cookies-") for k in by_key), 4)
+        self.assertEqual(sum(k.startswith("cookie-tray-") for k in by_key), 4)
         self.assertTrue(all(r["outputs"]["entries"][0]["count"] == 12 for k, r in by_key.items() if k.startswith("cookies-")))
 
     def test_fishing_curve_bait_timers_and_complete_adopted_water_sets(self):

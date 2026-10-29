@@ -8,7 +8,7 @@ import copy
 import hashlib
 import json
 
-IDS = {3051, 3081, 3088, 3549, 6529, 6530}
+IDS = {3051, 3053, 3081, 3088, 3090, 3549, 6529, 6530}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
@@ -29,6 +29,15 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
         if binding['disposition'] != 'EXACT':
             raise ValueError('TIMED_PROFILE_BINDING')
         semantics = copy.deepcopy(source['semantics'])
+        # TIMEDITEMS2-1: the inactive time ring has no speed ability. The active
+        # form carries the admitted +30 modifier and inherits the base wearability.
+        # Canary items.xml: 3053 -> 3090, speed=30, duration=600, deequip=3053.
+        if key == 'oteryn:item.tibia.i3053':
+            semantics['skill_modifiers'] = {'state': 'UNKNOWN'}
+        if key == 'oteryn:item.tibia.i3090':
+            base = definitions['oteryn:item.tibia.i3053']['semantics']
+            for group in ('equipment', 'stack', 'physical'):
+                semantics[group] = copy.deepcopy(base[group])
         # ENERGY-RING-1: the active form inherits the wiki's existing wearable facts,
         # including KNIGHT/MONK/PALADIN (never Canary's older vocation list).
         # Pinned Canary 04b83b51 data/items/items.xml: 3051 -> 3088, manashield=1,
@@ -55,10 +64,12 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             for pattern in semantics['equipment']['value']['patterns']['value']:
                 if key not in ('oteryn:item.tibia.i3051', 'oteryn:item.tibia.i3088'):
                     pattern['vocations'] = {'state': 'KNOWN', 'value': []}
+                if key in ('oteryn:item.tibia.i3053', 'oteryn:item.tibia.i3090'):
+                    pattern['vocations']['value'] = ['DRUID', 'KNIGHT', 'MONK', 'PALADIN', 'SORCERER']
                 pattern['level'] = {'state': 'KNOWN', 'value': 0}
         document['records'].append({
             'authoring': {'item': source['identity']}, 'semantics': semantics,
-            'attributes': {'speed_bonus': 0},
+            'attributes': {'speed_bonus': 30 if key == 'oteryn:item.tibia.i3090' else 0},
             'admission': {'materializable': True, 'stack_class': 'NonStackable',
                           'legal_destinations': ['CharacterInventory', 'Ground']},
             'production_definition': {'family': 'Item', 'production_key': key,

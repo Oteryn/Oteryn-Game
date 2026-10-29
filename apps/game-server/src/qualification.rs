@@ -387,7 +387,13 @@ fn sign_grant(grant: &Grant<'_>, issued_at: i64) -> String {
 async fn database() -> TestResult<(String, String)> {
     let admin_url = required("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
     if !admin_url.starts_with("postgresql://oteryn_test_admin:")
-        || !admin_url.ends_with("@127.0.0.1:5432/postgres")
+        || !admin_url.rsplit_once('@').is_some_and(|(_, host)| {
+            host.strip_prefix("127.0.0.1:")
+                .and_then(|rest| rest.strip_suffix("/postgres"))
+                .is_some_and(|port| {
+                    port.bytes().all(|b| b.is_ascii_digit()) && port.parse::<u16>().is_ok()
+                })
+        })
     {
         return Err("unsafe PostgreSQL test admin URL".into());
     }
@@ -688,9 +694,26 @@ async fn exchange_must_close_paced(
         if *after > 0 {
             let mut chunk = [0_u8; 4096];
             while complete_frames(&output) < *after {
-                let read = tokio::time::timeout(Duration::from_secs(20), stream.read(&mut chunk))
-                    .await
-                    .map_err(|_| "server did not answer a paced segment")??;
+                // A close (or reset) here ends the stream as `read_to_end` below treats it, so
+                // the caller's frame assertion reports what the server sent before closing.
+                let read =
+                    match tokio::time::timeout(Duration::from_secs(20), stream.read(&mut chunk))
+                        .await
+                        .map_err(|_| "server did not answer a paced segment")?
+                    {
+                        Ok(read) => read,
+                        Err(error)
+                            if matches!(
+                                error.kind(),
+                                io::ErrorKind::UnexpectedEof
+                                    | io::ErrorKind::ConnectionReset
+                                    | io::ErrorKind::BrokenPipe
+                            ) =>
+                        {
+                            0
+                        }
+                        Err(error) => return Err(error.into()),
+                    };
                 if read == 0 {
                     break;
                 }

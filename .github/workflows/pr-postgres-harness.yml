@@ -3,6 +3,12 @@ name: PR PostgreSQL harness
 # Early signal only: runs the Merge Queue PostgreSQL harness on pull requests
 # that can change what it runs (the game-server crate and its path
 # dependencies), so its failures show before the queue.
+# Grouped runs (owner decision 2026-10-28): the harness runs only on pull
+# requests labelled `heavy-tests` - a finished mechanic, or one batch pull
+# request that merges several finished ones - instead of on every push of
+# every pull request. Adding the label starts a run; later pushes to a
+# labelled pull request run it again. Protected main still runs every
+# PostgreSQL lane after each merge (merge-group-gate.yml on push to main).
 # It is not the PR gate (merge-gate.yml) and not a required check; the Merge
 # Queue (merge-group-gate.yml) keeps the exact-candidate qualification and
 # runs the full workspace suite and every PostgreSQL lane once (D1471). The
@@ -25,7 +31,7 @@ on:
     branches:
       - main
     # Drafts are still being authored; the harness runs once the PR is ready.
-    types: [opened, reopened, synchronize, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review, labeled]
     # Everything the game-server PostgreSQL targets link: the targets and the
     # library PostgreSQL tests exercise game-server code well beyond
     # durability/** (combat, pickup, transport, interaction, catalogues), so
@@ -54,15 +60,23 @@ on:
 permissions: {}
 
 concurrency:
-  group: pr-postgres-harness-${{ github.event.pull_request.number }}
+  # Adding any other label must not cancel a running harness, so those
+  # (skipped) runs get a group of their own.
+  group: pr-postgres-harness-${{ github.event.pull_request.number }}${{ (github.event.action == 'labeled' && github.event.label.name != 'heavy-tests') && format('-label-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 jobs:
   build:
     name: PR early signal / Durability PostgreSQL harness build
     # Early signal for authors only: drafts and Dependabot bumps wait for the
-    # Merge Queue, which runs the same targets on the exact candidate.
-    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
+    # Merge Queue, which runs the same targets on the exact candidate. Only
+    # pull requests labelled `heavy-tests` run it, and a `labeled` event only
+    # when that label is the one added.
+    if: >-
+      github.event.pull_request.draft == false
+      && github.event.pull_request.user.login != 'dependabot[bot]'
+      && contains(github.event.pull_request.labels.*.name, 'heavy-tests')
+      && (github.event.action != 'labeled' || github.event.label.name == 'heavy-tests')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -319,10 +333,16 @@ jobs:
           set -euo pipefail
           echo "OTERYN_TEST_POSTGRES_ADMIN_URL=postgresql://oteryn_test_admin:ci-${RUN_ID}-${RUN_ATTEMPT}@127.0.0.1:5432/postgres" >> "$GITHUB_ENV"
           echo "PG_WORKSPACE=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          echo "PG_SOURCE=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          printf '%s\n' '#!/bin/bash' 'exec "$@"' > "$RUNNER_TEMP/pg-run"
+          chmod 755 "$RUNNER_TEMP/pg-run"
+          echo "PG_RUN=$RUNNER_TEMP/pg-run" >> "$GITHUB_ENV"
 
       # The binaries read repository files through the build job's compile-time workspace path. All
-      # Molehill runners share one host, so that path is a symlink to a per-head checkout; it is
-      # switched only while no partition holds the current head (a shared lock held for the job).
+      # Molehill runners share one host, so each partition keeps a per-head checkout and runs its tests
+      # in a private mount namespace where that checkout is bound at the build path. Partitions of
+      # different heads therefore run side by side; a shared lock per checkout keeps it from being
+      # pruned while a partition uses it.
       - name: Expose this head at the build workspace path
         if: runner.environment == 'self-hosted'
         env:
@@ -341,65 +361,60 @@ jobs:
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$BUILD_WORKSPACE" =~ ^/home/runner/work/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]]
           parent="$(dirname "$BUILD_WORKSPACE")"
-          if [[ ! -d "$parent" || ! -w "$parent" ]]; then
-            echo "$parent must exist and be writable by the runner user (Molehill PostgreSQL setup)" >&2
-            exit 1
-          fi
-          if [[ -e "$BUILD_WORKSPACE" && ! -L "$BUILD_WORKSPACE" ]]; then
-            echo "$BUILD_WORKSPACE must be a symlink managed by this job" >&2
+          if [[ ! -d "$parent" ]]; then
+            echo "$parent must exist (Molehill PostgreSQL setup)" >&2
             exit 1
           fi
           base="$OTERYN_CI_TARGET_ROOT/pr-postgres"
           mkdir -p "$base/ws"
           ws="$base/ws/$EXPECTED_SHA"
           exec 9>"$base/switch.lock"
-          deadline=$((SECONDS + 1800))
-          while :; do
-            flock -x 9
-            # Drop idle checkouts of other heads older than a day.
-            find "$base/ws" -mindepth 1 -maxdepth 1 -type d -mmin +1440 -print0 |
-              while IFS= read -r -d '' old; do
-                if [[ "$old" != "$ws" ]] && flock -n -x "$old.use" true; then rm -rf -- "$old" "$old.use"; fi
-              done
-            if [[ ! -d "$ws/.git" ]]; then
-              rm -rf -- "$ws.tmp"
-              git clone -q --local --no-checkout "$GITHUB_WORKSPACE" "$ws.tmp"
-              git -C "$ws.tmp" -c advice.detachedHead=false checkout -q --detach "$EXPECTED_SHA"
-              mv -T "$ws.tmp" "$ws"
-            fi
-            test "$(git -C "$ws" rev-parse HEAD)" = "$EXPECTED_SHA"
-            current="$(readlink "$BUILD_WORKSPACE" 2>/dev/null || true)"
-            if [[ "$current" != "$ws" ]] && { [[ -z "$current" ]] || flock -n -x "$current.use" true; }; then
-              ln -sfn "$ws" "$BUILD_WORKSPACE.new"
-              mv -T "$BUILD_WORKSPACE.new" "$BUILD_WORKSPACE"
-              current="$ws"
-            fi
-            if [[ "$current" == "$ws" ]]; then
-              setsid flock -s -o "$ws.use" sleep 7200 </dev/null >/dev/null 2>&1 &
-              holder=$!
-              # Keep the switch lock until the shared lock is held, so no one can switch under us.
-              for _ in $(seq 1 50); do
-                if ! flock -n -x "$ws.use" true; then break; fi
-                sleep 0.1
-              done
-              if flock -n -x "$ws.use" true; then
-                echo 'could not take the shared workspace lock' >&2
-                exit 1
-              fi
-              touch "$ws"
-              flock -u 9
-              break
-            fi
-            flock -u 9
-            if (( SECONDS > deadline )); then
-              echo "timed out waiting for $BUILD_WORKSPACE to be released by another head" >&2
-              exit 1
-            fi
-            sleep 15
+          flock -x 9
+          # Drop idle checkouts of other heads older than a day.
+          find "$base/ws" -mindepth 1 -maxdepth 1 -type d -mmin +1440 -print0 |
+            while IFS= read -r -d '' old; do
+              if [[ "$old" != "$ws" ]] && flock -n -x "$old.use" true; then rm -rf -- "$old" "$old.use"; fi
+            done
+          if [[ ! -d "$ws/.git" ]]; then
+            rm -rf -- "$ws.tmp"
+            git clone -q --local --no-checkout "$GITHUB_WORKSPACE" "$ws.tmp"
+            git -C "$ws.tmp" -c advice.detachedHead=false checkout -q --detach "$EXPECTED_SHA"
+            mv -T "$ws.tmp" "$ws"
+          fi
+          test "$(git -C "$ws" rev-parse HEAD)" = "$EXPECTED_SHA"
+          setsid flock -s -o "$ws.use" sleep 7200 </dev/null >/dev/null 2>&1 &
+          holder=$!
+          # Keep the prune lock until the shared lock is held, so the checkout cannot be dropped first.
+          for _ in $(seq 1 50); do
+            if ! flock -n -x "$ws.use" true; then break; fi
+            sleep 0.1
           done
+          if flock -n -x "$ws.use" true; then
+            echo 'could not take the shared workspace lock' >&2
+            exit 1
+          fi
+          touch "$ws"
+          flock -u 9
+          # Outer namespace: map this user to root only to mount. Inner namespace: map root back to
+          # this user's id, so the tests run with no capabilities and normal file permissions.
+          cat > "$RUNNER_TEMP/pg-run" <<'WRAP'
+          #!/bin/bash
+          set -euo pipefail
+          export PG_RUN_UID="$(id -u)" PG_RUN_GID="$(id -g)"
+          exec unshare --user --mount --map-root-user --propagation private bash -euc '
+            mount -t tmpfs -o mode=0755 tmpfs "$(dirname "$PG_WORKSPACE")"
+            mkdir "$PG_WORKSPACE"
+            mount --bind "$PG_SOURCE" "$PG_WORKSPACE"
+            exec unshare --user --map-user="$PG_RUN_UID" --map-group="$PG_RUN_GID" -- "$@"
+          ' pg-run "$@"
+          WRAP
+          chmod 755 "$RUNNER_TEMP/pg-run"
           echo "PG_WORKSPACE=$BUILD_WORKSPACE" >> "$GITHUB_ENV"
+          echo "PG_SOURCE=$ws" >> "$GITHUB_ENV"
+          echo "PG_RUN=$RUNNER_TEMP/pg-run" >> "$GITHUB_ENV"
           echo "PG_WS_HOLDER=$holder" >> "$GITHUB_ENV"
-          test "$(git -C "$BUILD_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(PG_WORKSPACE="$BUILD_WORKSPACE" PG_SOURCE="$ws" "$RUNNER_TEMP/pg-run" \
+            git -C "$BUILD_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
 
       # A throwaway cluster per job: fresh data directory, random password, loopback only, durability
       # off (the tests never survive a crash of their own database).
@@ -478,7 +493,8 @@ jobs:
           sha256sum -c SHA256SUMS
           test "$(cat head-sha)" = "$EXPECTED_SHA"
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
-          test "$(git -C "$PG_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git -C "$PG_SOURCE" rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$("$PG_RUN" git -C "$PG_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
 
       # The partition is taken from the matrix position and size, so the slices always cover the
       # whole archive whatever the matrix length; the label must agree with the position.
@@ -499,7 +515,7 @@ jobs:
           PARTITION_SPEC: ${{ steps.partition.outputs.spec }}
         run: |
           set -euo pipefail
-          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \
+          "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \
             --workspace-remap "$PG_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
 
       - name: Run PostgreSQL-backed library tests
@@ -508,7 +524,7 @@ jobs:
           PARTITION_SPEC: ${{ steps.partition.outputs.spec }}
         run: |
           set -euo pipefail
-          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
+          "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
             --workspace-remap "$PG_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
 
       - name: Stop ephemeral PostgreSQL 18

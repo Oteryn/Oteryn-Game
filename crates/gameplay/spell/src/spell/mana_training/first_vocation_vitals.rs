@@ -50,6 +50,9 @@ impl PlayerSpellState {
         // Use the same constructor to validate maxima, level and monk initialization bounds.
         let validated = Self::new(facts, 0, 0)?;
         let mut next = self.clone();
+        // A vocationless actor has no Wheel contribution, so the new maxima are the base.
+        next.base_max_health = facts.max_health;
+        next.base_max_mana = facts.max_mana;
         next.facts = facts;
         next.base_speed = validated.base_speed;
         next.monk = validated.monk;

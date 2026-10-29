@@ -10,7 +10,9 @@ use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{
     ChannelContentPin, CharacterLease, MessageType, MovementLocalPosition, decode_wire_envelope,
 };
-use crate::gameplay_transport::capabilities::{OfferedCapability, test_command};
+use crate::gameplay_transport::capabilities::{
+    BUNDLE_WORLD_OFFERED_CAPABILITIES, test_command,
+};
 use crate::gameplay_transport::connection::{
     ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, LivenessPolicy, serve_admitted,
 };
@@ -31,41 +33,6 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 use oteryn_protocol_oteryn::{CommandStatus, decode_command_result, decode_snapshot_chunk};
 use tokio::io::AsyncWriteExt;
-
-const FIELD_OFFER: &[OfferedCapability] = &[
-    OfferedCapability {
-        id: 4,
-        requires: &[6],
-    },
-    OfferedCapability {
-        id: 6,
-        requires: &[],
-    },
-    OfferedCapability {
-        id: 11,
-        requires: &[15, 18],
-    },
-    OfferedCapability {
-        id: 15,
-        requires: &[4],
-    },
-    OfferedCapability {
-        id: 18,
-        requires: &[4, 6],
-    },
-    OfferedCapability {
-        id: 22,
-        requires: &[15],
-    },
-    OfferedCapability {
-        id: 30,
-        requires: &[6],
-    },
-    OfferedCapability {
-        id: 91,
-        requires: &[4, 11, 22, 30],
-    },
-];
 
 #[test]
 fn field_runes_all_profiles_use_the_existing_caster() -> TestResult {
@@ -216,6 +183,16 @@ fn field_runes_postgres_real_dispatch_casts_blocking_and_safe_barriers() -> Test
 }
 
 #[test]
+fn field_runes_postgres_secret_agent_tool_removes_wild_growth() -> TestResult {
+    large_stack(|| {
+        run(async |admin| {
+            field_scenario(admin, 3156, 1, 2130, true, false, false, Scenario::SecretMachete)
+                .await
+        })
+    })
+}
+
+#[test]
 fn field_runes_postgres_missing_extension_cannot_pay_or_create() -> TestResult {
     large_stack(|| run(async |admin| field_case(admin, 3164, 0, 2135, false, false, false).await))
 }
@@ -242,6 +219,7 @@ enum Scenario {
     Hardcore,
     SelfHardcore,
     SelfOpen,
+    SecretMachete,
     NoPvp,
     PzTick,
     NoPvpTick,
@@ -679,7 +657,7 @@ async fn field_scenario_inner(
         crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),
         1,
         "policy-1",
-        FIELD_OFFER,
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
     )
     .map_err(debug)?;
     let formula = native.training_formula().ok_or("training formula")?;
@@ -816,7 +794,10 @@ async fn field_scenario_inner(
     }
     let mut inventory = vec![(format!("oteryn:item.tibia.i{rune}"), 3)];
     if matches!(output, 2128 | 2130) {
-        inventory.push(("oteryn:item.tibia.i3308".to_owned(), 1));
+        inventory.push((
+            format!("oteryn:item.tibia.i{}", if scenario == Scenario::SecretMachete { 9594 } else { 3308 }),
+            1,
+        ));
     }
     seed_main_backpack(
         &harness,
@@ -898,7 +879,8 @@ async fn field_scenario_inner(
             .ok_or_else(|| "inventory definition".into())
     };
     let rune_definition = inventory_definition(rune)?;
-    let machete_definition = inventory_definition(3308)?;
+    let machete_id = if scenario == Scenario::SecretMachete { 9594 } else { 3308 };
+    let machete_definition = inventory_definition(machete_id)?;
     let casting = async {
         let mut handle = None;
         let mut field_handle = None;
@@ -1285,7 +1267,7 @@ async fn field_scenario_inner(
                 }
             }
             if matches!(output, 2128 | 2130) {
-                let tool:(i16,i64)=sqlx::query_as("SELECT lifecycle,quantity::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3308'").fetch_one(&harness.pool).await?;
+                let tool:(i16,i64)=sqlx::query_as("SELECT lifecycle,quantity::bigint FROM game_item_instances WHERE definition_production_key=$1").bind(format!("oteryn:item.tibia.i{machete_id}")).fetch_one(&harness.pool).await?;
                 assert_eq!(
                     tool,
                     (1, 1),
@@ -2671,7 +2653,7 @@ async fn qualify_field_restart(
         scope,
         generation,
         "policy-1",
-        FIELD_OFFER,
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
     )
     .map_err(debug)?;
     assert_eq!(

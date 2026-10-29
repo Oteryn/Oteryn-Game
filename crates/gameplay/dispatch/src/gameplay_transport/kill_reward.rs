@@ -43,6 +43,17 @@ use {
 use super::attack::ChannelAttackStates;
 use super::{ComposedFreshAdmission, operator_event};
 
+fn apply_hunting_stamina_to_loot(
+    loot_table: &mut crate::combat::LootTableDefinition,
+    stamina_minutes: Option<u16>,
+) {
+    if stamina_minutes
+        .is_some_and(|minutes| !oteryn_gameplay_characters::stamina::hunting_loot_allowed(minutes))
+    {
+        loot_table.entries.clear();
+    }
+}
+
 /// KILLRW-RL-01: queued plus in-flight unsettled kills of one Channel.
 pub const KILLRW_RL_01_UNSETTLED_ENTRIES_PER_CHANNEL_MAX: usize = 64;
 
@@ -1525,6 +1536,16 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             );
             apply_talisman_loot_bonus(&mut loot_table, bonus);
         }
+        // The captured reward principal is Global's highest-damage loot owner. Read its live
+        // session value only after the current fence has been requalified; party members' stamina
+        // affects their XP, not ownership of this corpse's loot.
+        let live_stamina = admission
+            .states
+            .spell_states
+            .lock()
+            .await
+            .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
+        apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             corpse_item: entry.row.corpse_item.clone(),
             loot_table_ref: entry.row.loot_table_ref.clone(),

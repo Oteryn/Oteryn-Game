@@ -9,6 +9,7 @@ use sha2::{Digest, Sha256};
 #[derive(Debug, Clone)]
 pub struct PreyCatalogue {
     pub(super) creatures: Vec<(String, u8, bool)>,
+    /// Creatures whose loot table exceeds the PREY-0 R4 budget (`PREY0-RL-16`, 7 entries).
     pub(super) unsupported_loot: std::collections::BTreeSet<String>,
 }
 impl TryFrom<&NativeGameplayState> for PreyCatalogue {
@@ -25,6 +26,9 @@ impl TryFrom<&NativeGameplayState> for PreyCatalogue {
             if value.bestiary.is_none()
                 || value.experience.unwrap_or(0) == 0
                 || !details.system_eligibility.prey
+                // Reference profiles can be prey-eligible, but the Prey wire contract
+                // only admits native Oteryn identities (including for SelectAny).
+                || !record.profile.target.key.starts_with("oteryn:")
             {
                 continue;
             }
@@ -50,13 +54,17 @@ impl TryFrom<&NativeGameplayState> for PreyCatalogue {
         if creatures.iter().filter(|c| !c.2).count() < 27 {
             return Err(DurabilityError::InvalidStoredState);
         }
+        // A creature without a settleable loot row rolls no loot, so it is an empty table
+        // within the budget. R4 requires the content compiler to fail closed on oversized
+        // preyable tables (`PREY_LOOT_TABLE_TOO_LARGE`); until that check exists this set
+        // is the runtime guard.
         let unsupported_loot = creatures
             .iter()
             .filter(|c| {
                 native
                     .reward_table()
                     .row(&c.0)
-                    .map_or(true, |r| r.loot_table.entries.len() > 7)
+                    .is_ok_and(|r| r.loot_table.entries.len() > 7)
             })
             .map(|c| c.0.clone())
             .collect();
@@ -104,10 +112,14 @@ impl Draw {
             300..=499 => [1, 2, 3, 3],
             _ => [1, 1, 3, 4],
         };
+        // A listed creature must be selectable: oversized loot tables are refused on Select,
+        // so they are never offered (interim guard until `PREY_LOOT_TABLE_TOO_LARGE`).
         let mut pool: Vec<_> = catalogue
             .creatures
             .iter()
-            .filter(|c| !c.2 && !blacklist.contains(&c.0))
+            .filter(|c| {
+                !c.2 && !blacklist.contains(&c.0) && !catalogue.unsupported_loot.contains(&c.0)
+            })
             .collect();
         let mut out = Vec::new();
         for (band, count) in quotas.into_iter().enumerate() {
@@ -160,6 +172,73 @@ impl Draw {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn prey_catalogue_draws_only_wire_encodable_native_creatures()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::{
+            native_gameplay::NativeGameplayInput, native_gameplay_test_world_id,
+            qualified_native_gameplay_test_state, qualify_selected_native_gameplay_room,
+        };
+        use oteryn_protocol_oteryn::prey as wire;
+
+        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../../content/spells.manifest.json");
+        let input = NativeGameplayInput::from_manifest(&manifest)?;
+        let room = qualify_selected_native_gameplay_room(native_gameplay_test_world_id()?, &input)?;
+        let native = qualified_native_gameplay_test_state(room.compiled())?;
+        let catalogue = PreyCatalogue::try_from(&native)?;
+        // This secret and occurrence drew canary:creature/rat before catalogue filtering.
+        let secret = [
+            0xa9, 0xf2, 0x48, 0xea, 0xb2, 0xb6, 0xa6, 0x01, 0xf7, 0x53, 0xa7, 0x5c, 0x77, 0x41,
+            0xa6, 0xc8, 0xbe, 0x1e, 0x42, 0x8c, 0x39, 0x23, 0xb1, 0x39, 0x95, 0xe3, 0xf3, 0xef,
+            0x64, 0xb0, 0xac, 0x2a,
+        ];
+        let creatures = Draw::new(&secret, &5_u128.to_be_bytes(), b"oteryn.prey.list.v1").list(
+            &catalogue,
+            1,
+            &[],
+        )?;
+        let reply = wire::Reply {
+            status: 0,
+            wildcard_balance: 0,
+            slots: vec![wire::Slot {
+                slot: 1,
+                state: 1,
+                creatures,
+                selected: String::new(),
+                bonus: 0,
+                grade: 0,
+                percent: 0,
+                hunting_seconds: 0,
+                option: 0,
+                free_reroll_at: 0,
+            }],
+        };
+        assert!(
+            reply.slots[0]
+                .creatures
+                .iter()
+                .all(|creature| !catalogue.unsupported_loot.contains(creature)),
+            "listed prey creatures must be selectable"
+        );
+        let encoded = wire::encode_reply(&reply)
+            .map_err(|error| format!("expiry draw must be wire encodable: {error:?}"))?;
+        assert_eq!(wire::decode_reply(&encoded), Ok(reply));
+        // Check every candidate, including exclusive creatures available through SelectAny.
+        for (creature, _, _) in &catalogue.creatures {
+            assert!(
+                wire::encode_request(&wire::Request::SelectAny {
+                    slot: 1,
+                    creature: creature.clone(),
+                })
+                .is_ok(),
+                "unencodable prey candidate: {creature}"
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn prey_draw_is_receipt_stable_unique_and_respects_bands() -> Result<(), DurabilityError> {
         let catalogue = PreyCatalogue {
@@ -195,6 +274,31 @@ mod tests {
             }
             let next = Draw::new(&[7; 32], &[4; 16], b"list").list(&catalogue, level, &list)?;
             assert!(next.iter().all(|key| !list.contains(key)));
+        }
+        Ok(())
+    }
+    #[test]
+    fn prey_draw_never_offers_oversized_loot_creatures() -> Result<(), DurabilityError> {
+        let creatures: Vec<_> = (1..=4)
+            .flat_map(|stars| {
+                (0..4).map(move |n| (format!("oteryn:creature.b{stars}_{n}"), stars, false))
+            })
+            .collect();
+        let catalogue = PreyCatalogue {
+            unsupported_loot: creatures
+                .iter()
+                .filter(|c| c.0.ends_with("_0"))
+                .map(|c| c.0.clone())
+                .collect(),
+            creatures,
+        };
+        for n in 0..50_u8 {
+            let list = Draw::new(&[7; 32], &[n; 16], b"list").list(&catalogue, 1, &[])?;
+            assert_eq!(list.len(), 9);
+            assert!(
+                list.iter()
+                    .all(|key| !catalogue.unsupported_loot.contains(key))
+            );
         }
         Ok(())
     }

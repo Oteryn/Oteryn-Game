@@ -426,6 +426,10 @@
       "fluid_container": false,
       "max_stack": 100
     },
+    "3598": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
     "3600": {
       "fluid_container": false,
       "max_stack": 100
@@ -475,6 +479,10 @@
       "max_stack": 100
     },
     "8019": {
+      "fluid_container": false,
+      "max_stack": 100
+    },
+    "8020": {
       "fluid_container": false,
       "max_stack": 100
     },

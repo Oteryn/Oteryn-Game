@@ -1758,12 +1758,16 @@ impl ChannelSpellStates {
                     refused: false,
                     ..
                 } => {
-                    if tick.provenance.source_kind != ConditionSourceKind::Creature
+                    // PAR-M10: environment drown has no source actor; it is dealt like a
+                    // creature hit.
+                    if !crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
+                        &tick.provenance,
+                    ) && (tick.provenance.source_kind != ConditionSourceKind::Creature
                         || !tick
                             .provenance
                             .source
                             .as_deref()
-                            .is_some_and(|s| s.starts_with("creature:"))
+                            .is_some_and(|s| s.starts_with("creature:")))
                     {
                         return None;
                     }
