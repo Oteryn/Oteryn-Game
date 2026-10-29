@@ -88,6 +88,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
             .await;
+        if matches!(settled, SessionDeath::Durable) && !releasing {
+            let Ok(Some(committed)) = self
+                .root
+                .reconcile_character_death(self.character, death.occurrence)
+                .await
+            else {
+                return (SessionDeath::Retry, lowered);
+            };
+            let equipment_changed = committed
+                .items
+                .as_ref()
+                .is_some_and(|items| items.amulet.is_some() || !items.lost.is_empty());
+            if equipment_changed {
+                // Drops and the AoL burn changed durable equipment. A respawn must
+                // not retain protections or a swing weapon from the pre-death slots.
+                let Some(_permit) = self.spell_lane_permit().await else {
+                    return (SessionDeath::Retry, lowered);
+                };
+                let Ok(effects) = self.read_admission_effects(session).await else {
+                    return (SessionDeath::Retry, lowered);
+                };
+                self.states
+                    .attack
+                    .lock()
+                    .await
+                    .forget_weapon(actor, session);
+                let runtime = self.runtime.lock().await;
+                if self
+                    .install_admission_suppressions(&runtime, actor, session, effects)
+                    .await
+                    .is_none()
+                {
+                    return (SessionDeath::Retry, lowered);
+                }
+            }
+        }
         (settled, lowered)
     }
 
@@ -253,6 +289,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         decided: Option<&last_position::AdmissionPosition>,
     ) -> bool {
+        // Death settlement also holds the spell lane before its revision slot.
+        let Some(permit) = self.spell_lane_permit().await else {
+            return false;
+        };
         // NODEBOOT-1: the reads before the placement are retried on a busy holder.
         let Ok(Some(fence)) = self.current_quest_fence_within(budget, session).await else {
             return false;
@@ -295,6 +335,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             Err(_) => return false,
         };
+        // A reconnect can arrive after the receipt committed but before its item operations.
+        if self
+            .resume_player_death_items(&permit, fence, pending.occurrence)
+            .await
+            .is_err()
+        {
+            return false;
+        }
         let placed_at_entry = matches!(
             decided,
             Some(last_position::AdmissionPosition::Respawn(placed))

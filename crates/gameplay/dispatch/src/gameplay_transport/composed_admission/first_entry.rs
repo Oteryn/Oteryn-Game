@@ -244,6 +244,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 scope_ownership_generation: current.current_scope_generation(),
                 expected_character_revision: character_revision,
             };
+        if self
+            .resume_pending_player_death_items(&permit, position_fence)
+            .await
+            .is_err()
+        {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        }
         let Ok(decided) = self.read_tutorial_admission_position(position_fence).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
