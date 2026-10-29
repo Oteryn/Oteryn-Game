@@ -3,6 +3,7 @@ use super::*;
 
 mod autowalk;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
+pub(super) mod underwater_drown;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn ordinary_paced_step(
@@ -128,6 +129,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         match outcome {
             Ok((snapshot, duration)) => {
+                // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
+                // owner turn as the committed step.
+                if let Some(map) = self.bundle_map() {
+                    states.stage_underwater_step(
+                        &runtime,
+                        actor,
+                        session,
+                        now,
+                        origin.is_some_and(|origin| {
+                            underwater_drown::underwater(map, origin.position())
+                        }),
+                        underwater_drown::underwater(map, snapshot.position()),
+                    );
+                }
                 drop(states);
                 drop(runtime);
                 let snapshot = match origin {
