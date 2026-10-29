@@ -331,7 +331,9 @@ def auxiliary_path(roots: dict[str, str], path: str) -> bool:
     if (
         # deploy/ holds operator deployment scripts and templates: auxiliary unless the
         # exact candidate's product/build sources reference them.
-        path.startswith(("docs/", ".github/", "tools/", "content/", "imports/", "deploy/"))
+        path.startswith((
+            "docs/", ".github/", "tools/", "content/", "imports/", "deploy/", ".claude/", ".agents/",
+        ))
         or PurePosixPath(path).name in {
             "AGENTS.md", "AGENTS.override.md", "README.md", "CHANGELOG.md",
             "CONTRIBUTING.md", "SECURITY.md", "LICENSE", "LICENSE-ASSETS.md",

@@ -149,6 +149,9 @@ def test_routing_matrix(module):
         "tools/agents/probe.py",
         "tools/reference-world-corridor-census/offline.py",
         ".github/workflows/content-census.yml",
+        ".claude/skills/oteryn-dev/SKILL.md",
+        ".claude/agents/oteryn-impl-worker.md",
+        ".agents/skills/README.md",
     )
     for path in auxiliary:
         result = classify(module, [path])
