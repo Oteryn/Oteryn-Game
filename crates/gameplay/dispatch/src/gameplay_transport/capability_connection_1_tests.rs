@@ -2,10 +2,10 @@
 fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn Error>> {
     run(async {
         let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
-        // ADMIT0: a bundle World's floor is 11 and 18, including the cooking USE dependency.
+        // ADMIT0: a bundle World's floor is 11, 18 and 30, including the cooking USE dependency.
         authority.required = Some(
             super::super::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-                &[11, CAPABILITY_WORLD_MAP_VIEW_V1],
+                &[11, CAPABILITY_WORLD_MAP_VIEW_V1, 30],
                 crate::foundation::RuntimeScopeRefV1::channel(
                     WorldId::decode(&WORLD)?,
                     ChannelId::decode(&CHANNEL)?,
@@ -18,10 +18,10 @@ fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn E
         );
         let required =
             encode_protocol_error(FoundationProtocolError::AdmissionCapabilityRequired, 0)?;
-        // 4, 6 and 18 select 18 with the rest of the production set the client supports.
+        // The client selects the floor closure and the optional capabilities it supports.
         let (admitted, frames) =
-            admit(&authority, &bootstrap(&[4, 6, 11, 13, 15, 17, 18])?).await?;
-        assert_eq!(accepted_selection(&frames)?, [4, 6, 11, 13, 15, 17, 18]);
+            admit(&authority, &bootstrap(&[4, 6, 11, 13, 15, 17, 18, 30])?).await?;
+        assert_eq!(accepted_selection(&frames)?, [4, 6, 11, 13, 15, 17, 18, 30]);
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
         assert!(
             admitted
@@ -50,6 +50,8 @@ fn a_bundle_world_admits_only_a_client_that_selects_18() -> Result<(), Box<dyn E
                 17, // ATTACK_V1
                 18, // WORLD_MAP_VIEW_V1
             ],
+            &[4, 6, 11, 13, 15, 17, 30], // Missing 18 alone.
+            &[4, 6, 11, 13, 15, 17, 18], // Missing 30 alone.
             &[],
         ] {
             let (refused, frames) = admit(&authority, &bootstrap(supported)?).await?;
@@ -74,7 +76,7 @@ fn a_bundle_world_recovery_lacking_18_is_refused_with_1118_and_one_frame()
         let mut authority = NegotiatingAuthority::new(Some(BUNDLE_WORLD_OFFERED_CAPABILITIES));
         authority.required = Some(
             super::super::world_required_capabilities::BoundRequiredCapabilities::for_channel_boot(
-                &[11, CAPABILITY_WORLD_MAP_VIEW_V1],
+                &[11, CAPABILITY_WORLD_MAP_VIEW_V1, 30],
                 crate::foundation::RuntimeScopeRefV1::channel(
                     WorldId::decode(&WORLD)?,
                     ChannelId::decode(&CHANNEL)?,
@@ -85,7 +87,7 @@ fn a_bundle_world_recovery_lacking_18_is_refused_with_1118_and_one_frame()
             )
             .map_err(|error| format!("{error:?}"))?,
         );
-        let (admitted, _) = admit(&authority, &bootstrap(&[4, 6, 11, 13, 15, 17, 18])?).await?;
+        let (admitted, _) = admit(&authority, &bootstrap(&[4, 6, 11, 13, 15, 17, 18, 30])?).await?;
         let admitted = admitted.map_err(|end| format!("{end:?}"))?;
         authority.lost.set(Some(admitted));
         // ADMIT0 §5 / D1187: a recovery lacking a required member is answered with exactly
@@ -105,6 +107,8 @@ fn a_bundle_world_recovery_lacking_18_is_refused_with_1118_and_one_frame()
                 17, // ATTACK_V1
                 18, // WORLD_MAP_VIEW_V1
             ],
+            &[4, 6, 11, 13, 15, 17, 30], // Missing 18 alone.
+            &[4, 6, 11, 13, 15, 17, 18], // Missing 30 alone.
             &[],
         ] {
             let (refused, frames) = admit(&authority, &resume(supported)).await?;
@@ -121,7 +125,7 @@ fn a_bundle_world_recovery_lacking_18_is_refused_with_1118_and_one_frame()
             crate::foundation::ProtocolDisposition::OperationTerminal
         );
         // The same session, supporting the closure, resumes with its selection.
-        let (resumed, frames) = admit(&authority, &resume(&[4, 6, 11, 13, 15, 17, 18])).await?;
+        let (resumed, frames) = admit(&authority, &resume(&[4, 6, 11, 13, 15, 17, 18, 30])).await?;
         let resumed = resumed.map_err(|end| format!("{end:?}"))?;
         assert!(
             resumed
