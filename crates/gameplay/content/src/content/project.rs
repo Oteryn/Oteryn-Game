@@ -930,7 +930,7 @@ pub struct LootEntryDocument {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub unique: bool,
 }
 
