@@ -1456,18 +1456,19 @@ mod tests {
         };
         let sweep =
             equipment_attack(&profile("sweeping takedown"), &charged).expect("whole-bound harmony");
+        // Global, news 8944, owner decision 2026-10-29: 28% + 5% gives 1.33.
         assert_eq!(
             sweep.components[0].bounds,
             MagnitudeBounds {
-                minimum: 991,
-                maximum: 1296
+                minimum: 891,
+                maximum: 1165
             }
         );
         assert_eq!(
             sweep.components[1].bounds,
             MagnitudeBounds {
-                minimum: 743,
-                maximum: 972
+                minimum: 668,
+                maximum: 873
             }
         );
         let missing = EquipmentFacts {

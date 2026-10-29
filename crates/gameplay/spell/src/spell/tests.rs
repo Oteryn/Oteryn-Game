@@ -686,8 +686,8 @@ fn only_a_spender_scales_its_damage_bounds_by_the_harmony_multiplier() {
     };
     assert_eq!(bounds(None), (Some(98), Some(143)));
     assert_eq!(bounds(Some(HarmonyRole::Builder)), (Some(98), Some(143)));
-    // B = 7 + 0.005 * 100 = 7.5 percent, x4 at three charges: m = 1.3 exactly.
-    assert_eq!(multiplier.apply(98), 127);
+    // Global, news 8944, owner decision 2026-10-29: 28% + 0.5% gives 1.285.
+    assert_eq!(multiplier.apply(98), 125);
     assert_eq!(
         bounds(Some(HarmonyRole::Spender)),
         (Some(multiplier.apply(98)), Some(multiplier.apply(143)))

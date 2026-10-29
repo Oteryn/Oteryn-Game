@@ -21,8 +21,8 @@ impl HarmonyMultiplier {
         numerator: MULTIPLIER_DENOMINATOR,
     };
 
-    /// `m = 1 + B * 2^(c - 1) / 100` for c = `charges` > 0, else 1, with
-    /// `B = (7 + 0.005 * level) * V` percent and `V` = 1 without Virtue of Harmony, 1.5 with it,
+    /// `m = 1 + (7 * 2^(c - 1) + 0.005 * level) * V / 100` for c = `charges` > 0,
+    /// else 1, with `V` = 1 without Virtue of Harmony, 1.5 with it,
     /// 2 with it while Serene (news 8944). `None` above [`MAX_HARMONY`] charges.
     pub fn new(level: u32, charges: u8, virtue_of_harmony: bool, serene: bool) -> Option<Self> {
         if charges > MAX_HARMONY {
@@ -36,10 +36,10 @@ impl HarmonyMultiplier {
             (true, false) => 3,
             (true, true) => 4,
         };
-        // B in thousandths of a percent, doubled: (7000 + 5 * level) * 2V.
-        let bonus = (7_000 + 5 * u64::from(level)) * half_steps;
+        // Thousandths of a percent times 2V; the level term is added once to the table.
+        let bonus = (7_000 * (1 << (charges - 1)) + 5 * u64::from(level)) * half_steps;
         Some(Self {
-            numerator: MULTIPLIER_DENOMINATOR + bonus * (1 << (charges - 1)),
+            numerator: MULTIPLIER_DENOMINATOR + bonus,
         })
     }
 
