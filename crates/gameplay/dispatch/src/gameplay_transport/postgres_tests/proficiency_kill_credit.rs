@@ -19,24 +19,52 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
+#[derive(Clone, Copy)]
+enum Scenario {
+    CheckpointReplay,
+    FenceReadFailure,
+    GonePrincipal,
+}
+
 #[test]
 fn proficiency_kill_credit_settlement_checkpoint_and_replay() -> TestResult {
+    run(Scenario::CheckpointReplay, "proficiency_kill_credit")
+}
+
+#[test]
+fn proficiency_kill_credit_fence_read_failure_is_retryable() -> TestResult {
+    run(Scenario::FenceReadFailure, "proficiency_fence_failure")
+}
+
+#[test]
+fn proficiency_kill_credit_surviving_contributor_when_xp_principal_is_gone() -> TestResult {
+    run(Scenario::GonePrincipal, "proficiency_gone_principal")
+}
+
+fn run(case: Scenario, name: &'static str) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
-    super::kill_reward_e2e::scenario_thread::run("proficiency-kill-credit", || {
-        fixture::runtime()?.block_on(async {
-            let admin = fixture::configured_admin().ok_or("PostgreSQL route required")?;
-            let h = Harness::create(admin, "proficiency_kill_credit", false).await?;
-            eprintln!("P08_POSTGRES_STARTED");
-            let result = scenario(&h).await;
-            h.cleanup().await?;
-            result
-        })
-    })
+    std::thread::Builder::new()
+        .name(name.into())
+        .stack_size(64 << 20)
+        .spawn(move || {
+            let runtime = fixture::runtime().map_err(|error| error.to_string())?;
+            let result: TestResult = runtime.block_on(async {
+                let admin = fixture::configured_admin().ok_or("PostgreSQL route required")?;
+                let h = Harness::create(admin, name, false).await?;
+                let result = scenario(&h, case).await;
+                h.cleanup().await?;
+                result
+            });
+            result.map_err(|error: Box<dyn std::error::Error>| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "proficiency scenario thread panicked")?
+        .map_err(Into::into)
 }
 
-async fn scenario(h: &Harness) -> TestResult {
+async fn scenario(h: &Harness, case: Scenario) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -287,6 +315,59 @@ async fn scenario(h: &Harness) -> TestResult {
             .await
             .ok_or("install changed weapon")?;
     }
+    if matches!(case, Scenario::GonePrincipal) {
+        let queue = owner.states.attack.lock().await.kills().clone();
+        {
+            let mut runtime = owner.runtime.lock().await;
+            damage(&mut runtime, creature.actor, players[0], 15, 399_999)?;
+            runtime
+                .remove_terminal_session(players[0].1, players[0].0)
+                .map_err(debug)?;
+            damage(&mut runtime, creature.actor, players[1], 100, 400_000)?;
+            record(
+                &mut runtime,
+                &queue,
+                native.reward_table(),
+                creature.actor,
+                crate::combat::CapturedRewardPrincipal {
+                    character: second.current_character_lease().character_id(),
+                    lease_generation: second.current_character_lease().generation(),
+                    session: players[1].1,
+                    actor: players[1].0,
+                },
+            );
+        }
+        assert_eq!(
+            owner.drain_kill_rewards(players[1].1).await,
+            DrainOutcome::Drained
+        );
+        assert_eq!(
+            owner
+                .states
+                .proficiencies
+                .lock()
+                .map_err(debug)?
+                .get(&players[1].1)
+                .and_then(|state| state.track("oteryn:item.tibia.i3264"))
+                .map(|track| track.progress),
+            Some(30),
+            "B earns independently of gone XP principal A"
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
+                .fetch_one(&h.pool)
+                .await?,
+            0,
+            "XP must not be reassigned to B"
+        );
+        assert_eq!(
+            owner
+                .save_weapon_proficiency(players[1].0, players[1].1, true)
+                .await,
+            crate::gameplay_transport::actor_spell::TrainingSave::Saved
+        );
+        return Ok(());
+    }
     // The oldest contributor is one ms outside the window; the other is exactly on it.
     let queue = owner.states.attack.lock().await.kills().clone();
     {
@@ -415,6 +496,39 @@ async fn scenario(h: &Harness) -> TestResult {
         owner.drain_kill_rewards(players[0].1).await,
         DrainOutcome::Drained
     );
+    if matches!(case, Scenario::FenceReadFailure) {
+        // Break the actual fence read, then restore it before asserting so cleanup works.
+        sqlx::query("ALTER TABLE game_durability_reconnect_sessions RENAME TO proficiency_unavailable_sessions")
+            .execute(&h.pool).await?;
+        let saved = owner
+            .save_weapon_proficiency(players[0].0, players[0].1, true)
+            .await;
+        sqlx::query("ALTER TABLE proficiency_unavailable_sessions RENAME TO game_durability_reconnect_sessions")
+            .execute(&h.pool).await?;
+        assert_eq!(
+            saved,
+            crate::gameplay_transport::actor_spell::TrainingSave::Unknown
+        );
+        // A successfully read terminal session is an actual fence loss, with the
+        // same unsaved points still pending.
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3, current_transport_ref=NULL WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(players[0].1.as_bytes().as_slice()).execute(&h.pool).await?;
+        assert_eq!(
+            owner
+                .save_weapon_proficiency(players[0].0, players[0].1, true)
+                .await,
+            crate::gameplay_transport::actor_spell::TrainingSave::FencedOut
+        );
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=2, current_transport_ref=$2 WHERE game_session_id=encode($1,'hex')::uuid")
+            .bind(players[0].1.as_bytes().as_slice()).bind(first.current_transport().ok_or("transport")?.to_bytes().as_slice()).execute(&h.pool).await?;
+        assert_eq!(
+            owner
+                .save_weapon_proficiency(players[0].0, players[0].1, true)
+                .await,
+            crate::gameplay_transport::actor_spell::TrainingSave::Saved
+        );
+        return Ok(());
+    }
     for (index, (actor, session)) in players.iter().copied().enumerate() {
         assert_eq!(
             owner
@@ -596,4 +710,54 @@ async fn initialize_build(
         return Err("official classed Character facts".into());
     };
     Ok((facts, after))
+}
+
+fn damage(
+    runtime: &mut ChannelRuntimeV1,
+    target: crate::foundation::ExactActorRef,
+    player: (
+        crate::foundation::ExactActorRef,
+        crate::foundation::GameSessionId,
+    ),
+    amount: i64,
+    at: u64,
+) -> TestResult {
+    runtime
+        .borrow_exact_actor_commit_at(at)
+        .commit_damage_for_bound_attacker(
+            target,
+            player.0,
+            CommandRef::new(player.1, CommandId::new(3).map_err(debug)?),
+            0,
+            crate::foundation::OwnerDamageCommand {
+                target: b"oteryn:creature.rat",
+                occurrence: player.1.as_bytes(),
+                binding: b"proficiency-review",
+                damage: amount,
+            },
+        )
+        .map_err(debug)?;
+    Ok(())
+}
+
+fn record(
+    runtime: &mut ChannelRuntimeV1,
+    queue: &crate::gameplay_transport::kill_reward::KillSettlementQueue,
+    rewards: &crate::content::creature_reward::CreatureRewardTable,
+    target: crate::foundation::ExactActorRef,
+    principal: crate::combat::CapturedRewardPrincipal,
+) {
+    crate::gameplay_transport::kill_reward::record_creature_kill(
+        runtime,
+        KillSink {
+            prey: None,
+            activity: &[],
+            queue,
+            rewards,
+        },
+        target,
+        principal,
+        400_000,
+        Some(oteryn_simulation_determinism::SemanticTimeMicros::from_micros(400_000_000)),
+    );
 }

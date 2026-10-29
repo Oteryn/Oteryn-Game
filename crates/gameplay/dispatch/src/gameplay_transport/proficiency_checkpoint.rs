@@ -181,9 +181,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let definitions =
             catalogue.for_content(&binding.context.content) as Arc<dyn ProficiencyDefinitions>;
-        let Some(current) = super::character_gameplay_fence::current(self, session, true).await
-        else {
-            return TrainingSave::FencedOut;
+        let current = match self.current_quest_fence(session).await {
+            Ok(Some(fence)) => fence,
+            Ok(None) => return TrainingSave::FencedOut,
+            Err(()) => return TrainingSave::Unknown,
         };
         let mut slot = self.revision_sequencer.acquire(current.character_id).await;
         let Ok(root) = self
@@ -293,9 +294,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Err(_) => return TrainingSave::Unknown,
             },
         };
-        let Some(fresh) = super::character_gameplay_fence::current(self, session, true).await
-        else {
-            return TrainingSave::FencedOut;
+        let fresh = match self.current_quest_fence(session).await {
+            Ok(Some(fence)) => fence,
+            Ok(None) => return TrainingSave::FencedOut,
+            Err(()) => return TrainingSave::Unknown,
         };
         if fresh.character_id != retained.fence.character_id
             || fresh.connection_generation != current.connection_generation
