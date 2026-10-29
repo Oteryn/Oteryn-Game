@@ -263,6 +263,24 @@ async fn prepare_spatial(
                     c.actor.placement_identity() == held.identity && c.generation == held.generation
                 })
                 .map(|c| c.actor)
+                .or_else(|| {
+                    matches!(
+                        spell.carrier,
+                        crate::spell::Carrier::Rune { item: 3165, .. }
+                    )
+                    .then(|| {
+                        runtime
+                            .visible_entities()
+                            .players
+                            .into_iter()
+                            .find(|p| {
+                                p.actor.placement_identity() == held.identity
+                                    && p.generation == held.generation
+                            })
+                            .map(|p| p.actor)
+                    })
+                    .flatten()
+                })
                 .ok_or(SpellCastDisposition::TargetIllegal)?;
             let seen = runtime
                 .read_actor_position(creature)
@@ -480,14 +498,17 @@ async fn qualify_targets(
         caster_protection,
     } = spatial;
     let mut pvp_targets = Vec::new();
-    // Basic direct damage only: delayed/chain/condition/field effects retain their refusals.
+    // Direct damage and the single-target paralyze rune share the real PvP legality owner.
     let basic_pvp = spell.aggressive
         && spell.chain.is_none()
-        && profile
-            .dependencies
-            .effects
-            .iter()
-            .all(|e| e.operation == "damage")
+        && profile.dependencies.effects.iter().all(|e| {
+            e.operation == "damage"
+                || (matches!(
+                    spell.carrier,
+                    crate::spell::Carrier::Rune { item: 3165, .. }
+                ) && e.operation == "condition"
+                    && e.condition.as_ref().is_some_and(|c| c.kind == "paralyze"))
+        })
         && profile
             .dependencies
             .abilities

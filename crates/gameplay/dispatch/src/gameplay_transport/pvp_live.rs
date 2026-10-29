@@ -556,11 +556,18 @@ pub(super) async fn record_spell_harm(
         pvp_locks.push((batch.caster, batch.command.game_session_id(), true));
     }
     for effect in &batch.effects {
+        let paralysis = matches!(&effect.change,
+            crate::spell::combat_batch::OwnerCombatChange::PlayerConditions { expected, next }
+                if next.instances().iter().any(|condition|
+                    condition.definition().condition_type()
+                        == oteryn_gameplay_domain::domain::condition::ConditionType::Paralysis
+                        && !expected.instances().contains(condition)));
         if runtime.contains_live_creature(effect.target)
-            || !matches!(
-                effect.change,
-                crate::spell::combat_batch::OwnerCombatChange::Damage { .. }
-            )
+            || (!paralysis
+                && !matches!(
+                    effect.change,
+                    crate::spell::combat_batch::OwnerCombatChange::Damage { .. }
+                ))
         {
             continue;
         }
@@ -589,11 +596,17 @@ pub(super) async fn record_spell_harm(
         {
             return Err(SpellCastDisposition::TargetIllegal);
         }
-        let receipt = player
-            .health_receipt(effect.target, effect.sub_ordinal)
-            .ok_or(SpellCastDisposition::Rejected)?;
-        let damage = u32::try_from(receipt.health_before - receipt.health_after)
-            .map_err(|_| SpellCastDisposition::Rejected)?;
+        // Condition-only harm still records aggression and combat locks through
+        // the same fenced transaction; it has no health receipt or damage.
+        let damage = if paralysis {
+            0
+        } else {
+            let receipt = player
+                .health_receipt(effect.target, effect.sub_ordinal)
+                .ok_or(SpellCastDisposition::Rejected)?;
+            u32::try_from(receipt.health_before - receipt.health_after)
+                .map_err(|_| SpellCastDisposition::Rejected)?
+        };
         let binding = Sha256::digest(format!("{batch:?}").as_bytes()).into();
         storage::record_live_pvp_harm_in_transaction(
             tx,

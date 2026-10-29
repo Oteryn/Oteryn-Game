@@ -58,12 +58,25 @@ fn a_same_session_resume_waits_for_a_busy_holder_at_prepare_postgres() -> TestRe
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario().map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "busy-holder resume thread panicked")??;
     Ok(())
 }
-fn resume_scenario() -> TestResult {
+#[test]
+fn a_resumed_loss_retries_an_unreadable_history_without_releasing_the_session_postgres()
+-> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| resume_scenario(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "resumed-loss thread panicked")??;
+    Ok(())
+}
+fn resume_scenario(history_read_fails: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         return Ok(());
     };
@@ -74,8 +87,9 @@ fn resume_scenario() -> TestResult {
         true,
         false,
     ))?;
-    let result =
-        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| rt.block_on(resume_case(&h))));
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        rt.block_on(resume_case(&h, history_read_fails))
+    }));
     let cleanup = rt.block_on(h.cleanup());
     match result {
         Ok(result) => {
@@ -85,7 +99,7 @@ fn resume_scenario() -> TestResult {
         Err(panic) => std::panic::resume_unwind(panic),
     }
 }
-async fn resume_case(h: &Harness) -> TestResult {
+async fn resume_case(h: &Harness, history_read_fails: bool) -> TestResult {
     let recovery_source = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -151,7 +165,74 @@ async fn resume_case(h: &Harness) -> TestResult {
     let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
         .current_session_at(admitted.game_session_id)
         .await?;
-    assert_eq!(current.session_state(), crate::foundation::GameSessionState::Active);
+    assert_eq!(
+        current.session_state(),
+        crate::foundation::GameSessionState::Active
+    );
+    if history_read_fails {
+        let store = FreshAdmissionStore::from_root(h.root.clone());
+        let held = h.root.try_issue_semantic_pass()?;
+        assert!(matches!(
+            store.resumed_history(resumed.game_session_id).await,
+            Err(crate::durability::DurabilityError::RootUnavailable)
+        ));
+        held.run(|_, _| Box::pin(async { Ok(()) })).await?;
+        assert!(
+            store
+                .resumed_history(resumed.game_session_id)
+                .await?
+                .is_some()
+        );
+        // Inject a recoverable read failure only at the retained-history boundary.
+        // Current-session reads and relation fencing remain available.
+        sqlx::query("REVOKE SELECT ON game_durability_admission_lifecycle_receipts FROM oteryn_game_runtime")
+            .execute(&h.pool).await?;
+        h.root
+            .try_issue_semantic_pass()?
+            .run(|holder, _| {
+                Box::pin(async move {
+                    sqlx::query("SET ROLE oteryn_game_runtime")
+                        .execute(&mut **holder)
+                        .await?;
+                    Ok(())
+                })
+            })
+            .await?;
+        assert_eq!(
+            store.current_session(resumed.game_session_id).await?,
+            current
+        );
+        assert!(
+            store
+                .resumed_history(resumed.game_session_id)
+                .await
+                .is_err()
+        );
+        let loss = owner
+            .lose_control_for_cause(resumed, std::time::Duration::ZERO, None)
+            .await;
+        sqlx::query(
+            "GRANT SELECT ON game_durability_admission_lifecycle_receipts TO oteryn_game_runtime",
+        )
+        .execute(&h.pool)
+        .await?;
+        assert_eq!(
+            loss,
+            crate::gameplay_transport::connection::ControlLossResult::Unknown,
+            "unavailable history must be retried, not treated as invalid history"
+        );
+        assert_eq!(
+            store.current_session(resumed.game_session_id).await?,
+            current
+        );
+    }
+    assert_eq!(
+        owner
+            .lose_control_for_cause(resumed, std::time::Duration::ZERO, None)
+            .await,
+        crate::gameplay_transport::connection::ControlLossResult::Recorded,
+        "a resumed connection must open its next reconnect window"
+    );
     Ok(())
 }
 async fn resume_same_session(
