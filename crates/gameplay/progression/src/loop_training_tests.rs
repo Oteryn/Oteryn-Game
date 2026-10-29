@@ -9,12 +9,13 @@ fn rates() -> TrainingRates {
 #[test]
 fn loop_training_gate_and_unknown_vocation_fail_closed() {
     let mut rates = rates();
+    rates.enabled = false;
     assert!(!rates.enabled);
     assert!(rates.offline_gain("knight", 3, 600).is_err());
     rates.enabled = true;
     assert_eq!(rates.offline_gain("knight", 3, 600), Ok(150));
-    assert_eq!(rates.offline_gain("paladin", 5, 600), Ok(75));
-    assert_eq!(rates.offline_gain("sorcerer", 0, 600), Ok(600));
+    assert_eq!(rates.offline_gain("paladin", 5, 600), Ok(120));
+    assert_eq!(rates.offline_gain("sorcerer", 0, 600), Ok(300));
     assert!(rates.offline_gain("unknown", 3, 600).is_err());
     assert!(rates.offline_gain("knight", 7, 600).is_err());
     assert!(rates.offline_gain("knight", 3, 43201).is_err());
@@ -102,12 +103,16 @@ fn crystal_exercise_dummy_percentages_match_per_charge_integer_conversion() {
 }
 
 #[test]
-fn crystal_offline_hourly_rates_cover_every_vocation_and_skill() {
+fn offline_hourly_rates_apply_global_coefficients_to_retained_vocations() {
     let mut rates = rates();
     rates.enabled = true;
     for vocation in &rates.vocations {
-        let expected_magic =
-            3_600_000_u64 * u64::from(vocation.mana_amount) / u64::from(vocation.top_mana_ticks_ms);
+        let expected_magic = match vocation.vocation.as_str() {
+            "sorcerer" | "druid" | "master_sorcerer" | "elder_druid" => 1800,
+            "paladin" | "royal_paladin" | "monk" | "exalted_monk" => 1200,
+            "none" | "knight" | "elite_knight" => 600,
+            _ => 0,
+        };
         assert_eq!(
             rates.offline_gain(&vocation.vocation, 0, 3_600),
             Ok(expected_magic),
@@ -115,8 +120,11 @@ fn crystal_offline_hourly_rates_cover_every_vocation_and_skill() {
             vocation.vocation
         );
         for family in 1..=6 {
-            let expected = 3_600_000_u64
-                / (u64::from(vocation.top_attack_ms) * u64::from(rates.offline_divisors[family]));
+            let expected = match family {
+                5 => 720,
+                6 => 450,
+                _ => 900,
+            };
             assert_eq!(
                 rates.offline_gain(&vocation.vocation, family, 3_600),
                 Ok(expected),

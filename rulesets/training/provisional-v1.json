@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "provisional": true,
-  "enabled": false,
-  "source": "Crystal 201189f871d23597b82caf88fd611454a2ddefb8 and Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446 (donor parity verified; native Global rates remain UNVERIFIED)",
+  "enabled": true,
+  "source": "TibiaWiki Training School Mathematics (https://tibia.fandom.com/api.php?action=parse&page=Training_School&prop=wikitext&format=json, checked 2026-10-29): offline coefficients; Crystal 201189f871d23597b82caf88fd611454a2ddefb8 and Canary 47dfd51f45280a59a1d3e50ba7edd573d7234446: vocation and integer exercise candidates (Global fractional exercise accumulation and vocation ticks remain UNVERIFIED)",
   "exercise_gains": [
     600,
     7,
@@ -140,7 +140,7 @@
     2,
     2,
     2,
-    4,
+    5,
     4,
     0
   ]

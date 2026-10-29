@@ -165,13 +165,15 @@ async fn scenario(h: &Harness, inspection: bool) -> TestResult {
     }
     let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
     let channel = ChannelId::decode(&id(CHANNEL)).map_err(debug)?;
+    // The build writer requires the same content revision as the durable fixture roots.
     let (controller, pin) =
-        crate::content::native_gameplay::test_support::activated_with_loot_tables(
+        super::death_ml_loss_composed::production_generation_with_source(
             world,
+            "content-1",
             Some(include_bytes!(
                 "../../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
             )),
-        );
+        )?;
     let active = controller.active().ok_or("active")?;
     let frame_digest = pin.frame_binding().digest();
     let room = pin.qualified_room().clone();
@@ -241,6 +243,8 @@ async fn scenario(h: &Harness, inspection: bool) -> TestResult {
         "real source-map initialization"
     );
     for a in &mut admitted {
+        owner.admit_loop_training(a).await;
+        assert_eq!(a.first_entry, FirstEntryOutcome::Positioned);
         a.continuity.selected_capabilities = SelectedCapabilities::select(
             owner.offered_capabilities(),
             if inspection {
@@ -723,6 +727,16 @@ async fn scenario(h: &Harness, inspection: bool) -> TestResult {
     )
     .await?;
     result?;
+    let markers: (i64, i64) = sqlx::query_as(
+        "SELECT count(*) FILTER (WHERE cause='offline_settlement'), count(*) FILTER (WHERE cause='logout') FROM game_character_training_markers",
+    )
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        markers,
+        (2, i64::from(!inspection)),
+        "default training preserves trade; only explicit logout writes its marker"
+    );
     if inspection {
         return Ok(());
     }
