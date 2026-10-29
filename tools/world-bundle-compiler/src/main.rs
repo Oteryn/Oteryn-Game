@@ -352,6 +352,7 @@ const INPUT_PATHS: &[&str] = &[
     "content/dialogues/definitions/",
     "content/services/",
     "tools/world-bundle-compiler/",
+    "tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json",
     "crates/world-bundle/",
     "Cargo.toml",
     "Cargo.lock",

@@ -502,13 +502,24 @@ impl PlayerSpellState {
         current: bool,
         valid_until_micros: Option<u64>,
     ) -> Result<bool, SpellCastDisposition> {
+        self.apply_owner_promotion_transition(self.stored_promotion, current, valid_until_micros)
+    }
+
+    /// Install the fenced permanent promotion and current Premium projection together.
+    /// Crystal's vocation transition preserves current soul when the maximum falls.
+    pub fn apply_owner_promotion_transition(
+        &mut self,
+        promoted: bool,
+        current: bool,
+        valid_until_micros: Option<u64>,
+    ) -> Result<bool, SpellCastDisposition> {
         if current && valid_until_micros.is_none() {
             return Err(SpellCastDisposition::Rejected);
         }
-        let maximum = crate::domain::premium::soul_maximum(current);
-        let soul = crate::domain::premium::apply_account_transition(self.soul, current);
-        let changed =
-            self.premium_current != current || self.facts.max_soul != maximum || self.soul != soul;
+        let maximum = crate::domain::premium::soul_maximum(promoted, current);
+        let changed = self.premium_current != current
+            || self.stored_promotion != promoted
+            || self.facts.max_soul != maximum;
         let revision = if changed {
             self.revision
                 .checked_add(1)
@@ -519,7 +530,7 @@ impl PlayerSpellState {
         self.premium_current = current;
         self.premium_valid_until_micros = if current { valid_until_micros } else { None };
         self.facts.max_soul = maximum;
-        self.soul = soul;
+        self.stored_promotion = promoted;
         self.revision = revision;
         Ok(changed)
     }

@@ -1,6 +1,6 @@
-# Oteryn World Bundle format (v5; the file name keeps V1)
+# Oteryn World Bundle format (v6; the file name keeps V1)
 
-- Format ID: `OTERYN_WORLD_BUNDLE/v5` (v1, v2, v3 and v4 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
+- Format ID: `OTERYN_WORLD_BUNDLE/v6` (v1, v2, v3, v4 and v5 are retired and have no reader; see "Format v2", "Format v3" and "Format v4" below)
 - Owner: `Oteryn/Oteryn-Game`, MAP-BUNDLE-1 (ADR-0021 §5)
 - Status: **CANDIDATE.** ADR-0005 §3 requires an accepted schema contract before a runtime
   treats a serializer as a permanent format. This document is accepted together with
@@ -34,7 +34,7 @@ All integers are little endian unless the payload grammar (§5) says varint.
 | Offset | Size | Field | Rule |
 |---|---|---|---|
 | 0 | 4 | magic | `"OTWB"` |
-| 4 | 2 | `format_version` u16 | `5` |
+| 4 | 2 | `format_version` u16 | `6` |
 | 6 | 2 | reserved u16 | `0` |
 | 8 | 4 | `manifest_length` u32 | at most `MAP01-BUNDLE-MANIFEST-BYTES` |
 | 12 | 4 | `sector_count` u32 | at most `MAP01-BUNDLE-SECTOR-COUNT` |
@@ -59,8 +59,8 @@ reader rejects unknown fields at every level (fail closed); a new field needs a 
 | Field | Meaning |
 |---|---|
 | `subareas` | Typed client-mask admission (§15), covered by the bundle digest. Written first. |
-| `format` | `"OTERYN_WORLD_BUNDLE/v5"` |
-| `min_reader_version` | lowest reader `format_version` able to read the file; `5` |
+| `format` | `"OTERYN_WORLD_BUNDLE/v6"` |
+| `min_reader_version` | lowest reader `format_version` able to read the file; `6` |
 | `projection_class` | `"server"` (ADR-0021 §4.2). A client projection is not part of v1. |
 | `compiler_version` | set by the compiler, never by its caller: `oteryn-world-bundle-compiler/<crate version> zstd/<library version>` (§6) |
 | `build_class` | `"production"` or `"non-production"`, §8 |
@@ -129,7 +129,7 @@ already writes canonical varints.
 
 - **Per sector.** The table row holds the SHA-256 of the stored frame. A reader checks it before
   it decompresses the frame, so a corrupt frame never reaches the decompressor.
-- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v5" || 0x00 || file[0 .. len − 32])`, stored
+- **Bundle digest.** `SHA-256("OTERYN_WORLD_BUNDLE/v6" || 0x00 || file[0 .. len − 32])`, stored
   as the last 32 bytes. It covers the header, the manifest (including `build_class` and the
   content revision), the tables and every frame, the spawn and NPC frames included. It is the bundle identity used for pinning
   (ADR-0021 §4.2), the Ground `map_revision` (§4.4) and `MapItemMaterialization`.
@@ -609,3 +609,42 @@ for a boss. A policy on an ordinary or encounter-bound creature is invalid. Lega
 without policy are retained as held evidence outside active spawn shards; an active boss point
 without policy fails compilation.
 Scheduling provenance lives on the source declaration, outside the runtime payload.
+
+## 16. Format v6 (C20d-W23)
+
+Version 6 carries each area's `town_id` (the source engine town id or null),
+`hometown` flag, and `temple` (native `{x,y,floor}` or null). Hometowns require
+a positive unique town id and a temple; other areas carry neither. The catalogue
+retains the 19 hometowns admitted by the city content and the default starter
+town from the committed OTBM town sample. Runtime compatibility
+version is 4; the reader rejects earlier bundle formats. The frame layout stays
+the same. Regenerate bytes and pins with the compiler; never relabel old bytes.
+
+The table's `default_town` is resolved from the reviewed pin's `entry_start`
+against the original verified source masks, then the named OTBM town, or the
+parent region's unique hometown when the area has no named town.
+This lookup does not change discovery membership admission. The shipped start
+(32534,32513,-7) is in source subregion Newhaven (514), parent Thais (24), whose
+source name matches OTBM town Newhaven (33), temple (32536,32514,-7) in
+`tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json`.
+The parent region is not substituted for that named town. Missing or ambiguous source
+membership or a missing hometown is a compilation error. The pin's entry start
+is therefore a compiler input as well as a boot check; derived digest fields
+remain excluded from the compiler input fingerprint.
+
+Home town is a per-Character durable choice in `game_character_home_towns`
+(migration 0534). Under DUR-02 section 5, an actual citizenship change advances
+the global CharacterRevision and its existing progression mirror exactly once.
+Its immutable home-town receipt extends the existing Character revision chain;
+deferred database guards require the changed town and receipt to agree in the
+same transaction and preserve the existing progression consistency checks.
+An absent row already denotes the pinned default: materializing it, or repeating
+the same citizenship, does not change logical state or advance the revision.
+Initialization and citizenship changes prove the current gameplay fence in the
+same transaction as the write. The revision sequencer reloads its cursor after
+the operation, including an unknown commit outcome. Fresh admission initializes an absent row
+from the pinned default. Death records the selected temple in its existing
+pending respawn, and consumes it through the existing fenced placement path;
+the placed temple also becomes the saved last position. Citizen ingress uses
+placement unique ids from Crystal/Canary `citizen.lua`, including Svargrond's
+Barbarian Test storage 41174 threshold 8. No wire protocol change is required.

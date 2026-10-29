@@ -8,6 +8,14 @@ pub const MAX_MASKS: usize = 512;
 pub const MAX_RUNS: usize = 262_144;
 pub const MAX_TILES: usize = 4_194_304;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Temple {
+    pub x: u16,
+    pub y: u16,
+    pub floor: i8,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Area {
@@ -17,6 +25,9 @@ pub struct Area {
     pub name: String,
     pub parent: Option<u32>,
     pub source_record_sha256: String,
+    pub town_id: Option<u32>,
+    pub hometown: bool,
+    pub temple: Option<Temple>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -45,6 +56,8 @@ pub struct Run {
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Table {
+    /// Town of the reviewed entry start, resolved against the source area masks.
+    pub default_town: Option<u32>,
     pub client_version: String,
     pub candidate_sha256: String,
     pub areas: Vec<Area>,
@@ -54,6 +67,12 @@ pub struct Table {
 }
 
 impl Table {
+    pub fn town(&self, id: u32) -> Option<&Area> {
+        self.areas
+            .iter()
+            .find(|a| a.hometown && a.town_id == Some(id))
+    }
+
     /// The region and subarea at a native position. Missing coverage stays unknown.
     pub fn resolve(&self, x: u16, y: u16, floor: i8) -> Option<(u32, u32)> {
         let at = self
@@ -111,6 +130,7 @@ impl Table {
                 .map(|i| &self.areas[i])
         };
         let mut keys = std::collections::BTreeSet::new();
+        let mut towns = std::collections::BTreeSet::new();
         for a in &self.areas {
             if a.id == 0
                 || !a.key.starts_with("oteryn:content.area.")
@@ -119,11 +139,20 @@ impl Table {
                 || a.name.is_empty()
                 || a.name.len() > 256
                 || !hash(&a.source_record_sha256)
+                || a.hometown != a.temple.is_some()
+                || a.hometown != a.town_id.is_some()
+                || a.town_id.is_some_and(|id| id == 0 || !towns.insert(id))
+                || a.temple.is_some_and(|p| !(-15..=0).contains(&p.floor))
                 || a.parent
                     .is_some_and(|p| p == a.id || area(p).is_none_or(|p| p.parent.is_some()))
             {
                 return Err(fail("area identity or parent"));
             }
+        }
+        if self.default_town.is_some_and(|id| self.town(id).is_none())
+            || (!towns.is_empty() && self.default_town.is_none())
+        {
+            return Err(fail("default town"));
         }
         let mut counts = std::collections::BTreeMap::<u32, usize>::new();
         let mut total = 0;
@@ -176,9 +205,34 @@ impl Table {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn town_metadata_survives_the_bundle_reader() -> Result<(), Box<dyn std::error::Error>> {
+        let record = serde_json::json!({
+            "id": 451,
+            "key": "oteryn:content.area.city.ab_dendriel",
+            "name": "Ab'Dendriel",
+            "parent": 1,
+            "source_record_sha256": "a".repeat(64),
+            "town_id": 5,
+            "hometown": true,
+            "temple": {"x": 32732, "y": 31634, "floor": -7}
+        });
+        let area: Area = serde_json::from_value(record.clone())?;
+        let table = Table {
+            areas: vec![area.clone()],
+            default_town: Some(5),
+            ..Table::default()
+        };
+        assert_eq!(table.town(5), Some(&area));
+        assert_eq!(table.town(999), None);
+        assert_eq!(serde_json::to_value(area)?, record);
+        Ok(())
+    }
     fn table() -> Table {
         let hash = "a".repeat(64);
         Table {
+            default_town: None,
             client_version: "15.30".into(),
             candidate_sha256: hash.clone(),
             areas: vec![
@@ -188,6 +242,9 @@ mod tests {
                     name: "Hrodmir".into(),
                     parent: None,
                     source_record_sha256: hash.clone(),
+                    town_id: None,
+                    hometown: false,
+                    temple: None,
                 },
                 Area {
                     id: 109,
@@ -195,6 +252,9 @@ mod tests {
                     name: "Nibelor".into(),
                     parent: Some(23),
                     source_record_sha256: hash.clone(),
+                    town_id: None,
+                    hometown: false,
+                    temple: None,
                 },
             ],
             masks: vec![Mask {
@@ -222,6 +282,41 @@ mod tests {
             max_x: 32,
             max_y: 32,
             floors: vec![-7],
+        }
+    }
+
+    #[test]
+    fn town_lookup_rejects_incomplete_default_duplicate_ids_and_invalid_temples() {
+        let mut valid = table();
+        valid.default_town = Some(5);
+        valid.areas[1].town_id = Some(5);
+        valid.areas[1].hometown = true;
+        valid.areas[1].temple = Some(Temple {
+            x: 20,
+            y: 10,
+            floor: -7,
+        });
+        assert_eq!(valid.validate(&world()), Ok(()));
+        assert_eq!(valid.town(5), valid.areas.get(1));
+        assert_eq!(valid.town(6), None);
+        let mut missing = valid.clone();
+        missing.default_town = None;
+        let mut unknown = valid.clone();
+        unknown.default_town = Some(999);
+        let mut duplicate = valid.clone();
+        duplicate.areas[0].town_id = Some(5);
+        duplicate.areas[0].hometown = true;
+        duplicate.areas[0].temple = valid.areas[1].temple;
+        let mut incomplete = valid.clone();
+        incomplete.areas[1].temple = None;
+        let mut invalid = valid;
+        invalid.areas[1].temple = Some(Temple {
+            x: 20,
+            y: 10,
+            floor: 7,
+        });
+        for table in [missing, unknown, duplicate, incomplete, invalid] {
+            assert!(table.validate(&world()).is_err());
         }
     }
 

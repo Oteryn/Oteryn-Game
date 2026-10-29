@@ -223,7 +223,7 @@ fn pins(compiled: &Compiled, production: bool) -> BundlePins {
 fn resealed(mut bytes: Vec<u8>) -> (Vec<u8>, [u8; 32]) {
     let body = bytes.len() - 32;
     let digest: [u8; 32] = Sha256::new()
-        .chain_update(b"OTERYN_WORLD_BUNDLE/v5\0")
+        .chain_update(b"OTERYN_WORLD_BUNDLE/v6\0")
         .chain_update(&bytes[..body])
         .finalize()
         .into();

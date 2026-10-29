@@ -1629,7 +1629,7 @@ mod map_overlay_pickup {
         out.extend_from_slice(&npc_frame);
         let body = out.len();
         let digest: [u8; 32] = Sha256::new()
-            .chain_update(b"OTERYN_WORLD_BUNDLE/v5\0")
+            .chain_update(b"OTERYN_WORLD_BUNDLE/v6\0")
             .chain_update(&out)
             .finalize()
             .into();
