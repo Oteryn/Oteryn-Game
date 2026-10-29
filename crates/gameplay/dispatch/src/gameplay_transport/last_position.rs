@@ -209,6 +209,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
     async fn has_training_to_flush(&self, session: GameSessionId, actor: ExactActorRef) -> bool {
         let runtime = self.runtime.lock().await;
+        if runtime.player_control_facts(actor, session).is_ok() {
+            // Proficiency progresses independently of spell training. Queued deaths may
+            // still owe this contributor credit when shutdown takes its first snapshot.
+            let pending = self.states.proficiencies.lock().map_or(true, |states| {
+                states
+                    .get(&session)
+                    .is_some_and(|state| state.checkpoint_due(self.owner_now().get(), true))
+            });
+            if pending
+                || !self
+                    .states
+                    .attack
+                    .lock()
+                    .await
+                    .kills()
+                    .proficiency_principals(session)
+                    .is_empty()
+            {
+                return true;
+            }
+        }
         self.states
             .spell_states
             .lock()
