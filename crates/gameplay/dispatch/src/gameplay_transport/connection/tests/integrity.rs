@@ -49,6 +49,10 @@ impl FreshAdmissionAuthority for IntegrityAuthority {
 #[test]
 fn sec1_flood_refuses_without_owner_effect_and_connection_recovers() -> Result<(), Box<dyn Error>> {
     run(async {
+        // Virtual time: the 100 flood commands share one instant, so the refusal's sleep
+        // frees the whole window. On wall time a scheduling gap inside the flood leaves
+        // later slots unexpired and the recovering step is refused too.
+        tokio::time::pause();
         let authority = IntegrityAuthority::new();
         // Unknown types also cost capacity. None can reach the movement owner.
         let mut commands: Vec<_> = (1..=100)

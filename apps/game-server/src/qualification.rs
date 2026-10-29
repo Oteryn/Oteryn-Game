@@ -694,9 +694,26 @@ async fn exchange_must_close_paced(
         if *after > 0 {
             let mut chunk = [0_u8; 4096];
             while complete_frames(&output) < *after {
-                let read = tokio::time::timeout(Duration::from_secs(20), stream.read(&mut chunk))
-                    .await
-                    .map_err(|_| "server did not answer a paced segment")??;
+                // A close (or reset) here ends the stream as `read_to_end` below treats it, so
+                // the caller's frame assertion reports what the server sent before closing.
+                let read =
+                    match tokio::time::timeout(Duration::from_secs(20), stream.read(&mut chunk))
+                        .await
+                        .map_err(|_| "server did not answer a paced segment")?
+                    {
+                        Ok(read) => read,
+                        Err(error)
+                            if matches!(
+                                error.kind(),
+                                io::ErrorKind::UnexpectedEof
+                                    | io::ErrorKind::ConnectionReset
+                                    | io::ErrorKind::BrokenPipe
+                            ) =>
+                        {
+                            0
+                        }
+                        Err(error) => return Err(error.into()),
+                    };
                 if read == 0 {
                     break;
                 }

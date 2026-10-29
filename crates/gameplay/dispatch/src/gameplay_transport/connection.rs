@@ -404,6 +404,25 @@ pub enum AdmissionRefusal {
 /// N8: the one pre-admission refusal frame is written and flushed within this bound, or dropped.
 const ADMISSION_REFUSAL_WRITE_BOUND: std::time::Duration = std::time::Duration::from_secs(2);
 
+/// DEFLAKE-2: the closed-schema operator line of a silent fresh-admission or resume refusal.
+/// It names the refusal kind alone, never a session, account, character or transport.
+pub(super) fn admission_refused_event(refusal: AdmissionRefusal) -> Option<&'static str> {
+    match refusal {
+        AdmissionRefusal::Unavailable => Some("event=admission_refused kind=unavailable"),
+        // PREMCHAN: a Premium refusal takes the silent rejection path.
+        AdmissionRefusal::Rejected | AdmissionRefusal::PremiumRequired => {
+            Some("event=admission_refused kind=rejected")
+        }
+        _ => None,
+    }
+}
+
+fn report_admission_refusal(refusal: AdmissionRefusal) {
+    if let Some(line) = admission_refused_event(refusal) {
+        super::operator_event(line);
+    }
+}
+
 /// The terminal outcome of one `ACCOUNT_ACHIEVEMENTS_QUERY` (display contract §3.3, §4).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AccountAchievementsReply {
@@ -679,7 +698,10 @@ where
                     ));
                 }
                 // Every other refusal stays silent: nothing about the session is revealed.
-                Err(_) => return Err(ConnectionEnd::ResumeUnavailable),
+                Err(refusal) => {
+                    report_admission_refusal(refusal);
+                    return Err(ConnectionEnd::ResumeUnavailable);
+                }
             };
             let continuity = resumed.continuity;
             // CAP-NEG-1: the resumed session keeps its original selection. The owning authority
@@ -775,6 +797,7 @@ where
     let mut admitted = match authority.admit(attempt).await {
         Ok(admitted) => admitted,
         Err(refusal) => {
+            report_admission_refusal(refusal);
             if let AdmissionRefusal::Classified(error) = refusal {
                 // N8: exactly one ProtocolError at generation 0, then close. A slow or
                 // failed peer write changes nothing: the refusal already stands.

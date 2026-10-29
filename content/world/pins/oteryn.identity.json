@@ -1,12 +1,12 @@
 {
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "tibia-news-bal-1-20261027-r1",
-  "content_lock_digest": "7a9f42d2293d74eabde3f51840b160e4372d982fe412a5020c1f4c8c66479998",
+  "content_revision": "par-m10-drown-protection-20261028-r1",
+  "content_lock_digest": "a1322d2db427abda1034a35e77d2785c934c44112e418e75ebfb40ec2f6a877e",
   "min_runtime_version": "3",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:tibia-news-bal-1-20261027-r1/6b33663b4640b56ab4e181f576b5a34a5943dbad9de7bf02213cdf4d38b1dbdb"
+  "provenance_summary": "lock:par-m10-drown-protection-20261028-r1/13e01f54839774a68a17617392808143f7b632c59fac2fb3e896225f1528be33"
 }

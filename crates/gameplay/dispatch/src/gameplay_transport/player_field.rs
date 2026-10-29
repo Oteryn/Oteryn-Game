@@ -207,6 +207,20 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             if refused {
                 continue;
             }
+            // PAR-M10: environment drown has no source actor; it is dealt like a creature hit.
+            if !agony
+                && crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
+                    &tick.provenance,
+                )
+            {
+                next = crate::spell::actor_conditions::stage_creature_hit(&next, amount, now_us)
+                    .map_err(|_| DurabilityError::Unavailable)?
+                    .0;
+                if next.vitals().health == 0 {
+                    break;
+                }
+                continue;
+            }
             if tick.provenance.source_kind
                 == oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::Creature
             {

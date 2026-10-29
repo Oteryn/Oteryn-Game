@@ -94,10 +94,32 @@ fn i11_crystal_station_baking_and_milling_match() {
     }
 }
 
+/// Cookie tray: Crystal `baking.lua` and TibiaWiki "Baking Tray (Cookie)" (revision 1008370:
+/// "Can be used with an oven to get 12 Cookies (and an empty, reusable Baking Tray)") bake tray
+/// 8020 on every oven into 12 cookies 3598 and the empty tray 3464.
+#[test]
+fn i11_cookie_tray_bakes_twelve_cookies_and_an_empty_tray() {
+    let controller = native();
+    let state = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .expect("native gameplay");
+    for oven in OVENS {
+        assert_eq!(
+            outputs(state, 8020, oven),
+            out(&[(3464, 1), (3598, 12)]),
+            "cookie tray {oven}"
+        );
+    }
+    for mill in MILLSTONES {
+        assert_eq!(outputs(state, 8020, mill), None, "tray on millstone {mill}");
+    }
+}
+
 /// Divergences pinned for the owner; none is changed here.
-/// - MISSING: the cookie tray. Crystal bakes tray 8020 on an oven into 12 cookies 3598 and an
-///   empty tray 3464; TibiaWiki "Baking Tray (Cookie)" agrees. Oteryn has no 8020 row. Crystal
-///   fills the tray with lump of dough 3604, TibiaWiki with lump of cake dough 6276 (DIFF).
+/// - The cookie tray fill step. TibiaWiki (Lump of Cake Dough, revision 1013648) fills the empty
+///   tray 3464 with lump of cake dough 6276 to get tray 8020; Crystal uses lump of dough 3604.
+///   Oteryn follows Global (6276). The fill is a carried-target row (below), so it is MISSING.
 /// - Crystal's oven `else` branch also turns flour 3603, wheat 3605, holy water dough 8195 and
 ///   reed 30975 into bread; Oteryn bakes only lump of dough 3604 (Oteryn keeps the narrower rule).
 /// - Carried-target rows (flour on a fluid container, cake dough on chocolate, holy water dough
@@ -111,7 +133,6 @@ fn i11_crystal_divergences_are_pinned() {
         .and_then(|active| active.native_gameplay())
         .expect("native gameplay");
     for oven in OVENS {
-        assert_eq!(outputs(state, 8020, oven), None, "cookie tray {oven}");
         for used in [3603, 3605, 8195, 30975] {
             assert_eq!(outputs(state, used, oven), None, "oven else {used} {oven}");
         }

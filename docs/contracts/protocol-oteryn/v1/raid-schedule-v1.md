@@ -1,9 +1,8 @@
 # Raid Schedule V1
 
-Capability 149 reserves commands 171, 172 and 173. It is not offered: raid
-firing, waves and cleanup are server driven by the game node's raid scheduler,
-and no client command can start, advance or cancel a raid. Until the capability
-is offered every command below is refused with no result payload.
+Capability 149 routes read-only command 171 on bundle-booted Worlds. Raid firing, waves and cleanup are
+server driven by the game node's raid scheduler, and no client command can start,
+advance or cancel a raid. Commands 172 and 173 remain reserved and unrouted.
 
 ## Query
 
@@ -12,8 +11,9 @@ admitted session.
 
 ## Query result
 
-Reserved, at most 8192 bytes. The encoding is fixed when the capability is
-offered.
+Protobuf-style fields: raid key (1, UTF-8), running (2, bool), committed action
+count (3, uint32), and active durable creature count (4, uint32). All fields are
+absent when no firing has run on the admitted channel.
 
 ## Subscribe
 

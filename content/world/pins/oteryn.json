@@ -1,9 +1,9 @@
 {
   "schema": "OTERYN_WORLD_PIN/v2",
-  "digest": "4e264dee5ef31fec29593f8e148cb83af7f70e07f03806b017ae1467aa040e0a",
+  "digest": "74ed262d51368b3c17134ebb57a13069d45534ff9d4e54b6bd8dfde7e46c04ae",
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
-  "content_revision": "tibia-news-bal-1-20261027-r1",
+  "content_revision": "par-m10-drown-protection-20261028-r1",
   "production": false,
   "entry_start": {
     "x": 32534,

@@ -213,6 +213,8 @@ impl crate::domain::character_build::DeathBuildState for DurableBuildState {
 pub enum BuildCause {
     /// Vocation equal; no family lower, at least one higher.
     Training,
+    /// RESTSTAM3: resting-area stamina restoration; build families stay equal.
+    RestingStamina,
     /// `none` to a vocation key. The owner re-levels cumulative progress under the new vocation
     /// (SKILLS-0 §3.3) and binds the formula table in the policy digest.
     VocationChoice,
@@ -228,6 +230,7 @@ impl BuildCause {
     const fn key(self) -> &'static str {
         match self {
             Self::Training => "training",
+            Self::RestingStamina => "resting_stamina",
             Self::Logout => "logout",
             Self::OfflineSettlement => "offline_settlement",
             Self::VocationChoice => "vocation_choice",
@@ -238,6 +241,7 @@ impl BuildCause {
     fn parse(key: &str) -> Option<Self> {
         [
             Self::Training,
+            Self::RestingStamina,
             Self::VocationChoice,
             Self::Promotion,
             Self::Logout,
@@ -252,6 +256,8 @@ impl BuildCause {
         let (from, to) = (before.families(), after.families());
         match self {
             Self::Logout => before == after,
+            // A resting receipt is valid only with its increase-only OfflineChange.
+            Self::RestingStamina => false,
             Self::OfflineSettlement => {
                 before.vocation == after.vocation
                     && from.iter().zip(&to).all(|(from, to)| to >= from)
@@ -454,7 +460,12 @@ pub(super) async fn apply_build_in_transaction(
             && request.before == request.after
             && change.after.stamina_minutes < change.before.stamina_minutes
     });
-    if (!request.cause.admits(&request.before, &request.after) && !stamina_training)
+    let stamina_resting = offline.is_some_and(|change| {
+        request.cause == BuildCause::RestingStamina
+            && request.before == request.after
+            && change.after.stamina_minutes > change.before.stamina_minutes
+    });
+    if (!request.cause.admits(&request.before, &request.after) && !stamina_training && !stamina_resting)
         || binding.is_empty()
         || binding.len() > 1024
     {
@@ -663,6 +674,11 @@ pub(super) async fn apply_build_in_transaction(
     }
     if request.cause == BuildCause::Training && offline.after.stamina_minutes < offline.before.stamina_minutes {
         sqlx::query("SELECT game_hunting_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
+            .bind(character).bind(request.occurrence.0.as_slice())
+            .bind(i32::from(offline.after.stamina_minutes)).execute(&mut **tx).await?;
+    }
+    if request.cause == BuildCause::RestingStamina && offline.after.stamina_minutes > offline.before.stamina_minutes {
+        sqlx::query("SELECT game_resting_set_stamina(encode($1,'hex')::uuid, encode($2,'hex')::uuid, $3)")
             .bind(character).bind(request.occurrence.0.as_slice())
             .bind(i32::from(offline.after.stamina_minutes)).execute(&mut **tx).await?;
     }
@@ -1053,11 +1069,17 @@ mod tests {
         assert!(BuildCause::VocationChoice.admits(&seed, &knight));
         assert!(!BuildCause::VocationChoice.admits(&knight, &elite));
         assert!(BuildCause::Training.admits(&knight, &trained));
+        assert!(!BuildCause::RestingStamina.admits(&knight, &knight));
+        assert!(!BuildCause::RestingStamina.admits(&knight, &trained));
         assert!(!BuildCause::Training.admits(&trained, &knight));
         assert!(!BuildCause::Training.admits(&knight, &knight));
         assert!(BuildCause::Promotion.admits(&trained, &elite));
         assert!(!BuildCause::Promotion.admits(&knight, &elite));
         assert_eq!(BuildCause::parse("promotion"), Some(BuildCause::Promotion));
+        assert_eq!(
+            BuildCause::parse("resting_stamina"),
+            Some(BuildCause::RestingStamina)
+        );
         assert_eq!(BuildCause::parse("death"), None);
     }
 }

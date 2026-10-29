@@ -91,7 +91,7 @@ fn npc_shop_intent_refuses_unknown_repeated_and_out_of_range_fields() {
 fn npc_shop_result_carries_text_or_sale_only_with_ok() {
     let look = NpcShopResult {
         disposition: NpcIntentDisposition::Ok,
-        look_text: "x".repeat(MAX_ITEM_LOOK_TEXT_BYTES),
+        look_text: "x".repeat(MAX_NPC_SHOP_LOOK_TEXT_BYTES),
         sold_units: 0,
         total_gold_units: 0,
     };
@@ -152,7 +152,7 @@ fn npc_shop_result_carries_text_or_sale_only_with_ok() {
     }
     for over in [
         NpcShopResult {
-            look_text: "x".repeat(MAX_ITEM_LOOK_TEXT_BYTES + 1),
+            look_text: "x".repeat(MAX_NPC_SHOP_LOOK_TEXT_BYTES + 1),
             ..look
         },
         NpcShopResult {

@@ -21,6 +21,7 @@ pub mod analyser;
 pub mod animus_mastery;
 pub mod appearance;
 pub mod arena;
+pub mod atelier;
 pub mod attack;
 pub mod bed;
 pub mod bestiary;

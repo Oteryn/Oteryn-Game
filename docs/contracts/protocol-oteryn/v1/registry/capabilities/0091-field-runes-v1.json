@@ -11,5 +11,6 @@
   ],
   "command_types": [],
   "state_domains": [],
-  "offered": false
+  "offered": false,
+  "offer_gate": "The fallback and item-view profiles remain unoffered. The production bundle-world profile (BUNDLE_WORLD_OFFERED_CAPABILITIES) offers FIELD-RUNES-1 after real-dispatch field creation, player and creature stepping, periodic damage, expiry and restart recovery shipped; selection requires 4, 11, 22 and 30."
 }
