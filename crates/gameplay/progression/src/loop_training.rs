@@ -157,12 +157,12 @@ pub fn plan_offline(
         return Err(TrainingUnavailable);
     }
     let elapsed = elapsed.min(MAX_OFFLINE_SECONDS);
-    if selected.is_some() && elapsed < 600 {
-        return Ok(OfflinePlan {
-            pool_after: pool,
-            training_seconds: 0,
-        });
-    }
+    // Get Help entry 178 excludes the first ten minutes from training and refill.
+    let elapsed = if selected.is_some() {
+        elapsed.saturating_sub(600)
+    } else {
+        elapsed
+    };
     let trained = if selected.is_some() {
         elapsed.min(u64::from(pool))
     } else {

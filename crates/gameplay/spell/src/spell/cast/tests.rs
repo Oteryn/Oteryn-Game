@@ -197,7 +197,7 @@ fn premium_grant_renewal_and_expiry_keep_soul_without_refilling() {
     state.soul = 75;
     assert!(
         state
-            .apply_owner_premium_transition(true, Some(100))
+            .apply_owner_promotion_transition(true, true, Some(100))
             .expect("grant")
     );
     assert_eq!(
@@ -206,7 +206,7 @@ fn premium_grant_renewal_and_expiry_keep_soul_without_refilling() {
     );
     assert!(
         !state
-            .apply_owner_premium_transition(true, Some(150))
+            .apply_owner_promotion_transition(true, true, Some(150))
             .expect("renewal")
     );
     assert!(!state.expire_owner_premium(149).expect("before expiry"));
@@ -214,15 +214,24 @@ fn premium_grant_renewal_and_expiry_keep_soul_without_refilling() {
     assert!(state.expire_owner_premium(150).expect("expiry"));
     assert_eq!(
         (state.soul, state.facts.max_soul, state.revision()),
-        (100, 100, 3)
+        (180, 100, 3)
     );
     assert!(!state.expire_owner_premium(151).expect("already expired"));
     assert!(
         state
-            .apply_owner_premium_transition(true, Some(200))
+            .apply_owner_promotion_transition(true, true, Some(200))
             .expect("new grant")
     );
-    assert_eq!(state.soul, 100);
+    assert_eq!(state.soul, 180);
+}
+
+#[test]
+fn non_promoted_premium_keeps_the_base_soul_maximum() {
+    let mut state = PlayerSpellState::new(druid(8), 0, 0).expect("state");
+    state
+        .apply_owner_premium_transition(true, Some(100))
+        .expect("grant");
+    assert_eq!(state.character_facts().max_soul, 100);
 }
 
 // This qualifies the pure actor-owned transition, not a commercial entitlement issuer.
@@ -233,7 +242,7 @@ fn premium_revocation_expiry_and_regrant_obey_the_same_soul_limits() {
             let mut state = PlayerSpellState::new(druid(8), 0, 0).expect("state");
             state.soul = initial;
             state
-                .apply_owner_premium_transition(true, Some(100))
+                .apply_owner_promotion_transition(true, true, Some(100))
                 .expect("grant");
             assert_eq!((state.soul, state.facts.max_soul), (initial, 200));
             // The actor has accumulated soul while Premium was genuinely current.
@@ -247,7 +256,7 @@ fn premium_revocation_expiry_and_regrant_obey_the_same_soul_limits() {
                 state.expire_owner_premium(100).expect("expiry")
             };
             assert!(changed);
-            assert_eq!((state.soul, state.facts.max_soul), (100, 100));
+            assert_eq!((state.soul, state.facts.max_soul), (180, 100));
             let revision = state.revision();
             assert!(
                 !state
@@ -256,12 +265,12 @@ fn premium_revocation_expiry_and_regrant_obey_the_same_soul_limits() {
             );
             assert_eq!(state.revision(), revision);
             state
-                .apply_owner_premium_transition(true, Some(200))
+                .apply_owner_promotion_transition(true, true, Some(200))
                 .expect("regrant");
-            assert_eq!((state.soul, state.facts.max_soul), (100, 200));
+            assert_eq!((state.soul, state.facts.max_soul), (180, 200));
             assert!(!state.expire_owner_premium(199).expect("current"));
             assert!(state.expire_owner_premium(200).expect("second expiry"));
-            assert_eq!((state.soul, state.facts.max_soul), (100, 100));
+            assert_eq!((state.soul, state.facts.max_soul), (180, 100));
         }
     }
 }

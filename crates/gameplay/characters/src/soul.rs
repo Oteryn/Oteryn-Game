@@ -1,5 +1,5 @@
 //! Soul R5 pure policy: cap, regeneration interval and the typed kill-receipt participant.
-//! D1251: cap reads the current PremiumGate; fast regeneration also needs stored promotion.
+//! T-SOULCAP: both cap and fast regeneration require effective promotion.
 //! The kill writer must create the participant from its actual applied XP inside its own
 //! fenced transaction. This pure proposal neither commits a receipt nor proves authority.
 
@@ -17,7 +17,7 @@ pub struct SoulSchedule {
 #[must_use]
 pub const fn soul_schedule(stored_promotion: bool, gate: PremiumGate) -> SoulSchedule {
     SoulSchedule {
-        maximum: soul_maximum(gate.premium_current()),
+        maximum: soul_maximum(stored_promotion, gate.premium_current()),
         interval_seconds: if stored_promotion && gate.premium_current() {
             15
         } else {
@@ -110,11 +110,11 @@ mod tests {
     }
 
     #[test]
-    fn premium_alone_controls_cap_but_promotion_is_also_required_for_fast_regeneration() {
+    fn effective_promotion_controls_cap_and_fast_regeneration() {
         for (promoted, premium, maximum, interval_seconds) in [
             (false, false, 100, 120),
             (true, false, 100, 120),
-            (false, true, 200, 120),
+            (false, true, 100, 120),
             (true, true, 200, 15),
         ] {
             assert_eq!(

@@ -1,5 +1,4 @@
-//! Pure promotion-benefit rules plus the 2026-10-01 owner soul amendment.
-//! Premium now selects soul maximum independently of durable promotion; expiry clamps soul.
+//! Pure promotion-benefit rules. Soul maximum follows effective promotion (T-SOULCAP).
 //!
 //! The caller supplies whether Premium is current (PREM-1) and the durable promotion state; the
 //! regeneration schedule and soul sources are separate children.
@@ -32,7 +31,7 @@ impl EmptyLatchHeld {
 
 /// Soul maximum without a current promotion benefit.
 pub const BASE_SOUL_MAXIMUM: u32 = 100;
-/// Soul maximum while authenticated Premium is current (owner amendment 2026-10-01).
+/// Soul maximum while promotion benefits are active.
 pub const PROMOTED_SOUL_MAXIMUM: u32 = 200;
 
 /// D76: a promotion benefit applies only while the durable promotion is set and Premium is current
@@ -42,29 +41,28 @@ pub const fn promotion_benefit_current(promoted: bool, premium_current: bool) ->
     promoted && premium_current
 }
 
-/// The current account type selects the soul maximum at every transition and gain.
+/// Promotion benefits require both stored promotion and current Premium.
 #[must_use]
-pub const fn soul_maximum(premium_current: bool) -> u32 {
-    if premium_current {
+pub const fn soul_maximum(promoted: bool, premium_current: bool) -> u32 {
+    if promotion_benefit_current(promoted, premium_current) {
         PROMOTED_SOUL_MAXIMUM
     } else {
         BASE_SOUL_MAXIMUM
     }
 }
 
-/// Apply an authenticated grant change, expiry, revocation or unavailable benefit.
-/// Raising the maximum does not refill soul; lowering it clamps immediately.
+/// A positive gain uses the current maximum; a cap transition alone preserves stored soul.
 #[must_use]
-pub const fn apply_account_transition(current: u32, premium_current: bool) -> u32 {
-    let maximum = soul_maximum(premium_current);
-    if current > maximum { maximum } else { current }
-}
-
-/// A gain uses the same current maximum and never preserves out-of-bound soul.
-#[must_use]
-pub const fn apply_soul_gain(current: u32, gain: u32, premium_current: bool) -> u32 {
-    let maximum = soul_maximum(premium_current);
-    let current = apply_account_transition(current, premium_current);
+pub const fn apply_soul_gain(
+    current: u32,
+    gain: u32,
+    promoted: bool,
+    premium_current: bool,
+) -> u32 {
+    if gain == 0 {
+        return current;
+    }
+    let maximum = soul_maximum(promoted, premium_current);
     let raised = current.saturating_add(gain);
     if raised > maximum { maximum } else { raised }
 }
@@ -170,12 +168,18 @@ mod tests {
         ] {
             assert!(!closed.premium_current());
             assert_eq!(closed.require(), Err(PremiumRefusal::NotCurrent));
-            assert_eq!(soul_maximum(closed.premium_current()), BASE_SOUL_MAXIMUM);
+            assert_eq!(
+                soul_maximum(true, closed.premium_current()),
+                BASE_SOUL_MAXIMUM
+            );
             assert!(!promotion_benefit_current(true, closed.premium_current()));
         }
         let open = PremiumGate::from_fence_read(true);
         assert_eq!(open.require(), Ok(()));
-        assert_eq!(soul_maximum(open.premium_current()), PROMOTED_SOUL_MAXIMUM);
+        assert_eq!(
+            soul_maximum(true, open.premium_current()),
+            PROMOTED_SOUL_MAXIMUM
+        );
     }
 
     #[test]
@@ -200,49 +204,47 @@ mod tests {
         assert_eq!(free, death_experience_loss(100, 0, false)?);
         // Crystal `percentReduction += 0.30` for a promoted vocation.
         assert_eq!(premium, 339_640);
-        // Demoted vocation soul 100, promoted 200; a lapse clamps at once.
-        assert_eq!(soul_maximum(false), 100);
-        assert_eq!(soul_maximum(true), 200);
-        assert_eq!(apply_account_transition(200, false), 100);
+        // Demoted vocation soul 100, promoted 200; stored promotion survives.
+        assert_eq!(soul_maximum(true, false), 100);
+        assert_eq!(soul_maximum(true, true), 200);
         // Renewal restores the benefit without a new promotion purchase.
         assert!(promotion_benefit_current(true, true));
         Ok(())
     }
 
     #[test]
-    fn the_soul_maximum_follows_the_current_account_type() {
-        assert_eq!(soul_maximum(true), 200);
-        assert_eq!(soul_maximum(false), 100);
-        assert_eq!(soul_maximum(promotion_benefit_current(true, false)), 100);
+    fn the_soul_maximum_follows_effective_promotion() {
+        assert_eq!(soul_maximum(false, false), 100);
+        assert_eq!(soul_maximum(false, true), 100);
+        assert_eq!(soul_maximum(true, true), 200);
+        assert_eq!(soul_maximum(true, false), 100);
     }
 
     #[test]
     fn a_gain_is_capped_exactly_at_the_maximum() {
-        assert_eq!(apply_soul_gain(95, 4, false), 99);
-        assert_eq!(apply_soul_gain(95, 5, false), 100);
-        assert_eq!(apply_soul_gain(95, 6, false), 100);
-        assert_eq!(apply_soul_gain(100, 1, false), 100);
-        assert_eq!(apply_soul_gain(150, 60, true), 200);
-        assert_eq!(apply_soul_gain(0, u32::MAX, true), 200);
-        assert_eq!(apply_soul_gain(10, 0, false), 10);
+        assert_eq!(apply_soul_gain(95, 4, true, false), 99);
+        assert_eq!(apply_soul_gain(95, 5, true, false), 100);
+        assert_eq!(apply_soul_gain(95, 6, true, false), 100);
+        assert_eq!(apply_soul_gain(100, 1, true, false), 100);
+        assert_eq!(apply_soul_gain(150, 60, true, true), 200);
+        assert_eq!(apply_soul_gain(0, u32::MAX, true, true), 200);
+        assert_eq!(apply_soul_gain(10, 0, true, false), 10);
     }
 
     #[test]
-    fn premium_expiry_clamps_soul_and_grant_does_not_refill() {
-        assert_eq!(apply_account_transition(200, false), 100);
-        assert_eq!(apply_account_transition(101, false), 100);
-        assert_eq!(apply_account_transition(50, true), 50);
-        assert_eq!(apply_soul_gain(200, 5, false), 100);
-        assert_eq!(apply_soul_gain(101, 10, false), 100);
+    fn a_positive_gain_clamps_retained_soul_but_zero_gain_preserves_it() {
+        assert_eq!(apply_soul_gain(200, 0, true, false), 200);
+        assert_eq!(apply_soul_gain(200, 5, true, false), 100);
+        assert_eq!(apply_soul_gain(101, 10, false, true), 100);
     }
 
     #[test]
     fn regeneration_never_exceeds_the_maximum() {
         for promoted in [false, true] {
-            let maximum = soul_maximum(promoted);
+            let maximum = soul_maximum(promoted, true);
             let mut soul = 0;
             for _ in 0..500 {
-                soul = apply_soul_gain(soul, 1, promoted);
+                soul = apply_soul_gain(soul, 1, promoted, true);
                 assert!(soul <= maximum);
             }
             assert_eq!(soul, maximum);

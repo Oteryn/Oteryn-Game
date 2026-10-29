@@ -888,7 +888,10 @@ def server_qualification_required(files, changed_count, complete=True) -> bool:
 # WORLD-BUNDLE-CI-1: the compiler inputs of the World Bundle (ARCH-WORLD-CONTENT-SERVE-1 §1.2).
 # `tools/world-bundle-compiler/src/main.rs` lists the same paths (`INPUT_PATHS`) for the
 # `inputs_digest`; `test_classify_pr_test_lanes.py` keeps the two equal. `vendor/` is excluded.
-WORLD_BUNDLE_INPUT_FILES = frozenset({"Cargo.toml", "Cargo.lock", "rust-toolchain.toml"})
+WORLD_BUNDLE_INPUT_FILES = frozenset({
+    "Cargo.toml", "Cargo.lock", "rust-toolchain.toml",
+    "tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json",
+})
 WORLD_BUNDLE_INPUT_PREFIXES = (
     "content/world/",
     "content/cyclopedia/",

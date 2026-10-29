@@ -3,7 +3,7 @@
   "world_schema_version": "reference-schema-v1",
   "content_revision": "par-m10-drown-protection-20261028-r1",
   "content_lock_digest": "a1322d2db427abda1034a35e77d2785c934c44112e418e75ebfb40ec2f6a877e",
-  "min_runtime_version": "3",
+  "min_runtime_version": "4",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"

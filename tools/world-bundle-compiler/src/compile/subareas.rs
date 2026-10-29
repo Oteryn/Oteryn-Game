@@ -15,6 +15,8 @@ const MAX_INPUT: usize = 16 << 20;
 const MAX_ASSET: usize = 64 << 10;
 const MAX_PIXELS: usize = 1 << 20;
 const MAX_BMP: usize = MAX_PIXELS * 4 + 122;
+const TOWN_SOURCE: &str =
+    "tools/content-schema/area-authoring/samples/crystal-world-towns-00ce02a5.json";
 
 fn fail(what: impl std::fmt::Display) -> Error {
     Error::Format(format!("subarea admission: {what}"))
@@ -149,6 +151,29 @@ impl Source {
                         name: text(&a["name"])?,
                         parent: None,
                         source_record_sha256: text(&provenance["source_record_sha256"])?,
+                        town_id: if a["hometown"].is_null() {
+                            None
+                        } else {
+                            Some(
+                                provenance["hometown"]["engine_town"]["town_id"]
+                                    .as_u64()
+                                    .and_then(|id| u32::try_from(id).ok())
+                                    .ok_or_else(|| fail("town id"))?,
+                            )
+                        },
+                        hometown: !a["hometown"].is_null(),
+                        temple: if a["hometown"].is_null() {
+                            None
+                        } else {
+                            let p: Position =
+                                serde_json::from_value(a["hometown"]["temple"].clone())
+                                    .map_err(fail)?;
+                            Some(subarea::Temple {
+                                x: p.x,
+                                y: p.y,
+                                floor: native_floor(p.z)?,
+                            })
+                        },
                     });
                     if source.table.areas.len() > subarea::MAX_AREAS {
                         return Err(Error::Limit("subarea areas".into()));
@@ -301,6 +326,90 @@ impl Source {
             .any(|p| p[0].subarea == p[1].subarea)
         {
             return Err(fail("duplicate mask"));
+        }
+        // The reviewed start belongs to a source area. Starter towns such as Newhaven
+        // have their own OTBM town even though the historical city catalogue omits them.
+        let pin: Value = serde_json::from_slice(&read(
+            &root.join("content/world/pins/oteryn.json"),
+            MAX_INPUT,
+        )?)
+        .map_err(fail)?;
+        let p: subarea::Temple =
+            serde_json::from_value(pin["entry_start"].clone()).map_err(fail)?;
+        let z = p
+            .floor
+            .checked_neg()
+            .and_then(|z| u8::try_from(z).ok())
+            .ok_or_else(|| fail("entry_start floor"))?;
+        let id = source
+            .tiles
+            .get(&(p.x, p.y, z))
+            .ok_or_else(|| fail("entry_start town source mask"))?;
+        let area_index = source
+            .table
+            .areas
+            .iter()
+            .position(|a| a.id == *id)
+            .ok_or_else(|| fail("entry_start area"))?;
+        let towns: Value =
+            serde_json::from_slice(&read(&root.join(TOWN_SOURCE), MAX_INPUT)?).map_err(fail)?;
+        if towns["engine"] != "crystalserver"
+            || towns["revision"] != "00ce02a57ca5a12e48f32a3476e37471167e4c3f"
+            || towns["otbm_sha256"]
+                != "dcb735549bd11de526c4bd441bbf62e4490efbb60ff7aa334530f1692345d8d7"
+        {
+            return Err(fail("entry_start town provenance"));
+        }
+        let towns = towns["towns"]
+            .as_array()
+            .filter(|a| a.len() <= subarea::MAX_AREAS)
+            .ok_or_else(|| fail("source towns"))?;
+        // Keep the starter town even when a later reviewed pin moves its entry elsewhere:
+        // existing Characters may still be its citizens after that World reset.
+        let mut matching = towns.iter().filter(|t| t["name"] == "Newhaven");
+        let town = matching
+            .next()
+            .ok_or_else(|| fail("Newhaven source town"))?;
+        if matching.next().is_some() {
+            return Err(fail("ambiguous Newhaven town"));
+        }
+        let town_id = town["town_id"]
+            .as_u64()
+            .and_then(|id| u32::try_from(id).ok())
+            .ok_or_else(|| fail("Newhaven town id"))?;
+        let temple: Position = serde_json::from_value(town["temple"].clone()).map_err(fail)?;
+        let starter = source
+            .table
+            .areas
+            .iter_mut()
+            .find(|a| a.id == 514 && a.name == "Newhaven")
+            .ok_or_else(|| fail("Newhaven source area"))?;
+        starter.town_id = Some(town_id);
+        starter.hometown = true;
+        starter.temple = Some(subarea::Temple {
+            x: temple.x,
+            y: temple.y,
+            floor: native_floor(temple.z)?,
+        });
+        let area = &source.table.areas[area_index];
+        let region = area.parent.unwrap_or(area.id);
+        if let Some(id) = area.town_id {
+            source.table.default_town = Some(id);
+        } else {
+            let mut matching = source
+                .table
+                .areas
+                .iter()
+                .filter(|a| a.hometown && a.parent == Some(region));
+            source.table.default_town = Some(
+                matching
+                    .next()
+                    .and_then(|a| a.town_id)
+                    .ok_or_else(|| fail("entry_start region hometown"))?,
+            );
+            if matching.next().is_some() {
+                return Err(fail("entry_start ambiguous hometown"));
+            }
         }
         Ok(source)
     }
@@ -515,6 +624,34 @@ pub(super) fn realize(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn hometown_lookup_retains_temples_and_resolves_newhaven_start() -> Result<(), Error> {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let source = Source::load(&root)?;
+        assert_eq!(source.table.default_town, Some(33));
+        assert_eq!(
+            source.table.town(33).and_then(|a| a.temple),
+            Some(subarea::Temple {
+                x: 32536,
+                y: 32514,
+                floor: -7
+            })
+        );
+        let town = source.table.town(8).ok_or_else(|| fail("Thais"))?;
+        assert_eq!(town.name, "Thais");
+        assert_eq!(
+            town.temple,
+            Some(subarea::Temple {
+                x: 32369,
+                y: 32241,
+                floor: -7
+            })
+        );
+        assert_eq!(source.table.areas.iter().filter(|a| a.hometown).count(), 20);
+        assert!(source.table.town(999).is_none());
+        Ok(())
+    }
 
     #[test]
     fn subarea_bmp_orientation_shape_framing_and_allocation_bounds() -> Result<(), Error> {

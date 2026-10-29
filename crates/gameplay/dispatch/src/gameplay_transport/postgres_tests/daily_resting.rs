@@ -91,10 +91,14 @@ fn scenario() -> TestResult {
                     .ok_or("actor")?
                     .restore_saved_vitals(100, 10);
             }
-            let clock_origin = owner.clock_origin;
-            for second in 1..=120 {
-                owner.clock_origin = clock_origin
-                    .checked_sub(Duration::from_secs(second))
+            // Initialization keeps microseconds; condition ticks truncate to milliseconds.
+            // Advance a full second from the last observation, rounding up so even the
+            // first tick is due without depending on setup/database latency.
+            for _ in 0..120 {
+                let next_tick = Duration::from_millis(owner.owner_now().get().div_ceil(1_000))
+                    + Duration::from_secs(1);
+                owner.clock_origin = std::time::Instant::now()
+                    .checked_sub(next_tick)
                     .ok_or("clock")?;
                 Box::pin(owner.tick_actor_vitals(actor, session)).await;
             }

@@ -21,6 +21,7 @@ mod bundle_map_position;
 mod capabilities;
 mod channel_states;
 mod character_gameplay_fence;
+mod character_home_town;
 mod character_progression_binding;
 #[cfg(test)]
 mod character_progression_binding_tests;
@@ -716,11 +717,23 @@ struct AuthorizedRespawn {
 /// exactly the Character lease the fence proves current, and the runtime still holds the scope
 /// ownership generation it proves. Any mismatch moves nothing and clears no respawn condition: the
 /// actor stays dead and its pending respawn stays recorded.
+#[cfg(test)]
 fn place_authorized_respawn(
     runtime: &mut ChannelRuntimeV1,
     actor: ExactActorRef,
     session: GameSessionId,
     authorized: &AuthorizedRespawn,
+) -> bool {
+    let respawn = runtime.respawn_position();
+    place_authorized_respawn_at(runtime, actor, session, authorized, respawn)
+}
+
+fn place_authorized_respawn_at(
+    runtime: &mut ChannelRuntimeV1,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    authorized: &AuthorizedRespawn,
+    respawn: crate::foundation::MovementLocalPosition,
 ) -> bool {
     let current = runtime
         .bound_attacker_lease(actor, session)
@@ -733,7 +746,6 @@ fn place_authorized_respawn(
         operator_event("settled_respawn_placement_refused reason=authority_not_current");
         return false;
     }
-    let respawn = runtime.respawn_position();
     runtime
         .place_respawned_player(actor, session, respawn)
         .is_ok()

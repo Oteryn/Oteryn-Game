@@ -30,28 +30,28 @@ fn loop_training_pool_delay_cap_restore_and_short_pool() {
         })
     );
     assert_eq!(
-        plan_offline(43200, Some(3), 600),
+        plan_offline(43200, Some(3), 1200),
         Ok(OfflinePlan {
             pool_after: 42600,
             training_seconds: 600
         })
     );
     assert_eq!(
-        plan_offline(30, Some(3), 600),
+        plan_offline(30, Some(3), 1200),
         Ok(OfflinePlan {
             pool_after: 570,
             training_seconds: 30
         })
     );
     assert_eq!(
-        plan_offline(43200, Some(0), 43200),
+        plan_offline(43200, Some(0), 43800),
         Ok(OfflinePlan {
             pool_after: 0,
             training_seconds: 43200
         })
     );
     assert_eq!(
-        plan_offline(43200, Some(0), 86400),
+        plan_offline(43200, Some(0), 87000),
         Ok(OfflinePlan {
             pool_after: 43200,
             training_seconds: 43200
@@ -67,6 +67,55 @@ fn loop_training_pool_delay_cap_restore_and_short_pool() {
     assert!(plan_offline(43201, None, 600).is_err());
     assert!(plan_offline(43200, Some(6), 600).is_err());
 }
+#[test]
+fn loop_training_excludes_first_ten_minutes_at_boundary() {
+    for (elapsed, trained) in [(599, 0), (600, 0), (601, 1)] {
+        assert_eq!(
+            plan_offline(3600, Some(3), elapsed),
+            Ok(OfflinePlan {
+                pool_after: 3600 - trained,
+                training_seconds: trained,
+            }),
+            "elapsed {elapsed}"
+        );
+        assert_eq!(
+            plan_offline(0, Some(3), elapsed),
+            Ok(OfflinePlan {
+                pool_after: trained,
+                training_seconds: 0,
+            }),
+            "empty pool, elapsed {elapsed}"
+        );
+        assert_eq!(
+            plan_offline(3600, None, elapsed),
+            Ok(OfflinePlan {
+                pool_after: 3600 + elapsed as u32,
+                training_seconds: 0,
+            }),
+            "no selection, elapsed {elapsed}"
+        );
+    }
+}
+
+#[test]
+fn loop_training_entry178_worked_examples() {
+    for (pool, pool_after) in [
+        (43200, 10800),
+        (23400, 30600),
+        (10800, 43200),
+        (7200, 43200),
+    ] {
+        assert_eq!(
+            plan_offline(pool, Some(3), 54600),
+            Ok(OfflinePlan {
+                pool_after,
+                training_seconds: pool,
+            }),
+            "starting pool {pool}"
+        );
+    }
+}
+
 #[test]
 fn loop_training_configuration_refuses_unknown_fields_and_zero_divisors() {
     let mut value: serde_json::Value = serde_json::from_slice(include_bytes!(
