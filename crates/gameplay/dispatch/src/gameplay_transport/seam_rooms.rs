@@ -60,9 +60,9 @@ impl<'a> SeamRooms<'a> {
         self.combat
     }
 
-    /// MAGIC-CAST-1 and WAVE-A/M11: locate messages and vertical moves read the combat room's
-    /// tile facts on both World kinds. House access keeps the qualified room and stays closed
-    /// on a bundle World, which has none.
+    /// MAGIC-CAST-1, WAVE-A/M11 and WAVE-A2/C17c: locate messages, vertical moves and creature
+    /// appearance read the combat room's tile facts on both World kinds. House access keeps the
+    /// qualified room and stays closed on a bundle World, which has none.
     pub fn gate_parameter_cast(&self, key: &str) -> Option<&'a QualifiedNativeEntryRoom> {
         match key {
             "locate_message" => self.combat,
