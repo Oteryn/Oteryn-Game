@@ -2902,6 +2902,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?;
         let mut draft = captured.migrate_to_v2();
         apply_official_creature_balance(&mut draft)?;
+        // NPCTRAVEL: quest-gated correction routes the durable travel quote now qualifies.
+        oteryn_game_server::content::npc_catalogue::travel::install(&mut draft)?;
         let documents = CanonicalProjectDocuments::from_v2_draft(draft, reconciled_limits())?;
         // This fresh output contains only the base package just materialized above.
         // The canonical writer requires an absent root for the successor package.

@@ -27,7 +27,7 @@ fn repository_import_preserves_all_data_and_approximation_flags() {
     assert_eq!(catalogue.project_revision(), "tibia-news-bal-1-20261027-r1");
     assert_eq!(
         catalogue.source_tree_digest(),
-        "7f59cd14fc07a110f03d7f4a811b59f690b7143791798d5a5bc074f679312c8a"
+        "daa875a5f7594cf95ed399da3464a601ffd64181a8b26ac54dd6831f2539c89b"
     );
     assert_eq!(catalogue.npc_count(), 1282);
     assert_eq!(catalogue.dialogue_count(), 836);

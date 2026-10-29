@@ -2,7 +2,10 @@
 //! `travel_routes.json` projects source-correction-check and admission-evidence in
 //! docs/reference/content-prep/travel-content-1. Unmapped custom/quest guards stay held.
 use super::NpcServiceModel;
-use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
+use crate::content::{
+    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2TravelDestination,
+    ProjectV2TravelRoute,
+};
 use serde::Deserialize;
 use std::sync::OnceLock;
 
@@ -60,6 +63,53 @@ pub fn resolve(model: &NpcServiceModel, services: &[ProjectV2DefinitionRef]) -> 
             })
         })
         .collect()
+}
+
+/// Correction rows without an admitted source route. Each is held upstream only on a quest gate
+/// that the durable travel quote now evaluates (`npc_travel::paid::route_accessible`).
+const QUALIFIED_ADDITIONS: [&str; 1] = ["oteryn:service.travel.captain_seagull/yalahar"];
+
+/// Materialize the qualified correction routes on their already-declared travel Services.
+pub fn install(draft: &mut ProjectV2Draft) -> Result<(), &'static str> {
+    let corrections: Vec<Correction> = serde_json::from_str(include_str!("travel_routes.json"))
+        .map_err(|_| "travel corrections are malformed")?;
+    for key in QUALIFIED_ADDITIONS {
+        let row = corrections
+            .iter()
+            .find(|row| row.key == key)
+            .ok_or("qualified travel correction is absent")?;
+        let (service_key, route_key) = key.split_once('/').ok_or("travel correction key")?;
+        let Some(ProjectV2Declaration::Service { routes, .. }) =
+            draft.state.declarations.iter_mut().find(|record| {
+                matches!(record, ProjectV2Declaration::Service { identity, .. } if identity.key == service_key)
+            })
+        else {
+            return Err("qualified travel Service is absent");
+        };
+        if routes.iter().any(|route| route.key == route_key) {
+            return Err("qualified travel route already declared");
+        }
+        let coordinate_frame = routes
+            .first()
+            .ok_or("qualified travel Service has no route frame")?
+            .destination
+            .coordinate_frame
+            .clone();
+        routes.push(ProjectV2TravelRoute {
+            key: route_key.to_owned(),
+            destination: ProjectV2TravelDestination {
+                coordinate_frame,
+                x: row.x,
+                y: row.y,
+                floor: row.floor,
+            },
+            price: row.price,
+            premium: row.premium,
+            min_level: None,
+        });
+        routes.sort_by(|left, right| left.key.cmp(&right.key));
+    }
+    Ok(())
 }
 
 #[cfg(test)]

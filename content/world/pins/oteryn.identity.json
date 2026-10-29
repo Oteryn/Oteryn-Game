@@ -2,11 +2,11 @@
   "project_format_version": "OTERYN_WORLD_PROJECT_ROOT/v2",
   "world_schema_version": "reference-schema-v1",
   "content_revision": "tibia-news-bal-1-20261027-r1",
-  "content_lock_digest": "7a9f42d2293d74eabde3f51840b160e4372d982fe412a5020c1f4c8c66479998",
+  "content_lock_digest": "8fce766d17eda373127045dac5872cf0e1ecffe2be9ef6ec20b6a87f38ecd516",
   "min_runtime_version": "3",
   "required_capabilities": [],
   "ruleset_compatibility": [
     "oteryn:ruleset/entry-r1"
   ],
-  "provenance_summary": "lock:tibia-news-bal-1-20261027-r1/6b33663b4640b56ab4e181f576b5a34a5943dbad9de7bf02213cdf4d38b1dbdb"
+  "provenance_summary": "lock:tibia-news-bal-1-20261027-r1/e73c8016ac6a8f992a56d69ef9ab56738168bc651d9f3059635bdcee95840674"
 }

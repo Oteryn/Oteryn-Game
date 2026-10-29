@@ -18,12 +18,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         400,
-        "7a9f42d2293d74eabde3f51840b160e4372d982fe412a5020c1f4c8c66479998",
+        "8fce766d17eda373127045dac5872cf0e1ecffe2be9ef6ec20b6a87f38ecd516",
     ),
     (
         "definitions/declarations.json",
-        27_600_259,
-        "949746ad0a2d1304ca5a1ec75ae4cd707650c1e24d4017a0733af52ca4fa5809",
+        27_600_397,
+        "dfc386756dd3996ede0f0d4855bf26ffd8cb8fa249ad48673eb395a50009f579",
     ),
     (
         "definitions/reference.json",
@@ -38,7 +38,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1951,
-        "d3dc24e84973177ffe29ac8fb17f49fb633c0a3287d9b51c5cb0c2132c01f6c1",
+        "ff9be6a53d07c03819e4633399aace233c2326e042644b6671c2713d78973df5",
     ),
     (
         "presentations/bindings.json",
@@ -48,12 +48,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         402,
-        "aa1db70f8e67a3224d4c899d1cc4b0db15df2bd60158400d1d1307f478cdc6e1",
+        "f3a8de7d12e1f5267f3a1322e298935a4b68d0b0079ae3a5dd00eeb02b32f6b2",
     ),
     (
         "provenance/imports.json",
         6_771_443,
-        "d70737a155a5210947b9889cc2dee719ce72815b8189f2120b6ee06ec54a4f5c",
+        "82abb98fd7a908bfc55ad39d3c6176ea876fc74959af04c47a60ed1d46480096",
     ),
     (
         "provenance/sources.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "7f59cd14fc07a110f03d7f4a811b59f690b7143791798d5a5bc074f679312c8a";
+const TREE_SHA256: &str = "daa875a5f7594cf95ed399da3464a601ffd64181a8b26ac54dd6831f2539c89b";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
