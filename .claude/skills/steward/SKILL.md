@@ -107,6 +107,23 @@ tools/merge-driver/regen.sh        # regenerate_content.py --resolve
 - Only a real edit-versus-edit conflict in hand-written logic stops for a
   person.
 
+## Before every push
+
+A red or cancelled run costs a full gate cycle (about 12 minutes) and, with
+`heavy-tests`, about 30 more. Most red runs on this repository came from pushes
+that were never checked locally, and most cancelled ones from a second push a
+few minutes after the first.
+
+- Run the fast checks the gate runs, locally, on the exact tree you will push:
+  `cargo fmt --all --check`, strict Clippy and the unit tests of every changed
+  crate, plus the content and pin regeneration when you touched content
+  (`.claude/skills/oteryn-build-test/SKILL.md` has the commands).
+- Push once, when all of them pass. Collect follow-up fixes into the next push
+  instead of pushing each one; a new push cancels the run in progress.
+- Merge `origin/main` into the branch once, right before it is labelled
+  `heavy-tests` or goes into a batch, not after every merge to `main`.
+- Never push to make CI tell you whether something compiles.
+
 ## Many PRs at once
 
 - Keep about 10-12 PRs in CI at a time. Beyond that runners queue and every
