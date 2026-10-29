@@ -158,7 +158,7 @@ fn boundary(
             assert_eq!(death.blessings_after, request.held_blessings);
         } else {
             let expected_loss = i64::try_from(
-                crate::domain::death::death_experience_loss(level, u8::from(regular_blessing), false)
+                crate::domain::death::death_experience_loss_for_experience(level, death.experience_before, u8::from(regular_blessing), false, 0)
                     .map_err(debug)?,
             )?.min(death.experience_before.get());
             assert!(expected_loss > 0);
@@ -284,7 +284,9 @@ fn permanence(award: bool) -> TestResult {
             .settle_source_player_death(current, request.clone(), None, None)
             .await
             .map_err(debug)?;
-        assert_eq!((death.level_before, death.level_after), (21, 20));
+        // 2,000,000 XP loses 10% less one blessing (184,000), reaching level 19
+        // in this fixture's 100,000-XP-per-level table.
+        assert_eq!((death.level_before, death.level_after), (21, 19));
         assert!(death.experience_lost.get() > 0);
         current.expected_character_revision = death.committed_character_revision;
         h.root
@@ -301,7 +303,7 @@ fn permanence(award: bool) -> TestResult {
             .settle_source_player_death(current, again, None, None)
             .await
             .map_err(debug)?;
-        assert_eq!(delevelled.level_before, 20);
+        assert_eq!(delevelled.level_before, 19);
         assert!(
             delevelled.experience_lost.get() > 0,
             "first reaching 21 permanently ended protection"

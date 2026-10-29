@@ -1220,8 +1220,14 @@ mod death_ml_loss_composed {
                     assert_eq!(
                         lost,
                         i64::try_from(
-                            crate::domain::death::death_experience_loss(20, 0, false)
-                                .map_err(debug)?
+                            crate::domain::death::death_experience_loss_for_experience(
+                                20,
+                                ExactI64::new(i64::try_from(LEVEL_20_EXPERIENCE)?),
+                                0,
+                                false,
+                                0
+                            )
+                            .map_err(debug)?
                         )?
                     );
                     assert!(payload_absent);
@@ -1252,7 +1258,14 @@ mod death_ml_loss_composed {
             assert_eq!(binding, 1);
             assert_eq!(u64::try_from(experience_before)?, LEVEL_20_EXPERIENCE);
             let lost = u64::try_from(
-                crate::domain::death::death_experience_loss(20, 0, false).map_err(debug)?,
+                crate::domain::death::death_experience_loss_for_experience(
+                    20,
+                    ExactI64::new(i64::try_from(LEVEL_20_EXPERIENCE)?),
+                    0,
+                    false,
+                    0,
+                )
+                .map_err(debug)?,
             )?;
             assert_eq!(u64::try_from(experience_lost)?, lost);
             let payload_absent: bool = sqlx::query_scalar(

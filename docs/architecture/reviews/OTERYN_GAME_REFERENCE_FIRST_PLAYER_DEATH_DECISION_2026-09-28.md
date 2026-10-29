@@ -26,7 +26,7 @@ Reference profile's first player death, and how is it made durable and restart-s
 | # | Decision | Owner choice (2026-09-28) |
 |---|---|---|
 | D58 | XP loss follows Global: `((L+50)/100) × 50 × (L² − 5L + 8)` before reductions, which equals `((L+50)/100) × (XPThreshold(L) − XPThreshold(L−1))`. Reductions: promotion −30% and −8% per regular blessing, additive. Skills and magic level never drop. | "Dokładnie jak Global" |
-| D59 | Levels 1-23 use the D58 formula instead of Global's 10% of total experience. | "Ten sam wzór od lvl 1" |
+| D59 | Replaced by the owner on 2026-10-29 (WAVE_A_PLAN §9 Q4): levels 1-23 lose 10% of total experience before existing blessing, promotion and Bless reductions; level 24+ is unchanged. | Supersedes "Ten sam wzór od lvl 1" |
 | D60 | PvE only: Twist of Fate, the unfair-fight reduction, skulls, Adventurer's Blessing and Retro rules are deferred to PvP. | "Odłożyć" |
 | D62 | Blessings protect containers and equipment on one ladder: with 0/1/2/3/4/5+ blessings a backpack drops with 100/70/45/25/10/0% and each equipped item with 10/7/4.5/2.5/1/0%. | "Blessy chronią plecak" |
 | D63 | Respawn at the home temple with full HP and mana; no protection window. | "Pełne HP i mana" |

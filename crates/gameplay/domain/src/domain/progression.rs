@@ -1,6 +1,6 @@
 //! Pure, persistence-neutral Character experience projection.
 
-use super::death::{PveDeathError, death_experience_loss};
+use super::death::{PveDeathError, death_experience_loss_for_experience};
 use oteryn_simulation_determinism::{ExactI64, NumericError, RoundingMode};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,7 +53,7 @@ pub enum ProgressionOperation<O, R> {
         amount: ExactI64,
     },
     /// Reference first player death (D58, D59, D66-D68): the loss is
-    /// `domain::death::death_experience_loss` (one source of truth), capped
+    /// `domain::death::death_experience_loss_for_experience` (one source of truth), capped
     /// at the current experience so it never drops below 0; the level
     /// follows it.
     ApplyDeathExperienceLoss {
@@ -164,10 +164,12 @@ where
             {
                 return Err(ProgressionCalculationError::InvalidDeathPolicy);
             }
-            let raw = death_experience_loss(
+            let raw = death_experience_loss_for_experience(
                 snapshot.level,
+                snapshot.total_experience,
                 *regular_blessings,
                 *promoted_with_current_premium,
+                0,
             )
             .map_err(|error| match error {
                 PveDeathError::TooManyBlessings => ProgressionCalculationError::TooManyBlessings,
@@ -294,4 +296,79 @@ pub fn calculate_level_up_vital_change(
             .checked_sub(before.max_mana)
             .ok_or(LevelUpVitalError::RegressingMaximum)?,
     })
+}
+
+#[cfg(test)]
+mod death_experience_tests {
+    use super::*;
+
+    #[test]
+    fn progression_death_uses_total_experience_below_24() -> Result<(), ProgressionCalculationError>
+    {
+        let context = ProgressionRevisionContext {
+            profile: (),
+            ruleset: (),
+            content: (),
+            simulation: (),
+            evidence: (),
+            declaration: (),
+        };
+        let policy = FiniteProgressionPolicy {
+            context: context.clone(),
+            policy_revision: (),
+            reward_revision: (),
+            death_policy_revision: (),
+            declared_difference_revision: (),
+            thresholds: std::array::from_fn::<_, 24, _>(|index| {
+                let level = index as u32 + 1;
+                let l = i64::from(level);
+                LevelThreshold {
+                    level,
+                    minimum_experience: ExactI64::new(
+                        (50 * l * l * l - 300 * l * l + 850 * l - 600) / 3,
+                    ),
+                }
+            }),
+            terminal_exclusive_experience: ExactI64::new(204_800),
+            death_loss_numerator: 1,
+            death_loss_denominator: 1,
+            death_loss_rounding: RoundingMode::Floor,
+        };
+        for (level, experience, base) in [
+            (1, 99, 9),
+            (8, 4_299, 429),
+            (23, 156_299, 15_629),
+            (24, 179_499, 17_168),
+        ] {
+            for blessings in [0, 5] {
+                for promoted in [false, true] {
+                    let snapshot = CurrentProgressionSnapshot {
+                        level,
+                        total_experience: ExactI64::new(experience),
+                        skill_progression: (),
+                        magic_progression: (),
+                    };
+                    let operation = ProgressionOperation::ApplyDeathExperienceLoss {
+                        death_occurrence: (),
+                        death_policy_revision: (),
+                        declared_difference_revision: (),
+                        regular_blessings: blessings,
+                        promoted_with_current_premium: promoted,
+                    };
+                    let outcome =
+                        calculate_progression(&snapshot, &context, &(), &operation, &policy)?;
+                    let expected = base
+                        * (100 - 8 * i64::from(blessings) - if promoted { 30 } else { 0 })
+                        / 100;
+                    assert_eq!(
+                        outcome.death_experience_lost.get(),
+                        expected,
+                        "level {level}, blessings {blessings}, promoted {promoted}"
+                    );
+                    assert_eq!(outcome.experience_after.get(), experience - expected);
+                }
+            }
+        }
+        Ok(())
+    }
 }
