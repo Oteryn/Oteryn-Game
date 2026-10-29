@@ -1562,7 +1562,7 @@ pub mod tests {
 
         // Open: walkable (live in the collision index too), the open item's facts, revision 1.
         assert_eq!(
-            doors.toggle(key, 0, false, u32::MAX),
+            doors.toggle(key, 0, false, u32::MAX, true),
             Some(DoorUse::Toggled {
                 revision: 1,
                 open: true
@@ -1579,14 +1579,17 @@ pub mod tests {
         assert_eq!(world.facts().object_revision(key), 1);
 
         // A stale revision changes nothing; an occupied open door does not close.
-        assert_eq!(doors.toggle(key, 0, false, u32::MAX), Some(DoorUse::Stale));
         assert_eq!(
-            doors.toggle(key, 1, true, u32::MAX),
+            doors.toggle(key, 0, false, u32::MAX, true),
+            Some(DoorUse::Stale)
+        );
+        assert_eq!(
+            doors.toggle(key, 1, true, u32::MAX, true),
             Some(DoorUse::Occupied)
         );
         assert!(world.enterable(DOOR_AT));
         assert_eq!(
-            doors.toggle(key, 1, false, u32::MAX),
+            doors.toggle(key, 1, false, u32::MAX, true),
             Some(DoorUse::Toggled {
                 revision: 2,
                 open: false
@@ -1596,7 +1599,7 @@ pub mod tests {
 
         // The grass under the door and the coin beside it are no door.
         let grass = crate::map::view::placement_key(DOOR_AT, 0).ok_or("grass key")?;
-        assert_eq!(doors.toggle(grass, 0, false, u32::MAX), None);
+        assert_eq!(doors.toggle(grass, 0, false, u32::MAX, true), None);
         assert_eq!(world.facts().object_revision(grass), 0);
         Ok(())
     }
@@ -1613,7 +1616,7 @@ pub mod tests {
             world
                 .facts()
                 .doors()
-                .toggle(key, 0, false, u32::MAX)
+                .toggle(key, 0, false, u32::MAX, true)
                 .is_some()
         );
         // The live facts moved on; the pinned ones still say closed at revision 0.
@@ -1641,7 +1644,7 @@ pub mod tests {
             first
                 .facts()
                 .doors()
-                .toggle(door_key(), 0, false, u32::MAX)
+                .toggle(door_key(), 0, false, u32::MAX, true)
                 .is_some()
         );
         assert!(first.enterable(DOOR_AT));
@@ -1657,7 +1660,7 @@ pub mod tests {
         let world = door_world_with(|key| door_items(key).filter(|_| !key.ends_with("1630")))?;
         let doors = world.facts().doors();
         assert_eq!((doors.len(), doors.sealed()), (0, 1));
-        assert_eq!(doors.toggle(door_key(), 0, false, u32::MAX), None);
+        assert_eq!(doors.toggle(door_key(), 0, false, u32::MAX, true), None);
         assert!(!world.enterable(DOOR_AT));
         Ok(())
     }
@@ -1723,7 +1726,7 @@ pub mod tests {
         })?;
         let doors = world.facts().doors();
         assert_eq!((doors.len(), doors.sealed()), (0, 0));
-        assert_eq!(doors.toggle(door_key(), 0, false, u32::MAX), None);
+        assert_eq!(doors.toggle(door_key(), 0, false, u32::MAX, true), None);
         assert!(!world.enterable(DOOR_AT));
         // The profile's door on an appearance the Game registry does not pair is a sealed door:
         // solid, and `USE` refuses it, whatever its id.
@@ -1777,7 +1780,7 @@ pub mod tests {
         )?;
         let doors = world.facts().doors();
         assert_eq!((doors.len(), doors.sealed()), (0, 1));
-        assert_eq!(doors.toggle(door_key(), 0, false, u32::MAX), None);
+        assert_eq!(doors.toggle(door_key(), 0, false, u32::MAX, true), None);
         assert!(!world.enterable(DOOR_AT));
         assert!(world.facts().house_tile(DOOR_AT));
         Ok(())

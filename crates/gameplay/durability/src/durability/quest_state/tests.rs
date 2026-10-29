@@ -1,5 +1,17 @@
 use super::*;
 
+#[test]
+fn quest_door_storage_uses_the_durable_track_and_absence_is_minus_one() {
+    let mut copy = QuestStateCopy::default();
+    assert!(!copy.meets_door_storage(4500));
+    copy.tracks
+        .insert("oteryn:quest-progress/storage/4500".into(), -1);
+    assert!(!copy.meets_door_storage(4500));
+    copy.tracks
+        .insert("oteryn:quest-progress/storage/4500".into(), 0);
+    assert!(copy.meets_door_storage(4500));
+}
+
 fn id(tag: u8) -> [u8; 16] {
     [tag, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag]
 }
