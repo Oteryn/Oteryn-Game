@@ -50,9 +50,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         DeathCommit,
         Option<crate::durability::character_build::DurableBuildState>,
     ) {
-        let (map_revision, respawn) = {
+        let Some(respawn) = self.home_temple(session).await else {
+            return (DeathCommit::Unavailable, None);
+        };
+        let map_revision = {
             let runtime = self.runtime.lock().await;
-            (runtime.map_revision_digest(), runtime.respawn_position())
+            runtime.map_revision_digest()
         };
         let request = player_death_request(
             progression,

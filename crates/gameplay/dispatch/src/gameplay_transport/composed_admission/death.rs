@@ -114,6 +114,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         occurrence: crate::durability::character_death::PlayerDeathOccurrence,
     ) -> bool {
+        let Some(respawn) = self.home_temple(session).await else {
+            return false;
+        };
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
         };
@@ -132,7 +135,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // orders after it.
         let respawned = {
             let runtime = self.runtime.lock().await;
-            self.placed_record(&runtime, runtime.respawn_position())
+            self.placed_record(&runtime, respawn)
         };
         let runtime = &self.runtime;
         let placed = self
@@ -148,7 +151,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 respawned,
                 move |pending| async move {
                     let mut runtime = runtime.lock().await;
-                    let admission_cell = runtime.respawn_position();
+                    let admission_cell = respawn;
                     if !last_position::respawn_cell_recorded(admission_cell, &respawned) {
                         operator_event("settled_respawn_placement_refused reason=cell_changed");
                         return false;
@@ -162,7 +165,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             false
                         }
                         SettledRespawn::Gone | SettledRespawn::Reproduced => {
-                            place_authorized_respawn(&mut runtime, actor, session, &authorized)
+                            place_authorized_respawn_at(
+                                &mut runtime,
+                                actor,
+                                session,
+                                &authorized,
+                                respawn,
+                            )
                         }
                     }
                 },
