@@ -829,7 +829,6 @@ pub fn record_creature_kill(
     let percent = sink.queue.prey_at_death(runtime, target, percent);
     // One independent trigger plus two <=7-entry rolls stay within PREY-0 R4's
     // 29 draws; a forge sliver adds two more, still below the existing 32 ceiling.
-    // A larger table stays preyable: its improved-loot bonus adds no extra roll.
     let base = sink
         .rewards
         .row(&creature)

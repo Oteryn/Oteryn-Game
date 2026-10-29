@@ -135,6 +135,12 @@ fn scenario() -> TestResult {
             .and_then(|a| a.native_gameplay())
             .ok_or("native")?;
         // Every listed creature is selectable, so the last one stands for all.
+        assert!(state.slots[0].creatures.iter().all(|key| {
+            !native
+                .reward_table()
+                .row(key)
+                .is_ok_and(|r| r.loot_table.entries.len() > 7)
+        }));
         let index = state.slots[0].creatures.len() - 1;
         let select = wire::encode_request(&wire::Request::Select {
             slot: 1,
@@ -312,14 +318,10 @@ fn scenario() -> TestResult {
             .await?,
             0
         );
-        // A creature without a <=7-entry loot row is still preyable, as in Tibia: the
-        // improved-loot bonus only adds no extra roll for it (PREY-0 R4 budget).
-        assert!(
-            !native
-                .reward_table()
-                .row("oteryn:creature.dragon")
-                .is_ok_and(|r| r.loot_table.entries.len() <= 7)
-        );
+        // A creature without a loot row is an empty table within the PREY-0 R4 budget and
+        // selectable. Oversized tables stay explicit content refusals, never skipped bonus
+        // rolls; no preyable creature on this world has one (draw.rs unit tests cover it).
+        assert!(native.reward_table().row("oteryn:creature.dragon").is_err());
         let any = wire::encode_request(&wire::Request::SelectAny {
             slot: 1,
             creature: "oteryn:creature.dragon".into(),

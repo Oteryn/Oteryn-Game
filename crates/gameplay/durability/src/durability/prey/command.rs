@@ -161,10 +161,12 @@ impl DurabilityRoot {
                             if slot.state!=1 {return Ok(Err(Error::InvalidInput));}
                             let Some(key)=slot.creatures.get(usize::from(*index).wrapping_sub(1)).cloned() else {return Ok(Err(Error::InvalidInput));};
                             if black.contains(&key) {return Ok(Err(Error::InvalidInput));}
+                            if catalogue.unsupported_loot.contains(&key) {reply.status=wire::STATUS_CONTENT_UNAVAILABLE;tx.commit(deadline).await?;return Ok(Ok((reply,permanent)));}
                             select(slot,key,&mut bonus_draw);
                         }
                         Request::SelectAny{creature,..}=>{
                             if slot.state!=1 || !catalogue.creatures.iter().any(|c| &c.0==creature) || black.contains(creature) {return Ok(Err(Error::InvalidInput));}
+                            if catalogue.unsupported_loot.contains(creature) {reply.status=wire::STATUS_CONTENT_UNAVAILABLE;tx.commit(deadline).await?;return Ok(Ok((reply,permanent)));}
                             spend=5; select(slot,creature.clone(),&mut bonus_draw);
                         }
                         Request::BonusReroll{..}=>{
