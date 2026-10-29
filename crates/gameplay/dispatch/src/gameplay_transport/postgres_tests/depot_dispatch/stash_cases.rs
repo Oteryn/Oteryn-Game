@@ -194,24 +194,74 @@ pub(super) async fn exercise(
                 break;
             }
         }
-        // Any non-stash command closes the ephemeral stash page. Reopen it before
-        // withdrawing; search must not turn an expired row handle into authority.
-        send(
-            &mut client,
-            12,
-            StashIntent {
-                page: 0,
-                action: StashAction::Browse,
+        // Retrieve-all from the search result reaches the production router and
+        // delegates the mutation to the existing fenced stash owner.
+        let payload = search::encode_request(search::Request::Retrieve {
+            client_id: 3028,
+            all: true,
+        })
+        .map_err(debug)?;
+        let frame = oteryn_protocol_oteryn::encode_client_command(
+            1,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id: 12,
+                command_type: search::COMMAND_TYPE_DEPOT_SEARCH,
+                payload: &payload,
             },
         )
+        .map_err(debug)?;
+        client.write_u32(u32::try_from(frame.len())?).await?;
+        client.write_all(&frame).await?;
+        loop {
+            let len = client.read_u32().await? as usize;
+            let mut frame = vec![0; len];
+            client.read_exact(&mut frame).await?;
+            let wire = oteryn_protocol_oteryn::decode_wire_envelope(&frame).map_err(debug)?;
+            if wire.message_type() == MessageType::CommandResult {
+                let result =
+                    oteryn_protocol_oteryn::decode_command_result(wire.payload()).map_err(debug)?;
+                assert_eq!(result.command_id, 12);
+                let reply = search::decode_reply(result.payload).map_err(debug)?;
+                assert_eq!(reply.outcome, search::Outcome::Retrieved);
+                assert_eq!(reply.retrieved, 62);
+                break;
+            }
+        }
+        // The committed withdrawal must become usable inventory in the same turn.
+        tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            loop {
+                let len = client.read_u32().await? as usize;
+                assert!(len <= 1 << 20);
+                let mut frame = vec![0; len];
+                client.read_exact(&mut frame).await?;
+                let wire = oteryn_protocol_oteryn::decode_wire_envelope(&frame).map_err(debug)?;
+                if wire.message_type() == MessageType::StateDelta {
+                    let delta = oteryn_protocol_oteryn::decode_state_delta(wire.payload())
+                        .map_err(debug)?;
+                    if delta.domain_id
+                        == oteryn_protocol_oteryn::item_view::STATE_DOMAIN_CHARACTER_INVENTORY
+                    {
+                        let inventory = oteryn_protocol_oteryn::item_view::decode_character_inventory(
+                            delta.payload,
+                        )
+                        .map_err(debug)?;
+                        assert_eq!(
+                            inventory.entries.iter().map(|item| item.count.get()).sum::<u32>(),
+                            300,
+                        );
+                        break;
+                    }
+                }
+            }
+            Ok::<_, Box<dyn std::error::Error>>(())
+        })
+        .await??;
+        let remaining: i64 = sqlx::query_scalar(
+            "SELECT quantity FROM game_character_stash_balances WHERE definition_key='oteryn:item.tibia.i3028'",
+        )
+        .fetch_one(pool)
         .await?;
-        let reopened = result(&mut client, 12, &mut deltas).await?;
-        assert_eq!(reopened.outcome, StashOutcome::Opened);
-        assert_eq!(reopened.rows[0].quantity, 62);
-        send(&mut client, 13, intent(reopened.rows[0].handle, 62)).await?;
-        let empty = result(&mut client, 13, &mut deltas).await?;
-        assert_eq!(empty.outcome, StashOutcome::Committed);
-        assert!(empty.rows.is_empty());
+        assert_eq!(remaining, 0);
         assert!(deltas >= 9);
         client.shutdown().await?;
         Ok::<_, Box<dyn std::error::Error>>((stowed, withdrawn, limit, stow, intent(old_row, 37)))

@@ -111,9 +111,11 @@ pub(in super::super) fn world(
         ("oteryn:item.tibia.i3031", gold.get() - 1),
     );
     let mut parsed = bundle::read(&bytes)?;
+    // Two rows hold at most six POIs four tiles apart outside the entry window (x <= 10),
+    // so x >= 11 extends to eight rows; walks to POIs stay on rows that exist.
     let mut tiles = Vec::new();
-    for y in 0..2 {
-        for x in 0..32 {
+    for y in 0..8 {
+        for x in (0..32).filter(|x| y < 2 || *x >= 11) {
             tiles.push(Tile {
                 x,
                 y,

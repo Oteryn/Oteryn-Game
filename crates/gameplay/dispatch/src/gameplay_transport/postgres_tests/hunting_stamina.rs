@@ -246,6 +246,26 @@ pub(super) async fn qualify(
         xp.2 * 2 / 2,
         "level 1 doubles the share; the live stamina penalty halves it before checkpoint"
     );
+    let corpses: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_mint_receipts \
+         WHERE corpse_top_damage_character_id=encode($1,'hex')::uuid",
+    )
+    .bind(item.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert!(corpses >= 1, "the low-stamina kill still materialises its corpse");
+    let corpse_loot: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_corpse_container_entries e \
+         JOIN game_item_mint_receipts r ON r.item_instance_id=e.parent_item_instance_id \
+         WHERE r.corpse_top_damage_character_id=encode($1,'hex')::uuid",
+    )
+    .bind(item.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(
+        corpse_loot, 0,
+        "the highest-damage owner in the final fourteen stamina hours receives no monster loot"
+    );
     assert_eq!(
         owner.save_hunting_stamina(actor, session).await,
         TrainingSave::Saved
@@ -304,6 +324,97 @@ pub(super) async fn qualify(
             .map_err(debug)?,
         live
     );
+    drop(_slot);
+
+    assert!(owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .gain_resting_stamina(actor, session));
+    assert_eq!(owner.save_resting_stamina(actor, session).await, TrainingSave::Saved);
+    let restored = live + 1;
+    assert_eq!(
+        h.root
+            .read_hunting_stamina(owner.character, item.character_id)
+            .await
+            .map_err(debug)?,
+        restored,
+        "resting gain survives a canonical reload"
+    );
+    let gain_bytes: Vec<u8> = sqlx::query_scalar(
+        "SELECT uuid_send(build_occurrence_id) FROM game_character_build_receipts WHERE character_id=encode($1,'hex')::uuid AND cause='resting_stamina' ORDER BY committed_character_revision DESC LIMIT 1",
+    )
+    .bind(item.character_id.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    let mut gain_id = [0; 16];
+    gain_id.copy_from_slice(&gain_bytes);
+    let gain_occurrence = crate::durability::character_build::BuildOccurrence::from_bytes(gain_id)
+        .map_err(debug)?;
+    assert!(matches!(
+        h.root
+            .commit_resting_stamina(
+                owner.character,
+                owner.holder,
+                fence,
+                gain_occurrence,
+                (live, restored),
+            )
+            .await
+            .map_err(debug)?,
+        crate::durability::character_build::BuildCommitOutcome::AlreadyCommitted(_)
+    ));
+    assert_eq!(
+        h.root
+            .read_hunting_stamina(owner.character, item.character_id)
+            .await
+            .map_err(debug)?,
+        restored,
+        "replaying the retained gain does not apply it twice"
+    );
+    let root_after_gain = h
+        .root
+        .read_current_character(owner.character, item.character_id)
+        .await
+        .map_err(debug)?;
+    let debit_fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
+        expected_character_revision: root_after_gain.revision,
+        ..fence
+    };
+    let debit_occurrence = crate::durability::character_build::BuildOccurrence::from_bytes(
+        crate::bestiary_postgres_harness::id(201),
+    )
+    .map_err(debug)?;
+    assert!(matches!(
+        h.root
+            .commit_hunting_stamina(
+                owner.character,
+                owner.holder,
+                debit_fence,
+                debit_occurrence,
+                (restored, restored - 1),
+            )
+            .await
+            .map_err(debug)?,
+        crate::durability::character_build::BuildCommitOutcome::Committed(_)
+    ));
+    let cap_occurrence = crate::durability::character_build::BuildOccurrence::from_bytes(
+        crate::bestiary_postgres_harness::id(202),
+    )
+    .map_err(debug)?;
+    assert!(h
+        .root
+        .commit_resting_stamina(
+            owner.character,
+            owner.holder,
+            debit_fence,
+            cap_occurrence,
+            (2520, 2521),
+        )
+        .await
+        .is_err());
+
     let mut stale = fence;
     stale.character_lease_generation += 1;
     let occurrence = crate::durability::character_build::BuildOccurrence::from_bytes(

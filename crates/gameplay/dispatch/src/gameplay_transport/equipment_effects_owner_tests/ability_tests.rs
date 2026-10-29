@@ -53,6 +53,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 39180, 39183, 39186, 39546, 50149, 50159, 50188, 50240, 50254.
     // 34097 has speed_bonus=15 and 34098 has speed_bonus=20; the other 34 have speed_bonus=0.
     ("REWARD-BAG-2", 36),
+    // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
+    ("TIMEDITEMS2-1", 2),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),
@@ -142,6 +144,20 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         )
         .collect()
     );
+    Ok(())
+}
+
+#[test]
+fn equipment_effects_owner_time_ring_grants_speed_only_in_ring_slot() -> TestResult {
+    let content = native(&input()?)?;
+    for slot in 1..=10 {
+        let equipment = snapshot(&content, "oteryn:item.tibia.i3090", slot);
+        assert_eq!(
+            speed_term(&equipment, &content),
+            Some(if slot == 8 { 30 } else { 0 }),
+            "slot {slot}"
+        );
+    }
     Ok(())
 }
 

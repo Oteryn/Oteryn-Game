@@ -34,6 +34,21 @@ message BosstiaryProgressEntryV1 {
   uint64 kill_count = 2;
 }
 
+// Command 340. Identity and World come exclusively from the admitted session.
+message BossRewardOpenV1 {}
+message BossRewardGroupV1 {
+  bytes death_id = 1;
+  string boss_key = 2;
+  uint64 minted_at_unix_ms = 3;
+  uint64 expires_at_unix_ms = 4;
+  uint32 item_count = 5;
+}
+message BossRewardChestV1 {
+  uint64 now_unix_ms = 1;
+  // Oldest first, at most 64 groups. Expired groups are never exposed.
+  repeated BossRewardGroupV1 entries = 2;
+}
+
 // Reserved staged commands 178 (lever), 179 (defeated), 180 (timeout).
 // Every request remains refused: the activity handoff, InstanceRuntime and
 // return/recovery owner are not installed. Capability 117 also retains hazard 169.

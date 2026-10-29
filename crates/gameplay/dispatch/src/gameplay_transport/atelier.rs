@@ -24,7 +24,118 @@ pub enum GemBuildOutcome {
     Atelier(crate::durability::character_atelier::AtelierOutcome),
     Wheel(Box<crate::durability::character_wheel::WheelCommitOutcome>),
 }
+
+#[derive(Debug)]
+pub enum AtelierWireReply {
+    Rejected,
+    Payload(Vec<u8>),
+    Unavailable,
+}
+
 impl super::ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn atelier_wire(
+        &self,
+        admitted: super::connection::AdmittedSession,
+        kind: u32,
+        payload: &[u8],
+    ) -> AtelierWireReply {
+        use oteryn_protocol_oteryn::atelier as wire;
+        if !admitted
+            .continuity
+            .selected_capabilities
+            .contains(wire::CAPABILITY_WHEEL_ALLOCATION_V1)
+        {
+            return AtelierWireReply::Rejected;
+        }
+        let Some(expected) = admitted.item_fence else {
+            return AtelierWireReply::Rejected;
+        };
+        if expected.game_session_id != admitted.game_session_id
+            || expected.connection_generation.get() != admitted.continuity.connection_generation
+        {
+            return AtelierWireReply::Rejected;
+        }
+        let mut refused = false;
+        if kind == wire::COMMAND_TYPE_ATELIER_QUERY {
+            if wire::decode_query(payload).is_err() {
+                return AtelierWireReply::Rejected;
+            }
+        } else if kind == wire::COMMAND_TYPE_ATELIER_SET_LOCK {
+            let Ok(request) = wire::decode_set_lock(payload) else {
+                return AtelierWireReply::Rejected;
+            };
+            let Some(permit) = self.spell_lane_permit().await else {
+                return AtelierWireReply::Unavailable;
+            };
+            let result = self
+                .commit_wheel_client(
+                    admitted.game_session_id,
+                    GemBuildCommand::Atelier(
+                        crate::durability::character_atelier::AtelierRequest {
+                            occurrence: request.occurrence,
+                            expected_atelier_revision: request.expected_revision,
+                            mutation:
+                                crate::durability::character_atelier::AtelierMutation::SetLock {
+                                    gem: request.gem,
+                                    locked: request.locked,
+                                },
+                            resources: None,
+                        },
+                    ),
+                    false,
+                    Some(expected),
+                )
+                .await;
+            drop(permit);
+            refused = match result {
+                Ok(GemBuildOutcome::Atelier(
+                    crate::durability::character_atelier::AtelierOutcome::Refused,
+                )) => true,
+                Ok(GemBuildOutcome::Atelier(_)) => false,
+                Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput
+                    | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
+                    | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence) => return AtelierWireReply::Rejected,
+                _ => return AtelierWireReply::Unavailable,
+            };
+        } else {
+            return AtelierWireReply::Rejected;
+        }
+        let state = self
+            .states
+            .atelier_sessions
+            .lock()
+            .ok()
+            .and_then(|states| states.get(&admitted.game_session_id).cloned().flatten());
+        let Some(state) = state else {
+            return AtelierWireReply::Unavailable;
+        };
+        let gems = state
+            .gems
+            .values()
+            .map(|gem| wire::GemView {
+                id: gem.id.to_be_bytes(),
+                quality: match gem.quality {
+                    oteryn_gameplay_progression::atelier::GemQuality::Lesser => 0,
+                    oteryn_gameplay_progression::atelier::GemQuality::Regular => 1,
+                    oteryn_gameplay_progression::atelier::GemQuality::Greater => 2,
+                },
+                domain: match gem.domain {
+                    oteryn_gameplay_progression::wheel::WheelDomain::Green => 0,
+                    oteryn_gameplay_progression::wheel::WheelDomain::Red => 1,
+                    oteryn_gameplay_progression::wheel::WheelDomain::Purple => 2,
+                    oteryn_gameplay_progression::wheel::WheelDomain::Blue => 3,
+                },
+                locked: gem.locked,
+                vessel: gem.vessel,
+            })
+            .collect();
+        wire::encode_reply(&wire::AtelierReply {
+            refused,
+            revision: state.revision,
+            gems,
+        })
+        .map_or(AtelierWireReply::Unavailable, AtelierWireReply::Payload)
+    }
     /// Runtime Gem Atelier entry point.
     ///
     /// All player-facing Atelier and vessel commands must enter here rather than calling a
@@ -140,6 +251,28 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         Ok(outcome)
     }
 }
+
+macro_rules! authority_methods {
+    () => {
+        fn atelier_command(&self, _admitted: $crate::gameplay_transport::connection::AdmittedSession, _kind: u32, _payload: &[u8]) -> impl std::future::Future<Output = $crate::gameplay_transport::atelier::AtelierWireReply> {
+            async { $crate::gameplay_transport::atelier::AtelierWireReply::Rejected }
+        }
+    };
+}
+pub(super) use authority_methods;
+macro_rules! composed_methods {
+    () => {
+        async fn atelier_command(
+            &self,
+            admitted: connection::AdmittedSession,
+            kind: u32,
+            payload: &[u8],
+        ) -> atelier::AtelierWireReply {
+            self.atelier_wire(admitted, kind, payload).await
+        }
+    };
+}
+pub(super) use composed_methods;
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, reason = "test fixtures")]

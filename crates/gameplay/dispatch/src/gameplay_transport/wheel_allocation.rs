@@ -148,6 +148,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(allocation) = allocation else {
             return WheelAllocationReply::Unavailable;
         };
+        if let Some(actor) = admitted.runtime_actor {
+            self.refresh_wheel_vitals(actor, session).await;
+        }
         wire::encode_wheel_reply(&wire::WheelAllocationReply {
             refused,
             revision: allocation.wheel_revision,
