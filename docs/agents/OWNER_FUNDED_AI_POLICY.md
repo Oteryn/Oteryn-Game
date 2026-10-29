@@ -50,6 +50,23 @@ Codex usage, repeated reviewer loops or any other owner-funded AI/API operation.
 Optional review without separate task-specific authorization is skipped rather than
 turned into a new owner prompt.
 
+### Owner authorization for wave and high-risk reviews (2026-10-29)
+
+The owner also authorizes one Codex review, at reasoning effort `medium`, of a
+stable exact head in each of these cases. These reviews are owner-authorized, not
+optional extras:
+
+- the batch PR of a mechanics wave (`.claude/skills/oteryn-waves`), after its
+  local checks pass;
+- a frozen PR head that changes persistence, session fencing, the wire protocol
+  or authority.
+
+The binding, live readback, de-duplication and single review-dispatch owner rules
+of this file apply unchanged: one invocation per exact head, never a loop. A head
+that only answers this review's findings is reviewed again only when it fixes a P0
+or P1 (root `AGENTS.md`, *Review guidelines*, *Converge*). This authorization
+covers the review alone, not implementation, repair or any other Codex use.
+
 The owner may revoke or narrow this standing authorization at any time by a later
 explicit instruction. A later protected policy may narrow execution further but
 cannot broaden this permission.

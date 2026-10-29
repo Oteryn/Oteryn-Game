@@ -59,8 +59,9 @@ same day.
    it is only a test vehicle.
 3. Run what the PR gate never runs on the batch tree, on a PC lane when one is
    available: Node boot and the integration shards (`oteryn-dev`
-   `references/local-checks.md`, *Jobs that only run after the merge*). Label
-   the batch `heavy-tests` once.
+   `references/local-checks.md`, *Jobs that only run after the merge*). Then,
+   once, request the batch's Codex review (`oteryn-review`, *Independent
+   review by Codex*) and label the batch `heavy-tests`.
 4. Batch red: bisect it by member and fix the member, not the batch.
 5. Batch green: check `main` health (`oteryn-dev` `scripts/main-health.sh`),
    then merge the members one by one, back to back, with no other game-server

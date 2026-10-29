@@ -67,11 +67,12 @@ of root `AGENTS.md`, *Review guidelines*:
 
 ## 5. Independent review by Codex
 
-Codex review spends owner-funded quota. `docs/agents/OWNER_FUNDED_AI_POLICY.md`
-covers exactly one review of an exact head, and only when the bound META
-review policy or the task contract requires it; an optional second opinion
-needs the owner's authorization for that use and is skipped without it, not
-turned into a question.
+Codex review spends owner-funded quota, so it runs only where
+`docs/agents/OWNER_FUNDED_AI_POLICY.md` covers it: a review the bound META
+policy or the task contract requires, and (owner decision, 2026-10-29) one
+review of each wave's batch PR and of each frozen head that changes
+persistence, session fencing, the wire protocol or authority. Any other
+second opinion is skipped, not turned into a question.
 
 When a review is covered: only the coordinator (the review-dispatch owner)
 starts it, once per frozen head, after the local checks pass. On a PR that is
