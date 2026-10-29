@@ -153,21 +153,27 @@ impl BasicArea {
                     })
                     .collect();
                 candidates.sort_unstable();
+                if candidates.len() < self.generated_count {
+                    return Err(MapRefusal::InsufficientPool);
+                }
                 let mut points = Vec::with_capacity(self.generated_count);
-                for (_, point) in candidates {
-                    if points.iter().all(|selected: &Point| {
-                        selected.floor != point.floor
-                            || selected.x.abs_diff(point.x) >= self.min_poi_spacing
-                            || selected.y.abs_diff(point.y) >= self.min_poi_spacing
-                    }) {
-                        points.push(point);
-                        if points.len() == self.generated_count {
-                            break;
-                        }
+                for (_, point) in &candidates {
+                    if points.len() < self.generated_count
+                        && points.iter().all(|selected: &Point| {
+                            selected.floor != point.floor
+                                || selected.x.abs_diff(point.x) >= self.min_poi_spacing
+                                || selected.y.abs_diff(point.y) >= self.min_poi_spacing
+                        })
+                    {
+                        points.push(*point);
                     }
                 }
-                if points.len() < self.generated_count {
-                    return Err(MapRefusal::InsufficientPool);
+                // Crystal `discovery_system.lua` generatePois relaxes the spacing rule
+                // once a box is hard to fill; the remaining draws keep the same order.
+                for (_, point) in &candidates {
+                    if points.len() < self.generated_count && !points.contains(point) {
+                        points.push(*point);
+                    }
                 }
                 state.exploration = Some(Exploration { points, found: 0 });
                 Ok(true)
@@ -318,12 +324,73 @@ mod tests {
             area.apply(
                 &mut empty,
                 MapAction::Start,
-                &pool,
-                Point { x: 30, ..point },
+                &pool[..6],
+                start,
                 true,
                 &[3; 16]
             ),
             Err(MapRefusal::InsufficientPool)
         );
+        assert_eq!(empty, MapProgress::default());
+    }
+    #[test]
+    fn a_pool_too_narrow_for_seven_spaced_points_relaxes_spacing_like_the_reference() {
+        let Some(area) = BasicArea::embedded() else {
+            panic!("authored area")
+        };
+        // The admitted shape of a 32x2 strip entered at (1, 0): the view window removes
+        // x <= 10, leaving x 11..=31 on two rows, which holds at most six spaced points.
+        let start = Point {
+            x: 1,
+            y: 0,
+            floor: -7,
+        };
+        let pool: Vec<_> = (0..32)
+            .flat_map(|x| (0..2).map(move |y| Point { x, y, floor: -7 }))
+            .filter(|p| !p.in_window(start))
+            .collect();
+        let spaced = |a: &Point, b: &Point| {
+            a.floor != b.floor
+                || a.x.abs_diff(b.x) >= area.min_poi_spacing
+                || a.y.abs_diff(b.y) >= area.min_poi_spacing
+        };
+        for occurrence in 0..16u8 {
+            let mut state = MapProgress::default();
+            assert_eq!(
+                area.apply(
+                    &mut state,
+                    MapAction::Start,
+                    &pool,
+                    start,
+                    true,
+                    &[occurrence; 16]
+                ),
+                Ok(true)
+            );
+            let Some(exploration) = state.exploration else {
+                panic!("active exploration")
+            };
+            let points = exploration.points;
+            assert_eq!(points.len(), 7);
+            assert!(points.iter().all(|p| pool.contains(p)));
+            assert!(
+                points
+                    .iter()
+                    .enumerate()
+                    .all(|(i, p)| !points[..i].contains(p))
+            );
+            // Spaced draws come first; only the draws that no longer fit are relaxed.
+            let relaxed = points
+                .iter()
+                .enumerate()
+                .position(|(i, p)| !points[..i].iter().all(|o| spaced(p, o)))
+                .unwrap_or(points.len());
+            assert!(
+                points[relaxed..]
+                    .iter()
+                    .all(|p| !points[..relaxed].iter().all(|o| spaced(p, o)))
+            );
+            assert!((1..=6).contains(&relaxed));
+        }
     }
 }
