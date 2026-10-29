@@ -15,6 +15,6 @@
   "offers": {
     "production": false,
     "item_view": false,
-    "bundle_world": false
+    "bundle_world": true
   }
 }

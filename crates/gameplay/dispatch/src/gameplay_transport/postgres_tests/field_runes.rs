@@ -10,7 +10,9 @@ use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{
     ChannelContentPin, CharacterLease, MessageType, MovementLocalPosition, decode_wire_envelope,
 };
-use crate::gameplay_transport::capabilities::{OfferedCapability, test_command};
+use crate::gameplay_transport::capabilities::{
+    BUNDLE_WORLD_OFFERED_CAPABILITIES, test_command,
+};
 use crate::gameplay_transport::connection::{
     ConnectionEnd, FirstEntryOutcome, FreshAdmissionAuthority, LivenessPolicy, serve_admitted,
 };
@@ -31,41 +33,6 @@ use oteryn_protocol_oteryn::world_spatial::{
 };
 use oteryn_protocol_oteryn::{CommandStatus, decode_command_result, decode_snapshot_chunk};
 use tokio::io::AsyncWriteExt;
-
-const FIELD_OFFER: &[OfferedCapability] = &[
-    OfferedCapability {
-        id: 4,
-        requires: &[6],
-    },
-    OfferedCapability {
-        id: 6,
-        requires: &[],
-    },
-    OfferedCapability {
-        id: 11,
-        requires: &[15, 18],
-    },
-    OfferedCapability {
-        id: 15,
-        requires: &[4],
-    },
-    OfferedCapability {
-        id: 18,
-        requires: &[4, 6],
-    },
-    OfferedCapability {
-        id: 22,
-        requires: &[15],
-    },
-    OfferedCapability {
-        id: 30,
-        requires: &[6],
-    },
-    OfferedCapability {
-        id: 91,
-        requires: &[4, 11, 22, 30],
-    },
-];
 
 #[test]
 fn field_runes_all_profiles_use_the_existing_caster() -> TestResult {
@@ -690,7 +657,7 @@ async fn field_scenario_inner(
         crate::foundation::RuntimeScopeRefV1::channel(world, dependencies.admitted.channel_id),
         1,
         "policy-1",
-        FIELD_OFFER,
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
     )
     .map_err(debug)?;
     let formula = native.training_formula().ok_or("training formula")?;
@@ -2686,7 +2653,7 @@ async fn qualify_field_restart(
         scope,
         generation,
         "policy-1",
-        FIELD_OFFER,
+        BUNDLE_WORLD_OFFERED_CAPABILITIES,
     )
     .map_err(debug)?;
     assert_eq!(
