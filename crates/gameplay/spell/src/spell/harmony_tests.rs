@@ -159,13 +159,13 @@ fn a_solo_monk_is_serene_for_its_first_cast_with_no_periodic_step() {
     let mut state = monk(5);
     state.initialize(at(40), &solo()).expect("initialized");
     assert!(state.serene());
-    // Virtue of Harmony while Serene doubles the base: level 200, 5 charges, 3.56.
+    // Global, news 8944, owner decision 2026-10-29: (112% + 1%) x2 gives 3.26.
     assert_eq!(
         state
             .spender_multiplier(200, true)
             .expect("ready")
             .numerator(),
-        712_000
+        652_000
     );
     // A same-GameSession reconnect and FND-04B §21 recovery keep the actor and initialize it again.
     for reattach in [at(900), at(30_000)] {
@@ -323,12 +323,13 @@ fn reading_the_spender_multiplier_keeps_harmony() {
     // A failed or rejected cast reads the multiplier but reaches no PRIMARY COMMIT.
     let state = ready(3);
     let before = state.clone();
+    // Global, news 8944, owner decision 2026-10-29: 28% + 1% gives 1.29.
     assert_eq!(
         state
             .spender_multiplier(200, false)
             .expect("ready")
             .numerator(),
-        132 * MULTIPLIER_DENOMINATOR / 100
+        129 * MULTIPLIER_DENOMINATOR / 100
     );
     assert_eq!(state, before);
 }
