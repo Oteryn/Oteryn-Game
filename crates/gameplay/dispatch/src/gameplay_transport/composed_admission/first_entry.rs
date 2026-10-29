@@ -1,6 +1,40 @@
 use super::*;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// [`Self::initialize_first_entry`], repeated from fresh reads while it is refused before
+    /// the Channel-owner write: on a busy holder under `budget` (NODEBOOT-1), on stale authority
+    /// for at most [`RECONCILE_ATTEMPTS`] rounds. A refused round wrote no runtime state.
+    pub(in crate::gameplay_transport) async fn enter_committed_actor(
+        &self,
+        budget: &AdmissionRetryBudget<'_>,
+        request: &FreshAdmissionCommitRequestV1,
+        game_session_id: GameSessionId,
+        transport: AuthenticatedTransportRefV1,
+        actor: ExactActorRef,
+    ) -> (
+        FirstEntryOutcome,
+        Option<CurrentCharacterItemFence>,
+        Option<last_position::AdmissionPosition>,
+    ) {
+        let mut stale_rounds = 1;
+        loop {
+            let result = self
+                .initialize_first_entry(request, game_session_id, transport, actor)
+                .await;
+            match result.0 {
+                FirstEntryOutcome::RefusedUnavailable
+                    if budget
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await => {}
+                FirstEntryOutcome::RefusedStaleAuthority if stale_rounds < RECONCILE_ATTEMPTS => {
+                    stale_rounds += 1;
+                    tokio::time::sleep(RECONCILE_BACKOFF).await;
+                }
+                _ => break result,
+            }
+        }
+    }
+
     /// Immediately before the position write, resolve independently current
     /// authority (#935): the current GameSession, the current Character guard
     /// (owner, World, eligibility, lease generation and holder) and the current

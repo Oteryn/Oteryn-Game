@@ -1261,6 +1261,21 @@ impl<'r> AdmissionRetryBudget<'r> {
         }
     }
 
+    /// Repeats an admission `step` that reports any failure as `false` under
+    /// [`Self::retries_unavailable`] (NODEBOOT-1). Only for a step that is a read, or an
+    /// idempotent fenced write, followed by a runtime install: the step is repeated whole.
+    async fn retry_until(&self, mut step: impl AsyncFnMut() -> bool) -> bool {
+        self.retry_unavailable(async || {
+            if step().await {
+                Ok(())
+            } else {
+                Err(AdmissionRefusal::Unavailable)
+            }
+        })
+        .await
+        .is_ok()
+    }
+
     /// Whether a round left stale by concurrent owner evidence is retried: it waits one
     /// backoff while rounds remain.
     async fn retries_stale(&mut self) -> bool {
