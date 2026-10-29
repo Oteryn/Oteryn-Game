@@ -76,6 +76,7 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
                 min_count: 1,
                 max_count: 1,
                 probability_ppm: Some(1_000_000),
+                details: Default::default(),
             }],
         },
         ground: DeathGroundContext {

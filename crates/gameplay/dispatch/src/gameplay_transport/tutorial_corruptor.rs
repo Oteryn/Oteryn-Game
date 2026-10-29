@@ -61,6 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 min_count: 1,
                 max_count: 1,
                 probability_ppm: Some(1_000_000),
+                details: Default::default(),
             });
         }
         Ok(table)

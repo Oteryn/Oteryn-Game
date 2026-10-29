@@ -428,7 +428,8 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         request: ItemMintRequest,
     ) -> Result<ItemMintCandidate> {
-        self.freeze_mint(authority, node, request, None).await
+        self.freeze_mint(authority, node, request, None, false)
+            .await
     }
 
     /// Freeze one loot MINT into a corpse container (DUR-03 §39.4, D3-2),
@@ -466,7 +467,35 @@ impl DurabilityRoot {
             ruleset_revision,
             sim_revision,
         };
-        self.freeze_mint(authority, node, request, Some(placement))
+        self.freeze_mint(authority, node, request, Some(placement), false)
+            .await
+    }
+
+    /// Reserve one entry for an atomic kill batch. Its parent is a candidate in that batch;
+    /// this grants no custody and the batch commit re-proves the live writer and ancestry.
+    pub async fn freeze_kill_loot_entry(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        request: CorpseLootMintRequest,
+    ) -> Result<ItemMintCandidate> {
+        let placement = request.placement;
+        let request = ItemMintRequest {
+            cause: request.cause,
+            item: request.item,
+            quantity: request.quantity,
+            ground: GroundPlacement {
+                spatial_position: Vec::new(),
+                corpse_ref: Vec::new(),
+                map_revision: String::new(),
+                content_revision: String::new(),
+                native_room_placement_context: Vec::new(),
+            },
+            content_revision: request.content_revision,
+            ruleset_revision: request.ruleset_revision,
+            sim_revision: request.sim_revision,
+        };
+        self.freeze_mint(authority, node, request, Some(placement), true)
             .await
     }
 
@@ -476,6 +505,7 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         request: ItemMintRequest,
         corpse_entry: Option<CorpseContainerPlacement>,
+        pending_parent: bool,
     ) -> Result<ItemMintCandidate> {
         validate_request(&request, corpse_entry.as_ref())?;
         let intent_binding = intent_binding(&request, corpse_entry.as_ref())?;
@@ -511,6 +541,7 @@ impl DurabilityRoot {
                         return Ok(Err(ItemMintError::AuthorityRejected));
                     }
                     if let Some(entry) = &corpse_entry
+                        && !pending_parent
                         && !corpse_parent_is_live(&mut tx, &request.cause.death, entry).await?
                     {
                         return Ok(Err(ItemMintError::InvalidInput));
@@ -800,7 +831,15 @@ impl DurabilityRoot {
         candidate: &mut ItemMintCandidate,
         top_damage_character_id: [u8; 16],
     ) -> Result<ItemMintOutcome> {
-        self.commit_corpse_mint_inner(permit, authority, node, candidate, top_damage_character_id, None).await
+        self.commit_corpse_mint_inner(
+            permit,
+            authority,
+            node,
+            candidate,
+            top_damage_character_id,
+            None,
+        )
+        .await
     }
 
     /// Boss clock transition and corpse receipt share the same fenced transaction.
@@ -813,7 +852,15 @@ impl DurabilityRoot {
         top_damage_character_id: [u8; 16],
         boss: (String, u64, oteryn_gameplay_content::content::BossPolicy),
     ) -> Result<ItemMintOutcome> {
-        self.commit_corpse_mint_inner(permit, authority, node, candidate, top_damage_character_id, Some(boss)).await
+        self.commit_corpse_mint_inner(
+            permit,
+            authority,
+            node,
+            candidate,
+            top_damage_character_id,
+            Some(boss),
+        )
+        .await
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -826,6 +873,36 @@ impl DurabilityRoot {
         top_damage_character_id: [u8; 16],
         boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
     ) -> Result<ItemMintOutcome> {
+        let mut outcomes = self
+            .commit_kill_loot_mints(
+                permit,
+                authority,
+                node,
+                candidate,
+                &mut [],
+                top_damage_character_id,
+                boss,
+            )
+            .await?;
+        outcomes.pop().ok_or(ItemMintError::InvalidInput)
+    }
+
+    /// Atomically materialize a corpse and its flattened, parent-before-child loot tree.
+    /// Every candidate keeps its own cause, reservation, audit event and retry budget.
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the atomic kill retains the existing corpse writer's fence and boss facts"
+    )]
+    pub async fn commit_kill_loot_mints(
+        &self,
+        permit: &SpellLanePermit,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        candidate: &mut ItemMintCandidate,
+        children: &mut [ItemMintCandidate],
+        top_damage_character_id: [u8; 16],
+        boss: Option<(String, u64, oteryn_gameplay_content::content::BossPolicy)>,
+    ) -> Result<Vec<ItemMintOutcome>> {
         if candidate.request.cause.purpose_key != CORPSE_MATERIALIZATION_PURPOSE_KEY {
             return Err(ItemMintError::InvalidInput);
         }
@@ -847,6 +924,23 @@ impl DurabilityRoot {
             .map_err(|_| ItemMintError::AuthorityRejected)?;
         self.charge_item_mint_work_unit(recovery.clone(), candidate)
             .await?;
+        let mut parents = vec![candidate.item_instance_id];
+        let mut frozen_children = Vec::with_capacity(children.len());
+        if children.len() > 4096 {
+            return Err(ItemMintError::CapacityExceeded);
+        }
+        for child in children {
+            let placement = child.corpse_entry.ok_or(ItemMintError::InvalidInput)?;
+            if child.request.cause.death != candidate.request.cause.death
+                || !parents.contains(&placement.corpse_item_instance_id)
+            {
+                return Err(ItemMintError::InvalidInput);
+            }
+            self.charge_item_mint_work_unit(recovery.clone(), child)
+                .await?;
+            frozen_children.push((FrozenMint::of(child), placement));
+            parents.push(child.item_instance_id);
+        }
         let frozen = FrozenMint::of(candidate);
         let node = node.clone();
         let mut context = permit;
@@ -879,8 +973,20 @@ impl DurabilityRoot {
                             return Ok(Err(ItemMintError::ConflictingCause));
                         }
                         let committed = decode_receipt(&row)?;
+                        let mut outcomes = vec![ItemMintOutcome::AlreadyCommitted(committed)];
+                        for (child, _) in &frozen_children {
+                            let Some(row) = load_receipt(&mut tx, &child.request.cause).await?
+                            else {
+                                return Ok(Err(ItemMintError::ConflictingCandidate));
+                            };
+                            if row.try_get::<Vec<u8>, _>("intent_binding")? != child.intent_binding
+                            {
+                                return Ok(Err(ItemMintError::ConflictingCause));
+                            }
+                            outcomes.push(ItemMintOutcome::AlreadyCommitted(decode_receipt(&row)?));
+                        }
                         tx.commit(deadline).await?;
-                        return Ok(Ok(ItemMintOutcome::AlreadyCommitted(committed)));
+                        return Ok(Ok(outcomes));
                     }
 
                     let Some(row) = load_reservation(&mut tx, &frozen.request.cause).await? else {
@@ -952,11 +1058,67 @@ impl DurabilityRoot {
                         .await?;
                     if let Some((spawn, cycle, policy)) = &boss {
                         let death = &frozen.request.cause.death;
-                        let key = super::boss_encounter::BossClockKey { world: death.world_id,
-                            channel: death.channel_id, spawn: spawn.clone() };
-                        super::boss_encounter::advance_death_in_transaction(&mut tx, &key,
-                            death.scope_ownership_generation, *cycle, *policy).await
-                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        let key = super::boss_encounter::BossClockKey {
+                            world: death.world_id,
+                            channel: death.channel_id,
+                            spawn: spawn.clone(),
+                        };
+                        super::boss_encounter::advance_death_in_transaction(
+                            &mut tx,
+                            &key,
+                            death.scope_ownership_generation,
+                            *cycle,
+                            *policy,
+                        )
+                        .await
+                        .map_err(|_| DurabilityError::InvalidStoredState)?;
+                    }
+                    let mut child_outcomes = Vec::with_capacity(frozen_children.len());
+                    for (child, placement) in &frozen_children {
+                        lock_cause(&mut tx, &child.request.cause).await?;
+                        let Some(row) = load_reservation(&mut tx, &child.request.cause).await?
+                        else {
+                            return Ok(Err(ItemMintError::ConflictingCandidate));
+                        };
+                        let stored: Vec<u8> = row.try_get("intent_binding")?;
+                        if stored != child.intent_binding {
+                            return Ok(Err(ItemMintError::ConflictingCause));
+                        }
+                        let reservation = decode_reservation(&row)?;
+                        if reservation.transaction_id != child.transaction_id
+                            || reservation.event_id != child.event_id
+                            || reservation.item_instance_id != child.item_instance_id
+                        {
+                            return Ok(Err(ItemMintError::ConflictingCandidate));
+                        }
+                        if mint_identity_reused(&mut tx, child).await? {
+                            return Ok(Err(ItemMintError::ConflictingCandidate));
+                        }
+
+                        // DUR-03 §32 / D52: the reservation's fence must be live.
+                        if !fence_matches(&reservation, &node)
+                            || !fence_is_live(&mut tx, &child.request.cause.death, &node).await?
+                        {
+                            return Ok(Err(ItemMintError::AuthorityRejected));
+                        }
+
+                        let tuple = match tx.frozen_tuple(&child.envelope) {
+                            Ok(tuple) => tuple,
+                            Err(error) => return Ok(Err(error.into())),
+                        };
+                        if placement.corpse_item_instance_id == frozen.item_instance_id {
+                            insert_corpse_loot_mint(&mut tx, permit, child, tuple, placement)
+                                .await?;
+                        } else {
+                            insert_nested_loot_mint(&mut tx, child, tuple, placement).await?;
+                        }
+                        child_outcomes.push(ItemMintOutcome::Committed(CommittedItemMint {
+                            transaction_id: child.transaction_id,
+                            event_id: child.event_id,
+                            item_instance_id: child.item_instance_id,
+                            occurred_at_unix_ms: child.occurred_at_unix_ms,
+                            envelope_sha256: child.envelope_sha256,
+                        }));
                     }
                     let committed = CommittedItemMint {
                         transaction_id: frozen.transaction_id,
@@ -966,7 +1128,9 @@ impl DurabilityRoot {
                         envelope_sha256: frozen.envelope_sha256,
                     };
                     tx.commit(deadline).await?;
-                    Ok(Ok(ItemMintOutcome::Committed(committed)))
+                    let mut outcomes = vec![ItemMintOutcome::Committed(committed)];
+                    outcomes.extend(child_outcomes);
+                    Ok(Ok(outcomes))
                 })
             })
             .await?
@@ -1618,6 +1782,30 @@ async fn insert_corpse_loot_mint(
     )
     .bind(frozen.item_instance_id.as_slice())
     .bind(death.world_id.as_bytes().as_slice())
+    .bind(placement.corpse_item_instance_id.as_slice())
+    .bind(placement.placement_ordinal.to_string())
+    .bind(frozen.transaction_id.as_slice())
+    .execute(&mut **tx)
+    .await?;
+    insert_receipt(tx, frozen, None, Some(placement)).await?;
+    insert_audit_outbox(tx, frozen, tuple).await
+}
+
+async fn insert_nested_loot_mint(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    frozen: &FrozenMint,
+    tuple: SelectedType2Tuple,
+    placement: &CorpseContainerPlacement,
+) -> std::result::Result<(), DurabilityError> {
+    insert_item_instance(tx, frozen).await?;
+    sqlx::query(
+        "INSERT INTO game_item_nested_entries(item_instance_id, world_id, \
+           parent_item_instance_id, placement_ordinal, placed_transaction_id) \
+         VALUES (encode($1,'hex')::uuid, encode($2,'hex')::uuid, encode($3,'hex')::uuid, \
+           $4::text::numeric(20,0), encode($5,'hex')::uuid)",
+    )
+    .bind(frozen.item_instance_id.as_slice())
+    .bind(frozen.request.cause.death.world_id.as_bytes().as_slice())
     .bind(placement.corpse_item_instance_id.as_slice())
     .bind(placement.placement_ordinal.to_string())
     .bind(frozen.transaction_id.as_slice())

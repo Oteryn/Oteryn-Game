@@ -905,6 +905,9 @@ pub struct ReferenceLootEntry {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
+    pub children: Vec<ReferenceLootEntry>,
+    pub unique: bool,
+    pub subtype: Option<u16>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -2345,61 +2348,62 @@ fn validate_loot_definition(
             "reference-playable loot selection authority must remain server-only",
         ));
     }
-
-    match loot.algorithm {
-        ReferenceLootSelectionAlgorithm::WeightedSingleSelection => {
-            return Err(ContentError::InvalidArtifact(
-                "reference-playable weighted loot entries require separately accepted typed weight semantics",
-            ));
-        }
-        ReferenceLootSelectionAlgorithm::NestedGroups => {
-            return Err(ContentError::InvalidArtifact(
-                "reference-playable nested loot groups require separately accepted typed group references",
-            ));
-        }
-        ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm
-        | ReferenceLootSelectionAlgorithm::GuaranteedEntries => {}
+    if loot.algorithm == ReferenceLootSelectionAlgorithm::WeightedSingleSelection {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable weighted loot entries require separately accepted typed weight semantics",
+        ));
     }
-
-    for entry in &loot.entries {
-        if entry.min_count == 0 || entry.max_count < entry.min_count {
+    fn entries(
+        entries: &[ReferenceLootEntry],
+        algorithm: ReferenceLootSelectionAlgorithm,
+        depth: usize,
+    ) -> Result<(), ContentError> {
+        if depth > 8 || entries.len() > 4096 {
             return Err(ContentError::InvalidArtifact(
-                "reference-playable loot entry requires a positive ordered count range",
+                "reference-playable loot tree bounds",
             ));
         }
-
-        match loot.algorithm {
-            ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm => {
-                let probability_ppm =
-                    entry.probability_ppm.ok_or(ContentError::InvalidArtifact(
-                        "reference-playable Bernoulli loot entry requires explicit probability_ppm",
-                    ))?;
-                if probability_ppm > REFERENCE_LOOT_PROBABILITY_PPM_SCALE {
+        for entry in entries {
+            if entry.min_count == 0 || entry.max_count < entry.min_count {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable loot entry requires a positive ordered count range",
+                ));
+            }
+            match algorithm {
+                ReferenceLootSelectionAlgorithm::IndependentBernoulliPpm
+                | ReferenceLootSelectionAlgorithm::NestedGroups => {
+                    let probability = entry.probability_ppm.ok_or(ContentError::InvalidArtifact("reference-playable Bernoulli loot entry requires explicit probability_ppm"))?;
+                    if probability > REFERENCE_LOOT_PROBABILITY_PPM_SCALE {
+                        return Err(ContentError::InvalidArtifact(
+                            "reference-playable loot probability_ppm exceeds one million",
+                        ));
+                    }
+                }
+                ReferenceLootSelectionAlgorithm::GuaranteedEntries => {
+                    if entry.probability_ppm.is_some() {
+                        return Err(ContentError::InvalidArtifact(
+                            "reference-playable guaranteed loot entry cannot also declare probability_ppm",
+                        ));
+                    }
+                }
+                ReferenceLootSelectionAlgorithm::WeightedSingleSelection => {
                     return Err(ContentError::InvalidArtifact(
-                        "reference-playable loot probability_ppm exceeds one million",
+                        "reference-playable weighted loot entries require separately accepted typed weight semantics",
                     ));
                 }
             }
-            ReferenceLootSelectionAlgorithm::GuaranteedEntries => {
-                if entry.probability_ppm.is_some() {
-                    return Err(ContentError::InvalidArtifact(
-                        "reference-playable guaranteed loot entry cannot also declare probability_ppm",
-                    ));
-                }
-            }
-            ReferenceLootSelectionAlgorithm::WeightedSingleSelection => {
-                return Err(ContentError::InvalidArtifact(
-                    "reference-playable weighted loot entries require separately accepted typed weight semantics",
-                ));
-            }
-            ReferenceLootSelectionAlgorithm::NestedGroups => {
-                return Err(ContentError::InvalidArtifact(
-                    "reference-playable nested loot groups require separately accepted typed group references",
-                ));
-            }
+            validate_loot_children(entry, algorithm, depth)?;
         }
+        Ok(())
     }
-    Ok(())
+    fn validate_loot_children(
+        entry: &ReferenceLootEntry,
+        algorithm: ReferenceLootSelectionAlgorithm,
+        depth: usize,
+    ) -> Result<(), ContentError> {
+        entries(&entry.children, algorithm, depth + 1)
+    }
+    entries(&loot.entries, loot.algorithm, 0)
 }
 
 fn validate_definition_shape(definition: &ReferenceDefinition) -> Result<(), ContentError> {
@@ -2615,13 +2619,24 @@ fn validate_definition_references(
             Ok(())
         }
         ReferenceDefinitionKind::Loot(loot) => {
-            for entry in &loot.entries {
-                resolve_expected_definition(
+            let mut pending: Vec<_> = loot.entries.iter().collect();
+            while let Some(entry) = pending.pop() {
+                let target = resolve_expected_definition(
                     definitions,
                     &entry.item,
                     DefinitionFamily::Item,
                     "reference-playable loot entry must target Item",
                 )?;
+                if !entry.children.is_empty()
+                    && !matches!(&target.kind,
+                    ReferenceDefinitionKind::Item(item) if matches!(&item.semantics.container,
+                        ReferenceItemField::Known(container) if matches!(container.capacity, ReferenceItemField::Known(1..))))
+                {
+                    return Err(ContentError::InvalidArtifact(
+                        "reference-playable nested loot parent must be a typed container",
+                    ));
+                }
+                pending.extend(&entry.children);
             }
             Ok(())
         }

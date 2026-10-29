@@ -664,6 +664,7 @@ impl KillSettlementQueue {
                 &row.loot_table_ref,
                 &row.loot_table,
             )
+            // The flattened plan counts descendants as well as direct corpse entries.
             .map_or(0, |plan| plan.entries.len())
                 + if entry.creature == "oteryn:creature.the_corruptor" {
                     3
@@ -671,6 +672,13 @@ impl KillSettlementQueue {
                     0
                 }
         });
+        // A plan that cannot fit even an idle scope must reach settle's terminal
+        // capacity refusal, rather than wait forever for impossible headroom.
+        let loot_mints = if check_inflight_loot_mint_capacity(0, loot_mints).is_ok() {
+            loot_mints
+        } else {
+            0
+        };
         let inflight_before = state.reserved_loot_mints;
         if check_inflight_loot_mint_capacity(inflight_before, loot_mints).is_err() {
             return TakeOutcome::CapacityWait;
@@ -987,6 +995,7 @@ pub fn record_creature_kill(
                     min_count: count,
                     max_count: count,
                     probability_ppm: Some(1_000_000),
+                    details: Default::default(),
                 });
         }
     }

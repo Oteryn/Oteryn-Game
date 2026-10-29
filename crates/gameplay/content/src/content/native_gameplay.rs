@@ -1775,8 +1775,8 @@ pub mod test_support {
 
     mod activation_fixture;
     pub use activation_fixture::{
-        activated_loop_monster, activated_loop_monster_missing_child, activated_with_loot_tables,
-        loop_monster_inner_digest,
+        activated_loop_monster, activated_loop_monster_missing_child,
+        activated_with_custom_loot_tables, activated_with_loot_tables, loop_monster_inner_digest,
     };
 }
 

@@ -44,11 +44,25 @@ pub fn activated_with_loot_tables(
     ContentActivationController,
     crate::content::NativeEntryContentPin,
 ) {
+    activated_with_custom_loot_tables(world, source_world, None)
+}
+
+pub fn activated_with_custom_loot_tables(
+    world: oteryn_protocol_oteryn::WorldId,
+    source_world: Option<&[u8]>,
+    loot_tables: Option<&[u8]>,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
     let mut supplied = manifest_input();
     assert!(
         supplied.loot_tables.is_some(),
         "the manifest pins loot_tables"
     );
+    if let Some(bytes) = loot_tables {
+        supplied.loot_tables = Some(pinned(bytes));
+    }
     supplied.source_world = source_world.map(pinned);
     activate(world, &supplied)
 }

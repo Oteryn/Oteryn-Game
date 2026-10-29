@@ -179,6 +179,12 @@ pub struct SectionLootEntry {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
+    #[serde(default)]
+    pub children: Vec<SectionLootEntry>,
+    #[serde(default)]
+    pub unique: bool,
+    #[serde(default)]
+    pub subtype: Option<u16>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -196,6 +202,10 @@ pub struct SectionItemFacts {
     pub item: SectionRef,
     pub materializable: bool,
     pub container_capacity: Option<u32>,
+    #[serde(default)]
+    pub charges: Option<u32>,
+    #[serde(default)]
+    pub stackable: bool,
 }
 
 /// The pinned `loot_tables` section (`OTERYN_NATIVE_LOOT_TABLES/v1`).
@@ -210,6 +220,42 @@ pub struct LootTablesSection {
 
 fn refuse(reason: &'static str) -> ContentError {
     ContentError::InvalidArtifact(reason)
+}
+
+fn lower_loot_entries(
+    entries: &[SectionLootEntry],
+    items: &HashMap<&SectionRef, &SectionItemFacts>,
+    depth: usize,
+) -> Result<Vec<LootTableEntry>, NoSettlementReason> {
+    if depth > 8 || entries.len() > LOOT_SECTION_RECORDS_MAX {
+        return Err(NoSettlementReason::LootItemInadmissible);
+    }
+    entries
+        .iter()
+        .map(|entry| {
+            let facts = items
+                .get(&entry.item)
+                .filter(|facts| facts.materializable)
+                .ok_or(NoSettlementReason::LootItemInadmissible)?;
+            if !entry.children.is_empty() && facts.container_capacity.is_none() {
+                return Err(NoSettlementReason::LootItemInadmissible);
+            }
+            Ok(LootTableEntry {
+                item: entry.item.lower(),
+                min_count: entry.min_count,
+                max_count: entry.max_count,
+                probability_ppm: entry.probability_ppm,
+                details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                    children: lower_loot_entries(&entry.children, items, depth + 1)?,
+                    container_capacity: facts.container_capacity,
+                    charges: facts.charges,
+                    stackable: facts.stackable,
+                    subtype: entry.subtype,
+                    unique: entry.unique,
+                },
+            })
+        })
+        .collect()
 }
 
 fn algorithm(name: &str) -> Option<LootSelectionAlgorithm> {
@@ -445,20 +491,7 @@ fn row(
             let table = tables
                 .get(reference)
                 .ok_or(NoSettlementReason::LootTableMissing)?;
-            let entries = table
-                .entries
-                .iter()
-                .map(|entry| {
-                    admitted(&entry.item)
-                        .map(|_| LootTableEntry {
-                            item: entry.item.lower(),
-                            min_count: entry.min_count,
-                            max_count: entry.max_count,
-                            probability_ppm: entry.probability_ppm,
-                        })
-                        .ok_or(NoSettlementReason::LootItemInadmissible)
-                })
-                .collect::<Result<_, _>>()?;
+            let entries = lower_loot_entries(&table.entries, items, 0)?;
             (
                 reference.lower(),
                 LootTableDefinition {

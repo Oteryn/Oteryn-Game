@@ -349,7 +349,7 @@ pub enum CombatDeathRewardLootError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CommittedCorpseLoot {
     pub corpse: CommittedItemMint,
-    /// In plan order; entry `i` occupies corpse container ordinal `i + 1`.
+    /// In flattened plan order, including entries inside dropped containers.
     pub entries: Vec<CommittedItemMint>,
 }
 
@@ -450,10 +450,21 @@ async fn settle_loot(
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
+    // W22a: the approved migration changes custody only. Never silently discard subtype state.
+    if plan.entries.iter().any(|entry| entry.subtype.is_some()) {
+        return Err(CombatDeathRewardLootError::Plan(
+            crate::combat::LootPlanError::UnsupportedItemSubtype,
+        ));
+    }
     check_inflight_loot_mint_capacity(inflight_before_this_death, plan.entries.len())
         .map_err(CombatDeathRewardLootError::Capacity)?;
-    check_corpse_container_capacity(plan.entries.len())
-        .map_err(CombatDeathRewardLootError::Capacity)?;
+    check_corpse_container_capacity(
+        plan.entries
+            .iter()
+            .filter(|entry| entry.parent.is_none())
+            .count(),
+    )
+    .map_err(CombatDeathRewardLootError::Capacity)?;
 
     // The corpse's cause reuses the loot-cause tuple with the reserved
     // sentinel purpose key, draw ordinal 0 and the corpse's own definition in
@@ -478,6 +489,67 @@ async fn settle_loot(
         .freeze_item_mint(session.authority, session.node, corpse_request)
         .await
         .map_err(CombatDeathRewardLootError::Corpse)?;
+    if plan.entries.iter().any(|entry| entry.parent.is_some()) {
+        let mut children = Vec::with_capacity(plan.entries.len());
+        for entry in &plan.entries {
+            let parent = match entry.parent {
+                Some(index) => children.get(index).map(
+                    |candidate: &crate::durability::item_mint::ItemMintCandidate| {
+                        *candidate.item_instance_id()
+                    },
+                ),
+                None => Some(*corpse_candidate.item_instance_id()),
+            }
+            .ok_or(CombatDeathRewardLootError::Corpse(
+                ItemMintError::InvalidInput,
+            ))?;
+            let request = CorpseLootMintRequest {
+                cause: ItemMintCause::from_creature_death(
+                    death,
+                    to_typed_definition(&plan.loot_table),
+                    entry.purpose_key.clone(),
+                    entry.draw_ordinal,
+                ),
+                item: to_typed_definition(&entry.item),
+                quantity: entry.quantity,
+                placement: CorpseContainerPlacement {
+                    corpse_item_instance_id: parent,
+                    placement_ordinal: entry.placement_ordinal,
+                },
+                content_revision: ground.content_revision.clone(),
+                ruleset_revision: ground.ruleset_revision.clone(),
+                sim_revision: ground.sim_revision.clone(),
+            };
+            children.push(
+                session
+                    .root
+                    .freeze_kill_loot_entry(session.authority, session.node, request)
+                    .await
+                    .map_err(CombatDeathRewardLootError::Corpse)?,
+            );
+        }
+        let outcomes = session
+            .root
+            .commit_kill_loot_mints(
+                permit,
+                session.authority,
+                session.node,
+                &mut corpse_candidate,
+                &mut children,
+                top_damage_character_id,
+                ground.boss_spawn.clone(),
+            )
+            .await
+            .map_err(CombatDeathRewardLootError::Corpse)?;
+        let mut outcomes = outcomes.into_iter().map(committed);
+        let corpse = outcomes.next().ok_or(CombatDeathRewardLootError::Corpse(
+            ItemMintError::InvalidInput,
+        ))?;
+        return Ok(CommittedCorpseLoot {
+            corpse,
+            entries: outcomes.collect(),
+        });
+    }
     let corpse_outcome = if let Some(boss) = &ground.boss_spawn {
         session
             .root
@@ -1019,14 +1091,14 @@ mod tests {
     }
 
     #[test]
-    fn corpse_container_capacity_accepts_the_full_plan_and_rejects_one_over() {
-        // A complete accepted loot plan fits the container; SUMMER decision 20
-        // increases container capacity without increasing generated loot.
-        assert!(
+    fn corpse_container_capacity_limits_direct_entries() {
+        // W22a's total plan includes descendants. Direct corpse entries still
+        // obey SUMMER decision 20's capacity, independently of that plan ceiling.
+        assert_eq!(
             check_corpse_container_capacity(
                 oteryn_gameplay_items::loot_plan::COMBAT01_LOOT_PLAN_ITEMS_MAX
-            )
-            .is_ok()
+            ),
+            Err(CombatResourceLimitError::CorpseContainerEntriesExceeded)
         );
         assert_eq!(GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, 30);
         assert!(check_corpse_container_capacity(0).is_ok());

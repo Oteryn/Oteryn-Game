@@ -10,8 +10,7 @@ use oteryn_simulation_determinism::ExactI64;
 
 use super::*;
 use crate::combat::{
-    COMBAT01_LOOT_PLAN_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition,
-    LootTableEntry,
+    LootDefinitionRef, LootSelectionAlgorithm, LootTableDefinition, LootTableEntry,
 };
 use crate::foundation::CharacterId;
 use crate::foundation::{ChannelId, CombatDeathFixture, ScopeOwnershipGeneration, WorldId};
@@ -41,6 +40,7 @@ fn row(drops: usize) -> Arc<CreatureRewardRow> {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(1_000_000),
+                    details: Default::default(),
                 })
                 .collect(),
         },
@@ -133,6 +133,7 @@ fn pending_with_ordinary_surprise_bag() -> PendingKillSettlement {
         min_count: 1,
         max_count: 1,
         probability_ppm: Some(1_000_000),
+        details: Default::default(),
     });
     pending
 }
@@ -192,10 +193,44 @@ fn killrw_rl_01_bounds_queued_plus_in_flight() {
 }
 
 #[test]
+fn w22a_reservation_counts_nested_children_and_unfit_plans_do_not_wait_forever() {
+    let queue = KillSettlementQueue::default();
+    let mut entry = pending(2, 50, 3, 1);
+    let table = &mut Arc::make_mut(entry.row.as_mut().expect("reward row")).loot_table;
+    let child = table.entries[0].clone();
+    table.entries[0].details.container_capacity = Some(2);
+    table.entries[0].details.children = vec![child.clone(), child];
+    queue.append(entry);
+    let held = taken(queue.take(session(50), 3));
+    assert_eq!(queue.counts(), (0, 1, 3));
+    held.finish();
+    assert_eq!(queue.counts(), (0, 0, 0));
+
+    queue.append(pending(
+        3,
+        50,
+        3,
+        crate::combat::COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX + 1,
+    ));
+    let held = taken(queue.take(session(50), 3));
+    assert_eq!(
+        queue.counts(),
+        (0, 1, 0),
+        "settle will reject an intrinsically oversized plan before minting"
+    );
+    held.finish();
+}
+
+#[test]
 fn take_reserves_planned_loot_mints_and_waits_for_capacity() {
     let queue = KillSettlementQueue::default();
     for channel in 2..7 {
-        queue.append(pending(channel, 50, 3, COMBAT01_LOOT_PLAN_ENTRIES_MAX));
+        queue.append(pending(
+            channel,
+            50,
+            3,
+            crate::combat::COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX / 4,
+        ));
     }
     let held: Vec<_> = (0..4).map(|_| taken(queue.take(session(50), 3))).collect();
     assert_eq!(held[3].inflight_before(), 48);
@@ -333,9 +368,12 @@ fn the_drain_defers_on_capacity_wait() {
         let blocker = {
             let states = attack.lock().await;
             for channel in 2..7 {
-                states
-                    .kills()
-                    .append(pending(channel, 50, 3, COMBAT01_LOOT_PLAN_ENTRIES_MAX));
+                states.kills().append(pending(
+                    channel,
+                    50,
+                    3,
+                    crate::combat::COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX / 4,
+                ));
             }
             (0..4)
                 .map(|_| taken(states.kills().take(session(50), 3)))

@@ -361,9 +361,17 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS) -> dict:
             definition = record['definition']
             container = definition.get('semantics', {}).get('container', {})
             capacity = container.get('value', {}).get('capacity', {}) if container.get('state') == 'KNOWN' else {}
+            charges = definition.get('semantics', {}).get('charges', {})
+            charge_count = charges.get('value', {}).get('count', {}) if charges.get('state') == 'KNOWN' else {}
             facts[definition['identity']['key']] = {
                 'item': definition['identity'], 'materializable': definition['materializable'] is True,
                 'container_capacity': capacity['value'] if capacity.get('state') == 'KNOWN' else None}
+            if charge_count.get('state') == 'KNOWN' and charge_count['value'] > 0:
+                facts[definition['identity']['key']]['charges'] = charge_count['value']
+                stack = definition.get('semantics', {}).get('stack', {})
+                stackable = stack.get('value', {}).get('stackable', {}) if stack.get('state') == 'KNOWN' else {}
+                if stackable.get('state') == 'KNOWN' and stackable['value'] is True:
+                    facts[definition['identity']['key']]['stackable'] = True
     return facts
 
 
@@ -414,8 +422,11 @@ def loot_tables(creatures: dict, creature_definitions: Path = CREATURE_DEFINITIO
                 if table is None or table['identity'] != loot:
                     raise ValueError(f"Creature loot reference has no exact loot table: {loot['key']}")
                 used[loot['key']] = table
-                for entry in table['entries']:
-                    name(entry['item'])
+                def name_entries(entries):
+                    for entry in entries:
+                        name(entry['item'])
+                        name_entries(entry.get('children', []))
+                name_entries(table['entries'])
         bindings[target['key']] = {'creature': target, 'loot': loot}
     # FORGECREATURE: this resource is added by the live fiend's death classification,
     # rather than by every creature's static loot table. Preserve core admission facts.
