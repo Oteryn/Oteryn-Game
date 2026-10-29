@@ -595,6 +595,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.use_reward_bag(actor, command, item).await {
             return outcome;
         }
+        if let Some(outcome) = self.use_converter_item(actor, command, item).await {
+            return outcome;
+        }
         if let Some(outcome) = self.use_timed_item(actor, command, item).await {
             return outcome;
         }

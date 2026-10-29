@@ -19,6 +19,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("ENERGY-RING-1", 2),
     // The sliver 37109 (tools/content-migration/forge_creature_profiles.py), speed_bonus=0.
     ("FORGECREATURE", 1),
+    // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
+    // All have speed_bonus=0.
+    ("GOLDCONV", 4),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
     // The wooden chairs 2358..=2361 (tools/content-migration/item_transform_profiles.py).
