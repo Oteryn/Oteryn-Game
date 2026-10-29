@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -30,6 +31,20 @@ import donor_census
 
 ROOT = Path(__file__).resolve().parents[3]
 SHARD = 500
+
+
+def summer_corpse_item_ids(root=ROOT):
+    """Corpse stages the Summer overlay also materializes as Items (summer_corpse_items.py)."""
+    spec = importlib.util.spec_from_file_location(
+        "summer_corpse_items",
+        root / "tools/content-schema/native-gameplay/summer_corpse_items.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return frozenset(item for chain in module.CHAINS for item in chain)
+
+
+SUMMER_CORPSE_ITEMS = summer_corpse_item_ids()
 CATALOGUES = {
     # family: (directory, shard prefix, marker notes)
     "Terrain": ("content/world/terrain", "terrain", "Terrain definitions"),
@@ -128,7 +143,10 @@ def build_qualified_donor_record(
     if (
         binding != expected_binding
         or (definition or {}).get("identity") != expected_binding["target"]
-        or (definition or {}).get("materializable") is not False
+        # The Summer overlay admits these corpse stages as Items too; the WorldObject
+        # route below is unchanged.
+        or (definition or {}).get("materializable")
+        is not (item_id in SUMMER_CORPSE_ITEMS)
     ):
         raise ValueError("DONOR_EXACT_IDENTITY_BINDING")
     old, current = (membership.get(item_id) for membership in memberships)

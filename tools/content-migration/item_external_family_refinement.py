@@ -46,6 +46,9 @@ IDS = frozenset(
     }
 )
 NOTES = "Can be used on an imbued item to erase all applied [[imbuements]]."
+# summer_corpse_items.py admits the etcher as plain stackable loot; that
+# admission leaves its public family evidence unchanged.
+OVERLAY_ADMITTED = {51443: "StackCapable"}
 COORDS = ("page_id", "revision_id", "revision_timestamp", "content_sha256")
 
 
@@ -145,8 +148,8 @@ def derive_external(
         or definition.get("identity") != target
         or target.get("family") != "Item"
         or target.get("revision") != "definition-r1"
-        or definition.get("materializable") is not False
-        or definition.get("stack_class") != "Unknown"
+        or definition.get("materializable") is not (iid in OVERLAY_ADMITTED)
+        or definition.get("stack_class") != OVERLAY_ADMITTED.get(iid, "Unknown")
         or not name_agrees(definition, name)
         or appearance.get("id") != iid
         or appearance.get("name") != name

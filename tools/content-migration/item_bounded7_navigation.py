@@ -23,7 +23,7 @@ from item_official_navigation import admission_ids, decoded_digest
 from source_relocations import read_text as relocated_text
 
 PATH = "imports/tibiawiki/facts/items-bounded7-navigation-20261002.json"
-SHA = "e7934cbc1dbe846479523702c9392b0416a2f6b01c804b32a7b49b20b70a934e"
+SHA = "052e16875845d9c79e22aa9b052b0bb1cfd099febf70fc8b84df84f37cd5d9a0"
 IDS = frozenset({4290, 39571, 43778, 43779, 43780, 43781, 43782})
 A12_IDS = IDS - {4290, 39571}
 COORDS = ("page_id", "revision_id", "revision_timestamp", "content_sha256")
