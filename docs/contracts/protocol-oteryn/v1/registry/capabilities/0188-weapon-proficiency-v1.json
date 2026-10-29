@@ -12,5 +12,5 @@
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "WEAPPROF3: offered only by a World booted from a bundle."
+  "offer_gate": "WEAPPROF3: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. Without the capability selected, command types 480-483 are refused as unsupported."
 }

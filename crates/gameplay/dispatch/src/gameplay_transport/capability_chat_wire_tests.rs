@@ -175,7 +175,7 @@ fn lines(frames: &[Vec<u8>]) -> Result<Vec<ChatLine>, Box<dyn Error>> {
 #[test]
 fn a_say_reaches_the_session_in_range_and_not_the_one_out_of_range()
 -> Result<(), Box<dyn Error>> {
-    run(async {
+    run_on_node_stack(|| async {
         let (mut runtime, speaker, speaker_session) = runtime_with_capacity(0x71, 3);
         let mut others = Vec::new();
         for tag in [0x72, 0x73] {
