@@ -1,24 +1,132 @@
+/// Runs `test` on a current-thread runtime whose clock is paused, so backoffs auto-advance.
+fn run_paused(test: impl std::future::Future<Output = ()>) {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_time()
+        .start_paused(true)
+        .build()
+        .expect("runtime")
+        .block_on(test);
+}
+
 /// A busy durability holder fails a pass at once with nothing written. Fresh admission
-/// retries that proven noncommit while rounds remain and fails closed on the last one;
-/// rejections and classified refusals are never retried.
+/// retries only that transient refusal; rejections and classified refusals are never
+/// retried. The backoff carries the per-attempt jitter.
 #[test]
 fn fresh_admission_retries_only_transient_noncommits() {
-    assert!(fresh_round_retries(AdmissionRefusal::Unavailable, false));
-    assert!(!fresh_round_retries(AdmissionRefusal::Unavailable, true));
-    for last in [false, true] {
-        assert!(!fresh_round_retries(AdmissionRefusal::Rejected, last));
-        assert!(!fresh_round_retries(
-            AdmissionRefusal::Classified(FoundationProtocolError::AdmissionGrantReplayed),
-            last
-        ));
+    run_paused(async {
+        let session = GameSessionId::decode(&uuid_v7(0x40)).expect("session");
+        let budget = AdmissionRetryBudget::new(&session);
+        assert!(!budget.retries_unavailable(AdmissionRefusal::Rejected).await);
+        assert!(
+            !budget
+                .retries_unavailable(AdmissionRefusal::Classified(
+                    FoundationProtocolError::AdmissionGrantReplayed
+                ))
+                .await
+        );
+        assert!(
+            !budget
+                .retries_unavailable(AdmissionRefusal::PremiumRequired)
+                .await
+        );
+        assert!(budget.retries_unavailable(AdmissionRefusal::Unavailable).await);
+        let low = GameSessionId::decode(&uuid_v7(0x40)).expect("low session");
+        let high = GameSessionId::decode(&uuid_v7(0x7f)).expect("high session");
+        assert_eq!(fresh_admission_backoff(&low), RECONCILE_BACKOFF);
+        assert_eq!(
+            fresh_admission_backoff(&high),
+            RECONCILE_BACKOFF + Duration::from_millis(63)
+        );
+    });
+}
+
+/// One admission step against a holder that background passes keep busy for `busy_for`:
+/// it succeeds once the holder is free, and otherwise asks the attempt's budget.
+async fn admit_against_busy_holder(busy_for: Duration) -> Result<Duration, AdmissionRefusal> {
+    let session = GameSessionId::decode(&uuid_v7(0x7f)).expect("session");
+    let start = tokio::time::Instant::now();
+    let budget = AdmissionRetryBudget::new(&session);
+    loop {
+        if start.elapsed() >= busy_for {
+            return Ok(start.elapsed());
+        }
+        if !budget
+            .retries_unavailable(AdmissionRefusal::Unavailable)
+            .await
+        {
+            return Err(AdmissionRefusal::Unavailable);
+        }
     }
-    let low = GameSessionId::decode(&uuid_v7(0x40)).expect("low session");
-    let high = GameSessionId::decode(&uuid_v7(0x7f)).expect("high session");
-    assert_eq!(fresh_admission_backoff(&low), RECONCILE_BACKOFF);
+}
+
+/// DEFLAKE-2: a holder busy for longer than the former three rounds (two backoffs, at most
+/// 526 ms) no longer refuses the attempt; one still busy at the end of the root recovery
+/// window does, before the window ends.
+#[test]
+fn admission_survives_a_busy_holder_within_the_root_recovery_window() {
+    run_paused(async {
+        let session = GameSessionId::decode(&uuid_v7(0x7f)).expect("session");
+        let former_bound = fresh_admission_backoff(&session) * (FRESH_ADMISSION_ROUNDS - 1);
+        for busy_for in [
+            former_bound + Duration::from_millis(1),
+            Duration::from_secs(2),
+            Duration::from_secs(4),
+        ] {
+            let admitted = admit_against_busy_holder(busy_for).await;
+            assert!(
+                matches!(admitted, Ok(at) if at >= busy_for && at < crate::durability::ROOT_RECOVERY_WINDOW),
+                "busy for {busy_for:?}: {admitted:?}"
+            );
+        }
+        let start = tokio::time::Instant::now();
+        assert_eq!(
+            admit_against_busy_holder(crate::durability::ROOT_RECOVERY_WINDOW).await,
+            Err(AdmissionRefusal::Unavailable)
+        );
+        assert!(start.elapsed() < crate::durability::ROOT_RECOVERY_WINDOW);
+    });
+}
+
+/// DEFLAKE-2: a round left stale by concurrent owner evidence keeps its bound of
+/// `FRESH_ADMISSION_ROUNDS` rounds, however much of the window is left, and busy-holder
+/// retries do not spend it.
+#[test]
+fn stale_rounds_keep_their_round_bound() {
+    run_paused(async {
+        let session = GameSessionId::decode(&uuid_v7(0x40)).expect("session");
+        let mut budget = AdmissionRetryBudget::new(&session);
+        for _ in 0..4 {
+            assert!(budget.retries_unavailable(AdmissionRefusal::Unavailable).await);
+        }
+        for _ in 1..FRESH_ADMISSION_ROUNDS {
+            assert!(budget.retries_stale().await);
+        }
+        assert!(!budget.retries_stale().await);
+        assert!(budget.retries_unavailable(AdmissionRefusal::Unavailable).await);
+    });
+}
+
+/// DEFLAKE-2: a silent admission or resume refusal leaves one closed-schema operator line
+/// naming its kind alone; a refusal that answers the client with a frame leaves none.
+#[test]
+fn silent_admission_refusals_name_their_kind_alone() {
+    use connection::admission_refused_event;
     assert_eq!(
-        fresh_admission_backoff(&high),
-        RECONCILE_BACKOFF + Duration::from_millis(63)
+        admission_refused_event(AdmissionRefusal::Unavailable),
+        Some("event=admission_refused kind=unavailable")
     );
+    for refusal in [AdmissionRefusal::Rejected, AdmissionRefusal::PremiumRequired] {
+        assert_eq!(
+            admission_refused_event(refusal),
+            Some("event=admission_refused kind=rejected")
+        );
+    }
+    for refusal in [
+        AdmissionRefusal::RecoveryCapabilityRequired,
+        AdmissionRefusal::Classified(FoundationProtocolError::AdmissionGrantReplayed),
+    ] {
+        assert_eq!(admission_refused_event(refusal), None);
+    }
 }
 
 /// N8 (ARCH-LOGIN-FIRST-PACKETS-V1 §1.2): each fresh verifier refusal carries its FND-04A
