@@ -9,6 +9,11 @@ on:
 permissions:
   contents: read
 
+# A newer main push supersedes the cache build of an older one; the newest cache is the useful one.
+concurrency:
+  group: rust-protected-main-cache-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lanes:
     name: Rust / protected-main risk lanes
@@ -155,12 +160,13 @@ jobs:
           PY
 
   linux:
-    name: Rust / protected-main cache and smoke
+    name: Rust / protected-main cache
     needs: lanes
     if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && github.ref_protected && (github.event_name != 'push' || needs.lanes.result != 'success' || needs.lanes.outputs.rust != 'false' || needs.lanes.outputs.windows != 'false') }}
     runs-on: ubuntu-24.04
-    # Full test execution belongs to Merge Queue. Compile and lint the protected
-    # merged tree to warm every shared Cargo artifact without repeating tests.
+    # Full test execution, the synthetic harness and the smoke belong to Merge Queue (rust_linux
+    # build-smoke on the same SHA). Compile and lint the protected merged tree to warm every shared
+    # Cargo artifact without repeating tests or runs.
     timeout-minutes: 60
     steps:
       - name: Check out exact revision
@@ -178,7 +184,7 @@ jobs:
         run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
 
       - name: Restore trimmed Cargo cache from protected main
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/
@@ -201,11 +207,12 @@ jobs:
       - name: Compile workspace tests without executing them
         run: cargo +1.99.1 test --locked --workspace --no-run
 
-      - name: Run synthetic harness
-        run: cargo +1.99.1 run --locked -p oteryn-synthetic-client-harness
-
-      - name: Smoke native game-server bootstrap
-        run: cargo +1.99.1 run --locked -p oteryn-game-server -- --smoke
+      # The MQ build-smoke leg, node_boot and server_seam build these package-scoped units
+      # (`-p` resolves features per package) and reuse them from this cache.
+      - name: Build synthetic harness and native game-server
+        run: |
+          cargo +1.99.1 build --locked -p oteryn-synthetic-client-harness
+          cargo +1.99.1 build --locked -p oteryn-game-server --bin oteryn-game-server
 
       # Only protected-main source may produce the shared compilation cache.
       # A cache hit never substitutes for exact-candidate MQ qualification.
@@ -219,9 +226,9 @@ jobs:
           git rev-parse HEAD > target/.oteryn-cache-source-sha
           du -sh target/ | tee -a "$GITHUB_STEP_SUMMARY"
 
-      - name: Save trimmed cache from protected main after compilation and smoke
+      - name: Save trimmed cache from protected main after compilation
         if: github.ref == 'refs/heads/main' && github.ref_protected
-        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cargo/registry/index/

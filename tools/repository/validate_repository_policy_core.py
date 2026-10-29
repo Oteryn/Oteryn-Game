@@ -47,8 +47,8 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "4102f456f4fed6e8cbcb5b9b53356279f7fae420
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "24b5197d8c22835f08a27423ae909f2bdf6b240e7c64026ce76174753c820e4c"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "d4f8458055f1e84669cfd739738566c8edf966ff"
-EXPECTED_POST_MERGE_RUST_SHA256 = "3ad65add5903a3ea6745b8cc26c589477bdc0a963a7f5780a6d75307475a03a1"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "b4388b06ee2a93398399e1ca691b8bc08bfb9005"
+EXPECTED_POST_MERGE_RUST_SHA256 = "3ad10ed77185ae06bf0b1a2addaf5e94d52723ffc934c0944d028ad69182fff1"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -483,15 +483,35 @@ def main() -> int:
                 "python tools/repository/validate_repository_policy.py",
                 "python tools/agents/tests/test_governance_lifecycle_discovery.py",
                 "python tools/repository/test_validate_merge_group_pg_sim.py",
+                # A superseded push run never qualified its SHA: a push is qualified from the newest
+                # successful main push that is a strict ancestor, else every lane is selected.
+                "      base_sha: ${{ steps.base.outputs.sha }}\n",
+                "      - name: Resolve last qualified protected base\n",
+                "              base, qualified = os.environ['QUEUE_BASE_SHA'].strip().lower(), 'true'\n",
+                "              base, qualified = os.environ['PUSH_BEFORE_SHA'].strip().lower(), 'false'\n",
+                "'?branch=main&event=push&status=success&exclude_pull_requests=true&per_page=100'",
+                "or run.get('conclusion') != 'success'",
+                "if compare.get('status') == 'ahead' and compare.get('behind_by') == 0:",
+                "base, qualified = candidate, 'true'",
+                "raise SystemExit('invalid qualified base')",
+                "          ref: ${{ steps.base.outputs.sha }}\n",
+                "          BASE_QUALIFIED: ${{ steps.base.outputs.qualified }}\n",
+                "              if os.environ.get('BASE_QUALIFIED') != 'true':\n"
+                "                  raise ValueError('unqualified protected base')\n",
+                "          BASE_SHA: ${{ steps.base.outputs.sha }}\n",
+                'git fetch --no-tags --depth=1 origin "$BASE_SHA"',
             ),
             "dependency_review": (
                 "    name: Merge Queue / dependency review\n",
+                "    needs: candidate\n",
                 "actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294",
-                "base-ref: ${{ github.event.merge_group.base_sha || github.event.before }}",
+                "base-ref: ${{ needs.candidate.outputs.base_sha }}",
                 "head-ref: ${{ github.event.merge_group.head_sha || github.sha }}",
             ),
             "codeql": (
                 "    name: Merge Queue / CodeQL (${{ matrix.language }})\n",
+                # codeql.yml analyses every push to main; this copy covers the merge queue only.
+                "    if: github.event_name == 'merge_group'\n",
                 "language: [python, actions]",
                 "github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
                 "github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370",
@@ -544,7 +564,7 @@ def main() -> int:
                 "    name: Merge Queue / Durability PostgreSQL harness build\n",
                 "    if: needs.candidate.outputs.rust == 'true'\n",
                 "ref: ${{ github.event.merge_group.head_sha || github.sha }}",
-                "BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}",
+                "BASE_SHA: ${{ needs.candidate.outputs.base_sha }}",
                 "HEAD_SHA: ${{ github.event.merge_group.head_sha || github.sha }}",
                 'git cat-file -e "$BASE_SHA:$path"',
                 'git cat-file -e "$HEAD_SHA:$path"',
@@ -640,9 +660,16 @@ def main() -> int:
                 "    name: game-gate\n",
                 "    if: always()\n",
                 "    needs: [candidate, dependency_review, codeql, atlas_fullworld, world_bundle, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
+                "          EVENT_NAME: ${{ github.event_name }}\n",
                 "          CANDIDATE: ${{ needs.candidate.result }}\n",
                 "          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}\n",
                 "          CODEQL: ${{ needs.codeql.result }}\n",
+                "          for result in \"$CANDIDATE\" \"$DEPENDENCY_REVIEW\"; do\n",
+                "          if [[ \"${EVENT_NAME:-}\" == \"push\" ]]; then\n"
+                "            [[ \"$CODEQL\" == success || \"$CODEQL\" == skipped ]]\n"
+                "          else\n"
+                "            test \"$CODEQL\" = success\n"
+                "          fi\n",
                 "          ATLAS_FULLWORLD_REQUIRED: ${{ needs.candidate.outputs.atlas_fullworld }}\n",
                 "          ATLAS_FULLWORLD: ${{ needs.atlas_fullworld.result }}\n",
                 "          WORLD_BUNDLE_REQUIRED: ${{ needs.candidate.outputs.world_bundle }}\n",
@@ -674,6 +701,34 @@ def main() -> int:
                 errors.append(
                     f"merge-group gate job durability_postgres must not compile or restore a cache: {forbidden.strip()}"
                 )
+
+    # The merge-group gate leaves push-to-main CodeQL to codeql.yml, so codeql.yml must keep
+    # analysing python, actions and rust on every push to main with no path or job filter.
+    codeql_workflow = ROOT / ".github/workflows/codeql.yml"
+    if codeql_workflow.is_file():
+        text = codeql_workflow.read_text(encoding="utf-8")
+        trigger_block = top_level_yaml_mapping_block(text, "on") or ""
+        analyze = indented_yaml_mapping_block(text, "analyze", 2) or ""
+        for fragment, block in (
+            ("  push:\n    branches:\n      - main\n", trigger_block),
+            ("          - python\n", analyze),
+            ("          - actions\n", analyze),
+            ("          - rust\n", analyze),
+            ("github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370", analyze),
+            ("github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370", analyze),
+            ("          category: /language:${{ matrix.language }}\n", analyze),
+        ):
+            if fragment not in block:
+                errors.append(f"CodeQL workflow missing push-to-main analysis contract: {fragment.strip()}")
+        for forbidden, block in (
+            ("paths", trigger_block),
+            ("    if:", analyze),
+            ("continue-on-error", text),
+        ):
+            if forbidden in block:
+                errors.append(f"CodeQL workflow must not filter push-to-main analysis: {forbidden.strip()}")
+    else:
+        errors.append("missing CodeQL workflow that analyses every push to main")
 
     agent_governance = ROOT / ".github/workflows/agent-governance.yml"
     if agent_governance.is_file():
