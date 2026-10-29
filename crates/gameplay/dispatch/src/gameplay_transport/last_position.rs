@@ -266,6 +266,8 @@ enum Captured {
     At(Capture),
     /// The actor is dead: the placement of its respawn writes the respawn cell.
     Dead,
+    /// A retained vocation commit awaits live installation; retry the track later.
+    Held,
     /// The actor has no current position in the pinned context.
     Gone,
 }
@@ -282,7 +284,7 @@ impl LastPositions {
     /// The next write sequence: strictly greater than every earlier one of this process and
     /// never below the wall clock in microseconds, so a later process of the same lease (none
     /// exists today) still orders after this one.
-    fn next_sequence(&self) -> u64 {
+    pub(super) fn next_sequence(&self) -> u64 {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .ok()
@@ -587,6 +589,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let actor = track.actor;
         let kept = track.written.and_then(|saved| saved.vitals);
         let runtime = self.runtime.lock().await;
+        // A retained build may have committed its refill before live installation. Keep
+        // the transaction's projection until the actor has the committed pools too.
+        if self
+            .states
+            .npc_conversations
+            .dawnport_choice(session)
+            .is_some_and(|choice| choice.retained.is_some())
+        {
+            return Captured::Held;
+        }
         let (vitals, rest) = {
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) {
@@ -656,7 +668,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 record: capture.record,
                 write_sequence: capture.write_sequence,
             }),
-            Captured::Dead | Captured::Gone => None,
+            Captured::Dead | Captured::Held | Captured::Gone => None,
         }
     }
 
@@ -850,7 +862,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let capture = match self.capture_last_position(&track, session).await {
                 Captured::At(capture) => capture,
                 // The placement of its respawn writes the respawn cell.
-                Captured::Dead => continue,
+                Captured::Dead | Captured::Held => continue,
                 Captured::Gone => {
                     // The actor is gone: its session ended without a retire of this track.
                     self.states.last_positions.forget(session);
