@@ -50,8 +50,8 @@ pub trait PartyBuffSpecExt {
 }
 
 impl PartyBuffSpecExt for PartyBuffSpec {
-    /// The members one cast affects, ordered by creature id: party members on the caster's floor
-    /// inside the area. The caster must be listed in its own party.
+    /// The members one cast affects, ordered by creature id: party members within 36 tiles
+    /// in 3D Chebyshev distance. The caster must be listed in its own party.
     fn affected<'a>(
         &self,
         world: &'a dyn PartyWorld,
@@ -63,7 +63,7 @@ impl PartyBuffSpecExt for PartyBuffSpec {
         }
         let affected: BTreeMap<u64, &ChainCreature> = party
             .iter()
-            .filter(|member| covers(self, caster.position, member.position))
+            .filter(|member| covers(caster.position, member.position))
             .map(|member| (member.id, member))
             .collect();
         if affected.len() < usize::try_from(self.min_affected).unwrap_or(usize::MAX) {
@@ -94,6 +94,12 @@ impl PartyBuffSpecExt for PartyBuffSpec {
     }
 }
 
-fn covers(spec: &PartyBuffSpec, centre: TilePosition, tile: TilePosition) -> bool {
-    tile.floor == centre.floor && spec.area.contains(&(tile.x - centre.x, tile.y - centre.y))
+fn covers(centre: TilePosition, tile: TilePosition) -> bool {
+    // Crystal 201189f: data/scripts/spells/party/heal_party.lua:37 checks distance <= 36;
+    // src/lua/functions/map/position_functions.cpp:117 defines it as max(|dx|, |dy|, |dz|).
+    tile.x
+        .abs_diff(centre.x)
+        .max(tile.y.abs_diff(centre.y))
+        .max(u32::from(tile.floor.abs_diff(centre.floor)))
+        <= 36
 }
