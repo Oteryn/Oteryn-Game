@@ -543,11 +543,19 @@ async fn apply_retire(
             .await?
         }
         Some(ordinal) => {
+            let death_container = matches!(step.cause, RetireCause::WorldReset(_))
+                && super::world_reset::ground_step::is_death_container(
+                    tx,
+                    step.corpse_item_instance_id,
+                )
+                .await?;
+            let query = if death_container {
+                "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)"
+            } else {
+                "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)"
+            };
             sqlx::query(
-                "DELETE FROM game_item_corpse_container_entries \
-                  WHERE item_instance_id = encode($1,'hex')::uuid \
-                    AND parent_item_instance_id = encode($2,'hex')::uuid \
-                    AND placement_ordinal = $3::text::numeric(20,0)",
+                query,
             )
             .bind(item)
             .bind(step.corpse_item_instance_id.as_slice())

@@ -193,13 +193,13 @@ mod tests {
     fn crystal_premium_lapse_suspends_but_keeps_the_promotion()
     -> Result<(), crate::domain::death::PveDeathError> {
         use crate::domain::death::death_experience_loss;
-        // Level 100: (100 + 50) x 50 x (100^2 - 500 + 8) / 100 = 713_100 base loss.
+        // Level 100: the canonical L→L+1 experience span is 485_200.
         let free = death_experience_loss(100, 0, promotion_benefit_current(true, false))?;
         let premium = death_experience_loss(100, 0, promotion_benefit_current(true, true))?;
-        assert_eq!(free, 713_100);
+        assert_eq!(free, 485_200);
         assert_eq!(free, death_experience_loss(100, 0, false)?);
         // Crystal `percentReduction += 0.30` for a promoted vocation.
-        assert_eq!(premium, 499_170);
+        assert_eq!(premium, 339_640);
         // Demoted vocation soul 100, promoted 200; a lapse clamps at once.
         assert_eq!(soul_maximum(false), 100);
         assert_eq!(soul_maximum(true), 200);

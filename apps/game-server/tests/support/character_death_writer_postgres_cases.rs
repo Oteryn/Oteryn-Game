@@ -251,16 +251,16 @@ fn death_commits_one_receipt_replays_reconciles_and_survives_restart() -> TestRe
                     .await
                     .map_err(|error| format!("{error:?}"))?,
             )?;
-            // Level 9: 0.59 × 50 × 44 = 1298, two blessings −16%: 1090.32 → 1090.
-            assert_eq!(first.experience_lost.get(), 1090);
-            assert_eq!(first.experience_after.get(), 5410);
-            assert_eq!((first.level_before, first.level_after), (9, 8));
+            // Level 9: (9300 − 6400) × 84/100 = 2436; 6500 − 2436 = 4064, level 7.
+            assert_eq!(first.experience_lost.get(), 2436);
+            assert_eq!(first.experience_after.get(), 4064);
+            assert_eq!((first.level_before, first.level_after), (9, 7));
             assert_eq!(first.committed_character_revision.get(), 2);
             assert_eq!(first.blessings_before, ["embrace", "spark"]);
             assert!(first.blessings_after.is_empty());
             assert_eq!(
                 snapshot(&harness.pool).await?,
-                format!("2|2,8,5410|0|1|0|-|{}", uuid(80))
+                format!("2|2,7,4064|0|1|0|-|{}", uuid(80))
             );
 
             // Exact replay returns the first receipt without session authority.
@@ -363,7 +363,7 @@ fn death_commits_one_receipt_replays_reconciles_and_survives_restart() -> TestRe
                     state.level,
                     state.total_experience.get()
                 ),
-                (2, 8, 5410)
+                (2, 7, 4064)
             );
             drop(restart_authority);
             drop(restart_seal);
@@ -477,7 +477,7 @@ fn mixed_chain_xp_death_stance_death_passes_integrity_and_red_gaps_fail() -> Tes
                 .await
                 .map_err(|error| format!("{error:?}"))?;
             assert!(matches!(xp, ExperienceCommitOutcome::Committed(_)));
-            // Level 9 at 6600 loses 1298 → 5302, level 8.
+            // Level 9: 9300 − 6400 = 2900; 6600 − 2900 = 3700, level 7.
             let first = committed(
                 harness
                     .root
@@ -485,10 +485,10 @@ fn mixed_chain_xp_death_stance_death_passes_integrity_and_red_gaps_fail() -> Tes
                     .await
                     .map_err(|error| format!("{error:?}"))?,
             )?;
-            assert_eq!((first.experience_after.get(), first.level_after), (5302, 8));
+            assert_eq!((first.experience_after.get(), first.level_after), (3700, 7));
             consume_pending(&harness.pool).await?;
-            toggle_stance(&harness.pool, 92, 3, (8, 5302)).await?;
-            // Level 8: 0.58 × 50 × 32 = 928 → 4374, still level 8.
+            toggle_stance(&harness.pool, 92, 3, (7, 3700)).await?;
+            // Level 7: 4200 − 2600 = 1600; 3700 − 1600 = 2100, level 6.
             let second = committed(
                 harness
                     .root
@@ -501,12 +501,12 @@ fn mixed_chain_xp_death_stance_death_passes_integrity_and_red_gaps_fail() -> Tes
                     second.experience_before.get(),
                     second.experience_after.get()
                 ),
-                (5302, 4374)
+                (3700, 2100)
             );
             assert_eq!(second.committed_character_revision.get(), 5);
             assert_eq!(
                 snapshot(&harness.pool).await?,
-                format!("5|5,8,4374|1|2|1|-|{}", uuid(93))
+                format!("5|5,6,2100|1|2|1|-|{}", uuid(93))
             );
             drop(authority);
             harness
@@ -578,7 +578,7 @@ fn concurrent_xp_award_and_death_serialize_on_the_character_root() -> TestResult
                 (
                     Err(CharacterProgressionError::CharacterRevisionMismatch),
                     Ok(CharacterDeathOutcome::Committed(_)),
-                ) => format!("2|2,8,5202|0|1|0|-|{}", uuid(95)),
+                ) => format!("2|2,7,3600|0|1|0|-|{}", uuid(95)),
                 outcomes => {
                     return Err(format!("unexpected concurrent outcomes: {outcomes:?}").into());
                 }
@@ -663,7 +663,7 @@ fn death_commits_and_replays_under_the_runtime_role_grants() -> TestResult {
                         .await
                         .map_err(|error| format!("runtime death: {error:?}"))?,
                 )?;
-                assert_eq!((first.experience_after.get(), first.level_after), (5410, 8));
+                assert_eq!((first.experience_after.get(), first.level_after), (4064, 7));
                 assert_eq!(
                     runtime
                         .commit_character_death(&authority, &harness.node, fence(1)?, request)
@@ -684,7 +684,7 @@ fn death_commits_and_replays_under_the_runtime_role_grants() -> TestResult {
                 ));
                 assert_eq!(
                     snapshot(&harness.pool).await?,
-                    format!("2|2,8,5410|0|1|0|-|{}", uuid(96))
+                    format!("2|2,7,4064|0|1|0|-|{}", uuid(96))
                 );
                 // DEATH-2: the runtime role consumes the pending respawn (0016 DELETE grant).
                 assert_eq!(
@@ -695,7 +695,7 @@ fn death_commits_and_replays_under_the_runtime_role_grants() -> TestResult {
                         .map(|consumed| consumed.occurrence),
                     Some(occurrence(96)?)
                 );
-                assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5410|0|1|0|-|-");
+                assert_eq!(snapshot(&harness.pool).await?, "2|2,7,4064|0|1|0|-|-");
                 let probe = sqlx::PgPool::connect(&runtime_url).await?;
                 let login: (String, bool) = sqlx::query_as(
                     "SELECT current_user::text, pg_has_role('oteryn_game_runtime', 'MEMBER')",
@@ -765,11 +765,11 @@ fn concurrent_commits_of_the_same_death_write_exactly_one_receipt() -> TestResul
                     return Err(format!("unexpected concurrent outcomes: {outcomes:?}").into());
                 }
             };
-            // Level 9 with one blessing: 1298 × 0.92 = 1194.16 → 1194.
-            assert_eq!(receipt.experience_lost.get(), 1194);
+            // Level 9: (9300 − 6400) × 92/100 = 2668; 6500 − 2668 = 3832, level 7.
+            assert_eq!(receipt.experience_lost.get(), 2668);
             assert_eq!(
                 snapshot(&harness.pool).await?,
-                format!("2|2,8,5306|0|1|0|-|{}", uuid(98))
+                format!("2|2,7,3832|0|1|0|-|{}", uuid(98))
             );
             drop(other_authority);
             drop(authority);
@@ -806,7 +806,7 @@ fn pending_respawn_is_consumed_once_under_the_current_gameplay_fence() -> TestRe
                 .commit_character_death(&authority, &harness.node, fence(1)?, death(86, &[])?)
                 .await
                 .map_err(|error| format!("{error:?}"))?;
-            let pending = format!("2|2,8,5202|0|1|0|-|{}", uuid(86));
+            let pending = format!("2|2,7,3600|0|1|0|-|{}", uuid(86));
             assert_eq!(snapshot(&harness.pool).await?, pending);
 
             // A stale fence or a stale revision deletes nothing.
@@ -890,7 +890,7 @@ fn pending_respawn_is_consumed_once_under_the_current_gameplay_fence() -> TestRe
                     respawn_position: b"temple:thais".to_vec(),
                 })
             );
-            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,7,3600|0|1|0|-|-");
             // A retry finds nothing left.
             assert_eq!(
                 harness
@@ -964,7 +964,7 @@ fn an_in_session_placement_runs_under_the_held_fence_before_the_consumption() ->
                 .commit_character_death(&authority, &harness.node, fence(1)?, death(89, &[])?)
                 .await
                 .map_err(|error| format!("{error:?}"))?;
-            let pending = format!("2|2,8,5202|0|1|0|-|{}", uuid(89));
+            let pending = format!("2|2,7,3600|0|1|0|-|{}", uuid(89));
             assert_eq!(snapshot(&harness.pool).await?, pending);
             let recorded = ConsumedRespawn {
                 occurrence: occurrence(89)?,
@@ -1082,7 +1082,7 @@ fn an_in_session_placement_runs_under_the_held_fence_before_the_consumption() ->
                     .await
                     .map_err(|error| format!("{error:?}"))?
             );
-            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,7,3600|0|1|0|-|-");
             // A retry after a lost acknowledgement is handed no row and deletes nothing.
             assert!(
                 harness
@@ -1101,7 +1101,7 @@ fn an_in_session_placement_runs_under_the_held_fence_before_the_consumption() ->
                 handed.lock().expect("handed").drain(..).collect::<Vec<_>>(),
                 vec![None, Some(recorded), None]
             );
-            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,7,3600|0|1|0|-|-");
             drop(authority);
             drop(seal);
             harness.cleanup().await
@@ -1139,9 +1139,9 @@ fn a_settled_player_death_commits_once_and_keeps_its_respawn_until_placed() -> T
                 )
                 .await
                 .map_err(|error| format!("{error:?}"))?;
-            // Level 9: 0.59 × 50 × 44 = 1298.
-            assert_eq!((first.experience_after.get(), first.level_after), (5202, 8));
-            let pending = format!("2|2,8,5202|0|1|0|-|{}", uuid(90));
+            // Level 9: 9300 − 6400 = 2900; 6500 − 2900 = 3600, level 7.
+            assert_eq!((first.experience_after.get(), first.level_after), (3600, 7));
+            let pending = format!("2|2,7,3600|0|1|0|-|{}", uuid(90));
             assert_eq!(snapshot(&harness.pool).await?, pending);
             // The fence's revision is replaced by the slot's cursor; a retry replays.
             let replay = harness
@@ -1174,7 +1174,7 @@ fn a_settled_player_death_commits_once_and_keeps_its_respawn_until_placed() -> T
                     expected
                 );
             }
-            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,7,3600|0|1|0|-|-");
             // A retry after the consumption still replays and writes nothing.
             let replay = harness
                 .root
@@ -1188,7 +1188,7 @@ fn a_settled_player_death_commits_once_and_keeps_its_respawn_until_placed() -> T
                 .await
                 .map_err(|error| format!("{error:?}"))?;
             assert_eq!(replay, first);
-            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,7,3600|0|1|0|-|-");
             // A stale session settles nothing.
             let mut stale = fence(2)?;
             stale.character_lease_generation = 2;
@@ -1205,10 +1205,11 @@ fn a_settled_player_death_commits_once_and_keeps_its_respawn_until_placed() -> T
                     .await,
                 Err(CharacterProgressionError::AuthorityRejected)
             ));
-            assert_eq!(snapshot(&harness.pool).await?, "2|2,8,5202|0|1|0|-|-");
+            assert_eq!(snapshot(&harness.pool).await?, "2|2,7,3600|0|1|0|-|-");
             // An earlier death whose respawn was never consumed (a failed admission
             // consumption): the next settled death consumes it first, then commits and
-            // records its own. Level 8: 0.58 × 50 × 32 = 928 for each death.
+            // records its own. Level 7: 3600 − (4200 − 2600) = 2000, level 6;
+            // then level 6: 2000 − (2600 − 1500) = 900, level 5.
             harness
                 .root
                 .commit_character_death(&authority, &harness.node, fence(2)?, death(93, &[])?)
@@ -1225,10 +1226,10 @@ fn a_settled_player_death_commits_once_and_keeps_its_respawn_until_placed() -> T
                 )
                 .await
                 .map_err(|error| format!("{error:?}"))?;
-            assert_eq!((again.experience_after.get(), again.level_after), (3346, 7));
+            assert_eq!((again.experience_after.get(), again.level_after), (900, 5));
             assert_eq!(
                 snapshot(&harness.pool).await?,
-                format!("4|4,7,3346|0|3|0|-|{}", uuid(94))
+                format!("4|4,5,900|0|3|0|-|{}", uuid(94))
             );
             drop(authority);
             drop(seal);
@@ -1317,9 +1318,9 @@ fn a_restart_before_the_placement_keeps_the_respawn_and_loses_experience_once() 
                 )
                 .await
                 .map_err(|error| format!("{error:?}"))?;
-            // Level 9: 0.59 × 50 × 44 = 1298, one blessing −8%: 1194.16 → 1194.
-            assert_eq!(first.experience_lost.get(), 1194);
-            let pending = format!("2|2,8,5306|0|1|0|-|{}", uuid(95));
+            // Level 9: (9300 − 6400) × 92/100 = 2668; 6500 − 2668 = 3832, level 7.
+            assert_eq!(first.experience_lost.get(), 2668);
+            let pending = format!("2|2,7,3832|0|1|0|-|{}", uuid(95));
             assert_eq!(snapshot(&harness.pool).await?, pending);
             // The node stops before the actor is placed.
             drop(authority);
@@ -1387,7 +1388,7 @@ fn a_restart_before_the_placement_keeps_the_respawn_and_loses_experience_once() 
                     .map_err(|error| format!("{error:?}"))?,
                 recorded
             );
-            let respawned = "2|2,8,5306|0|1|0|-|-";
+            let respawned = "2|2,7,3832|0|1|0|-|-";
             assert_eq!(snapshot(&harness.pool).await?, respawned);
             drop(restart_authority);
             drop(restart_seal);

@@ -119,10 +119,10 @@ fn non_reference_award_crosses_exact_threshold_and_multiple_thresholds()
 fn declared_difference_death_can_delevel_and_preserves_skill_and_magic()
 -> Result<(), ProgressionCalculationError> {
     let result = calculate(&snapshot(5, 400), &death())?;
-    // D58 at level 5: (55/100) × 50 × (25 − 25 + 8) = 220.
-    assert_eq!(result.death_experience_lost, ExactI64::new(220));
-    assert_eq!(result.experience_after, ExactI64::new(180));
-    assert_eq!(result.level_after, 4);
+    // Canonical level 5 span: 1500 − 800 = 700, capped at 400 held.
+    assert_eq!(result.death_experience_lost, ExactI64::new(400));
+    assert_eq!(result.experience_after, ExactI64::new(0));
+    assert_eq!(result.level_after, 3);
     assert_eq!(result.skill_progression, "skills-bit-pattern");
     assert_eq!(result.magic_progression, "magic-bit-pattern");
     Ok(())
@@ -131,9 +131,10 @@ fn declared_difference_death_can_delevel_and_preserves_skill_and_magic()
 #[test]
 fn death_loss_depends_on_level_not_within_level_progress() -> Result<(), ProgressionCalculationError>
 {
-    let near_start = calculate(&snapshot(5, 360), &death())?;
+    // Both fixtures hold at least the canonical span (1500 − 800 = 700), so neither caps.
+    let near_start = calculate(&snapshot(5, 700), &death())?;
     let near_end = calculate(&snapshot(5, 890), &death())?;
-    assert_eq!(near_start.death_experience_lost, ExactI64::new(220));
+    assert_eq!(near_start.death_experience_lost, ExactI64::new(700));
     assert_eq!(
         near_start.death_experience_lost,
         near_end.death_experience_lost
@@ -286,7 +287,7 @@ fn checked_overflow_and_underflow_return_no_outcome() {
         Err(ProgressionCalculationError::Numeric(NumericError::Overflow))
     );
 
-    // Level 3: (53/100) × 50 × 2 = 53, capped at the 20 held.
+    // Canonical level 3 span: 400 − 200 = 200, capped at the 20 held.
     let capped = calculate(&snapshot(3, 20), &death()).expect("capped death");
     assert_eq!(capped.death_experience_lost, ExactI64::new(20));
     assert_eq!(capped.experience_after, ExactI64::new(0));
@@ -318,8 +319,7 @@ fn identical_scalar_inputs_are_deterministic() {
     );
 }
 
-/// Global experience threshold `50/3 × (L³ − 6L² + 17L − 12)`; `L = 0` gives
-/// the virtual −200 that makes the level-one span 200 (D59).
+/// Canonical experience threshold `50/3 × (L³ − 6L² + 17L − 12)` for levels 1–502.
 fn global_threshold(level: i128) -> i128 {
     50 * (level * level * level - 6 * level * level + 17 * level - 12) / 3
 }
@@ -400,15 +400,15 @@ fn d58_loss_matches_the_global_span_form_at_every_required_level()
 -> Result<(), ProgressionCalculationError> {
     for level in [1_u32, 23, 24, 100, 500] {
         let at = i128::from(level);
-        let span = global_threshold(at) - global_threshold(at - 1);
+        let span = global_threshold(at + 1) - global_threshold(at);
         // One experience point below the next level: the most a character of
         // this level can hold, so the cap only binds where the loss exceeds it.
         let experience = i64::try_from(global_threshold(at + 1) - 1).expect("experience");
         for blessings in 0..=4_u8 {
             for promoted in [false, true] {
                 let percent = 100 - 8 * i128::from(blessings) - if promoted { 30 } else { 0 };
-                // Floor of (L+50)/100 × span × percent/100 (D68).
-                let expected = ((at + 50) * span * percent / 10_000).min(i128::from(experience));
+                // Floor of the canonical L→L+1 span × percent/100 (no Bless assignment).
+                let expected = (span * percent / 100).min(i128::from(experience));
                 let outcome = reference_death(level, experience, blessings, promoted)?;
                 assert_eq!(
                     i128::from(outcome.death_experience_lost.get()),
@@ -424,30 +424,29 @@ fn d58_loss_matches_the_global_span_form_at_every_required_level()
             }
         }
     }
-    // Global: level 100 without reductions loses 1.5 × 50 × 9508.
+    // Canonical level 100 span: 16180000 − 15694800 = 485200.
     assert_eq!(
         reference_death(100, 16_000_000, 0, false)?.death_experience_lost,
-        ExactI64::new(713_100)
+        ExactI64::new(485_200)
     );
     Ok(())
 }
 
 #[test]
-fn d58_loss_rounds_down_caps_at_zero_and_delevels() -> Result<(), ProgressionCalculationError> {
-    // Level 24: 0.74 × 50 × 464 = 17168; with one blessing 0.92 × 17168 =
-    // 15794.56, floored in the player's favour.
+fn death_loss_caps_at_zero_and_delevels() -> Result<(), ProgressionCalculationError> {
+    // Canonical level 24 span with one blessing: (204800 − 179400) × 92/100 = 23368.
     assert_eq!(
         reference_death(24, 180_000, 1, false)?.death_experience_lost,
-        ExactI64::new(15_794)
+        ExactI64::new(23_368)
     );
-    // Level 1 loses (51/100) × 50 × 4 = 102 of at most 99 held: capped at 0.
+    // Canonical level 1 span: 100 − 0 = 100, capped at 99 held, leaving 0.
     let level_one = reference_death(1, 99, 0, false)?;
     assert_eq!(level_one.experience_after, ExactI64::new(0));
     assert_eq!(level_one.level_after, 1);
-    // Level 9 at 6500 loses 0.59 × 50 × 44 = 1298 and drops to level 8.
+    // Canonical level 9 span: 9300 − 6400 = 2900; 6500 − 2900 = 3600, level 7.
     let delevel = reference_death(9, 6_500, 0, false)?;
-    assert_eq!(delevel.experience_after, ExactI64::new(5_202));
-    assert_eq!((delevel.level_before, delevel.level_after), (9, 8));
+    assert_eq!(delevel.experience_after, ExactI64::new(3_600));
+    assert_eq!((delevel.level_before, delevel.level_after), (9, 7));
     Ok(())
 }
 

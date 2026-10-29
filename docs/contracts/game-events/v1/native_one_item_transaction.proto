@@ -117,6 +117,8 @@ message OneItemTransactionV1 {
     OneItemPlayerTradeV1 player_trade = 14; // TRADE-PLAYER-1 writer-only; two reciprocal leaves
     OneItemCraftV1 craft = 15; // CRAFT-1: fixed cooking consume/mint proof
     OneItemAtelierV1 atelier = 16; // GEM3: dismantle fragment MINT proof
+    OneItemPlayerDeathItemV1 player_death_drop = 17;
+    OneItemPlayerDeathItemV1 player_death_amulet = 18;
   }
 }
 
@@ -714,3 +716,30 @@ message OneItemCraftV1 { bytes proof = 1; }
 // Canonical JSON proof: Character, occurrence, closed mutation, parent and before/after item lines.
 // The Atelier receipt and existing custody guards bind every line in the same physical transaction.
 message OneItemAtelierV1 { bytes proof = 1; }
+
+// DEATH-DUR-1 / death-complete0 §4.4. Closed typed causes are
+// PlayerDeathDropCause { death_occurrence, item_instance } (tag 17 TRANSFER) and
+// PlayerDeathAmuletCause { death_occurrence, item_instance } (tag 18 BURN).
+// Source slot uses GAME-ITEM-01 durable semantic codes (necklace 7, backpack 9),
+// zero only with source_entry. The server supplies the receipt's death cell.
+// A container's children keep their parent identity and are never expanded into lines.
+// Both operations retain before/after state, cause and custody; only tag 18 has
+// typed_sink="PlayerDeathAmuletCause", quantity 1 -> 0 and LIVE -> RETIRED.
+// Server-originated: no envelope CommandRef/session; the current fence is evidence below.
+message OneItemPlayerDeathItemV1 {
+  bytes death_occurrence = 1;
+  bytes item_instance = 2;
+  OneItemStateV1 before = 3;
+  OneItemStateV1 after = 4;
+  bytes character_id = 5;
+  uint32 source_slot = 6;
+  OneItemContainerEntryV1 source_entry = 7;
+  OneItemGroundV1 ground = 8; // drop only; exactly the persisted death cell
+  string typed_sink = 9; // amulet only
+  string content_revision = 10;
+  string ruleset_revision = 11;
+  string sim_revision = 12;
+  uint64 session_generation = 13;
+  bytes game_session_id = 14;
+  uint64 lease_generation = 15;
+}

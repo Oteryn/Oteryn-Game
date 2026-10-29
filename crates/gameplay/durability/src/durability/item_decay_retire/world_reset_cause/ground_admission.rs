@@ -40,9 +40,8 @@ pub(in crate::durability::item_decay_retire) async fn admit(
             DecayRetireRefusal::NotACorpse,
         )));
     };
-    // A nested or character-container child is not an admitted Ground shape.
-    // Refuse before attempting any child or the root, including nested children
-    // of a direct corpse entry. These bounded families have indexed parent keys.
+    // Only death-dropped containers admit retained direct contents; they retire
+    // atomically with the root. All other nested Ground shapes remain refused.
     crate::durability::world_reset::ground_step::validate_root(tx, step.corpse_item_instance_id)
         .await?;
     let entries = sqlx::query("SELECT item_instance_id::text,placement_ordinal::text FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY placement_ordinal LIMIT $2")

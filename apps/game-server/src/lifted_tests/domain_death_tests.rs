@@ -171,7 +171,7 @@ fn build_loss_handles_signed_storage_maxima_without_overflow() {
 }
 
 #[test]
-fn trained_death_keeps_all_build_progress_while_d58_experience_drops() {
+fn trained_death_keeps_all_build_progress_while_experience_drops() {
     let formula = LossFormula(|_, _| Some(100));
     let before = loss_build((3, 50), [(14, 50); 7]);
     for blessings in 0..=MAX_REGULAR_BLESSINGS {
@@ -181,8 +181,9 @@ fn trained_death_keeps_all_build_progress_while_d58_experience_drops() {
             death.total_experience = ExactI64::new(1_000_000);
             death.promotion_benefit_current = promoted;
             let outcome = calculate_pve_death(&death, &ROOT, occurrence(91)).expect("death");
+            // Canonical level 50 span: 1965000 − 1847300 = 117700.
             let expected =
-                112_900 * (100 - 8 * i64::from(blessings) - if promoted { 30 } else { 0 }) / 100;
+                117_700 * (100 - 8 * i64::from(blessings) - if promoted { 30 } else { 0 }) / 100;
             assert_eq!(outcome.experience_lost.get(), expected);
             assert_eq!(outcome.experience_after.get(), 1_000_000 - expected);
             assert_eq!(
@@ -245,32 +246,41 @@ fn threshold(level: u128) -> u128 {
 }
 
 #[test]
-fn experience_loss_matches_the_d58_formula_at_the_revalidation_levels() {
+fn experience_loss_matches_the_canonical_table_at_the_revalidation_levels() {
     let expected: [(u32, [u128; 5], u128); 9] = [
-        (1, [102, 93, 85, 77, 69], 14),
-        (23, [15_403, 14_170, 12_938, 11_706, 10_474], 2_156),
-        (24, [17_168, 15_794, 14_421, 13_047, 11_674], 2_403),
-        (50, [112_900, 103_868, 94_836, 85_804, 76_772], 15_806),
-        (100, [713_100, 656_052, 599_004, 541_956, 484_908], 99_834),
+        // Level 1: 100 − 0 = 100; × (100 − 8b)/100, or × 14/100.
+        (1, [100, 92, 84, 76, 68], 14),
+        // Level 23: 179_400 − 156_200 = 23_200; × (100 − 8b)/100, or × 14/100.
+        (23, [23_200, 21_344, 19_488, 17_632, 15_776], 3_248),
+        // Level 24: 204_800 − 179_400 = 25_400; × (100 − 8b)/100, or × 14/100.
+        (24, [25_400, 23_368, 21_336, 19_304, 17_272], 3_556),
+        // Level 50: 1_965_000 − 1_847_300 = 117_700; × (100 − 8b)/100, or × 14/100.
+        (50, [117_700, 108_284, 98_868, 89_452, 80_036], 16_478),
+        // Level 100: 16_180_000 − 15_694_800 = 485_200; × (100 − 8b)/100, or × 14/100.
+        (100, [485_200, 446_384, 407_568, 368_752, 329_936], 67_928),
+        // Level 150: 55_145_000 − 54_042_300 = 1_102_700; × (100 − 8b)/100, or × 14/100.
         (
             150,
-            [2_175_800, 2_001_736, 1_827_672, 1_653_608, 1_479_544],
-            304_612,
+            [1_102_700, 1_014_484, 926_268, 838_052, 749_836],
+            154_378,
         ),
+        // Level 180: 95_604_000 − 94_010_800 = 1_593_200; × (100 − 8b)/100, or × 14/100.
         (
             180,
-            [3_623_420, 3_333_546, 3_043_672, 2_753_799, 2_463_925],
-            507_278,
+            [1_593_200, 1_465_744, 1_338_288, 1_210_832, 1_083_376],
+            223_048,
         ),
+        // Level 200: 131_360_000 − 129_389_800 = 1_970_200; × (100 − 8b)/100, or × 14/100.
         (
             200,
-            [4_876_000, 4_485_920, 4_095_840, 3_705_760, 3_315_680],
-            682_640,
+            [1_970_200, 1_812_584, 1_654_968, 1_497_352, 1_339_736],
+            275_828,
         ),
+        // Level 500: 2_070_900_000 − 2_058_474_800 = 12_425_200; × (100 − 8b)/100, or × 14/100.
         (
             500,
-            [68_064_700, 62_619_524, 57_174_348, 51_729_172, 46_283_996],
-            9_529_058,
+            [12_425_200, 11_431_184, 10_437_168, 9_443_152, 8_449_136],
+            1_739_528,
         ),
     ];
     for (level, by_blessings, all_reductions) in expected {
@@ -286,11 +296,12 @@ fn experience_loss_matches_the_d58_formula_at_the_revalidation_levels() {
 
 #[test]
 fn bless_reduces_the_residual_loss_at_each_stage() {
-    // Independent fixed oracles: the 7 blessings and promotion retain 14% first.
+    // Canonical spans: level 100 = 485200, level 180 = 1593200.
+    // Floor(span × 14/100 × (100 − Bless%)/100), with 7 blessings and promotion.
     for (reduction, at_level_100, at_level_180) in [
-        (6, 93_843, 476_842),
-        (9, 90_848, 461_623),
-        (12, 87_853, 446_405),
+        (6, 63_852, 209_665),
+        (9, 61_814, 202_973),
+        (12, 59_776, 196_282),
     ] {
         assert_eq!(
             death_experience_loss_with_bless(100, 7, true, reduction),
@@ -303,7 +314,7 @@ fn bless_reduces_the_residual_loss_at_each_stage() {
     }
     assert_eq!(
         death_experience_loss_with_bless(100, 0, false, 12),
-        Ok(627_528)
+        Ok(426_976)
     );
     for invalid in [1, 5, 10, 13, 100, 255] {
         assert_eq!(
@@ -311,7 +322,10 @@ fn bless_reduces_the_residual_loss_at_each_stage() {
             Err(PveDeathError::InvalidBlessReduction)
         );
     }
-    assert!(death_experience_loss_with_bless(u32::MAX, 0, false, 12).is_ok());
+    assert_eq!(
+        death_experience_loss_with_bless(u32::MAX, 0, false, 12),
+        Err(PveDeathError::InvalidLevel)
+    );
 }
 
 #[test]
@@ -321,8 +335,8 @@ fn bless_pve_outcome_changes_only_experience() {
     let plain = calculate_pve_death(&death, &ROOT, occurrence(17)).expect("a valid PvE death");
     let blessed = calculate_pve_death_with_bless(&death, 12, &ROOT, occurrence(17))
         .expect("a valid death with Bless");
-    assert_eq!(blessed.experience_lost, ExactI64::new(627_528));
-    assert_eq!(blessed.experience_after, ExactI64::new(15_067_272));
+    assert_eq!(blessed.experience_lost, ExactI64::new(426_976));
+    assert_eq!(blessed.experience_after, ExactI64::new(15_267_824));
     assert_eq!(blessed.blessings_consumed, plain.blessings_consumed);
     assert_eq!(
         blessed.amulet_of_loss_consumed,
@@ -333,41 +347,39 @@ fn bless_pve_outcome_changes_only_experience() {
 }
 
 #[test]
-fn bless_pve_outcome_rounds_once_before_the_experience_cap() {
+fn bless_pve_outcome_applies_before_the_experience_cap() {
     let mut death = input(&[], 7);
     death.level = 180;
     death.promotion_benefit_current = true;
     let blessed = calculate_pve_death_with_bless(&death, 6, &ROOT, occurrence(18))
         .expect("a valid death with Bless");
-    // Flooring the pre-Bless loss first would incorrectly produce 476,841.
-    assert_eq!(blessed.experience_lost, ExactI64::new(476_842));
+    // Floor((1593200 × 14 × 94)/10000) = floor(209665.12) = 209665.
+    assert_eq!(blessed.experience_lost, ExactI64::new(209_665));
 
     death.level = 100;
-    death.total_experience = ExactI64::new(80_000);
+    death.total_experience = ExactI64::new(50_000);
     let blessed = calculate_pve_death_with_bless(&death, 12, &ROOT, occurrence(19))
         .expect("a valid death with Bless");
-    // Capping first and reducing that cap would incorrectly leave 9,600 XP.
-    assert_eq!(blessed.experience_lost, ExactI64::new(80_000));
+    // Floor(485200 × 14/100 × 88/100) = 59776, capped at 50000.
+    // Capping first and reducing that cap would incorrectly leave 6000 XP.
+    assert_eq!(blessed.experience_lost, ExactI64::new(50_000));
     assert_eq!(blessed.experience_after, ExactI64::new(0));
 }
 
 #[test]
-fn experience_loss_equals_the_level_factor_times_the_previous_level_span() {
+fn experience_loss_equals_the_next_level_span() {
     for level in 2_u32..=1_000 {
         let wide = u128::from(level);
-        let span = threshold(wide) - threshold(wide - 1);
-        assert_eq!(
-            death_experience_loss(level, 0, false),
-            Ok((wide + 50) * span / 100)
-        );
+        let span = threshold(wide + 1) - threshold(wide);
+        assert_eq!(death_experience_loss(level, 0, false), Ok(span));
     }
 }
 
 #[test]
 fn experience_loss_rounds_down_and_rejects_invalid_inputs() {
-    // 180: 3,623,420 × 0.14 = 507,278.8 → 507,278 (D68).
-    assert_eq!(death_experience_loss(180, 7, true), Ok(507_278));
-    assert_eq!(death_experience_loss(100, 0, true), Ok(499_170));
+    // Level 180: (95604000 − 94010800) × 14/100 = 223048.
+    assert_eq!(death_experience_loss(180, 7, true), Ok(223_048));
+    assert_eq!(death_experience_loss(100, 0, true), Ok(339_640));
     assert_eq!(
         death_experience_loss(0, 0, false),
         Err(PveDeathError::InvalidLevel)
@@ -376,7 +388,10 @@ fn experience_loss_rounds_down_and_rejects_invalid_inputs() {
         death_experience_loss(100, 8, false),
         Err(PveDeathError::TooManyBlessings)
     );
-    assert!(death_experience_loss(u32::MAX, 0, false).is_ok());
+    assert_eq!(
+        death_experience_loss(u32::MAX, 0, false),
+        Err(PveDeathError::InvalidLevel)
+    );
 }
 
 #[test]
@@ -392,8 +407,8 @@ fn experience_never_drops_below_zero_and_blessings_are_consumed() {
     death.level = 100;
     death.total_experience = ExactI64::new(15_694_800);
     let outcome = calculate_pve_death(&death, &ROOT, occurrence(0)).expect("a valid PvE death");
-    assert_eq!(outcome.experience_lost, ExactI64::new(541_956));
-    assert_eq!(outcome.experience_after, ExactI64::new(15_152_844));
+    assert_eq!(outcome.experience_lost, ExactI64::new(368_752));
+    assert_eq!(outcome.experience_after, ExactI64::new(15_326_048));
 
     death.total_experience = ExactI64::new(-1);
     assert_eq!(
