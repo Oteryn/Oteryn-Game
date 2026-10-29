@@ -92,6 +92,7 @@ pub(super) async fn prepare_direct(
     training_occurrence: BuildOccurrence,
     now: SemanticTimeMicros,
     rune: Option<&ItemSpellCastIntent>,
+    legacy: Option<&LegacyRuneUse>,
     parameter: Option<&ParameterSpellCastIntent>,
     _draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
@@ -173,13 +174,41 @@ pub(super) async fn prepare_direct(
         {
             return reject();
         }
+        let selected = if intent.target == SpellTarget::AttackTarget {
+            Some(
+                legacy
+                    .and_then(|l| l.creature)
+                    .ok_or(SpellCastDisposition::NotAvailable)?,
+            )
+        } else {
+            None
+        };
         let p = match intent.target {
             SpellTarget::Position(p) => TilePosition {
                 x: p.x,
                 y: p.y,
                 floor: p.floor,
             },
-            SpellTarget::AttackTarget => return Err(SpellCastDisposition::NotAvailable),
+            SpellTarget::AttackTarget => {
+                let actor = runtime
+                    .visible_entities()
+                    .creatures
+                    .iter()
+                    .find(|c| {
+                        selected.is_some_and(|e| {
+                            e.identity == c.actor.placement_identity()
+                                && e.generation == c.generation
+                        })
+                    })
+                    .map(|c| c.actor)
+                    .ok_or(SpellCastDisposition::TargetIllegal)?;
+                tile(
+                    runtime
+                        .read_actor_position(actor)
+                        .map_err(|_| SpellCastDisposition::TargetIllegal)?
+                        .position(),
+                )
+            }
             _ => return Err(SpellCastDisposition::TargetRequired),
         };
         let group = crate::durability::spell_familiar_group::read_current_group_in_transaction(
@@ -198,7 +227,10 @@ pub(super) async fn prepare_direct(
         // A missing attack-selector owner remains unavailable rather than guessed.
         let mut visible = Vec::new();
         for (actor, pos, session) in &roster {
-            if session.is_none() && tile(pos.position()) == p {
+            if session.is_none()
+                && tile(pos.position()) == p
+                && selected.is_none_or(|e| e.identity == actor.placement_identity())
+            {
                 let snapshot = runtime
                     .companion_snapshot(*actor)
                     .map_err(|_| SpellCastDisposition::TargetIllegal)?;

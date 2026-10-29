@@ -328,13 +328,14 @@ pub(in crate::gameplay_transport) fn speed_term(
     i32::try_from(equipment_effects_inner(equipment, content, true, &[])?.speed).ok()
 }
 
-/// The suppressions, worn armor, hands' defence, mana shield and offence one admission installs.
+/// Equipment effects and the owner snapshot one admission installs.
 pub(in crate::gameplay_transport) type AdmissionEffects = (
     EquipmentEffects,
     u32,
     Option<HandDefence>,
     bool,
     EquippedOffence,
+    EquipmentSnapshot,
 );
 
 /// EQUIP-0 §4: read under the caller's spell lane, before its runtime lock.
@@ -352,6 +353,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let equipment = super::read_current_equipment(self, session)
             .await
             .ok_or(())?;
+        self.load_proficiency_equipment(session, &equipment).await?;
         let fence = self
             .current_quest_fence(session)
             .await
@@ -378,10 +380,17 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let defence = equipped_defence(&equipment, native).ok_or(())?;
         let mana_shield = equipped_mana_shield(&equipment, native).ok_or(())?;
         let offence = equipped_offence_inner(&equipment, native, &imbuements).ok_or(())?;
-        Ok(Some((effects, armor, defence, mana_shield, offence)))
+        Ok(Some((
+            effects,
+            armor,
+            defence,
+            mana_shield,
+            offence,
+            equipment,
+        )))
     }
 
-    /// The caller holds the spell lane and runtime; lock only spell state here.
+    /// The caller holds the spell lane and runtime; publish equipment before its effects.
     pub(in crate::gameplay_transport) async fn install_admission_suppressions(
         &self,
         runtime: &crate::foundation::ChannelRuntimeV1,
@@ -389,7 +398,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         session: crate::foundation::GameSessionId,
         effects: Option<AdmissionEffects>,
     ) -> Option<()> {
-        if let Some((effects, armor, defence, mana_shield, offence)) = effects {
+        if let Some((effects, armor, defence, mana_shield, offence, equipment)) = effects {
+            self.install_proficiency_equipment(runtime, actor, session, &equipment)
+                .await?;
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             state.install_equipped_physical_protection(physical_protection(&effects));
