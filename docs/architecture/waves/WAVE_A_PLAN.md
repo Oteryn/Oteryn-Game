@@ -109,3 +109,22 @@ Counted from the row-by-row table: STALE 7, A 4, A' 9, B 70, C 43.
 4. Recorded divergences to adopt or keep: C10, C11, C15 (donor values), C20a (D59), S15b
    (4 s), W05a (server save 10:00 vs 06:00 Berlin).
 5. P23a Hunting Tasks: replaced by the Task Board (numbered decision), or build them?
+
+## 9. Owner answers, 2026-10-29
+
+- Q1, Q2: accepted (A1, A2, A3 bundle with class B fragments).
+- Q3: open every A' gate (capabilities 91, 164, 171, 140; Primal Bag; provisional training;
+  vertical moves on bundle World). Each opening is its own small PR in a later wave.
+- Q4:
+  - W05a server save stays at 10:00; S15b reconnect protection stays 4 s.
+  - C20a (replaces D59): levels 1-23 lose 10% as on Global, but of the experience needed for
+    the next level, not of the character's total experience. Variant (whole level span or the
+    rest to the next level) is pending.
+  - C15 stamina: Global. Crystal at the pin drains stamina only inside
+    `Player:onGainExperience` (`data/events/scripts/player.lua:484`, call at `:506`;
+    `useStamina` at `:99`: 1 minute per 60 s, 2 minutes after a gap over 60 s). Never in a
+    protection zone without a kill. Replaces the OFFLINE-0 R1 damage-activity signal.
+  - C11 Monk Harmony: Global (news 8944: 7% + 0.005% per level, Virtue of Harmony x1.5 /
+    x2 while Serene, Serene with 7 or fewer adjacent creatures).
+  - C10 Monk and Exalted Monk regeneration: same as Paladin and Royal Paladin.
+- Q5: build the Hunting Tasks (P23a), class C, later wave.
