@@ -1,8 +1,3 @@
----
-name: oteryn-mechanic
-description: Build and land one Tibia game mechanic in Oteryn-Game end to end - definition of done, allocating migration, capability and command numbers, the exact file set for a new capability, PostgreSQL migrations and grants, conflict-free registration, and the parity-table PR. Use when implementing, finishing or reviewing a mechanic or a slice of one.
----
-
 # Landing one mechanic
 
 ## What "done" means
@@ -14,20 +9,33 @@ rules without a caller, or a command nobody can send, is **PARTIAL**. Say
 "slice done", never "mechanic complete", until every element is done, and
 count mechanics, not PRs, when reporting progress.
 
+The progress ledger is the file `docs/agents/tasks/MECHANICS_STATUS.md` points
+to in its first paragraph (on 2026-10-29: the Crystal re-audit,
+`docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md`, with
+rows marked `DONE`, `PARTIAL`, `MISSING`, `OWNER-EXCLUDED`, `OUT-OF-SCOPE`).
+Follow that pointer rather than a remembered path: the ledger has moved once
+already, and the 2026-10-27 table in `MECHANICS_STATUS.md` is now a frozen
+snapshot. Use the ledger's own words and definitions so reports and the table
+agree, report progress from its totals line, and update the mechanic's row in
+the PR that changes its state. The element list above is the checklist for
+reaching the ledger's `DONE`, not a second definition.
+
 - One mechanic = one branch = one PR. Merge it when the mechanic is DONE.
-- Partial work stays on a branch without a PR, or goes into a PR whose title
-  and parity table say PARTIAL and name the missing elements.
-- Behaviour must match the reference (current Tibia, checked against
-  tibia.com and the pinned Canary/Crystal sources; `docs/reference/`). Record
-  every rule in the PR's parity table with its source, and write `N/A` with a
-  reason for rows that do not apply.
+- Partial work stays on a branch without a PR. A PARTIAL slice gets a PR only
+  when the owner asked for that slice; its title and parity table say PARTIAL
+  and name the missing elements.
+- Behaviour must match the reference (`content-world.md`, *Reference
+  sources*). Record every rule in the PR's parity table with its source, and
+  write `N/A` with a reason for rows that do not apply.
 
 ## Before writing code
 
 1. Read the task card (`docs/agents/tasks/`) and the nearest `AGENTS.md` of
    every path you will touch.
 2. Claim numbers against **current `main` and every open PR**, not against
-   `main` alone:
+   `main` alone. `scripts/next-free-numbers.py` prints the next free value of
+   each kind and which open PR holds a number; it exits non-zero when two open
+   PRs claim the same one. The kinds:
    - migration: above the highest number in `apps/game-server/migrations/`
      and in open PRs, so files apply in merge order. A reused number fails the
      migration-directory check in `crates/gameplay/durability/src/lib.rs`.
@@ -35,11 +43,21 @@ count mechanics, not PRs, when reporting progress.
      `docs/contracts/protocol-oteryn/v1/registry/{capabilities,command_types}/`
      and in open PRs.
    - offer order (`offer=<order>,...` in a `.mechanic` file): unique.
-   Re-check the numbers right before you push; renumber yours if `main` took
-   them.
+   Re-check the numbers right before you push (run the script again);
+   renumber yours if `main` took them. The directory check only rejects
+   duplicates, so a number below `main`'s highest still builds (#2676 merged
+   `0411` when `main` was at `0445`); taking the next free number keeps the
+   apply order equal to the merge order.
 3. Check that the selected-capability capacity still has room
    (`SELECTED_CAPACITY` in
-   `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs`).
+   `crates/gameplay/dispatch/src/gameplay_transport/capabilities.rs`) counting
+   the capabilities of open PRs too. It has been raised again and again
+   (32, 64, 112, 120: CAPCAP-1, CAPCAP-2); if it is full, search open PRs for
+   a pending raise and depend on it instead of opening another one.
+   `SELECTED_CAPACITY` must stay below `MAX_CAPABILITY_COUNT`
+   (`crates/protocol-oteryn/src/lib.rs`, 128 at the time of writing); when a
+   raise would reach it, stop and raise it with the owner, because the next
+   step is a protocol change, not another constant bump.
 
 ## File set for a new capability
 
@@ -112,6 +130,15 @@ an assertion to fit.
 - No `expect`/`unwrap` in production code. An unwired rules slice carries the
   `dead_code` allowance with a reason, and its PR says PARTIAL.
 - Insert registrations in sorted position, never at the end of a file.
+- A test that drives a full connection, dispatch scenario or PostgreSQL case
+  runs on a dedicated thread with at least a 64 MiB stack
+  (`std::thread::Builder::new().stack_size(64 << 20)`), as about 80 test files
+  already do. Default-stack overflows in CI were fixed one by one (the
+  FLOOR-STACK-1 fix was copied into 8 PRs) and show up only on some runners.
+- Tests never depend on wall-clock timing: drive timers with paused or
+  virtual time, wait on an explicit readiness signal instead of a sleep, and
+  treat a busy durable holder as retryable. DEFLAKE-1..4 (2026-10-29) and the
+  field-runes barrier fixes (copied into 15 PRs) were all this.
 
 ## The PR
 
@@ -120,5 +147,9 @@ an assertion to fit.
 - Validation lists what actually ran, with pass counts; unchecked boxes say
   why.
 - Before the first push: merge current `origin/main`, then run the local checks
-  (`oteryn-build-test`). Add the `heavy-tests` label only when the mechanic is
-  DONE (`steward`).
+  (`local-checks.md`). Add the `heavy-tests` label only when the mechanic is
+  DONE (`ci-merge.md`).
+- Never edit the PR body after opening it; post the tested head SHA and any
+  changed validation as a comment.
+- A mechanic PR that changes a row's state carries the ledger update
+  (*What "done" means*).

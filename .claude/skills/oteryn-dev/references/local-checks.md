@@ -1,20 +1,17 @@
----
-name: oteryn-build-test
-description: Build, format, lint and test Oteryn-Game changes locally before a push - the exact cargo, clippy, rustfmt, PostgreSQL, Python tool and architecture checks per changed path, and the pitfalls that turned CI red after a push. Use before every push, when a local build or test fails, or when choosing what to run for a change.
----
-
 # Local checks before a push
 
 The selection table is `docs/agents/CONTEXT_ROUTING.md`, *Local checks by
-changed path*; this skill adds what that table does not say. CI runs the full
+changed path*; this file adds what that table does not say. CI runs the full
 workspace, Windows client and E2E lanes; run only what your paths need, but
 run all of it, and fix every failure of one run in one push.
 
 ## Order (cheapest first)
 
-1. `git merge origin/main` (see `steward`), then `cargo fmt --all`.
-2. Generated content: `tools/merge-driver/regen.sh` if anything under
-   `content/`, `imports/` or a pinned input changed (`oteryn-content-world`).
+1. `git merge origin/main` (`ci-merge.md`, *Merge conflicts*), then `cargo fmt --all`.
+2. Generated content: `python3 tools/content-migration/regenerate_content.py --resolve`
+   (same as `tools/merge-driver/regen.sh`; the python form is the one the
+   session allowlist permits) if anything under
+   `content/`, `imports/` or a pinned input changed (`content-world.md`).
 3. Registry fragments: `python3 tools/contracts/registry_fragments.py`.
 4. Architecture: `cargo run --locked -p oteryn-architecture-check -- workspace .`
    (needed for every new capability or client registration).
@@ -25,15 +22,42 @@ run all of it, and fix every failure of one run in one push.
    builds it.
 6. Tests per changed package: `cargo test --locked -p <package> --quiet`
    (with `--all-features` for the two crates above). Add `--no-fail-fast`
-   when you want every failing target in one run.
+   when you want every failing target in one run. Unit tests are where PRs go
+   red most: in 46 failed PR gates (25-29 October 2026) the three
+   `changed-crate ... tests` shards failed in 26, 22 and 15 of them, Clippy in
+   6. CI runs them with cargo-nextest, one
+   process per test, so a test that relies on state left by another passes
+   locally under `cargo test` and fails in CI; `cargo nextest run -p <package>`
+   reproduces CI when nextest is installed.
 7. Governance, when `docs/agents/`, `tools/agents/`, `.claude/` or `AGENTS.md`
    changed: `python3 tools/agents/validate_governance.py` and
    `python3 -m unittest discover -s tools/agents/tests`.
 8. Python tools: the workflow for that `tools/` subtree shows its exact test
    command. Content-migration tests run from inside `tools/content-migration`.
-   Lint with the pinned `ruff==0.16.1` (`requirements*.txt` of the tool), not
-   whatever ruff is installed.
+   Lint with the ruff version pinned in that tool's `requirements*.txt`,
+   not whatever ruff is installed.
 9. `git diff --check` and a read of the full diff.
+
+## Jobs that only run after the merge
+
+The PR gate does not run these (`ci-merge.md`, *Blind spot*). Run the
+matching one locally when your change can reach it; commands are copied from
+`.github/workflows/merge-group-gate.yml`, which wins if they differ.
+
+- Integration shards (`integration-heavy`, `integration-rest`):
+  ```sh
+  cargo metadata --locked --no-deps --format-version 1 > /tmp/meta.json
+  python tools/repository/plan_rust_test_shards.py /tmp/meta.json integration-rest > /tmp/shard.txt
+  mapfile -t a < /tmp/shard.txt; test "${#a[@]}" -gt 0   # an empty plan would run everything
+  cargo nextest run --locked --workspace "${a[@]}" --no-fail-fast
+  ```
+  Narrow with a test filter when only one target is affected.
+- Node boot (needs the pinned `Oteryn/Oteryn-Platform` checkout named in the
+  workflow, as `PLATFORM_SOURCE`):
+  `bash tools/qualification/node_boot/run.sh` and look for
+  `NODE_BOOT_RESULT=NODE_BOOT_PASS`. Run it for changes to node startup,
+  configuration, thread or stack size, schedulers or the dispatch runtime.
+- Smoke: `cargo run --locked -p oteryn-game-server -- --smoke`.
 
 ## Formatting pitfalls
 
@@ -41,9 +65,8 @@ run all of it, and fix every failure of one run in one push.
   modules (`mod x;`): it follows the declarations, formats the child files
   too, and defaults to an older edition. For a single generated file use
   `rustfmt --edition 2024 <file>`.
-- After a merge, look for duplicated `mod` lines, imports or test bodies left
-  by the additive merge driver before formatting; they show up as E0428 or as
-  an fmt diff in CI.
+- After a merge, check for duplicates left by the additive driver
+  (`ci-merge.md`, *Merge conflicts*) before formatting.
 
 ## PostgreSQL tests
 
@@ -70,13 +93,3 @@ run all of it, and fix every failure of one run in one push.
   `set -o pipefail`, or `${PIPESTATUS[0]}`.
 - Builds and tests print a lot: send output to a file and read the tail and
   the `error`/`FAILED` lines, not the whole log.
-
-## What not to do
-
-- Do not push to "see what CI says". A push without the checks above usually
-  costs a full CI cycle (15-60 minutes) and a second push.
-- Do not skip, `#[ignore]`, weaken or delete a test to make a run pass.
-- Do not add a new top-level `tests/*_postgres.rs` target (use the mounted
-  directories, `oteryn-mechanic`).
-- Do not add a third-party dependency without the custody review its
-  `Cargo.toml` change triggers.

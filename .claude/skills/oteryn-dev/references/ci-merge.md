@@ -1,15 +1,7 @@
----
-name: steward
-description: Drive an Oteryn-Game pull request to a mergeable state - read CI on the current head, tell a PR failure from a main failure, handle merge conflicts with the repo merge drivers, decide when the PostgreSQL harness must run, and keep many open PRs moving without leaving any of them idle. Use when watching, babysitting or fixing CI on Game PRs, or when several PRs are waiting.
----
+# CI, merge conditions and conflicts
 
-# Steward: driving Game PRs to green
-
-This skill records how this repository's CI and merge flow behave today. It
-does not grant authority: merging, labelling, re-running and pushing stay with
-whoever the owner authorised (root `AGENTS.md`, *Repository boundaries*).
-Machine contracts win over this text (`docs/agents/BUILD_TEST_MATRIX.md`,
-*Machine authority*); if they disagree, fix this file.
+Merging, labelling, re-running and pushing stay with whoever the owner
+authorised; this file only says how the flow behaves.
 
 ## How the gate works now
 
@@ -17,8 +9,8 @@ Machine contracts win over this text (`docs/agents/BUILD_TEST_MATRIX.md`,
   check. It is an aggregator: it turns red within seconds when any selected
   sub-job fails. Never diagnose `game-gate` or `Merge gate / validate`; open
   the failing leaf job.
-- There is no merge queue (owner decision). `merge-group-gate.yml` ("Game
-  Merge Queue gate") runs on **push to main** after every merge: full
+- There is no merge queue (owner decision, since 2026-10-23). `merge-group-gate.yml`
+  ("Game Merge Queue gate") runs on **push to main** after every merge: full
   workspace tests, every PostgreSQL lane, Windows client, node boot, Server
   Seam, Atlas fullworld. A red post-merge run means `main` is broken for
   everyone: that is a P0 and its fix PR goes first.
@@ -35,23 +27,47 @@ Machine contracts win over this text (`docs/agents/BUILD_TEST_MATRIX.md`,
 - A job that sits `queued` with no runner is a failure, not progress. Check
   whether the routing variable points at an offline self-hosted runner.
 
+## Blind spot
+
+`Node boot against the real Platform` and the
+`Rust Linux workspace (integration-heavy | integration-rest)` shards run
+**only after the merge**; the PR `game-gate` never runs them. A PR that
+touches node startup, stack size, the dispatch runtime, integration tests,
+or `content/` and `imports/` (the integration tests count their files) must
+run the matching tests locally (`local-checks.md`) because CI will
+only report them once `main` is already red. In the week after the queue
+was switched off, about 9 in 10 post-merge runs failed, almost all on
+these three jobs.
+
 ## Merge conditions
+
+Start every merge round with the state of `main`:
+
+```sh
+.claude/skills/oteryn-dev/scripts/main-health.sh 10
+```
+
+If the latest completed post-merge run is red, the next merge is the fix for
+it (or the PR that already carries it); other merges wait until a post-merge
+run on a later `main` is green or fails only on a job the fix does not touch.
 
 A PR is mergeable when all of these hold on its **current** head SHA:
 
 1. `game-gate` green and the PR `mergeable_state` is `clean`.
 2. For a game-server change: all six PostgreSQL partitions green on that same
-   head, or the PR is a member of a batch PR whose six partitions are green on
-   the same `main`.
-3. Client-only, docs-only, tools/CI-only and test-only fixes of `main` need
-   only (1).
+   head (root `AGENTS.md`: merge only a head whose own CI is green, the
+   PostgreSQL legs included). The one exception is the owner's grouping
+   decision: a member of a batch PR whose six partitions are green on the
+   same `main`, with its own `game-gate` green.
+3. Changes whose paths select no PostgreSQL leg (client, docs, tools/CI,
+   test-only fixes of `main`) need only (1); their own CI is then complete.
 
 Merge with squash and pass the full 40-character head SHA. After the merge,
 watch the post-merge `Game Merge Queue gate` run on the new `main`, and check
 for duplicate migration numbers:
 
 ```sh
-git ls-tree --name-only origin/main apps/game-server/migrations/ | xargs -n1 basename | cut -c1-4 | sort | uniq -d
+.claude/skills/oteryn-dev/scripts/dup-migrations.sh origin/main
 ```
 
 Any output is a P0 for the PR that merged second.
@@ -64,21 +80,22 @@ Any output is a P0 for the PR that merged second.
    `FAIL` / `panicked at` / `TIMEOUT`; the log tail is usually only cluster
    shutdown, so search the whole log, not the last lines.
 3. Ask whether `main` has the same failure (latest post-merge run on `main`).
-   If yes, it is not this PR's: port the existing fix into the branch (it is a
-   no-op once `main` carries it), or wait for the main-fix PR, and say so once
-   on the PR. Before writing a new main fix, search the open PRs and recent
+   If yes, it is not this PR's. Land the main fix first and then merge
+   `origin/main` into the waiting PRs; say so once on each PR. Port the fix
+   into a branch only when that branch must merge before the fix can, and then
+   as an exact cherry-pick of the fix commit. In October 2026 single fixes were
+   re-committed by hand into up to 15 PRs each (68 duplicate commits in 300
+   PRs); each copy costs a CI cycle and a later conflict. Before writing a new main fix, search the open PRs and recent
    branches for one that already exists (title, changed file, the constant or
    test name); a second PR for the same fix wastes a CI cycle and conflicts
    with the first.
 4. Otherwise it is this PR's failure. Common causes, in the order they show
    up in this repo's history:
-   - `main` moved: merge `origin/main` and rebuild before reading anything else
-     (about 70% of fix-up commits in October 2026 were this).
-   - Migration number reused: two files with the same four digits fail the
-     migration-directory check in `crates/gameplay/durability/src/lib.rs`.
-     Renumber yours above main's highest.
-   - Capability or command number taken on `main` in the meantime.
-   - Stale content pins or digests (`pin-check`), see `oteryn-content-world`.
+   - `main` moved (by far the most common): merge `origin/main` and rebuild
+     before reading anything else.
+   - Migration, capability or command number taken on `main` in the meantime:
+     renumber yours (`mechanic.md`, *Before writing code*).
+   - Stale content pins or digests (`pin-check`), see `content-world.md`.
    - Lint after a merge: duplicated `mod` lines (E0428), duplicated test
      bodies, `expect`/`unwrap` in production code, `dead_code` on an unwired
      slice.
@@ -94,7 +111,7 @@ then:
 ```sh
 git merge --no-edit origin/main
 cargo fmt --all
-tools/merge-driver/regen.sh        # regenerate_content.py --resolve
+python3 tools/content-migration/regenerate_content.py --resolve   # = tools/merge-driver/regen.sh
 ```
 
 - `oteryn-additive` resolves insert-only hunks (two `mod` lines, two registry
@@ -119,12 +136,3 @@ tools/merge-driver/regen.sh        # regenerate_content.py --resolve
   doing anything else; a PR that conflicts gets no CI.
 - Never leave a red or conflicted PR you own without either a pushed fix or
   one comment naming the failing check and what blocks it.
-
-## Never
-
-- Skip, disable, weaken or quarantine a test to get green.
-- Push an empty commit or close and reopen a PR to start CI.
-- Edit `.github/workflows/**`, `.github/repository-policy.json` or
-  `tools/repository/**` without the owner's consent for that change.
-- Edit a PR body after review starts; post the tested head as a comment.
-- Treat a green check on an older head as evidence for the current head.

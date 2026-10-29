@@ -29,7 +29,7 @@ After authorization, choose the smallest relevant set, including none; no per-sk
 
 ## Repository process skills
 
-`.claude/skills/` records current repository practice as on-demand skills: `steward` (CI, merge conditions, conflicts, batch PRs), `oteryn-mechanic` (DONE versus PARTIAL, claimed numbers, capability file set, migrations), `oteryn-build-test` (local checks per changed path), `oteryn-content-world` (pins, digests, reference sources) and `oteryn-codex-packet` (delegation packets and review of returned work). They are not the optional catalog above and need no separate authorization; they grant no authority, and the machine contracts in `docs/agents/` win where they differ. Update a skill in the same change that alters the practice it describes.
+`.claude/skills/oteryn-dev/` records current repository practice as one on-demand skill: its `SKILL.md` gives the path of a change and the rules that hold at every step, and `references/` covers numbers and mechanics, local checks, content and pins, CI and merging, and delegation. It is not the optional catalog above and needs no separate authorization; it grants no authority, and the machine contracts in `docs/agents/` win where they differ. Update a skill in the same change that alters the practice it describes.
 
 ## Repository boundaries
 
