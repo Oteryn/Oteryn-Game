@@ -43,6 +43,14 @@ use {
 use super::attack::ChannelAttackStates;
 use super::{ComposedFreshAdmission, operator_event};
 
+#[cfg(test)]
+#[allow(
+    clippy::expect_used,
+    reason = "unit fixtures construct valid proficiency shapes"
+)]
+#[path = "proficiency_kill_tests.rs"]
+mod proficiency_kill_tests;
+
 fn apply_hunting_stamina_to_loot(
     loot_table: &mut crate::combat::LootTableDefinition,
     stamina_minutes: Option<u16>,
@@ -125,6 +133,9 @@ struct ReleasingMark {
 
 #[derive(Debug, Default)]
 struct KillQueueState {
+    // Equipment-owner projections, independent of a held attack target or swing-cache epoch.
+    proficiency_weapons: Vec<(ExactActorRef, GameSessionId, u64, Option<String>)>,
+    proficiency_deaths: Vec<(ExactActorRef, [u8; 16], Vec<FrozenProficiencyContributor>)>,
     /// One frozen contribution per retained exact corpse projection; pruned on each death.
     prey_loot: Vec<(ExactActorRef, u8)>,
     queued: VecDeque<PendingKillSettlement>,
@@ -212,7 +223,142 @@ pub enum TakeOutcome {
 #[derive(Debug, Default, Clone)]
 pub struct KillSettlementQueue(Arc<Mutex<KillQueueState>>);
 
+#[derive(Debug, Clone)]
+struct FrozenProficiencyContributor {
+    actor: ExactActorRef,
+    session: GameSessionId,
+    last_damage_at_ms: u64,
+    weapon: String,
+}
+
 impl KillSettlementQueue {
+    /// Actor-end saves drain deaths to which this session contributed, including another
+    /// principal's queue. An in-flight settle must finish before the contributor can save.
+    pub(super) fn proficiency_principals(&self, session: GameSessionId) -> Vec<GameSessionId> {
+        let state = self.state();
+        let mut principals: std::collections::BTreeSet<_> = state
+            .queued
+            .iter()
+            .chain(
+                state
+                    .releasing
+                    .iter()
+                    .flat_map(|mark| mark.parked.iter().map(|(entry, _)| entry)),
+            )
+            .filter(|entry| {
+                entry.facts.principal.session == session
+                    || entry
+                        .damage_shares
+                        .iter()
+                        .any(|share| share.session == Some(session))
+            })
+            .map(|entry| entry.facts.principal.session)
+            .collect();
+        for (_, principal, target) in &state.in_flight {
+            if principal.0 == session
+                || state
+                    .proficiency_deaths
+                    .iter()
+                    .any(|(actor, _, contributors)| {
+                        actor == target
+                            && contributors
+                                .iter()
+                                .any(|contributor| contributor.session == session)
+                    })
+            {
+                principals.insert(principal.0);
+            }
+        }
+        principals.into_iter().collect()
+    }
+
+    pub(super) fn prune_proficiency(&self, runtime: &ChannelRuntimeV1) {
+        let mut state = self.state();
+        state.proficiency_weapons.retain(|(actor, session, _, _)| {
+            runtime.player_control_facts(*actor, *session).is_ok()
+        });
+        state
+            .proficiency_deaths
+            .retain(|(actor, _, _)| runtime.retains_corpse_projection(*actor));
+    }
+    pub(super) fn proficiency_equipment(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        revision: u64,
+        weapon: Option<&str>,
+    ) {
+        let mut state = self.state();
+        if state
+            .proficiency_weapons
+            .iter()
+            .any(|(a, s, r, _)| *a == actor && *s == session && *r > revision)
+        {
+            return;
+        }
+        state
+            .proficiency_weapons
+            .retain(|(a, s, _, _)| *a != actor || *s != session);
+        state
+            .proficiency_weapons
+            .push((actor, session, revision, weapon.map(str::to_owned)));
+    }
+
+    fn freeze_proficiency(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        occurrence: [u8; 16],
+        shares: &[crate::foundation::RewardDamageShare],
+    ) {
+        if !runtime
+            .companion_snapshot_including_dead(target)
+            .is_ok_and(|snapshot| {
+                snapshot.state.master.is_none() && !snapshot.state.policy.is_familiar
+            })
+        {
+            return;
+        }
+        let mut state = self.state();
+        state.proficiency_weapons.retain(|(actor, session, _, _)| {
+            runtime.player_control_facts(*actor, *session).is_ok()
+        });
+        state
+            .proficiency_deaths
+            .retain(|(actor, _, _)| runtime.retains_corpse_projection(*actor));
+        if state
+            .proficiency_deaths
+            .iter()
+            .any(|(_, key, _)| *key == occurrence)
+        {
+            return;
+        }
+        let contributors = shares
+            .iter()
+            .filter_map(|share| {
+                let session = share.session?;
+                let lease = share.lease_generation?;
+                let (actor, _, _, weapon) = state
+                    .proficiency_weapons
+                    .iter()
+                    .find(|(_, s, _, _)| *s == session)?;
+                let weapon = weapon.as_ref()?;
+                let bound = runtime.bound_attacker_lease(*actor, session).ok()?;
+                if bound.character_id() != share.character || bound.generation() != lease {
+                    return None;
+                }
+                Some(FrozenProficiencyContributor {
+                    actor: *actor,
+                    session,
+                    last_damage_at_ms: share.last_damage_at_ms?,
+                    weapon: weapon.clone(),
+                })
+            })
+            .collect();
+        state
+            .proficiency_deaths
+            .push((target, occurrence, contributors));
+    }
     fn state(&self) -> MutexGuard<'_, KillQueueState> {
         self.0
             .lock()
@@ -806,6 +952,8 @@ pub fn record_creature_kill(
         refuse("damage_shares_unavailable", &creature);
         return;
     };
+    sink.queue
+        .freeze_proficiency(runtime, target, facts.occurrence, &damage_shares);
     if let Some(effects) =
         super::hazard::effects(runtime, principal.actor, principal.session, target)
     {
@@ -1619,6 +1767,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .credit_task_board_kill(self.fence, race.key(), entry.facts.occurrence)
                 .await;
         }
+        if outcome.is_ok() {
+            admission.credit_weapon_proficiency_kill(&entry).await;
+        }
         let mut runtime = admission.runtime.lock().await;
         if let Ok(outcome) = &outcome
             && let CorpseBind::Refused(error) =
@@ -1633,6 +1784,134 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         release_settled_corpse(&mut runtime, &entry, report.verdict);
         report
     }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    async fn credit_weapon_proficiency_kill(&self, entry: &PendingKillSettlement) {
+        let contributors = self
+            .states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .state()
+            .proficiency_deaths
+            .iter()
+            .find(|(_, occurrence, _)| *occurrence == entry.facts.occurrence)
+            .map(|(_, _, contributors)| contributors.clone())
+            .unwrap_or_default();
+        let points = proficiency_points(self, entry);
+        let mut checkpoints = Vec::new();
+        {
+            let runtime = self.runtime.lock().await;
+            if runtime.owner_fence().is_err() {
+                return;
+            }
+            let Ok(mut sessions) = self.states.proficiencies.lock() else {
+                return;
+            };
+            for contributor in &contributors {
+                // A transition fence blocks new attacks, not the acknowledgement of death
+                // facts frozen under the contributor's bound lease. The exact actor/session
+                // must still exist; the checkpoint independently resolves current DB fences.
+                let in_channel = runtime
+                    .player_control_facts(contributor.actor, contributor.session)
+                    .is_ok();
+                let Some(owner) = sessions.get_mut(&contributor.session) else {
+                    continue;
+                };
+                if credit_proficiency(
+                    owner,
+                    entry.facts.occurrence,
+                    entry.facts.death_at_ms,
+                    points,
+                    in_channel,
+                    contributor.last_damage_at_ms,
+                    &contributor.weapon,
+                )
+                .is_some()
+                    && owner.checkpoint_due(self.owner_now().get(), false)
+                {
+                    checkpoints.push((contributor.actor, contributor.session));
+                }
+            }
+        }
+        for (actor, session) in checkpoints {
+            let _ = self.save_weapon_proficiency(actor, session, false).await;
+        }
+    }
+}
+
+fn proficiency_points(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    entry: &PendingKillSettlement,
+) -> Option<u32> {
+    use crate::domain::weapon_proficiency::{
+        BossCategory, CreatureDifficulty, CreatureInfluence, boss_points, creature_points,
+    };
+    let native = admission.active_generation?.native_gameplay()?;
+    let profile = native
+        .creature_profiles()
+        .records
+        .iter()
+        .find(|row| row.profile.target.key == entry.creature)?;
+    let oteryn_gameplay_content::content::ProjectV2AuthoringProfileData::Creature(creature) =
+        &profile.profile.data
+    else {
+        return None;
+    };
+    if let Some(boss) = &creature.bosstiary {
+        return Some(boss_points(match boss.category.as_str() {
+            "bane" => BossCategory::Bane,
+            "archfoe" => BossCategory::Archfoe,
+            "nemesis" => BossCategory::Nemesis,
+            _ => return None,
+        }));
+    }
+    let difficulty = match creature.bestiary.as_ref()?.difficulty.as_str() {
+        "harmless" => CreatureDifficulty::Harmless,
+        "trivial" => CreatureDifficulty::Trivial,
+        "easy" => CreatureDifficulty::Easy,
+        "medium" => CreatureDifficulty::Medium,
+        "hard" => CreatureDifficulty::Hard,
+        "challenging" => CreatureDifficulty::Challenging,
+        _ => return None,
+    };
+    let influence = match entry.forge.as_ref().map(|forge| forge.kind) {
+        Some(crate::domain::forge_creature::ForgeCreature::Fiendish) => CreatureInfluence::Fiendish,
+        Some(crate::domain::forge_creature::ForgeCreature::Influenced(stacks)) => {
+            CreatureInfluence::Stacks(stacks)
+        }
+        None => CreatureInfluence::Stacks(0),
+    };
+    creature_points(difficulty, influence).ok()
+}
+
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the frozen death and contributor facts are independently validated"
+)]
+fn credit_proficiency(
+    owner: &mut super::weapon_proficiency::WeaponProficiencyDispatch,
+    occurrence: [u8; 16],
+    death_at_ms: u64,
+    points: Option<u32>,
+    in_channel: bool,
+    last_damage_at_ms: u64,
+    weapon: &str,
+) -> Option<u32> {
+    owner.dispatch_kill(super::weapon_proficiency::KillDispatch {
+        death_occurrence: occurrence,
+        death_at_ms,
+        creature_is_summon: false,
+        points,
+        contributor: crate::domain::weapon_proficiency::ProficiencyKillContributor {
+            character_in_channel: in_channel,
+            last_damage_at_ms,
+            equipped_weapon_item_key: Some(weapon),
+            weapon_has_promoted_proficiency: true,
+        },
+    })
 }
 
 /// Spoils increases every independent loot chance by its hundredths-of-percent bonus. The
