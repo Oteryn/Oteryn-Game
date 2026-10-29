@@ -497,7 +497,7 @@ The source may be a production-ready world renderer by then or an explicitly bou
 - synthetic world inputs remain labelled synthetic where applicable;
 - production client gains no synthetic-only dependencies;
 - server/gameplay authority does not move into renderer/UI;
-- reuse/promotion from `experiments/world-vfx-prototype` requires explicit path allocation/review.
+- reuse/promotion from the former `experiments/world-vfx-prototype` (removed from the tree; recoverable with `git show 329f78f8:experiments/world-vfx-prototype/<path>`) requires explicit path allocation/review.
 
 P1-P4 are not blocked on full World+VFX completion. This is a P5/P6 physical-proof gate.
 
