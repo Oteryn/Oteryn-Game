@@ -22,6 +22,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> TrainingSave {
+        // Resting gains use their own retained occurrence and must be acknowledged before
+        // hunting debits. If activity continued after an unknown gain outcome, the debit is
+        // then committed from the acknowledged gained value rather than entering the gain path.
+        for _ in 0..2 {
+            match self.save_resting_stamina(actor, session).await {
+                TrainingSave::Unknown => return TrainingSave::Unknown,
+                TrainingSave::FencedOut => return TrainingSave::FencedOut,
+                TrainingSave::NotApplicable => break,
+                TrainingSave::Saved => {}
+            }
+        }
         // A retained receipt may leave spending accumulated after its unknown outcome.
         // Drain that successor before an actor-end save can report success.
         for _ in 0..2 {

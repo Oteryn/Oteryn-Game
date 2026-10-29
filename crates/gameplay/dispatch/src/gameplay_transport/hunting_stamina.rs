@@ -20,7 +20,8 @@ pub(super) struct LiveStamina {
     minutes: u16,
     durable: u16,
     clock: HuntingClock,
-    pending: Option<(BuildOccurrence, u16, u16)>,
+    pending_gain: Option<(BuildOccurrence, u16, u16)>,
+    pending_debit: Option<(BuildOccurrence, u16, u16)>,
 }
 
 impl ChannelSpellStates {
@@ -45,7 +46,8 @@ impl ChannelSpellStates {
                 // Admission settlement may regenerate before the first hunting event.
                 // A same-session reconnect must preserve live spending and replay state.
                 if state.clock == HuntingClock::default()
-                    && state.pending.is_none()
+                    && state.pending_gain.is_none()
+                    && state.pending_debit.is_none()
                     && state.minutes == state.durable
                 {
                     state.minutes = minutes;
@@ -58,7 +60,8 @@ impl ChannelSpellStates {
                     minutes,
                     durable: minutes,
                     clock: HuntingClock::default(),
-                    pending: None,
+                    pending_gain: None,
+                    pending_debit: None,
                 });
             }
         }
@@ -113,12 +116,123 @@ impl ChannelSpellStates {
         self.hunting_stamina.iter().any(|s| {
             s.actor == actor
                 && s.session == session
-                && (s.minutes < s.durable || s.pending.is_some())
+                && (s.minutes != s.durable || s.pending_gain.is_some() || s.pending_debit.is_some())
         })
     }
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    pub(super) async fn save_resting_stamina(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> TrainingSave {
+        if !self.flush_prey(session).await {
+            return TrainingSave::Unknown;
+        }
+        {
+            let states = self.states.spell_states.lock().await;
+            if !states.stamina_to_flush(actor, session) {
+                return TrainingSave::NotApplicable;
+            }
+        }
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let Ok(current) = store.current_session(session).await else {
+            return TrainingSave::Unknown;
+        };
+        let Some(item) = super::item_fence_of(current) else {
+            return TrainingSave::FencedOut;
+        };
+        if current.session_state() == GameSessionState::Terminal {
+            return TrainingSave::FencedOut;
+        }
+        let mut slot = self.revision_sequencer.acquire(item.character_id).await;
+        let Ok(root) = self
+            .root
+            .read_current_character(self.character, item.character_id)
+            .await
+        else {
+            return TrainingSave::Unknown;
+        };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if runtime.owner_fence().is_err()
+            || runtime.player_control_facts(actor, session).is_err()
+            || item.runtime_scope
+                != RuntimeScopeRefV1::channel(
+                    runtime.binding().world_id(),
+                    runtime.binding().channel_id(),
+                )
+            || item.scope_ownership_generation != runtime.binding().scope_generation()
+        {
+            return TrainingSave::FencedOut;
+        }
+        let Some(state) = states
+            .hunting_stamina
+            .iter_mut()
+            .find(|s| s.actor == actor && s.session == session)
+        else {
+            return TrainingSave::NotApplicable;
+        };
+        if state.pending_gain.is_none() && state.minutes <= state.durable {
+            return TrainingSave::NotApplicable;
+        }
+        let (occurrence, before, after) = match state.pending_gain {
+            Some(pending) => pending,
+            None => {
+                let Some(occurrence) = SecureIdentifiers::random::<16>().and_then(|mut bytes| {
+                    bytes[6] = (bytes[6] & 15) | 0x70;
+                    bytes[8] = (bytes[8] & 63) | 0x80;
+                    BuildOccurrence::from_bytes(bytes).ok()
+                }) else {
+                    return TrainingSave::Unknown;
+                };
+                let pending = (occurrence, state.durable, state.minutes);
+                state.pending_gain = Some(pending);
+                pending
+            }
+        };
+        let fence = CurrentCharacterGameplayFence {
+            character_id: item.character_id,
+            game_session_id: session,
+            connection_generation: item.connection_generation,
+            character_lease_generation: item.character_lease_generation,
+            runtime_scope: item.runtime_scope,
+            scope_ownership_generation: item.scope_ownership_generation,
+            expected_character_revision: root.revision,
+        };
+        let outcome = self
+            .root
+            .commit_resting_stamina(
+                self.character,
+                self.holder,
+                fence,
+                occurrence,
+                (before, after),
+            )
+            .await;
+        slot.observe_loop_training();
+        match outcome {
+            Ok(_) => {}
+            Err(
+                CharacterProgressionError::AuthorityRejected
+                | CharacterProgressionError::RespawnPending,
+            ) => return TrainingSave::FencedOut,
+            Err(_) => return TrainingSave::Unknown,
+        }
+        let Ok(fresh) = store.current_session(session).await else {
+            return TrainingSave::Unknown;
+        };
+        if fresh.session_state() == GameSessionState::Terminal
+            || super::item_fence_of(fresh) != Some(item)
+        {
+            return TrainingSave::FencedOut;
+        }
+        state.durable = after;
+        state.pending_gain = None;
+        TrainingSave::Saved
+    }
+
     pub(super) async fn save_hunting_stamina(
         &self,
         actor: ExactActorRef,
@@ -171,7 +285,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return TrainingSave::NotApplicable;
         };
-        let (occurrence, before, after) = match state.pending {
+        if state.pending_debit.is_none() && state.minutes >= state.durable {
+            return TrainingSave::NotApplicable;
+        }
+        let (occurrence, before, after) = match state.pending_debit {
             Some(pending) => pending,
             None => {
                 let Some(occurrence) = SecureIdentifiers::random::<16>().and_then(|mut bytes| {
@@ -182,7 +299,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return TrainingSave::Unknown;
                 };
                 let pending = (occurrence, state.durable, state.minutes);
-                state.pending = Some(pending);
+                state.pending_debit = Some(pending);
                 pending
             }
         };
@@ -223,7 +340,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return TrainingSave::FencedOut;
         }
         state.durable = after;
-        state.pending = None;
+        state.pending_debit = None;
         TrainingSave::Saved
     }
 }
@@ -281,5 +398,37 @@ mod tests {
             );
         }
         assert_eq!(states.live_stamina(actor, session), Some(840));
+    }
+    #[test]
+    #[allow(clippy::expect_used)]
+    fn retained_resting_gain_does_not_hide_a_later_hunting_debit() {
+        let (runtime, actor, session) = fixture::runtime_with_player(146);
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                fixture::FACTS,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .expect("player");
+        states.load_stamina(&runtime, actor, session, 100);
+        assert!(states.gain_resting_stamina(actor, session));
+        let state = states
+            .hunting_stamina
+            .iter_mut()
+            .find(|state| state.actor == actor && state.session == session)
+            .expect("stamina");
+        let gain =
+            BuildOccurrence::from_bytes([1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
+                .expect("occurrence");
+        state.pending_gain = Some((gain, 100, 101));
+        // One later hunting minute cancels the live delta but not the retained gain receipt.
+        state.minutes = 100;
+        assert_eq!(state.pending_gain, Some((gain, 100, 101)));
+        assert!(state.pending_debit.is_none());
+        assert!(states.stamina_to_flush(actor, session));
     }
 }
