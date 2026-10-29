@@ -40,9 +40,7 @@ impl PlayerSpellState {
                 .is_some_and(|live| live.durable() != before)
             || self.training_checkpoint.is_some()
             || self.pending_stance.is_some()
-            || self.stance_key.is_some()
-            || self.health > facts.max_health
-            || self.mana > facts.max_mana
+            || self.health == 0
             || self.soul > facts.max_soul
         {
             return None;
@@ -54,6 +52,10 @@ impl PlayerSpellState {
         next.base_max_health = facts.max_health;
         next.base_max_mana = facts.max_mana;
         next.facts = facts;
+        // Dawnport changeVocation: recompute as if levelled from 8, then fill both pools.
+        // The existing stance key/conditions survive the donor's setVocation call.
+        next.health = facts.max_health;
+        next.mana = facts.max_mana;
         next.base_speed = validated.base_speed;
         next.monk = validated.monk;
         next.make_playable(now).ok()?;

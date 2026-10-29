@@ -274,14 +274,9 @@ impl PlayerSpellState {
         Some((next, gained))
     }
 
-    /// One resting-area cadence credit through the native regeneration clocks.
-    pub fn after_resting_regeneration(&self, streak: u32) -> Option<Self> {
-        let mut next = self.clone();
-        crate::spell::food_regeneration::credit_resting_second(&mut next, streak)?;
-        if next != *self {
-            next.revision = next.revision.checked_add(1)?;
-        }
-        Some(next)
+    /// Install the tile-qualified projection before the existing regeneration clock runs.
+    pub fn set_resting_streak(&mut self, streak: u32) {
+        self.resting_streak = streak;
     }
 
     /// One soul point from the resting-area owner, capped by the current actor facts.

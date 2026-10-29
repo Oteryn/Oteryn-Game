@@ -3,6 +3,26 @@
 use crate::foundation::{ExactActorRef, GameSessionId};
 use std::{collections::BTreeMap, sync::Mutex};
 
+pub(super) fn soul_interval(vocation: crate::spell::Vocation, premium: bool) -> u16 {
+    use crate::domain::premium::PremiumStatus;
+    use crate::spell::Vocation;
+    let promoted = matches!(
+        vocation,
+        Vocation::EliteKnight
+            | Vocation::RoyalPaladin
+            | Vocation::MasterSorcerer
+            | Vocation::ElderDruid
+            | Vocation::ExaltedMonk
+    );
+    let gate = if premium {
+        PremiumStatus::Current
+    } else {
+        PremiumStatus::NotCurrent
+    }
+    .gate();
+    oteryn_gameplay_characters::soul::soul_schedule(promoted, gate).interval_seconds as u16
+}
+
 #[derive(Debug, Clone, Copy)]
 struct Projection {
     actor: ExactActorRef,
@@ -61,7 +81,8 @@ impl RestingAreaSessions {
         // cadences without weakening the durable daily-reward owner.
         let stamina_due = if premium && p.streak >= 4 && stamina < 2520 {
             p.stamina_seconds = p.stamina_seconds.saturating_add(1);
-            let interval = if stamina > 2340 { 360 } else { 180 };
+            // Match characters::stamina: the top three hours start at minute 2340.
+            let interval = if stamina >= 2340 { 360 } else { 180 };
             if p.stamina_seconds >= interval {
                 p.stamina_seconds = 0;
                 true
@@ -103,6 +124,77 @@ mod tests {
     }
     fn session() -> GameSessionId {
         GameSessionId::decode(&id(4)).expect("session")
+    }
+
+    #[test]
+    fn daily_resting_soul_interval_uses_promotion_rather_than_premium_cap() {
+        use crate::spell::Vocation;
+        for vocation in [
+            Vocation::None,
+            Vocation::Knight,
+            Vocation::Paladin,
+            Vocation::Sorcerer,
+            Vocation::Druid,
+            Vocation::Monk,
+        ] {
+            assert_eq!(soul_interval(vocation, true), 120);
+            assert_eq!(soul_interval(vocation, false), 120);
+        }
+        for vocation in [
+            Vocation::EliteKnight,
+            Vocation::RoyalPaladin,
+            Vocation::MasterSorcerer,
+            Vocation::ElderDruid,
+            Vocation::ExaltedMonk,
+        ] {
+            assert_eq!(soul_interval(vocation, true), 15);
+            assert_eq!(soul_interval(vocation, false), 120);
+        }
+    }
+
+    #[test]
+    fn daily_resting_thresholds_and_stamina_model_boundaries() {
+        for streak in 0..=8 {
+            for inside in [false, true] {
+                for premium in [false, true] {
+                    for (stamina, interval) in [
+                        (2339, 180),
+                        (2340, 360),
+                        (2341, 360),
+                        (2519, 360),
+                        (2520, 360),
+                    ] {
+                        let owner = RestingAreaSessions::default();
+                        owner.install(session(), actor(), streak);
+                        let mut gains = (0, 0);
+                        for second in 1..=interval {
+                            let (stamina_due, soul_due) =
+                                owner.cadence(session(), actor(), inside, premium, stamina, 120);
+                            gains.0 += u32::from(stamina_due);
+                            gains.1 += u32::from(soul_due);
+                            if second < interval {
+                                assert_eq!(
+                                    gains.0, 0,
+                                    "streak={streak}, stamina={stamina}, second={second}"
+                                );
+                            }
+                        }
+                        assert_eq!(
+                            gains.0,
+                            u32::from(inside && premium && streak >= 4 && stamina < 2520)
+                        );
+                        assert_eq!(
+                            gains.1,
+                            if inside && premium && streak >= 7 {
+                                interval / 120
+                            } else {
+                                0
+                            }
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]
