@@ -72,6 +72,7 @@ oteryn-world-bundle-compiler = { version = "=0.1.0", path = "../../../tools/worl
 rcgen.workspace = true
 rustls = { workspace = true, features = ["tls12"] }
 syn.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
 
 [lints]
 workspace = true
