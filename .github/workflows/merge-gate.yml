@@ -923,7 +923,21 @@ jobs:
             exit 0
           fi
           expression="$(IFS='|'; echo "${filters[*]}")"
-          printf '[profile.rust-fast.junit]\npath = "junit.xml"\n' > "$RUNNER_TEMP/nextest.toml"
+          # Priorities only order the start of this shard's tests; they never select or skip one.
+          # These tests take 30-150 s here under four-way contention, so starting them first keeps
+          # one of them from running alone at the end of the shard. Renamed tests just lose it.
+          cat > "$RUNNER_TEMP/nextest.toml" <<'TOML'
+          [profile.rust-fast.junit]
+          path = "junit.xml"
+
+          [[profile.rust-fast.overrides]]
+          filter = 'test(/attack_chase_budget_tests::/) | test(/tutorial_current_world_compiles_twice/) | test(/compiler_writes_only_v7_and_v4_to_v6/)'
+          priority = 100
+
+          [[profile.rust-fast.overrides]]
+          filter = 'test(/equipment_effects_owner::tests::/) | test(/typed_item_codec_tests::bed_set_/) | test(/summer_dialogue_tests::/) | test(/npc_promotion::tests::/) | test(/eqmod2_content_forge_tiers/) | test(/item_look::tests::reading_map_/) | test(/imbuement_allowance_of_activated_native_content/) | test(/writable_profiles_survive_native_artifact/) | test(/bundle_spawn_owner_tests::/) | test(/the_chase_search_drain_gives_the_same_routes/) | test(/active_content_mints_every_reward_bag_output/) | test(/prey_catalogue_draws_only_wire_encodable/)'
+          priority = 50
+          TOML
           code=0
           cargo +1.99.1 nextest run --locked --workspace --lib --bins \
             --config-file "$RUNNER_TEMP/nextest.toml" --profile rust-fast -E "$expression" \
