@@ -1356,10 +1356,10 @@ mod tests {
         assert!(source_feedback("unqualified_source_message", None).is_err());
     }
     /// MAGIC-CAST-1: on a bundle World (no fixture room, the combat room is the entry room's
-    /// bundle view) a locate message reads the combat room, while house access and vertical moves
-    /// stay closed; on a fixture World every parameter cast reads the fixture room.
+    /// bundle view) locate messages and vertical moves read the combat room. House access stays
+    /// closed; on a fixture World every parameter cast reads the fixture room.
     #[test]
-    fn bundle_world_opens_locate_message_only() {
+    fn bundle_world_opens_locate_message_and_vertical_move() {
         use crate::gameplay_transport::SeamRooms;
         use crate::map::spell_tiles::tests::{id, world as bundle_world};
         let world = bundle_world();
@@ -1379,11 +1379,13 @@ mod tests {
             )
             .unwrap();
         let bundle = SeamRooms::new(None, Some(&view));
-        assert!(std::ptr::eq(
-            bundle.gate_parameter_cast("locate_message").unwrap(),
-            &view
-        ));
-        for key in ["house_access", "vertical_move", ""] {
+        for key in ["locate_message", "vertical_move"] {
+            assert!(std::ptr::eq(
+                bundle.gate_parameter_cast(key).unwrap(),
+                &view
+            ));
+        }
+        for key in ["house_access", ""] {
             assert!(bundle.gate_parameter_cast(key).is_none(), "{key}");
         }
         let fixture = SeamRooms::new(Some(&entry), Some(&entry));

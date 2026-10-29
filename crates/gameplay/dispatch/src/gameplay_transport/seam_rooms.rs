@@ -60,13 +60,13 @@ impl<'a> SeamRooms<'a> {
         self.combat
     }
 
-    /// MAGIC-CAST-1: the room a parameter cast reads. A locate message reads it only for the
-    /// caster's protection-zone tile, which the combat room serves on both World kinds. House
-    /// access and vertical moves read the fixture room's house and floor facts, so they keep the
-    /// qualified room and stay closed on a bundle World, which has none.
+    /// MAGIC-CAST-1 and WAVE-A/M11: locate messages and vertical moves read the combat room's
+    /// tile facts on both World kinds. House access keeps the qualified room and stays closed
+    /// on a bundle World, which has none.
     pub fn gate_parameter_cast(&self, key: &str) -> Option<&'a QualifiedNativeEntryRoom> {
         match key {
             "locate_message" => self.combat,
+            "vertical_move" => self.combat,
             "creature_appearance" => self.combat,
             _ => self.qualified,
         }
