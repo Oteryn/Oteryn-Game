@@ -296,9 +296,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let spell = policy
                 .and_then(|p| p.record().production_binding.external_id.parse().ok())
                 .and_then(|id| self.spells.rune(id));
-            let Some(spell) = spell
-                .filter(|s| oteryn_gameplay_spell_rules::dispatch_plans::rune_use::direct_rune(s))
-            else {
+            let Some(spell) = spell.filter(|s| {
+                oteryn_gameplay_spell_rules::dispatch_plans::rune_use::direct_rune(s)
+                    || matches!(
+                        s.carrier,
+                        crate::spell::Carrier::Rune {
+                            item: 3165 | 3177 | 3178,
+                            ..
+                        }
+                    )
+            }) else {
                 if intent.use_with.is_none() && intent.use_with_position.is_none() {
                     return Some(
                         self.use_backpack_item(actor, command, ItemKey::Instance(instance))
@@ -311,7 +318,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !matches!(
                     spell.carrier,
                     crate::spell::Carrier::Rune {
-                        item: 3174 | 3188,
+                        item: 3165 | 3174 | 3177 | 3178 | 3188,
                         ..
                     }
                 )

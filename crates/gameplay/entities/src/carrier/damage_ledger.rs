@@ -145,6 +145,8 @@ pub struct RewardDamageShare {
     pub total: u64,
     pub lease_generation: Option<u64>,
     pub session: Option<GameSessionId>,
+    /// Last committed damage clock, retained independently of the evictable receipts.
+    pub last_damage_at_ms: Option<u64>,
 }
 
 /// D132/D3-3: bounded, ephemeral, per-creature-generation damage-contributor accumulation.
@@ -1183,6 +1185,7 @@ impl CurrentOwnerCombatDeath<'_> {
                     total: entry.total,
                     lease_generation: entry.high_water.map(|(lease, _, _, _)| lease),
                     session: entry.high_water.map(|(_, session, _, _)| session),
+                    last_damage_at_ms: entry.last_damage_at_ms,
                 })
                 .collect()),
             _ => Err(CarrierError::NotCreature),

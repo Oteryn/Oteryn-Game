@@ -44,7 +44,6 @@ use std::sync::{Arc, Weak};
 use tokio::time::{Duration, Instant};
 
 use super::ComposedFreshAdmission;
-use super::weapon_proficiency::WeaponProficiencyDispatch;
 use crate::ability::{
     AbilityIntent, AbilityOccurrence, CommitGroup, Effect, EffectPlan, ProposalSource, RevisionSet,
 };
@@ -490,6 +489,7 @@ impl ChannelAttackStates {
     /// Drop the entries whose actor is no longer controlled by its session's slot, and the
     /// block budgets of creatures no longer live.
     fn prune(&mut self, runtime: &ChannelRuntimeV1) {
+        self.kills.prune_proficiency(runtime);
         self.entries.retain(|entry| {
             runtime
                 .player_control_facts(entry.actor, entry.session)
@@ -1329,15 +1329,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     std::sync::Arc::clone(catalogue) as std::sync::Arc<dyn ProficiencyDefinitions>,
                 )
                 .await
+            && let Ok(mut sessions) = self.states.proficiencies.lock()
         {
-            let mut owner = WeaponProficiencyDispatch::default();
+            let owner = sessions.entry(session).or_default();
             for stored in tracks {
                 if let Some(track) = catalogue.live_track(&stored) {
                     owner.install_track(stored.state.item_key().to_owned(), track);
                 }
             }
-            if let Ok(mut sessions) = self.states.proficiencies.lock() {
-                sessions.insert(session, owner);
+            if let Some(key) = item_key.as_deref()
+                && owner.track(key).is_none()
+                && let Some(track) = catalogue.empty_track(key)
+            {
+                owner.install_track(key, track);
             }
         }
         self.states.attack.lock().await.store_weapon(
