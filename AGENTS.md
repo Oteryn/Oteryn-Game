@@ -29,7 +29,7 @@ After authorization, choose the smallest relevant set, including none; no per-sk
 
 ## Repository process skills
 
-`.claude/skills/` records current repository practice as on-demand skills: `steward` (CI, merge conditions, conflicts, batch PRs), `oteryn-mechanic` (DONE versus PARTIAL, claimed numbers, capability file set, migrations), `oteryn-build-test` (local checks per changed path), `oteryn-content-world` (pins, digests, reference sources) and `oteryn-codex-packet` (delegation packets and review of returned work). They are not the optional catalog above and need no separate authorization; they grant no authority, and the machine contracts in `docs/agents/` win where they differ. Update a skill in the same change that alters the practice it describes.
+`.claude/skills/` records current repository practice as on-demand skills: `oteryn-dev` (the path of a change, invariants, numbers and mechanics, local checks, content and pins, CI and merging, and helper scripts; it says which of the others to load), `oteryn-coding` (scope, Rust, async, PostgreSQL and test rules), `oteryn-debugging` (root cause before a fix, flaky tests), `oteryn-review` (reviewing diffs and handling findings), `oteryn-verify` (evidence before claims) and `oteryn-waves` (planning waves, delegation packets, landing a batch). The implementation subagents in `.claude/agents/` preload `oteryn-dev`, `oteryn-coding` and `oteryn-verify`. Using them is mandatory: load `oteryn-dev` before any change to this repository, `oteryn-coding` before writing Rust, SQL or test code, `oteryn-review` before marking work ready or landing it, and `oteryn-verify` before any report or claim that work is done, fixed, green or mergeable. They are not the optional catalog above and need no separate authorization; they grant no authority, and the machine contracts in `docs/agents/` win where they differ. Update a skill in the same change that alters the practice it describes.
 
 ## Repository boundaries
 
@@ -61,7 +61,7 @@ Keep registration blocks sorted by name; insert in order and never append regist
 - **A case runs in route-less lanes too:** it returns `Ok(())` when `OTERYN_TEST_POSTGRES_ADMIN_URL` is absent. `route_less_case_guard` rejects a case that errors instead.
 - **World pins are regenerated, never hand-edited:** stage the inputs, run `cargo fmt`, then `oteryn-world-bundle-compiler pin-refresh .`. `tools/content-migration/regenerate_content.py --resolve` does this on a conflicted pin unless the entry start moved; `pin-check` stays the gate.
 - **Merge `origin/main` locally with the merge drivers registered** (`tools/merge-driver/install.sh`, once per clone): `oteryn-additive` combines insert-only hunks in Rust, TOML, Markdown, workflow and `docs/contracts/*.json` files (two `mod` lines, fields, methods, dependencies or registry entries at one place), `oteryn-regen` takes the incoming derived registry. Then run `cargo fmt` and `tools/merge-driver/regen.sh`. Only a real edit-versus-edit conflict stops for a person.
-- **Merge only a head whose own CI is green**, the PostgreSQL legs included.
+- **Merge only a head whose own CI is green**, the PostgreSQL legs included. The one exception is the owner's grouping decision (2026-10-29): the members of a batch PR whose PostgreSQL legs are green on the same `main` merge one after another with their own `game-gate` green, with no other merge in between (`.claude/skills/oteryn-dev/references/ci-merge.md`).
 
 ## Review guidelines
 
