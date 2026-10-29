@@ -31,7 +31,7 @@ CREATE TABLE game_character_home_town_receipts (
     PRIMARY KEY (character_id, committed_character_revision)
 );
 REVOKE ALL ON game_character_home_town_receipts FROM PUBLIC;
-GRANT SELECT, INSERT, UPDATE ON game_character_home_town_receipts TO oteryn_game_runtime;
+GRANT SELECT, INSERT ON game_character_home_town_receipts TO oteryn_game_runtime;
 GRANT SELECT ON game_character_home_town_receipts TO oteryn_game_control;
 
 CREATE VIEW game_character_home_town_revision_chain WITH (security_invoker=true) AS
