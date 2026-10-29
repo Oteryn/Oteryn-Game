@@ -19,7 +19,7 @@ pub fn encode_current_subarea(membership: Option<(u32, u32)>) -> [u8; 9] {
     bytes
 }
 pub const MAX_REQUEST_BYTES: usize = 9;
-pub const MAX_RESULT_BYTES: usize = 29 + 8 * 5;
+pub const MAX_RESULT_BYTES: usize = 30 + 8 * 5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MapIntent {
@@ -62,6 +62,8 @@ pub struct MapResult {
     pub revision: u64,
     pub discovered: bool,
     pub found: u8,
+    /// Fully discovered subareas divided by all subareas in this area, as 0..=100.
+    pub area_percent: u8,
     pub pool: u64,
     pub epoch: u64,
     pub improved: bool,
@@ -72,6 +74,7 @@ pub fn encode_result(result: &MapResult) -> Result<Vec<u8>, MapWireError> {
     if result.code > 7
         || result.revision == 0
         || result.found > 7
+        || result.area_percent > 100
         || result.visible.len() > 8
         || (result.discovered && (result.found != 7 || !result.visible.is_empty()))
     {
@@ -85,11 +88,12 @@ pub fn encode_result(result: &MapResult) -> Result<Vec<u8>, MapWireError> {
     {
         return Err(MapWireError);
     }
-    let mut bytes = Vec::with_capacity(29 + 5 * result.visible.len());
+    let mut bytes = Vec::with_capacity(30 + 5 * result.visible.len());
     bytes.push(result.code);
     bytes.extend_from_slice(&result.revision.to_le_bytes());
     bytes.push(u8::from(result.discovered));
     bytes.push(result.found);
+    bytes.push(result.area_percent);
     bytes.extend_from_slice(&result.pool.to_le_bytes());
     bytes.extend_from_slice(&result.epoch.to_le_bytes());
     bytes.push(if result.improved { 2 } else { 1 });
@@ -103,21 +107,21 @@ pub fn encode_result(result: &MapResult) -> Result<Vec<u8>, MapWireError> {
 }
 /// Validate retained results again before the transport emits persisted bytes.
 pub fn decode_result(bytes: &[u8]) -> Result<MapResult, MapWireError> {
-    if !(29..=MAX_RESULT_BYTES).contains(&bytes.len()) {
+    if !(30..=MAX_RESULT_BYTES).contains(&bytes.len()) {
         return Err(MapWireError);
     }
-    let count = usize::from(bytes[28]);
+    let count = usize::from(bytes[29]);
     if count > 8
-        || bytes.len() != 29 + count * 5
+        || bytes.len() != 30 + count * 5
         || !matches!(bytes[9], 0 | 1)
-        || !matches!(bytes[27], 1 | 2)
+        || !matches!(bytes[28], 1 | 2)
     {
         return Err(MapWireError);
     }
     #[cfg(test)]
     crate::count_bounds_tests::allocation(count);
     let mut visible = Vec::with_capacity(count);
-    for point in bytes[29..].as_chunks::<5>().0 {
+    for point in bytes[30..].as_chunks::<5>().0 {
         #[cfg(test)]
         crate::count_bounds_tests::iteration();
         let pos = (
@@ -135,9 +139,10 @@ pub fn decode_result(bytes: &[u8]) -> Result<MapResult, MapWireError> {
         revision: u64::from_le_bytes(bytes[1..9].try_into().map_err(|_| MapWireError)?),
         discovered: bytes[9] == 1,
         found: bytes[10],
-        pool: u64::from_le_bytes(bytes[11..19].try_into().map_err(|_| MapWireError)?),
-        epoch: u64::from_le_bytes(bytes[19..27].try_into().map_err(|_| MapWireError)?),
-        improved: bytes[27] == 2,
+        area_percent: bytes[11],
+        pool: u64::from_le_bytes(bytes[12..20].try_into().map_err(|_| MapWireError)?),
+        epoch: u64::from_le_bytes(bytes[20..28].try_into().map_err(|_| MapWireError)?),
+        improved: bytes[28] == 2,
         visible,
     };
     encode_result(&r)?;
@@ -171,6 +176,7 @@ mod tests {
             revision: 1,
             discovered: false,
             found: 0,
+            area_percent: 0,
             pool: 0,
             epoch: 0,
             improved: false,

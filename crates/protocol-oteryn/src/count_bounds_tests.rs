@@ -178,10 +178,10 @@ fn f26_frame_length_and_envelope_payload() {
 fn f26_cyclopedia_count_bound_precedes_allocation_and_iteration() {
     for count in [0u8, 1, 8, 9, u8::MAX] {
         for backed in [false, true] {
-            let mut bytes = vec![0; 29];
+            let mut bytes = vec![0; 30];
             bytes[1] = 1; // revision
-            bytes[27] = 1;
-            bytes[28] = count;
+            bytes[28] = 1;
+            bytes[29] = count;
             if backed {
                 for n in 0..count {
                     bytes.extend([n, 0, 0, 0, 0]);
