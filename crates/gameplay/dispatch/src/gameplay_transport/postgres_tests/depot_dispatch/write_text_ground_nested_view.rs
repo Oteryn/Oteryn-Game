@@ -294,7 +294,7 @@ pub(super) async fn dispatch_ground(
         &mut server,
         admitted,
         owner,
-        crate::gameplay_transport::connection::IDLE_LIVENESS,
+        SCENARIO_LIVENESS,
     );
     let exchange = async move {
         let mut root_handle = None;

@@ -67,6 +67,19 @@ async fn remaining(h: &Harness, seed: u8, column: &str) -> TestResult<Option<i64
         .flatten())
 }
 
+/// The stored deadline of one column in µs since the epoch, `None` when unset.
+async fn deadline_us(h: &Harness, seed: u8, column: &str) -> TestResult<Option<i64>> {
+    let sql = format!(
+        "SELECT (extract(epoch FROM {column}) * 1000000)::bigint \
+           FROM game_character_pvp_state WHERE character_id = encode($1,'hex')::uuid"
+    );
+    Ok(sqlx::query_scalar(sqlx::AssertSqlSafe(sql))
+        .bind(id(seed).as_slice())
+        .fetch_optional(&h.pool)
+        .await?
+        .flatten())
+}
+
 async fn rows(h: &Harness) -> TestResult<i64> {
     h.count("game_character_pvp_state").await
 }
@@ -132,8 +145,13 @@ fn write_ahead_raises_deadlines_and_reads_back_remaining_time() -> TestResult {
         assert!(remaining(h, OTHER, "white_skull_until").await?.is_some());
         assert_eq!(remaining(h, OTHER, "logout_block_until").await?, None);
 
-        // A second write-ahead raises the named column and keeps the rest.
-        let before = remaining(h, CHARACTER, "logout_block_until")
+        // A second write-ahead raises the named column and keeps the rest. Compare the stored
+        // deadlines, not the time remaining: that shrinks with every millisecond the runner spends
+        // between the two reads.
+        let before = deadline_us(h, CHARACTER, "logout_block_until")
+            .await?
+            .expect("set");
+        let pz_before = deadline_us(h, CHARACTER, "pz_block_until")
             .await?
             .expect("set");
         h.root
@@ -149,12 +167,15 @@ fn write_ahead_raises_deadlines_and_reads_back_remaining_time() -> TestResult {
             .await
             .map_err(debug)?;
         assert!(
-            remaining(h, CHARACTER, "logout_block_until")
+            deadline_us(h, CHARACTER, "logout_block_until")
                 .await?
                 .expect("set")
-                >= before - 50
+                > before
         );
-        assert!(remaining(h, CHARACTER, "pz_block_until").await?.is_some());
+        assert_eq!(
+            deadline_us(h, CHARACTER, "pz_block_until").await?,
+            Some(pz_before)
+        );
         let second = h
             .root
             .read_pvp_state(&authority, &h.node, fence(1)?)
