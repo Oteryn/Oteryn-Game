@@ -99,6 +99,8 @@ pub struct PlayerSpellState {
     pub(super) regen_mana_ms: u32,
     /// Runtime-only clock, anchored when admission makes this actor playable.
     pub(super) regeneration_next_tick_us: Option<u64>,
+    /// Owner-qualified daily streak for the current resting tile; runtime-only.
+    pub(super) resting_streak: u32,
     pub(super) soul: u32,
     /// VITALS-SOUL-1: the running soul kill window, if any. Runtime-only.
     pub(super) soul_window: Option<super::soul_window::SoulWindow>,
@@ -182,6 +184,7 @@ impl PlayerSpellState {
                 regen_health_ms: 0,
                 regen_mana_ms: 0,
                 regeneration_next_tick_us: None,
+                resting_streak: 0,
                 premium_current: false,
                 premium_valid_until_micros: None,
                 soul: facts.max_soul,
