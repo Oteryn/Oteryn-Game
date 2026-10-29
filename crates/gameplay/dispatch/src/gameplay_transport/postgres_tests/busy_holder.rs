@@ -1,7 +1,7 @@
-//! NODEBOOT-1: the first entry of a committed actor waits for a busy durability holder
-//! instead of leaving the admitted session not playable.
+//! NODEBOOT-1: admission entry steps and command gating reads wait for a busy durability
+//! holder instead of refusing at once.
 use super::fixture::{Harness, debug, run};
-use super::{Dependencies, TestResult, prepare_current_session};
+use super::{Dependencies, TestResult, prepare_current_session, track};
 use crate::foundation::AuthenticatedTransportRefV1;
 use crate::gameplay_transport::AdmissionRetryBudget;
 use crate::gameplay_transport::connection::FirstEntryOutcome;
@@ -49,7 +49,47 @@ fn a_committed_actor_enters_after_a_busy_holder_is_returned_postgres() -> TestRe
                 "{outcome:?}"
             );
             assert!(item_fence.is_some());
-            Ok(())
+            drop(owner);
+            drop(seal);
+            h.cleanup().await
+        })
+    })
+}
+
+/// Every step refreshes the session's PvP locks from durable state first; a step that met a
+/// background pass on the holder was rejected (the node-boot use-wire `step_blocked` stage).
+#[test]
+fn a_step_lock_refresh_waits_for_a_busy_holder_postgres() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("pvp-refresh-busy-holder", || {
+        run(async |admin| {
+            let h = Harness::create_with_admission_seed(admin, "pvp_refresh_busy_holder", true, false)
+                .await?;
+            prepare_current_session(&h).await?;
+            let seal = h.recovery.seal_current().map_err(debug)?;
+            let authority = h
+                .root
+                .open_character_authority(&seal)
+                .await
+                .map_err(debug)?;
+            let dependencies = Dependencies::new()?;
+            let owner = dependencies.owner(&h, &authority);
+            dependencies.initialize(&owner).await;
+            owner
+                .runtime
+                .lock()
+                .await
+                .initialize_first_entry_position(dependencies.actor)
+                .map_err(debug)?;
+            track(&owner, &dependencies)?;
+            let session = dependencies.admitted.game_session_id;
+            assert!(owner.refresh_pvp_locks(dependencies.actor, session).await);
+            let busy = hold_holder(&h.root, Duration::from_millis(300))?;
+            let refreshed = owner.refresh_pvp_locks(dependencies.actor, session).await;
+            busy.await??;
+            assert!(refreshed, "the refresh refused on a busy holder");
+            drop(owner);
+            drop(seal);
+            h.cleanup().await
         })
     })
 }

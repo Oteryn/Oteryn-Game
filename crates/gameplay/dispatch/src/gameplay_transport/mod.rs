@@ -1203,6 +1203,10 @@ struct AdmissionRetryBudget<'r> {
 /// repeated while background passes keep returning the holder.
 const HOLDER_RETRY_FLOOR: Duration = Duration::from_millis(50);
 
+/// The longest a command's gating reads wait for a busy holder (NODEBOOT-1). The command holds
+/// its lane meanwhile, so the window stays short of the root recovery window.
+const COMMAND_HOLDER_WINDOW: Duration = Duration::from_secs(1);
+
 impl<'r> AdmissionRetryBudget<'r> {
     fn new(game_session_id: &GameSessionId) -> Self {
         Self {
@@ -1210,6 +1214,18 @@ impl<'r> AdmissionRetryBudget<'r> {
             backoff: fresh_admission_backoff(game_session_id),
             stale_rounds: 1,
             root: None,
+        }
+    }
+
+    /// The budget of the durable reads that gate one in-session command, such as a step's PvP
+    /// lock refresh (NODEBOOT-1): a busy holder is retried, waiting for its return, for at most
+    /// [`COMMAND_HOLDER_WINDOW`], then the command fails closed as before.
+    fn for_command(root: &'r DurabilityRoot) -> Self {
+        Self {
+            deadline: tokio::time::Instant::now() + COMMAND_HOLDER_WINDOW,
+            backoff: RECONCILE_BACKOFF,
+            stale_rounds: FRESH_ADMISSION_ROUNDS,
+            root: Some(root),
         }
     }
 
