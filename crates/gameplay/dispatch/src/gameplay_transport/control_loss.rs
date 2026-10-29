@@ -111,7 +111,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.lift_kept_logout(game_session_id, actor).await;
         // This controller may have resumed a lost session: its loss opens the next epoch
         // and retains the resumed one's history, read from the durable receipts. A resumed
-        // session whose history cannot be proven is released instead (`ResumedHistory`).
+        // session with proven missing or invalid history is released (`ResumedHistory`);
+        // an unreadable history stays unknown so the listener retries.
         let (history, protection) = match session.current_control_loss_epoch() {
             None => (
                 ControlLossHistoryV1::FreshOrigin,
@@ -133,7 +134,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         ..
                     },
                 )) => (history, retained),
-                _ => return ControlLossResult::ResumedHistory,
+                Ok(_) | Err(crate::durability::DurabilityError::InvalidStoredState) => {
+                    return ControlLossResult::ResumedHistory;
+                }
+                Err(_) => return ControlLossResult::Unknown,
             },
         };
         // A refused loss must not strand a resumed session ACTIVE on its dead transport.
