@@ -13,6 +13,12 @@ remain in `docs/contracts/protocol-oteryn/v1/registry/` (REGISTRY-SPLIT-1).
   acceptance messages do not currently enforce. Changing this is a separate wire behavior task.
 - `offers` declares production fallback, Item view and bundle World membership. Requirements
   are identical in each offered set. Per-connection weather filtering remains in dispatch.
+  `production` names the fallback without a non-empty active Item index; it is not a
+  shipped-game availability flag. The shipped Synology topology enables the pinned World
+  bundle and stages `content/spells.manifest.json`, including its Item keys. Its offer uses
+  `bundle_world`, where field runes (91), coin conversion (171) and their prerequisites
+  are enabled. The server library test `shipped_world_offers_field_runes_and_coin_conversion`
+  activates that manifest and checks the shipped scope offer and dependency selection.
 - `supersedes` records the existing MAP-WIRE-1 core-domain replacement (18 supersedes 2).
 
 `build.rs` scans the directory, checks exact registry coverage, filenames, unique ids/names,

@@ -131,6 +131,38 @@ mod tests {
     }
 
     #[test]
+    fn primal_bag_is_playable_and_mints_every_pinned_reward() {
+        use crate::content::native_gameplay::test_support::{
+            activated_with_item_keys, activated_with_loot_tables,
+        };
+        let world = activated_with_item_keys(None)
+            .active()
+            .expect("active")
+            .identity()
+            .world_id();
+        let (controller, _) = activated_with_loot_tables(world, None);
+        let active = controller.active().expect("active");
+        let native = active.native_gameplay().expect("native");
+        let bag = reward_bags()
+            .expect("overlay")
+            .iter()
+            .find(|bag| bag.constant == "PRIMAL_BAG")
+            .expect("Primal Bag is present");
+        assert!(bag.playable);
+        assert_eq!(bag.bag, "oteryn:item.tibia.i39546");
+        assert_eq!(bag.rewards.len(), 14);
+        let mut cumulative = 0;
+        for reward in &bag.rewards {
+            let plan = reward_bag_conversion(native, &item(&bag.bag), cumulative)
+                .expect("Primal Bag reward is mintable in active content");
+            assert_eq!(plan.recipe, "oteryn:reward-bag.primal_bag");
+            assert_eq!(plan.outputs, vec![(item(&reward.item), 1)]);
+            cumulative += reward.weight;
+        }
+        assert_eq!(cumulative, 54_000);
+    }
+
+    #[test]
     fn active_content_mints_every_reward_bag_output() {
         use crate::content::native_gameplay::test_support::{
             activated_with_item_keys, activated_with_loot_tables,
