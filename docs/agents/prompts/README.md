@@ -1,6 +1,6 @@
 # Reusable agent prompts
 
-`../PROMPT_LIFECYCLE.json` is the dispatchability source of truth. Resolve one known alias by reading only its matching lifecycle entry and prompt. Only `status: reusable` entries may run. Files under `retired/` are cold provenance and must not be dispatched.
+`../PROMPT_LIFECYCLE.json` is the dispatchability source of truth. Resolve one known alias by reading only its matching lifecycle entry and prompt. Only `status: reusable` entries may run. Retired prompts are removed from the tree and recoverable from git history at `329f78f8` (the one exception under `retired/` is `OTV2_DEFECT_DISCOVERY_SUPERVISOR.md`, which a test still pins); none may be dispatched.
 
 Prompts are task-specific deltas over root/nearest instructions, bound META and accepted contracts. Alias existence grants no allocation, tracked-file write, control-plane, merge, production or cross-repository authority.
 

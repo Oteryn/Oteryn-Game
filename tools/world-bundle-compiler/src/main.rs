@@ -564,8 +564,10 @@ fn inputs_digest(root: &Path) -> Result<String, Error> {
     Ok(hex(&hash.finalize()))
 }
 
-/// Compiles the World Project of `root` as a non-production bundle, twice, and returns its bytes.
-fn build_twice(root: &Path, identity: &Identity) -> Result<Vec<u8>, Error> {
+/// Compiles the World Project of `root` as a non-production bundle, twice, and returns its bytes
+/// with the Item registry it was compiled against. The two compiles run on their own threads,
+/// the equivalence proof of the first beside the second.
+fn build_twice(root: &Path, identity: &Identity) -> Result<(Vec<u8>, Registry), Error> {
     let project = project(root)?;
     let (registry, palette) = registry(root, &project)?;
     let input = Input {
@@ -577,15 +579,24 @@ fn build_twice(root: &Path, identity: &Identity) -> Result<Vec<u8>, Error> {
         draft_areas: project::draft_areas(&project.index)?,
         families: &project.families,
     };
-    let first = compile::compile(&input, &registry)?;
-    let second = compile::compile(&input, &registry)?;
+    let (first, second) = std::thread::scope(|scope| {
+        let second = scope.spawn(|| compile::compile(&input, &registry));
+        let first = compile::compile(&input, &registry).and_then(|first| {
+            equivalence(&input, &registry, &first.bytes)?;
+            Ok(first)
+        });
+        let second = second
+            .join()
+            .map_err(|_| Error::Format("the second build panicked".into()));
+        (first, second)
+    });
+    let (first, second) = (first?, second??);
     if first.digest != second.digest || first.bytes != second.bytes {
         return Err(Error::Format(
             "two builds from one tree gave different bundles".into(),
         ));
     }
-    equivalence(&input, &registry, &first.bytes)?;
-    Ok(first.bytes)
+    Ok((first.bytes, registry))
 }
 
 fn run_derive_identity(root: &Path, slug: &str) -> Result<String, Error> {
@@ -658,7 +669,7 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
                 "entry_start: outside the World bounds".into(),
             ));
         }
-        let bytes = build_twice(root, &identity)?;
+        let (bytes, registry) = build_twice(root, &identity)?;
         let digest = hex(&bytes[bytes.len() - 32..]);
         if pin.digest != digest {
             return Err(fail(format!(
@@ -666,7 +677,7 @@ fn run_pin_check(root: &Path, out: &Path) -> Result<Value, Error> {
                 pin.digest
             )));
         }
-        entry_start::check(&bytes, pin.entry_start, &registry(root, &project(root)?)?.0)?;
+        entry_start::check(&bytes, pin.entry_start, &registry)?;
         fs::write(out.join(format!("{slug}-{digest}.otwb")), &bytes).map_err(io)?;
         names.push(digest.clone());
         reports.push(json!({"world": slug, "digest": digest, "bytes": bytes.len()}));

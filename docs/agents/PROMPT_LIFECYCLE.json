@@ -19,28 +19,6 @@
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
     },
     {
-      "prompt_id": "OTV2_CLOSE_NEXT_WAVE_BLOCKERS",
-      "path": "docs/agents/prompts/retired/OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "historical-implementation-programme",
-      "scope": "Owner-authorized coordinator for #93/#115/#116/#123 blocker closure, evidence-backed first-slice numeric acceptance, serialized registry canonicalization and bounded #115 verifier/consumer closure.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Terminal blocker-closure delivery is complete through #131/#152; use the canonical Work coordinator and live allocations for future work."
-    },
-    {
-      "prompt_id": "OTV2_CONTENT_FORMAT_SPIKE",
-      "path": "docs/agents/prompts/retired/OTV2_CONTENT_FORMAT_SPIKE.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "historical-implementation-coordinator",
-      "scope": "Evidence-only content-format spike; no permanent production-format selection authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Issue #95 is completed; any future content-format work requires a fresh live allocation rather than redispatching the terminal spike."
-    },
-    {
       "prompt_id": "OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT",
       "path": "docs/agents/prompts/OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT.md",
       "version": "1.2",
@@ -76,7 +54,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "version": "2.10",
+      "version": "2.11",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "Primary Game Work control plane rooted directly in protected repository instructions, bound META policy, routed Game contracts, current allocation/custody and live GitHub state; bounded worker dispatch/integration with fail-closed architecture escalation, no authority expansion, and registered scoped dispatch aliases that resolve to this same profile identity.",
@@ -105,17 +83,6 @@
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This prompt is read-only owner guidance and supersedes no coordinator, lane lead, architect or auditor; only an explicit replacement registered in this lifecycle registry may supersede it."
-    },
-    {
-      "prompt_id": "OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "historical-architecture-programme",
-      "scope": "Architecture/governance continuation for the owner-approved Work-control-plane + Sol-lane-lead + selective-Codex execution model; no runtime implementation authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md",
-      "supersession_rule": "Issue #179 design delivery and its lifecycle closeout are complete; the adopted scheduler and current reusable role family supersede this one-shot architecture continuation."
     },
     {
       "prompt_id": "OTV2_IMPL_ANALYTICS",
@@ -217,28 +184,6 @@
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
     },
     {
-      "prompt_id": "OTV2_IMPL_QA_E2E",
-      "path": "docs/agents/prompts/retired/OTV2_IMPL_QA_E2E.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "live-implementation-coordinator-allocation",
-      "scope": "Bounded QA/E2E evidence worker template; a completed prior task does not grant new write authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_SOL_CLIENT_QA_LEAD.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt optimization): its unique content was folded into OTV2_SOL_CLIENT_QA_LEAD, which the owner invokes for this lane. Retained as provenance."
-    },
-    {
-      "prompt_id": "OTV2_IMPL_SERVER_SEAM",
-      "path": "docs/agents/prompts/retired/OTV2_IMPL_SERVER_SEAM.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "live-implementation-coordinator-allocation",
-      "scope": "Bounded production gameplay server-seam executor; no mutation without the merged exact allocation required by the prompt.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt optimization): its unique content was folded into OTV2_SOL_SERVER_SEAM_LEAD, which the owner invokes for this lane. Retained as provenance."
-    },
-    {
       "prompt_id": "OTV2_IMPL_SIMULATION",
       "path": "docs/agents/prompts/OTV2_IMPL_SIMULATION.md",
       "version": "1.1",
@@ -250,50 +195,6 @@
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
     },
     {
-      "prompt_id": "OTV2_IMPL_VSL_COMBAT",
-      "path": "docs/agents/prompts/retired/OTV2_IMPL_VSL_COMBAT.md",
-      "version": "1.2",
-      "status": "retired",
-      "owner": "live-implementation-coordinator-allocation",
-      "scope": "Bounded authoritative combat implementation worker; writes require a current merged allocation.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt optimization): its unique content was folded into OTV2_SOL_COMBAT_LEAD, which the owner invokes for this lane. Retained as provenance."
-    },
-    {
-      "prompt_id": "OTV2_IMPL_VSL_CONTENT",
-      "path": "docs/agents/prompts/retired/OTV2_IMPL_VSL_CONTENT.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "live-implementation-coordinator-allocation",
-      "scope": "Bounded VSL content executor template; current production acceptance remains governed by live allocation and blockers.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_CONTENT_WORLD_LEAD.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): VSL content execution is superseded by the active OTV2_CONTENT_WORLD_* lane family; no recorded use. Retained as provenance."
-    },
-    {
-      "prompt_id": "OTV2_IMPL_VSL_MOVEMENT",
-      "path": "docs/agents/prompts/retired/OTV2_IMPL_VSL_MOVEMENT.md",
-      "version": "1.3",
-      "status": "retired",
-      "owner": "live-implementation-coordinator-allocation",
-      "scope": "Bounded movement implementation worker; writes require a current merged allocation.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt optimization): its unique content was folded into OTV2_SOL_MOVEMENT_LEAD, which the owner invokes for this lane. Retained as provenance."
-    },
-    {
-      "prompt_id": "OTV2_IMPL_WORKSPACE_BOOTSTRAP",
-      "path": "docs/agents/prompts/retired/OTV2_IMPL_WORKSPACE_BOOTSTRAP.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "live-implementation-coordinator-allocation",
-      "scope": "Bounded workspace-bootstrap executor template; reuse requires a current merged allocation even though prior bootstrap is terminal.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): the workspace bootstrap is terminal (its own scope says so) and the profile had no recorded use. Retained as provenance."
-    },
-    {
       "prompt_id": "OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT",
       "path": "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md",
       "version": "1.4",
@@ -303,72 +204,6 @@
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
-    },
-    {
-      "prompt_id": "OTV2_NEXT_WAVE_PARALLEL_PREPARATION",
-      "path": "docs/agents/prompts/retired/OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "historical-implementation-programme",
-      "scope": "Orchestration-only launcher for bounded preparation lanes #93-#97; live task/allocation state is mandatory before any write.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Preparation Issues #93-#97 are terminal; future work is allocated from the canonical Work coordinator and current DAG."
-    },
-    {
-      "prompt_id": "OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH",
-      "path": "docs/agents/prompts/retired/OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "historical-implementation-programme",
-      "scope": "Historical one-shot post-SIM Wave-1 launch guidance retained for provenance only.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "The canonical Work coordinator and live allocation state supersede this one-shot launch guidance; it must not be dispatched."
-    },
-    {
-      "prompt_id": "OTV2_PREP_DURABILITY_TOPOLOGY",
-      "path": "docs/agents/prompts/retired/OTV2_PREP_DURABILITY_TOPOLOGY.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "historical-live-implementation-coordinator-allocation",
-      "scope": "Issue #94 durability topology preparation executor; no runtime/DDL implementation authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Issue #94 is completed; future durability work resolves current allocations and contracts."
-    },
-    {
-      "prompt_id": "OTV2_PREP_PROGRAMME_STATUS",
-      "path": "docs/agents/prompts/retired/OTV2_PREP_PROGRAMME_STATUS.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "historical-live-implementation-coordinator-allocation",
-      "scope": "Issue #97 programme-status reconciliation executor; docs/audit only under a current allocation.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Issue #97 is completed; future status reconciliation resolves live GitHub through the current Work coordinator."
-    },
-    {
-      "prompt_id": "OTV2_PREP_SERVER_SEAM",
-      "path": "docs/agents/prompts/retired/OTV2_PREP_SERVER_SEAM.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "historical-live-implementation-coordinator-allocation",
-      "scope": "Issue #96 production gameplay server-seam preparation executor; no listener/runtime implementation authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Issue #96 preparation is completed; current Server Seam delivery is governed by its live allocation and implementation prompt."
-    },
-    {
-      "prompt_id": "OTV2_PREP_WAVE2_RESOURCE_LIMITS",
-      "path": "docs/agents/prompts/retired/OTV2_PREP_WAVE2_RESOURCE_LIMITS.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "historical-live-implementation-coordinator-allocation",
-      "scope": "Issue #93 Wave-2 resource-limit decision preparation; missing numeric values must not be invented.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Issue #93 is completed; future resource-limit work requires a fresh current allocation."
     },
     {
       "prompt_id": "OTV2_TERRA_GAME_CONTROL_PLANE",
@@ -448,39 +283,6 @@
       "supersession_rule": "Read-only analyst profile; it never supersedes or becomes the Durability Lead, implementation worker, formal reviewer, control plane or architecture authority."
     },
     {
-      "prompt_id": "OTV2_WP3_WRITER",
-      "path": "docs/agents/prompts/retired/OTV2_WP3_WRITER.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "wp3-live-canonical-lineage",
-      "scope": "Historical single-writer profile for the superseded broad #356 SQLx-driver-accounting lineage; retained as provenance only.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/retired/OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md",
-      "supersession_rule": "Retired after the protected upstream-first WP3-A transition. Do not dispatch against #356; current mutation uses the WP3-v2 implementation lead only under live #162/#364 allocation."
-    },
-    {
-      "prompt_id": "OTV2_WP3_TLS_AUDITOR",
-      "path": "docs/agents/prompts/retired/OTV2_WP3_TLS_AUDITOR.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "wp3-read-only-analysis",
-      "scope": "Historical read-only TLS audit profile bound to the superseded broad #356 candidate; retained as provenance only.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/retired/OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md",
-      "supersession_rule": "Retired after the protected upstream-first WP3-A transition. Current TLS/source evidence work uses the WP3-v2 evidence auditor against the live upstream-first lineage."
-    },
-    {
-      "prompt_id": "OTV2_WP3_QUALIFICATION_AUDITOR",
-      "path": "docs/agents/prompts/retired/OTV2_WP3_QUALIFICATION_AUDITOR.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "wp3-read-only-analysis",
-      "scope": "Historical read-only qualification profile bound to the superseded broad #356 candidate; retained as provenance only.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/retired/OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md",
-      "supersession_rule": "Retired after the protected upstream-first WP3-A transition. Current evidence and qualification support uses the WP3-v2 evidence auditor against the live upstream-first lineage."
-    },
-    {
       "prompt_id": "OTV2_SOL_SERVER_SEAM_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
       "version": "1.2",
@@ -525,61 +327,6 @@
       "supersession_rule": "This lead profile does not supersede OTV2_IMPL_VSL_COMBAT; it specializes reasoning/leadership under live coordinator allocation."
     },
     {
-      "prompt_id": "OTV2_SOL_POST_VSL_EXPANSION",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_POST_VSL_EXPANSION.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "architecture-programme",
-      "scope": "Read-only-by-default post-VSL planning/decomposition of remaining accepted Game work; no runtime implementation authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): read-only future-wave placeholder from the 2026-08-27 parallel-execution plan, with no recorded use. Future waves are allocated by the Work coordinator with the standard worker definitions. Retained as provenance."
-    },
-    {
-      "prompt_id": "OTV2_SOL_WORLD_CONTENT_PREP",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_WORLD_CONTENT_PREP.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "post-vsl-read-only-preparation",
-      "scope": "Post-VSL World/Content read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_CONTENT_WORLD_LEAD.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): superseded by the active OTV2_CONTENT_WORLD_* lane family; no recorded use. Retained as provenance."
-    },
-    {
-      "prompt_id": "OTV2_SOL_NPC_AI_PREP",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_NPC_AI_PREP.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "post-vsl-read-only-preparation",
-      "scope": "Post-VSL NPC/AI read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): read-only future-wave placeholder from the 2026-08-27 parallel-execution plan, with no recorded use. Future waves are allocated by the Work coordinator with the standard worker definitions. Retained as provenance."
-    },
-    {
-      "prompt_id": "OTV2_SOL_SYSTEMS_ECONOMY_PREP",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_SYSTEMS_ECONOMY_PREP.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "post-vsl-read-only-preparation",
-      "scope": "Post-VSL Systems/Economy read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): read-only future-wave placeholder from the 2026-08-27 parallel-execution plan, with no recorded use. Future waves are allocated by the Work coordinator with the standard worker definitions. Retained as provenance."
-    },
-    {
-      "prompt_id": "OTV2_SOL_TOOLING_OPS_PREP",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_TOOLING_OPS_PREP.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "post-vsl-read-only-preparation",
-      "scope": "Post-VSL Tooling/Ops read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): read-only future-wave placeholder from the 2026-08-27 parallel-execution plan, with no recorded use. Future waves are allocated by the Work coordinator with the standard worker definitions. Retained as provenance."
-    },
-    {
       "prompt_id": "OTV2_REFERENCE_INVESTIGATOR",
       "path": "docs/agents/prompts/OTV2_REFERENCE_INVESTIGATOR.md",
       "version": "1.3",
@@ -589,127 +336,6 @@
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Additive #486 research accelerator; it supersedes no implementation, lane-lead, coordinator or auditor prompt. Alias reuse never grants write authority."
-    },
-    {
-      "prompt_id": "OTV2_SOL_NATIVE_UI_LEAD",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_NATIVE_UI_LEAD.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "native-ui-programme-documentation",
-      "scope": "Native UI programme planning and handoff documents named by a live exact allocation; read-only otherwise; no implementation, allocation, control-plane or merge authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): the Native UI agent programme (docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md) never became active and had no recorded use; native client work proceeds through ADR-0020 lanes (N1-N3 merged) with ordinary allocated workers. Retained as provenance; a restart needs a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_SOL_NATIVE_UI_P1",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_NATIVE_UI_P1.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "native-ui-p1-foundation",
-      "scope": "Native UI P1 ui-core and explicitly leased manifest/boundary paths named by a live exact protected allocation; read-only otherwise; no P1 admission, control-plane or merge authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): the Native UI agent programme (docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md) never became active and had no recorded use; native client work proceeds through ADR-0020 lanes (N1-N3 merged) with ordinary allocated workers. Retained as provenance; a restart needs a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_SOL_NATIVE_UI_INPUT",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_NATIVE_UI_INPUT.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "native-ui-input-integration",
-      "scope": "One admitted Native UI P2 input sub-slice and exact paths named by a live allocation; read-only otherwise; no renderer, protocol, control-plane or merge authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): the Native UI agent programme (docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md) never became active and had no recorded use; native client work proceeds through ADR-0020 lanes (N1-N3 merged) with ordinary allocated workers. Retained as provenance; a restart needs a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_SOL_NATIVE_UI_RENDERER",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_NATIVE_UI_RENDERER.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "native-ui-renderer-integration",
-      "scope": "One admitted Native UI P3 renderer/native-host sub-slice and exact paths named by a live allocation; read-only otherwise; no product/FOV, control-plane or merge authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): the Native UI agent programme (docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md) never became active and had no recorded use; native client work proceeds through ADR-0020 lanes (N1-N3 merged) with ordinary allocated workers. Retained as provenance; a restart needs a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_SOL_NATIVE_UI_HUD",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_NATIVE_UI_HUD.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "native-ui-hud-view-model",
-      "scope": "One admitted Native UI P5 or feature-driven P8 slice and exact paths named by a live allocation; read-only otherwise; no protocol, server, control-plane or merge authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): the Native UI agent programme (docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md) never became active and had no recorded use; native client work proceeds through ADR-0020 lanes (N1-N3 merged) with ordinary allocated workers. Retained as provenance; a restart needs a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_SOL_NATIVE_UI_QUALIFY",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_NATIVE_UI_QUALIFY.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "native-ui-physical-qualification",
-      "scope": "Read-only Native UI physical qualification plus only evidence-report paths named by a live exact allocation; no implementation repair, FOV decision, control-plane or merge authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): the Native UI agent programme (docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md) never became active and had no recorded use; native client work proceeds through ADR-0020 lanes (N1-N3 merged) with ordinary allocated workers. Retained as provenance; a restart needs a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_SOL_NATIVE_UI_CI",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_NATIVE_UI_CI.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "native-ui-ci-enforcement",
-      "scope": "One explicitly allocated Native UI P1-E, CP-S, CP-D or CP-A tools/governance slice and exact paths; read-only otherwise; no branch-protection, runtime, second-control-plane or merge authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): the Native UI agent programme (docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md) never became active and had no recorded use; native client work proceeds through ADR-0020 lanes (N1-N3 merged) with ordinary allocated workers. Retained as provenance; a restart needs a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_SOL_NATIVE_UI_REVIEW",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_NATIVE_UI_REVIEW.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "native-ui-independent-review",
-      "scope": "Strictly read-only independent Native UI review of one live exact candidate; no tracked-file repair, allocation, approval, control-plane or merge authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 (prompt audit): the Native UI agent programme (docs/agents/programs/OTERYN_NATIVE_UI_AGENT_PROGRAMME_V1.md) never became active and had no recorded use; native client work proceeds through ADR-0020 lanes (N1-N3 merged) with ordinary allocated workers. Retained as provenance; a restart needs a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR",
-      "path": "docs/agents/prompts/retired/OTV2_ASTRA_WP3_V2_PROGRAMME_COORDINATOR.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "wp3-v2-programme-coordination",
-      "scope": "Task-specific WP3-v2 through Child B/WP5/G0/Server-Seam programme routing under live #162/#364 authority; creates no independent control plane or write lease.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29: the WP3-v2, Child B and WP5 G0 programme is terminal (WP5 G0 READY on #319; Server Seam #247 closed via #823). Retained as provenance only; future work uses the canonical Work coordinator and live #162 allocations."
-    },
-    {
-      "prompt_id": "OTV2_ASTRA_WP3_V2_ARCHITECTURE_LEAD",
-      "path": "docs/agents/prompts/retired/OTV2_ASTRA_WP3_V2_ARCHITECTURE_LEAD.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "wp3-v2-architecture-closure",
-      "scope": "Architecture-only closure/acceptance preparation for the protected Revision-3 WP3-v2 successor; no runtime implementation or acceptance authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29: the WP3-v2, Child B and WP5 G0 programme is terminal (WP5 G0 READY on #319; Server Seam #247 closed via #823). Retained as provenance only; future work uses the canonical Work coordinator and live #162 allocations."
-    },
-    {
-      "prompt_id": "OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR",
-      "path": "docs/agents/prompts/retired/OTV2_SOL_WP3_V2_EVIDENCE_AUDITOR.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "wp3-v2-read-only-analysis",
-      "scope": "Strict read-only exact-source evidence support for Revision-3 closure and later A4 qualification; no tracked-file, control-plane, review-disposition or merge authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29: the WP3-v2, Child B and WP5 G0 programme is terminal (WP5 G0 READY on #319; Server Seam #247 closed via #823). Retained as provenance only; future work uses the canonical Work coordinator and live #162 allocations."
     },
     {
       "prompt_id": "OTV2_ASTRA_PLATFORM_NATIVE_EVIDENCE_HARDENING",
@@ -723,78 +349,12 @@
       "supersession_rule": "Cross-repository handoff profile only; actual Platform work remains governed by Platform live authority and task lifecycle."
     },
     {
-      "prompt_id": "OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD",
-      "path": "docs/agents/prompts/retired/OTV2_ASTRA_WP3_V2_IMPLEMENTATION_LEAD.md",
-      "version": "1.1",
-      "status": "retired",
-      "owner": "wp3-v2-live-implementation-allocation",
-      "scope": "WP3-v2 implementation lead activated only after architecture acceptance and fresh exact #162/#364 allocation/path custody; read-only otherwise.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29: the WP3-v2, Child B and WP5 G0 programme is terminal (WP5 G0 READY on #319; Server Seam #247 closed via #823). Retained as provenance only; future work uses the canonical Work coordinator and live #162 allocations."
-    },
-    {
-      "prompt_id": "OTV2_ASTRA_CHILD_B_DURABILITY_LEAD",
-      "path": "docs/agents/prompts/retired/OTV2_ASTRA_CHILD_B_DURABILITY_LEAD.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "child-b-canonical-lineage",
-      "scope": "Canonical #329/#335 Child B durability completion profile; mutating work requires protected WP3 and exact live shared-path custody, read-only preparation otherwise.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29: the WP3-v2, Child B and WP5 G0 programme is terminal (WP5 G0 READY on #319; Server Seam #247 closed via #823). Retained as provenance only; future work uses the canonical Work coordinator and live #162 allocations."
-    },
-    {
-      "prompt_id": "OTV2_ASTRA_WP5_SOURCE_COMPOSITION_LEAD",
-      "path": "docs/agents/prompts/retired/OTV2_ASTRA_WP5_SOURCE_COMPOSITION_LEAD.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "wp5-source-composition",
-      "scope": "#319/WP5 Game source-readiness, ingestion and composed G0 profile under live allocations; no implicit Platform, PKI, production, Child B or Server Seam write authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29: the WP3-v2, Child B and WP5 G0 programme is terminal (WP5 G0 READY on #319; Server Seam #247 closed via #823). Retained as provenance only; future work uses the canonical Work coordinator and live #162 allocations."
-    },
-    {
       "prompt_id": "OTV2_DEFECT_DISCOVERY_SUPERVISOR",
       "path": "docs/agents/prompts/retired/OTV2_DEFECT_DISCOVERY_SUPERVISOR.md",
       "version": "1.1",
       "status": "retired",
       "owner": "defect-discovery-programme",
       "scope": "Read-only technical supervision and exact next-allocation proposal for OTERYN_DEFECT_DISCOVERY_V1; no second control plane or implementation authority.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 by owner decision: the Defect Discovery programme has been dormant since its 2026-09-15 P0-P3 allocation. Retained as provenance; a restart needs a new owner decision and a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_DEFECT_DISCOVERY_P0_P3_LEAD",
-      "path": "docs/agents/prompts/retired/OTV2_DEFECT_DISCOVERY_P0_P3_LEAD.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "live-implementation-coordinator-allocation",
-      "scope": "First Defect Discovery proof-package implementation lead for P0-P3; writes require a current merged exact allocation.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 by owner decision: the Defect Discovery programme has been dormant since its 2026-09-15 P0-P3 allocation. Retained as provenance; a restart needs a new owner decision and a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER",
-      "path": "docs/agents/prompts/retired/OTV2_DEFECT_DISCOVERY_TOOL_QUALIFIER.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "defect-discovery-programme",
-      "scope": "Bounded Oteryn-specific qualification of optional Defect Discovery tooling after protected P0-P3 proof; no broad adoption without exact allocation.",
-      "reusable": false,
-      "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "supersession_rule": "Retired 2026-09-29 by owner decision: the Defect Discovery programme has been dormant since its 2026-09-15 P0-P3 allocation. Retained as provenance; a restart needs a new owner decision and a live #162 allocation."
-    },
-    {
-      "prompt_id": "OTV2_DEFECT_DISCOVERY_MODULE_LEAD",
-      "path": "docs/agents/prompts/retired/OTV2_DEFECT_DISCOVERY_MODULE_LEAD.md",
-      "version": "1.0",
-      "status": "retired",
-      "owner": "live-implementation-coordinator-allocation",
-      "scope": "Parameterized Defect Discovery implementation lead for one exact allocated product module after the protected core proof.",
       "reusable": false,
       "superseded_by": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
       "supersession_rule": "Retired 2026-09-29 by owner decision: the Defect Discovery programme has been dormant since its 2026-09-15 P0-P3 allocation. Retained as provenance; a restart needs a new owner decision and a live #162 allocation."
