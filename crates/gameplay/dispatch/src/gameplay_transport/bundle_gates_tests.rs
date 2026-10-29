@@ -144,6 +144,16 @@ const INVENTORY: &[Entry] = &[
         // The cast and its commit, and the three of `bundle_world_opens_locate_message_only`.
         calls: &[("gameplay_transport/parameter_cast.rs", 5)],
     },
+    Entry {
+        gate: "parameter cast and its commit: creature appearance",
+        plan: "`creature_appearance` parameter cast",
+        accessor: "gate_parameter_cast",
+        key: "creature_appearance",
+        state: Gate::AllocatedOpen {
+            task: "WAVE-A2/C17c",
+        },
+        calls: &[],
+    },
     // `house_access` and `vertical_move`: SPELL-RT-WORLD-1 of the MAGIC-SUMMON-1 graph.
     Entry {
         gate: "parameter cast and its commit: house access, vertical move",
@@ -555,6 +565,11 @@ fn every_gate_names_its_opener_or_owner() -> Result<(), Box<dyn std::error::Erro
                 assert!(!batch.is_empty() && pr > 0, "open gate `{}`", entry.gate);
             }
             Gate::AllocatedOpen { task } => {
+                if task == "WAVE-A2/C17c" {
+                    assert_eq!(entry.accessor, "gate_parameter_cast");
+                    assert_eq!(entry.key, "creature_appearance");
+                    continue;
+                }
                 assert_eq!(task, "FIELD-RUNES-1");
                 let contract: serde_json::Value = serde_json::from_str(include_str!(
                     "../../../../../docs/contracts/protocol-oteryn/v1/registry/capabilities/0091-field-runes-v1.json"
