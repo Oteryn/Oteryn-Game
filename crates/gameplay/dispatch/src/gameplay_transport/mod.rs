@@ -1217,6 +1217,24 @@ impl AdmissionRetryBudget {
         true
     }
 
+    /// Runs one durable `step` of the attempt, retrying an unavailable outcome (such as a
+    /// busy holder) under [`Self::retries_unavailable`]; any other refusal is final (DEFLAKE-3).
+    async fn retry_unavailable<T>(
+        &self,
+        mut step: impl AsyncFnMut() -> Result<T, AdmissionRefusal>,
+    ) -> Result<T, AdmissionRefusal> {
+        loop {
+            match step().await {
+                Ok(value) => return Ok(value),
+                Err(refusal) => {
+                    if !self.retries_unavailable(refusal).await {
+                        return Err(refusal);
+                    }
+                }
+            }
+        }
+    }
+
     /// Whether a round left stale by concurrent owner evidence is retried: it waits one
     /// backoff while rounds remain.
     async fn retries_stale(&mut self) -> bool {

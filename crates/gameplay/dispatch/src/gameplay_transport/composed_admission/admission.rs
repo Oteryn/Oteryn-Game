@@ -158,9 +158,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     _ => Unavailable,
                 })?;
             // LOOP-MAP-1: initialize selection and home-spawn factors before a player is admitted.
-            self.initialize_cyclopedia_respawn()
-                .await
-                .map_err(|_| Unavailable)?;
+            // Its epoch pass takes the shared holder too, so a busy holder is retried (DEFLAKE-3).
+            budget
+                .retry_unavailable(async || {
+                    self.initialize_cyclopedia_respawn()
+                        .await
+                        .map_err(|()| Unavailable)
+                })
+                .await?;
             let mut flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
                 .map_err(|_| Rejected)?;
             let mut prepared = PreparedRequest(None);
@@ -397,28 +402,42 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         // Login is the repair path for characters created before automatic acquisition and for
         // an earlier level-up whose durable projection could not be written.
+        // Both are reads or an idempotent fenced write through the shared holder, so a busy
+        // holder is retried within the attempt's window rather than refusing it (DEFLAKE-3).
         if writes_after_progression(positioned, admitted.first_entry) {
-            let facts = load_character_cast_facts(self.root, self.character, character_id).await;
-            let (facts, character_revision) = match facts {
-                CastFactsLoad::Ready {
-                    facts,
-                    character_revision,
-                } => (facts, character_revision),
-                CastFactsLoad::NoVocation { .. } => return Ok(admitted),
-                CastFactsLoad::Unavailable => return Err(AdmissionRefusal::Unavailable),
+            let loaded = budget
+                .retry_unavailable(async || {
+                    match load_character_cast_facts(self.root, self.character, character_id).await {
+                        CastFactsLoad::Ready {
+                            facts,
+                            character_revision,
+                        } => Ok(Some((facts, character_revision))),
+                        CastFactsLoad::NoVocation { .. } => Ok(None),
+                        CastFactsLoad::Unavailable => Err(Unavailable),
+                    }
+                })
+                .await?;
+            let Some((facts, character_revision)) = loaded else {
+                return Ok(admitted);
             };
-            if !self
-                .reconcile_automatic_spells(
-                    character_id,
-                    admitted.game_session_id,
-                    character_revision,
-                    facts.level,
-                    facts.vocation,
-                )
-                .await
-            {
-                return Err(AdmissionRefusal::Unavailable);
-            }
+            budget
+                .retry_unavailable(async || {
+                    if self
+                        .reconcile_automatic_spells(
+                            character_id,
+                            admitted.game_session_id,
+                            character_revision,
+                            facts.level,
+                            facts.vocation,
+                        )
+                        .await
+                    {
+                        Ok(())
+                    } else {
+                        Err(Unavailable)
+                    }
+                })
+                .await?;
         }
         Ok(admitted)
     }
