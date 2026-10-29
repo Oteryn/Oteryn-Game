@@ -87,7 +87,7 @@ Cross product/auxiliary renames, symlinks/submodules, special modes, malformed c
 
 ## Post-merge full gate
 
-The canonical full-gate workflow is `.github/workflows/merge-group-gate.yml`. The GitHub merge queue is off (owner decision 2026-10-23, PR #2319), so it runs post-merge on every push to `main` (`push` trigger, no cancel-in-progress, `github.sha` as head and the previous main as base). It is a post-merge verdict, not a PR requirement; the `merge_group` trigger is kept so restoring the queue needs no workflow change (it would validate GitHub's exact synthetic `merge_group` head).
+The canonical full-gate workflow is `.github/workflows/merge-group-gate.yml`. The GitHub merge queue is off (owner decision 2026-10-23, PR #2319), so it runs post-merge on every push to `main` (`push` trigger, `github.sha` as head). Push runs share one concurrency group per ref with cancel-in-progress, so a newer main push supersedes an older run; the base is the newest main SHA whose push run of this workflow succeeded and that is a strict ancestor of the head, or the push's own parent with every lane selected (`qualified=false`) when that cannot be proven. It is a post-merge verdict, not a PR requirement; the `merge_group` trigger is kept so restoring the queue needs no workflow change (it would validate GitHub's exact synthetic `merge_group` head).
 
 ### PR early-signal PostgreSQL harness
 
