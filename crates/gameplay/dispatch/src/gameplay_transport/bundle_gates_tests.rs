@@ -141,13 +141,31 @@ const INVENTORY: &[Entry] = &[
             batch: "MAGIC-CAST-1",
             pr: 2112,
         },
-        // The cast and its commit, and the three of `bundle_world_opens_locate_message_only`.
+        // The cast and its commit, and the three of `bundle_world_opens_locate_message_and_vertical_move`.
         calls: &[("gameplay_transport/parameter_cast.rs", 5)],
     },
-    // `house_access` and `vertical_move`: SPELL-RT-WORLD-1 of the MAGIC-SUMMON-1 graph.
     Entry {
-        gate: "parameter cast and its commit: house access, vertical move",
-        plan: "`house_access` and `vertical_move` parameter casts",
+        gate: "parameter cast and its commit: vertical move",
+        plan: "`vertical_move` parameter cast",
+        accessor: "gate_parameter_cast",
+        key: "vertical_move",
+        state: Gate::AllocatedOpen { task: "WAVE-A/M11" },
+        calls: &[],
+    },
+    Entry {
+        gate: "parameter cast and its commit: creature appearance",
+        plan: "`creature_appearance` parameter cast",
+        accessor: "gate_parameter_cast",
+        key: "creature_appearance",
+        state: Gate::AllocatedOpen {
+            task: "WAVE-A2/C17c",
+        },
+        calls: &[],
+    },
+    // `house_access`: SPELL-RT-WORLD-1 of the MAGIC-SUMMON-1 graph.
+    Entry {
+        gate: "parameter cast and its commit: house access",
+        plan: "`house_access` parameter cast",
         accessor: "gate_parameter_cast",
         key: "_",
         state: Gate::Closed {
@@ -555,6 +573,16 @@ fn every_gate_names_its_opener_or_owner() -> Result<(), Box<dyn std::error::Erro
                 assert!(!batch.is_empty() && pr > 0, "open gate `{}`", entry.gate);
             }
             Gate::AllocatedOpen { task } => {
+                if task == "WAVE-A/M11" {
+                    assert_eq!(entry.accessor, "gate_parameter_cast");
+                    assert_eq!(entry.key, "vertical_move");
+                    continue;
+                }
+                if task == "WAVE-A2/C17c" {
+                    assert_eq!(entry.accessor, "gate_parameter_cast");
+                    assert_eq!(entry.key, "creature_appearance");
+                    continue;
+                }
                 assert_eq!(task, "FIELD-RUNES-1");
                 let contract: serde_json::Value = serde_json::from_str(include_str!(
                     "../../../../../docs/contracts/protocol-oteryn/v1/registry/capabilities/0091-field-runes-v1.json"
@@ -702,10 +730,12 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
+    ("gameplay_transport/postgres_tests/party_buffs.rs", 1),
     ("gameplay_transport/postgres_tests/party_xp.rs", 1),
     ("gameplay_transport/postgres_tests/ranged_attack.rs", 1),
     ("gameplay_transport/postgres_tests/player_trade.rs", 2),
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
+    ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),
     ("gameplay_transport/postgres_tests/wheel_allocation.rs", 3),
     ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),

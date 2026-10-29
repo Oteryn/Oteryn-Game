@@ -92,6 +92,7 @@ pub(super) async fn prepare_direct(
     training_occurrence: BuildOccurrence,
     now: SemanticTimeMicros,
     rune: Option<&ItemSpellCastIntent>,
+    legacy: Option<&LegacyRuneUse>,
     parameter: Option<&ParameterSpellCastIntent>,
     attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     _draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
@@ -175,18 +176,11 @@ pub(super) async fn prepare_direct(
             return reject();
         }
         let selected = if intent.target == SpellTarget::AttackTarget {
-            let wanted = attack_target.ok_or(SpellCastDisposition::TargetRequired)?;
             Some(
-                runtime
-                    .visible_entities()
-                    .creatures
-                    .iter()
-                    .find(|c| {
-                        c.actor.placement_identity() == wanted.identity
-                            && c.generation == wanted.generation
-                    })
-                    .map(|c| c.actor)
-                    .ok_or(SpellCastDisposition::TargetIllegal)?,
+                legacy
+                    .and_then(|l| l.creature)
+                    .or(attack_target)
+                    .ok_or(SpellCastDisposition::TargetRequired)?,
             )
         } else {
             None
@@ -197,11 +191,26 @@ pub(super) async fn prepare_direct(
                 y: p.y,
                 floor: p.floor,
             },
-            SpellTarget::AttackTarget => roster
-                .iter()
-                .find(|(a, _, _)| Some(*a) == selected)
-                .map(|(_, p, _)| tile(p.position()))
-                .ok_or(SpellCastDisposition::TargetIllegal)?,
+            SpellTarget::AttackTarget => {
+                let actor = runtime
+                    .visible_entities()
+                    .creatures
+                    .iter()
+                    .find(|c| {
+                        selected.is_some_and(|e| {
+                            e.identity == c.actor.placement_identity()
+                                && e.generation == c.generation
+                        })
+                    })
+                    .map(|c| c.actor)
+                    .ok_or(SpellCastDisposition::TargetIllegal)?;
+                tile(
+                    runtime
+                        .read_actor_position(actor)
+                        .map_err(|_| SpellCastDisposition::TargetIllegal)?
+                        .position(),
+                )
+            }
             _ => return Err(SpellCastDisposition::TargetRequired),
         };
         let group = crate::durability::spell_familiar_group::read_current_group_in_transaction(
@@ -221,8 +230,8 @@ pub(super) async fn prepare_direct(
         let mut visible = Vec::new();
         for (actor, pos, session) in &roster {
             if session.is_none()
-                && selected.is_none_or(|selected| selected == *actor)
                 && tile(pos.position()) == p
+                && selected.is_none_or(|e| e.identity == actor.placement_identity())
             {
                 let snapshot = runtime
                     .companion_snapshot(*actor)

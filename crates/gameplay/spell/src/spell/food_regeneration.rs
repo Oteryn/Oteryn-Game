@@ -21,7 +21,9 @@ pub(super) fn step_due(state: &mut PlayerSpellState, now: u64, in_protection_zon
             now.saturating_sub(1),
         )
         .is_some();
-    if in_protection_zone {
+    if in_protection_zone && state.resting_streak >= 2 {
+        credit_resting_second(state, state.resting_streak, fed);
+    } else if in_protection_zone {
         hold_fed_second(state, fed);
     } else {
         credit_second(state, fed);
@@ -56,35 +58,38 @@ pub fn credit_second(state: &mut PlayerSpellState, fed: bool) {
 }
 
 /// Credit the daily-reward resting-area clocks. The streak unlocks health at two,
-/// mana at three, and a second health/mana credit at five/six respectively.
-pub fn credit_resting_second(state: &mut PlayerSpellState, streak: u32) -> Option<()> {
+/// mana at three, and doubles the credited health/mana amounts at five/six.
+fn credit_resting_second(state: &mut PlayerSpellState, streak: u32, fed: bool) {
+    // Global: Free accounts keep the health/mana unlocks, but tiers 4-7 need Premium.
+    let streak = if state.premium_current {
+        streak
+    } else {
+        streak.min(3)
+    };
     if streak < 2 || state.health == 0 {
-        return Some(());
+        return;
     }
-    let before = state.clone();
-    let fed = state
-        .conditions
-        .active_at(
-            oteryn_gameplay_domain::domain::condition::ConflictKey::FoodRegeneration,
-            state
-                .regeneration_next_tick_us
-                .unwrap_or(0)
-                .saturating_sub(1),
-        )
-        .is_some();
+    let health_before = state.health;
+    let mana_before = (state.mana, state.regen_mana_ms);
     credit_second(state, fed);
     if streak < 3 {
-        state.mana = before.mana;
-        state.regen_mana_ms = before.regen_mana_ms;
+        (state.mana, state.regen_mana_ms) = mana_before;
+        let health = (state.health, state.regen_health_ms);
+        hold_fed_second(state, fed);
+        (state.health, state.regen_health_ms) = health;
     }
     if streak >= 5 {
-        let mana = (state.mana, state.regen_mana_ms);
-        credit_second(state, fed);
-        if streak < 6 {
-            (state.mana, state.regen_mana_ms) = mana;
-        }
+        state.health = state
+            .health
+            .saturating_add(state.health - health_before)
+            .min(state.facts.max_health);
     }
-    Some(())
+    if streak >= 6 {
+        state.mana = state
+            .mana
+            .saturating_add(state.mana - mana_before.0)
+            .min(state.facts.max_mana);
+    }
 }
 
 /// Holds one native tick in a protection zone. The historical helper also serves hungry actors.
@@ -152,21 +157,98 @@ mod tests {
     }
 
     #[test]
+    fn daily_resting_health_and_mana_below_at_and_above_every_threshold() {
+        for streak in 0..=8 {
+            for premium in [false, true] {
+                let mut state = actor(Vocation::Druid);
+                state.premium_current = premium;
+                state.set_resting_streak(streak);
+                for second in 1..=120 {
+                    step_due(&mut state, second * 1_000_000, true);
+                    let before = state.clone();
+                    step_due(&mut state, second * 1_000_000, true);
+                    assert_eq!(
+                        state, before,
+                        "a repeated owner observation cannot credit again"
+                    );
+                }
+                let health = if streak < 2 {
+                    0
+                } else if premium && streak >= 5 {
+                    60
+                } else {
+                    30
+                };
+                let mana = if streak < 3 {
+                    0
+                } else if premium && streak >= 6 {
+                    80
+                } else {
+                    40
+                };
+                assert_eq!(
+                    (state.health, state.mana),
+                    (100 + health, 100 + mana),
+                    "streak={streak}, premium={premium}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn daily_resting_double_tiers_multiply_amounts_without_accelerating_the_clocks() {
+        for (streak, expected) in [
+            (4, (101, 102)),
+            (5, (102, 102)),
+            (6, (102, 104)),
+            (7, (102, 104)),
+        ] {
+            let mut state = actor(Vocation::Druid);
+            state.premium_current = true;
+            state.set_resting_streak(streak);
+            for second in 1..=3 {
+                step_due(&mut state, second * 1_000_000, true);
+                assert_eq!((state.health, state.mana), (100, 100));
+            }
+            step_due(&mut state, 4_000_000, true);
+            assert_eq!((state.health, state.mana), (expected.0, 100));
+            step_due(&mut state, 5_000_000, true);
+            assert_eq!(state.mana, 100);
+            step_due(&mut state, 6_000_000, true);
+            assert_eq!((state.health, state.mana), expected);
+        }
+    }
+
+    #[test]
+    fn daily_resting_streak_does_not_accelerate_regeneration_outside_the_area() {
+        for streak in 0..=8 {
+            let mut state = actor(Vocation::Druid);
+            state.premium_current = true;
+            state.set_resting_streak(streak);
+            for second in 1..=120 {
+                step_due(&mut state, second * 1_000_000, false);
+            }
+            assert_eq!((state.health, state.mana), (130, 140));
+        }
+    }
+
+    #[test]
     fn resting_streak_tiers_unlock_and_double_only_the_named_pool() {
         let mut tier_one = actor(Vocation::Druid);
         let before = tier_one.clone();
-        credit_resting_second(&mut tier_one, 1).expect("tier");
+        credit_resting_second(&mut tier_one, 1, false);
         assert_eq!(tier_one, before);
 
         let mut tier_two = actor(Vocation::Druid);
+        tier_two.premium_current = true;
         let mut tier_three = tier_two.clone();
         let mut tier_five = tier_two.clone();
         let mut tier_six = tier_two.clone();
         for _ in 0..12 {
-            credit_resting_second(&mut tier_two, 2).expect("tier 2");
-            credit_resting_second(&mut tier_three, 3).expect("tier 3");
-            credit_resting_second(&mut tier_five, 5).expect("tier 5");
-            credit_resting_second(&mut tier_six, 6).expect("tier 6");
+            credit_resting_second(&mut tier_two, 2, false);
+            credit_resting_second(&mut tier_three, 3, false);
+            credit_resting_second(&mut tier_five, 5, false);
+            credit_resting_second(&mut tier_six, 6, false);
         }
         assert_eq!(tier_two.mana, 100, "tier 2 has no mana bonus");
         assert!(tier_three.mana > tier_two.mana);

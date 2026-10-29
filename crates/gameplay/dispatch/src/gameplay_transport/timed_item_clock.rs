@@ -169,6 +169,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     effects::equipped_defence(&equipment, native)?,
                     effects::equipped_mana_shield(&equipment, native)?,
                     effects::equipped_offence(&equipment, native)?,
+                    equipment.clone(),
                 ))
             })() {
                 let runtime = self.runtime.lock().await;
@@ -216,6 +217,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         clock.items.retain(|id, _| held.contains(id));
+        let mut proficiency_equipment = equipment.clone();
         for item in equipment.items {
             let Some((definition, target)) = facts(native, &item.definition) else {
                 continue;
@@ -331,8 +333,16 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             active_mana_shield = active;
+            proficiency_equipment = equipment;
         }
         let runtime = self.runtime.lock().await;
+        if self
+            .install_proficiency_equipment(&runtime, actor, session, &proficiency_equipment)
+            .await
+            .is_none()
+        {
+            return false;
+        }
         let mut states = self.states.spell_states.lock().await;
         if let Some(state) = states.get_mut(&runtime, actor, session) {
             state.install_equipped_mana_shield(active_mana_shield);

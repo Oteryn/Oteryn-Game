@@ -810,21 +810,14 @@ impl ChannelSpellStates {
             .then_some((gained, revision))
     }
 
-    pub(super) fn apply_resting_regeneration(
+    pub(super) fn apply_resting_soul(
         &mut self,
         runtime: &ChannelRuntimeV1,
         actor: ExactActorRef,
         session: GameSessionId,
-        streak: u32,
         soul_due: bool,
     ) -> Option<(u64, ActorVitals)> {
         if self.is_dead(actor) || self.has_pending_spell_commit(actor, session) {
-            return None;
-        }
-        let current = self.get(runtime, actor, session)?.clone();
-        let next = current.after_resting_regeneration(streak)?;
-        let mut changed = next.revision() != current.revision();
-        if changed && !self.commit(runtime, actor, session, next) {
             return None;
         }
         let current = self.get(runtime, actor, session)?.clone();
@@ -837,9 +830,8 @@ impl ChannelSpellStates {
         if soul_changed && !self.commit(runtime, actor, session, next) {
             return None;
         }
-        changed |= soul_changed;
         let state = self.get(runtime, actor, session)?;
-        changed.then(|| (state.revision(), state.vitals()))
+        soul_changed.then(|| (state.revision(), state.vitals()))
     }
 
     /// True while no spell commit is pending for the committed player and no durable spell holds

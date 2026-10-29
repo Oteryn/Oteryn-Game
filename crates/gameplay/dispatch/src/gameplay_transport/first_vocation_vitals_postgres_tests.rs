@@ -18,7 +18,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 #[test]
-fn first_vocation_vitals_dispatch_preserves_pools_once_and_restores_after_restart_postgres()
+fn first_vocation_vitals_dispatch_refills_pools_once_and_restores_after_restart_postgres()
 -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("tutorial-first-vocation", || {
         scenario("tutorial_first_vocation", 70, 30)
@@ -26,7 +26,8 @@ fn first_vocation_vitals_dispatch_preserves_pools_once_and_restores_after_restar
 }
 
 #[test]
-fn first_vocation_vitals_full_pools_do_not_refill_after_restart_postgres() -> TestResult {
+fn first_vocation_vitals_old_full_pools_refill_to_new_maxima_after_restart_postgres() -> TestResult
+{
     super::kill_reward_e2e::scenario_thread::run("tutorial-first-vocation-maxima", || {
         scenario("tutorial_first_vocation_maxima", 245, 150)
     })
@@ -84,6 +85,43 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
         owner.active_generation = None;
         admit(&owner, &dependencies, &request).await?;
         owner.active_generation = Some(active);
+        let fence = owner
+            .current_quest_fence(session)
+            .await
+            .map_err(|()| "stance fence")?
+            .ok_or("stance fence")?;
+        // The node tracks a successfully admitted actor for periodic/final position saves.
+        assert!(owner.track_restored(
+            session,
+            actor,
+            &crate::gameplay_transport::last_position::AdmissionPosition::FirstLogin,
+            fence
+        ));
+        h.root
+            .commit_character_stance(
+                &authority,
+                &h.node,
+                fence,
+                crate::durability::character_stance::StanceChangeRequest {
+                    occurrence:
+                        crate::durability::character_stance::StanceChangeOccurrence::from_bytes(id(
+                            92,
+                        ))
+                        .map_err(debug)?,
+                    before: None,
+                    after: Some("protector".into()),
+                    content_revision: "content-1".into(),
+                    policy_revision: progression.policy_revision.clone(),
+                    policy_digest: [1; 32],
+                },
+            )
+            .await
+            .map_err(debug)?;
+        let stance = h
+            .root
+            .read_character_stance(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
         let npc = {
             let mut runtime = dependencies.runtime.lock().await;
             let at = runtime
@@ -115,6 +153,9 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
                 (state.vitals().max_health, state.vitals().max_mana),
                 (245, 150)
             );
+            state
+                .load_owned_stance(&stance, owner.spells)
+                .map_err(debug)?;
             state.restore_saved_vitals(health, mana);
             let formula = active
                 .native_gameplay()
@@ -227,6 +268,14 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
         ))
         .await;
         assert_eq!(chosen.disposition, NpcIntentDisposition::Ok);
+        assert_eq!(
+            sqlx::query_as::<_, (Option<i32>, Option<i32>)>(
+                "SELECT health, mana FROM game_character_last_positions"
+            )
+            .fetch_one(&h.pool)
+            .await?,
+            (Some(365), Some(150))
+        );
         let (installed_revision, occurrence) = {
             let runtime = dependencies.runtime.lock().await;
             let states = owner.states.spell_states.lock().await;
@@ -240,7 +289,7 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
                     state.vitals().mana,
                     state.vitals().max_health
                 ),
-                (health, mana, 365)
+                (365, 150, 365)
             );
             let occurrence: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(build_occurrence_id) FROM game_character_build_receipts WHERE cause='vocation_choice'").fetch_one(&h.pool).await?;
             (state.revision(), occurrence)
@@ -281,6 +330,46 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
                 .ok_or("formula")?
                 .digest(),
         };
+        let stored_stance = h
+            .root
+            .read_character_stance(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
+        assert_eq!(stored_stance.key(), Some("protector"));
+        let stored_build = h
+            .root
+            .read_character_build_state(&authority, fence.character_id)
+            .await
+            .map_err(debug)?;
+        let stored_progress = h
+            .root
+            .read_character_progression(&authority, fence.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("progress")?;
+        assert_eq!(
+            crate::gameplay_transport::spell_character_facts::maxima_with_bounds(
+                stored_build.vocation(),
+                stored_progress.level,
+                oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
+                oteryn_protocol_oteryn::actor_spell::MAX_SOUL
+            ),
+            Some((365, 150, 100))
+        );
+        assert_eq!(
+            oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(
+                stored_progress.level,
+                stored_build.vocation()
+            ),
+            Ok(97_000)
+        );
+        assert_eq!(
+            oteryn_gameplay_items::item_capacity::project_global_capacity_centi_oz(
+                stored_progress.level,
+                "none"
+            ),
+            Ok(96_000)
+        );
         // Replay both after installation and after a commit whose live installation was lost.
         for (command_id, restore_before) in [(4, false), (5, true)] {
             if restore_before {
@@ -300,6 +389,17 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
                     .states
                     .npc_conversations
                     .restore_vocation_topic_for_test(session, replay)
+            );
+            // The retained choice may be committed while the actor still has its old pools.
+            // A periodic capture must wait, keeping its track for the next ordinary save.
+            assert_eq!(owner.write_due_last_positions(true).await, 0);
+            assert_eq!(
+                sqlx::query_as::<_, (Option<i32>, Option<i32>)>(
+                    "SELECT health, mana FROM game_character_last_positions"
+                )
+                .fetch_one(&h.pool)
+                .await?,
+                (Some(365), Some(150))
             );
             owner.clock_origin = Instant::now()
                 .checked_sub(Duration::from_secs(command_id + 1))
@@ -324,7 +424,7 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
                 .get(&runtime, actor, session)
                 .ok_or("converted vitals")?;
             assert_eq!(state.revision(), installed_revision);
-            assert_eq!((state.vitals().health, state.vitals().mana), (health, mana));
+            assert_eq!((state.vitals().health, state.vitals().mana), (365, 150));
         }
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
@@ -333,6 +433,44 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
             .fetch_one(&h.pool)
             .await?,
             1
+        );
+        {
+            let runtime = dependencies.runtime.lock().await;
+            owner
+                .states
+                .spell_states
+                .lock()
+                .await
+                .get_mut(&runtime, actor, session)
+                .ok_or("spent pools")?
+                .restore_saved_vitals(70, 30);
+        }
+        assert_eq!(owner.write_due_last_positions(true).await, 0);
+        let replay = h
+            .root
+            .commit_character_build(
+                &authority,
+                &h.node,
+                retained.fence,
+                retained.request.clone(),
+                active
+                    .native_gameplay()
+                    .and_then(|native| native.training_formula())
+                    .ok_or("formula")?,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(matches!(
+            replay,
+            crate::durability::character_build::BuildCommitOutcome::AlreadyCommitted(_)
+        ));
+        assert_eq!(
+            sqlx::query_as::<_, (Option<i32>, Option<i32>)>(
+                "SELECT health, mana FROM game_character_last_positions"
+            )
+            .fetch_one(&h.pool)
+            .await?,
+            (Some(70), Some(30))
         );
         drop(owner);
         drop(authority);
@@ -360,7 +498,7 @@ fn scenario(tag: &str, health: u32, mana: u32) -> TestResult {
                 .get(&runtime, restarted.actor, session)
                 .ok_or("restored classed vitals")?;
             assert_eq!(state.character_facts().vocation, Vocation::Knight);
-            assert_eq!((state.vitals().health, state.vitals().mana), (health, mana));
+            assert_eq!((state.vitals().health, state.vitals().mana), (70, 30));
         }
         assert_eq!(
             sqlx::query_scalar::<_, i64>(
