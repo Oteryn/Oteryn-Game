@@ -69,14 +69,24 @@ fn i05_crystal_charged_amulet_matches() {
     assert!(target.is_none());
 }
 
-/// Crystal timed rings the active generation does not admit: stealth 3049 -> 3086 (600 s), life
-/// 3052 -> 3089 (1,200 s), time 3053 -> 3090 (600 s), dwarven 3097 -> 3099 (3,600 s) and ring of
-/// healing 3098 -> 3100 (450 s). The timed path resolves no form or budget for them. MISSING.
+/// Time ring 3053 -> 3090 is admitted with its 600-second active-time budget. The remaining
+/// Crystal rings are pinned below until their non-temporal equipment effects are production-ready.
 #[test]
-fn i05_unadmitted_crystal_timed_rings_are_pinned() {
+fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
     let controller = native();
     let native = native_state(&controller);
-    for base in [3049, 3052, 3053, 3097, 3098] {
+    let definition = typed_of(native, 3053).expect("time ring admitted");
+    assert_eq!(
+        equipped_definition(native, &definition)
+            .expect("active form")
+            .production_key,
+        key(3090)
+    );
+    let (time_facts, target) = facts(native, &definition).expect("timed facts");
+    assert_eq!(time_facts.full.remaining_ms(), Some(600_000));
+    assert!(target.is_none());
+
+    for base in [3049, 3052, 3097, 3098] {
         let definition = typed_of(native, base);
         assert!(
             definition

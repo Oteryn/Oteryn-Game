@@ -15,14 +15,21 @@ pub(super) async fn sleep_with_owner(
     intent: BedSleepIntent,
     target: ItemKey,
 ) -> Result<UseOutcome, crate::durability::DurabilityError> {
-    use crate::durability::bed_sleep::BedSleepOutcome;
-
     let Some(owner) = authority
         .prepare_bed_sleep(actor, command, intent, target)
         .await
     else {
         return Ok(UseOutcome::rejected());
     };
+    finish_owner(command, intent, owner).await
+}
+
+pub(super) async fn finish_owner(
+    command: UseCommand,
+    intent: BedSleepIntent,
+    owner: crate::durability::bed_sleep::BedSleepOwner<'_, '_, '_>,
+) -> Result<UseOutcome, crate::durability::DurabilityError> {
+    use crate::durability::bed_sleep::BedSleepOutcome;
     if command.item_fence != Some(owner.request.fence)
         || command.game_session_id != owner.request.fence.game_session_id
         || command.command_id != owner.request.command_id

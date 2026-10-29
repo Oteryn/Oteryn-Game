@@ -6,6 +6,14 @@ use crate::durability::spell_items_abi::SpellGroundTarget;
 use crate::durability::spell_owner_commit::SpellLanePermit;
 use sha2::{Digest, Sha256};
 
+/// The terrain-tool catalogue owns which qualified items act as a machete.
+fn is_machete(key: &str) -> bool {
+    matches!(
+        oteryn_gameplay_world::terrain_tools::TerrainTool::from_production_key(key),
+        Some(oteryn_gameplay_world::terrain_tools::TerrainTool::Machete)
+    )
+}
+
 #[derive(Debug)]
 pub(super) struct PendingFieldRemoval {
     pub(super) fence: CurrentCharacterItemFence,
@@ -66,7 +74,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let tool_item = carried
             .into_iter()
             .find(|entry| entry.item.item_instance_id == tool)?;
-        if tool_item.item.definition.production_key != "oteryn:item.tibia.i3308" {
+        if !is_machete(&tool_item.item.definition.production_key) {
             return None;
         }
         let binding: [u8; 32] = Sha256::digest(
@@ -197,6 +205,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             window.install();
             self.states.loop_ground.invalidate();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_machete;
+
+    #[test]
+    fn global_machetes_and_secret_agent_tools_share_field_removal() {
+        for id in [3308, 3330, 9594, 9596, 9598] {
+            assert!(is_machete(&format!("oteryn:item.tibia.i{id}")), "{id}");
+        }
+        assert!(!is_machete("oteryn:item.tibia.i5908"));
+        assert!(!is_machete("oteryn:item.tibia.i3457"));
     }
 }
 

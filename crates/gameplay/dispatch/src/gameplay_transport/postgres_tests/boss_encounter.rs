@@ -756,6 +756,17 @@ fn page(payload: &[u8]) -> TestResult<CooldownPage> {
             26 => {
                 next = std::str::from_utf8(bytes(payload, &mut at)?)?.to_owned();
             }
+            34 => {
+                // Bosstiary progress shares the authority-consistent snapshot. Cooldown
+                // assertions below deliberately ignore its independently tested contents.
+                let _ = bytes(payload, &mut at)?;
+            }
+            40 => {
+                let _ = varint(payload, &mut at)?;
+            }
+            50 => {
+                let _ = bytes(payload, &mut at)?;
+            }
             _ => return Err("unknown result field".into()),
         }
     }
@@ -929,6 +940,13 @@ fn scenario(history_probe: HistoryProbe) -> TestResult {
         assert!(now > 0);
         assert!(entries.is_empty() && next.is_empty());
         let fence = admitted.item_fence.ok_or("fence")?;
+        sqlx::query(
+            "INSERT INTO game_character_bosstiary_progress(character_id,boss_key,kill_count,boss_points) \
+             VALUES(encode($1,'hex')::uuid,'oteryn:boss.progress',20,30)",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .execute(&h.pool)
+        .await?;
         // Seed admission outcomes through the admin connection. This test qualifies the
         // dispatched read, not a boss-admission writer. Deadlines include expired rows.
         for i in 0..66 {
@@ -939,6 +957,12 @@ fn scenario(history_probe: HistoryProbe) -> TestResult {
         }
         let (status, payload) = exchange(&owner, &mut admitted, 2, &[]).await?;
         assert_eq!(status, CommandStatus::Accepted);
+        assert!(
+            payload
+                .windows(b"oteryn:boss.progress".len())
+                .any(|window| window == b"oteryn:boss.progress")
+        );
+        assert!(payload.windows(2).any(|window| window == [40, 30]));
         let (now, entries, next) = page(&payload)?;
         assert!(now > 0);
         assert_eq!(entries.len(), 64);
@@ -974,6 +998,29 @@ fn scenario(history_probe: HistoryProbe) -> TestResult {
         let selected = admitted.continuity.selected_capabilities;
         admitted = without_capability;
         admitted.continuity.selected_capabilities = selected;
+        // REWARDCHEST2: command 340 traverses serve_admitted, the production router and the
+        // current-session durability proof. Continue the same command stream after the
+        // cooldown checks; command IDs are shared across command types.
+        let minted: i64 = sqlx::query_scalar(
+            "SELECT floor(extract(epoch FROM clock_timestamp())*1000)::bigint",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        sqlx::query("INSERT INTO game_character_boss_reward_chests(character_id,world_id,death_id,boss_key,minted_at,expires_at,item_count) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'oteryn:boss.fixture',$4,$4+604800000,2)")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(admitted.world_id.as_bytes().as_slice())
+            .bind(characters::sid(90, 4).as_slice()).bind(minted).execute(&h.pool).await?;
+        let reward_command_id = admitted.continuity.next_command_id;
+        let (status, rewards) = exchange_kind(
+            &owner,
+            &mut admitted,
+            reward_command_id,
+            COMMAND_TYPE_BOSS_REWARD_OPEN,
+            &[],
+        )
+        .await?;
+        assert_eq!(status, CommandStatus::Accepted);
+        assert!(rewards.windows(16).any(|bytes| bytes == characters::sid(90, 4)));
+        assert_eq!(admitted.continuity.next_command_id, reward_command_id + 1);
         use crate::gameplay_transport::guild_intent::GuildReply;
         assert!(matches!(
             owner

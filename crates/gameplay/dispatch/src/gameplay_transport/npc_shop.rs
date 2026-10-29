@@ -16,9 +16,10 @@ use super::npc_trade_command::{self, NpcTradeStep};
 use super::{ComposedFreshAdmission, item_ref_admission::pinned_index};
 use crate::foundation::ExactActorRef;
 use crate::content::ActiveGeneration;
-use oteryn_protocol_oteryn::item_look::MAX_ITEM_LOOK_TEXT_BYTES;
 use oteryn_protocol_oteryn::npc_service::{NpcIntentDisposition, NpcTradeIntent, NpcTradeSide};
-use oteryn_protocol_oteryn::npc_shop::{NpcShopAction, NpcShopIntent, NpcShopResult};
+use oteryn_protocol_oteryn::npc_shop::{
+    MAX_NPC_SHOP_LOOK_TEXT_BYTES, NpcShopAction, NpcShopIntent, NpcShopResult,
+};
 
 /// Canary game.cpp:6352 `Item::getDescription(it, 1, ...)`: the shop look is a near look.
 const SHOP_LOOK_DISTANCE: i32 = 1;
@@ -75,7 +76,7 @@ const fn trade_intent(intent: &NpcShopIntent) -> NpcTradeIntent {
 
 /// `text` cut at a character boundary to the look text bound.
 fn bounded(mut text: String) -> String {
-    let mut end = text.len().min(MAX_ITEM_LOOK_TEXT_BYTES);
+    let mut end = text.len().min(MAX_NPC_SHOP_LOOK_TEXT_BYTES);
     while !text.is_char_boundary(end) {
         end -= 1;
     }

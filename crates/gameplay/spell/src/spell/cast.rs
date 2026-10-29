@@ -85,6 +85,9 @@ pub struct CharacterCastFacts {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlayerSpellState {
     pub facts: CharacterCastFacts,
+    /// Character-owner maxima before temporary Wheel dedication is projected.
+    pub(crate) base_max_health: u32,
+    pub(crate) base_max_mana: u32,
     pub(super) premium_current: bool,
     pub(super) premium_valid_until_micros: Option<u64>,
     pub health: u32,
@@ -172,6 +175,8 @@ impl PlayerSpellState {
             && facts.max_soul <= MAX_SOUL)
             .then(|| Self {
                 facts,
+                base_max_health: facts.max_health,
+                base_max_mana: facts.max_mana,
                 health: facts.max_health,
                 mana: facts.max_mana,
                 regen_health_ms: 0,
