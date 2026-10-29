@@ -1217,13 +1217,7 @@ mod death_ml_loss_composed {
                     let (lost, payload_absent): (i64, bool) = sqlx::query_as(
                         "SELECT experience_lost, vocation IS NULL FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid"
                     ).bind(id(41).as_slice()).fetch_one(&harness.pool).await?;
-                    assert_eq!(
-                        lost,
-                        i64::try_from(
-                            crate::domain::death::death_experience_loss(20, 0, false)
-                                .map_err(debug)?
-                        )?
-                    );
+                    assert_eq!(lost, 17_200);
                     assert!(payload_absent);
                     drop(owner);
                     drop(authority);
@@ -1251,9 +1245,7 @@ mod death_ml_loss_composed {
             .await?;
             assert_eq!(binding, 1);
             assert_eq!(u64::try_from(experience_before)?, LEVEL_20_EXPERIENCE);
-            let lost = u64::try_from(
-                crate::domain::death::death_experience_loss(20, 0, false).map_err(debug)?,
-            )?;
+            let lost = 17_200;
             assert_eq!(u64::try_from(experience_lost)?, lost);
             let payload_absent: bool = sqlx::query_scalar(
                 "SELECT vocation IS NULL FROM game_character_death_receipts WHERE character_id=encode($1,'hex')::uuid"

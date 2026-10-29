@@ -175,8 +175,8 @@ impl From<DecisionError> for PveDeathError {
     }
 }
 
-/// D58/D59/D68: `floor(((L+50)/100) × 50 × (L² − 5L + 8) × (1 − 0.08·b − 0.30·p))`, before the
-/// cap at the current experience. Exact integer arithmetic; the same formula from level 1.
+/// Owner decision 2026-10-29 (replaces D58/D59): one canonical L→L+1
+/// experience-table span, with additive blessing/promotion reductions and floor rounding.
 pub fn death_experience_loss(
     level: u32,
     regular_blessings: u8,
@@ -195,6 +195,40 @@ pub fn death_experience_loss_with_bless(
     promotion_benefit_current: bool,
     bless_reduction_percent: u8,
 ) -> Result<u128, PveDeathError> {
+    experience_loss(
+        level,
+        regular_blessings,
+        promotion_benefit_current,
+        bless_reduction_percent,
+    )
+}
+
+/// The raw loss is independent of total experience and progress within the level.
+/// Validate experience here; callers cap the reduced loss at current experience.
+pub fn death_experience_loss_for_experience(
+    level: u32,
+    total_experience: ExactI64,
+    regular_blessings: u8,
+    promotion_benefit_current: bool,
+    bless_reduction_percent: u8,
+) -> Result<u128, PveDeathError> {
+    if total_experience.get() < 0 {
+        return Err(PveDeathError::NegativeExperience);
+    }
+    experience_loss(
+        level,
+        regular_blessings,
+        promotion_benefit_current,
+        bless_reduction_percent,
+    )
+}
+
+fn experience_loss(
+    level: u32,
+    regular_blessings: u8,
+    promotion_benefit_current: bool,
+    bless_reduction_percent: u8,
+) -> Result<u128, PveDeathError> {
     if level == 0 {
         return Err(PveDeathError::InvalidLevel);
     }
@@ -204,20 +238,64 @@ pub fn death_experience_loss_with_bless(
     if !matches!(bless_reduction_percent, 0 | 6 | 9 | 12) {
         return Err(PveDeathError::InvalidBlessReduction);
     }
-    let level = u128::from(level);
-    // L² − 5L + 8 = L(L − 5) + 8 is positive for every L ≥ 1.
-    let span = (level * level + 8)
-        .checked_sub(5 * level)
-        .ok_or(PveDeathError::Overflow)?;
     let percent_kept =
         100 - 8 * u128::from(regular_blessings) - if promotion_benefit_current { 30 } else { 0 };
-    (level + 50)
-        .checked_mul(50)
-        .and_then(|value| value.checked_mul(span))
-        .and_then(|value| value.checked_mul(percent_kept))
+    let next = level.checked_add(1).ok_or(PveDeathError::InvalidLevel)?;
+    let span = canonical_experience_threshold(next)?
+        .checked_sub(canonical_experience_threshold(level)?)
+        .ok_or(PveDeathError::Overflow)?;
+    span.checked_mul(percent_kept)
         .and_then(|value| value.checked_mul(100 - u128::from(bless_reduction_percent)))
-        .map(|value| value / 1_000_000)
+        .map(|value| value / 10_000)
         .ok_or(PveDeathError::Overflow)
+}
+
+// Decode the same canonical native progression section that CharacterProgressionContent
+// admits; no formula or independently maintained experience thresholds live here.
+#[derive(serde::Deserialize)]
+struct CanonicalProgressionSection {
+    experience_table: CanonicalExperienceTable,
+}
+
+#[derive(serde::Deserialize)]
+struct CanonicalExperienceTable {
+    levels: Vec<CanonicalExperienceThreshold>,
+    terminal_exclusive_experience: String,
+}
+
+#[derive(serde::Deserialize)]
+struct CanonicalExperienceThreshold {
+    level: u32,
+    minimum_experience: String,
+}
+
+/// Threshold from the canonical progression section, including its terminal boundary.
+pub(crate) fn canonical_experience_threshold(level: u32) -> Result<u128, PveDeathError> {
+    static SECTION: std::sync::OnceLock<Option<CanonicalProgressionSection>> =
+        std::sync::OnceLock::new();
+    let table = &SECTION
+        .get_or_init(|| {
+            serde_json::from_slice(include_bytes!(
+                "../../../../../rulesets/character/experience/native-section.json"
+            ))
+            .ok()
+        })
+        .as_ref()
+        .ok_or(PveDeathError::Overflow)?
+        .experience_table;
+    let index = usize::try_from(level.checked_sub(1).ok_or(PveDeathError::InvalidLevel)?)
+        .map_err(|_| PveDeathError::InvalidLevel)?;
+    let threshold = if index == table.levels.len() {
+        &table.terminal_exclusive_experience
+    } else {
+        &table
+            .levels
+            .get(index)
+            .filter(|row| row.level == level)
+            .ok_or(PveDeathError::InvalidLevel)?
+            .minimum_experience
+    };
+    threshold.parse().map_err(|_| PveDeathError::Overflow)
 }
 
 pub fn calculate_pve_death<I: Clone>(
@@ -240,8 +318,9 @@ pub fn calculate_pve_death_with_bless<I: Clone>(
     if experience < 0 {
         return Err(PveDeathError::NegativeExperience);
     }
-    let raw_loss = death_experience_loss_with_bless(
+    let raw_loss = death_experience_loss_for_experience(
         input.level,
+        input.total_experience,
         input.regular_blessings,
         input.promotion_benefit_current,
         bless_reduction_percent,
@@ -311,4 +390,72 @@ pub fn calculate_pve_death_with_bless<I: Clone>(
 pub fn per_mille_roll(draw: u64) -> u16 {
     // The product is below 1000 · 2^64, so the shifted value is below 1000.
     u16::try_from((u128::from(draw) * PER_MILLE) >> 64).unwrap_or(u16::MAX)
+}
+
+#[cfg(test)]
+mod experience_tests {
+    use super::*;
+
+    #[test]
+    fn pve_death_uses_next_level_span_at_every_level() -> Result<(), PveDeathError> {
+        let root = GameplayDecisionRoot::from_bytes([7; 32]);
+        let occurrence = DecisionOccurrenceId::from_bytes([1; 16]);
+        // Exact owner examples and boundary levels, independent of progress within the level.
+        for (level, experience, losses) in [
+            (1, 0, [100, 70, 44, 14]),
+            (10, 9_300, [3_700, 2_590, 1_628, 518]),
+            (23, 156_200, [23_200, 16_240, 10_208, 3_248]),
+            (24, 179_400, [25_400, 17_780, 11_176, 3_556]),
+            (50, 1_847_300, [117_700, 82_390, 51_788, 16_478]),
+            (
+                400,
+                1_050_779_800,
+                [7_940_200, 5_558_140, 3_493_688, 1_111_628],
+            ),
+            (
+                2000,
+                132_933_899_800,
+                [199_700_200, 139_790_140, 87_868_088, 27_958_028],
+            ),
+        ] {
+            for (blessings, promoted, loss) in [
+                (0, false, losses[0]),
+                (0, true, losses[1]),
+                (7, false, losses[2]),
+                (7, true, losses[3]),
+            ] {
+                for experience in [experience, experience + 99] {
+                    for bless in [0, 6, 9, 12] {
+                        let input = PveDeathInput::<u8> {
+                            level,
+                            total_experience: ExactI64::new(experience),
+                            regular_blessings: blessings,
+                            promotion_benefit_current: promoted,
+                            has_vocation: true,
+                            equipment: &[],
+                            necklace_is_amulet_of_loss: false,
+                        };
+                        let raw = loss * (100 - i64::from(bless)) / 100;
+                        assert_eq!(
+                            death_experience_loss_with_bless(level, blessings, promoted, bless)?,
+                            raw as u128
+                        );
+                        let expected = raw.min(experience);
+                        let outcome =
+                            calculate_pve_death_with_bless(&input, bless, &root, occurrence)?;
+                        assert_eq!(
+                            outcome.experience_lost.get(),
+                            expected,
+                            "level {level}, blessings {blessings}, promoted {promoted}, Bless {bless}"
+                        );
+                        assert_eq!(outcome.experience_after.get(), experience - expected);
+                        if bless == 0 {
+                            assert_eq!(calculate_pve_death(&input, &root, occurrence)?, outcome);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
 }

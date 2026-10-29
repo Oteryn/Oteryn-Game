@@ -1997,6 +1997,7 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/item_use.rs",
                 "crates/gameplay/durability/src/durability/map_item_mint.rs",
                 "crates/gameplay/durability/src/durability/npc_trade.rs",
+                "crates/gameplay/durability/src/durability/player_death_items.rs",
                 "crates/gameplay/durability/src/durability/player_trade/storage.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
             ]

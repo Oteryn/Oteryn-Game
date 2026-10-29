@@ -32,30 +32,6 @@ on:
       - main
     # Drafts are still being authored; the harness runs once the PR is ready.
     types: [opened, reopened, synchronize, ready_for_review, labeled]
-    # Everything the game-server PostgreSQL targets link: the targets and the
-    # library PostgreSQL tests exercise game-server code well beyond
-    # durability/** (combat, pickup, transport, interaction, catalogues), so
-    # the whole crate and its workspace path dependencies (including the
-    # gameplay crates carved out of it) are in scope. The
-    # lane is skipped only for PRs that cannot change what it runs.
-    paths:
-      - 'apps/game-server/**'
-      - 'crates/gameplay/**'
-      - 'crates/error-codes/**'
-      - 'crates/foundation/**'
-      - 'crates/ntp-clock/**'
-      - 'crates/protocol-oteryn/**'
-      - 'crates/session/**'
-      - 'crates/session-tcp/**'
-      - 'crates/simulation-determinism/**'
-      - 'crates/world-bundle/**'
-      - 'tools/dev-client/**'
-      - 'tools/world-bundle-compiler/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'rust-toolchain.toml'
-      - 'tools/repository/normalize_cargo_mtimes.py'
-      - '.github/workflows/pr-postgres-harness.yml'
 
 permissions: {}
 
@@ -84,6 +60,7 @@ jobs:
     outputs:
       archives_sha256: ${{ steps.digest.outputs.archives_sha256 }}
       workspace: ${{ steps.digest.outputs.workspace }}
+      empty: ${{ steps.scope.outputs.empty }}
     # No database here: this job verifies target custody and compiles once; the partition jobs run the tests.
     steps:
       - name: Check out exact pull request head
@@ -91,6 +68,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Verify exact pull request head SHA
         env:
@@ -103,13 +81,21 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git fetch --no-tags origin "$BASE_SHA"
           test "$(git rev-parse FETCH_HEAD)" = "$BASE_SHA"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.99.1 --profile minimal
 
+      - name: Select PostgreSQL package scope
+        id: scope
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 tools/ci/select_postgres_packages.py --base "$BASE_REF"
+
       - name: Restore trimmed Cargo cache from protected main
+        if: steps.scope.outputs.empty != 'true'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: |
@@ -122,13 +108,16 @@ jobs:
             rust-linux-v2-1.99.1-${{ hashFiles('Cargo.lock') }}-
 
       - name: Normalize source mtimes for the restored Cargo cache
+        if: steps.scope.outputs.empty != 'true'
         run: python tools/repository/normalize_cargo_mtimes.py
 
       - name: Verify locked metadata
+        if: steps.scope.outputs.empty != 'true'
         run: cargo +1.99.1 metadata --locked --format-version 1 >/dev/null
 
       # cargo-nextest 0.9.146, pinned by SHA-256 as in the Rust Linux legs.
       - name: Install pinned cargo-nextest
+        if: steps.scope.outputs.empty != 'true'
         env:
           NEXTEST_VERSION: 0.9.146
           NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
@@ -142,13 +131,15 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
-      # Every registered target present at the head is archived exactly once; any target removed or
-      # renamed against the protected base fails here, before anything is compiled.
+      # Verify every registered target before compiling the selected game-server targets.
+      # Any target removed or renamed against the protected base still fails custody.
       - name: Archive registered PostgreSQL E2E targets
+        if: steps.scope.outputs.empty != 'true'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PACKAGES: ${{ steps.scope.outputs.packages }}
         run: |
           set -euo pipefail
           archived_targets=()
@@ -246,18 +237,28 @@ jobs:
             exit 1
           }
           mkdir -p "$RUNNER_TEMP/pg-archives"
-          cargo +1.99.1 nextest archive --locked --workspace "${archived_targets[@]}" \
-            --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
+          if python3 -c 'import json, os, sys; p = json.loads(os.environ["PACKAGES"]); sys.exit(0 if p is None or "oteryn-game-server" in p else 1)'; then
+            cargo +1.99.1 nextest archive --locked -p oteryn-game-server "${archived_targets[@]}" \
+              --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst"
+          fi
 
       # Library tests that need PostgreSQL skip in the Rust Linux lib shards, which have no database;
       # this archive holds exactly the library tests the partition jobs run against the service.
       - name: Archive PostgreSQL-backed library tests
+        if: steps.scope.outputs.empty != 'true'
+        env:
+          LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
         run: |
           set -euo pipefail
-          cargo +1.99.1 nextest archive --locked -p oteryn-gameplay-durability -p oteryn-gameplay-dispatch -p oteryn-game-server --lib \
+          mapfile -t packages < <(python3 -c 'import json, os; print("\n".join(json.loads(os.environ["LIB_PACKAGES"])))')
+          args=()
+          for package in "${packages[@]}"; do args+=(-p "$package"); done
+          test "${#args[@]}" -gt 0
+          cargo +1.99.1 nextest archive --locked "${args[@]}" --lib \
             --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
 
       - name: Record archive digests and head
+        if: steps.scope.outputs.empty != 'true'
         id: digest
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -265,13 +266,14 @@ jobs:
           set -euo pipefail
           cd "$RUNNER_TEMP/pg-archives"
           printf '%s\n' "$HEAD_SHA" > head-sha
-          sha256sum head-sha pg-e2e.tar.zst pg-lib.tar.zst > SHA256SUMS
+          sha256sum head-sha ./*.tar.zst > SHA256SUMS
           ls -l
           echo "archives_sha256=$(sha256sum SHA256SUMS | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
           echo "workspace=$GITHUB_WORKSPACE" >> "$GITHUB_OUTPUT"
 
       # The archives are already zstd-compressed and only live for this run's partition jobs.
       - name: Upload PostgreSQL test archives
+        if: steps.scope.outputs.empty != 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pr-postgres-test-archives
@@ -314,18 +316,20 @@ jobs:
       # The test binaries read repository files through their compile-time CARGO_MANIFEST_DIR, so the
       # partition checks out the same head at the same workspace path as the build job.
       - name: Check out exact pull request head
+        if: needs.build.outputs.empty != 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Verify exact pull request head SHA
+        if: needs.build.outputs.empty != 'true'
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Use the PostgreSQL service container
-        if: runner.environment != 'self-hosted'
+        if: needs.build.outputs.empty != 'true' && runner.environment != 'self-hosted'
         env:
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
@@ -344,7 +348,7 @@ jobs:
       # different heads therefore run side by side; a shared lock per checkout keeps it from being
       # pruned while a partition uses it.
       - name: Expose this head at the build workspace path
-        if: runner.environment == 'self-hosted'
+        if: needs.build.outputs.empty != 'true' && runner.environment == 'self-hosted'
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
           BUILD_WORKSPACE: ${{ needs.build.outputs.workspace }}
@@ -419,7 +423,7 @@ jobs:
       # A throwaway cluster per job: fresh data directory, random password, loopback only, durability
       # off (the tests never survive a crash of their own database).
       - name: Start ephemeral PostgreSQL 18
-        if: runner.environment == 'self-hosted'
+        if: needs.build.outputs.empty != 'true' && runner.environment == 'self-hosted'
         run: |
           set -euo pipefail
           bin=/usr/lib/postgresql/18/bin
@@ -461,6 +465,7 @@ jobs:
           echo "NEXTEST_TEST_THREADS=4" >> "$GITHUB_ENV"
 
       - name: Install pinned cargo-nextest
+        if: needs.build.outputs.empty != 'true'
         env:
           NEXTEST_VERSION: 0.9.146
           NEXTEST_SHA256: 682c21b777c333e96fd532e114d3a5a894e0729ab88d94c0a9f20f8419695428
@@ -475,12 +480,14 @@ jobs:
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
       - name: Download PostgreSQL test archives
+        if: needs.build.outputs.empty != 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: pr-postgres-test-archives
           path: ${{ runner.temp }}/pg-archives
 
       - name: Verify archives were built for this head
+        if: needs.build.outputs.empty != 'true'
         id: verify
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
@@ -503,6 +510,7 @@ jobs:
       # balance. The partition is the matrix position and size, so the plan covers the whole
       # archive whatever the matrix length; the label must agree with the position.
       - name: Plan partition
+        if: needs.build.outputs.empty != 'true'
         id: partition
         env:
           LABEL: ${{ matrix.partition }}
@@ -515,6 +523,7 @@ jobs:
           plan="$RUNNER_TEMP/pg-plan"
           mkdir -p "$plan"
           for archive in pg-e2e pg-lib; do
+            [[ -f "$RUNNER_TEMP/pg-archives/$archive.tar.zst" ]] || continue
             "$PG_RUN" cargo-nextest nextest list --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \
               --workspace-remap "$PG_WORKSPACE" --message-format json > "$plan/$archive.json"
           done
@@ -551,7 +560,11 @@ jobs:
 
           priorities = []
           for archive in ('pg-e2e', 'pg-lib'):
-              listing = json.loads((plan / f'{archive}.json').read_text())
+              listing_path = plan / f'{archive}.json'
+              if not listing_path.exists():
+                  (plan / f'{archive}.filters').write_text('')
+                  continue
+              listing = json.loads(listing_path.read_text())
               cases = sorted(
                   (suite['binary-id'], name)
                   for suite in listing['rust-suites'].values()
@@ -564,7 +577,7 @@ jobs:
                   shares[share].append(case)
                   load[share] += estimate(case)
               assigned = sorted(case for share in shares for case in share)
-              if not cases or assigned != cases or len(set(cases)) != len(cases) or not all(shares):
+              if not cases or assigned != cases or len(set(cases)) != len(cases):
                   raise SystemExit(f'{archive}: the plan does not run every listed test exactly once')
               (plan / f'{archive}.filters').write_text(
                   ''.join(f'--filterset=binary_id(={b}) & test(={n})\n' for b, n in sorted(shares[index]))
@@ -580,9 +593,11 @@ jobs:
           PY
 
       - name: Run registered PostgreSQL E2E targets
+        if: needs.build.outputs.empty != 'true'
         run: |
           set -euo pipefail
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
           "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \
             --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
             --no-fail-fast "${filters[@]}"
@@ -592,6 +607,7 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
           "$PG_RUN" cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
             --workspace-remap "$PG_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
             --no-fail-fast "${filters[@]}"
