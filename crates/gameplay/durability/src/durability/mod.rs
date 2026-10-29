@@ -7,6 +7,7 @@ pub mod bed_regen;
 pub mod bed_sleep;
 pub mod boss_encounter;
 pub mod character_hazard;
+pub mod character_home_town;
 pub mod character_known_spells;
 pub mod creature_source_items;
 pub mod daily_boost;

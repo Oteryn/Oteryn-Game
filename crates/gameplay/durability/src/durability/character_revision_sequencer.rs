@@ -127,6 +127,11 @@ impl Expect {
 }
 
 impl RevisionSlot {
+    /// A citizenship choice may advance the root. Reload after success or an unknown outcome.
+    pub fn observe_home_town(&mut self) {
+        *self.cursor = None;
+    }
+
     /// A composed loop-training transaction (or an unknown outcome) changed the root.
     /// The next queued writer reloads it; no historical receipt grants a current cursor.
     pub fn observe_loop_training(&mut self) {
