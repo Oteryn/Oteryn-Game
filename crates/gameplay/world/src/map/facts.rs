@@ -179,6 +179,10 @@ impl BundleFacts {
                         .and(item.attrs.action)
                         .and_then(|action| u32::from(action).checked_sub(1000))
                 });
+                let required_storage = self.palette.get(item.palette as usize).and_then(|entry| {
+                    super::door_registry::quest_door_of(u32::from(entry.facts.appearance_id))
+                        .and(item.attrs.action)
+                });
                 // Preserve the source House and door numbers before ordinary Channel door
                 // classification deliberately seals House doors.
                 if tile.house != 0
@@ -201,7 +205,12 @@ impl BundleFacts {
                 let level_action = required_level.is_some()
                     && item.attrs.unique.is_none()
                     && item.attrs.door.is_none();
-                let door = if dropped || (bound(&item.attrs) && !key_action && !level_action) {
+                let quest_action = required_storage.is_some()
+                    && item.attrs.unique.is_none()
+                    && item.attrs.door.is_none();
+                let door = if dropped
+                    || (bound(&item.attrs) && !key_action && !level_action && !quest_action)
+                {
                     PaletteDoor::No
                 } else if tile.house != 0 && matches!(door, PaletteDoor::Pair { .. }) {
                     // A house door belongs to the house runtime, never to the channel DoorBook.
@@ -232,6 +241,7 @@ impl BundleFacts {
                             locked,
                             item.attrs.action,
                             required_level,
+                            required_storage,
                         );
                     }
                     PaletteDoor::Sealed => {

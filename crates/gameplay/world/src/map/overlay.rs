@@ -448,6 +448,17 @@ impl ChannelOverlay {
         self.tiles.get(&pos).map(|tile| TileOverlayView { tile })
     }
 
+    /// Whether an item added by a runtime owner currently occupies `pos`.
+    ///
+    /// Base-map entries are deliberately excluded: callers use this census for objects which
+    /// can be moved onto a doorway after boot (durable Ground items and volatile items).
+    #[must_use]
+    pub fn has_added_item(&self, pos: TilePos) -> bool {
+        self.tiles
+            .get(&pos)
+            .is_some_and(|tile| !tile.added.is_empty())
+    }
+
     /// Every changed tile, in no particular order.
     pub fn tiles(&self) -> impl Iterator<Item = (TilePos, TileOverlayView<'_>)> + '_ {
         self.tiles

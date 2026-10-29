@@ -120,6 +120,7 @@ impl FreshAdmissionAuthority for BundleChannel {
                 self.position.get(),
                 |pos| pos == self.position.get(),
                 self.level,
+                true,
                 &target,
             );
         }

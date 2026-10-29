@@ -50,6 +50,7 @@ struct Door {
     /// Crystal action id carried by the placed door; key items must match it exactly.
     action: Option<u16>,
     required_level: Option<u32>,
+    required_storage: Option<u16>,
     closed_solid: bool,
     open_solid: bool,
     open: EntryFacts,
@@ -107,12 +108,14 @@ impl DoorBook {
         locked: bool,
         action: Option<u16>,
         required_level: Option<u32>,
+        required_storage: Option<u16>,
     ) {
         self.doors.push(Door {
             key,
             locked,
             action,
             required_level,
+            required_storage,
             closed_solid,
             open_solid,
             open,
@@ -261,6 +264,7 @@ impl DoorBook {
         expected_revision: u64,
         occupied: bool,
         actor_level: u32,
+        quest_storage_met: bool,
     ) -> Option<DoorUse> {
         let door = self.find(key)?;
         let current = door.state.load(Ordering::Acquire);
@@ -274,6 +278,9 @@ impl DoorBook {
             .required_level
             .is_some_and(|required| actor_level < required)
         {
+            return Some(DoorUse::Locked);
+        }
+        if door.required_storage.is_some() && !quest_storage_met {
             return Some(DoorUse::Locked);
         }
         let closing = current % 2 == 1;
@@ -350,14 +357,14 @@ mod key_tests {
     fn matching_key_toggles_and_wrong_or_reserved_keys_do_not() {
         for door_action in [None, Some(101), Some(1001), Some(4322)] {
             let mut doors = DoorBook::default();
-            doors.push(7, true, false, open_facts(), true, door_action, None);
+            doors.push(7, true, false, open_facts(), true, door_action, None, None);
             doors.finish();
             assert_eq!(doors.use_key(7, 0, 4321), Some(DoorUse::Locked));
             assert_eq!(doors.revision(7), 0);
         }
 
         let mut doors = DoorBook::default();
-        doors.push(7, true, false, open_facts(), true, Some(4321), None);
+        doors.push(7, true, false, open_facts(), true, Some(4321), None, None);
         doors.finish();
         assert_eq!(
             doors.use_key(7, 0, 4321),
@@ -372,6 +379,34 @@ mod key_tests {
             floor: 0
         }));
         assert_eq!(doors.use_key(7, 0, 4321), Some(DoorUse::Stale));
+    }
+
+    #[test]
+    fn quest_door_requires_its_durable_storage_predicate() {
+        let mut doors = DoorBook::default();
+        doors.push(
+            7,
+            true,
+            false,
+            open_facts(),
+            false,
+            Some(4500),
+            None,
+            Some(4500),
+        );
+        doors.finish();
+        assert_eq!(
+            doors.toggle(7, 0, false, u32::MAX, false),
+            Some(DoorUse::Locked)
+        );
+        assert_eq!(doors.revision(7), 0);
+        assert_eq!(
+            doors.toggle(7, 0, false, u32::MAX, true),
+            Some(DoorUse::Toggled {
+                revision: 1,
+                open: true,
+            })
+        );
     }
 }
 

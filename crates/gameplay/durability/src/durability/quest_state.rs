@@ -229,6 +229,14 @@ pub struct QuestStateCopy {
 }
 
 impl QuestStateCopy {
+    /// Global quest-door storage semantics: absent storage reads as `-1`; any
+    /// durable value for the source storage action id grants the door.
+    #[must_use]
+    pub fn meets_door_storage(&self, action: u16) -> bool {
+        self.tracks
+            .get(&format!("oteryn:quest-progress/storage/{action}"))
+            .is_some_and(|value| *value != -1)
+    }
     /// Stored track values; a track without a row reads as its declared initial value.
     #[must_use]
     pub fn tracks(&self) -> &BTreeMap<String, i64> {
