@@ -381,6 +381,7 @@ impl ChannelSpellStates {
         session: GameSessionId,
         facts: &crate::spell::owned_cast_facts::OwnedCastFacts,
         now_micros: u64,
+        promoted: bool,
     ) -> Result<bool, SpellCastDisposition> {
         if runtime.owner_fence().is_err()
             || facts.binding().actor != actor
@@ -396,7 +397,8 @@ impl ChannelSpellStates {
             return Err(SpellCastDisposition::Rejected);
         }
         let projection = facts.current_premium(now_micros);
-        state.apply_owner_premium_transition(
+        state.apply_owner_promotion_transition(
+            promoted,
             projection.is_some_and(|value| value.value),
             projection
                 .filter(|value| value.value)
