@@ -1,3 +1,4 @@
+use super::SCENARIO_LIVENESS;
 use super::super::TestResult;
 use super::super::fixture::{debug, id};
 use crate::durability::item_transfer::CurrentCharacterItemFence;
@@ -5,7 +6,7 @@ use crate::foundation::ExactActorRef;
 use crate::gameplay_transport::ComposedFreshAdmission;
 use crate::gameplay_transport::capabilities::SelectedCapabilities;
 use crate::gameplay_transport::connection::{
-    AdmittedSession, FreshAdmissionAuthority, IDLE_LIVENESS, UseCommand, serve_admitted,
+    AdmittedSession, FreshAdmissionAuthority, UseCommand, serve_admitted,
 };
 use oteryn_protocol_oteryn::{CommandStatus, MessageType, item_view::ItemHandle, stash::*};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
@@ -75,7 +76,7 @@ pub(super) async fn exercise(
             .contains(CAPABILITY_STASH_V1)
     );
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
-    let server_run = serve_admitted(&mut server, admitted, owner, IDLE_LIVENESS);
+    let server_run = serve_admitted(&mut server, admitted, owner, SCENARIO_LIVENESS);
     let client_run = async {
         let mut deltas = 0;
         send(

@@ -4,11 +4,19 @@ use super::character_equipment::assert_current_equipment_in_transaction;
 use super::db::begin_type2_transaction;
 use super::item_loop_move::{ItemLoopContent, carried_weight};
 use super::item_mint::TypedDefinitionRef;
+use super::character_progression::CurrentCharacterGameplayFence;
+use super::item_timed_state::{
+    self, TimedCheckpointRequest, TimedDefinitionFacts, TimedExpiryRequest, TimedWriteError,
+};
 use super::item_transfer::{CurrentCharacterItemFence, read_derived_transfer_capacity_centi_oz};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::currency::Coin;
+use crate::domain::{
+    CharacterRevision,
+    timed_item::{ExpireReason, TimedValues},
+};
 use crate::foundation::CommandRef;
 use oteryn_gameplay_economy::coin_exchange::{CoinExchange, ExchangeRefusal, ExchangeUse, qualify, qualify_item_use};
 use serde_json::{Value, json};
@@ -77,7 +85,7 @@ impl DurabilityRoot {
         source: Option<[u8; 16]>,
         content: Option<&C>,
         coins: Option<[TypedDefinitionRef; 3]>,
-        converter: Option<CoinConverter>,
+        converter: Option<(CoinConverter, TimedDefinitionFacts)>,
     ) -> Result<Option<CoinExchangeReceipt>, DurabilityError> {
         if command.game_session_id() != fence.game_session_id {
             return Err(DurabilityError::InvalidStoredState);
@@ -109,7 +117,7 @@ impl DurabilityRoot {
                 }
                 assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
                 sqlx::query("INSERT INTO game_coin_exchange_receipts(transaction_id,game_session_id,command_id,character_id,world_id,content_digest,exchange,amount,npc_identity,npc_generation,npc_key,catalogue_revision,conversation_revision,item_source,converter_source,converter_kind) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric,$8,$9::text::numeric,$10,$11::text::numeric,$12::text::numeric,CASE WHEN $13::bytea IS NULL THEN NULL ELSE encode($13,'hex')::uuid END,CASE WHEN $14::bytea IS NULL THEN NULL ELSE encode($14,'hex')::uuid END,$15)")
-                    .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(content.loop_content_digest().as_slice()).bind(code(request.exchange)).bind(request.amount.to_string()).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(&request.npc_key).bind(request.catalogue_revision.to_string()).bind(request.conversation_revision.to_string()).bind(source.as_ref().map(|id| id.as_slice())).bind(converter.map(CoinConverter::id).as_ref().map(|id| id.as_slice())).bind(converter.map(CoinConverter::code)).execute(&mut **tx).await?;
+                    .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(content.loop_content_digest().as_slice()).bind(code(request.exchange)).bind(request.amount.to_string()).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(&request.npc_key).bind(request.catalogue_revision.to_string()).bind(request.conversation_revision.to_string()).bind(source.as_ref().map(|id| id.as_slice())).bind(converter.as_ref().map(|(tool, _)| tool.id()).as_ref().map(|id| id.as_slice())).bind(converter.as_ref().map(|(tool, _)| tool.code())).execute(&mut **tx).await?;
             }
             // The immutable accepted request survives a timeout or process loss after this commit.
             tx.commit(deadline).await?;
@@ -129,8 +137,8 @@ impl DurabilityRoot {
             }
             let mut result: i16 = row.try_get("result")?;
             let stored_converter: Option<Vec<u8>> = row.try_get("converter_source")?;
-            if stored_converter.as_deref() != converter.map(CoinConverter::id).as_ref().map(|id| id.as_slice())
-                || row.try_get::<Option<i16>,_>("converter_kind")? != converter.map(CoinConverter::code) { return Err(DurabilityError::InvalidStoredState); }
+            if stored_converter.as_deref() != converter.as_ref().map(|(tool, _)| tool.id()).as_ref().map(|id| id.as_slice())
+                || row.try_get::<Option<i16>,_>("converter_kind")? != converter.as_ref().map(|(tool, _)| tool.code()) { return Err(DurabilityError::InvalidStoredState); }
             if result == 0 {
                 let content = content.ok_or(DurabilityError::Unavailable)?;
                 let coins = coins.as_ref().ok_or(DurabilityError::Unavailable)?;
@@ -139,12 +147,27 @@ impl DurabilityRoot {
                 }
                 assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
                 let transaction: String = row.try_get("transaction_id")?;
+                // An unusable converter refuses before any coin is planned or locked.
+                let charge = match converter.as_ref() {
+                    Some((tool, facts)) => match qualify_converter(&mut tx, fence, *tool, facts, exchange).await? {
+                        Some(charge) => Some(charge),
+                        None => {
+                            sqlx::query("UPDATE game_coin_exchange_receipts SET result=2,inputs='[]',outputs='[]' WHERE transaction_id=$1::uuid")
+                                .bind(&transaction).execute(&mut **tx).await?;
+                            tx.commit(deadline).await?;
+                            return Ok(Some(CoinExchangeReceipt { npc_identity: identity.try_into().map_err(|_| DurabilityError::InvalidStoredState)?, npc_generation: generation, line: exchange.insufficient_coins().to_owned(), changed: false }));
+                        }
+                    },
+                    None => None,
+                };
                 let (outcome, inputs, outputs) = plan(&mut tx, fence, exchange, amount, source, content, coins).await?;
                 result = match outcome { Ok(()) => 1, Err(ExchangeRefusal::InvalidAmount) => 2, Err(ExchangeRefusal::InsufficientCoins) => 3, Err(ExchangeRefusal::NoRoom) => 4 };
                 sqlx::query("UPDATE game_coin_exchange_receipts SET result=$2,inputs=$3,outputs=$4 WHERE transaction_id=$1::uuid")
                     .bind(&transaction).bind(result).bind(json!(inputs)).bind(json!(outputs)).execute(&mut **tx).await?;
                 if result == 1 {
-                    if let Some(tool) = converter { qualify_and_spend_converter(&mut tx, fence, tool, exchange, &transaction).await?; }
+                    if let (Some((tool, facts)), Some(charge)) = (converter.as_ref(), charge) {
+                        spend_converter(&mut tx, fence, *tool, facts, charge).await?;
+                    }
                     apply(&mut tx, fence, &transaction, &inputs, &outputs).await?;
                 }
             }
@@ -159,6 +182,101 @@ impl DurabilityRoot {
         })).await
     }
 }
+
+impl DurabilityRoot {
+    /// MAGICCONV: toggle a carried magic gold converter between its two admitted forms.
+    /// The charge row moves unchanged with the definition under one cause-9 timed write.
+    /// `transaction_id` is derived from the command, so a retry replays the committed toggle.
+    /// Returns whether the converter is now active, or `None` when it is not togglable.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn toggle_magic_converter(
+        &self,
+        permit: &SpellLanePermit,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        transaction_id: [u8; 16],
+        converter: [u8; 16],
+        inactive: &TimedDefinitionFacts,
+        active: &TimedDefinitionFacts,
+    ) -> Result<Option<bool>, DurabilityError> {
+        permit.check_scope(fence.runtime_scope)?;
+        let full = inactive.full.charges().filter(|_| {
+            inactive.definition.production_key == MAGIC_CONVERTER_INACTIVE
+                && active.definition.production_key == MAGIC_CONVERTER_ACTIVE
+                && inactive.definition.family == "Item"
+                && active.definition.family == "Item"
+                && inactive.full == active.full
+                && inactive.full.remaining_ms().is_none()
+                && !inactive.lit_continuous
+                && !active.lit_continuous
+        });
+        let Some(full) = full else { return Ok(None) };
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let (inactive, active) = (inactive.definition.clone(), active.definition.clone());
+        let node = node.clone();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = begin_type2_transaction(holder, deadline).await?;
+            assert_recovery_fence(&mut tx, &record).await?;
+            // The live session-generation fence takes the Character root lock before the item.
+            if super::character_progression::assert_item_only_fence(&mut tx, &fence, &node).await?.is_err() {
+                return Err(DurabilityError::Unavailable);
+            }
+            let replay = sqlx::query("SELECT uuid_send(item_instance_id) AS item,definition_after_production_key FROM game_item_timed_state_writes WHERE transaction_id=encode($1,'hex')::uuid AND cause=9")
+                .bind(transaction_id.as_slice()).fetch_optional(&mut **tx).await?;
+            if let Some(replay) = replay {
+                if replay.try_get::<Vec<u8>, _>("item")? != converter {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                let now = replay.try_get::<String, _>("definition_after_production_key")? == MAGIC_CONVERTER_ACTIVE;
+                tx.commit(deadline).await?;
+                return Ok(Some(now));
+            }
+            let row = sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity=1 AND EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id AND e.character_id=encode($3,'hex')::uuid) FOR UPDATE OF i")
+                .bind(converter.as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+            let Some(row) = row else { tx.commit(deadline).await?; return Ok(None) };
+            let stored = TypedDefinitionRef {
+                family: row.try_get("definition_family")?,
+                production_key: row.try_get("definition_production_key")?,
+                revision_ref: row.try_get("definition_revision_ref")?,
+            };
+            let (before, after) = if stored == inactive { (&inactive, &active) } else if stored == active { (&active, &inactive) } else { tx.commit(deadline).await?; return Ok(None) };
+            let state = item_timed_state::load_timed_state(&mut tx, &converter).await.map_err(timed_error)?;
+            let (revision, charges) = match state {
+                None => (0, full),
+                Some(state) => match (state.deadline_at, state.values.and_then(|values| values.charges())) {
+                    (None, Some(charges)) if charges >= 1 && charges <= full => (state.revision, charges),
+                    _ => { tx.commit(deadline).await?; return Ok(None) }
+                },
+            };
+            sqlx::query("INSERT INTO game_item_timed_state_writes(item_instance_id,expected_revision,cause,transaction_id,holder_character_id,definition_before_family,definition_before_production_key,definition_before_revision_ref,definition_after_family,definition_after_production_key,definition_after_revision_ref,full_charges,full_remaining_ms,lit_continuous,charges_before,remaining_ms_before,deadline_before,charges_after,remaining_ms_after,deadline_after) VALUES(encode($1,'hex')::uuid,$2::text::numeric(20,0),9,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7,$8,$9,$10,$11,NULL,false,$12,NULL,NULL,$12,NULL,NULL)")
+                .bind(converter.as_slice()).bind(revision.to_string()).bind(transaction_id.as_slice()).bind(fence.character_id.as_bytes().as_slice())
+                .bind(&before.family).bind(&before.production_key).bind(&before.revision_ref)
+                .bind(&after.family).bind(&after.production_key).bind(&after.revision_ref)
+                .bind(i32::try_from(full).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i32::try_from(charges).map_err(|_| DurabilityError::InvalidStoredState)?)
+                .execute(&mut **tx).await?;
+            sqlx::query("UPDATE game_item_instances SET definition_production_key=$2,definition_revision_ref=$3,last_transaction_id=encode($4,'hex')::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(converter.as_slice()).bind(&after.production_key).bind(&after.revision_ref).bind(transaction_id.as_slice()).execute(&mut **tx).await?;
+            let written = if revision == 0 {
+                sqlx::query("INSERT INTO game_item_timed_states(item_instance_id,charges,remaining_ms,deadline_at,state_revision) VALUES(encode($1,'hex')::uuid,$2,NULL,NULL,1)")
+                    .bind(converter.as_slice()).bind(i32::try_from(charges).map_err(|_| DurabilityError::InvalidStoredState)?).execute(&mut **tx).await?
+            } else {
+                sqlx::query("UPDATE game_item_timed_states SET state_revision=state_revision+1 WHERE item_instance_id=encode($1,'hex')::uuid AND state_revision=$2::text::numeric(20,0)")
+                    .bind(converter.as_slice()).bind(revision.to_string()).execute(&mut **tx).await?
+            };
+            if written.rows_affected() != 1 {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            tx.commit(deadline).await?;
+            Ok(Some(after.production_key == MAGIC_CONVERTER_ACTIVE))
+        })).await
+    }
+}
+
+pub const MAGIC_CONVERTER_INACTIVE: &str = "oteryn:item.tibia.i28525";
+pub const MAGIC_CONVERTER_ACTIVE: &str = "oteryn:item.tibia.i28526";
 
 async fn lock(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
@@ -176,25 +294,125 @@ async fn read(
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut ***tx).await?)
 }
 
-async fn qualify_and_spend_converter(
-    tx: &mut super::item_mint_audit::Type2Transaction<'_>, fence: CurrentCharacterItemFence,
-    tool: CoinConverter, exchange: CoinExchange, transaction: &str,
+/// The converter's live charge row, locked for this execution transaction.
+struct ConverterCharge {
+    revision: u64,
+    charges: u32,
+}
+
+fn converter_keys(tool: CoinConverter) -> &'static [&'static str] {
+    match tool {
+        CoinConverter::Gold(_) => &["oteryn:item.tibia.i23722", "oteryn:item.tibia.i25719"],
+        CoinConverter::Magic(_) => &[MAGIC_CONVERTER_ACTIVE],
+    }
+}
+
+/// `None` refuses the conversion: the tool is not a live, carried, charged converter of
+/// the admitted definition. Custody follows the timed burn: a direct backpack entry.
+async fn qualify_converter(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    tool: CoinConverter,
+    facts: &TimedDefinitionFacts,
+    exchange: CoinExchange,
+) -> Result<Option<ConverterCharge>, DurabilityError> {
+    if matches!(tool, CoinConverter::Magic(_))
+        && !matches!(exchange, CoinExchange::GoldToPlatinum | CoinExchange::PlatinumToCrystal)
+    {
+        return Ok(None);
+    }
+    let definition = &facts.definition;
+    if definition.family != "Item"
+        || !converter_keys(tool).contains(&definition.production_key.as_str())
+        || facts.full.remaining_ms().is_some()
+        || facts.full.charges().is_none()
+        || facts.lit_continuous
+    {
+        return Ok(None);
+    }
+    let row = sqlx::query("SELECT i.definition_family,i.definition_production_key,i.definition_revision_ref FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND EXISTS(SELECT 1 FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id AND e.character_id=encode($3,'hex')::uuid) FOR UPDATE OF i")
+        .bind(tool.id().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+    let Some(row) = row else { return Ok(None) };
+    let stored = TypedDefinitionRef {
+        family: row.try_get("definition_family")?,
+        production_key: row.try_get("definition_production_key")?,
+        revision_ref: row.try_get("definition_revision_ref")?,
+    };
+    if &stored != definition {
+        return Ok(None);
+    }
+    let charge = match item_timed_state::load_timed_state(tx, &tool.id()).await.map_err(timed_error)? {
+        None => facts.full.charges().map(|charges| ConverterCharge { revision: 0, charges }),
+        Some(state) if state.deadline_at.is_none() => state
+            .values
+            .and_then(|values| values.charges())
+            .map(|charges| ConverterCharge { revision: state.revision, charges }),
+        Some(_) => None,
+    };
+    Ok(charge.filter(|charge| charge.charges >= 1))
+}
+
+/// Spend one charge under its own timed write; the last charge burns the converter.
+/// Its TransactionId is distinct from the receipt's, whose coin lines it never joins.
+async fn spend_converter(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    tool: CoinConverter,
+    facts: &TimedDefinitionFacts,
+    charge: ConverterCharge,
 ) -> Result<(), DurabilityError> {
-    if matches!(tool, CoinConverter::Magic(_)) && !matches!(exchange, CoinExchange::GoldToPlatinum | CoinExchange::PlatinumToCrystal) {
-        return Err(DurabilityError::InvalidStoredState);
+    let ids = sqlx::query("SELECT uuid_send(game_character_uuid_v7()) AS tx,uuid_send(game_character_uuid_v7()) AS event,floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS now")
+        .fetch_one(&mut ***tx).await?;
+    let id = |column: &str| -> Result<[u8; 16], DurabilityError> {
+        ids.try_get::<Vec<u8>, _>(column)?.try_into().map_err(|_| DurabilityError::InvalidStoredState)
+    };
+    let transaction_id = id("tx")?;
+    if charge.charges > 1 {
+        let checkpoint = TimedCheckpointRequest {
+            item_instance_id: tool.id(),
+            expected_revision: charge.revision,
+            transaction_id,
+            definition: facts.clone(),
+            values: TimedValues::new(Some(charge.charges - 1), None).map_err(|_| DurabilityError::InvalidStoredState)?,
+        };
+        item_timed_state::validate_checkpoint(&checkpoint).map_err(timed_error)?;
+        item_timed_state::write_checkpoint(tx, fence.character_id, &checkpoint).await.map_err(timed_error)?;
+        return Ok(());
     }
-    let expected = match tool { CoinConverter::Gold(_) => "oteryn:item.tibia.i23722", CoinConverter::Magic(_) => "oteryn:item.tibia.i28526" };
-    let row = sqlx::query("SELECT i.definition_production_key,s.charges,s.state_revision::text FROM game_item_instances i JOIN game_item_timed_states s USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_container_slots b ON b.item_instance_id=e.parent_item_instance_id WHERE e.item_instance_id=i.item_instance_id AND b.character_id=encode($3,'hex')::uuid) FOR UPDATE OF i,s")
-        .bind(tool.id().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
-    if row.try_get::<String,_>("definition_production_key")? != expected { return Err(DurabilityError::InvalidStoredState); }
-    let charges: i32 = row.try_get::<Option<i32>,_>("charges")?.ok_or(DurabilityError::InvalidStoredState)?;
-    if charges <= 0 { return Err(DurabilityError::InvalidStoredState); }
-    sqlx::query("UPDATE game_item_timed_states SET charges=charges-1,state_revision=state_revision+1 WHERE item_instance_id=encode($1,'hex')::uuid").bind(tool.id().as_slice()).execute(&mut ***tx).await?;
-    if charges == 1 {
-        sqlx::query("UPDATE game_item_instances SET lifecycle=2,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid").bind(tool.id().as_slice()).bind(transaction).execute(&mut ***tx).await?;
-        sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(tool.id().as_slice()).execute(&mut ***tx).await?;
-    }
+    let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut ***tx).await?;
+    let gameplay = CurrentCharacterGameplayFence {
+        character_id: fence.character_id,
+        game_session_id: fence.game_session_id,
+        connection_generation: fence.connection_generation,
+        character_lease_generation: fence.character_lease_generation,
+        runtime_scope: fence.runtime_scope,
+        scope_ownership_generation: fence.scope_ownership_generation,
+        expected_character_revision: CharacterRevision::new(revision.parse().map_err(|_| DurabilityError::InvalidStoredState)?)
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    };
+    let expiry = TimedExpiryRequest {
+        item_instance_id: tool.id(),
+        expected_revision: charge.revision,
+        transaction_id,
+        event_id: id("event")?,
+        reason: ExpireReason::ChargesExhausted,
+        definition: facts.clone(),
+        target: None,
+        occurred_at_unix_ms: ids.try_get("now")?,
+        server_build_id: super::character_authority::SERVER_BUILD_ID.to_owned(),
+    };
+    item_timed_state::validate_expiry(&expiry).map_err(timed_error)?;
+    let tuple = tx.tuple();
+    item_timed_state::write_expiry(tx, &gameplay, &expiry, tuple).await.map_err(timed_error)?;
     Ok(())
+}
+
+fn timed_error(error: TimedWriteError) -> DurabilityError {
+    match error {
+        TimedWriteError::Unavailable(error) => error,
+        _ => DurabilityError::InvalidStoredState,
+    }
 }
 
 type Plan = (Result<(), ExchangeRefusal>, Vec<Value>, Vec<Value>);
