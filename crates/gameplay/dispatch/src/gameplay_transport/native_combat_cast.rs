@@ -2567,7 +2567,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         .map_err(|_|DurabilityError::Unavailable)?;
                     let prepared_result=if native_companion_item_cast::direct_applicable(spell) {
                         native_companion_item_cast::prepare_direct(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),parameter.as_ref(),&mut draw).await
+                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),parameter.as_ref(),attack_target,&mut draw).await
                     } else if let Some(parameter)=parameter.as_ref(){
                         match super::parameter_cast::resolve_named_player_in_transaction(&mut tx,owner.root,&authority,runtime,states,parameter).await {
                             Ok(super::parameter_cast::NamedPlayerResolution::Found(target))=>ordinary_combat::prepare_named(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
@@ -2634,8 +2634,16 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 // rejects a NEW write, while a genuine historical receipt keeps its original plan.
                 let mut original_tiles_current=true;
                 for (position,expected) in &attempt.prepared.tile_facts {
-                    if !matches!(read_tile(&mut tx,&authority,room,runtime,objects,*position).await,
-                        Ok(actual) if actual==*expected) { original_tiles_current=false; }
+                    let corpse_target=attempt.prepared.corpse_companion.as_ref()
+                        .is_some_and(|companion| companion.target==*position);
+                    // Animate captured map-owned target facts; its consumed corpse has
+                    // its own locked Item reservation, not ordinary field collision flags.
+                    let current=if corpse_target {
+                        native_companion_item_cast::read_corpse_target_tile(&mut tx,&authority,room,runtime,objects,*position).await
+                    } else {
+                        read_tile(&mut tx,&authority,room,runtime,objects,*position).await
+                    };
+                    if !matches!(current,Ok(actual) if actual==*expected) { original_tiles_current=false; }
                 }
                 let original_party_current=if let Some(party)=attempt.prepared.party.as_ref(){
                     match crate::durability::world_party::read_world_party_in_transaction(&mut tx,&authority).await{

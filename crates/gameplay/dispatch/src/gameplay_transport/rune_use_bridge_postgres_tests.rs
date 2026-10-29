@@ -40,14 +40,16 @@ const CASTER: MovementLocalPosition = MovementLocalPosition {
     y: 11,
     floor: -7,
 };
-const VICTIM: MovementLocalPosition = MovementLocalPosition {
+pub(super) const VICTIM: MovementLocalPosition = MovementLocalPosition {
     x: 1,
     y: 11,
     floor: -7,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Case {
+pub(super) enum Case {
+    ParalyzeMonster,
+    ParalyzePlayer,
     Replay,
     Protection,
     TooFar,
@@ -200,6 +202,27 @@ async fn client_cast(
         None => 0,
     };
     match case {
+        Case::ParalyzeMonster | Case::ParalyzePlayer => {
+            if case == Case::ParalyzePlayer {
+                let mut modes = oteryn_protocol_oteryn::pvp_expert::ExpertFightModes::default();
+                modes.modes.secure = false;
+                modes.expert = oteryn_protocol_oteryn::pvp_expert::ExpertMode::RedFist;
+                assert_eq!(
+                    owner
+                        .set_expert_fight_modes(actor, session, first_id, modes)
+                        .await,
+                    oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
+                );
+            }
+            send_use(
+                client,
+                first_id,
+                &intent,
+                Expected::Result(UseDisposition::Committed),
+            )
+            .await?;
+            super::paralyze_rune::assert_paralyzed(owner, victim, case).await?;
+        }
         Case::Replay => {
             let bad = UseIntent {
                 use_with: Some(EntityRef {
@@ -445,9 +468,15 @@ fn scenario() -> TestResult {
     })
 }
 
-async fn run_case(admin: String, case: Case) -> TestResult {
-    let harness = Harness::create_with_admission_seed(admin, "rune_bridge", true, false).await?;
+pub(super) async fn run_case(admin: String, case: Case) -> TestResult {
+    let paralyze = matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer);
+    let harness =
+        Harness::create_with_admission_seed(admin, "rune_bridge", !paralyze, false).await?;
     prepare_current_session(&harness).await?;
+    if case == Case::ParalyzePlayer {
+        harness.seed_pvp_target().await?;
+        super::appearance_change_postgres::observer_visibility_tests::admit(&harness).await?;
+    }
     let seal = harness.recovery.seal_current().map_err(debug)?;
     let authority = harness
         .root
@@ -504,7 +533,7 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         native.spell_book().clone(),
     )?;
     let (actor, session) = (dependencies.actor, dependencies.admitted.game_session_id);
-    let victim;
+    let mut victim = None;
     {
         let mut runtime = dependencies.runtime.lock().await;
         // Keep damage/replay observations deterministic across the Forge population tick.
@@ -540,24 +569,49 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         runtime
             .initialize_first_entry_position(actor)
             .map_err(debug)?;
-        runtime
-            .realize_native_qualification_spawn(channel_pin, "oteryn:creature.rat", target_position)
-            .map_err(debug)?;
-        let creature = runtime.visible_entities().creatures[0];
-        victim = EntityRef {
-            identity: creature.actor.placement_identity(),
-            generation: creature.generation,
-        };
+        if case != Case::ParalyzePlayer {
+            runtime
+                .realize_native_qualification_spawn(
+                    channel_pin,
+                    "oteryn:creature.rat",
+                    target_position,
+                )
+                .map_err(debug)?;
+            let creature = runtime.visible_entities().creatures[0];
+            victim = Some(EntityRef {
+                identity: creature.actor.placement_identity(),
+                generation: creature.generation,
+            });
+        }
     }
     let mut owner = dependencies.owner(&harness, &authority);
     owner.active_generation = Some(active);
     owner.rooms = SeamRooms::new(Some(&room), Some(&room));
+    if case == Case::ParalyzePlayer {
+        victim = Some(super::paralyze_rune::initialize_player(&dependencies, &owner).await?);
+    }
+    let victim = victim.ok_or("rune target")?;
     let mut admitted = dependencies.admitted;
     admitted.first_entry = FirstEntryOutcome::Positioned;
     let (current, _) = FreshAdmissionStore::from_root(harness.root.clone())
         .current_session_at(session)
         .await?;
     admitted.item_fence = item_fence_of(current);
+    if paralyze {
+        owner.admit_progression_session(&mut admitted).await;
+        let progression = owner
+            .progression_binding(session)
+            .ok_or("caster progression")?;
+        harness.root.commit_character_experience(
+            &authority, &harness.node, current_fence(&owner, session).await?,
+            crate::durability::character_progression::ExperienceAwardRequest {
+                occurrence: crate::durability::character_progression::ExperienceRewardOccurrence::from_bytes(id(92)).map_err(debug)?,
+                amount: oteryn_simulation_determinism::ExactI64::new(2_347_900),
+                context: progression.context.clone(), policy_revision: progression.policy_revision.clone(),
+                reward_revision: progression.reward_revision.clone(), policy: progression.policy.clone(),
+            },
+        ).await.map_err(debug)?;
+    }
     let formula = native.training_formula().ok_or("training formula")?;
     let druid = convert_vocation(formula, &DurableBuildState::default(), "druid").map_err(debug)?;
     assert!(matches!(
@@ -580,6 +634,30 @@ async fn run_case(admin: String, case: Case) -> TestResult {
             .map_err(debug)?,
         BuildCommitOutcome::Committed(_)
     ));
+    let druid = if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+        let trained =
+            DurableBuildState::new(druid.vocation(), (18, 0), druid.skills()).map_err(debug)?;
+        harness
+            .root
+            .commit_character_build(
+                &authority,
+                &harness.node,
+                current_fence(&owner, session).await?,
+                BuildChangeRequest {
+                    occurrence: BuildOccurrence::from_bytes(id(91)).map_err(debug)?,
+                    cause: BuildCause::Training,
+                    before: druid,
+                    after: trained.clone(),
+                    pruned_stance: None,
+                },
+                formula,
+            )
+            .await
+            .map_err(debug)?;
+        trained
+    } else {
+        druid
+    };
     {
         let runtime = dependencies.runtime.lock().await;
         let mut states = owner.states.spell_states.lock().await;
@@ -590,7 +668,22 @@ async fn run_case(admin: String, case: Case) -> TestResult {
                     actor,
                     session,
                     CharacterCastFacts {
-                        level: 50,
+                        level: if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+                            54
+                        } else {
+                            50
+                        },
+                        magic_level: if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer)
+                        {
+                            18
+                        } else {
+                            0
+                        },
+                        max_mana: if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+                            2000
+                        } else {
+                            90
+                        },
                         ..crate::gameplay_transport::actor_spell::tests::FACTS
                     },
                     (0, 0),
@@ -621,6 +714,8 @@ async fn run_case(admin: String, case: Case) -> TestResult {
         .bind(id(41).as_slice()).execute(&harness.pool).await?;
     let source_key = if case == Case::UnqualifiedSource {
         "oteryn:item.tibia.i3607"
+    } else if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+        "oteryn:item.tibia.i3165"
     } else {
         "oteryn:item.tibia.i3174"
     };
@@ -628,6 +723,26 @@ async fn run_case(admin: String, case: Case) -> TestResult {
     sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
     sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
+    if matches!(case, Case::ParalyzeMonster | Case::ParalyzePlayer) {
+        super::paralyze_rune::prepare_target(&owner, &harness, victim, case).await?;
+        tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            serve_cast(&owner, &harness, admitted, victim, case, None),
+        )
+        .await??;
+        let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+            .bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+        assert_eq!(quantity, 2, "the real rune owner consumes one charge");
+        if case == Case::ParalyzePlayer {
+            let harm: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_pvp_harm WHERE game_session_id=encode($1,'hex')::uuid AND damage=0")
+                .bind(id(50).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(harm, 1, "paralysis records condition-only PvP aggression");
+        }
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return harness.cleanup().await;
+    }
     let victim_actor = owner.runtime.lock().await.visible_entities().creatures[0].actor;
     let initial_health = owner
         .runtime

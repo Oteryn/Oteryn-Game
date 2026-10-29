@@ -123,6 +123,16 @@ fn target(
     original: UseIntent,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
 ) -> Result<(SpellTarget, LegacyRuneUse), UseDisposition> {
+    // docs/reference/spells/utility-runes-2026-10-29.md:10: a creature
+    // target must not turn into the movable item underneath that creature.
+    if original.use_with.is_some()
+        && matches!(
+            spell.carrier,
+            crate::spell::Carrier::Rune { item: 3178, .. }
+        )
+    {
+        return Err(UseDisposition::TargetIllegal);
+    }
     let caster = runtime
         .read_actor_position(actor)
         .map_err(|_| UseDisposition::Rejected)?;
@@ -144,6 +154,18 @@ fn target(
             .map(|c| EntityRef {
                 identity: a.placement_identity(),
                 generation: c.generation,
+            })
+            .or_else(|| {
+                matches!(
+                    spell.carrier,
+                    crate::spell::Carrier::Rune { item: 3165, .. }
+                )
+                .then(|| entities.players.iter().find(|p| p.actor == a))
+                .flatten()
+                .map(|p| EntityRef {
+                    identity: a.placement_identity(),
+                    generation: p.generation,
+                })
             })
     };
     let creature = if let Some(wanted) = original.use_with {
@@ -311,7 +333,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 && !matches!(
                     spell.carrier,
                     crate::spell::Carrier::Rune {
-                        item: 3174 | 3188,
+                        item: 3165 | 3174 | 3178 | 3188 | 3197,
                         ..
                     }
                 )

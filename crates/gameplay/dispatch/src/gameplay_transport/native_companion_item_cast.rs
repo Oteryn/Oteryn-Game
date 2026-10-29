@@ -93,6 +93,7 @@ pub(super) async fn prepare_direct(
     now: SemanticTimeMicros,
     rune: Option<&ItemSpellCastIntent>,
     parameter: Option<&ParameterSpellCastIntent>,
+    attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     _draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     use crate::spell::combat_batch::{OwnerCombatChange, OwnerCombatEffect};
@@ -173,13 +174,34 @@ pub(super) async fn prepare_direct(
         {
             return reject();
         }
+        let selected = if intent.target == SpellTarget::AttackTarget {
+            let wanted = attack_target.ok_or(SpellCastDisposition::TargetRequired)?;
+            Some(
+                runtime
+                    .visible_entities()
+                    .creatures
+                    .iter()
+                    .find(|c| {
+                        c.actor.placement_identity() == wanted.identity
+                            && c.generation == wanted.generation
+                    })
+                    .map(|c| c.actor)
+                    .ok_or(SpellCastDisposition::TargetIllegal)?,
+            )
+        } else {
+            None
+        };
         let p = match intent.target {
             SpellTarget::Position(p) => TilePosition {
                 x: p.x,
                 y: p.y,
                 floor: p.floor,
             },
-            SpellTarget::AttackTarget => return Err(SpellCastDisposition::NotAvailable),
+            SpellTarget::AttackTarget => roster
+                .iter()
+                .find(|(a, _, _)| Some(*a) == selected)
+                .map(|(_, p, _)| tile(p.position()))
+                .ok_or(SpellCastDisposition::TargetIllegal)?,
             _ => return Err(SpellCastDisposition::TargetRequired),
         };
         let group = crate::durability::spell_familiar_group::read_current_group_in_transaction(
@@ -194,11 +216,14 @@ pub(super) async fn prepare_direct(
             || group
                 .flag("CanSenseInvisibility")
                 .ok_or(SpellCastDisposition::NotAvailable)?;
-        // Match the actual qualified physical creature on the requested tile.
-        // A missing attack-selector owner remains unavailable rather than guessed.
+        // Preserve the exact USE/attack selector incarnation when one was supplied;
+        // position targeting retains the ordinary lowest-actor selection.
         let mut visible = Vec::new();
         for (actor, pos, session) in &roster {
-            if session.is_none() && tile(pos.position()) == p {
+            if session.is_none()
+                && selected.is_none_or(|selected| selected == *actor)
+                && tile(pos.position()) == p
+            {
                 let snapshot = runtime
                     .companion_snapshot(*actor)
                     .map_err(|_| SpellCastDisposition::TargetIllegal)?;
@@ -450,6 +475,7 @@ pub(super) async fn prepare_direct(
 /// and the matching actual common COMMIT proof before infallible installation.
 #[derive(Debug)]
 pub(super) struct PreparedCorpseCompanion {
+    pub(super) target: TilePosition,
     pub(super) cast: PreparedNativeCombatCast,
     pub(super) spawn: CompanionSpawnReservation,
     pub(super) restrictions: AcquisitionOwnerFacts,
@@ -706,6 +732,7 @@ pub(super) async fn prepare_with_current_restrictions(
         installation: None,
     };
     Ok(PreparedCorpseCompanion {
+        target,
         cast,
         spawn,
         restrictions: current.clone(),
@@ -714,9 +741,40 @@ pub(super) async fn prepare_with_current_restrictions(
 
 #[derive(Debug)]
 pub(super) struct PreparedCorpseCompanionState {
+    pub(super) target: TilePosition,
     pub(super) spawn: CompanionSpawnReservation,
     pub(super) restrictions: AcquisitionOwnerFacts,
 }
+
+/// Animate's corpse is reserved and revalidated by the Item owner separately.
+/// Its target tile uses the same map facts at preparation and at the write gate.
+pub(super) async fn read_corpse_target_tile(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    room: &QualifiedNativeEntryRoom,
+    runtime: &ChannelRuntimeV1,
+    objects: &LocalObjectRuntime,
+    position: TilePosition,
+) -> Result<TileFlags, SpellCastDisposition> {
+    let fact = crate::spell::world_execution::qualified_combat_tile_in_transaction(
+        tx,
+        authority,
+        room,
+        runtime,
+        objects,
+        cell(position),
+    )
+    .await
+    .map_err(|_| SpellCastDisposition::NotAvailable)?;
+    Ok(TileFlags {
+        projectile: fact.block_projectile(),
+        solid: fact.block_solid(),
+        floor_change: fact.floor_change(),
+        protection: fact.protection_zone(),
+        present: fact.ground_present(),
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn prepare(
     tx: &mut Transaction<'_, Postgres>,
@@ -741,6 +799,7 @@ pub(super) async fn prepare(
     let restrictions =
         read_current_restrictions(tx, root, authority, runtime, states, owned, now).await?;
     let PreparedCorpseCompanion {
+        target,
         mut cast,
         spawn,
         restrictions,
@@ -766,6 +825,7 @@ pub(super) async fn prepare(
     )
     .await?;
     cast.corpse_companion = Some(PreparedCorpseCompanionState {
+        target,
         spawn,
         restrictions,
     });
@@ -792,7 +852,17 @@ pub(super) async fn read_current_restrictions(
     )
     .await
     .map_err(|_| SpellCastDisposition::NotAvailable)?;
-    let black = qualify_current_black_skull(owned.current_black_skull(now.get()), b, now.get())?;
+    let black = match owned.current_black_skull(now.get()) {
+        Some(projection) => qualify_current_black_skull(Some(projection), b, now.get())?,
+        // Admitted USE has no cached skull projection. Read the existing PvP
+        // owner under this same current session/scope/Character transaction.
+        None => {
+            crate::durability::pvp_live::read_expert_pvp_context_in_transaction(tx, root, authority)
+                .await
+                .map_err(|_| SpellCastDisposition::NotAvailable)?
+                .1
+        }
+    };
     Ok(AcquisitionOwnerFacts {
         mana: u64::from(before.vitals().mana),
         has_infinite_mana: group
