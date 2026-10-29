@@ -59,12 +59,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         actor: ExactActorRef,
         session: crate::foundation::GameSessionId,
     ) -> bool {
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
-            return false;
-        };
-        let Ok(stored) = self
-            .root
-            .read_pvp_state(self.character, self.holder, fence)
+        // NODEBOOT-1: both reads go through the shared holder that background passes also
+        // take, so a busy holder is retried briefly instead of refusing the command.
+        use crate::gameplay_transport::connection::AdmissionRefusal::{Rejected, Unavailable};
+        let Ok(stored) = crate::gameplay_transport::AdmissionRetryBudget::for_command(self.root)
+            .retry_unavailable(async || {
+                let fence = self
+                    .current_quest_fence(session)
+                    .await
+                    .map_err(|()| Unavailable)?
+                    .ok_or(Rejected)?;
+                self.root
+                    .read_pvp_state(self.character, self.holder, fence)
+                    .await
+                    .map_err(|_| Unavailable)
+            })
             .await
         else {
             return false;

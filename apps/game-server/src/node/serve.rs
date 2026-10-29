@@ -1334,6 +1334,11 @@ fn boot_step_retryable(error: &crate::durability::DurabilityError) -> bool {
     )
 }
 
+/// Whether a boot step only found the single holder busy.
+const fn root_busy(error: &crate::durability::DurabilityError) -> bool {
+    matches!(error, crate::durability::DurabilityError::RootUnavailable)
+}
+
 /// [`boot_step_retryable`] for the Character authority open.
 fn character_authority_retryable(
     error: &crate::durability::character_authority::CharacterAuthorityError,
@@ -1359,6 +1364,7 @@ async fn with_retries<T, E, F, Fut>(
     step: &str,
     deadline: Duration,
     retryable: impl Fn(&E) -> bool,
+    busy: impl Fn(&E) -> bool,
     mut operation: F,
 ) -> Result<T, E>
 where
@@ -1385,7 +1391,20 @@ where
         event(&boot_step_retry_line(step, runs, &error));
         root.request_ready();
         let _ = root.maintain_ready_once().await;
-        backoff(&mut attempt).await;
+        if busy(&error) {
+            // The maintenance window waited its turn for the holder and returned it to idle:
+            // retry now, not after a backoff that a background pass outruns (NODEBOOT-1). If
+            // another pass took the holder again, retry when it is returned.
+            if !root.is_ready() {
+                let now = tokio::time::Instant::now();
+                let delay = retry_delay(attempt, None);
+                attempt = attempt.saturating_add(1);
+                root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + delay)
+                    .await;
+            }
+        } else {
+            backoff(&mut attempt).await;
+        }
     }
 }
 
@@ -1424,9 +1443,14 @@ async fn establish_custody(
     evidence: &FreshEvidenceSource,
 ) -> Result<(), BootError> {
     let deadline = material.config.boot_pass_deadline();
-    let stored = with_retries(root, "read", deadline, boot_step_retryable, || {
-        root.read_native_admission_source_registration()
-    })
+    let stored = with_retries(
+        root,
+        "read",
+        deadline,
+        boot_step_retryable,
+        root_busy,
+        || root.read_native_admission_source_registration(),
+    )
     .await
     .map_err(|_| BootError::SourceCustody("read"))?;
     match (stored, &material.s2) {
@@ -1448,9 +1472,14 @@ async fn establish_custody(
             };
             if let Err(error) = initialized {
                 // An initialization whose response was lost: compare exactly.
-                let after = with_retries(root, "initialize", deadline, boot_step_retryable, || {
-                    root.read_native_admission_source_registration()
-                })
+                let after = with_retries(
+                    root,
+                    "initialize",
+                    deadline,
+                    boot_step_retryable,
+                    root_busy,
+                    || root.read_native_admission_source_registration(),
+                )
                 .await
                 .ok()
                 .flatten();
@@ -1470,14 +1499,24 @@ async fn establish_custody(
         }
         (Some(_), None) => {}
     }
-    with_retries(root, "custody claim", deadline, boot_step_retryable, || {
-        root.claim_native_admission_source_custody(proof)
-    })
+    with_retries(
+        root,
+        "custody claim",
+        deadline,
+        boot_step_retryable,
+        root_busy,
+        || root.claim_native_admission_source_custody(proof),
+    )
     .await
     .map_err(|_| BootError::SourceCustody("custody claim"))?;
-    with_retries(root, "descriptor", deadline, boot_step_retryable, || {
-        root.register_native_admission_descriptor(proof, material.descriptor.clone())
-    })
+    with_retries(
+        root,
+        "descriptor",
+        deadline,
+        boot_step_retryable,
+        root_busy,
+        || root.register_native_admission_descriptor(proof, material.descriptor.clone()),
+    )
     .await
     .map_err(|_| BootError::SourceCustody("descriptor"))?;
     for attempt in 0..PENDING_RECONCILE_ATTEMPTS {
@@ -1852,7 +1891,7 @@ async fn bootstrap_one(
 ) -> &'static str {
     let budget = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
     // A committed result is answered without any external read.
-    match retry_busy(budget, holder_busy, async || {
+    match retry_busy(Some(root), budget, holder_busy, async || {
         root.reconcile_character_bootstrap(authority, operation_id)
             .await
     })
@@ -1889,9 +1928,12 @@ async fn bootstrap_one(
     // Current account security is fetched into S2 through the D4 lane; an
     // authenticated denial is accepted there and then rejects the bootstrap.
     // The refresh failure renders as fixed step/cause tokens only.
-    if let Err(unavailable) = retry_busy(budget, EvidenceUnavailable::holder_busy, async || {
-        evidence.refresh_account(root, proof, &account).await
-    })
+    if let Err(unavailable) = retry_busy(
+        Some(root),
+        budget,
+        EvidenceUnavailable::holder_busy,
+        async || evidence.refresh_account(root, proof, &account).await,
+    )
     .await
     {
         event(&format!(
@@ -1899,7 +1941,7 @@ async fn bootstrap_one(
         ));
         return "unavailable";
     }
-    match retry_busy(budget, holder_busy, async || {
+    match retry_busy(Some(root), budget, holder_busy, async || {
         root.bootstrap_character(authority, proof, &intent).await
     })
     .await
@@ -1918,7 +1960,12 @@ async fn bootstrap_one(
 /// until `budget` (DEFLAKE-4). Every step takes the single, non-blocking durability holder
 /// that background passes also take, so a busy holder fails the step at once, before any SQL
 /// runs; the bootstrap commit is idempotent by its operation id. Any other outcome is final.
+///
+/// With a `root`, a retry starts as soon as the busy holder is returned, not before
+/// [`HOLDER_RETRY_FLOOR`] and not after the backoff (NODEBOOT-1): a step sleeping its
+/// backoff lost the holder to the background passes that poll it on their own cadence.
 async fn retry_busy<T, E>(
+    root: Option<&DurabilityRoot>,
     budget: tokio::time::Instant,
     busy: impl Fn(&E) -> bool,
     mut step: impl AsyncFnMut() -> Result<T, E>,
@@ -1927,13 +1974,23 @@ async fn retry_busy<T, E>(
     loop {
         let outcome = step().await;
         match &outcome {
-            Err(error) if busy(error) && tokio::time::Instant::now() < budget => {
-                backoff_within(&mut attempt, Some(budget)).await;
-            }
+            Err(error) if busy(error) && tokio::time::Instant::now() < budget => match root {
+                Some(root) => {
+                    let now = tokio::time::Instant::now();
+                    let delay = retry_delay(attempt, Some(budget.saturating_duration_since(now)));
+                    attempt = attempt.saturating_add(1);
+                    root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + delay)
+                        .await;
+                }
+                None => backoff_within(&mut attempt, Some(budget)).await,
+            },
             _ => return outcome,
         }
     }
 }
+
+/// The earliest retry of a bootstrap step after it found the holder busy (NODEBOOT-1).
+const HOLDER_RETRY_FLOOR: Duration = Duration::from_millis(50);
 
 /// Whether a Character authority step found the durability holder busy.
 const fn holder_busy(error: &CharacterAuthorityError) -> bool {
@@ -2470,6 +2527,7 @@ async fn boot_and_serve(
         "staff trust configuration",
         config.boot_pass_deadline(),
         boot_step_retryable,
+        root_busy,
         || root.configure_staff(config.staff.clone()),
     )
     .await
@@ -2492,6 +2550,7 @@ async fn boot_and_serve(
         "character authority open",
         config.boot_pass_deadline(),
         character_authority_retryable,
+        holder_busy,
         || root.open_character_authority(seal),
     )
     .await
@@ -2876,7 +2935,7 @@ mod tests {
             let budget = tokio::time::Instant::now() + Duration::from_secs(5);
             let mut outcomes = [Err(busy()), Err(busy()), Ok(7)].into_iter();
             let mut calls = 0;
-            let result = retry_busy(budget, holder_busy, async || {
+            let result = retry_busy(None, budget, holder_busy, async || {
                 calls += 1;
                 outcomes.next().expect("outcome")
             })
@@ -2886,7 +2945,7 @@ mod tests {
 
             // Any other outcome is final after one try.
             let mut calls = 0;
-            let result: Result<(), _> = retry_busy(budget, holder_busy, async || {
+            let result: Result<(), _> = retry_busy(None, budget, holder_busy, async || {
                 calls += 1;
                 Err(CharacterAuthorityError::Rejected)
             })
@@ -2896,7 +2955,8 @@ mod tests {
 
             // A holder busy past the window fails by the budget, not later.
             let budget = tokio::time::Instant::now() + Duration::from_millis(500);
-            let result: Result<(), _> = retry_busy(budget, holder_busy, async || Err(busy())).await;
+            let result: Result<(), _> =
+                retry_busy(None, budget, holder_busy, async || Err(busy())).await;
             assert!(holder_busy(&result.expect_err("busy past the window")));
             assert!(tokio::time::Instant::now() < budget + Duration::from_millis(100));
         });
@@ -3530,5 +3590,60 @@ mod tests {
         ];
         let unique: std::collections::BTreeSet<_> = codes.iter().collect();
         assert_eq!(unique.len(), codes.len());
+    }
+
+    /// NODEBOOT-1: a boot step retried by [`with_retries`] gets the holder although a
+    /// background pass takes it back within a millisecond of each return, as the boot-time
+    /// highscore, guild and market passes did before the custody claim.
+    #[test]
+    fn a_boot_step_gets_a_holder_that_background_passes_keep_busy()
+    -> crate::bestiary_postgres_harness::TestResult {
+        use crate::bestiary_postgres_harness::{self as fixture, Harness};
+        let Some(admin) = fixture::configured_admin() else {
+            return Ok(());
+        };
+        fixture::runtime()?.block_on(async {
+            let harness = Harness::create(admin, "boot_step_busy_holder", true).await?;
+            let root = harness.root.clone();
+            let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+            let background = tokio::spawn({
+                let root = root.clone();
+                let stop = std::sync::Arc::clone(&stop);
+                async move {
+                    while !stop.load(std::sync::atomic::Ordering::Acquire) {
+                        if let Ok(pass) = root.try_issue_semantic_pass() {
+                            let _ = pass
+                                .run(|_holder, _deadline| {
+                                    Box::pin(async {
+                                        tokio::time::sleep(Duration::from_millis(300)).await;
+                                        Ok(())
+                                    })
+                                })
+                                .await;
+                        }
+                        tokio::time::sleep(Duration::from_millis(1)).await;
+                    }
+                }
+            });
+            tokio::time::sleep(Duration::from_millis(20)).await;
+            let result = with_retries(
+                &root,
+                "busy holder",
+                Duration::from_secs(2),
+                boot_step_retryable,
+                root_busy,
+                || async {
+                    root.try_issue_semantic_pass()?
+                        .run(|_holder, _deadline| Box::pin(async { Ok(()) }))
+                        .await
+                },
+            )
+            .await;
+            stop.store(true, std::sync::atomic::Ordering::Release);
+            background.await?;
+            harness.cleanup().await?;
+            assert!(result.is_ok(), "{result:?}");
+            Ok(())
+        })
     }
 }

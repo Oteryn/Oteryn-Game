@@ -18,17 +18,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
     pub(super) async fn consume_admitted_newhaven_arrival(
         &self,
+        budget: &AdmissionRetryBudget<'_>,
         session: GameSessionId,
         actor: ExactActorRef,
         decided: Option<&last_position::AdmissionPosition>,
     ) -> bool {
         let Some(last_position::AdmissionPosition::Arrival(pending, vitals, rest)) = decided else {
-            if !self.consume_admitted_respawn(session, actor, decided).await {
+            if !self
+                .consume_admitted_respawn(budget, session, actor, decided)
+                .await
+            {
                 return false;
             }
-            return self.complete_tutorial_islet_admission(actor, session).await;
+            return self
+                .complete_tutorial_islet_admission(budget, actor, session)
+                .await;
         };
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+        let Ok(Some(fence)) = self.current_quest_fence_within(budget, session).await else {
             return false;
         };
         let placed = {

@@ -94,6 +94,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    /// [`Self::current_quest_fence`] for an admission step: a failed read (such as a busy
+    /// holder) is retried under `budget` (NODEBOOT-1).
+    pub(super) async fn current_quest_fence_within(
+        &self,
+        budget: &super::AdmissionRetryBudget<'_>,
+        session: GameSessionId,
+    ) -> Result<Option<crate::durability::character_progression::CurrentCharacterGameplayFence>, ()>
+    {
+        budget
+            .retry_unavailable(async || {
+                self.current_quest_fence(session)
+                    .await
+                    .map_err(|()| super::AdmissionRefusal::Unavailable)
+            })
+            .await
+            .map_err(|_| ())
+    }
+
     /// The gameplay fence of `session` from current durable reads; its expected revision is
     /// replaced by the revision slot's cursor at commit. `Ok(None)` when the session is proven
     /// terminal; `Err` when a read failed, which proves nothing.

@@ -1189,31 +1189,73 @@ const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
 /// until the next attempt would start past [`crate::durability::ROOT_RECOVERY_WINDOW`] from
 /// the attempt's start. A round left stale by concurrent owner evidence keeps its own bound
 /// of [`FRESH_ADMISSION_ROUNDS`] rounds. A rejection or a classified refusal is final.
-struct AdmissionRetryBudget {
+struct AdmissionRetryBudget<'r> {
     deadline: tokio::time::Instant,
     backoff: Duration,
     stale_rounds: u32,
+    /// The root whose holder a retry waits for (NODEBOOT-1); without one a retry sleeps the
+    /// whole backoff.
+    root: Option<&'r DurabilityRoot>,
 }
 
-impl AdmissionRetryBudget {
+/// The earliest retry after a step that found the holder busy, measured from the failure
+/// (NODEBOOT-1): it bounds how often a step that keeps failing for another reason is
+/// repeated while background passes keep returning the holder.
+const HOLDER_RETRY_FLOOR: Duration = Duration::from_millis(50);
+
+/// The longest a command's gating reads wait for a busy holder (NODEBOOT-1). The command holds
+/// its lane meanwhile, so the window stays short of the root recovery window.
+const COMMAND_HOLDER_WINDOW: Duration = Duration::from_secs(1);
+
+impl<'r> AdmissionRetryBudget<'r> {
     fn new(game_session_id: &GameSessionId) -> Self {
         Self {
             deadline: tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW,
             backoff: fresh_admission_backoff(game_session_id),
             stale_rounds: 1,
+            root: None,
+        }
+    }
+
+    /// The budget of the durable reads that gate one in-session command, such as a step's PvP
+    /// lock refresh (NODEBOOT-1): a busy holder is retried, waiting for its return, for at most
+    /// [`COMMAND_HOLDER_WINDOW`], then the command fails closed as before.
+    fn for_command(root: &'r DurabilityRoot) -> Self {
+        Self {
+            deadline: tokio::time::Instant::now() + COMMAND_HOLDER_WINDOW,
+            backoff: RECONCILE_BACKOFF,
+            stale_rounds: FRESH_ADMISSION_ROUNDS,
+            root: Some(root),
+        }
+    }
+
+    /// [`Self::new`] whose retries wait for `root`'s holder instead of sleeping blind
+    /// (NODEBOOT-1).
+    fn for_root(game_session_id: &GameSessionId, root: &'r DurabilityRoot) -> Self {
+        Self {
+            root: Some(root),
+            ..Self::new(game_session_id)
         }
     }
 
     /// Whether a step that ended on `refusal` is retried. Only an unavailable outcome (such
-    /// as a busy durability holder) is transient: it waits one backoff, unless the retry
-    /// would start past the window, which fails closed at once.
+    /// as a busy durability holder) is transient: it waits at most one backoff, unless the
+    /// retry would start past the window, which fails closed at once. With a root, the retry
+    /// starts as soon as the busy holder is returned (not before [`HOLDER_RETRY_FLOOR`]), so
+    /// the attempt takes the holder ahead of the background passes that poll it on their own
+    /// cadence; a sleeping attempt lost it to them at node start (NODEBOOT-1).
     async fn retries_unavailable(&self, refusal: AdmissionRefusal) -> bool {
-        if refusal != AdmissionRefusal::Unavailable
-            || tokio::time::Instant::now() + self.backoff >= self.deadline
-        {
+        let now = tokio::time::Instant::now();
+        if refusal != AdmissionRefusal::Unavailable || now + self.backoff >= self.deadline {
             return false;
         }
-        tokio::time::sleep(self.backoff).await;
+        match self.root {
+            Some(root) => {
+                root.wait_holder_retry(now + HOLDER_RETRY_FLOOR, now + self.backoff)
+                    .await;
+            }
+            None => tokio::time::sleep(self.backoff).await,
+        }
         true
     }
 
@@ -1233,6 +1275,21 @@ impl AdmissionRetryBudget {
                 }
             }
         }
+    }
+
+    /// Repeats an admission `step` that reports any failure as `false` under
+    /// [`Self::retries_unavailable`] (NODEBOOT-1). Only for a step that is a read, or an
+    /// idempotent fenced write, followed by a runtime install: the step is repeated whole.
+    async fn retry_until(&self, mut step: impl AsyncFnMut() -> bool) -> bool {
+        self.retry_unavailable(async || {
+            if step().await {
+                Ok(())
+            } else {
+                Err(AdmissionRefusal::Unavailable)
+            }
+        })
+        .await
+        .is_ok()
     }
 
     /// Whether a round left stale by concurrent owner evidence is retried: it waits one

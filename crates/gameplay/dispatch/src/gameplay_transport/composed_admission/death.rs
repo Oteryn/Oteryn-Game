@@ -248,24 +248,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// playable, as an unplaced respawn does.
     pub(in crate::gameplay_transport) async fn consume_admitted_respawn(
         &self,
+        budget: &AdmissionRetryBudget<'_>,
         session: GameSessionId,
         actor: ExactActorRef,
         decided: Option<&last_position::AdmissionPosition>,
     ) -> bool {
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+        // NODEBOOT-1: the reads before the placement are retried on a busy holder.
+        let Ok(Some(fence)) = self.current_quest_fence_within(budget, session).await else {
             return false;
         };
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
-        let Ok(expected_character_revision) = slot.cursor(self.root, self.character).await else {
+        let Ok(expected_character_revision) = budget
+            .retry_unavailable(async || {
+                slot.cursor(self.root, self.character)
+                    .await
+                    .map_err(|_| AdmissionRefusal::Unavailable)
+            })
+            .await
+        else {
             return false;
         };
         let fence = crate::durability::character_progression::CurrentCharacterGameplayFence {
             expected_character_revision,
             ..fence
         };
-        let pending = match self
-            .root
-            .pending_respawn(self.character, self.holder, fence)
+        let pending = match budget
+            .retry_unavailable(async || {
+                self.root
+                    .pending_respawn(self.character, self.holder, fence)
+                    .await
+                    .map_err(|error| {
+                        operator_event(&format!("pending_respawn_read_failed reason={error}"));
+                        AdmissionRefusal::Unavailable
+                    })
+            })
             .await
         {
             Ok(Some(pending)) => pending,
@@ -277,10 +293,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return decided
                     .is_some_and(|decided| self.track_restored(session, actor, decided, fence));
             }
-            Err(error) => {
-                operator_event(&format!("pending_respawn_read_failed reason={error}"));
-                return false;
-            }
+            Err(_) => return false,
         };
         let placed_at_entry = matches!(
             decided,

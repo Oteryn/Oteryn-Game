@@ -39,19 +39,27 @@ impl TutorialSessions {
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn complete_tutorial_islet_admission(
         &self,
+        budget: &super::AdmissionRetryBudget<'_>,
         actor: crate::foundation::ExactActorRef,
         session: GameSessionId,
     ) -> bool {
         if !self.tutorial_enabled().await {
             return true;
         }
-        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+        let Ok(Some(fence)) = self.current_quest_fence_within(budget, session).await else {
             return false;
         };
-        let stored = match self.tutorial_progress(fence).await {
+        let stored = match budget
+            .retry_unavailable(async || {
+                self.tutorial_progress(fence)
+                    .await
+                    .map_err(|()| super::AdmissionRefusal::Unavailable)
+            })
+            .await
+        {
             Ok(Some(stored)) => stored,
             Ok(None) => return true,
-            Err(()) => return false,
+            Err(_) => return false,
         };
         if !stored.pending_islet {
             return true;

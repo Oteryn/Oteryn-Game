@@ -17,7 +17,7 @@ use super::world_required_capabilities::{
     AuthenticatedSessionCapabilities, SessionCapabilityError,
 };
 use super::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
-use super::{ComposedFreshAdmission, canonical_uuid};
+use super::{AdmissionRetryBudget, ComposedFreshAdmission, canonical_uuid};
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::durability::recovery_evidence_composition::RecoveryEvidenceSubject;
@@ -118,9 +118,12 @@ fn attempt_ref(attempt: &ResumeAttempt<'_>) -> Option<ReconnectAttemptRef> {
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
     /// `wrote` is set before the first step that may write (the capability-mismatch release
-    /// or PREPARE): until then a refusal wrote nothing and the resume may be repeated.
+    /// or PREPARE): until then a refusal wrote nothing and the resume may be repeated. After
+    /// PREPARE, each durable read and an unissued PREPARE or COMMIT pass is retried on a busy
+    /// holder under `retry` (NODEBOOT-1), so a busy holder no longer closes the resume.
     pub(super) async fn resume_lost(
         &self,
+        retry: &AdmissionRetryBudget<'_>,
         attempt: ResumeAttempt<'_>,
         wrote: &mut bool,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
@@ -462,6 +465,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         *wrote = true;
         let prepared = match self
             .decide(
+                retry,
                 &store,
                 prepare,
                 source.clone(),
@@ -478,7 +482,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         };
         let committed = async {
-            let budget = recovery_budget_of(&store, session_id, epoch).await?;
+            let budget = retry
+                .retry_unavailable(async || recovery_budget_of(&store, session_id, epoch).await)
+                .await?;
             {
                 let mut current = source.current.lock().map_err(|_| Unavailable)?;
                 current.snapshot.budget = budget;
@@ -491,11 +497,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .map_err(|_| Unavailable)?;
             // COMMIT is reauthorized from a fresh verification at a fresh durable time,
             // never from PREPARE's capability.
-            let fresh = verify().await?;
-            let (_, final_now) = store
-                .current_session_at(session_id)
-                .await
-                .map_err(|_| Unavailable)?;
+            let fresh = retry.retry_unavailable(async || verify().await).await?;
+            let (_, final_now) = retry
+                .retry_unavailable(async || {
+                    store
+                        .current_session_at(session_id)
+                        .await
+                        .map_err(|_| Unavailable)
+                })
+                .await?;
             let authorization = CompleteReconnectAuthorizationV1::reauthorize_history(
                 flow.operation().recovery.clone(),
                 CompleteReconnectProofV1::V2(Box::new(fresh)),
@@ -512,6 +522,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| Rejected)?,
             );
             self.decide(
+                retry,
                 &store,
                 commit,
                 source.clone(),
@@ -571,32 +582,53 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 
     /// One PREPARE or COMMIT through the durable adapter; an unproven outcome is reconciled
-    /// from the immutable receipts, never decided twice.
+    /// from the immutable receipts, never decided twice. The reconciliation read is retried
+    /// on a busy holder under `retry`. A pass that found the holder busy was never issued: once
+    /// the receipts prove it absent, it is applied again under `retry` (NODEBOOT-1). An issued
+    /// pass that left no receipt is final, as before.
     async fn decide(
         &self,
+        retry: &AdmissionRetryBudget<'_>,
         store: &FreshAdmissionStore,
         request: Arc<crate::foundation::CompleteReconnectRequestV1>,
         source: Arc<ChannelResumeSource>,
         operation: &CompleteReconnectDurabilityOperationV1,
         capabilities: &AuthenticatedSessionCapabilities,
     ) -> Result<CompleteReconnectOutcomeV1, AdmissionRefusal> {
-        match store
-            .apply_registered_complete_reconnect(
-                self.holder,
-                request,
-                source,
-                capabilities.current_check(),
-            )
-            .await
-        {
-            Ok(CompleteReconnectOutcomeV1::Ambiguous) | Err(_) => {
-                match store.reconcile_complete_reconnect(operation).await {
-                    Ok(Some(completion)) => Ok(completion.outcome),
-                    Ok(None) => Err(AdmissionRefusal::Rejected),
-                    Err(_) => Err(AdmissionRefusal::Unavailable),
+        loop {
+            let unissued = match store
+                .apply_registered_complete_reconnect(
+                    self.holder,
+                    request.clone(),
+                    source.clone(),
+                    capabilities.current_check(),
+                )
+                .await
+            {
+                Ok(CompleteReconnectOutcomeV1::Ambiguous) => false,
+                Err(error) => matches!(error, crate::durability::DurabilityError::RootUnavailable),
+                Ok(outcome) => return Ok(outcome),
+            };
+            let reconciled = retry
+                .retry_unavailable(async || {
+                    store
+                        .reconcile_complete_reconnect(operation)
+                        .await
+                        .map_err(|_| AdmissionRefusal::Unavailable)
+                })
+                .await?;
+            match reconciled {
+                Some(completion) => return Ok(completion.outcome),
+                None if !unissued => return Err(AdmissionRefusal::Rejected),
+                None => {
+                    if !retry
+                        .retries_unavailable(AdmissionRefusal::Unavailable)
+                        .await
+                    {
+                        return Err(AdmissionRefusal::Unavailable);
+                    }
                 }
             }
-            Ok(outcome) => Ok(outcome),
         }
     }
 }

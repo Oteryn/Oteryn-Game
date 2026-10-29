@@ -23,7 +23,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // pass at once with nothing written. Such a busy holder is retried within the
         // root recovery window, with a per-attempt backoff so concurrent attempts do not
         // stay in lockstep.
-        let mut budget = AdmissionRetryBudget::new(&attempt.game_session_id);
+        let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
         let record = loop {
             match self
                 .root
@@ -303,21 +303,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // through the single ready-only holder, which a concurrent pass (another session's
         // release or tick) can briefly hold; the attempt wrote no runtime state, so it is
         // repeated from fresh reads, bounded, before the actor is left unpositioned.
-        let mut attempt_round = 0;
-        let (first_entry, item_fence, decided) = loop {
-            attempt_round += 1;
-            let result = self
-                .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
-                .await;
-            if !matches!(
-                result.0,
-                FirstEntryOutcome::RefusedUnavailable | FirstEntryOutcome::RefusedStaleAuthority
-            ) || attempt_round >= RECONCILE_ATTEMPTS
-            {
-                break result;
-            }
-            tokio::time::sleep(RECONCILE_BACKOFF).await;
-        };
+        // NODEBOOT-1: the committed actor's entry steps share a window of their own, from the
+        // commit, and a busy holder is retried under it; stale authority keeps its round bound.
+        budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
+        let (first_entry, item_fence, decided) = self
+            .enter_committed_actor(
+                &budget,
+                &request,
+                attempt.game_session_id,
+                attempt.transport,
+                actor,
+            )
+            .await;
         #[cfg(test)]
         if std::env::var_os("OTERYN_SEAM_SPELL_MANIFEST").is_some() {
             eprintln!("SEAM_EVIDENCE spell_first_entry outcome={first_entry:?}");
@@ -348,12 +345,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.first_entry,
             FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
         );
+        // NODEBOOT-1: each step below is a read or an idempotent fenced write through the
+        // shared holder, so a step refused on a busy holder is repeated whole within the window.
         if positioned {
-            self.admit_progression_session(&mut admitted).await;
+            let entered = admitted.first_entry;
+            loop {
+                self.admit_progression_session(&mut admitted).await;
+                if admitted.first_entry != FirstEntryOutcome::RefusedUnavailable
+                    || !budget.retries_unavailable(Unavailable).await
+                {
+                    break;
+                }
+                admitted.first_entry = entered;
+            }
             if matches!(
                 admitted.first_entry,
                 FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
-            ) && !self.admit_hazard(admitted).await
+            ) && !budget
+                .retry_until(async || self.admit_hazard(admitted).await)
+                .await
             {
                 admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
             }
@@ -366,6 +376,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             let settled = self
                 .consume_admitted_newhaven_arrival(
+                    &budget,
                     admitted.game_session_id,
                     actor,
                     decided.as_ref(),
@@ -374,8 +385,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             admitted.first_entry = respawned_first_entry(admitted.first_entry, settled);
         }
         if writes_after_progression(positioned, admitted.first_entry) {
-            self.admit_loop_training(&mut admitted).await;
-            if !self.admit_prey(admitted).await {
+            let trained = admitted.first_entry;
+            loop {
+                self.admit_loop_training(&mut admitted).await;
+                if admitted.first_entry != FirstEntryOutcome::RefusedUnavailable
+                    || !budget.retries_unavailable(Unavailable).await
+                {
+                    break;
+                }
+                admitted.first_entry = trained;
+            }
+            if writes_after_progression(positioned, admitted.first_entry)
+                && !budget
+                    .retry_until(async || self.admit_prey(admitted).await)
+                    .await
+            {
                 admitted.first_entry = FirstEntryOutcome::RefusedUnavailable;
             }
         }
