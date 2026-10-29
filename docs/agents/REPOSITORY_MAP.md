@@ -48,7 +48,7 @@ Cross-repository work requires explicit authority and a separate lifecycle in ev
 - Scope consistency: `docs/architecture/MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md`.
 - Otheryn migration: `docs/architecture/OTHERYN_REFERENCE_MIGRATION_PLAN.md`.
 - Cross-repository policy and revision state: `docs/agents/CROSS_REPO_CONTRACTS.md` and `docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json`.
-- Shared limits and failure contracts: `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, `FOUNDATION_ERROR_VOCABULARY.md` and `FOUNDATION_FAILURE_SCENARIOS.md`.
+- Shared limits and failure contracts: `docs/contracts/resource-limits/registry.json` plus `docs/contracts/resource-limits/entries/*.json`, `FOUNDATION_ERROR_VOCABULARY.md` and `FOUNDATION_FAILURE_SCENARIOS.md`.
 
 ## Ownership routing
 

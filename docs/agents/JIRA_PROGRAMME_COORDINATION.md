@@ -1,6 +1,6 @@
 # Jira programme coordination
 
-Owner decision 2026-09-29: only the programme coordinator writes to Jira, once per day in one batch. Workers do not load the Jira connector; they record material state transitions in their task record and #162, and the coordinator's daily sync mirrors them.
+Owner decision 2026-09-29: only the programme coordinator writes to Jira, once per day in one batch. Workers do not load the Jira connector; they record material state transitions in their task record and #1622, and the coordinator's daily sync mirrors them.
 
 Oteryn programme coordination is mirrored in Jira project `KAN` at `https://oteryn.atlassian.net`; `KAN-23` is the programme overview. When an Atlassian/Jira connector is available in the current session, use it as a bounded programme-coordination surface.
 

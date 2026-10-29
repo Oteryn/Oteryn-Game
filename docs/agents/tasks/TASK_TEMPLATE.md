@@ -140,7 +140,7 @@ Record every local check that `docs/agents/CONTEXT_ROUTING.md` selects for the c
 
 ## PR and closeout
 
-For a mechanic, update its [MECHANICS_STATUS.md](MECHANICS_STATUS.md) row in the same PR that closes the card, with resolving implementation/card links and the remaining gaps, if any. DONE is an outcome label; retain `status: completed` for the task lifecycle.
+For a mechanic, do not edit the progress ledger that [MECHANICS_STATUS.md](MECHANICS_STATUS.md) points to; one docs PR per wave updates its rows with file:line evidence. DONE is an outcome label; retain `status: completed` for the task lifecycle.
 
 - changed-file review: pending
 - unresolved review threads: pending

@@ -88,4 +88,4 @@ When compacting, always preserve: task_id and owned paths; branch, frozen SHA an
 
 ## Jira programme coordination
 
-Only the programme coordinator writes to Jira (project `KAN`), under `docs/agents/JIRA_PROGRAMME_COORDINATION.md`; Jira never grants any authority. Everyone else reports state in their task record and #162.
+Only the programme coordinator writes to Jira (project `KAN`), under `docs/agents/JIRA_PROGRAMME_COORDINATION.md`; Jira never grants any authority. Everyone else reports state in their task record and #1622.

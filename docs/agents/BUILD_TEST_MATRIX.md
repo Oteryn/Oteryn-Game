@@ -13,7 +13,7 @@ Use the exact candidate/tree and current protected machine implementations:
 - repository-policy/fan-in checks: `tools/repository/validate_repository_policy.py` and `validate_repository_policy_core.py`;
 - PostgreSQL/SIM routing regressions: `test_validate_pr_gate_pg_sim.py` and `test_validate_merge_group_pg_sim.py`;
 - PR aggregate: `.github/workflows/merge-gate.yml`;
-- Merge Queue aggregate: `.github/workflows/merge-group-gate.yml`;
+- post-merge full gate (push to `main`; the GitHub merge queue is off): `.github/workflows/merge-group-gate.yml`;
 - protected-main post-merge lanes: `.github/workflows/rust.yml`.
 
 If this summary conflicts with those protected machine contracts, fail closed and reconcile the documentation; do not weaken the machine gate.
@@ -32,8 +32,8 @@ If this summary conflicts with those protected machine contracts, fail closed an
 
 `.github/workflows/merge-gate.yml` runs on every PR to `main`.
 
-The pull-request gate is light: heavy qualification runs once, in the Merge Queue
-(D431). Always-required evidence includes:
+The pull-request gate is light: heavy qualification runs once, in the post-merge
+full gate (D431; the GitHub merge queue is off). Always-required evidence includes:
 
 - exact PR/base/head identity and trusted-base risk classification;
 - exact-head routing-contract validation against candidate Cargo/tree state;
@@ -50,8 +50,8 @@ The pull-request gate is light: heavy qualification runs once, in the Merge Queu
 - aggregate `Merge gate / validate` and final `game-gate`.
 
 CodeQL, full Linux/PostgreSQL, Windows client/input/SIM and installer lifecycle,
-Atlas fullworld, node boot and Server Seam execute in the Merge Queue on the exact
-synthetic candidate. The PR gate contains no heavyweight jobs or `full-ci` switch.
+Atlas fullworld, node boot and Server Seam execute in the post-merge full gate
+(`merge-group-gate.yml` on push to `main`). The PR gate contains no heavyweight jobs or `full-ci` switch.
 All label-only and ordinary metadata edits re-run the exact-head PR gate in an
 isolated concurrency group without cancelling a running qualification; retargets
 still require canonical qualification.
@@ -67,7 +67,7 @@ Fast Rust selection on the PR:
 | Client/shared/simulation, including their consumed auxiliary inputs | changed-crate Clippy/unit tests + Rust policy/supply chain |
 | Canonical routing controls (`merge-gate.yml`, `merge-group-gate.yml`, `rust.yml`), `.github/actions/**`, `tools/repository/**`, `docs/migration/**`, Cargo/toolchain/build inputs, unknown/mixed/incomplete evidence | conservative workspace fast Rust checks + policy/supply chain |
 
-Physical server qualification runs only in Merge Queue. It runs node boot and Server Seam against the real Platform (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`). These run when a change can reach the shipped server's boot, admission, transport, durability or reconnect paths:
+Physical server qualification runs only in the post-merge full gate (`merge-group-gate.yml`). It runs node boot and Server Seam against the real Platform (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`). These run when a change can reach the shipped server's boot, admission, transport, durability or reconnect paths:
 
 - `apps/game-server/src/**`, except `ability/`, `ai/`, `interaction/`, `combat.rs` and Content authoring;
 - the native entry room Content, its WorldProject/v2 model and its activation;
@@ -77,7 +77,7 @@ Physical server qualification runs only in Merge Queue. It runs node boot and Se
 - Cargo/toolchain inputs;
 - `merge-gate.yml`.
 
-They also run when the changed-file evidence is incomplete or malformed, or when the trusted-base classifier emits no selection. Only an explicit `false` skips them. Only the Merge Queue runs these physical qualifications, and its `game-gate` requires both to succeed whenever selected.
+They also run when the changed-file evidence is incomplete or malformed, or when the trusted-base classifier emits no selection. Only an explicit `false` skips them. Only the post-merge full gate runs these physical qualifications, and its `game-gate` requires both to succeed whenever selected.
 
 Reduced lanes are derived from the exact candidate tree. Cargo metadata owns package/reverse dependency closure; literal file/directory references from exact-candidate Cargo package sources attach non-Cargo files to their real consumers. Canonical product-CI workflows conservatively attach literal file and directory consumers too. Only explicitly audited routing-only directory predicates registered in the protected classifier may be omitted from consumer attachment; every unregistered or ambiguous workflow directory predicate/reference remains fail-closed/FULL. There is no historical document-consumer SHA or source-drift snapshot to refresh.
 
@@ -85,18 +85,20 @@ Reduced lanes are derived from the exact candidate tree. Cargo metadata owns pac
 
 Cross product/auxiliary renames, symlinks/submodules, special modes, malformed consumer evidence and incomplete file enumeration fail closed. The classifier itself and canonical routing controls always self-qualify through FULL.
 
-## Merge Queue gate
+## Post-merge full gate
 
-The canonical Merge Queue workflow is `.github/workflows/merge-group-gate.yml`; it validates GitHub's exact synthetic `merge_group` head.
+The canonical full-gate workflow is `.github/workflows/merge-group-gate.yml`. The GitHub merge queue is off (owner decision 2026-10-23, PR #2319), so it runs post-merge on every push to `main` (`push` trigger, `github.sha` as head). Push runs share one concurrency group per ref with cancel-in-progress, so a newer main push supersedes an older run; the base is the newest main SHA whose push run of this workflow succeeded and that is a strict ancestor of the head, or the push's own parent with every lane selected (`qualified=false`) when that cannot be proven. It is a post-merge verdict, not a PR requirement; the `merge_group` trigger is kept so restoring the queue needs no workflow change (it would validate GitHub's exact synthetic `merge_group` head).
 
-While the GitHub merge queue is off, the same full gate also runs post-merge on every push to `main` (`push` trigger, no cancel-in-progress, `github.sha` as head and the previous main as base). It is a post-merge verdict, not a PR requirement; the `merge_group` trigger is kept so restoring the queue needs no workflow change.
+### PR early-signal PostgreSQL harness
+
+`.github/workflows/pr-postgres-harness.yml` is an early signal, not the PR gate (`merge-gate.yml`) and not a required check. It runs the six PostgreSQL partitions on a PR only while the PR carries the `heavy-tests` label (owner decision 2026-10-28, PR #2678): a finished mechanic, or one batch PR that merges several finished ones. Adding the label starts a run and later pushes re-run it. Protected `main` still runs every PostgreSQL lane after each merge.
 
 | Exact queue classification | Selected jobs |
 |---|---|
 | Complete valid diff containing only Markdown under `docs/architecture/**` | candidate/governance, dependency review and CodeQL; heavy Rust/PostgreSQL/Windows/supply-chain may be unselected |
 | Unconsumed auxiliary inputs, proven by protected-base exact-consumer routing on the synthetic candidate | always-required gates; heavy Rust/PostgreSQL/Windows/supply-chain may be unselected |
-| Exact server-only consumer closure (`server` or `durability`), proven by that same classifier | Linux workspace, PostgreSQL 17.6 and supply chain plus always-required gates; Windows may be unselected |
-| Everything else, including client/shared/simulation, canonical routing controls, mixed, special-mode, malformed or incomplete evidence | FULL Linux workspace, PostgreSQL 17.6, Windows client/input/SIM and supply chain plus always-required gates |
+| Exact server-only consumer closure (`server` or `durability`), proven by that same classifier | Linux workspace, PostgreSQL 18.6 and supply chain plus always-required gates; Windows may be unselected |
+| Everything else, including client/shared/simulation, canonical routing controls, mixed, special-mode, malformed or incomplete evidence | FULL Linux workspace, PostgreSQL 18.6, Windows client/input/SIM and supply chain plus always-required gates |
 
 The physical server qualifications (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`) are selected separately on the exact queue diff. The selection uses the protected-base `server_qualification_required` classifier with the same path rules as the pull-request gate, so a batched candidate is re-qualified whenever any of its changes can reach the shipped server. It fails closed: anything but a proven-unrelated diff selects them.
 
@@ -124,7 +126,7 @@ Current selected Linux evidence includes:
 
 - locked workspace metadata and formatting/policy checks;
 - workspace build, strict Clippy and tests;
-- `oteryn-game-server --test durability_postgres` against pinned PostgreSQL 17.6 when the exact target is allocated/present;
+- `oteryn-game-server --test durability_postgres` against pinned PostgreSQL 18.6 when the exact target is allocated/present;
 - synthetic client harness and server bootstrap smoke where selected;
 - dependency closure and `cargo-deny` supply-chain checks.
 
@@ -150,10 +152,10 @@ The selected cache producer builds and runs strict Clippy, compiles workspace
 tests with `cargo test --no-run`, then runs bounded synthetic/native smoke before
 trimming and saving the cache. It does not execute the full workspace,
 PostgreSQL or Windows test suites after merge. Supply-chain qualification remains
-in PR/MQ; dedicated workflows retain their accepted checks.
+in the PR gate and the post-merge full gate; dedicated workflows retain their accepted checks.
 
 Compilation can still be substantial. Cache contents are a build optimization;
-PR/MQ exact-candidate qualification and real merge-group `game-gate` remain the
+PR exact-candidate qualification and the post-merge full-gate `game-gate` remain the
 integration evidence.
 
 ## Required additions as owning layers appear

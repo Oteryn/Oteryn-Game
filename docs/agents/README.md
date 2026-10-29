@@ -20,6 +20,12 @@ Shared execution, authority/trust, recovery, checkpoint/handoff and communicatio
 - `END_TO_END_FEATURE_COMPLETENESS.md` — end-to-end feature acceptance.
 - `CROSS_REPO_CONTRACTS.md` — Oteryn Platform/Otheryn/otclient migration boundaries.
 - `GOVERNANCE_CONTRACT.json`, `PROJECT_LANES.json` — machine-readable policy.
+- `OWNER_FUNDED_AI_POLICY.md` — owner-funded AI usage rules (mandatory per root `AGENTS.md`).
+- `DECISION_INDEX.md` — index of owner decisions by PR; find a decision here first.
+- `JIRA_PROGRAMME_COORDINATION.md` — the programme coordinator's Jira batch rules.
+- `CLOSURE_CONVERGENCE_PROTOCOL.md` — late-stage closure protocol, used only when `CONVERGENCE_MODE` is recorded.
+- `tasks/MECHANICS_STATUS.md` — pointer to the mechanic progress ledger.
+- `.claude/skills/` — current practice skills, loaded on demand (see root `AGENTS.md`).
 
 ## Reusable programme prompts
 
@@ -32,7 +38,7 @@ Reusable prompts are task deltas, not project state. Apply current authority, ta
 
 Before writing a mechanic card or starting a mechanic, check [mechanics status on main](tasks/MECHANICS_STATUS.md) and the [archive](tasks/archive/) for existing implementations and completed cards so nothing is reimplemented. Scope the card to the remaining work.
 
-Every mechanic card must declare `type: mechanic` and contain a `## Reference parity` section with the table `Behaviour | Reference value/source (Tibia wiki, TibiaData, Canary/Crystal path) | Oteryn | Test`. Each behaviour row must cite its reference and be backed by a table-driven test; use the [task template](tasks/TASK_TEMPLATE.md). On closeout, update the mechanic's MECHANICS_STATUS.md row in the same PR, including resolving links and any remaining gaps. Also update the row whenever a PR changes its implementation state. The governance validator requires the parity heading on `type: mechanic` cards with `status: DONE` or lifecycle `status: completed`, and checks the index's local file links.
+Every mechanic card must declare `type: mechanic` and contain a `## Reference parity` section with the table `Behaviour | Reference value/source (Tibia wiki, TibiaData, Canary/Crystal path) | Oteryn | Test`. Each behaviour row must cite its reference and be backed by a table-driven test; use the [task template](tasks/TASK_TEMPLATE.md). The progress ledger is the file `tasks/MECHANICS_STATUS.md` points to (the Crystal re-audit, `docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md`). Mechanic PRs do not edit the ledger; one docs PR per wave updates its rows with file:line evidence. The governance validator requires the parity heading on `type: mechanic` cards with `status: DONE` or lifecycle `status: completed`, and checks the index's local file links.
 
 Substantial work uses:
 
