@@ -15,6 +15,7 @@ use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId, VisibleR
 use crate::map::view::{self, MapEntryKey, MapFacts};
 use crate::movement::interest::{VisibilityPosition, VisibilitySettings};
 use crate::spell::Vocation;
+use crate::spell::{Carrier, ManaCost, SpellBook};
 use oteryn_protocol_oteryn::item_look::{
     ItemLookRefusal, ItemLookResult, MAX_ITEM_LOOK_TEXT_BYTES,
 };
@@ -431,16 +432,71 @@ async fn observe_look_item(
         definition: &definition,
         look_distance: distance,
     };
-    match examine_observed_item(
+    let ordinary = match examine_observed_item(
         &runtime,
         admission.active_generation,
         views,
         target,
         Some(observed),
     ) {
-        ItemLookOutcome::Text(text) => Ok(ItemLookResult::Text(text)),
-        ItemLookOutcome::Unavailable => Err(unavailable),
+        ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
+        ItemLookOutcome::Unavailable => return Err(unavailable),
+    };
+    if definition.production_key == "oteryn:item.tibia.i6120" {
+        // The runtime and spell-state locks preserve the Channel owner's established order. The
+        // state lookup rechecks the exact actor/session binding, so reconnect cannot expose a
+        // previous incarnation's vocation-filtered list.
+        let states = admission.states.spell_states.lock().await;
+        let state = states.get(&runtime, actor, session).ok_or(unavailable)?;
+        return spellbook_text(admission.spells, state.character_facts().vocation)
+            .map(ItemLookResult::Text)
+            .ok_or(unavailable);
     }
+    Ok(ordinary)
+}
+
+/// Crystal `spellbook.lua`: instant spells for the current vocation, grouped by required level,
+/// sorted by that level, with percentage mana replacing the fixed mana field. Oteryn currently
+/// has no instant-spell magic-level requirement; rune magic levels are intentionally excluded.
+pub(super) fn spellbook_text(book: &SpellBook, vocation: Vocation) -> Option<String> {
+    let mut spells: Vec<_> = book
+        .spells
+        .iter()
+        .enumerate()
+        .filter(|(index, spell)| {
+            !book.inactive_aliases.contains(index)
+                && spell.vocations.contains(&vocation)
+                && spell.level > 0
+                && matches!(spell.carrier, Carrier::Instant { .. })
+        })
+        .map(|(_, spell)| spell)
+        .collect();
+    spells.sort_by_key(|spell| spell.level);
+    if spells.is_empty() {
+        return Some("\n".to_owned());
+    }
+    let mut text = String::new();
+    let mut previous = None;
+    for spell in spells {
+        if previous != Some(spell.level) {
+            if previous.is_some() {
+                text.push('\n');
+            }
+            text.push_str(&format!("Spells for Level {}\n", spell.level));
+            previous = Some(spell.level);
+        }
+        let Carrier::Instant { words, .. } = &spell.carrier else {
+            unreachable!("filtered above")
+        };
+        let mana = match spell.mana {
+            ManaCost::Fixed(mana) => mana.to_string(),
+            ManaCost::PercentOfMaximum(percent) => format!("{percent}%"),
+        };
+        text.push_str(&format!("  {words} - {} : {mana}\n", spell.name));
+    }
+    // Crystal appends the separator before its (currently empty in Oteryn) magic-level group.
+    text.push('\n');
+    (text.len() <= MAX_ITEM_LOOK_TEXT_BYTES).then_some(text)
 }
 /// Read-only placement admission: exact bundle target, current revision, visible composed
 /// base entry and known definition. Never passes through materializable handle admission.

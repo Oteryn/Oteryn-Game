@@ -76,13 +76,13 @@ fn malformed_results_cannot_carry_hidden_facts() {
 }
 
 #[test]
-fn ascii_text_limit_is_512_bytes_on_encode_and_decode() {
-    assert_eq!(MAX_ITEM_LOOK_TEXT_BYTES, 512);
-    let exact = ItemLookResult::Text("x".repeat(512));
+fn ascii_text_limit_is_bounded_on_encode_and_decode() {
+    assert_eq!(MAX_ITEM_LOOK_TEXT_BYTES, 16_384);
+    let exact = ItemLookResult::Text("x".repeat(MAX_ITEM_LOOK_TEXT_BYTES));
     let encoded = encode_item_look_result_for(&exact, EXTENDED).unwrap();
-    assert_eq!(encoded.len(), 515); // Tag + two-byte length + 512 text bytes.
+    assert_eq!(encoded.len(), MAX_ITEM_LOOK_TEXT_BYTES + 4);
     assert_eq!(decode_item_look_result_for(&encoded, EXTENDED), Ok(exact));
-    let oversized = "x".repeat(513);
+    let oversized = "x".repeat(MAX_ITEM_LOOK_TEXT_BYTES + 1);
     assert_eq!(
         encode_item_look_result_for(&ItemLookResult::Text(oversized.clone()), EXTENDED),
         Err(ItemLookWireError::LimitExceeded)
@@ -97,14 +97,12 @@ fn ascii_text_limit_is_512_bytes_on_encode_and_decode() {
 
 #[test]
 fn multibyte_text_limit_counts_utf8_bytes_in_both_directions() {
-    let text = "é".repeat(256);
-    assert_eq!(text.len(), 512);
-    assert_eq!(text.chars().count(), 256);
+    let text = "é".repeat(MAX_ITEM_LOOK_TEXT_BYTES / 2);
+    assert_eq!(text.len(), MAX_ITEM_LOOK_TEXT_BYTES);
     let exact = ItemLookResult::Text(text);
     let encoded = encode_item_look_result_for(&exact, EXTENDED).unwrap();
     assert_eq!(decode_item_look_result_for(&encoded, EXTENDED), Ok(exact));
-    let oversized = "é".repeat(257);
-    assert_eq!(oversized.len(), 514);
+    let oversized = "é".repeat(MAX_ITEM_LOOK_TEXT_BYTES / 2 + 1);
     assert_eq!(
         encode_item_look_result_for(&ItemLookResult::Text(oversized.clone()), EXTENDED),
         Err(ItemLookWireError::LimitExceeded)

@@ -31,12 +31,12 @@ fn a_shop_intent_names_one_unit_of_the_same_offer() {
 #[test]
 fn a_look_text_is_cut_at_a_character_boundary_to_its_bound() {
     assert_eq!(bounded("You see a sword.".into()), "You see a sword.");
-    let wide = "\u{17c}".repeat(MAX_ITEM_LOOK_TEXT_BYTES);
+    let wide = "\u{17c}".repeat(MAX_NPC_SHOP_LOOK_TEXT_BYTES);
     let cut = bounded(wide);
-    assert!(cut.len() <= MAX_ITEM_LOOK_TEXT_BYTES);
-    assert_eq!(cut.len(), MAX_ITEM_LOOK_TEXT_BYTES);
-    let odd = format!("x{}", "\u{17c}".repeat(MAX_ITEM_LOOK_TEXT_BYTES));
-    assert_eq!(bounded(odd).len(), MAX_ITEM_LOOK_TEXT_BYTES - 1);
+    assert!(cut.len() <= MAX_NPC_SHOP_LOOK_TEXT_BYTES);
+    assert_eq!(cut.len(), MAX_NPC_SHOP_LOOK_TEXT_BYTES);
+    let odd = format!("x{}", "\u{17c}".repeat(MAX_NPC_SHOP_LOOK_TEXT_BYTES));
+    assert_eq!(bounded(odd).len(), MAX_NPC_SHOP_LOOK_TEXT_BYTES - 1);
 }
 
 #[test]

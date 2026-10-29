@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use oteryn_protocol_oteryn::actor_spell::{ActorVitals, SpellCastDisposition};
+use oteryn_protocol_oteryn::actor_spell::{ActorVitals, MAX_VITAL_POOL, SpellCastDisposition};
 use oteryn_simulation_determinism::SemanticTimeMicros;
 
 use super::{CharacterCastFacts, PlayerSpellState, solo};
@@ -11,6 +11,37 @@ use crate::spell::harmony::{HarmonyMultiplier, MonkState, MonkStateError};
 use crate::spell::{CasterState, HarmonyRole, SpellBook, SpellDefinition, Vocation};
 
 impl PlayerSpellState {
+    /// Replaces the Wheel dedication contribution without changing the Character-owned base.
+    /// Lower maxima clamp the live pools; higher maxima do not grant health or mana.
+    pub fn apply_wheel_maximum_bonus(
+        &mut self,
+        health_bonus: u32,
+        mana_bonus: u32,
+    ) -> Result<bool, SpellCastDisposition> {
+        let max_health = self
+            .base_max_health
+            .checked_add(health_bonus)
+            .filter(|value| *value <= MAX_VITAL_POOL)
+            .ok_or(SpellCastDisposition::Rejected)?;
+        let max_mana = self
+            .base_max_mana
+            .checked_add(mana_bonus)
+            .filter(|value| *value <= MAX_VITAL_POOL)
+            .ok_or(SpellCastDisposition::Rejected)?;
+        let changed = (self.facts.max_health, self.facts.max_mana) != (max_health, max_mana);
+        if changed {
+            self.facts.max_health = max_health;
+            self.facts.max_mana = max_mana;
+            self.health = self.health.min(max_health);
+            self.mana = self.mana.min(max_mana);
+            self.revision = self
+                .revision
+                .checked_add(1)
+                .ok_or(SpellCastDisposition::Rejected)?;
+        }
+        Ok(changed)
+    }
+
     pub fn source_cooldown_deadlines(&self) -> Vec<(String, u64)> {
         self.cooldowns.canonical_deadlines()
     }

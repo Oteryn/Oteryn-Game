@@ -68,6 +68,11 @@ pub(super) fn admits(cause: BuildCause, change: OfflineChange) -> bool {
         BuildCause::Training => change.after.stamina_minutes <= change.before.stamina_minutes
             && change.after.pool_seconds == change.before.pool_seconds
             && change.after.skill == change.before.skill,
+        BuildCause::RestingStamina => {
+            change.after.stamina_minutes > change.before.stamina_minutes
+                && change.after.pool_seconds == change.before.pool_seconds
+                && change.after.skill == change.before.skill
+        }
         BuildCause::Logout => {
             change.before.stamina_minutes == change.after.stamina_minutes
                 && change.after.pool_seconds >= change.before.pool_seconds
