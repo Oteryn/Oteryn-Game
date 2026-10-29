@@ -1,6 +1,6 @@
 # Mechanics status on main
 
-The 2026-10-27 table below is a snapshot and is no longer updated. The current per-element status is the [Crystal game-mechanics re-audit](../../architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md); mechanic PRs do not edit it, and one docs PR per wave updates its rows with file:line evidence (owner decision, 2026-10-29).
+The 2026-10-27 table below is a snapshot and is no longer updated. The current per-element status is the [Crystal game-mechanics re-audit](../../architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md). A mechanic PR does not edit that ledger: one docs PR per wave updates the rows the wave changed, each with `file:line` evidence on `main`.
 
 Check here before writing or allocating a mechanic card; reuse the existing owners. A reachable slice does not mean the entire mechanic is complete: read **what remains** and the card's unchanged acceptance criteria.
 

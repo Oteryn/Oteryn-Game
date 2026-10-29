@@ -69,15 +69,17 @@ of root `AGENTS.md`, *Review guidelines*:
 
 Codex review spends owner-funded quota, so it runs only where
 `docs/agents/OWNER_FUNDED_AI_POLICY.md` covers it: a review the bound META
-policy or the task contract requires, and (owner decision, 2026-10-29) one
-review of each wave's batch PR and of each frozen head that changes
-persistence, session fencing, the wire protocol or authority. Any other
-second opinion is skipped, not turned into a question.
+policy or the task contract requires, and the owner's review trial
+(2026-10-29): one review of each wave's batch PR and of each frozen head that
+changes persistence or migrations, session fencing, the wire protocol,
+authority, durable value (gold, items) or a CI workflow, at most 5 a day. The
+trial starts on 2-3 PRs and ends if it finds no real defect. Any other second
+opinion is skipped, not turned into a question.
 
 When a review is covered: only the coordinator (the review-dispatch owner)
-starts it, once per frozen head, after the local checks pass. On a PR that is
-one `@codex review` comment; outside a PR, `codex exec` in a read-only
-sandbox at reasoning effort medium, with the diff, `CODEX-CHECKLIST.md` and
+starts it, once per frozen head, after the local checks pass, with `codex
+exec` in a read-only sandbox at reasoning effort medium (an `@codex review`
+PR comment has gone unanswered since 2026-10-20, so it is not used), with the diff, `CODEX-CHECKLIST.md` and
 the instruction to report findings only. Its output is findings to verify
 with step 3, not a verdict; a failed or empty run means "not reviewed".
 

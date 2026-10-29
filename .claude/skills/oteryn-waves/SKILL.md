@@ -55,18 +55,22 @@ same day.
 
 1. Review each returned unit (`oteryn-review`) and push it to its own branch.
 2. Merge the wave's finished game-server heads, plus any other finished ones
-   waiting, onto a fresh `main` as one batch branch (4-6 heads, at most 6);
+   waiting, onto a fresh `main` as one batch branch (at most 3 heads);
    it is only a test vehicle.
 3. Run what the PR gate never runs on the batch tree, on a PC lane when one is
    available: Node boot and the integration shards (`oteryn-dev`
-   `references/local-checks.md`, *Jobs that only run after the merge*). Then,
-   once, request the batch's Codex review (`oteryn-review`, *Independent
-   review by Codex*) and label the batch `heavy-tests`.
-4. Batch red: bisect it by member and fix the member, not the batch.
+   `references/local-checks.md`, *Jobs that only run after the merge*). Label the
+   batch `heavy-tests`; the batch's Codex review is part of the review trial
+   (`oteryn-review`, *Independent review by Codex*).
+4. Batch red: bisect it by member and fix the member, not the batch. A member
+   that goes red or changes after the batch tested it stops the landing: merge
+   no further members, rebuild the batch from the ones left on the new `main`
+   and test it again.
 5. Batch green: check `main` health (`oteryn-dev` `scripts/main-health.sh`),
-   then merge the members one by one, back to back, with no other game-server
-   merge in between (`oteryn-dev` `references/ci-merge.md`, *Merge
-   conditions*); then close the batch.
+   then merge the members one by one, back to back, with no other merge at all
+   in between (`oteryn-dev` `references/ci-merge.md`, *Merge conditions*).
+   After the last one, `git rev-parse origin/main^{tree}` must equal the batch
+   head's `^{tree}`; then close the batch.
 
 ## 6. Close the wave
 

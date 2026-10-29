@@ -58,8 +58,10 @@ A PR is mergeable when all of these hold on its **current** head SHA:
    decision (2026-10-29, also stated in root `AGENTS.md`): a member of a batch
    PR whose six partitions are green on the same `main`, with its own
    `game-gate` green, merged right after the other members with no other
-   game-server merge in between (so the final `main` is the tree the batch
-   tested).
+   merge at all in between, so the final `main` is the tree the batch tested:
+   `git rev-parse origin/main^{tree}` equals the batch head's `^{tree}`. A
+   member that goes red or changes mid-way stops the landing; rebuild the
+   batch from the members left on the new `main` and test it again.
 3. Changes whose paths select no PostgreSQL leg (client, docs, tools/CI,
    test-only fixes of `main`) need only (1); their own CI is then complete.
 
