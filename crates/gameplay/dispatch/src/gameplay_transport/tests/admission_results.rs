@@ -87,6 +87,75 @@ fn admission_survives_a_busy_holder_within_the_root_recovery_window() {
     });
 }
 
+/// One step of a multi-step admission: unavailable until the holder frees at `free_at`.
+async fn step_against_holder_free_at(
+    free_at: tokio::time::Instant,
+    attempts: &mut u32,
+) -> Result<(), AdmissionRefusal> {
+    *attempts += 1;
+    if tokio::time::Instant::now() >= free_at {
+        Ok(())
+    } else {
+        Err(AdmissionRefusal::Unavailable)
+    }
+}
+
+/// DEFLAKE-3: a busy holder met by a later step of the attempt (the cyclopedia epoch before the
+/// commit, the cast facts and automatic spells after it) is retried within the same root
+/// recovery window instead of refusing the attempt on its first miss. A refusal other than
+/// unavailable is final, and the window still bounds the attempt as a whole.
+#[test]
+fn every_admission_step_retries_a_busy_holder_within_one_window() {
+    run_paused(async {
+        let session = GameSessionId::decode(&uuid_v7(0x7f)).expect("session");
+        let start = tokio::time::Instant::now();
+        let budget = AdmissionRetryBudget::new(&session);
+        // Background passes take the holder again just as each later step starts.
+        for busy_for in [
+            Duration::from_millis(300),
+            Duration::from_secs(1),
+            Duration::from_millis(500),
+        ] {
+            let free_at = tokio::time::Instant::now() + busy_for;
+            let mut attempts = 0;
+            let step = budget
+                .retry_unavailable(async || {
+                    step_against_holder_free_at(free_at, &mut attempts).await
+                })
+                .await;
+            assert_eq!(step, Ok(()), "busy for {busy_for:?}");
+            assert!(attempts > 1, "busy for {busy_for:?}: the first miss was retried");
+            assert!(tokio::time::Instant::now() >= free_at);
+        }
+        assert!(start.elapsed() < crate::durability::ROOT_RECOVERY_WINDOW);
+        // The remaining window is shared: a holder busy past it refuses the last step.
+        let free_at = start + crate::durability::ROOT_RECOVERY_WINDOW;
+        let mut attempts = 0;
+        assert_eq!(
+            budget
+                .retry_unavailable(async || {
+                    step_against_holder_free_at(free_at, &mut attempts).await
+                })
+                .await,
+            Err(AdmissionRefusal::Unavailable)
+        );
+        assert!(start.elapsed() < crate::durability::ROOT_RECOVERY_WINDOW);
+        // A rejection is final at once.
+        let fresh = AdmissionRetryBudget::new(&session);
+        let mut attempts = 0;
+        assert_eq!(
+            fresh
+                .retry_unavailable(async || {
+                    attempts += 1;
+                    Err::<(), _>(AdmissionRefusal::Rejected)
+                })
+                .await,
+            Err(AdmissionRefusal::Rejected)
+        );
+        assert_eq!(attempts, 1);
+    });
+}
+
 /// DEFLAKE-2: a round left stale by concurrent owner evidence keeps its bound of
 /// `FRESH_ADMISSION_ROUNDS` rounds, however much of the window is left, and busy-holder
 /// retries do not spend it.
