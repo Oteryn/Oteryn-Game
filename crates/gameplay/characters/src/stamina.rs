@@ -9,6 +9,12 @@ const NORMAL_STAMINA_MINUTES: u64 = 2_340;
 /// OFFLINE-0 §5 caps the elapsed interval before applying the recovery delay.
 pub const MAX_OFFLINE_SECONDS: u64 = 21 * 24 * 60 * 60;
 
+/// Global's exhausted hunting band: the highest-damage character receives no monster loot
+/// while their stamina is in the final fourteen hours. This deliberately includes minute 840.
+pub const fn hunting_loot_allowed(stamina_minutes: u16) -> bool {
+    stamina_minutes > 840
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StaminaOutOfRange;
 
@@ -252,5 +258,15 @@ mod hunting_tests {
         let (spent, clock) = clock.activity(u64::MAX - 60_000_000, 2520);
         assert_eq!(spent, 0);
         assert_eq!(clock.activity(u64::MAX, 2520).0, 1);
+    }
+
+    #[test]
+    fn final_fourteen_hours_disable_hunting_loot_at_the_exact_boundary() {
+        for minutes in [0, 1, 839, 840] {
+            assert!(!hunting_loot_allowed(minutes));
+        }
+        for minutes in [841, 2_340, 2_341, 2_520] {
+            assert!(hunting_loot_allowed(minutes));
+        }
     }
 }
