@@ -206,10 +206,17 @@ fn scenario() -> TestResult {
         assert_eq!(started, replay);
         // DISCOVERY3: a character row authored by the v1 catalogue remains readable.
         // The next mutating action rewrites its owner digest to the current v2 catalogue.
+        // The state guard demands a same-transaction receipt, so the legacy row is staged with
+        // triggers off, as a v1 owner commit would have left it.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role = replica")
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("UPDATE game_character_cyclopedia SET catalogue_digest=$1")
             .bind(crate::domain::cyclopedia::BasicArea::V1_CONTENT_DIGEST.as_slice())
-            .execute(&h.pool)
+            .execute(&mut *tx)
             .await?;
+        tx.commit().await?;
         let (_, shuffled) = support::exchange(&owner, &mut admitted, 5, 73, &request(2, 0)).await?;
         assert_eq!(shuffled[0], 0);
         assert!(revision(&shuffled) > revision(&started));
