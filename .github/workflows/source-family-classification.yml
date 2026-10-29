@@ -22,6 +22,7 @@ jobs:
   synthetic:
     name: G3 / source-signature counterexamples
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     permissions:
       contents: read
     steps:
