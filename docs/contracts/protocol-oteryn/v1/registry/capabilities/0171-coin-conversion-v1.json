@@ -1,0 +1,14 @@
+{
+  "id": 171,
+  "name": "COIN_CONVERSION_V1",
+  "owner_decision": "GOLDCONV2-1; Crystal re-audit E03",
+  "owner": "durable carried-item owner and production USE router",
+  "requires": [
+    4,
+    15
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "GOLDCONV2-1: only a node serving a World booted from a bundle offers this capability (BUNDLE_WORLD_OFFERED_CAPABILITIES); a fixture World never offers it, so this entry stays offered false. It requires native item content and the durable carried-coin owner; without the capability selected, coin conversion by USE is refused."
+}

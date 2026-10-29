@@ -396,6 +396,16 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
+    fn use_coin_converter(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _converter: ItemKey,
+        _coin: ItemKey,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     /// BAGS-USE-1: field 5, resolved by the owner against the complete carried tree.
     fn use_item_by_definition(
         &self,

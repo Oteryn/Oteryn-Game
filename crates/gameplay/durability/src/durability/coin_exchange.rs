@@ -33,6 +33,17 @@ pub struct CoinExchangeReceipt {
     pub changed: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CoinConverter {
+    Gold([u8; 16]),
+    Magic([u8; 16]),
+}
+
+impl CoinConverter {
+    fn id(self) -> [u8; 16] { match self { Self::Gold(id) | Self::Magic(id) => id } }
+    fn code(self) -> i16 { match self { Self::Gold(_) => 1, Self::Magic(_) => 2 } }
+}
+
 fn code(exchange: CoinExchange) -> i16 {
     match exchange {
         CoinExchange::GoldToPlatinum => 1,
@@ -66,6 +77,7 @@ impl DurabilityRoot {
         source: Option<[u8; 16]>,
         content: Option<&C>,
         coins: Option<[TypedDefinitionRef; 3]>,
+        converter: Option<CoinConverter>,
     ) -> Result<Option<CoinExchangeReceipt>, DurabilityError> {
         if command.game_session_id() != fence.game_session_id {
             return Err(DurabilityError::InvalidStoredState);
@@ -96,8 +108,8 @@ impl DurabilityRoot {
                     return Err(DurabilityError::InvalidStoredState);
                 }
                 assert_current_equipment_in_transaction(&mut tx, &record, &node, &fence, Some(command), content.loop_content_digest()).await.map_err(|_| DurabilityError::Unavailable)?;
-                sqlx::query("INSERT INTO game_coin_exchange_receipts(transaction_id,game_session_id,command_id,character_id,world_id,content_digest,exchange,amount,npc_identity,npc_generation,npc_key,catalogue_revision,conversation_revision,item_source) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric,$8,$9::text::numeric,$10,$11::text::numeric,$12::text::numeric,CASE WHEN $13::bytea IS NULL THEN NULL ELSE encode($13,'hex')::uuid END)")
-                    .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(content.loop_content_digest().as_slice()).bind(code(request.exchange)).bind(request.amount.to_string()).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(&request.npc_key).bind(request.catalogue_revision.to_string()).bind(request.conversation_revision.to_string()).bind(source.as_ref().map(|id| id.as_slice())).execute(&mut **tx).await?;
+                sqlx::query("INSERT INTO game_coin_exchange_receipts(transaction_id,game_session_id,command_id,character_id,world_id,content_digest,exchange,amount,npc_identity,npc_generation,npc_key,catalogue_revision,conversation_revision,item_source,converter_source,converter_kind) VALUES(game_character_uuid_v7(),encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6,$7::text::numeric,$8,$9::text::numeric,$10,$11::text::numeric,$12::text::numeric,CASE WHEN $13::bytea IS NULL THEN NULL ELSE encode($13,'hex')::uuid END,CASE WHEN $14::bytea IS NULL THEN NULL ELSE encode($14,'hex')::uuid END,$15)")
+                    .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(content.loop_content_digest().as_slice()).bind(code(request.exchange)).bind(request.amount.to_string()).bind(request.npc_identity.as_slice()).bind(request.npc_generation.to_string()).bind(&request.npc_key).bind(request.catalogue_revision.to_string()).bind(request.conversation_revision.to_string()).bind(source.as_ref().map(|id| id.as_slice())).bind(converter.map(CoinConverter::id).as_ref().map(|id| id.as_slice())).bind(converter.map(CoinConverter::code)).execute(&mut **tx).await?;
             }
             // The immutable accepted request survives a timeout or process loss after this commit.
             tx.commit(deadline).await?;
@@ -116,6 +128,9 @@ impl DurabilityRoot {
                 return Err(DurabilityError::InvalidStoredState);
             }
             let mut result: i16 = row.try_get("result")?;
+            let stored_converter: Option<Vec<u8>> = row.try_get("converter_source")?;
+            if stored_converter.as_deref() != converter.map(CoinConverter::id).as_ref().map(|id| id.as_slice())
+                || row.try_get::<Option<i16>,_>("converter_kind")? != converter.map(CoinConverter::code) { return Err(DurabilityError::InvalidStoredState); }
             if result == 0 {
                 let content = content.ok_or(DurabilityError::Unavailable)?;
                 let coins = coins.as_ref().ok_or(DurabilityError::Unavailable)?;
@@ -128,7 +143,10 @@ impl DurabilityRoot {
                 result = match outcome { Ok(()) => 1, Err(ExchangeRefusal::InvalidAmount) => 2, Err(ExchangeRefusal::InsufficientCoins) => 3, Err(ExchangeRefusal::NoRoom) => 4 };
                 sqlx::query("UPDATE game_coin_exchange_receipts SET result=$2,inputs=$3,outputs=$4 WHERE transaction_id=$1::uuid")
                     .bind(&transaction).bind(result).bind(json!(inputs)).bind(json!(outputs)).execute(&mut **tx).await?;
-                if result == 1 { apply(&mut tx, fence, &transaction, &inputs, &outputs).await?; }
+                if result == 1 {
+                    if let Some(tool) = converter { qualify_and_spend_converter(&mut tx, fence, tool, exchange, &transaction).await?; }
+                    apply(&mut tx, fence, &transaction, &inputs, &outputs).await?;
+                }
             }
             let line = match result {
                 1 => "Here you are.",
@@ -154,8 +172,29 @@ async fn read(
     tx: &mut super::item_mint_audit::Type2Transaction<'_>,
     command: CommandRef,
 ) -> Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
-    Ok(sqlx::query("SELECT transaction_id::text,uuid_send(character_id) AS character,content_digest,exchange,amount::text,npc_identity,npc_generation::text,npc_key,catalogue_revision::text,conversation_revision::text,result,uuid_send(item_source) AS item_source FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric FOR UPDATE")
+    Ok(sqlx::query("SELECT transaction_id::text,uuid_send(character_id) AS character,content_digest,exchange,amount::text,npc_identity,npc_generation::text,npc_key,catalogue_revision::text,conversation_revision::text,result,uuid_send(item_source) AS item_source,uuid_send(converter_source) AS converter_source,converter_kind FROM game_coin_exchange_receipts WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric FOR UPDATE")
         .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut ***tx).await?)
+}
+
+async fn qualify_and_spend_converter(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>, fence: CurrentCharacterItemFence,
+    tool: CoinConverter, exchange: CoinExchange, transaction: &str,
+) -> Result<(), DurabilityError> {
+    if matches!(tool, CoinConverter::Magic(_)) && !matches!(exchange, CoinExchange::GoldToPlatinum | CoinExchange::PlatinumToCrystal) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let expected = match tool { CoinConverter::Gold(_) => "oteryn:item.tibia.i23722", CoinConverter::Magic(_) => "oteryn:item.tibia.i28526" };
+    let row = sqlx::query("SELECT i.definition_production_key,s.charges,s.state_revision::text FROM game_item_instances i JOIN game_item_timed_states s USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND EXISTS(SELECT 1 FROM game_item_container_entries e JOIN game_item_container_slots b ON b.item_instance_id=e.parent_item_instance_id WHERE e.item_instance_id=i.item_instance_id AND b.character_id=encode($3,'hex')::uuid) FOR UPDATE OF i,s")
+        .bind(tool.id().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
+    if row.try_get::<String,_>("definition_production_key")? != expected { return Err(DurabilityError::InvalidStoredState); }
+    let charges: i32 = row.try_get::<Option<i32>,_>("charges")?.ok_or(DurabilityError::InvalidStoredState)?;
+    if charges <= 0 { return Err(DurabilityError::InvalidStoredState); }
+    sqlx::query("UPDATE game_item_timed_states SET charges=charges-1,state_revision=state_revision+1 WHERE item_instance_id=encode($1,'hex')::uuid").bind(tool.id().as_slice()).execute(&mut ***tx).await?;
+    if charges == 1 {
+        sqlx::query("UPDATE game_item_instances SET lifecycle=2,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid").bind(tool.id().as_slice()).bind(transaction).execute(&mut ***tx).await?;
+        sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(tool.id().as_slice()).execute(&mut ***tx).await?;
+    }
+    Ok(())
 }
 
 type Plan = (Result<(), ExchangeRefusal>, Vec<Value>, Vec<Value>);
