@@ -734,3 +734,151 @@ fn coin_use_scenario() -> TestResult {
         h.cleanup().await
     })
 }
+
+#[test]
+fn coin_converter_postgres_charges_burn_toggle_and_tick() -> TestResult {
+    if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| converter_scenario().map_err(|error| error.to_string()))?
+        .join()
+        .map_err(|_| "coin converter PostgreSQL thread panicked")??;
+    Ok(())
+}
+
+/// Seed one main backpack holding `entries` (seed, key, quantity, stored charges).
+async fn seed_converter_bag(h: &Harness, entries: &[(u8, &str, u32, Option<i32>)]) -> TestResult {
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *tx)
+        .await?;
+    for table in ["game_item_container_entries", "game_item_container_slots"] {
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "DELETE FROM {table} WHERE character_id=encode($1,'hex')::uuid"
+        )))
+        .bind(id(41).as_slice())
+        .execute(&mut *tx)
+        .await?;
+    }
+    let bag = entries.first().ok_or("bag")?.0.wrapping_sub(2);
+    let item = |seed, key: &str, count| {
+        crate::durability::item_fee_burn::test_support::item(seed, key, "definition-r1", count)
+    };
+    sqlx::raw_sql(sqlx::AssertSqlSafe(item(bag, "oteryn:item.tibia.i2854", 1)))
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)").bind(id(41).as_slice()).bind(id(bag).as_slice()).bind(id(42).as_slice()).bind(id(245).as_slice()).execute(&mut *tx).await?;
+    for (ordinal, (seed, key, count, charges)) in entries.iter().enumerate() {
+        sqlx::raw_sql(sqlx::AssertSqlSafe(item(*seed, key, *count)))
+            .execute(&mut *tx)
+            .await?;
+        if let Some(charges) = charges {
+            sqlx::query("INSERT INTO game_item_timed_states(item_instance_id,charges,state_revision) VALUES(encode($1,'hex')::uuid,$2,1)").bind(id(*seed).as_slice()).bind(charges).execute(&mut *tx).await?;
+        }
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::bigint,encode($6,'hex')::uuid)").bind(id(41).as_slice()).bind(id(bag).as_slice()).bind(id(*seed).as_slice()).bind(id(42).as_slice()).bind(i64::try_from(ordinal + 1)?).bind(id(246).as_slice()).execute(&mut *tx).await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn converter_row(h: &Harness, seed: u8) -> TestResult<(String, i16, Option<i32>)> {
+    let row: (String, i16, Option<i32>) = sqlx::query_as("SELECT i.definition_production_key,i.lifecycle,t.charges FROM game_item_instances i LEFT JOIN game_item_timed_states t USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid").bind(id(seed).as_slice()).fetch_one(&h.pool).await?;
+    Ok(row)
+}
+
+fn converter_scenario() -> TestResult {
+    use crate::gameplay_transport::item_view::ItemKey;
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    run(async |admin| {
+        reset();
+        let h = Harness::create_with_admission_seed(admin, "coin_converter", true, false).await?;
+        eprintln!("POSTGRES_STARTED goldconv2");
+        prepare_current_session(&h).await?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
+        let (controller, pin) = activated_with_loot_tables(world, None);
+        let active = controller.active().ok_or("active")?;
+        let channel_pin = ChannelContentPin::from_activation(world, pin.activation_sequence(), pin.identity().server_artifact_digest(), pin.identity().client_artifact_digest(), pin.frame_binding().digest(), pin.qualified_room().map_revision_digest(), (2, 0, 7));
+        let deps = Dependencies::with_content(channel_pin, crate::content::qualify_native_entry_room(world).map_err(debug)?, crate::spell::cast::v1_spell_book().map_err(debug)?)?;
+        let mut owner = deps.owner(&h, &authority);
+        owner.active_generation = Some(active);
+        deps.initialize(&owner).await;
+        deps.runtime.lock().await.initialize_first_entry_position(deps.actor).map_err(debug)?;
+        let session = deps.admitted.game_session_id;
+        let fence = owner.current_quest_fence(session).await.map_err(|_| "fence")?.ok_or("fence")?.item_fence();
+        sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1) ON CONFLICT DO NOTHING").bind(id(41).as_slice()).execute(&h.pool).await?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&h.pool).await?;
+        sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
+        let command = |command_id| UseCommand { game_session_id: session, command_id, item_fence: Some(fence) };
+        let gold = "oteryn:item.tibia.i3031";
+        let platinum = "oteryn:item.tibia.i3035";
+
+        // gold_converter.lua L17-36: a fresh converter spends one of its 500 charges.
+        seed_converter_bag(&h, &[(162, "oteryn:item.tibia.i23722", 1, None), (164, gold, 100, None)]).await?;
+        let converted = owner.use_gold_converter(deps.actor, command(1), ItemKey::Instance(id(162)), ItemKey::Instance(id(164))).await.ok_or("gold converter")?;
+        assert_eq!(converted.disposition, UseDisposition::Committed);
+        assert_eq!(converter_row(&h, 162).await?, ("oteryn:item.tibia.i23722".into(), 1, Some(499)));
+        assert_eq!(quantity(&h, "3035").await?, 1);
+        let replay = owner.use_gold_converter(deps.actor, command(1), ItemKey::Instance(id(162)), ItemKey::Instance(id(164))).await.ok_or("replay")?;
+        assert_eq!(replay.disposition, UseDisposition::Committed);
+        assert_eq!(converter_row(&h, 162).await?.2, Some(499));
+        // A plain use needs a coin target and spends nothing.
+        let plain = owner.use_item_completion(deps.actor, command(2), ItemKey::Instance(id(162))).await.ok_or("plain use")?;
+        assert_eq!(plain.disposition, UseDisposition::NotPossible);
+        assert_eq!(converter_row(&h, 162).await?.2, Some(499));
+
+        // The temporary converter burns with its last charge, together with the conversion.
+        seed_converter_bag(&h, &[(168, "oteryn:item.tibia.i25719", 1, Some(1)), (170, gold, 100, None)]).await?;
+        let last = owner.use_gold_converter(deps.actor, command(3), ItemKey::Instance(id(168)), ItemKey::Instance(id(170))).await.ok_or("last charge")?;
+        assert_eq!(last.disposition, UseDisposition::Committed);
+        let (_, lifecycle, charges) = converter_row(&h, 168).await?;
+        // The expiry retires the item in place; its last checkpoint row is never rewritten.
+        assert_eq!(lifecycle, 2);
+        assert_eq!(charges, Some(1));
+        assert_eq!(quantity(&h, "3035").await?, 1);
+        assert_eq!(quantity(&h, "3031").await?, 0);
+        // A spent converter cannot convert again under a new command.
+        seed_converter_bag(&h, &[(174, gold, 100, None), (176, "oteryn:item.tibia.i23722", 1, None)]).await?;
+        assert!(owner.use_gold_converter(deps.actor, command(4), ItemKey::Instance(id(168)), ItemKey::Instance(id(174))).await.is_none());
+        assert_eq!(quantity(&h, "3031").await?, 100);
+
+        // magic_gold_converter.lua L10-21: use switches the converter on, replay does not flip it.
+        seed_converter_bag(&h, &[(180, "oteryn:item.tibia.i28525", 1, None), (182, gold, 100, None), (184, platinum, 99, None)]).await?;
+        let on = owner.use_item_completion(deps.actor, command(5), ItemKey::Instance(id(180))).await.ok_or("switch on")?;
+        assert_eq!(on.disposition, UseDisposition::Committed);
+        assert_eq!(converter_row(&h, 180).await?, ("oteryn:item.tibia.i28526".into(), 1, Some(500)));
+        assert!(owner.states.timed_items.magic_converters.lock().await.contains_key(&session));
+        let replay = owner.use_item_completion(deps.actor, command(5), ItemKey::Instance(id(180))).await.ok_or("switch replay")?;
+        assert_eq!(replay.disposition, UseDisposition::Committed);
+        assert_eq!(converter_row(&h, 180).await?.0, "oteryn:item.tibia.i28526");
+        assert_eq!(quantity(&h, "3031").await?, 100);
+
+        // L23-55: the owner tick upgrades a carried 100-stack and spends one durable charge.
+        assert!(owner.tick_magic_converter(session).await);
+        assert_eq!(quantity(&h, "3031").await?, 0);
+        assert_eq!(quantity(&h, "3035").await?, 100);
+        assert_eq!(converter_row(&h, 180).await?.2, Some(499));
+        assert!(owner.tick_magic_converter(session).await);
+        assert_eq!(quantity(&h, "3035").await?, 0);
+        assert_eq!(quantity(&h, "3043").await?, 1);
+        assert_eq!(converter_row(&h, 180).await?.2, Some(498));
+        assert!(owner.tick_magic_converter(session).await);
+        assert_eq!(converter_row(&h, 180).await?.2, Some(498));
+
+        // Switching off keeps the charges and stops the owner tick.
+        let off = owner.use_item_completion(deps.actor, command(6), ItemKey::Instance(id(180))).await.ok_or("switch off")?;
+        assert_eq!(off.disposition, UseDisposition::Committed);
+        assert_eq!(converter_row(&h, 180).await?, ("oteryn:item.tibia.i28525".into(), 1, Some(498)));
+        assert!(!owner.states.timed_items.magic_converters.lock().await.contains_key(&session));
+        let journal: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_state_writes WHERE cause=9").fetch_one(&h.pool).await?;
+        assert_eq!(journal, 2);
+        // A switch cannot alter charges outside its own arm.
+        assert!(sqlx::query("UPDATE game_item_timed_states SET charges=500 WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(180).as_slice()).execute(&h.pool).await.is_err());
+        eprintln!("POSTGRES_COMPLETED goldconv2");
+        drop(owner); drop(authority); drop(seal);
+        h.cleanup().await
+    })
+}
