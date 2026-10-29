@@ -4693,7 +4693,7 @@
     "blank_scroll": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "6901daf34fcf53bb6e5650f28fbf5e1d1de0dfbd8e1bf64c5f68754f21f064d8",
+          "definition_sha256": "6b3c00fd06c9ecc2c33bf0c9f74effb51dab7367a0cb0062fe99f13592ac9a6c",
           "name": "blank imbuement scroll",
           "path": "content/items/definitions/items-28000-28499.json"
         },
@@ -4725,7 +4725,7 @@
     "etcher": {
       "evidence": {
         "canonical": {
-          "definition_sha256": "046252d91c21ad370cbdb77f6a334f273fce9b7106bf44bf37b4d453e412030c",
+          "definition_sha256": "eca27e4e86917a2950cf6a101bad5ff3dff44ccf41e38855e2b669b5a4b84a7e",
           "name": "etcher",
           "path": "content/items/definitions/items-28000-28499.json"
         },

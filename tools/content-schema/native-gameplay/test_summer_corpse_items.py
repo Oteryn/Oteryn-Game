@@ -1,9 +1,13 @@
 """Keep Summer corpse admission within its Item ownership boundary."""
 
 import json
+import sys
 import unittest
 
 import summer_corpse_items as summer
+
+sys.path.insert(0, str(summer.ROOT / "tools/content-schema/imbuement-authoring"))
+import imbuement_content
 
 
 class SummerItemOwnershipTests(unittest.TestCase):
@@ -30,7 +34,7 @@ class SummerItemOwnershipTests(unittest.TestCase):
         collect(refinement)
         self.assertFalse(summer.LOOT_IDS & owned)
 
-    def test_utility_records_remain_unmaterializable_and_unchanged(self):
+    def test_utility_records_are_plain_materializable_loot_and_unchanged(self):
         path = summer.ROOT / "content/items/definitions/items-28000-28499.json"
         before = json.loads(path.read_bytes())
         outputs = summer.outputs()
@@ -45,8 +49,22 @@ class SummerItemOwnershipTests(unittest.TestCase):
         self.assertEqual(set(records), keys)
         self.assertEqual(records, utilities(after))
         for record in records.values():
-            self.assertFalse(record["definition"]["materializable"])
-            self.assertNotEqual(record["definition"]["stack_class"], "StackCapable")
+            definition = record["definition"]
+            self.assertTrue(definition["materializable"])
+            item_id = int(definition["identity"]["key"].rsplit("i", 1)[1])
+            self.assertEqual(definition["stack_class"],
+                             "StackCapable" if item_id == 51443 else "NonStackable")
+            physical = definition["semantics"]["physical"]["value"]
+            self.assertEqual(physical["weight"],
+                             {"state": "KNOWN", "value": 250 if item_id == 51442 else 150})
+            for field in ("movable", "pickupable"):
+                self.assertEqual(physical[field], {"state": "KNOWN", "value": True})
+            for field in ("imbuement", "use_transform"):
+                self.assertEqual(definition["semantics"][field], {"state": "UNKNOWN"})
+        files = imbuement_content.content_files(imbuement_content.inputs())
+        for name in ("equipment.json", "index.json"):
+            self.assertEqual(json.loads(files[imbuement_content.PREFIX + name])["runtime_admission"],
+                             "BLOCKED")
 
     def test_committed_shards_are_deterministic_output(self):
         for path, raw in summer.outputs().items():

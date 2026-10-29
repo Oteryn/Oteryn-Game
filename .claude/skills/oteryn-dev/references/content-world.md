@@ -15,6 +15,10 @@ content digests are derived from committed inputs.
   (`tools/merge-driver/regen.sh` is the same command; prefer the python form,
   which the repository's `.claude/settings.json` allows.) Add `--no-stage` to
   leave the index untouched, `--skip-checks` to regenerate only.
+- The Item tree materializer reapplies the accepted Summer corpse/loot overlay before
+  hashing its output. After materializing an Item admission change, regenerate the native loot facts
+  with `python3 tools/content-schema/native-gameplay/build_full_spell_artifact.py --refresh-loot-tables`
+  and run `python3 tools/content-migration/register_spell_families.py` to pin those facts in the manifest.
 - To refresh only the World pins:
   `cargo run --locked --release -p oteryn-world-bundle-compiler -- pin-refresh .`
 - The gate is
