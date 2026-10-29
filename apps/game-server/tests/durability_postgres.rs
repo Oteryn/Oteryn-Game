@@ -2223,6 +2223,12 @@ fn isolated_postgres_guard_classifies_absence_and_rejects_unsafe_configuration()
         ))?,
         postgres::PostgresE2eAvailability::Configured
     );
+    assert_eq!(
+        postgres::classify_e2e_admin_url(Some(
+            "postgresql://oteryn_test_admin:secret@127.0.0.1:47271/postgres"
+        ))?,
+        postgres::PostgresE2eAvailability::Configured
+    );
     assert!(matches!(
         postgres::classify_e2e_admin_url(Some(
             "postgresql://oteryn_test_admin:secret@remote.example/postgres"
