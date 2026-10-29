@@ -25,17 +25,19 @@ use crate::content::{
     ContentActivationController, NativeEntryActivationError, NativeEntryActivationIssuance,
     NativeEntryContentPin, NodeBootQuiescence, activate_native_entry_room,
 };
-use crate::durability::DurabilityRoot;
 use crate::durability::admission_authority_guards::{
     AdmissionGuardStore, GuardPublicationDisposition,
 };
-use crate::durability::character_authority::ReconciledCharacterAuthority;
+use crate::durability::character_authority::{
+    CharacterAuthorityError, ReconciledCharacterAuthority,
+};
 use crate::durability::character_command::{Classified, classify_intent};
 use crate::durability::native_admission_source::{DescriptorRegistration, FreshStoreProvenance};
 use crate::durability::runtime_scope_assignment::{
     AssignmentError, AssignmentState, BootstrapSecret, LaunchBinding, NodeIncarnationProof,
     RegistrationError, RuntimeScopeAssignment,
 };
+use crate::durability::{DurabilityError, DurabilityRoot};
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -46,7 +48,7 @@ use crate::foundation::admission_authority_publication::{
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, NodeId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
-use crate::gameplay_transport::FreshEvidenceSource;
+use crate::gameplay_transport::{EvidenceUnavailable, FreshEvidenceSource};
 use crate::native_admission_source::account_characters::{
     self, EpochFence, EpochFenceFile, MtlsSink, ProjectionDescriptor, Publisher,
 };
@@ -1848,10 +1850,13 @@ async fn bootstrap_one(
     capacity: &TransientCapacity,
     operation_id: [u8; 16],
 ) -> &'static str {
+    let budget = tokio::time::Instant::now() + crate::durability::ROOT_RECOVERY_WINDOW;
     // A committed result is answered without any external read.
-    match root
-        .reconcile_character_bootstrap(authority, operation_id)
-        .await
+    match retry_busy(budget, holder_busy, async || {
+        root.reconcile_character_bootstrap(authority, operation_id)
+            .await
+    })
+    .await
     {
         Ok(Some(_)) => return "committed",
         Ok(None) => {}
@@ -1884,13 +1889,21 @@ async fn bootstrap_one(
     // Current account security is fetched into S2 through the D4 lane; an
     // authenticated denial is accepted there and then rejects the bootstrap.
     // The refresh failure renders as fixed step/cause tokens only.
-    if let Err(unavailable) = evidence.refresh_account(root, proof, &account).await {
+    if let Err(unavailable) = retry_busy(budget, EvidenceUnavailable::holder_busy, async || {
+        evidence.refresh_account(root, proof, &account).await
+    })
+    .await
+    {
         event(&format!(
             "event=character_bootstrap_failure stage=account_security reason=evidence {unavailable}"
         ));
         return "unavailable";
     }
-    match root.bootstrap_character(authority, proof, &intent).await {
+    match retry_busy(budget, holder_busy, async || {
+        root.bootstrap_character(authority, proof, &intent).await
+    })
+    .await
+    {
         Ok(_) => "committed",
         Err(
             crate::durability::character_authority::CharacterAuthorityError::Rejected
@@ -1899,6 +1912,35 @@ async fn bootstrap_one(
         ) => "rejected",
         Err(_) => bootstrap_unavailable("commit", "durability"),
     }
+}
+
+/// Runs one durable bootstrap `step`, retrying an outcome `busy` reports as a busy holder
+/// until `budget` (DEFLAKE-4). Every step takes the single, non-blocking durability holder
+/// that background passes also take, so a busy holder fails the step at once, before any SQL
+/// runs; the bootstrap commit is idempotent by its operation id. Any other outcome is final.
+async fn retry_busy<T, E>(
+    budget: tokio::time::Instant,
+    busy: impl Fn(&E) -> bool,
+    mut step: impl AsyncFnMut() -> Result<T, E>,
+) -> Result<T, E> {
+    let mut attempt = 0;
+    loop {
+        let outcome = step().await;
+        match &outcome {
+            Err(error) if busy(error) && tokio::time::Instant::now() < budget => {
+                backoff_within(&mut attempt, Some(budget)).await;
+            }
+            _ => return outcome,
+        }
+    }
+}
+
+/// Whether a Character authority step found the durability holder busy.
+const fn holder_busy(error: &CharacterAuthorityError) -> bool {
+    matches!(
+        error,
+        CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable)
+    )
 }
 
 // Only static stage/reason classes reach diagnostics. Never format the intent,
@@ -2814,6 +2856,50 @@ mod tests {
         ] {
             assert!(!character_authority_retryable(&terminal), "{terminal:?}");
         }
+    }
+
+    #[test]
+    fn a_busy_holder_is_retried_within_one_bootstrap_window() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_time()
+            .build()
+            .expect("runtime");
+        runtime.block_on(async {
+            let busy = || CharacterAuthorityError::Unavailable(DurabilityError::RootUnavailable);
+            assert!(holder_busy(&busy()));
+            assert!(!holder_busy(&CharacterAuthorityError::Unavailable(
+                DurabilityError::CommitOutcomeUnknown
+            )));
+            assert!(!holder_busy(&CharacterAuthorityError::Rejected));
+
+            // A holder busy for two tries is retried and the step then succeeds.
+            let budget = tokio::time::Instant::now() + Duration::from_secs(5);
+            let mut outcomes = [Err(busy()), Err(busy()), Ok(7)].into_iter();
+            let mut calls = 0;
+            let result = retry_busy(budget, holder_busy, async || {
+                calls += 1;
+                outcomes.next().expect("outcome")
+            })
+            .await;
+            assert!(matches!(result, Ok(7)));
+            assert_eq!(calls, 3);
+
+            // Any other outcome is final after one try.
+            let mut calls = 0;
+            let result: Result<(), _> = retry_busy(budget, holder_busy, async || {
+                calls += 1;
+                Err(CharacterAuthorityError::Rejected)
+            })
+            .await;
+            assert!(matches!(result, Err(CharacterAuthorityError::Rejected)));
+            assert_eq!(calls, 1);
+
+            // A holder busy past the window fails by the budget, not later.
+            let budget = tokio::time::Instant::now() + Duration::from_millis(500);
+            let result: Result<(), _> = retry_busy(budget, holder_busy, async || Err(busy())).await;
+            assert!(holder_busy(&result.expect_err("busy past the window")));
+            assert!(tokio::time::Instant::now() < budget + Duration::from_millis(100));
+        });
     }
 
     #[test]

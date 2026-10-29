@@ -78,6 +78,13 @@ impl EvidenceUnavailable {
         Self::new(step, durability_cause(error))
     }
 
+    /// Whether the refresh failed because the durability holder was busy (or not yet ready),
+    /// which fails a pass before any SQL runs, so the whole refresh may be run again.
+    #[must_use]
+    pub fn holder_busy(&self) -> bool {
+        self.cause == durability_cause(&DurabilityError::RootUnavailable)
+    }
+
     const fn after(mut self, replay: Option<&'static str>) -> Self {
         if self.replay.is_none() {
             self.replay = replay;
@@ -864,6 +871,16 @@ mod tests {
         let plain =
             EvidenceUnavailable::durability("checkpoint", &DurabilityError::RootUnavailable);
         assert_eq!(plain.to_string(), "step=checkpoint cause=root_unavailable");
+        assert!(plain.holder_busy());
+        assert!(
+            EvidenceUnavailable::durability("pending", &DurabilityError::RootUnavailable)
+                .holder_busy()
+        );
+        assert!(
+            !EvidenceUnavailable::durability("accept", &DurabilityError::CommitOutcomeUnknown)
+                .holder_busy()
+        );
+        assert!(!EvidenceUnavailable::new("lane", "queue_wait").holder_busy());
         let after = plain
             .after(Some("commit_unknown"))
             .after(Some("pass_deadline"));
