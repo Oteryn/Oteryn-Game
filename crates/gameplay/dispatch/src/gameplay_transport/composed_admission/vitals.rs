@@ -84,6 +84,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let party_vitals = self
             .refresh_source_party_serene(actor, game_session_id)
             .await;
+        // PKG-P3/P10 UNVERIFIED: map evidence currently identifies PZ tiles, not
+        // Global's narrower resting-area subset. This preserves the existing tile gate.
+        {
+            let mut runtime = self.runtime.lock().await;
+            let inside =
+                actor_spell::qualified_protection_zone(&mut runtime, self.movement_cells, actor)
+                    == Some(true);
+            let streak = if inside {
+                self.states
+                    .resting_areas
+                    .streak(game_session_id, actor)
+                    .unwrap_or(0)
+            } else {
+                0
+            };
+            if let Some(state) =
+                self.states
+                    .spell_states
+                    .lock()
+                    .await
+                    .get_mut(&runtime, actor, game_session_id)
+            {
+                state.set_resting_streak(streak);
+            }
+        }
         let result = if self
             .active_generation
             .and_then(|active| active.native_gameplay())
@@ -103,7 +128,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
         };
         let resting = {
-            let streak = self.states.resting_areas.streak(game_session_id, actor);
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             let inside =
@@ -116,11 +140,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let soul_interval = states
                 .get(&runtime, actor, game_session_id)
                 .map_or(120, |state| {
-                    if state.character_facts().max_soul > 100 {
-                        15
-                    } else {
-                        120
-                    }
+                    super::super::resting_area::soul_interval(
+                        state.character_facts().vocation,
+                        premium,
+                    )
                 });
             let (stamina_due, soul_due) = self.states.resting_areas.cadence(
                 game_session_id,
@@ -133,15 +156,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if stamina_due {
                 states.gain_resting_stamina(actor, game_session_id);
             }
-            streak.filter(|_| inside).and_then(|streak| {
-                states.apply_resting_regeneration(
-                    &runtime,
-                    actor,
-                    game_session_id,
-                    streak,
-                    soul_due,
-                )
-            })
+            if inside {
+                states.apply_resting_soul(&runtime, actor, game_session_id, soul_due)
+            } else {
+                None
+            }
         };
         let _ = self
             .save_spell_training(actor, game_session_id, false)

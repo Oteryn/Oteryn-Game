@@ -376,8 +376,6 @@ async fn prepare_parameter(
     let caster = owned
         .caster(&before, spell, content, HarmonyMultiplier::ONE, now.get())
         .map_err(|_| SpellCastDisposition::NotAvailable)?;
-    let mut common =
-        prepare_native_callback_owner_cast_with_caster(&before, spell, &operational, now, &caster)?;
     let behavior = &profile.spell()["execution"]["native_behavior"];
     let params = &behavior["parameters"];
     let mut relocation_proof = None;
@@ -387,7 +385,90 @@ async fn prepare_parameter(
         feedback: None,
         editor: None,
     };
+    let mut common = if behavior["key"].as_str() == Some("creature_appearance") {
+        let group = crate::durability::spell_familiar_group::read_current_group_in_transaction(
+            tx, authority, admissions, session,
+        )
+        .await
+        .map_err(|_| SpellCastDisposition::NotAvailable)?;
+        let can_illusion_all = group
+            .flag("CanIllusionAll")
+            .ok_or(SpellCastDisposition::NotAvailable)?;
+        let policy = content.policies().policies().iter().find(|policy| {
+            policy
+                .display_name
+                .eq_ignore_ascii_case(intent.parameter.as_deref().unwrap_or(""))
+        });
+        let member = policy.and_then(|policy| {
+            content
+                .spell_appearances()?
+                .for_creature(&policy.definition_key, &policy.definition_revision)
+        });
+        let facts = crate::spell::native_house_movement::HouseMovementFacts::Appearance {
+            outfit: member.map(|member| member.selection()),
+            illusionable: policy.is_some_and(|policy| policy.flags.illusionable),
+            can_illusion_all,
+        };
+        let mut requested_draw = false;
+        let paid = crate::spell::cast::prepare_native_owner_cast_with_caster(
+            &before,
+            spell,
+            &operational,
+            crate::spell::native::Facts::House(&facts),
+            now,
+            &mut |_, _| {
+                requested_draw = true;
+                0
+            },
+            &caster,
+        )?;
+        if requested_draw {
+            return Err(SpellCastDisposition::Rejected);
+        }
+        let mut next = paid.next;
+        let refusal = match policy {
+            None => Some("A creature with this name does not exist."),
+            Some(policy) if !policy.flags.illusionable && !can_illusion_all => {
+                Some("Sorry, not possible.")
+            }
+            _ => None,
+        };
+        if let Some(text) = refusal {
+            result.disposition = SpellCastDisposition::Rejected;
+            result.feedback = Some(PrivateSpellFeedback {
+                text: text.into(),
+                effect: PrivateSpellEffect::Poff,
+            });
+        } else {
+            let member = member.ok_or(SpellCastDisposition::NotAvailable)?;
+            let crate::spell::native::Plan::House(plan) = paid.plan else {
+                return Err(SpellCastDisposition::Rejected);
+            };
+            let HouseMovementPlan::Appearance {
+                outfit,
+                duration_ms,
+                ..
+            } = *plan
+            else {
+                return Err(SpellCastDisposition::Rejected);
+            };
+            crate::spell::actor_conditions::apply_appearance(
+                &mut next,
+                outfit,
+                member.look_type(),
+                u32::try_from(duration_ms).map_err(|_| SpellCastDisposition::Rejected)?,
+                now.get() / 1000,
+            )?;
+        }
+        crate::spell::cast::PaidNativeCallbackCast {
+            next,
+            anchor: paid.anchor,
+        }
+    } else {
+        prepare_native_callback_owner_cast_with_caster(&before, spell, &operational, now, &caster)?
+    };
     match behavior["key"].as_str() {
+        Some("creature_appearance") => (),
         Some("locate_message") if params["source"].as_str() == Some("online_player") => {
             let plan = crate::spell::find_person_execution::plan_find_person_in_transaction(
                 tx,
@@ -847,7 +928,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         let key = profile.spell()["execution"]["native_behavior"]["key"]
             .as_str()
             .unwrap_or("");
-        if !matches!(key, "locate_message" | "house_access" | "vertical_move") {
+        if !matches!(
+            key,
+            "creature_appearance" | "locate_message" | "house_access" | "vertical_move"
+        ) {
             return ParameterCastDispatch::bare(NativeCastDispatch::NotApplicable);
         }
         let rejected = || {
@@ -1272,10 +1356,10 @@ mod tests {
         assert!(source_feedback("unqualified_source_message", None).is_err());
     }
     /// MAGIC-CAST-1: on a bundle World (no fixture room, the combat room is the entry room's
-    /// bundle view) a locate message reads the combat room, while house access and vertical moves
-    /// stay closed; on a fixture World every parameter cast reads the fixture room.
+    /// bundle view) locate messages and vertical moves read the combat room. House access stays
+    /// closed; on a fixture World every parameter cast reads the fixture room.
     #[test]
-    fn bundle_world_opens_locate_message_only() {
+    fn bundle_world_opens_locate_message_and_vertical_move() {
         use crate::gameplay_transport::SeamRooms;
         use crate::map::spell_tiles::tests::{id, world as bundle_world};
         let world = bundle_world();
@@ -1295,11 +1379,13 @@ mod tests {
             )
             .unwrap();
         let bundle = SeamRooms::new(None, Some(&view));
-        assert!(std::ptr::eq(
-            bundle.gate_parameter_cast("locate_message").unwrap(),
-            &view
-        ));
-        for key in ["house_access", "vertical_move", ""] {
+        for key in ["locate_message", "vertical_move"] {
+            assert!(std::ptr::eq(
+                bundle.gate_parameter_cast(key).unwrap(),
+                &view
+            ));
+        }
+        for key in ["house_access", ""] {
             assert!(bundle.gate_parameter_cast(key).is_none(), "{key}");
         }
         let fixture = SeamRooms::new(Some(&entry), Some(&entry));

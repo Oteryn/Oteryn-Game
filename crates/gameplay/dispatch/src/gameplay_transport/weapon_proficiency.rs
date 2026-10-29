@@ -5,7 +5,7 @@
 //! applies selected attack perks before damage is handed to the combat owner. Checkpoints
 //! serialize this state through the existing Character proficiency writer.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, VecDeque};
 use std::sync::Arc;
 
 use crate::durability::character_proficiency::{
@@ -21,6 +21,88 @@ use oteryn_gameplay_domain::domain::weapon_proficiency::{
 };
 use sha2::{Digest, Sha256};
 
+impl super::ComposedFreshAdmission<'_, '_, '_> {
+    /// Equipment-owner reads initialise committed tracks even if the player never attacks.
+    pub(super) async fn load_proficiency_equipment(
+        &self,
+        session: crate::foundation::GameSessionId,
+        equipment: &crate::durability::character_equipment::EquipmentSnapshot,
+    ) -> Result<(), ()> {
+        let Some(catalogue) = &self.proficiency_catalogue else {
+            return Ok(());
+        };
+        let character =
+            crate::domain::CharacterId::from_bytes(equipment.character).map_err(|_| ())?;
+        let (tracks, _) = self
+            .root
+            .read_character_proficiency_with_definitions(
+                self.character,
+                character,
+                None,
+                Arc::clone(catalogue) as Arc<dyn ProficiencyDefinitions>,
+            )
+            .await
+            .map_err(|_| ())?;
+        let mut states = self.states.proficiencies.lock().map_err(|_| ())?;
+        let owner = states.entry(session).or_default();
+        for stored in tracks {
+            if let Some(track) = catalogue.live_track(&stored) {
+                owner.install_track(stored.state.item_key(), track);
+            }
+        }
+        Ok(())
+    }
+
+    /// The caller holds the spell lane and runtime, just as for other equipment effects.
+    /// Death capture consumes this owner projection independently of the swing cache.
+    pub(super) async fn install_proficiency_equipment(
+        &self,
+        runtime: &crate::foundation::ChannelRuntimeV1,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+        equipment: &crate::durability::character_equipment::EquipmentSnapshot,
+    ) -> Option<()> {
+        let Some(catalogue) = &self.proficiency_catalogue else {
+            return Some(());
+        };
+        if runtime
+            .bound_attacker_lease(actor, session)
+            .ok()?
+            .character_id()
+            .as_bytes()
+            != &equipment.character
+            || equipment.content_digest != runtime.content_pin().server_artifact_digest()
+        {
+            return None;
+        }
+        let key = equipment
+            .items
+            .iter()
+            .filter(|item| matches!(item.slot, 5 | 6 | 10))
+            .find_map(|item| {
+                catalogue
+                    .resolve_weapon(&item.definition.production_key)
+                    .map(|resolved| resolved.canonical_item_key)
+            });
+        {
+            let mut states = self.states.proficiencies.lock().ok()?;
+            let owner = states.entry(session).or_default();
+            if let Some(key) = &key
+                && owner.track(key).is_none()
+            {
+                owner.install_track(key, catalogue.empty_track(key)?);
+            }
+        }
+        self.states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .proficiency_equipment(actor, session, equipment.revision, key.as_deref());
+        Some(())
+    }
+}
+
 /// Immutable production adapter over the promoted proficiency catalogue.
 ///
 /// Construction validates the committed shards and bindings through the content importer.  The
@@ -28,17 +110,39 @@ use sha2::{Digest, Sha256};
 /// trusting definition identities or shapes supplied by a gameplay caller.
 #[derive(Debug)]
 pub struct ProductionProficiencyCatalogue {
-    data: ImportedWeaponProficiencyData,
+    data: Arc<ImportedWeaponProficiencyData>,
     digest: [u8; 32],
+    content_revision: String,
 }
 
 impl ProductionProficiencyCatalogue {
+    /// Bind the immutable promoted catalogue to the admission's selected progression content.
+    pub(super) fn for_content(&self, content_revision: &str) -> Arc<Self> {
+        Arc::new(Self {
+            data: Arc::clone(&self.data),
+            digest: self.digest,
+            content_revision: content_revision.to_owned(),
+        })
+    }
+    pub(super) fn empty_track(&self, item_key: &str) -> Option<LiveProficiencyTrack> {
+        let shape = self.resolved(item_key)?.shape;
+        Some(LiveProficiencyTrack {
+            shape,
+            progress: 0,
+            selections: vec![None; usize::from(shape.track_shape().perk_levels())],
+            effects: ProficiencyAttackEffects {
+                denominator: 1,
+                ..Default::default()
+            },
+        })
+    }
     pub fn embedded() -> Option<Arc<Self>> {
         let data = import_committed_weapon_proficiency_data().ok()?;
         let encoded = serde_json::to_vec(&data).ok()?;
         Some(Arc::new(Self {
-            data,
+            data: Arc::new(data),
             digest: Sha256::digest(encoded).into(),
+            content_revision: "weapon-proficiency-progression-r1".to_owned(),
         }))
     }
 
@@ -121,7 +225,7 @@ impl ProductionProficiencyCatalogue {
 
 impl ProficiencyDefinitions for ProductionProficiencyCatalogue {
     fn content_revision(&self) -> &str {
-        "weapon-proficiency-progression-r1"
+        &self.content_revision
     }
 
     fn digest(&self) -> [u8; 32] {
@@ -212,8 +316,11 @@ pub struct LiveProficiencyTrack {
 /// uncheckpointed progress disappear on restart by design.
 #[derive(Debug, Default)]
 pub struct WeaponProficiencyDispatch {
-    tracks: BTreeMap<String, LiveProficiencyTrack>,
-    seen_deaths: BTreeSet<[u8; 16]>,
+    pub(super) tracks: BTreeMap<String, LiveProficiencyTrack>,
+    pub(super) pending_progress: BTreeMap<String, u32>,
+    pub(super) dirty_since: Option<u64>,
+    pub(super) checkpoint: Option<super::proficiency_checkpoint::ProficiencyCheckpoint>,
+    seen_deaths: VecDeque<[u8; 16]>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -226,9 +333,24 @@ pub struct KillDispatch<'a> {
 }
 
 impl WeaponProficiencyDispatch {
-    /// Install a track loaded by the existing durable proficiency reader.
-    pub fn install_track(&mut self, item_key: impl Into<String>, track: LiveProficiencyTrack) {
-        self.tracks.insert(item_key.into(), track);
+    /// Refresh committed values while retaining this session's uncheckpointed delta.
+    pub fn install_track(&mut self, item_key: impl Into<String>, mut track: LiveProficiencyTrack) {
+        let item_key = item_key.into();
+        // Until reconciliation acknowledges a retained receipt, a durable refresh may already
+        // contain its delta. Keep the live predecessor rather than adding that delta twice.
+        if self.checkpoint.is_some() && self.tracks.contains_key(&item_key) {
+            return;
+        }
+        let pending = self.pending_progress.get(&item_key).copied().unwrap_or(0);
+        if let Some(existing) = self.tracks.get(&item_key) {
+            track.progress = track
+                .progress
+                .max(existing.progress.saturating_sub(pending));
+        }
+        if let Some(delta) = self.pending_progress.get(&item_key) {
+            track.progress = track.shape.track_shape().credited(track.progress, *delta);
+        }
+        self.tracks.insert(item_key, track);
     }
 
     pub fn track(&self, item_key: &str) -> Option<&LiveProficiencyTrack> {
@@ -247,11 +369,26 @@ impl WeaponProficiencyDispatch {
             input.contributor,
         )?;
         let track = self.tracks.get_mut(credit.weapon_item_key)?;
-        self.seen_deaths.insert(input.death_occurrence);
+        // PROFEFF0-RL-01 retains the latest 64 occurrences in arrival order.
+        if self.seen_deaths.len() == 64 {
+            self.seen_deaths.pop_front();
+        }
+        self.seen_deaths.push_back(input.death_occurrence);
+        let before = track.progress;
         track.progress = track
             .shape
             .track_shape()
             .credited(track.progress, credit.points);
+        let delta = track.progress - before;
+        if delta != 0 {
+            self.dirty_since
+                .get_or_insert(input.death_at_ms.saturating_mul(1000));
+            let pending = self
+                .pending_progress
+                .entry(credit.weapon_item_key.to_owned())
+                .or_default();
+            *pending = pending.saturating_add(delta);
+        }
         Some(track.progress)
     }
 
@@ -288,6 +425,11 @@ impl WeaponProficiencyDispatch {
             .max(0)
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::expect_used, reason = "test fixtures require valid tracks")]
+#[path = "weapon_proficiency_refresh_tests.rs"]
+mod refresh_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]

@@ -352,6 +352,20 @@ impl CreatureAiTable {
                 self.remove(actor);
                 continue;
             };
+            // Challenge is staged on the physical creature; consume its current owner read
+            // before selecting a target. Spell expiry is in ms, think deadlines in µs.
+            if let Ok(combat) = runtime.creature_combat_facts(actor, now_us / 1_000)
+                && let Some((caster, expires_ms)) =
+                    combat.monster_ai.and_then(|ai| ai.challenged_to)
+            {
+                self.set_override(
+                    actor,
+                    CreatureAiOverride::ForcedTarget {
+                        actor: caster,
+                        until_us: expires_ms.saturating_mul(1_000),
+                    },
+                );
+            }
             let route = self.retained_summon_route(runtime, actor);
             let Some(entry) = self.entry_mut(actor) else {
                 continue;

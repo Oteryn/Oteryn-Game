@@ -22,6 +22,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         force: bool,
     ) -> TrainingSave {
+        match self.save_weapon_proficiency(actor, session, force).await {
+            TrainingSave::Unknown => return TrainingSave::Unknown,
+            TrainingSave::FencedOut => return TrainingSave::FencedOut,
+            TrainingSave::NotApplicable | TrainingSave::Saved => {}
+        }
         // Resting gains use their own retained occurrence and must be acknowledged before
         // hunting debits. If activity continued after an unknown gain outcome, the debit is
         // then committed from the acknowledged gained value rather than entering the gain path.

@@ -58,6 +58,24 @@ mod tests {
     }
 
     #[test]
+    fn vocation_choice_maxima_recompute_from_level_eight_for_two_pairs() {
+        for (level, knight, druid, paladin) in [
+            (8, (185, 90), (185, 90), (185, 90)),
+            (9, (200, 95), (190, 120), (195, 105)),
+            (20, (365, 150), (245, 450), (305, 270)),
+            (50, (815, 300), (395, 1350), (605, 720)),
+        ] {
+            for (before, after, old, new) in [
+                ("knight", "druid", knight, druid),
+                ("druid", "paladin", druid, paladin),
+            ] {
+                assert_eq!(maxima(before, level), Some((old.0, old.1, 100)));
+                assert_eq!(maxima(after, level), Some((new.0, new.1, 100)));
+            }
+        }
+    }
+
+    #[test]
     fn accepted_maxima_keep_rookie_boundary_promotions_and_v1_soul() {
         for vocation in [
             "druid",

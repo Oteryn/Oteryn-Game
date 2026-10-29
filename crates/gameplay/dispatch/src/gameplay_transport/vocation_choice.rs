@@ -4,7 +4,7 @@
 //! per-session NPC conversation, saves actual pending training, reads current build/stance,
 //! retains one occurrence and commits through the Character revision slot. A historical
 //! receipt never substitutes for independently current session/actor authority.
-//! Nonempty stance fit and Dawnport caps remain specifically unqualified; no fit, cap,
+//! Dawnport caps remain specifically unqualified; no cap,
 //! departure destination or world-start coordinate is inferred here.
 
 use crate::durability::character_build::{
@@ -349,7 +349,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return reject("Your build is temporarily unavailable.");
             };
-            let Ok(stance) = self
+            let Ok(_stance) = self
                 .root
                 .read_character_stance(self.character, fence.character_id)
                 .await
@@ -374,10 +374,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return reject("Reach level 8 before making your first vocation choice.");
             }
-            // No stance fit is guessed. A nonempty stance is the specifically blocked subcase.
-            if stance.key().is_some() {
-                return reject("This choice needs a qualified stance-fit rule.");
-            }
+            // Crystal ff7ede59 dawnport.lua:55 calls setVocation; player.cpp:125-134
+            // leaves existing stance/conditions intact. Preserve the durable key as well.
             {
                 let runtime = self.runtime.lock().await;
                 let states = self.states.spell_states.lock().await;
@@ -395,12 +393,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return reject("The existing live build must be settled by its owner first.");
                 }
             }
-            if !self
-                .save_first_vocation_vitals(actor, session, current, &before)
-                .await
-            {
-                return reject("Your vitals are still being saved. Please try again.");
-            }
             let Ok(request) =
                 vocation_choice_request(choice.occurrence, before, choice.selected, formula, None)
             else {
@@ -417,6 +409,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 retained.clone(),
             ) {
                 return reject("The confirmed choice is no longer current.");
+            }
+            if !self
+                .save_first_vocation_vitals(actor, session, current, &retained.request.before)
+                .await
+            {
+                self.states
+                    .npc_conversations
+                    .rollback_dawnport_request(session, choice.occurrence);
+                return reject("Your vitals are still being saved. Please try again.");
             }
             let receipt = commit_retained_npc_vocation(
                 &mut slot,
@@ -464,7 +465,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !same_authority(&retained.fence, &current)
             || current.expected_character_revision != character_revision
             || build != retained.request.after
-            || stance.key().is_some()
         {
             return reject("The choice committed; current character state must be reloaded.");
         }
