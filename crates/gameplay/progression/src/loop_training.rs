@@ -1,4 +1,4 @@
-//! LOOP-TRAIN-1 pure OFFLINE0/exercise planning. Source candidates stay gated.
+//! LOOP-TRAIN-1 pure OFFLINE0/exercise planning with data-loaded provisional rates.
 use oteryn_gameplay_domain::domain::character_build::{
     BuildFormula, DeathBuildState, MAX_BUILD_PROGRESS, cumulative_progress, relevel,
 };
@@ -120,6 +120,8 @@ impl TrainingRates {
             .iter()
             .find(|rate| rate.vocation == vocation)
             .ok_or(TrainingUnavailable)?;
+        // TibiaWiki Training School, Mathematics: magic earns 50% of promoted mana
+        // regeneration; distance earns 12 tries/minute (two tries per five attack turns).
         let (numerator, denominator) = if family == 0 {
             (
                 u64::from(rate.mana_amount),
@@ -127,11 +129,11 @@ impl TrainingRates {
                     1000
                 } else {
                     rate.top_mana_ticks_ms
-                }),
+                }) * 2,
             )
         } else {
             (
-                1,
+                if family == 5 { 2 } else { 1 },
                 u64::from(rate.top_attack_ms) * u64::from(self.offline_divisors[family]),
             )
         };

@@ -192,11 +192,9 @@ fn scenario() -> TestResult {
         let world_id = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
 
         // One production generation (spells manifest with loot tables) for items, NPC offers,
-        // the rat and its loot.
+        // the rat and its loot. Its training formula uses the fixture's durable content revision.
         let (controller, activated) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
-                world_id, None,
-            );
+            super::death_ml_loss_composed::production_generation_with_pin(world_id, "content-1")?;
         let active = controller.active().ok_or("active generation")?;
         let native = active.native_gameplay().ok_or("native gameplay")?;
         let index = native.item_index().ok_or("item index")?;
@@ -408,6 +406,8 @@ fn scenario() -> TestResult {
         admitted.item_fence = Some(fence);
         owner.admit_progression_session(&mut admitted).await;
         assert!(owner.progression_binding(session).is_some());
+        owner.admit_loop_training(&mut admitted).await;
+        assert_eq!(admitted.first_entry, FirstEntryOutcome::Positioned);
         assert_eq!(
             position(&owner, actor).await?,
             MovementLocalPosition {
@@ -911,6 +911,20 @@ fn scenario() -> TestResult {
                 .map_err(debug)?;
         }
         assert!(owner.track_restored(next_session, next_actor, &decided, gameplay_fence));
+        let mut successor = crate::gameplay_transport::connection::AdmittedSession {
+            game_session_id: next_session,
+            runtime_actor: Some(next_actor),
+            item_fence: Some(next_fence),
+            ..admitted
+        };
+        owner.admit_loop_training(&mut successor).await;
+        assert_eq!(successor.first_entry, FirstEntryOutcome::Positioned);
+        let markers: (i64, i64) = sqlx::query_as(
+            "SELECT count(*) FILTER (WHERE cause='offline_settlement'), count(*) FILTER (WHERE cause='logout') FROM game_character_training_markers",
+        )
+        .fetch_one(&h.pool)
+        .await?;
+        assert_eq!(markers, (2, 1), "default training survives logout and relogin");
         assert_eq!(position(&owner, next_actor).await?, LOCKER_CELL);
         let relogged = ledger(&h).await?;
         assert_eq!(relogged, deposited, "relogin moves no value");

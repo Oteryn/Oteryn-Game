@@ -210,7 +210,7 @@ fn a_caster_without_party_members_in_range_is_refused() {
         cast(&spell, 5000, &none, at_ms(0), &solo),
         Err(CastRejection::NoPartyMembers)
     );
-    let alone = Party::new().with(2, tile(10, 0, 7));
+    let alone = Party::new().with(2, tile(37, 0, 7));
     assert_eq!(
         cast(&spell, 5000, &none, at_ms(0), &alone),
         Err(CastRejection::NoPartyMembers)
@@ -328,9 +328,9 @@ fn scaled_mana_follows_the_formula_rounded_up() {
     assert_eq!(per_member.last(), Some(&46.5));
 }
 
-/// C.3 test 4: the radius-3 circle on the caster's floor.
+/// Crystal 201189f: heal_party.lua:37 and position_functions.cpp:117 use 3D distance <= 36.
 #[test]
-fn the_area_is_the_radius_three_circle_on_the_caster_floor() {
+fn party_member_coverage_includes_distance_36_and_excludes_37() {
     let spell = heal_party();
     let party = Party::new()
         .with(2, tile(3, 1, 7))
@@ -338,11 +338,16 @@ fn the_area_is_the_radius_three_circle_on_the_caster_floor() {
         .with(4, tile(3, 3, 7))
         .with(5, tile(0, 0, 6))
         .with(6, tile(-1, -3, 7))
-        .with(7, tile(0, 4, 7));
+        .with(7, tile(0, 4, 7))
+        .with(8, tile(36, 36, 7))
+        .with(9, tile(37, 0, 7))
+        .with(10, tile(0, 0, 43))
+        .with(11, tile(0, 37, 8))
+        .with(12, tile(0, 0, 44));
     let resolution = cast(&spell, 5000, &Cooldowns::default(), at_ms(0), &party).expect("cast");
-    assert_eq!(affected(&resolution), vec![1, 2, 6]);
-    // Three affected members: members outside the area are not counted.
-    assert_eq!(resolution.mana_spent, 292);
+    assert_eq!(affected(&resolution), vec![1, 2, 3, 4, 5, 6, 7, 8, 10]);
+    // Nine affected members: ceil((9/10)^8 * 120 * 9) = 465 mana.
+    assert_eq!(resolution.mana_spent, 465);
     assert!(matches!(&spell.execution, Execution::PartyBuff(buff) if buff.area.len() == 37));
 }
 

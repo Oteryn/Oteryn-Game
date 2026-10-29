@@ -36,18 +36,8 @@ impl Default for TrainingRuntime {
             "../../../../../../rulesets/training/provisional-v1.json"
         ))
         .ok()
-        .and_then(|mut rates| {
-            // Explicit operator opt-in; absence and every other value keep the shipped gate closed.
-            if std::env::var("OTERYN_ENABLE_PROVISIONAL_TRAINING")
-                .ok()
-                .as_deref()
-                != Some("1")
-            {
-                return None;
-            }
-            rates.enabled = true;
-            Some(Arc::new(rates))
-        });
+        .filter(|rates| rates.enabled)
+        .map(Arc::new);
         Self {
             config,
             sessions: Mutex::new(HashMap::new()),
@@ -487,4 +477,48 @@ pub(super) fn offer(
     let offer = Box::leak(offer.into_boxed_slice());
     cache.push((base, offer));
     offer
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TrainingRuntime;
+
+    #[test]
+    fn shipped_training_is_enabled_without_environment_opt_in() -> Result<(), &'static str> {
+        let runtime = TrainingRuntime::default();
+        let rates = runtime
+            .config
+            .as_ref()
+            .ok_or("shipped training unavailable")?;
+        assert!(rates.enabled);
+        // Magic is verified; integer non-magic gains remain explicitly provisional.
+        assert!(rates.provisional);
+        assert_eq!(rates.exercise_gains, [600, 7, 7, 7, 7, 7, 7, 0]);
+        assert_eq!(rates.percent_scale, 100);
+        assert_eq!(rates.offline_divisors, [1, 2, 2, 2, 2, 5, 4, 0]);
+        let vocations = [
+            ("none", 6000),
+            ("sorcerer", 2000),
+            ("druid", 2000),
+            ("paladin", 3000),
+            ("knight", 6000),
+            ("master_sorcerer", 2000),
+            ("elder_druid", 2000),
+            ("royal_paladin", 3000),
+            ("elite_knight", 6000),
+            ("monk", 3000),
+            ("exalted_monk", 3000),
+        ];
+        assert_eq!(rates.vocations.len(), vocations.len());
+        for (rate, (name, mana_ticks)) in rates.vocations.iter().zip(vocations) {
+            assert_eq!(rate.vocation, name);
+            assert_eq!(rate.top_attack_ms, 2000);
+            assert_eq!(rate.mana_amount, 2);
+            assert_eq!(rate.top_mana_ticks_ms, mana_ticks);
+        }
+        assert_eq!(rates.offline_gain("knight", 3, 3600), Ok(900));
+        assert_eq!(rates.offline_gain("paladin", 5, 3600), Ok(720));
+        assert_eq!(rates.offline_gain("sorcerer", 0, 3600), Ok(1800));
+        Ok(())
+    }
 }
