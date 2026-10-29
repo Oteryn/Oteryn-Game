@@ -34,25 +34,32 @@ REVOKE ALL ON game_character_home_town_receipts FROM PUBLIC;
 GRANT SELECT, INSERT ON game_character_home_town_receipts TO oteryn_game_runtime;
 GRANT SELECT ON game_character_home_town_receipts TO oteryn_game_control;
 
-CREATE VIEW game_character_home_town_revision_chain WITH (security_invoker=true) AS
-    SELECT * FROM game_character_hazard_revision_chain
-    UNION ALL
-    SELECT character_id, original_character_revision, committed_character_revision,
-           level_before, level_after, experience_before, experience_after,
-           profile_revision, ruleset_revision, content_revision, simulation_revision,
-           evidence_revision, declaration_revision, policy_revision, reward_revision
-      FROM game_character_home_town_receipts;
-REVOKE ALL ON game_character_home_town_revision_chain FROM PUBLIC;
-GRANT SELECT ON game_character_home_town_revision_chain TO oteryn_game_runtime;
+-- Extend the hazard chain in place, as 0337 does: the guard keeps naming it, so 0332 and
+-- 0337 stay re-runnable. The body repeats 0337's chain and adds home-town receipts.
+CREATE OR REPLACE VIEW game_character_hazard_revision_chain WITH (security_invoker=true) AS
+ SELECT * FROM game_character_atelier_revision_chain
+ UNION ALL
+ SELECT character_id,original_character_revision,committed_character_revision,
+ level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,
+ content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision
+ FROM game_character_hazard_receipts WHERE committed_character_revision IS NOT NULL
+ UNION ALL
+ SELECT character_id,original_character_revision,committed_character_revision,
+ level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,
+ content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision
+ FROM game_character_prey_receipts
+ UNION ALL
+ SELECT character_id,original_character_revision,committed_character_revision,
+ level_before,level_after,experience_before,experience_after,profile_revision,ruleset_revision,
+ content_revision,simulation_revision,evidence_revision,declaration_revision,policy_revision,reward_revision
+ FROM game_character_home_town_receipts;
 
--- Preserve every existing cause and check; only extend the current chain view.
 DO $$ DECLARE body text; BEGIN
     SELECT pg_get_functiondef('game_character_progression_consistency_guard()'::regprocedure)
       INTO STRICT body;
     IF position('game_character_hazard_revision_chain' IN body) = 0 THEN
         RAISE EXCEPTION 'expected current Character receipt chain';
     END IF;
-    EXECUTE replace(body, 'game_character_hazard_revision_chain', 'game_character_home_town_revision_chain');
 END $$;
 
 CREATE FUNCTION game_character_home_town_state_guard() RETURNS trigger LANGUAGE plpgsql AS $$
