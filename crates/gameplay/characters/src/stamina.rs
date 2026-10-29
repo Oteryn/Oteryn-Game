@@ -18,16 +18,50 @@ pub const fn hunting_loot_allowed(stamina_minutes: u16) -> bool {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StaminaOutOfRange;
 
+/// Crystal player.lua:99-135: only monster experience consumes stamina, before XP modifiers.
+/// The deadline is session-local, initialized at admission, and measured in whole seconds.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct HuntingClock {
+    next_use_seconds: u64,
+}
+
+impl HuntingClock {
+    pub fn new(now_micros: u64) -> Self {
+        Self {
+            next_use_seconds: now_micros / 1_000_000,
+        }
+    }
+
+    /// Returns the proposed debit and successor without consuming either on a failed award.
+    pub fn activity(self, now_micros: u64, minutes: u16) -> (u16, Self) {
+        let now = now_micros / 1_000_000;
+        if minutes == 0 || now <= self.next_use_seconds {
+            return (0, self);
+        }
+        let debit = if now - self.next_use_seconds > 60 {
+            2
+        } else {
+            1
+        };
+        (
+            minutes.min(debit),
+            Self {
+                next_use_seconds: now.saturating_add(u64::from(debit) * 60),
+            },
+        )
+    }
+}
+
 /// Session-local hunting time. Gaps longer than a minute pause the clock;
 /// neither a checkpoint nor an idle owner tick calls `activity`.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct HuntingClock {
+pub struct HuntingActivityClock {
     last_activity_micros: Option<u64>,
     accumulated_micros: u64,
 }
 
-impl HuntingClock {
-    /// Damage dealt to or received from a monster is the OFFLINE-0 §4.2 signal.
+impl HuntingActivityClock {
+    /// Existing monster activity cadence, retained only for Prey time.
     /// Returns minutes spent and the successor clock without mutating the input.
     pub fn activity(self, now: u64, minutes: u16) -> (u16, Self) {
         const MINUTE: u64 = 60_000_000;
@@ -240,9 +274,9 @@ mod tests {
 mod hunting_tests {
     use super::*;
     #[test]
-    fn hunting_clock_band_edges_and_zero_floor() {
+    fn prey_activity_clock_band_edges_and_zero_floor() {
         for minutes in [0, 1, 840, 841, 2340, 2341, 2520] {
-            let (spent, clock) = HuntingClock::default().activity(10, minutes);
+            let (spent, clock) = HuntingActivityClock::default().activity(10, minutes);
             assert_eq!(spent, 0);
             let (spent, clock) = clock.activity(60_000_009, minutes);
             assert_eq!(spent, 0);
@@ -251,13 +285,49 @@ mod hunting_tests {
         }
     }
     #[test]
-    fn hunting_clock_idle_and_stale_events_never_catch_up() {
-        let (_, clock) = HuntingClock::default().activity(0, 2520);
+    fn prey_activity_clock_idle_and_stale_events_never_catch_up() {
+        let (_, clock) = HuntingActivityClock::default().activity(0, 2520);
         let (_, clock) = clock.activity(30_000_000, 2520);
         assert_eq!(clock.activity(29_000_000, 2520), (0, clock));
         let (spent, clock) = clock.activity(u64::MAX - 60_000_000, 2520);
         assert_eq!(spent, 0);
         assert_eq!(clock.activity(u64::MAX, 2520).0, 1);
+    }
+
+    #[test]
+    fn experience_stamina_first_kill_then_thirty_seconds_then_sixty_one_seconds() {
+        let (spent, clock) = HuntingClock::default().activity(1_000_000, 2520);
+        assert_eq!(spent, 1, "first kill spends immediately");
+        let (spent, clock) = clock.activity(31_000_000, 2519);
+        assert_eq!(spent, 0, "kill inside the deadline spends nothing");
+        let (spent, clock) = clock.activity(62_000_000, 2519);
+        assert_eq!(spent, 1, "kill one second after the deadline spends one");
+        assert_eq!(
+            clock.activity(183_000_000, 2518).0,
+            2,
+            "kill more than sixty seconds after the deadline spends two"
+        );
+    }
+
+    #[test]
+    fn experience_stamina_deadline_edges_zero_floor_and_replay() {
+        const SECOND: u64 = 1_000_000;
+        let clock = HuntingClock::new(10 * SECOND);
+        assert_eq!(clock.activity(10 * SECOND + 999_999, 2520), (0, clock));
+        assert_eq!(clock.activity(70 * SECOND, 2520).0, 1);
+        assert_eq!(clock.activity(71 * SECOND, 2520).0, 2);
+        for minutes in [0, 1, 2, 840, 841, 2340, 2341, 2520] {
+            let (spent, next) = clock.activity(71 * SECOND, minutes);
+            assert_eq!(spent, minutes.min(2));
+            assert_eq!(next.activity(71 * SECOND, minutes), (0, next));
+            assert_eq!(next.activity(11 * SECOND, minutes), (0, next));
+            if minutes > 0 {
+                assert_eq!(next.activity(191 * SECOND, minutes), (0, next));
+                assert_eq!(next.activity(192 * SECOND, minutes).0, minutes.min(1));
+            } else {
+                assert_eq!(next, clock, "zero stamina does not advance the deadline");
+            }
+        }
     }
 
     #[test]
