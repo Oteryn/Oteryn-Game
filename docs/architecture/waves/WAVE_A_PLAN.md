@@ -117,9 +117,8 @@ Counted from the row-by-row table: STALE 7, A 4, A' 9, B 70, C 43.
   vertical moves on bundle World). Each opening is its own small PR in a later wave.
 - Q4:
   - W05a server save stays at 10:00; S15b reconnect protection stays 4 s.
-  - C20a (replaces D59): levels 1-23 lose 10% as on Global, but of the experience needed for
-    the next level, not of the character's total experience. Variant (whole level span or the
-    rest to the next level) is pending.
+  - C20a (replaces D59): levels 1-23 follow Global, 10% of the character's total experience
+    before blessing and promotion reductions.
   - C15 stamina: Global. Crystal at the pin drains stamina only inside
     `Player:onGainExperience` (`data/events/scripts/player.lua:484`, call at `:506`;
     `useStamina` at `:99`: 1 minute per 60 s, 2 minutes after a gap over 60 s). Never in a
