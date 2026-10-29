@@ -508,25 +508,6 @@ fn run<F: Future<Output = Result<(), Box<dyn Error>>>>(test: F) -> Result<(), Bo
         .block_on(Box::pin(test))
 }
 
-/// [`run`] on a thread with the production node stack (64 MiB), for a test that polls several
-/// debug-build connection futures together and so exceeds the default 2 MiB test-thread stack.
-fn run_on_node_stack<F, T>(test: T) -> Result<(), Box<dyn Error>>
-where
-    F: Future<Output = Result<(), Box<dyn Error>>>,
-    T: FnOnce() -> F + Send,
-{
-    std::thread::scope(|scope| {
-        let outcome = std::thread::Builder::new()
-            .stack_size(64 << 20)
-            .spawn_scoped(scope, || run(test()).map_err(|error| error.to_string()))?
-            .join();
-        match outcome {
-            Ok(result) => result.map_err(Into::into),
-            Err(panic) => std::panic::resume_unwind(panic),
-        }
-    })
-}
-
 /// One entry frame through `admit_frame`: the end (or session) and the frames written.
 async fn admit(
     authority: &NegotiatingAuthority,
