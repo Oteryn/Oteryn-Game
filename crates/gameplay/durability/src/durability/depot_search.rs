@@ -2,9 +2,42 @@
 use super::{DurabilityError, DurabilityRoot};
 use crate::domain::CharacterId;
 use oteryn_protocol_oteryn::depot_search::{SearchResult, TierCount};
+use oteryn_protocol_oteryn::stash::StashRow;
 use sqlx::Row;
 
 impl DurabilityRoot {
+    /// Resolve one deterministic stash revision for a depot-search retrieval.
+    /// The returned handle is server-issued and is still revalidated and locked by
+    /// `stash_conversion`; this read never grants mutation authority by itself.
+    pub async fn read_stash_definition(
+        &self,
+        recovery: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        definition_key: &str,
+    ) -> Result<Option<StashRow>, DurabilityError> {
+        let record = recovery
+            .record_for(self)
+            .map_err(|_| DurabilityError::Unavailable)?;
+        let definition_key = definition_key.to_owned();
+        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
+            let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
+            super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
+            let row = sqlx::query("SELECT uuid_send(b.last_entry_id) AS handle,b.definition_key,b.definition_revision,b.quantity FROM game_character_stash_balances b JOIN game_character_roots r USING(character_id,world_id) WHERE b.character_id=encode($1,'hex')::uuid AND b.definition_key=$2 AND b.quantity>0 AND r.lifecycle=1 ORDER BY b.definition_revision COLLATE \"C\" LIMIT 1")
+                .bind(character.as_bytes().as_slice()).bind(definition_key).fetch_optional(&mut *tx).await?;
+            let row = row.map(|row| -> Result<StashRow, DurabilityError> {
+                Ok(StashRow {
+                    handle: row.try_get::<Vec<u8>, _>("handle")?.try_into().map_err(|_| DurabilityError::InvalidStoredState)?,
+                    definition_key: row.try_get("definition_key")?,
+                    definition_revision: row.try_get("definition_revision")?,
+                    quantity: u32::try_from(row.try_get::<i64, _>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    migration_required: false,
+                })
+            }).transpose()?;
+            super::db::commit_semantic_transaction(tx, deadline).await?;
+            Ok(row)
+        })).await
+    }
+
     /// One snapshot of the live Character's World-scoped custody aggregates.
     pub async fn read_depot_search(
         &self,

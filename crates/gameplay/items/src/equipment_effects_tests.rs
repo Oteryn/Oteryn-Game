@@ -20,14 +20,14 @@ fn percent(numerator: i64, denominator: u64) -> ReferenceRationalPercent {
 }
 
 #[test]
-fn equipment_effects_speed_contribution_requires_untimed_own_slot_outside_ammo() {
+fn equipment_effects_speed_contribution_requires_own_slot_outside_ammo() {
     for slot in [EquipmentSlot::Head, EquipmentSlot::Ammo] {
         for in_own_slot in [false, true] {
             for timed in [false, true] {
                 let mut item = input(slot, vec![ItemAbility::Speed(30)]);
                 item.in_own_slot = in_own_slot;
                 item.profile.timed = timed;
-                let contributes = slot == EquipmentSlot::Head && in_own_slot && !timed;
+                let contributes = slot == EquipmentSlot::Head && in_own_slot;
                 assert_eq!(item.contributes_speed(), contributes);
                 assert_eq!(
                     derive_equipment_effects(vec![item]).map(|effects| effects.speed),
@@ -157,7 +157,7 @@ fn equipment_effects_sum_before_clamp_and_application() -> Result<(), Box<dyn st
 }
 
 #[test]
-fn equipment_effects_timed_wrong_slot_and_extra_are_inactive_except_extra_light()
+fn equipment_effects_timed_speed_only_contributes_in_own_slot()
 -> Result<(), Box<dyn std::error::Error>> {
     let abilities = vec![
         ItemAbility::Speed(20),
@@ -183,7 +183,7 @@ fn equipment_effects_timed_wrong_slot_and_extra_are_inactive_except_extra_light(
     wrong.in_own_slot = false;
     let extra = input(EquipmentSlot::Ammo, abilities);
     let effects = derive_equipment_effects(vec![timed, wrong, extra]).ok_or("valid slots")?;
-    assert_eq!(effects.speed, 0);
+    assert_eq!(effects.speed, 20);
     assert!(effects.suppressions.is_empty());
     assert!(effects.skills.is_empty());
     assert!(effects.stat_flats.is_empty());

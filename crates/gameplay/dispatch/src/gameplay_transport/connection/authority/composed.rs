@@ -5,6 +5,16 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn sleep_in_bed(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        intent: oteryn_protocol_oteryn::bed::BedSleepIntent,
+        target: ItemKey,
+    ) -> Result<UseOutcome, crate::durability::DurabilityError> {
+        self.production_bed_sleep(actor, command, intent, target)
+            .await
+    }
     async fn use_key_on_door(
         &self,
         actor: ExactActorRef,
@@ -718,6 +728,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
 
     async fn world_event(&self, command: connection::UseCommand) -> world_event::Reply {
         world_event::query(self, command).await
+    }
+
+    async fn raid_schedule(&self, command: connection::UseCommand) -> raid_schedule::Reply {
+        raid_schedule::query(self, command).await
     }
 
     async fn highscores(

@@ -13,6 +13,7 @@ mod automatic_spell_progression;
 mod bank_npc;
 mod bed_regen;
 mod bed_sleep;
+mod bed_sleep_production;
 mod bundle_chest;
 #[cfg(test)]
 mod bundle_gates_tests;
@@ -115,6 +116,7 @@ mod pvp_live;
 mod quest_admission;
 mod quest_callbacks;
 mod quest_log_source;
+mod raid_schedule;
 mod resting_area;
 mod resume;
 mod reward_bag_use;

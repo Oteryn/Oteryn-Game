@@ -15,7 +15,6 @@ use crate::charm_wire::{
     WireResult, push_message_field, push_nonzero_varint_field, push_varint_field, read_bytes,
     read_uint32, read_varint, set_once,
 };
-use crate::item_look::MAX_ITEM_LOOK_TEXT_BYTES;
 pub use crate::npc_service::NpcServiceWireError as NpcShopWireError;
 use crate::npc_service::{
     MAX_NPC_INTENT_RESULT_BYTES, NpcIntentDisposition, NpcTradeSide, check_offer_index, check_size,
@@ -34,9 +33,12 @@ pub const MAX_SELL_ALL_UNITS: u32 = 2_000;
 pub const MAX_SELL_ALL_GOLD_UNITS: u64 = 1_009_999;
 /// The NPC field (2 + 29), revision (11), index (3), side (2), action (2) and price (6).
 pub const MAX_NPC_SHOP_INTENT_BYTES: usize = 2 + 29 + 11 + 3 + 2 + 2 + 6;
+/// The NPC shop look text in UTF-8 bytes. It keeps the original D1143 look bound and does not
+/// follow `MAX_ITEM_LOOK_TEXT_BYTES`, which LOOKBOOK-1 raised for spellbook dialogs only.
+pub const MAX_NPC_SHOP_LOOK_TEXT_BYTES: usize = 512;
 /// SELLALL1-RL-04: the disposition (2), the look text (3 + 512), units (3) and gold (4).
 pub const MAX_NPC_SHOP_RESULT_BYTES: usize =
-    MAX_NPC_INTENT_RESULT_BYTES + 3 + MAX_ITEM_LOOK_TEXT_BYTES + 3 + 4;
+    MAX_NPC_INTENT_RESULT_BYTES + 3 + MAX_NPC_SHOP_LOOK_TEXT_BYTES + 3 + 4;
 
 /// `NpcShopAction`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,7 +148,7 @@ pub fn decode_npc_shop_intent(payload: &[u8]) -> WireResult<NpcShopIntent> {
 }
 
 fn check_result(result: &NpcShopResult) -> WireResult<()> {
-    if result.look_text.len() > MAX_ITEM_LOOK_TEXT_BYTES
+    if result.look_text.len() > MAX_NPC_SHOP_LOOK_TEXT_BYTES
         || result.sold_units > MAX_SELL_ALL_UNITS
         || result.total_gold_units > MAX_SELL_ALL_GOLD_UNITS
     {
@@ -194,7 +196,7 @@ pub fn decode_npc_shop_result(payload: &[u8]) -> WireResult<NpcShopResult> {
             }
             (2, 2) => {
                 let bytes = read_bytes(input, cursor)?;
-                if bytes.len() > MAX_ITEM_LOOK_TEXT_BYTES {
+                if bytes.len() > MAX_NPC_SHOP_LOOK_TEXT_BYTES {
                     return Err(NpcShopWireError::LimitExceeded);
                 }
                 let text_value =

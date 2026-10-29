@@ -158,6 +158,46 @@ fn w16_crystal_summer_boss_parity() -> TestResult {
 }
 
 #[test]
+fn summer_population_wayland_has_both_global_placements() -> TestResult {
+    let content = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content"));
+    let index: serde_json::Value = serde_json::from_slice(&std::fs::read(
+        content.join("world/npc-placements/index.json"),
+    )?)?;
+    let mut cells = Vec::new();
+    for shard in index["shards"].as_array().ok_or("NPC placement shards")? {
+        let path = shard
+            .as_str()
+            .ok_or("placement path")?
+            .strip_prefix("content/")
+            .ok_or("content path")?;
+        let document: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(content.join(path))?)?;
+        for row in document["records"].as_array().ok_or("placement records")? {
+            if row["declaration"]["npc"] == "oteryn:npc.wayland_smythers" {
+                let cell = &row["declaration"]["cell"];
+                cells.push((
+                    cell["x"].as_u64(),
+                    cell["y"].as_u64(),
+                    cell["floor"].as_i64(),
+                    row["declaration"]["direction"]
+                        .as_str()
+                        .map(str::to_owned),
+                ));
+            }
+        }
+    }
+    cells.sort_unstable();
+    assert_eq!(
+        cells,
+        vec![
+            (Some(32961), Some(32076), Some(6), Some("north".into())),
+            (Some(33955), Some(32642), Some(6), Some("north".into())),
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn summer_population_all_six_execute_exact_pinned_loot_plans_and_replay() -> TestResult {
     use crate::content::creature_reward::{LootTablesSection, SectionRef};
     use oteryn_gameplay_domain::domain::loot_data::{
@@ -252,7 +292,7 @@ fn summer_population_all_six_execute_exact_pinned_loot_plans_and_replay() -> Tes
 }
 
 #[test]
-fn summer_population_mayor_placement_greeting_lore_and_stale_actor_on_postgres() -> TestResult {
+fn summer_population_npc_placements_greeting_lore_and_stale_actor_on_postgres() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("summer-population-pg", scenario)
 }
 
@@ -295,6 +335,7 @@ fn scenario() -> TestResult {
             content.join("world/npc-placements/index.json"),
         )?)?;
         let mut mayor = None;
+        let mut wayland = Vec::new();
         for shard in index["shards"].as_array().ok_or("NPC placement shards")? {
             let path = shard
                 .as_str()
@@ -309,6 +350,8 @@ fn scenario() -> TestResult {
                         mayor.replace(row["declaration"].clone()).is_none(),
                         "one Mayor placement"
                     );
+                } else if row["declaration"]["npc"] == "oteryn:npc.wayland_smythers" {
+                    wayland.push(row["declaration"].clone());
                 }
             }
         }
@@ -321,6 +364,27 @@ fn scenario() -> TestResult {
         );
         assert_eq!((x, y, floor), (34073, 32504, -6));
         assert_eq!(mayor["direction"], "north");
+        wayland.sort_by_key(|row| row["cell"]["x"].as_u64());
+        let wayland_cells = wayland
+            .iter()
+            .map(|row| {
+                let cell = &row["cell"];
+                (
+                    cell["x"].as_u64(),
+                    cell["y"].as_u64(),
+                    cell["floor"].as_i64(),
+                    row["direction"].as_str(),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            wayland_cells,
+            vec![
+                (Some(32961), Some(32076), Some(6), Some("north")),
+                (Some(33955), Some(32642), Some(6), Some("north")),
+            ]
+        );
+        let (x, y, floor) = (33955, 32642, -6);
         let npc = {
             let mut runtime = deps.runtime.lock().await;
             // Map cell admission is separately proven by the compiler test over the real
@@ -339,7 +403,7 @@ fn scenario() -> TestResult {
                 .place_npcs(
                     &NpcPlacementTable {
                         npcs: vec![NpcPlacements {
-                            key: "oteryn:npc.mayor_pocaro".into(),
+                            key: "oteryn:npc.wayland_smythers".into(),
                             placements: vec![NpcPlacement {
                                 x,
                                 y,
@@ -348,7 +412,7 @@ fn scenario() -> TestResult {
                             }],
                         }],
                     },
-                    |key| key == "oteryn:npc.mayor_pocaro",
+                    |key| key == "oteryn:npc.wayland_smythers",
                     true,
                 )
                 .map_err(debug)?;
@@ -359,11 +423,11 @@ fn scenario() -> TestResult {
             }
         };
         for (command_id, text, expected) in [
-            (1, "hi", Some("promise of moonsilver")),
-            (2, "name", Some("Pocaro. Mayor of Salgadora")),
-            (3, "kingdom", None),
-            (4, "settlement", Some("Most of our people")),
-            (5, "bye", Some("Keep your head down")),
+            (1, "hi", Some("Wayland Smythers, in service of science")),
+            (2, "danger", Some("humble messenger")),
+            (3, "name", Some("Wayland Smythers")),
+            (4, "kingdom", None),
+            (5, "bye", Some("do be careful")),
         ] {
             owner.clock_origin = owner
                 .clock_origin

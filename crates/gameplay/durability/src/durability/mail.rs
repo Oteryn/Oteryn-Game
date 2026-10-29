@@ -63,7 +63,7 @@ impl crate::durability::DurabilityRoot {
             let (address_text, stamp) = match key.as_str() {
                 "oteryn:item.tibia.i3505" => (row.try_get::<Option<String>,_>("text")?, "oteryn:item.tibia.i3506"),
                 "oteryn:item.tibia.i3503" => {
-                    let text = sqlx::query_scalar::<_, String>("SELECT t.text FROM game_item_container_entries e JOIN game_item_instances i USING(item_instance_id) JOIN game_item_texts t USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i3507' ORDER BY e.placement_ordinal LIMIT 1")
+                    let text = sqlx::query_scalar::<_, String>("SELECT t.text FROM game_item_nested_entries e JOIN game_item_instances i USING(item_instance_id) JOIN game_item_texts t USING(item_instance_id) WHERE e.parent_item_instance_id=encode($1,'hex')::uuid AND i.definition_production_key='oteryn:item.tibia.i3507' AND t.text<>'' ORDER BY e.placement_ordinal LIMIT 1")
                         .bind(item.as_slice()).fetch_optional(&mut *tx).await?;
                     (text, "oteryn:item.tibia.i3504")
                 }

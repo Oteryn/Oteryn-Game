@@ -1,0 +1,10 @@
+{
+  "id": 340,
+  "name": "BOSS_REWARD_OPEN",
+  "owner_decision": "REWARDCHEST2, 2026-10-28",
+  "capability": 117,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/boss_encounter_v1.proto#BossRewardOpenV1",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/boss_encounter_v1.proto#BossRewardChestV1",
+  "max_payload_bytes": 0,
+  "max_result_payload_bytes": 34400
+}

@@ -173,6 +173,9 @@ fn projection(
         revision,
         discovered: progress.discovered,
         found,
+        area_percent: BasicArea::embedded()
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .discovery_percent(progress),
         pool,
         epoch: request.epoch,
         improved,

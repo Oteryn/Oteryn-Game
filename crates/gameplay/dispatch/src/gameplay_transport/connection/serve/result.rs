@@ -187,7 +187,9 @@ pub(super) fn encode(
             (CommandStatus::Accepted, payload)
         }
         Dispatch::Reply(status, payload)
-            if command.command_type == oteryn_protocol_oteryn::market::COMMAND_TYPE_MARKET =>
+            if command.command_type == oteryn_protocol_oteryn::market::COMMAND_TYPE_MARKET
+                || command.command_type
+                    == oteryn_protocol_oteryn::depot_search::COMMAND_TYPE_DEPOT_SEARCH =>
         {
             (*status, payload.clone())
         }
