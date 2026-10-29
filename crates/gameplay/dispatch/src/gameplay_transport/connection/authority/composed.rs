@@ -741,6 +741,10 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         world_event::query(self, command).await
     }
 
+    async fn raid_schedule(&self, command: connection::UseCommand) -> raid_schedule::Reply {
+        raid_schedule::query(self, command).await
+    }
+
     async fn highscores(
         &self,
         world: WorldId,
