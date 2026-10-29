@@ -816,7 +816,8 @@ fn scenario() -> TestResult {
             .execute(&mut *tx)
             .await?;
         sqlx::query("UPDATE game_durability_reconnect_sessions SET training_created_at_us=training_created_at_us-2000000000 WHERE game_session_id=encode($1,'hex')::uuid").bind(id(50).as_slice()).execute(&mut *tx).await?;
-        sqlx::query("UPDATE game_character_training_markers SET committed_at_us=committed_at_us-1140000000,as_of_us=as_of_us-1140000000 WHERE cause='logout'").execute(&mut *tx).await?;
+        // Twenty minutes offline leaves ten minutes of training after the initial delay.
+        sqlx::query("UPDATE game_character_training_markers SET committed_at_us=committed_at_us-1200000000,as_of_us=as_of_us-1200000000 WHERE cause='logout'").execute(&mut *tx).await?;
         sqlx::query("UPDATE game_character_build_receipts b SET committed_at=m.committed_at_us/1000 FROM game_character_training_markers m WHERE b.build_occurrence_id=m.build_occurrence_id AND m.cause='logout'").execute(&mut *tx).await?;
         tx.commit().await?;
         let now: i64 =
