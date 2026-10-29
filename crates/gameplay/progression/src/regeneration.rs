@@ -33,17 +33,18 @@ pub const fn effective(vocation: Vocation, premium_current: bool) -> Vocation {
     }
 }
 
-/// Owner-decided Canary 15.30 values (`vocation-vitals-candidate-2026-09-28.json`,
-/// `regeneration`, D5b); a test keeps this table equal to that file.
+/// Owner-decided values (`vocation-vitals-candidate-2026-09-28.json`, `regeneration`):
+/// Canary 15.30 (D5b), with Monk/Exalted Monk equal to Paladin/Royal Paladin (2026-10-29).
+/// A test keeps this table equal to that file.
 pub const fn rate(vocation: Vocation) -> RegenerationRate {
     let (health_period_ms, mana_period_ms) = match vocation {
         Vocation::None => (12_000, 6_000),
         Vocation::Druid | Vocation::Sorcerer => (12_000, 3_000),
         Vocation::ElderDruid | Vocation::MasterSorcerer => (12_000, 2_000),
-        Vocation::Knight | Vocation::Monk => (6_000, 6_000),
-        Vocation::EliteKnight | Vocation::ExaltedMonk => (4_000, 6_000),
-        Vocation::Paladin => (8_000, 4_000),
-        Vocation::RoyalPaladin => (6_000, 3_000),
+        Vocation::Knight => (6_000, 6_000),
+        Vocation::EliteKnight => (4_000, 6_000),
+        Vocation::Paladin | Vocation::Monk => (8_000, 4_000),
+        Vocation::RoyalPaladin | Vocation::ExaltedMonk => (6_000, 3_000),
     };
     RegenerationRate {
         health_amount: 1,
@@ -125,6 +126,24 @@ pub fn hold_fed_second(state: &mut RegenerationState, rate: RegenerationRate) {
 #[allow(clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn monk_regeneration_equals_paladin_including_premium_fallback() {
+        for (monk, paladin) in [
+            (Vocation::Monk, Vocation::Paladin),
+            (Vocation::ExaltedMonk, Vocation::RoyalPaladin),
+        ] {
+            assert_eq!(rate(monk), rate(paladin), "{monk:?}");
+            for premium_current in [false, true] {
+                assert_eq!(
+                    rate(effective(monk, premium_current)),
+                    rate(effective(paladin, premium_current)),
+                    "{monk:?}, Premium current: {premium_current}"
+                );
+            }
+        }
+    }
+
     #[test]
     fn rate_table_equals_the_owner_decided_vitals_file() {
         let table: serde_json::Value = serde_json::from_str(include_str!(

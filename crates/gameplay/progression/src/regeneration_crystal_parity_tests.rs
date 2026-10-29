@@ -20,8 +20,8 @@ const CRYSTAL_TICKS: [(Vocation, u32, u32); 9] = [
     (Vocation::EliteKnight, 4_000, 6_000),
 ];
 /// Crystal Monk and Exalted Monk ticks, equal to TibiaWiki `Calculator/Hit Points Per Second`
-/// and `Calculator/Mana Per Second`; Canary `47dfd51f` (owner decision D5b) has 6000/6000 and
-/// 4000/6000. The live clocks no longer read these periods (see the news test below).
+/// and `Calculator/Mana Per Second`. The owner replaced D5b for Monk on 2026-10-29 with
+/// Paladin/Royal Paladin periods. The live clocks use the news periods below.
 const CRYSTAL_MONK_TICKS: [(Vocation, u32, u32); 2] = [
     (Vocation::Monk, 7_000, 4_000),
     (Vocation::ExaltedMonk, 5_000, 3_000),
@@ -45,14 +45,22 @@ fn c10_vocation_amounts_and_ticks_equal_crystal_for_every_non_monk_vocation() {
 }
 
 #[test]
-fn c10_monk_ticks_are_the_recorded_d5b_canary_crystal_conflict() {
-    for (vocation, health_ticks, mana_ticks) in CRYSTAL_MONK_TICKS {
+fn c10_monk_ticks_are_the_owner_decided_paladin_divergence_from_crystal() {
+    for ((vocation, health_ticks, mana_ticks), owner_ticks) in CRYSTAL_MONK_TICKS
+        .into_iter()
+        .zip([(8_000, 4_000), (6_000, 3_000)])
+    {
         let got = rate(vocation);
         assert_eq!((got.health_amount, got.mana_amount), (1, 2), "{vocation:?}");
+        assert_eq!(
+            (got.health_period_ms, got.mana_period_ms),
+            owner_ticks,
+            "{vocation:?}: owner decision 2026-10-29 follows Paladin/Royal Paladin"
+        );
         assert_ne!(
             (got.health_period_ms, got.mana_period_ms),
             (health_ticks, mana_ticks),
-            "{vocation:?}: Oteryn follows D5b (Canary), not Crystal"
+            "{vocation:?}: owner-decided Paladin/Royal Paladin ticks diverge from Crystal"
         );
     }
 }
