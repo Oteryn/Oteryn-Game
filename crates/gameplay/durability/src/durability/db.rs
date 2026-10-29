@@ -14,7 +14,7 @@ use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex as StdMutex, OnceLock};
 use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, Notify};
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
 const DB_PASS_DEADLINE_MILLIS: u64 = 2_000;
@@ -834,6 +834,8 @@ pub struct DurabilityRoot {
     pool: PgPool,
     runtime: RootRuntime,
     ready_demand: Arc<AtomicBool>,
+    /// Signalled each time the holder is observed back in the idle pool (NODEBOOT-1).
+    holder_returned: Arc<Notify>,
     maintenance: Arc<Mutex<()>>,
     /// The deadline of the next semantic pass in milliseconds, shared by every clone:
     /// `DB_PASS_DEADLINE` except while a [`BootPassDeadline`] guard lives.
@@ -902,6 +904,7 @@ impl DurabilityRoot {
             pool,
             runtime,
             ready_demand: Arc::new(AtomicBool::new(true)),
+            holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: Some(Box::new(relay_options)),
@@ -930,6 +933,7 @@ impl DurabilityRoot {
                 .connect_lazy(database_url)?,
             runtime: RootRuntime::AmbientTestFixture,
             ready_demand: Arc::new(AtomicBool::new(true)),
+            holder_returned: Arc::new(Notify::new()),
             maintenance: Arc::new(Mutex::new(())),
             pass_deadline_millis: Arc::new(AtomicU64::new(DB_PASS_DEADLINE_MILLIS)),
             relay_options: <PgConnectOptions as std::str::FromStr>::from_str(database_url)
@@ -1030,7 +1034,10 @@ impl DurabilityRoot {
         }
 
         match holder.return_to_pool_observed_until(deadline).await {
-            PoolConnectionReturnDisposition::ReturnedToIdle => Ok(true),
+            PoolConnectionReturnDisposition::ReturnedToIdle => {
+                self.holder_returned.notify_waiters();
+                Ok(true)
+            }
             PoolConnectionReturnDisposition::RetiredClosed
             | PoolConnectionReturnDisposition::NoEvidence => Err(DurabilityError::RootUnavailable),
         }
@@ -1039,6 +1046,31 @@ impl DurabilityRoot {
     #[must_use]
     pub fn is_ready(&self) -> bool {
         self.pool.num_idle() > 0
+    }
+
+    /// Waits for the retry of a step that found the holder busy (NODEBOOT-1). The retry starts
+    /// as soon as the holder is returned to idle, but not before `earliest`, and no later than
+    /// `latest`. A holder idle already means the step failed for another reason: the retry then
+    /// waits until `latest`, as a plain backoff would. A caller polling the non-blocking holder
+    /// on a fixed backoff instead loses it to whichever background pass takes it first while it
+    /// sleeps. The wait checks nothing out and never establishes a connection, so a retry that
+    /// still finds no idle holder fails closed exactly as before.
+    pub async fn wait_holder_retry(
+        &self,
+        earliest: tokio::time::Instant,
+        latest: tokio::time::Instant,
+    ) {
+        let mut returned = std::pin::pin!(self.holder_returned.notified());
+        returned.as_mut().enable();
+        if self.is_ready() {
+            tokio::time::sleep_until(latest).await;
+            return;
+        }
+        if tokio::time::timeout_at(latest, returned).await.is_ok()
+            && tokio::time::Instant::now() < earliest
+        {
+            tokio::time::sleep_until(earliest.min(latest)).await;
+        }
     }
 
     #[must_use]
@@ -1188,7 +1220,10 @@ impl IssuedSemanticPass {
             .return_to_pool_observed_until(self.deadline)
             .await
         {
-            PoolConnectionReturnDisposition::ReturnedToIdle => result,
+            PoolConnectionReturnDisposition::ReturnedToIdle => {
+                self.root.holder_returned.notify_waiters();
+                result
+            }
             PoolConnectionReturnDisposition::RetiredClosed => {
                 self.root.request_ready();
                 result

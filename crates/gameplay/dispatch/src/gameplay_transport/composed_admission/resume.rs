@@ -23,7 +23,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         } else {
             // DEFLAKE-2: a step refused on a busy durability holder before the resume wrote
             // anything is repeated from fresh reads within the root recovery window.
-            let budget = AdmissionRetryBudget::new(&attempt.game_session_id);
+            let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
             loop {
                 let mut wrote = false;
                 let resumed = self

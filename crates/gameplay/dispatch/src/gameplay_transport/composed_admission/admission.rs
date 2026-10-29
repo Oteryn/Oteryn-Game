@@ -23,7 +23,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // pass at once with nothing written. Such a busy holder is retried within the
         // root recovery window, with a per-attempt backoff so concurrent attempts do not
         // stay in lockstep.
-        let mut budget = AdmissionRetryBudget::new(&attempt.game_session_id);
+        let mut budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
         let record = loop {
             match self
                 .root
