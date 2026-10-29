@@ -9,7 +9,7 @@ use std::time::Duration;
 mod persistence;
 
 #[test]
-fn hunting_stamina_postgres_real_attacks_idle_checkpoint_and_reload() -> TestResult {
+fn hunting_stamina_postgres_kill_experience_idle_checkpoint_and_reload() -> TestResult {
     party_xp::run(Case::Stamina)
 }
 
@@ -25,14 +25,14 @@ pub(super) async fn qualify(
             .await?;
     let item = crate::gameplay_transport::item_fence_of(current).ok_or("item")?;
     // Pre-hunting legacy stamina establishes the baseline at its first hunting receipt.
-    sqlx::query("UPDATE game_character_build_state SET stamina_minutes=841 WHERE character_id=encode($1,'hex')::uuid")
+    sqlx::query("UPDATE game_character_build_state SET stamina_minutes=840 WHERE character_id=encode($1,'hex')::uuid")
         .bind(item.character_id.as_bytes().as_slice()).execute(&h.pool).await?;
     let minutes = h
         .root
         .read_hunting_stamina(owner.character, item.character_id)
         .await
         .map_err(debug)?;
-    assert_eq!(minutes, 841);
+    assert_eq!(minutes, 840);
     let equipment =
         crate::gameplay_transport::equipment_move::read_current_equipment(owner, session)
             .await
@@ -89,11 +89,11 @@ pub(super) async fn qualify(
         );
     }
     // Keep the content-owned rat alive between genuine swings; health is fixture setup,
-    // while damage, hit qualification and the hunting signal use production dispatch.
+    // while damage and hit qualification use production dispatch.
     // The content digest seeds swing damage and mitigation. Count three minutes between
     // landed hits, rather than assuming a fixed number of passes contains those hits.
     // This budget bounds setup/edge misses; neither the stop condition nor the elapsed
-    // checks consult stamina. Every hit gap must remain inside HuntingClock's idle cutoff.
+    // checks consult stamina. This exercises repeated damage without a kill.
     const MINUTE_MICROS: u64 = 60_000_000;
     let mut first_hit = None;
     let mut last_hit_at = None;
@@ -150,16 +150,13 @@ pub(super) async fn qualify(
         .await
         .live_stamina(actor, session)
         .ok_or("live")?;
-    assert_eq!(
-        live, 838,
-        "three minutes of real monster damage spend three stamina minutes"
-    );
+    assert_eq!(live, 840, "monster damage without kill XP never spends stamina");
     assert_eq!(
         h.root
             .read_hunting_stamina(owner.character, item.character_id)
             .await
             .map_err(debug)?,
-        841,
+        840,
         "live until the checkpoint"
     );
     {
@@ -189,7 +186,10 @@ pub(super) async fn qualify(
         Some(live),
         "idle owner passes spend nothing"
     );
-    // The XP writer consumes the live penalty band before the checkpoint above 14h.
+    assert_eq!(owner.save_hunting_stamina(actor, session).await, TrainingSave::NotApplicable);
+    assert_eq!(h.root.read_hunting_stamina(owner.character, item.character_id).await.map_err(debug)?, live,
+        "idle checkpoint preserves durable stamina");
+    // The XP writer consumes stamina for the kill before applying the penalty band.
     {
         let mut runtime = owner.runtime.lock().await;
         runtime
@@ -233,13 +233,29 @@ pub(super) async fn qualify(
             .checked_sub(Duration::from_secs(3))
             .ok_or("clock")?;
     }
+    let replay = {
+        let attack = owner.states.attack.lock().await;
+        let taken = match attack.kills().take(session, 2) {
+            crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) => taken,
+            _ => return Err("queued stamina kill".into()),
+        };
+        taken.entry().ok_or("stamina kill entry")?.clone()
+    };
     assert_eq!(
         owner.drain_kill_rewards(session).await,
         crate::gameplay_transport::kill_reward::DrainOutcome::Drained
     );
     let xp:(i32,i64,i64) = sqlx::query_as("SELECT stamina_minutes,xp_awarded,raw_share FROM game_party_kill_xp_members WHERE character_id=encode($1,'hex')::uuid")
         .bind(item.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!(xp.0, i32::from(live));
+    let live = 838;
+    assert_eq!(xp.0, i32::from(live), "the first kill after a long gap spends two before XP modifiers");
+    assert_eq!(owner.states.spell_states.lock().await.live_stamina(actor, session), Some(live));
+    // Replaying the durable kill must not consume a second time.
+    let permit = owner.spell_lane_permit().await.ok_or("lane")?;
+    let replayed = owner.settle_party_experience(&permit, &replay).await.map_err(debug)?;
+    drop(replayed);
+    drop(permit);
+    assert_eq!(owner.states.spell_states.lock().await.live_stamina(actor, session), Some(live));
     assert!(xp.2 > 0);
     assert_eq!(
         xp.1,
@@ -283,7 +299,7 @@ pub(super) async fn qualify(
     );
     let receipt: (Vec<u8>,i32,i32) = sqlx::query_as("SELECT uuid_send(build_occurrence_id),stamina_minutes_before,stamina_minutes_after FROM game_character_build_receipts WHERE character_id=encode($1,'hex')::uuid AND stamina_minutes_before<>stamina_minutes_after ORDER BY committed_character_revision DESC LIMIT 1")
         .bind(item.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!((receipt.1, receipt.2), (841, 838));
+    assert_eq!((receipt.1, receipt.2), (840, 838));
     let mut occurrence = [0; 16];
     occurrence.copy_from_slice(&receipt.0);
     let occurrence = crate::durability::character_build::BuildOccurrence::from_bytes(occurrence)
@@ -305,14 +321,14 @@ pub(super) async fn qualify(
     let _slot = owner.revision_sequencer.acquire(item.character_id).await;
     assert!(matches!(
         h.root
-            .commit_hunting_stamina(owner.character, owner.holder, fence, occurrence, (841, 838))
+            .commit_hunting_stamina(owner.character, owner.holder, fence, occurrence, (840, 838))
             .await
             .map_err(debug)?,
         crate::durability::character_build::BuildCommitOutcome::AlreadyCommitted(_)
     ));
     assert!(
         h.root
-            .commit_hunting_stamina(owner.character, owner.holder, fence, occurrence, (841, 837))
+            .commit_hunting_stamina(owner.character, owner.holder, fence, occurrence, (840, 837))
             .await
             .is_err(),
         "conflicting occurrence cannot spend twice"

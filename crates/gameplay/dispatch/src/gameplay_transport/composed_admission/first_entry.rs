@@ -361,11 +361,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return (FirstEntryOutcome::RefusedByChannel, None, None);
             }
         }
-        self.states.spell_states.lock().await.load_stamina(
+        self.states.spell_states.lock().await.load_stamina_at(
             &runtime,
             actor,
             game_session_id,
             stamina,
+            self.owner_now().get(),
         );
         self.states
             .resting_areas
