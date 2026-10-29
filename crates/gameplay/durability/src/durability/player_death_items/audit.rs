@@ -67,7 +67,11 @@ struct Payload {
     #[prost(oneof = "Operation", tags = "17,18")]
     operation: Option<Operation>,
 }
-fn check(burn: bool, value: &OneItemPlayerDeathItemV1) -> Result<(), AuditError> {
+fn check(
+    burn: bool,
+    value: &OneItemPlayerDeathItemV1,
+    transaction_id: &[u8],
+) -> Result<(), AuditError> {
     for id in [
         &value.death_occurrence,
         &value.item_instance,
@@ -123,7 +127,12 @@ fn check(burn: bool, value: &OneItemPlayerDeathItemV1) -> Result<(), AuditError>
         mint::check_technical_bytes(&ground.spatial_position)?;
         if ground.world_id != before.world_id
             || ground.content_revision != value.content_revision
-            || ground.corpse_ref != value.death_occurrence
+            || ground.corpse_ref
+                != [
+                    crate::durability::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX,
+                    transaction_id,
+                ]
+                .concat()
             || ground.native_room_placement_context != value.death_occurrence
             || ground.runtime_scope_ownership_generation == 0
             || !value.typed_sink.is_empty()
@@ -150,7 +159,15 @@ pub fn decode(
         Some(Operation::Amulet(v)) => (true, v),
         None => return Err(AuditError::InvalidInput),
     };
-    check(burn, &value)?;
+    check(
+        burn,
+        &value,
+        &envelope
+            .transaction_event
+            .as_ref()
+            .ok_or(AuditError::InvalidInput)?
+            .transaction_id,
+    )?;
     if envelope.command_id.is_some()
         || envelope.game_session_id.is_some()
         || envelope.connection_generation.is_some()
@@ -173,7 +190,7 @@ pub(super) fn encode(
     value: OneItemPlayerDeathItemV1,
     tuple: Type2EventTuple,
 ) -> Result<Vec<u8>, AuditError> {
-    check(burn, &value)?;
+    check(burn, &value, &request.transaction_id)?;
     mint::check_uuid_v7(&request.event_id)?;
     mint::check_uuid_v7(&request.transaction_id)?;
     mint::check_technical_text(&request.server_build_id)?;

@@ -357,7 +357,11 @@ async fn write(
         world_id: world_id.as_bytes().to_vec(),
         channel_id: channel_id.as_bytes().to_vec(),
         spatial_position: death.try_get("death_spatial_position")?,
-        corpse_ref: cause.death_occurrence.to_vec(),
+        corpse_ref: [
+            super::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX,
+            request.transaction_id.as_slice(),
+        ]
+        .concat(),
         map_revision: death.try_get("death_map_revision")?,
         content_revision: request.content_revision.clone(),
         native_room_placement_context: cause.death_occurrence.to_vec(),

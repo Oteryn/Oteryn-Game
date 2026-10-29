@@ -351,7 +351,9 @@ async fn run(admin: String) -> TestResult {
     drop(a);
     drop(seal);
     h.cleanup().await?;
-    eprintln!("player_death_item_primitives: routed PostgreSQL assertions completed (drop, container, burn, replay, conflict, fence, raw guard, resource boundaries)");
+    eprintln!(
+        "player_death_item_primitives: routed PostgreSQL assertions completed (drop, container, burn, replay, conflict, fence, raw guard, resource boundaries)"
+    );
     Ok(())
 }
 // Qualified synthetic equipment policy admits only the shared nonstackable fixture stone;
@@ -419,4 +421,217 @@ fn player_death_item_primitives() -> TestResult {
         .join()
         .map_err(|_| "death primitive test thread panicked")?
         .map_err(Into::into)
+}
+
+struct PickupContent;
+impl crate::durability::item_transfer::ItemWeightLookup for PickupContent {
+    fn generation_digest(&self) -> [u8; 32] {
+        [0xd1; 32]
+    }
+    fn weight_of(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Result<u32, crate::durability::item_transfer::ItemWeightRefused> {
+        crate::durability::item_transfer::ItemWeightLookup::weight_of(
+            &crate::durability::item_weight_lookup::TEST_WEIGHTS,
+            definition,
+        )
+    }
+}
+impl crate::durability::item_loop_move::ItemLoopContent for PickupContent {
+    fn loop_content_digest(&self) -> [u8; 32] {
+        DIGEST
+    }
+    fn loop_facts(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Option<ItemDefinitionFacts> {
+        let value = match definition.production_key.as_str() {
+            BACKPACK => backpack_facts(),
+            crate::item_transfer_postgres_cases::STONE => {
+                let mut value = facts(
+                    crate::item_transfer_postgres_cases::STONE,
+                    ItemStackClass::NonStackable,
+                );
+                value.weight = Some(1);
+                value
+            }
+            _ => return None,
+        };
+        (value.definition == *definition).then_some(value)
+    }
+}
+
+async fn run_death_ground_regression(admin: String, reset: bool) -> TestResult {
+    use crate::durability::item_loop_move::{LoopDestination, LoopMoveRequest};
+    use crate::durability::runtime_scope_assignment::{
+        AssignmentCommand, AssignmentOutcome, AssignmentRequest, ControlActor, OperationKey,
+        RuntimeScopeAssignmentWriter,
+    };
+    use crate::item_transfer_postgres_cases::scope;
+    use oteryn_gameplay_durability::durability::world_reset::test_support as retiring_fixture;
+
+    let h = Harness::create(admin, if reset { "death_reset" } else { "death_pickup" }).await?;
+    let seal = h.recovery.seal_current().map_err(debug)?;
+    let a = h
+        .root
+        .open_character_authority(&seal)
+        .await
+        .map_err(debug)?;
+    let backpack = h.mint(&a, BACKPACK, 1).await?;
+    h.committed(&a, to_slot(command(1)?, backpack, backpack_facts()))
+        .await?;
+    let child = give(&h, &a, crate::item_transfer_postgres_cases::STONE, 2).await?;
+    initialize(&h, &a).await?;
+    let f = fence()?;
+    let mut death = death()?;
+    let cell = vec![0, 0, 0, 12, 0, 0, 0, 13, 0, 7];
+    death.death_cell.spatial_position = cell.clone();
+    h.root
+        .commit_character_death(
+            &a,
+            &h.node,
+            CurrentCharacterGameplayFence {
+                character_id: f.character_id,
+                game_session_id: f.game_session_id,
+                connection_generation: f.connection_generation,
+                character_lease_generation: f.character_lease_generation,
+                runtime_scope: f.runtime_scope,
+                scope_ownership_generation: f.scope_ownership_generation,
+                expected_character_revision: CharacterRevision::new(1).map_err(debug)?,
+            },
+            death,
+        )
+        .await
+        .map_err(debug)?;
+    let permit = SpellLanePermit::of_fresh_scope(f.runtime_scope).await?;
+    let dropped = if reset { backpack } else { child };
+    assert_eq!(
+        h.root
+            .commit_player_death_drop(
+                &permit,
+                &a,
+                &h.node,
+                f,
+                PlayerDeathDropCause {
+                    death_occurrence: id(170),
+                    item_instance: dropped
+                },
+                request(180)
+            )
+            .await?,
+        PlayerDeathItemOutcome::Written
+    );
+    assert_eq!(h.count("game_item_ground_locations").await?, 1);
+    if reset {
+        let world = WorldId::decode(&id(WORLD)).map_err(debug)?;
+        retiring_fixture::seed_retiring(&h.pool, world).await?;
+        let reset = h.root.retiring_world_reset(world).await?.ok_or("reset")?;
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3")
+            .execute(&h.pool)
+            .await?;
+        sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2)")
+            .bind(id(WORLD).as_slice()).bind(id(CHANNEL).as_slice()).execute(&h.pool).await?;
+        let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "item-transfer-writer")
+            .await
+            .map_err(debug)?;
+        let predecessor = h
+            .root
+            .read_runtime_scope_predecessor(scope()?)
+            .await
+            .map_err(debug)?
+            .ok_or("predecessor")?;
+        let outcome = writer
+            .submit(&AssignmentRequest {
+                operation_key: OperationKey::from_bytes([9; 32]),
+                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+                command: AssignmentCommand::Replace {
+                    scope: scope()?,
+                    predecessor,
+                    target: h.node.fact(),
+                },
+            })
+            .await
+            .map_err(debug)?;
+        assert!(matches!(outcome, AssignmentOutcome::Committed(_)));
+        assert!(
+            h.root
+                .retire_world_reset_ground(&a, &h.node, &reset)
+                .await
+                .map_err(debug)?
+        );
+        assert!(
+            h.root
+                .retire_world_reset_ground(&a, &h.node, &reset)
+                .await
+                .map_err(debug)?
+        );
+        assert_eq!(h.count("game_item_ground_locations").await?, 0);
+        assert_eq!(h.count("game_item_container_entries").await?, 0);
+        assert_eq!(h.count("game_item_decay_retire_receipts").await?, 2);
+        let (transactions, audited): (i64, i64) = sqlx::query_as("SELECT count(DISTINCT r.created_xact_id),count(a.event_id) FROM game_item_decay_retire_receipts r JOIN game_item_audit_outbox a ON a.item_instance_id=r.item_instance_id AND a.transaction_id=r.transaction_id AND a.event_id=r.event_id AND a.envelope_sha256=r.envelope_sha256 AND a.created_xact_id=r.created_xact_id WHERE r.cause_kind='WORLD_RESET' AND r.ground_root_item_instance_id=encode($1,'hex')::uuid")
+            .bind(backpack.as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!((transactions, audited), (1, 2));
+        for item in [backpack, child] {
+            assert_eq!(h.item_state(item).await?, (0, 2));
+        }
+    } else {
+        let receipt = h
+            .root
+            .commit_item_loop_move(
+                &permit,
+                &a,
+                &h.node,
+                &f,
+                command(200)?,
+                &PickupContent,
+                LoopMoveRequest {
+                    item: child,
+                    count: None,
+                    pickup_cell: Some(cell),
+                    destination: LoopDestination::Container(backpack),
+                },
+            )
+            .await?
+            .map_err(debug)?;
+        assert!(!receipt.replayed);
+        assert_eq!(receipt.operation, 5);
+        assert_eq!(h.count("game_item_ground_locations").await?, 0);
+        let placed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid)")
+            .bind(child.as_slice()).bind(backpack.as_slice()).fetch_one(&h.pool).await?;
+        assert!(placed);
+        assert_eq!(h.item_state(child).await?, (1, 1));
+        assert_eq!(h.count("game_player_death_item_records").await?, 1);
+    }
+    drop(permit);
+    drop(a);
+    drop(seal);
+    h.cleanup().await
+}
+
+fn death_ground_case(reset: bool) -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(move || -> Result<(), String> {
+            runtime()
+                .map_err(debug)?
+                .block_on(run_death_ground_regression(admin, reset))
+                .map_err(debug)
+        })?
+        .join()
+        .map_err(|_| "death ground test thread panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn player_death_ground_drop_can_be_picked_up_by_item_loop() -> TestResult {
+    death_ground_case(false)
+}
+
+#[test]
+fn player_death_ground_backpack_and_contents_retire_on_world_reset() -> TestResult {
+    death_ground_case(true)
 }
