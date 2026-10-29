@@ -117,9 +117,12 @@ fn attempt_ref(attempt: &ResumeAttempt<'_>) -> Option<ReconnectAttemptRef> {
     ReconnectAttemptRef::new(value.max(1)).ok()
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// `wrote` is set before the first step that may write (the capability-mismatch release
+    /// or PREPARE): until then a refusal wrote nothing and the resume may be repeated.
     pub(super) async fn resume_lost(
         &self,
         attempt: ResumeAttempt<'_>,
+        wrote: &mut bool,
     ) -> Result<AdmittedSession, AdmissionRefusal> {
         use AdmissionRefusal::{Rejected, Unavailable};
         if self
@@ -437,6 +440,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if now >= grace_deadline {
                 return Err(Rejected);
             }
+            *wrote = true;
             let release = self.release_capability_mismatch(lost, epoch).await;
             return Err(capability_mismatch_refusal(release));
         }
@@ -455,6 +459,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // C2: the lost connection's item fence names its own generation; it is refreshed below
         // from the committed resume, never carried over.
         resumed.item_fence = None;
+        *wrote = true;
         let prepared = match self
             .decide(
                 &store,
