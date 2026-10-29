@@ -45,6 +45,7 @@ fn row(drops: usize) -> Arc<CreatureRewardRow> {
                 .collect(),
         },
         race: None,
+        boss: None,
     })
 }
 
@@ -107,7 +108,8 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
         activity_at_death: Some(Vec::new()),
         facts,
         creature: "fixture:rat".into(),
-        row: row(drops),
+        row: Some(row(drops)),
+        bosstiary_only: None,
         ground: DeathGroundContext {
             boss_spawn: None,
             map_revision: "map-1".into(),
@@ -123,7 +125,7 @@ fn pending(channel: u8, session_seed: u8, lease: u64, drops: usize) -> PendingKi
 
 fn pending_with_ordinary_surprise_bag() -> PendingKillSettlement {
     let mut pending = pending(2, 50, 3, 0);
-    let row = Arc::make_mut(&mut pending.row);
+    let row = Arc::make_mut(pending.row.as_mut().expect("reward row"));
     row.loot_table_ref =
         LootDefinitionRef::new("Loot", "oteryn:loot.creature.rat", "definition-r1");
     row.loot_table.entries.push(LootTableEntry {

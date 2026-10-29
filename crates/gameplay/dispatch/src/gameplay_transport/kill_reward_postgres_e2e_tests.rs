@@ -1302,7 +1302,10 @@ fn scenario_with_creature_charmed(
                 return Err("daily boosted kill".into());
             };
             let entry = taken.entry().ok_or("daily entry")?;
-            assert_eq!(entry.row.xp_amount.get(), queued_xp);
+            assert_eq!(
+                entry.row.as_ref().expect("reward row").xp_amount.get(),
+                queued_xp
+            );
             let death = entry.facts.death;
             let plan = oteryn_gameplay_items::loot_plan::plan_creature_loot(
                 oteryn_gameplay_items::loot_plan::LootPlanDeathKey::new(
@@ -1312,8 +1315,8 @@ fn scenario_with_creature_charmed(
                     death.actor_local_id(),
                     death.actor_local_generation(),
                 ),
-                &entry.row.loot_table_ref,
-                &entry.row.loot_table,
+                &entry.row.as_ref().expect("reward row").loot_table_ref,
+                &entry.row.as_ref().expect("reward row").loot_table,
             )
             .map_err(debug)?;
             daily_expected_loot = Some(
@@ -1323,7 +1326,10 @@ fn scenario_with_creature_charmed(
                     .collect::<Vec<_>>(),
             );
 
-            match (target, entry.row.loot_table.algorithm) {
+            match (
+                target,
+                entry.row.as_ref().expect("reward row").loot_table.algorithm,
+            ) {
                 (
                     "creature",
                     crate::combat::LootSelectionAlgorithm::DailyBoosted { extra_rolls: 1, .. },

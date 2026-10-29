@@ -122,6 +122,7 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
 
 fn bestiary(race: bool) -> TestResult<CreatureDeathBestiaryInput> {
     Ok(CreatureDeathBestiaryInput {
+        boss: None,
         race: if race {
             Some(BestiaryRace::new(RAT, "definition-r1", vec![5, 50, 500]).map_err(debug)?)
         } else {

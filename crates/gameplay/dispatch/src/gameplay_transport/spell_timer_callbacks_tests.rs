@@ -158,6 +158,7 @@ fn rewards() -> CreatureRewardTable {
                 entries: vec![],
             },
             race: None,
+            boss: None,
         }),
     );
     table

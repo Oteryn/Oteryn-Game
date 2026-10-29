@@ -745,6 +745,7 @@ pub struct CreatureDeathBestiaryInput {
     /// `None` when the creature's definition carries no Bestiary block: such
     /// a creature is never counted.
     pub race: Option<BestiaryRace>,
+    pub boss: Option<crate::domain::bosstiary::BosstiaryBoss>,
 }
 
 /// Global Animus Mastery: +2% raw species XP, plus 0.1% per ten completed
@@ -788,6 +789,7 @@ pub enum CombatDeathRewardBestiaryError {
 pub struct CreatureDeathRewardWithBestiaryOutcome {
     pub rewards: CreatureDeathRewardOutcome,
     pub bestiary: Result<CombatBestiaryOutcome, CombatDeathRewardBestiaryError>,
+    pub bosstiary: Result<bool, CharacterProgressionError>,
 }
 
 /// CHARM-2 entry point: [`settle_creature_death_rewards`] followed by one
@@ -814,13 +816,19 @@ pub async fn settle_creature_death_rewards_with_bestiary<const N: usize>(
         });
     let principal = admit_principal(&facts, &input)?;
     let rewards = settle_creature_death_rewards(permit, facts, session, slot, input).await?;
+    let boss = bestiary.boss.clone();
     let bestiary = match binding {
         Some(binding) => {
             settle_bestiary(session, slot, &facts, &principal, &binding, bestiary).await
         }
         None => Err(CombatDeathRewardBestiaryError::NoProgressionBinding),
     };
-    Ok(CreatureDeathRewardWithBestiaryOutcome { rewards, bestiary })
+    let bosstiary = settle_bosstiary(session, slot, &facts, &principal, boss.as_ref()).await;
+    Ok(CreatureDeathRewardWithBestiaryOutcome {
+        rewards,
+        bestiary,
+        bosstiary,
+    })
 }
 
 /// PARTY-XP-1: the consuming kill owner already committed all Character XP receipts in
@@ -846,13 +854,64 @@ pub async fn settle_creature_death_rewards_with_party_experience<const N: usize>
         });
     let mut rewards = settle_creature_death_rewards(permit, facts, session, slot, input).await?;
     rewards.xp = xp;
+    let boss = bestiary.boss.clone();
     let bestiary = match binding {
         Some(binding) => {
             settle_bestiary(session, slot, &facts, &principal, &binding, bestiary).await
         }
         None => Err(CombatDeathRewardBestiaryError::NoProgressionBinding),
     };
-    Ok(CreatureDeathRewardWithBestiaryOutcome { rewards, bestiary })
+    let bosstiary = settle_bosstiary(session, slot, &facts, &principal, boss.as_ref()).await;
+    Ok(CreatureDeathRewardWithBestiaryOutcome {
+        rewards,
+        bestiary,
+        bosstiary,
+    })
+}
+
+/// Shares the Bestiary settlement's captured principal, credit window and occurrence.
+/// Boss credit is independent of Bestiary membership and its saturated counters.
+pub async fn settle_bosstiary(
+    session: &DurabilitySession<'_, '_, '_>,
+    slot: &mut RevisionSlot,
+    facts: &ProjectedCreatureDeathFacts,
+    principal: &RewardPrincipal,
+    boss: Option<&crate::domain::bosstiary::BosstiaryBoss>,
+) -> Result<bool, CharacterProgressionError> {
+    if !facts.principal.admits(&principal.gameplay_fence) {
+        return Err(CharacterProgressionError::AuthorityRejected);
+    }
+    let Some(boss) = boss else {
+        return Ok(false);
+    };
+    let Some(last) = facts.principal_last_damage_at_ms else {
+        return Ok(false);
+    };
+    if !(BestiaryKillCredit {
+        principal_last_damage_at_ms: last,
+        death_at_ms: facts.death_at_ms,
+    })
+    .is_credited()
+    .map_err(|_| CharacterProgressionError::InvalidInput)?
+    {
+        return Ok(false);
+    }
+    let occurrence = BestiaryKillOccurrence::from_bytes(facts.occurrence)
+        .map_err(|_| CharacterProgressionError::InvalidInput)?;
+    let mut fence = principal.gameplay_fence;
+    fence.expected_character_revision = slot
+        .cursor(session.root, session.authority)
+        .await
+        .map_err(|error| match error {
+            crate::durability::character_authority::CharacterAuthorityError::Unavailable(error) => {
+                CharacterProgressionError::Unavailable(error)
+            }
+            _ => CharacterProgressionError::AuthorityRejected,
+        })?;
+    session
+        .root
+        .credit_bosstiary_kill(session.authority, session.node, fence, occurrence, boss)
+        .await
 }
 
 /// The progression binding the death's XP award used; the Bestiary receipt
