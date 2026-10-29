@@ -259,7 +259,11 @@ async fn case(h: &Harness) -> TestResult {
             .await
             .is_err()
     );
+    // NODEBOOT-1: a resume whose first read, its receipt, meets a busy holder retries it
+    // instead of closing.
+    let busy = hold_holder(restarted.root, std::time::Duration::from_millis(300))?;
     let recovered = resume_transfer(&restarted, source.game_session_id, &token, 10).await?;
+    busy.await??;
     let replayed = resume_transfer(&restarted, source.game_session_id, &token, 10).await?;
     assert_eq!(replayed.game_session_id, recovered.game_session_id);
     assert_eq!(replayed.runtime_actor, recovered.runtime_actor);
@@ -745,6 +749,19 @@ async fn lose_ack(
         ConnectionEnd::AdmittedThenDisconnected(current) => Ok(current),
         _ => Err(format!("lost ack end {ended:?}").into()),
     }
+}
+/// Takes `root`'s holder at once and keeps it for `hold` in a semantic pass.
+fn hold_holder(
+    root: &crate::durability::DurabilityRoot,
+    hold: std::time::Duration,
+) -> TestResult<tokio::task::JoinHandle<Result<(), crate::durability::DurabilityError>>> {
+    let pass = root.try_issue_semantic_pass().map_err(debug)?;
+    Ok(tokio::spawn(pass.run(move |_holder, _deadline| {
+        Box::pin(async move {
+            tokio::time::sleep(hold).await;
+            Ok(())
+        })
+    })))
 }
 struct RecoveryIdentifiers(u8);
 impl crate::gameplay_transport::connection::ConnectionIdentifiers for RecoveryIdentifiers {

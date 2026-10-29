@@ -9,21 +9,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(_permit) = self.states.input_gate.enter().await else {
             return Err(AdmissionRefusal::Unavailable);
         };
+        // DEFLAKE-2: a step refused on a busy durability holder before the resume wrote
+        // anything is repeated from fresh reads within the root recovery window.
+        let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
         let admitted = if let Some(admitted) = self
-            .recover_transferred_house(connection::ResumeAttempt {
-                game_session_id: attempt.game_session_id,
-                recovery_material: attempt.recovery_material,
-                transport: attempt.transport,
-                last_applied_server_sequence: attempt.last_applied_server_sequence,
-                supported_capabilities: attempt.supported_capabilities,
-            })
+            .recover_transferred_house(
+                &budget,
+                connection::ResumeAttempt {
+                    game_session_id: attempt.game_session_id,
+                    recovery_material: attempt.recovery_material,
+                    transport: attempt.transport,
+                    last_applied_server_sequence: attempt.last_applied_server_sequence,
+                    supported_capabilities: attempt.supported_capabilities,
+                },
+            )
             .await?
         {
             admitted
         } else {
-            // DEFLAKE-2: a step refused on a busy durability holder before the resume wrote
-            // anything is repeated from fresh reads within the root recovery window.
-            let budget = AdmissionRetryBudget::for_root(&attempt.game_session_id, self.root);
             loop {
                 let mut wrote = false;
                 let resumed = self
