@@ -1,7 +1,7 @@
 # Wave A plan — class A mechanics plus one bundle
 
-Status: **proposal for owner acceptance**. Nothing is dispatched before the owner accepts it,
-and no mechanic starts before #2703 is merged.
+Status: **accepted by the owner 2026-10-29** (questions 1 and 2: A1, A2 and the A3 bundle, class B
+fragments allowed in A3). No mechanic starts before #2703 is merged.
 
 - Base: `origin/main` = `8ad7e013`. Line numbers are from that commit.
 - Source of truth: `docs/architecture/reviews/OTERYN_GAME_CRYSTAL_REAUDIT_2026-10-28.md`
