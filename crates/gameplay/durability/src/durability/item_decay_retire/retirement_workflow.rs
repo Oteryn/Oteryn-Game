@@ -313,6 +313,10 @@ impl DurabilityRoot {
                     {
                         return Ok(Err(DecayRetireError::ConflictingCandidate));
                     }
+                    world_reset_cause::retire_death_contents(
+                        &mut tx, permit, &fence, &node, step, &admitted,
+                    )
+                    .await?;
                     let committed =
                         apply_retire(&mut tx, permit, step, &admitted, &reservation, tuple).await?;
                     tx.commit(deadline).await?;
@@ -516,7 +520,7 @@ impl DurabilityRoot {
     }
 }
 
-async fn insert_reservation(
+pub(super) async fn insert_reservation(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     step: DecayRetireStep,
     admitted: &Admitted,

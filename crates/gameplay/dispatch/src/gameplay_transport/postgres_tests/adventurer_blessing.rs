@@ -157,11 +157,13 @@ fn boundary(
             assert_eq!(death.level_after, level);
             assert_eq!(death.blessings_after, request.held_blessings);
         } else {
-            let expected_loss = i64::try_from(
-                crate::domain::death::death_experience_loss(level, u8::from(regular_blessing), false)
-                    .map_err(debug)?,
-            )?.min(death.experience_before.get());
-            assert!(expected_loss > 0);
+            let expected_loss = match (level, regular_blessing) {
+                (20, true) => 15_824,
+                (21, true) => 17_572,
+                (22, true) => 19_412,
+                (22, false) => 21_100,
+                _ => return Err("missing exact death-loss expectation".into()),
+            };
             assert_eq!(death.experience_lost.get(), expected_loss, "level {level}");
             assert_eq!(death.experience_after.get(), death.experience_before.get() - expected_loss);
             assert!(death.blessings_after.is_empty());
@@ -284,8 +286,10 @@ fn permanence(award: bool) -> TestResult {
             .settle_source_player_death(current, request.clone(), None, None)
             .await
             .map_err(debug)?;
+        // The canonical level-21 span less one blessing loses 17,572 XP, reaching
+        // level 20 in this fixture's 100,000-XP-per-level table.
         assert_eq!((death.level_before, death.level_after), (21, 20));
-        assert!(death.experience_lost.get() > 0);
+        assert_eq!(death.experience_lost.get(), 17_572);
         current.expected_character_revision = death.committed_character_revision;
         h.root
             .consume_pending_respawn(&authority, &h.node, current, Some(death.occurrence))
@@ -302,8 +306,8 @@ fn permanence(award: bool) -> TestResult {
             .await
             .map_err(debug)?;
         assert_eq!(delevelled.level_before, 20);
-        assert!(
-            delevelled.experience_lost.get() > 0,
+        assert_eq!(
+            delevelled.experience_lost.get(), 17_200,
             "first reaching 21 permanently ended protection"
         );
         drop(owner);

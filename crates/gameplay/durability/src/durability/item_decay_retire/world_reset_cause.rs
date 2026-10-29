@@ -2,6 +2,8 @@
 use super::*;
 use crate::durability::world_reset::RetiringWorldReset;
 
+mod death_contents;
+pub(super) use death_contents::retire_death_contents;
 mod ground_admission;
 pub(super) use ground_admission::admit;
 

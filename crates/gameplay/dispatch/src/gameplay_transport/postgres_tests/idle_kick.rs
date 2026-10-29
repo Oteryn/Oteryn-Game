@@ -225,6 +225,14 @@ fn case(protected: bool, stale: bool) -> TestResult {
         track(&owner, &deps)?;
         let mut admitted = deps.admitted;
         admitted.first_entry = FirstEntryOutcome::Positioned;
+        // Complete the training admission prerequisites before driving the router directly.
+        admitted.item_fence = crate::gameplay_transport::item_fence_of(
+            FreshAdmissionStore::from_root(h.root.clone())
+                .current_session(admitted.game_session_id)
+                .await?,
+        );
+        owner.admit_loop_training(&mut admitted).await;
+        assert_eq!(admitted.first_entry, FirstEntryOutcome::Positioned);
         admitted.continuity.selected_capabilities =
             SelectedCapabilities::select(owner.offered_capabilities(), &[31])
                 .ok_or("notice capability")?;
@@ -360,6 +368,12 @@ fn case(protected: bool, stale: bool) -> TestResult {
             );
         } else {
             assert_eq!(current.session_state(), GameSessionState::Terminal);
+            let markers: (i64, i64) = sqlx::query_as(
+                "SELECT count(*) FILTER (WHERE cause='offline_settlement'), count(*) FILTER (WHERE cause='logout') FROM game_character_training_markers",
+            )
+            .fetch_one(&h.pool)
+            .await?;
+            assert_eq!(markers, (1, 1), "default training admits and logs out");
             assert_eq!(positions, [(1, 0, 7)]);
             assert!(matches!(end, ConnectionEnd::AdmittedThenLoggedOut(_)));
             assert!(

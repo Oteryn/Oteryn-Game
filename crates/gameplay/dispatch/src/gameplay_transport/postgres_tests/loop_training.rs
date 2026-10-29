@@ -41,6 +41,8 @@ fn scenario() -> TestResult {
                 .current_session(admitted.game_session_id)
                 .await?;
         admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
+        // Exercise the unavailable context explicitly; shipped training is now enabled.
+        owner.states.training.config = None;
         assert!(owner.states.training.config.is_none());
         owner.admit_loop_training(&mut admitted).await;
         let count: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_training_markers")

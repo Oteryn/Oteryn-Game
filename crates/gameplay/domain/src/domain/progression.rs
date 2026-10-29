@@ -1,6 +1,6 @@
 //! Pure, persistence-neutral Character experience projection.
 
-use super::death::{PveDeathError, death_experience_loss};
+use super::death::{PveDeathError, death_experience_loss_for_experience};
 use oteryn_simulation_determinism::{ExactI64, NumericError, RoundingMode};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,7 +53,7 @@ pub enum ProgressionOperation<O, R> {
         amount: ExactI64,
     },
     /// Reference first player death (D58, D59, D66-D68): the loss is
-    /// `domain::death::death_experience_loss` (one source of truth), capped
+    /// `domain::death::death_experience_loss_for_experience` (one source of truth), capped
     /// at the current experience so it never drops below 0; the level
     /// follows it.
     ApplyDeathExperienceLoss {
@@ -164,10 +164,12 @@ where
             {
                 return Err(ProgressionCalculationError::InvalidDeathPolicy);
             }
-            let raw = death_experience_loss(
+            let raw = death_experience_loss_for_experience(
                 snapshot.level,
+                snapshot.total_experience,
                 *regular_blessings,
                 *promoted_with_current_premium,
+                0,
             )
             .map_err(|error| match error {
                 PveDeathError::TooManyBlessings => ProgressionCalculationError::TooManyBlessings,
@@ -294,4 +296,93 @@ pub fn calculate_level_up_vital_change(
             .checked_sub(before.max_mana)
             .ok_or(LevelUpVitalError::RegressingMaximum)?,
     })
+}
+
+#[cfg(test)]
+mod death_experience_tests {
+    use super::*;
+
+    #[test]
+    fn progression_death_uses_next_level_span_at_every_level()
+    -> Result<(), ProgressionCalculationError> {
+        let context = ProgressionRevisionContext {
+            profile: (),
+            ruleset: (),
+            content: (),
+            simulation: (),
+            evidence: (),
+            declaration: (),
+        };
+        let policy = FiniteProgressionPolicy {
+            context: context.clone(),
+            policy_revision: (),
+            reward_revision: (),
+            death_policy_revision: (),
+            declared_difference_revision: (),
+            thresholds: std::array::from_fn::<_, 2000, _>(|index| {
+                let level = index as u32 + 1;
+                LevelThreshold {
+                    level,
+                    minimum_experience: ExactI64::new(
+                        super::super::death::canonical_experience_threshold(level)
+                            .unwrap_or(u128::MAX) as i64,
+                    ),
+                }
+            }),
+            terminal_exclusive_experience: ExactI64::new(133_133_600_000),
+            death_loss_numerator: 1,
+            death_loss_denominator: 1,
+            death_loss_rounding: RoundingMode::Floor,
+        };
+        for (level, experience, losses) in [
+            (1, 0, [100, 70, 44, 14]),
+            (10, 9_300, [3_700, 2_590, 1_628, 518]),
+            (23, 156_200, [23_200, 16_240, 10_208, 3_248]),
+            (24, 179_400, [25_400, 17_780, 11_176, 3_556]),
+            (50, 1_847_300, [117_700, 82_390, 51_788, 16_478]),
+            (
+                400,
+                1_050_779_800,
+                [7_940_200, 5_558_140, 3_493_688, 1_111_628],
+            ),
+            (
+                2000,
+                132_933_899_800,
+                [199_700_200, 139_790_140, 87_868_088, 27_958_028],
+            ),
+        ] {
+            for (blessings, promoted, loss) in [
+                (0, false, losses[0]),
+                (0, true, losses[1]),
+                (7, false, losses[2]),
+                (7, true, losses[3]),
+            ] {
+                for experience in [experience, experience + 99] {
+                    let snapshot = CurrentProgressionSnapshot {
+                        level,
+                        total_experience: ExactI64::new(experience),
+                        skill_progression: (),
+                        magic_progression: (),
+                    };
+                    let operation = ProgressionOperation::ApplyDeathExperienceLoss {
+                        death_occurrence: (),
+                        death_policy_revision: (),
+                        declared_difference_revision: (),
+                        regular_blessings: blessings,
+                        promoted_with_current_premium: promoted,
+                    };
+                    let outcome =
+                        calculate_progression(&snapshot, &context, &(), &operation, &policy)?;
+                    let expected = loss.min(experience);
+                    assert_eq!(
+                        outcome.death_experience_lost.get(),
+                        expected,
+                        "level {level}, blessings {blessings}, promoted {promoted}"
+                    );
+                    assert_eq!(outcome.experience_after.get(), experience - expected);
+                }
+            }
+        }
+        Ok(())
+    }
 }

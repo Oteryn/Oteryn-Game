@@ -34,10 +34,28 @@ pub(in crate::durability) async fn validate_root(
     tx: &mut Transaction<'_, Postgres>,
     root: [u8; 16],
 ) -> Result<()> {
+    let death_container = is_death_container(tx, root).await?;
     let invalid: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid OR parent_item_instance_id IN(SELECT item_instance_id FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)) OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid OR parent_item_instance_id IN(SELECT item_instance_id FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)) OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id IN(SELECT item_instance_id FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid))")
         .bind(root.as_slice()).fetch_one(&mut **tx).await?;
-    if invalid {
+    if invalid && !death_container {
         return Err(DurabilityError::InvalidStoredState);
     }
+    if death_container {
+        // Death drops admit direct contents only. Keep all other shape guards,
+        // including children of direct entries, as strict as ordinary Ground.
+        let invalid: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid OR parent_item_instance_id IN(SELECT item_instance_id FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)) OR EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id IN(SELECT item_instance_id FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid)) OR EXISTS(SELECT 1 FROM game_item_corpse_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid OR parent_item_instance_id IN(SELECT item_instance_id FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid))")
+            .bind(root.as_slice()).fetch_one(&mut **tx).await?;
+        if invalid {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+    }
     Ok(())
+}
+
+pub(in crate::durability) async fn is_death_container(
+    tx: &mut Transaction<'_, Postgres>,
+    root: [u8; 16],
+) -> Result<bool> {
+    Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_player_death_item_records r JOIN game_item_ground_locations g USING(item_instance_id) WHERE r.item_instance_id=encode($1,'hex')::uuid AND r.operation=1 AND r.source_slot=9 AND g.world_id=r.world_id AND g.channel_id=r.channel_id AND g.corpse_ref=convert_to('OTERYN_ITEM_LOOP_DROP/v1:','UTF8')||uuid_send(r.transaction_id))")
+        .bind(root.as_slice()).fetch_one(&mut **tx).await?)
 }

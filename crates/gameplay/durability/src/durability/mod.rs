@@ -31,6 +31,7 @@ pub mod native_world_items;
 #[allow(dead_code)]
 pub mod native_world_read;
 pub mod party_kill_xp;
+pub mod player_death_items;
 pub mod player_report;
 pub mod prey;
 pub mod quest_world_callback;
