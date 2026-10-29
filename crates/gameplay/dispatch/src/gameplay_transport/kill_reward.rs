@@ -135,7 +135,7 @@ struct ReleasingMark {
 struct KillQueueState {
     // Equipment-owner projections, independent of a held attack target or swing-cache epoch.
     proficiency_weapons: Vec<(ExactActorRef, GameSessionId, u64, Option<String>)>,
-    proficiency_deaths: Vec<(ExactActorRef, [u8; 16], Vec<FrozenProficiencyContributor>)>,
+    proficiency_deaths: Vec<FrozenProficiencyDeath>,
     /// One frozen contribution per retained exact corpse projection; pruned on each death.
     prey_loot: Vec<(ExactActorRef, u8)>,
     queued: VecDeque<PendingKillSettlement>,
@@ -231,6 +231,14 @@ struct FrozenProficiencyContributor {
     weapon: String,
 }
 
+#[derive(Debug, Clone)]
+struct FrozenProficiencyDeath {
+    target: ExactActorRef,
+    occurrence: [u8; 16],
+    contributors: Vec<FrozenProficiencyContributor>,
+    reward_principal_gone: bool,
+}
+
 impl KillSettlementQueue {
     /// Actor-end saves drain deaths to which this session contributed, including another
     /// principal's queue. An in-flight settle must finish before the contributor can save.
@@ -256,15 +264,13 @@ impl KillSettlementQueue {
             .collect();
         for (_, principal, target) in &state.in_flight {
             if principal.0 == session
-                || state
-                    .proficiency_deaths
-                    .iter()
-                    .any(|(actor, _, contributors)| {
-                        actor == target
-                            && contributors
-                                .iter()
-                                .any(|contributor| contributor.session == session)
-                    })
+                || state.proficiency_deaths.iter().any(|death| {
+                    death.target == *target
+                        && death
+                            .contributors
+                            .iter()
+                            .any(|contributor| contributor.session == session)
+                })
             {
                 principals.insert(principal.0);
             }
@@ -279,7 +285,7 @@ impl KillSettlementQueue {
         });
         state
             .proficiency_deaths
-            .retain(|(actor, _, _)| runtime.retains_corpse_projection(*actor));
+            .retain(|death| runtime.retains_corpse_projection(death.target));
     }
     pub(super) fn proficiency_equipment(
         &self,
@@ -310,6 +316,7 @@ impl KillSettlementQueue {
         target: ExactActorRef,
         occurrence: [u8; 16],
         shares: &[crate::foundation::RewardDamageShare],
+        reward_principal_gone: bool,
     ) {
         if !runtime
             .companion_snapshot_including_dead(target)
@@ -325,11 +332,11 @@ impl KillSettlementQueue {
         });
         state
             .proficiency_deaths
-            .retain(|(actor, _, _)| runtime.retains_corpse_projection(*actor));
+            .retain(|death| runtime.retains_corpse_projection(death.target));
         if state
             .proficiency_deaths
             .iter()
-            .any(|(_, key, _)| *key == occurrence)
+            .any(|death| death.occurrence == occurrence)
         {
             return;
         }
@@ -355,9 +362,12 @@ impl KillSettlementQueue {
                 })
             })
             .collect();
-        state
-            .proficiency_deaths
-            .push((target, occurrence, contributors));
+        state.proficiency_deaths.push(FrozenProficiencyDeath {
+            target,
+            occurrence,
+            contributors,
+            reward_principal_gone,
+        });
     }
     fn state(&self) -> MutexGuard<'_, KillQueueState> {
         self.0
@@ -821,8 +831,8 @@ pub fn record_creature_kill(
         return;
     };
     if top.is_gone() {
+        // The lethal session carries proficiency through the queue; XP keeps its refusal.
         refuse("principal_gone", &creature);
-        return;
     }
     let (principal, last_damage_at_ms, untracked) = match top.present() {
         Some(winner) => (
@@ -952,8 +962,13 @@ pub fn record_creature_kill(
         refuse("damage_shares_unavailable", &creature);
         return;
     };
-    sink.queue
-        .freeze_proficiency(runtime, target, facts.occurrence, &damage_shares);
+    sink.queue.freeze_proficiency(
+        runtime,
+        target,
+        facts.occurrence,
+        &damage_shares,
+        top.is_gone(),
+    );
     if let Some(effects) =
         super::hazard::effects(runtime, principal.actor, principal.session, target)
     {
@@ -1063,6 +1078,10 @@ pub fn record_creature_kill(
             recipients,
         })
     });
+    if top.is_gone() {
+        // A proficiency-only entry reserves no loot MINT capacity.
+        Arc::make_mut(&mut row).loot_table.entries.clear();
+    }
     let entry = PendingKillSettlement {
         forge,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
@@ -1590,6 +1609,28 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
+        let proficiency_only = admission
+            .states
+            .attack
+            .lock()
+            .await
+            .kills()
+            .state()
+            .proficiency_deaths
+            .iter()
+            .any(|death| death.occurrence == entry.facts.occurrence && death.reward_principal_gone);
+        if proficiency_only {
+            admission.credit_weapon_proficiency_kill(entry).await;
+            release_settled_corpse(
+                &mut *admission.runtime.lock().await,
+                entry,
+                SettleVerdict::Final,
+            );
+            return SettleReport {
+                verdict: SettleVerdict::Final,
+                no_progression: false,
+            };
+        }
         // Existing fenced equipment is authoritative. Read it before the spell lane and
         // revision slot; an unavailable snapshot fails closed rather than inventing ownership.
         let talisman_equipped =
@@ -1797,8 +1838,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .state()
             .proficiency_deaths
             .iter()
-            .find(|(_, occurrence, _)| *occurrence == entry.facts.occurrence)
-            .map(|(_, _, contributors)| contributors.clone())
+            .find(|death| death.occurrence == entry.facts.occurrence)
+            .map(|death| death.contributors.clone())
             .unwrap_or_default();
         let points = proficiency_points(self, entry);
         let mut checkpoints = Vec::new();
