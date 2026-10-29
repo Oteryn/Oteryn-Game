@@ -41,7 +41,7 @@ pub(super) fn run(root: &Path) -> Result<Value, Error> {
             &pins.join(format!("{slug}.identity.json")),
             &identity_text(&identity)?,
         )?;
-        let bytes = build_twice(root, &identity)?;
+        let (bytes, _) = build_twice(root, &identity)?;
         let pin = Pin {
             schema: PIN_SCHEMA.to_owned(),
             digest: hex(&bytes[bytes.len() - 32..]),
