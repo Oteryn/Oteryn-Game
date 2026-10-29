@@ -77,7 +77,11 @@ fn event(burn: bool) -> audit::OneItemPlayerDeathItemV1 {
             world_id: id(42).to_vec(),
             channel_id: id(43).to_vec(),
             spatial_position: vec![1, 2, 3],
-            corpse_ref: id(11).to_vec(),
+            corpse_ref: [
+                super::super::item_loop_move::ITEM_LOOP_DROP_REF_PREFIX,
+                id(20).as_slice(),
+            ]
+            .concat(),
             map_revision: "map-1".into(),
             content_revision: "content-1".into(),
             native_room_placement_context: id(11).to_vec(),
@@ -112,6 +116,31 @@ fn player_death_audit_encoders_roundtrip_and_reject_silent_delete()
         wrong.typed_sink = "silent-delete".into();
         assert!(audit::encode(&request(), burn, wrong, mint::Type2EventTuple::V1).is_err());
     }
+    Ok(())
+}
+#[test]
+fn player_death_drop_audit_binds_loop_reference_to_transaction()
+-> std::result::Result<(), mint::AuditError> {
+    let value = event(false);
+    let mut wrong = value.clone();
+    wrong
+        .ground
+        .as_mut()
+        .ok_or(mint::AuditError::InvalidInput)?
+        .corpse_ref = id(11).to_vec();
+    assert!(audit::encode(&request(), false, wrong, mint::Type2EventTuple::V1).is_err());
+    let mut changed = request();
+    changed.transaction_id = id(22);
+    assert!(audit::encode(&changed, false, value, mint::Type2EventTuple::V1).is_err());
+    let wire = audit::encode(&request(), false, event(false), mint::Type2EventTuple::V1)?;
+    let (mut envelope, _, _) = audit::decode(&wire)?;
+    envelope
+        .transaction_event
+        .as_mut()
+        .ok_or(mint::AuditError::InvalidInput)?
+        .transaction_id = id(22).to_vec();
+    use prost::Message;
+    assert!(audit::decode(&envelope.encode_to_vec()).is_err());
     Ok(())
 }
 #[test]

@@ -101,7 +101,7 @@ BEGIN
     ON d.death_occurrence_id=r.death_occurrence_id WHERE g.item_instance_id=r.item_instance_id AND g.world_id=r.world_id
     AND g.channel_id=r.channel_id AND g.runtime_scope_ownership_generation=r.scope_generation
     AND g.spatial_position=d.death_spatial_position AND g.map_revision=d.death_map_revision
-    AND g.content_revision=d.content_revision AND g.corpse_ref=uuid_send(r.death_occurrence_id)
+    AND g.content_revision=d.content_revision AND g.corpse_ref=convert_to('OTERYN_ITEM_LOOP_DROP/v1:','UTF8')||uuid_send(r.transaction_id)
     AND g.native_room_placement_context=uuid_send(r.death_occurrence_id))) THEN
   RAISE EXCEPTION 'death primitive must commit its item, actual source removal, receipt death cell and audit together' USING ERRCODE='23514';
  END IF;
@@ -302,3 +302,59 @@ DO $$ BEGIN
  EXECUTE format('ALTER FUNCTION game_item_container_entry_removal_proven() SET search_path = pg_catalog, %I, pg_temp',current_schema());
  REVOKE ALL ON FUNCTION game_item_container_entry_removal_proven() FROM PUBLIC;
 END $$;
+
+-- A death-dropped backpack keeps its direct entries. Reset uses the existing
+-- Ground-container removal evidence and retirement receipts for those edges.
+CREATE FUNCTION game_player_death_reset_entry_capture() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+ IF EXISTS(SELECT 1 FROM game_player_death_item_records r JOIN game_item_ground_locations g USING(item_instance_id)
+   WHERE r.item_instance_id=OLD.parent_item_instance_id AND r.operation=1 AND r.source_slot=9
+    AND g.world_id=OLD.world_id AND g.channel_id=r.channel_id
+    AND EXISTS(SELECT 1 FROM game_world_reset_jobs j WHERE j.world_id=g.world_id AND j.phase='RETIRING')
+    AND g.corpse_ref=convert_to('OTERYN_ITEM_LOOP_DROP/v1:','UTF8')||uuid_send(r.transaction_id)) THEN
+  INSERT INTO game_item_corpse_entry_removal_evidence
+   (item_instance_id,parent_item_instance_id,placement_ordinal,world_id,channel_id)
+   SELECT OLD.item_instance_id,OLD.parent_item_instance_id,OLD.placement_ordinal,OLD.world_id,g.channel_id
+    FROM game_item_ground_locations g WHERE g.item_instance_id=OLD.parent_item_instance_id;
+ END IF;
+ RETURN OLD;
+END $$;
+CREATE TRIGGER game_player_death_reset_entry_capture BEFORE DELETE ON game_item_container_entries
+ FOR EACH ROW EXECUTE FUNCTION game_player_death_reset_entry_capture();
+
+DO $migration$
+DECLARE body TEXT; amended TEXT; begin_at INT;
+BEGIN
+ body:=pg_get_functiondef('game_world_reset_item_proven(uuid)'::regprocedure);
+ amended:=replace(body,
+  'OR NOT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id)
+    WHERE g.item_instance_id=r.ground_root_item_instance_id AND g.world_id=r.world_id AND g.channel_id=r.channel_id AND i.lifecycle=1)',
+  'OR NOT (EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id)
+    WHERE g.item_instance_id=r.ground_root_item_instance_id AND g.world_id=r.world_id AND g.channel_id=r.channel_id AND i.lifecycle=1
+     AND NOT EXISTS(SELECT 1 FROM game_player_death_item_records d WHERE d.item_instance_id=g.item_instance_id AND d.operation=1 AND d.source_slot=9
+      AND g.corpse_ref=convert_to(''OTERYN_ITEM_LOOP_DROP/v1:'',''UTF8'')||uuid_send(d.transaction_id)))
+   OR EXISTS(SELECT 1 FROM game_item_decay_retire_receipts root
+    JOIN game_player_death_item_records d ON d.item_instance_id=root.item_instance_id
+    JOIN game_item_ground_removal_evidence g ON g.item_instance_id=root.item_instance_id
+    WHERE root.item_instance_id=r.ground_root_item_instance_id AND root.ground_root_item_instance_id=root.item_instance_id
+     AND root.cause_kind=''WORLD_RESET'' AND root.world_id=r.world_id AND root.channel_id=r.channel_id
+     AND root.reset_epoch=r.reset_epoch AND root.retirement_binding=r.retirement_binding AND root.target_digest=r.target_digest
+     AND root.fence_scope_ownership_generation=r.fence_scope_ownership_generation
+     AND root.created_xact_id=pg_current_xact_id() AND g.created_xact_id=pg_current_xact_id()
+     AND d.operation=1 AND d.source_slot=9))');
+ IF amended=body THEN RAISE EXCEPTION 'missing reset Ground-container proof'; END IF;
+ EXECUTE amended;
+ body:=pg_get_functiondef('game_item_container_entry_removal_proven()'::regprocedure);
+ begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+ IF begin_at=0 THEN RAISE EXCEPTION 'missing reset entry removal guard'; END IF;
+ EXECUTE overlay(body placing E'BEGIN\n'||$arm$
+ IF TG_OP='DELETE' AND EXISTS(SELECT 1 FROM game_item_corpse_entry_removal_evidence e
+   WHERE e.item_instance_id=OLD.item_instance_id AND e.parent_item_instance_id=OLD.parent_item_instance_id
+    AND e.placement_ordinal=OLD.placement_ordinal AND e.world_id=OLD.world_id AND e.created_xact_id=pg_current_xact_id()) THEN
+  IF game_world_reset_item_proven(OLD.item_instance_id) THEN RETURN OLD; END IF;
+ END IF;
+$arm$ from begin_at for 5);
+ EXECUTE format('ALTER FUNCTION game_player_death_reset_entry_capture() SET search_path=pg_catalog,%I,pg_temp',current_schema());
+ REVOKE ALL ON FUNCTION game_player_death_reset_entry_capture() FROM PUBLIC;
+END $migration$;
