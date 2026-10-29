@@ -9,6 +9,7 @@ use sha2::{Digest, Sha256};
 #[derive(Debug, Clone)]
 pub struct PreyCatalogue {
     pub(super) creatures: Vec<(String, u8, bool)>,
+    /// Creatures whose loot table exceeds the PREY-0 R4 budget (`PREY0-RL-16`, 7 entries).
     pub(super) unsupported_loot: std::collections::BTreeSet<String>,
 }
 impl TryFrom<&NativeGameplayState> for PreyCatalogue {
@@ -53,13 +54,17 @@ impl TryFrom<&NativeGameplayState> for PreyCatalogue {
         if creatures.iter().filter(|c| !c.2).count() < 27 {
             return Err(DurabilityError::InvalidStoredState);
         }
+        // A creature without a settleable loot row rolls no loot, so it is an empty table
+        // within the budget. R4 requires the content compiler to fail closed on oversized
+        // preyable tables (`PREY_LOOT_TABLE_TOO_LARGE`); until that check exists this set
+        // is the runtime guard.
         let unsupported_loot = creatures
             .iter()
             .filter(|c| {
                 native
                     .reward_table()
                     .row(&c.0)
-                    .map_or(true, |r| r.loot_table.entries.len() > 7)
+                    .is_ok_and(|r| r.loot_table.entries.len() > 7)
             })
             .map(|c| c.0.clone())
             .collect();
@@ -107,8 +112,8 @@ impl Draw {
             300..=499 => [1, 2, 3, 3],
             _ => [1, 1, 3, 4],
         };
-        // A listed creature must be selectable: creatures whose loot table the bonus
-        // roll cannot serve are refused on Select, so they are never offered.
+        // A listed creature must be selectable: oversized loot tables are refused on Select,
+        // so they are never offered (interim guard until `PREY_LOOT_TABLE_TOO_LARGE`).
         let mut pool: Vec<_> = catalogue
             .creatures
             .iter()
@@ -269,6 +274,31 @@ mod tests {
             }
             let next = Draw::new(&[7; 32], &[4; 16], b"list").list(&catalogue, level, &list)?;
             assert!(next.iter().all(|key| !list.contains(key)));
+        }
+        Ok(())
+    }
+    #[test]
+    fn prey_draw_never_offers_oversized_loot_creatures() -> Result<(), DurabilityError> {
+        let creatures: Vec<_> = (1..=4)
+            .flat_map(|stars| {
+                (0..4).map(move |n| (format!("oteryn:creature.b{stars}_{n}"), stars, false))
+            })
+            .collect();
+        let catalogue = PreyCatalogue {
+            unsupported_loot: creatures
+                .iter()
+                .filter(|c| c.0.ends_with("_0"))
+                .map(|c| c.0.clone())
+                .collect(),
+            creatures,
+        };
+        for n in 0..50_u8 {
+            let list = Draw::new(&[7; 32], &[n; 16], b"list").list(&catalogue, 1, &[])?;
+            assert_eq!(list.len(), 9);
+            assert!(
+                list.iter()
+                    .all(|key| !catalogue.unsupported_loot.contains(key))
+            );
         }
         Ok(())
     }
