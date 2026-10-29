@@ -74,8 +74,9 @@ Any output is a P0 for the PR that merged second.
    up in this repo's history:
    - `main` moved: merge `origin/main` and rebuild before reading anything else
      (about 70% of fix-up commits in October 2026 were this).
-   - Migration ordering: a new migration that sorts before one already on
-     `main`, or reuses a number. Renumber yours above main's highest.
+   - Migration number reused: two files with the same four digits fail the
+     migration-directory check in `crates/gameplay/durability/src/lib.rs`.
+     Renumber yours above main's highest.
    - Capability or command number taken on `main` in the meantime.
    - Stale content pins or digests (`pin-check`), see `oteryn-content-world`.
    - Lint after a merge: duplicated `mod` lines (E0428), duplicated test

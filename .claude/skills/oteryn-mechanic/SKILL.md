@@ -29,8 +29,8 @@ count mechanics, not PRs, when reporting progress.
 2. Claim numbers against **current `main` and every open PR**, not against
    `main` alone:
    - migration: above the highest number in `apps/game-server/migrations/`
-     and in open PRs. A migration that sorts before one already merged fails
-     every PostgreSQL partition.
+     and in open PRs, so files apply in merge order. A reused number fails the
+     migration-directory check in `crates/gameplay/durability/src/lib.rs`.
    - capability id and command id: the next free fragment under
      `docs/contracts/protocol-oteryn/v1/registry/{capabilities,command_types}/`
      and in open PRs.
