@@ -175,94 +175,104 @@ fn lines(frames: &[Vec<u8>]) -> Result<Vec<ChatLine>, Box<dyn Error>> {
 #[test]
 fn a_say_reaches_the_session_in_range_and_not_the_one_out_of_range()
 -> Result<(), Box<dyn Error>> {
-    run(async {
-        let (mut runtime, speaker, speaker_session) = runtime_with_capacity(0x71, 3);
-        let mut others = Vec::new();
-        for tag in [0x72, 0x73] {
-            let session = GameSessionId::decode(&[
-                0x01, 0x90, 0x00, 0x00, 0x00, tag, 0x70, 0x00, 0x80, 0x00, 0, 0, 0, 0, 0, tag,
-            ])?;
-            let reservation = runtime
-                .reserve_fresh_session(session)
+    // In a debug build the 112-entry selected capability set makes these three lingering
+    // sessions deeper than the default test thread stack (CAPCAP-2).
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let (mut runtime, speaker, speaker_session) = runtime_with_capacity(0x71, 3);
+                let mut others = Vec::new();
+                for tag in [0x72, 0x73] {
+                    let session = GameSessionId::decode(&[
+                        0x01, 0x90, 0x00, 0x00, 0x00, tag, 0x70, 0x00, 0x80, 0x00, 0, 0, 0, 0, 0, tag,
+                    ])?;
+                    let reservation = runtime
+                        .reserve_fresh_session(session)
+                        .map_err(|e| format!("{e:?}"))?;
+                    let actor = runtime
+                        .commit_fresh_session(reservation)
+                        .map_err(|e| format!("{e:?}"))?;
+                    others.push((actor, session));
+                }
+                for actor in [speaker, others[0].0, others[1].0] {
+                    runtime
+                        .initialize_first_entry_position(actor)
+                        .map_err(|e| format!("{e:?}"))?;
+                }
+                for _ in 0..40 {
+                    let at = runtime
+                        .read_actor_position(others[1].0)
+                        .map_err(|e| format!("{e:?}"))?;
+                    let mut next = at.position();
+                    next.x += 1;
+                    runtime
+                        .borrow_movement_position()
+                        .commit_cardinal(at, next)
+                        .map_err(|e| format!("{e:?}"))?;
+                }
+                let (near, far) = (others[0], others[1]);
+                let authority = ChatAuthority {
+                    runtime: RefCell::new(runtime),
+                    chat: ChatRuntime::default(),
+                    names: vec![(speaker_session, "Aela"), (near.1, "Bryn"), (far.1, "Cade")],
+                };
+                let say = encode_chat_intent(&ChatIntent::Say {
+                    mode: ChatSpeechMode::Say,
+                    text: "hello there".to_owned(),
+                })
                 .map_err(|e| format!("{e:?}"))?;
-            let actor = runtime
-                .commit_fresh_session(reservation)
-                .map_err(|e| format!("{e:?}"))?;
-            others.push((actor, session));
-        }
-        for actor in [speaker, others[0].0, others[1].0] {
-            runtime
-                .initialize_first_entry_position(actor)
-                .map_err(|e| format!("{e:?}"))?;
-        }
-        for _ in 0..40 {
-            let at = runtime
-                .read_actor_position(others[1].0)
-                .map_err(|e| format!("{e:?}"))?;
-            let mut next = at.position();
-            next.x += 1;
-            runtime
-                .borrow_movement_position()
-                .commit_cardinal(at, next)
-                .map_err(|e| format!("{e:?}"))?;
-        }
-        let (near, far) = (others[0], others[1]);
-        let authority = ChatAuthority {
-            runtime: RefCell::new(runtime),
-            chat: ChatRuntime::default(),
-            names: vec![(speaker_session, "Aela"), (near.1, "Bryn"), (far.1, "Cade")],
-        };
-        let say = encode_chat_intent(&ChatIntent::Say {
-            mode: ChatSpeechMode::Say,
-            text: "hello there".to_owned(),
-        })
-        .map_err(|e| format!("{e:?}"))?;
-        let linger = Duration::from_millis(700);
-        let hearing = serve_lingering(&authority, admitted(near.0, near.1)?, &[], linger);
-        let missing = serve_lingering(&authority, admitted(far.0, far.1)?, &[], linger);
-        let speaking = async {
-            tokio::time::sleep(Duration::from_millis(150)).await;
-            serve_lingering(
-                &authority,
-                admitted(speaker, speaker_session)?,
-                &[command(1, 13, &say)],
-                Duration::ZERO,
-            )
-            .await
-        };
-        let (hearing, missing, speaking) = join3(hearing, missing, speaking).await;
-        let (near_end, near_frames) = hearing?;
-        let (far_end, far_frames) = missing?;
-        let (_, speaker_frames) = speaking?;
+                let linger = Duration::from_millis(700);
+                let hearing = serve_lingering(&authority, admitted(near.0, near.1)?, &[], linger);
+                let missing = serve_lingering(&authority, admitted(far.0, far.1)?, &[], linger);
+                let speaking = async {
+                    tokio::time::sleep(Duration::from_millis(150)).await;
+                    serve_lingering(
+                        &authority,
+                        admitted(speaker, speaker_session)?,
+                        &[command(1, 13, &say)],
+                        Duration::ZERO,
+                    )
+                    .await
+                };
+                let (hearing, missing, speaking) = join3(hearing, missing, speaking).await;
+                let (near_end, near_frames) = hearing?;
+                let (far_end, far_frames) = missing?;
+                let (_, speaker_frames) = speaking?;
 
-        let mut results = Vec::new();
-        for frame in &speaker_frames {
-            let envelope = decode_wire_envelope(frame)?;
-            if envelope.message_type() == MessageType::CommandResult {
-                let result = decode_command_result(envelope.payload())?;
-                assert_eq!(result.status, CommandStatus::Accepted);
-                results.push(
-                    decode_chat_intent_result(result.payload).map_err(|e| format!("{e:?}"))?,
-                );
-            }
-        }
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0].disposition, ChatDisposition::Ok);
+                let mut results = Vec::new();
+                for frame in &speaker_frames {
+                    let envelope = decode_wire_envelope(frame)?;
+                    if envelope.message_type() == MessageType::CommandResult {
+                        let result = decode_command_result(envelope.payload())?;
+                        assert_eq!(result.status, CommandStatus::Accepted);
+                        results.push(
+                            decode_chat_intent_result(result.payload).map_err(|e| format!("{e:?}"))?,
+                        );
+                    }
+                }
+                assert_eq!(results.len(), 1);
+                assert_eq!(results[0].disposition, ChatDisposition::Ok);
 
-        let heard = lines(&near_frames)?;
-        assert_eq!(heard.len(), 1, "{heard:?}");
-        assert!(matches!(
-            &heard[0],
-            ChatLine::Local { speaker_name, text, .. }
-                if speaker_name == "Aela" && text == "hello there"
-        ));
-        // The snapshot (revision 1) and the line (revision 2); the far session has the
-        // snapshot only.
-        assert_eq!(near_end.continuity.chat_revision, 2);
-        assert!(lines(&far_frames)?.is_empty());
-        assert_eq!(far_end.continuity.chat_revision, 1);
-        Ok(())
-    })
+                let heard = lines(&near_frames)?;
+                assert_eq!(heard.len(), 1, "{heard:?}");
+                assert!(matches!(
+                    &heard[0],
+                    ChatLine::Local { speaker_name, text, .. }
+                        if speaker_name == "Aela" && text == "hello there"
+                ));
+                // The snapshot (revision 1) and the line (revision 2); the far session has the
+                // snapshot only.
+                assert_eq!(near_end.continuity.chat_revision, 2);
+                assert!(lines(&far_frames)?.is_empty());
+                assert_eq!(far_end.continuity.chat_revision, 1);
+                Ok(())
+            })
+            .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "chat wire test panic")?
+        .map_err(Into::into)
 }
 
 #[test]
