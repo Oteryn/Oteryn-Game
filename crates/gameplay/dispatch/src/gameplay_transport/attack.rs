@@ -20,7 +20,7 @@
 //! has no creature-target effect; its PvP refusal waits for player targets (PVP-RT-1).
 
 mod attack_chase_search;
-mod charm_combat;
+pub(super) mod charm_combat;
 mod drain;
 mod equipped_offence;
 pub(super) mod player_block;

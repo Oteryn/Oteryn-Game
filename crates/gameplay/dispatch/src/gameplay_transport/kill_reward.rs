@@ -793,6 +793,8 @@ pub struct KillSink<'a> {
     pub activity: &'a [oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity],
     pub queue: &'a KillSettlementQueue,
     pub rewards: &'a CreatureRewardTable,
+    /// The imported Charm catalogue the loot owner's Gut Charm resolves in (W22b).
+    pub charms: Option<&'a crate::content::charm_source::CanonicalCharmCatalogue>,
 }
 
 /// Give back `hold`'s slot on its mark; a slot already given back is not counted again.
@@ -1126,6 +1128,25 @@ pub fn record_creature_kill(
             recipients,
         })
     });
+    // W22b: the loot owner's Gut Charm on this race widens every creature-product roll, the
+    // extra Prey, daily boost and hazard rolls included.
+    let gut = sink.prey.zip(sink.charms).map_or(0, |(states, charms)| {
+        super::attack::charm_combat::gut_bonus_hundredths(
+            states,
+            runtime,
+            charms,
+            principal.actor,
+            principal.session,
+            &creature,
+            &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+                runtime.content_pin().server_artifact_digest(),
+            ),
+            oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(facts.occurrence),
+        )
+    });
+    if gut > 0 {
+        apply_gut_to_loot(&mut Arc::make_mut(&mut row).loot_table.entries, gut);
+    }
     if top.is_gone() {
         // A proficiency-only entry reserves no loot MINT capacity.
         Arc::make_mut(&mut row).loot_table.entries.clear();
@@ -1542,6 +1563,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             activity: &activity,
             queue: attack.kills(),
             rewards: self.reward_table(),
+            charms: Some(self.imported_charms),
         };
         let now_ms = self.owner_now().get() / 1_000;
         for receipt in receipts {
@@ -2095,6 +2117,15 @@ fn credit_proficiency(
 /// Spoils increases every independent loot chance by its hundredths-of-percent bonus. The
 /// multiplication rounds up, matching Global's combat bonus rounding, and guaranteed drops cap
 /// at the planner's one-million ppm scale.
+fn apply_gut_to_loot(entries: &mut [crate::combat::LootTableEntry], gut_bonus_hundredths: u32) {
+    for entry in entries {
+        if entry.details.creature_product {
+            entry.details.gut_bonus_hundredths = gut_bonus_hundredths;
+        }
+        apply_gut_to_loot(&mut entry.details.children, gut_bonus_hundredths);
+    }
+}
+
 fn apply_talisman_loot_bonus(
     table: &mut oteryn_gameplay_items::loot_plan::LootTableDefinition,
     bonus_hundredths: i64,

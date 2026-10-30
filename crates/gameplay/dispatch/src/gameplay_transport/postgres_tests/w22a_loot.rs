@@ -1,6 +1,6 @@
 //! W22a: the real auto-attack kill drains large and nested loot plans through SQL custody guards.
 use super::TestResult;
-use super::fixture::{Harness, debug};
+use super::fixture::{Harness, debug, id};
 use super::kill_reward_e2e::{scenario, scenario_thread};
 use crate::gameplay_transport::ComposedFreshAdmission;
 use serde_json::{Value, json};
@@ -12,6 +12,7 @@ enum Case {
     Nested,
     Outside,
     ChargedSubtype,
+    Gut,
 }
 thread_local! { static CASE: Cell<Option<Case>> = const { Cell::new(None) }; }
 
@@ -33,6 +34,13 @@ fn w22a_nested_container_drop_mints_its_children_inside_the_container() -> TestR
 fn w22a_charged_loot_with_a_subtype_mints_with_its_full_charges() -> TestResult {
     scenario_thread::run("w22a-charged-subtype", || {
         CASE.set(Some(Case::ChargedSubtype));
+        scenario()
+    })
+}
+#[test]
+fn w22b_gut_widens_creature_product_rolls_on_the_real_kill_path() -> TestResult {
+    scenario_thread::run("w22b-gut", || {
+        CASE.set(Some(Case::Gut));
         scenario()
     })
 }
@@ -70,6 +78,12 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
             amulet["subtype"] = json!(5);
             table["entries"] = json!([amulet]);
         }
+        Case::Gut => {
+            // Twenty minotaur leathers, a client "Creature Products" item, at 80% each.
+            let mut leather = entry(5878);
+            leather["probability_ppm"] = json!(GUT_PROBABILITY_PPM);
+            table["entries"] = Value::Array(vec![leather; 20]);
+        }
         Case::Nested | Case::Outside => {
             table["algorithm"] = json!("NestedGroups");
             let mut bag = entry(2871);
@@ -80,6 +94,97 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
         }
     }
     Ok(Some(serde_json::to_vec(&section)?))
+}
+
+const GUT_PROBABILITY_PPM: u32 = 800_000;
+
+/// W22b: the loot owner holds Gut at stage 3 (12%) on the rat before the kill.
+pub(super) async fn before_kill(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    if !matches!(CASE.get(), Some(Case::Gut)) {
+        return Ok(());
+    }
+    use crate::domain::charm::{BestiaryRaceKey, CharmKey, CharmStage};
+    use crate::durability::charm_state::{CharacterCharmState, CombatCharmState};
+    let key = CharmKey::new("oteryn:charm.gut").map_err(debug)?;
+    let state = CharacterCharmState {
+        unlocks: [(key.clone(), CharmStage::new(3).map_err(debug)?)].into(),
+        assignments: [(
+            key,
+            BestiaryRaceKey::new("oteryn:creature.rat").map_err(debug)?,
+        )]
+        .into(),
+    };
+    let runtime = owner.runtime.lock().await;
+    assert!(owner.states.spell_states.lock().await.install_charm_state(
+        &runtime,
+        actor,
+        session,
+        CombatCharmState::new(
+            crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?,
+            state
+        )
+    ));
+    Ok(())
+}
+
+/// The draw ordinals the rat's table plans at this death, with `gut` on its creature products.
+fn planned_ordinals(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    death: crate::combat::LootPlanDeathKey,
+    gut: u32,
+) -> TestResult<Vec<i64>> {
+    let row = owner
+        .reward_table()
+        .row("oteryn:creature.rat")
+        .map_err(debug)?;
+    let mut table = row.loot_table.clone();
+    for entry in &mut table.entries {
+        assert!(entry.details.creature_product, "the loot facts mark the leather");
+        entry.details.gut_bonus_hundredths = gut;
+    }
+    let plan = crate::combat::plan_creature_loot(death, &row.loot_table_ref, &table)
+        .map_err(debug)?;
+    Ok(plan
+        .entries
+        .iter()
+        .map(|entry| i64::from(entry.draw_ordinal))
+        .collect())
+}
+
+async fn gut_widened_the_roll(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+) -> TestResult {
+    use sqlx::Row;
+    let row = sqlx::query("SELECT death_scope_ownership_generation::text AS generation, death_actor_local_id, death_actor_local_generation::text AS actor_generation FROM game_item_mint_receipts WHERE loot_purpose_key='CORPSE_MATERIALIZATION' LIMIT 1")
+        .fetch_one(&h.pool).await?;
+    let death = crate::combat::LootPlanDeathKey::new(
+        *owner.world_id.as_bytes(),
+        *owner.channel_id.as_bytes(),
+        row.try_get::<String, _>("generation")?.parse()?,
+        u32::try_from(row.try_get::<i64, _>("death_actor_local_id")?)?,
+        row.try_get::<String, _>("actor_generation")?.parse()?,
+    );
+    let minted: Vec<i64> = sqlx::query_scalar("SELECT draw_ordinal FROM game_item_mint_receipts WHERE loot_purpose_key='oteryn:item.tibia.i5878' ORDER BY draw_ordinal LIMIT 21")
+        .fetch_all(&h.pool).await?;
+    let without = planned_ordinals(owner, death, 0)?;
+    let with = planned_ordinals(owner, death, 1_200)?;
+    eprintln!(
+        "W22B_GUT minted={} without_gut={} with_gut={}",
+        minted.len(),
+        without.len(),
+        with.len()
+    );
+    assert_eq!(minted, with, "the kill mints exactly the Gut-widened plan");
+    assert!(
+        without.iter().all(|ordinal| with.contains(ordinal)) && with.len() > without.len(),
+        "Gut adds creature products this death would not drop without it"
+    );
+    Ok(())
 }
 
 pub(super) async fn qualify(
@@ -96,6 +201,7 @@ pub(super) async fn qualify(
         .fetch_one(&h.pool)
         .await?;
     match case {
+        Case::Gut => assert_eq!(nested, 0),
         Case::Large => {
             assert_eq!(direct, 20);
             assert_eq!(nested, 0);
@@ -127,6 +233,9 @@ pub(super) async fn qualify(
                 .fetch_all(&h.pool).await?;
             assert_eq!(depths, vec![1, 2, 2, 3]);
         }
+    }
+    if matches!(case, Case::Gut) {
+        gut_widened_the_roll(owner, h).await?;
     }
     if matches!(case, Case::Outside) {
         outside_container_is_refused(owner, h).await?;

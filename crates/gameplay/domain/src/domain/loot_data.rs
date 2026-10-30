@@ -74,6 +74,11 @@ pub struct LootEntryDetails {
     pub stackable: bool,
     pub subtype: Option<u16>,
     pub unique: bool,
+    /// A Global creature product (client market category "Creature Products").
+    pub creature_product: bool,
+    /// The loot owner's Gut Charm bonus on this creature product, in hundredths of a percent;
+    /// set on the kill's own copy of the table, never in content.
+    pub gut_bonus_hundredths: u32,
 }
 
 /// Mirrors `content::reference_playable::ReferenceLootDefinition`: the

@@ -384,6 +384,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     queue: attack.kills(),
                     rewards: self.reward_table(),
                     activity: &activity,
+                    charms: Some(self.imported_charms),
                 },
                 target,
                 lethal,

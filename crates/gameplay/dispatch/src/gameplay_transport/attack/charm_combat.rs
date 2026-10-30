@@ -48,6 +48,38 @@ pub(super) fn effect(outcome: &CharmOutcome) -> Option<CharmEffectOutcome> {
     }
 }
 
+/// W22b: the loot owner's Gut Charm bonus on `race`, in hundredths of a percent; 0 without one.
+/// Gut has no trigger roll, so the death's occurrence only keys the evaluation.
+#[allow(clippy::too_many_arguments)]
+pub(in crate::gameplay_transport) fn gut_bonus_hundredths(
+    states: &ChannelSpellStates,
+    runtime: &ChannelRuntimeV1,
+    catalogue: &dyn CharmCatalogueRead,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    race: &str,
+    root: &GameplayDecisionRoot,
+    occurrence: DecisionOccurrenceId,
+) -> u32 {
+    evaluate(
+        states,
+        runtime,
+        catalogue,
+        actor,
+        session,
+        race,
+        root,
+        occurrence,
+        CharmHookEvent::CreatureLoot,
+    )
+    .iter()
+    .find_map(|outcome| match effect(outcome) {
+        Some(CharmEffectOutcome::CreatureProductBonus { percent }) => Some(percent.hundredths()),
+        _ => None,
+    })
+    .unwrap_or(0)
+}
+
 pub(super) fn bonuses(
     offence: &mut oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence,
     outcomes: &[CharmOutcome],

@@ -325,7 +325,12 @@ fn roll_entries(
         ));
         if (is_surprise_bag(entry) && !is_global_event_loot_table(reference))
             || state.unique.contains(&entry.item.production_key)
-            || !factored_success(chance, probability, factor)
+            || !factored_success(
+                chance,
+                probability,
+                factor,
+                entry.details.gut_bonus_hundredths,
+            )
         {
             state.ordinal += validate_tree(&entry.details.children, 0)? as u32;
             continue;
@@ -519,10 +524,19 @@ fn loot_factor_percent(draw: u64) -> u32 {
 /// `success = draw_ppm < probability_ppm * factor / 100`, compared exactly, `draw_ppm` uniform
 /// over `0..1,000,000`: `probability_ppm == 0` never succeeds. An entry at the full scale always
 /// succeeds whatever the factor: Oteryn keeps guaranteed drops guaranteed (the donor lets a 95%
-/// factor drop a 100% entry; Global is unverified there).
-fn factored_success(draw: u64, probability_ppm: u32, factor_percent: u32) -> bool {
-    probability_ppm == LOOT_PROBABILITY_PPM_SCALE
-        || draw_ppm(draw) * 100 < u64::from(probability_ppm) * u64::from(factor_percent)
+/// factor drop a 100% entry; Global is unverified there). A Gut bonus raises the factored chance
+/// by `ceil(chance * bonus)` (Crystal and Canary `generateLootRoll`, `adjustedChance +=
+/// math.ceil(adjustedChance * charmChance / 100)`); the donor rounds on its 1/100,000 scale,
+/// Oteryn on the exact ppm-percent product.
+fn factored_success(
+    draw: u64,
+    probability_ppm: u32,
+    factor_percent: u32,
+    gut_bonus_hundredths: u32,
+) -> bool {
+    let chance = u64::from(probability_ppm) * u64::from(factor_percent);
+    let gut = (chance * u64::from(gut_bonus_hundredths)).div_ceil(10_000);
+    probability_ppm == LOOT_PROBABILITY_PPM_SCALE || draw_ppm(draw) * 100 < chance + gut
 }
 
 /// The donor takes the count from the same random value as the chance:
@@ -1212,20 +1226,20 @@ mod w22a_tests {
     #[test]
     fn loot_factor_scales_the_chance_exactly_at_its_boundaries() {
         // 50%: a 95% factor admits draws below 475,000 ppm, a 105% factor below 525,000.
-        assert!(factored_success(474_999, 500_000, 95));
-        assert!(!factored_success(475_000, 500_000, 95));
-        assert!(factored_success(524_999, 500_000, 105));
-        assert!(!factored_success(525_000, 500_000, 105));
-        assert!(factored_success(499_999, 500_000, 100));
-        assert!(!factored_success(500_000, 500_000, 100));
+        assert!(factored_success(474_999, 500_000, 95, 0));
+        assert!(!factored_success(475_000, 500_000, 95, 0));
+        assert!(factored_success(524_999, 500_000, 105, 0));
+        assert!(!factored_success(525_000, 500_000, 105, 0));
+        assert!(factored_success(499_999, 500_000, 100, 0));
+        assert!(!factored_success(500_000, 500_000, 100, 0));
         // A fractional threshold (356,433 * 0.95 = 338,611.35) is compared without rounding.
-        assert!(factored_success(338_611, 356_433, 95));
-        assert!(!factored_success(338_612, 356_433, 95));
-        assert!(!factored_success(0, 0, 105));
-        assert!(factored_success(999_999, 1_000_000, 95));
+        assert!(factored_success(338_611, 356_433, 95, 0));
+        assert!(!factored_success(338_612, 356_433, 95, 0));
+        assert!(!factored_success(0, 0, 105, 0));
+        assert!(factored_success(999_999, 1_000_000, 95, 0));
         // The draw is reduced to ppm first.
-        assert!(!factored_success(1_000_000 + 475_000, 500_000, 95));
-        assert!(factored_success(1_000_000 + 474_999, 500_000, 95));
+        assert!(!factored_success(1_000_000 + 475_000, 500_000, 95, 0));
+        assert!(factored_success(1_000_000 + 474_999, 500_000, 95, 0));
     }
 
     #[test]
@@ -1294,6 +1308,53 @@ mod w22a_tests {
             &table,
         )?;
         assert!(!plain.entries[0].needs_subtype_state());
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod w22b_tests {
+    use super::*;
+
+    #[test]
+    fn gut_raises_the_factored_chance_by_its_ceiled_share() {
+        // 50% at factor 100 with Gut 6%: 50,000,000 + 3,000,000 ppm-percent, draws below 530,000.
+        assert!(factored_success(529_999, 500_000, 100, 600));
+        assert!(!factored_success(530_000, 500_000, 100, 600));
+        // 12% at factor 105: 52,500,000 + 6,300,000.
+        assert!(factored_success(587_999, 500_000, 105, 1_200));
+        assert!(!factored_success(588_000, 500_000, 105, 1_200));
+        // The share is ceiled: 1 ppm at factor 95 with 6% is 95 + ceil(5.7) = 101.
+        assert!(factored_success(1, 1, 95, 600));
+        assert!(!factored_success(1, 1, 95, 0));
+        assert!(!factored_success(0, 0, 105, 1_200));
+    }
+
+    #[test]
+    fn a_gut_bonus_on_the_entry_widens_only_that_entry_roll() -> Result<(), LootPlanError> {
+        let reference = super::tests::table_ref("oteryn:loot.gut.table");
+        let plain = super::tests::one_entry_table("oteryn:item.gut.product", 1, 1, Some(500_000));
+        let mut gut = plain.clone();
+        gut.entries[0].details.creature_product = true;
+        gut.entries[0].details.gut_bonus_hundredths = 1_200;
+        let mut widened = false;
+        for actor in 0..4_096_u32 {
+            let death = LootPlanDeathKey::new([5; 16], [6; 16], 1, actor, 1);
+            let ppm = draw_ppm(deterministic_draw(death, &reference, 0, DrawKind::Chance));
+            let factor =
+                loot_factor_percent(deterministic_draw(death, &reference, 0, DrawKind::Factor));
+            let base = plan_creature_loot(death, &reference, &plain)?.entries.len();
+            let boosted = plan_creature_loot(death, &reference, &gut)?.entries.len();
+            let chance = 500_000 * u64::from(factor);
+            assert_eq!(
+                boosted == 1,
+                ppm * 100 < chance + (chance * 1_200).div_ceil(10_000),
+                "actor {actor}"
+            );
+            assert!(boosted >= base, "actor {actor}");
+            widened |= boosted > base;
+        }
+        assert!(widened);
         Ok(())
     }
 }

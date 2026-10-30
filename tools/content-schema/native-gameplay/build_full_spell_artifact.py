@@ -36,6 +36,11 @@ CREATURE_PROFILES = CREATURE_DEFINITIONS / 'spell-native-profiles.json'
 LOOT_DEFINITIONS = ROOT / 'content/loot'
 LOOT_TABLES = NATIVE / 'loot-tables.json'
 LOOT_RECORDS_MAX = 4096
+# The pinned 15.30 client appearances (CIPSOFT_OFFICIAL, imports/official/client-assets/15.30) and
+# their market category "Creature Products", the Items Global's Gut Charm counts.
+APPEARANCES = ROOT / ('content/assets/files/appearances-'
+                      '2dfa943b548472a1ddc7bc5afe97945bc75e14f1f41d74f728f8e622f5dae7e2.dat')
+MARKET_CATEGORY_CREATURE_PRODUCTS = 24
 
 
 def digest(raw: bytes) -> str:
@@ -351,9 +356,23 @@ def dependency_report(creatures: dict, presentations: dict, familiars: Path, pro
             'runtime_qualification': 'Native loader qualifies Creature/Behavior/Presentation and optional owner profiles; dependency carrier is a separate source sidecar and does not authorize monster AI.'}
 
 
-def item_facts(definitions: Path = ITEM_DEFINITIONS) -> dict:
+def creature_products(appearances: Path = APPEARANCES) -> set:
+    """Client ids of the pinned appearances' market category "Creature Products"."""
+    raw = appearances.read_bytes()
+    if digest(raw) != appearances.stem.removeprefix('appearances-'):
+        raise ValueError('Pinned client appearances differ from their digest')
+    sys.path.insert(0, str(ROOT / 'tools/content-schema/item-authoring'))
+    from engine_items import load_appearance_objects
+    return {number for number, record in load_appearance_objects(raw).items()
+            if record.get('flags', {}).get('market.category') == MARKET_CATEGORY_CREATURE_PRODUCTS}
+
+
+def item_facts(definitions: Path = ITEM_DEFINITIONS, appearances: Path = APPEARANCES) -> dict:
     """Admission facts of every Item definition, by key. The Forge resource's native
-    admission is resolved separately below (ARCH-KILL-REWARD-LOGOUT-1 §1.1, CP D929)."""
+    admission is resolved separately below (ARCH-KILL-REWARD-LOGOUT-1 §1.1, CP D929). A
+    `oteryn:item.tibia.i<client id>` Item in the client's "Creature Products" market category
+    carries `creature_product` (W22b, Gut Charm)."""
+    products = creature_products(appearances)
     facts = {}
     for path in sorted(definitions.glob('items-*.json')):
         _, shard = read(path)
@@ -372,6 +391,9 @@ def item_facts(definitions: Path = ITEM_DEFINITIONS) -> dict:
                 stackable = stack.get('value', {}).get('stackable', {}) if stack.get('state') == 'KNOWN' else {}
                 if stackable.get('state') == 'KNOWN' and stackable['value'] is True:
                     facts[definition['identity']['key']]['stackable'] = True
+            client = re.fullmatch(r'oteryn:item\.tibia\.i(\d+)', definition['identity']['key'])
+            if client is not None and int(client.group(1)) in products:
+                facts[definition['identity']['key']]['creature_product'] = True
     return facts
 
 
