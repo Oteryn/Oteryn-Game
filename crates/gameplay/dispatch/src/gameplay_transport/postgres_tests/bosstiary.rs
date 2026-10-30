@@ -117,7 +117,7 @@ async fn count(h: &Harness) -> TestResult<i64> {
         .bind(id(41).as_slice()).fetch_one(&h.pool).await?)
 }
 
-fn death(
+pub(super) fn death(
     runtime: &mut crate::foundation::ChannelRuntimeV1,
     fence: crate::durability::character_progression::CurrentCharacterGameplayFence,
 ) -> TestResult<crate::combat::ProjectedCreatureDeathFacts> {
@@ -156,7 +156,7 @@ fn death(
     Ok(facts)
 }
 
-async fn settle(
+pub(super) async fn settle(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     facts: crate::combat::ProjectedCreatureDeathFacts,
     boss: &BosstiaryBoss,

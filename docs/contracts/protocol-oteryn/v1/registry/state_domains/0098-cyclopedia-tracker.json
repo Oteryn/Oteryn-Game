@@ -1,0 +1,24 @@
+{
+  "id": 98,
+  "name": "CYCLOPEDIA_TRACKER",
+  "owner_decision": "P22 mechanic 45, owner allocation 2026-10-30",
+  "owner": "Character Cyclopedia tracker",
+  "capability": 197,
+  "revision": "per connection: the join snapshot is revision 1 and every delta advances it by one; reconnect, resume and transfer start with a new snapshot",
+  "delta_types": [
+    {
+      "id": 1,
+      "name": "CYCLOPEDIA_TRACKER_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-tracker-v1.md#snapshot",
+      "max_payload_bytes": 65536
+    }
+  ],
+  "snapshot_types": [
+    {
+      "id": 1,
+      "name": "CYCLOPEDIA_TRACKER_SNAPSHOT_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-tracker-v1.md#domain-98",
+      "max_payload_bytes": 131072
+    }
+  ]
+}

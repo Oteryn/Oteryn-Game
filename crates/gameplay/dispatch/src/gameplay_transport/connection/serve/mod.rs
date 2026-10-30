@@ -5,6 +5,7 @@ use super::*;
 mod autowalk;
 mod command;
 mod creature_push;
+mod cyclopedia_tracker;
 mod hotkey_equip;
 mod house_transfer;
 mod idle;
@@ -68,6 +69,8 @@ struct ServeState {
     party_icons: Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,
     market_revision: u64,
+    /// P22d: the domain 98 revision this connection has seen; 1 after the join snapshot.
+    cyclopedia_tracker_revision: u64,
     notices_selected: bool,
     overlay_served: bool,
     revision: u64,
