@@ -754,7 +754,12 @@ impl PreparedMagnitudeOwner {
                 .checked_add(signed_round(value as f64 * 0.6)?)
                 .ok_or(Error::InvalidMagnitude)?;
         }
+        let party = self
+            .caster
+            .virtue_party_bonuses(self.now_ms.saturating_mul(1_000));
         if element == Element::Healing {
+            value = percent(value, self.caster.sustain_healing_percent())?;
+            value = percent(value, 100 + party.spell_healing)?;
             value = percent(value, needed(a.healing_dealt_percent)?)?;
             value = compound(
                 value,
@@ -767,6 +772,7 @@ impl PreparedMagnitudeOwner {
                 .ok_or(Error::InvalidMagnitude)?;
             return Ok(value.max(0));
         }
+        value = percent(value, 100 + party.spell_damage)?;
         if let Some(side) = hit.side_percent {
             value = signed_round(value as f64 * f64::from(side) / 100.0)?;
         }

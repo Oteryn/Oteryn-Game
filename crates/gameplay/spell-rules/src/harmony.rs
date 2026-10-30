@@ -14,18 +14,29 @@ pub const MULTIPLIER_DENOMINATOR: u64 = 200_000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HarmonyMultiplier {
     numerator: u64,
+    ascetic_bonus: u64,
 }
 
 impl HarmonyMultiplier {
     pub const ONE: Self = Self {
         numerator: MULTIPLIER_DENOMINATOR,
+        ascetic_bonus: 0,
     };
 
-    /// `m = 1 + (7 * 2^(c - 1) + 0.005 * level) * V / 100` for c = `charges` > 0,
-    /// else 1, with `V` = 1 without Virtue of Harmony, 1.5 with it,
-    /// 2 with it while Serene (news 8944). `None` above [`MAX_HARMONY`] charges.
+    /// `m = 1 + (7 + 0.005 * level + Ascetic) * V * 2^(c-1) / 100`.
+    /// The four-argument form has no Ascetic allocation.
     pub fn new(level: u32, charges: u8, virtue_of_harmony: bool, serene: bool) -> Option<Self> {
-        if charges > MAX_HARMONY {
+        Self::with_ascetic(level, charges, virtue_of_harmony, serene, 0)
+    }
+
+    pub fn with_ascetic(
+        level: u32,
+        charges: u8,
+        virtue_of_harmony: bool,
+        serene: bool,
+        ascetic: u8,
+    ) -> Option<Self> {
+        if charges > MAX_HARMONY || ascetic > 3 {
             return None;
         }
         if charges == 0 {
@@ -36,11 +47,22 @@ impl HarmonyMultiplier {
             (true, false) => 3,
             (true, true) => 4,
         };
-        // Thousandths of a percent times 2V; the level term is added once to the table.
-        let bonus = (7_000 * (1 << (charges - 1)) + 5 * u64::from(level)) * half_steps;
+        let factor = (1 << (charges - 1)) * half_steps;
+        let ascetic_bonus = u64::from(ascetic) * 1_000 * factor;
+        let bonus = (7_000 + 5 * u64::from(level)) * factor + ascetic_bonus;
         Some(Self {
             numerator: MULTIPLIER_DENOMINATOR + bonus,
+            ascetic_bonus,
         })
+    }
+
+    /// Strip only the Wheel owner's contribution when comparing the independently owned
+    /// charge/stance/Serene predecessor against a qualified numerical caster.
+    pub fn without_ascetic(self) -> Self {
+        Self {
+            numerator: self.numerator - self.ascetic_bonus,
+            ascetic_bonus: 0,
+        }
     }
 
     pub fn numerator(self) -> u64 {

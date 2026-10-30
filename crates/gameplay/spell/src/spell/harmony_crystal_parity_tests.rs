@@ -144,7 +144,7 @@ fn c11_virtue_of_harmony_scales_the_base_where_crystal_adds_points() {
         assert_eq!((tenths, crystal), (oteryn, crystal), "serene {serene}");
     }
     // Crystal also clamps Harmony to at least 1 under the virtue (`setHarmony`), the refund of
-    // TibiaWiki's Virtue of Harmony; no Oteryn stance owner applies the virtue yet (§A.2 step 3c).
+    // TibiaWiki's Virtue of Harmony; the cast owner applies that refund (§A.2 step 3c).
 }
 
 #[test]

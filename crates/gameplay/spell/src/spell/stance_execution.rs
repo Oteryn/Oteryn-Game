@@ -224,3 +224,13 @@ pub fn active_stance_from_book(
             plan.after
         })
 }
+
+/// The closed, qualified virtue party rule shared by all three standard virtues.
+pub fn virtue_party_parameters() -> Option<&'static serde_json::Value> {
+    static PARAMETERS: std::sync::OnceLock<Option<serde_json::Value>> = std::sync::OnceLock::new();
+    PARAMETERS.get_or_init(|| {
+        let export: serde_json::Value = serde_json::from_str(include_str!("../../../../../tools/content-schema/spell-authoring/samples/native-spell-profiles.json")).ok()?;
+        export["profiles"].as_array()?.iter().find(|p| p["name"] == "Virtue of Harmony")?
+            ["execution"]["native_behavior"]["parameters"].as_object().map(|p| serde_json::Value::Object(p.clone()))
+    }).as_ref()
+}

@@ -168,7 +168,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(state) = states.get_mut(&runtime, actor, session) else {
                 return Some(SpellCastOutcome::rejected());
             };
-            if state.character_facts() != facts || state.durable_stance_key() != loaded.key() {
+            if !state.matches_character_base(facts) || state.durable_stance_key() != loaded.key() {
                 return Some(SpellCastOutcome::rejected());
             }
             let position = position.position();

@@ -202,9 +202,12 @@ Data check against the evidence file: the avatar rows in `wheel-augments.json` c
    sustain}. Virtues are the `standard` stance slot (8833: stances persist across sessions, may be empty); the stance
    behaviour selects them, this section defines what each does.
 2. **Harmony multiplier.** With c = charges > 0: `m = 1 + B * 2^(c-1) / 100`, else 1. `B` (percent) =
-   `(7 + 0.005*level) * V + A`, `V` = 1 without Virtue of Harmony, 1.5 with it, 2.0 with it while Serene (8944, which states
-   the level scaling is included); `A` = Ascetic stage 1/2/3 = +1/2/3 points, added after `V`, not doubled by Serene (F r1204680,
-   Canary). Level 200: B = 8 (16 with virtue + Serene); level 700: 10.5 (21).
+   `(7 + 0.005*level + A) * V`, `V` = 1 without Virtue of Harmony, 1.5 with it, 2.0 with it while Serene (8944, which states
+   the level scaling is included); `A` = Ascetic stage 1/2/3 = +1/2/3 points inside the base (owner C11PKG decision 1, 2026-10-30).
+   TibiaWiki Wheel_of_Destiny/Revelation_Perks r1204680 says "Increases the Harmony base bonus by 1%/2%/3%";
+   news 8944 scales that base by Virtue, including level scaling; kik-tibia/tibiatools@fe745abf
+   `src/lib/damage-calc/calc.ts:62` agrees. The old additive Virtue rule (CM post 39526082,
+   2025-06-05, "not affected by Serene") is superseded. Level 200: B = 8 (16 with virtue + Serene); level 700: 10.5 (21).
 3. **Spender cast.** (a) All cast checks pass first; a failed cast keeps Harmony (15.01.4b0877, 15.11.dd3523). (b) The damage
    roll of both bounds uses `m` from the current charges; each bound is truncated toward zero after the multiplication.
    (c) After success: Virtue Healing with the spent charges, `harmony := 0`, then with Virtue of Harmony +1 Harmony and its
@@ -239,7 +242,7 @@ Data check against the evidence file: the avatar rows in `wheel-augments.json` c
 | Harmony base bonus | 7% + 0.005% per level | 8944 | F r1136128: 7%; Canary 8% |
 | Bonus per extra charge | doubles (x1, 2, 4, 8, 16) | F r1136128, Canary | |
 | Virtue of Harmony | base x1.5, x2.0 Serene | 8944 | F r1197257: +3/+6 points; Canary +4/+8 |
-| Ascetic | +1/+2/+3 points, not doubled | F r1204680, Canary | |
+| Ascetic | +1/+2/+3 base points, scaled by V and charges | Owner C11PKG decision 1; F r1204680, 8944, tibiatools@fe745abf calc.ts:62 | old additive Virtue / CM post 39526082 |
 | Serene threshold | active with <= 7 creatures adjacent | 8944 | F r1104593 and Canary: 6 or more removes it |
 | Virtue party bonuses | -4% / +8% / +8% / +16% | 8944 | 8833 and Canary: -3 / +6 / +6 / +12 |
 | Guiding Presence | +33% of party bonuses | 8944, F r1206174 | |
@@ -271,7 +274,8 @@ equipped weapon's elemental bond (Canary, Crystal); that belongs to `equipment_d
 
 #### Engine tests
 1. Multiplier, level 200, no virtue: charges 1..5 give 1.08, 1.16, 1.32, 1.64, 2.28; virtue + Serene: 1.16, 1.32, 1.64, 2.28,
-   3.56; virtue without Serene, 5 charges: 2.92; level 700 virtue + Serene, 5 charges: 4.36; Ascetic 3 adds 3 points to B.
+   3.56; virtue without Serene, 5 charges: 2.92; level 700 virtue + Serene, 5 charges: 4.36. At level 200 and 5 charges,
+   Ascetic 3 gives 4.52 with Virtue + Serene, 3.64 with Virtue without Serene, and 2.76 without Virtue (owner C11PKG).
 2. Tiger Clash at 3 charges: both bounds x1.32 (level 200), then truncated; out of range: charges stay 3.
 3. Builder at 5 charges: no gain, no heal. Spender with virtue of Harmony at 5: Harmony ends at 1, two heals.
 4. Serene: no party always; party visible with 7 adjacent monsters: Serene; 8: not; forced 7 s by Focus Serenity holds at 8.
@@ -281,7 +285,7 @@ equipped weapon's elemental bond (Canary, Crystal); that belongs to `equipment_d
 8. Spiritual Outburst at 5 Harmony recasts at +1000 ms with stage %; at 4 Harmony no recast.
 
 #### Open questions
-- **Q1** Does Ascetic get scaled by Virtue of Harmony? 8944 says only that the level scaling is included.
+- **Q1 closed (owner C11PKG, 2026-10-30).** Ascetic is inside the base and scaled by Virtue and charges; see step 2 and its sources.
 - **Q2** Virtue Healing formula: wiki says it depends on magic level, Canary uses level only. Unknown coefficients.
 - **Q3** 8944 "monk and its lowest health ally": two heals or one, split or full, absolute health (Canary) or percent (wiki)?
 - **Q4** Spiritual Outburst recast: Canary computes it after Harmony is spent (multiplier 1); wiki says "original damage".

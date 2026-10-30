@@ -4,8 +4,8 @@
 //! The Channel owner still proves actor/session authority and compare-commits
 //! that successor. Resource debit, cooldown successor reset/rearm and the one
 //! vitals revision remain in the common cast anchor. No durable stance or
-//! alternate actor state is introduced; the accepted solo/no-virtue interim
-//! remains until those owning services are composed.
+//! alternate actor state is introduced. Native dispatch composes the real party
+//! and durable standard stance owners; route-less callers retain their explicit solo adapter.
 
 use std::sync::OnceLock;
 

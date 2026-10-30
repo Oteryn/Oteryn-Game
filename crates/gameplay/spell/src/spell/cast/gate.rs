@@ -124,8 +124,7 @@ pub(super) fn cast_resolved(
         SpellTarget::Position(_) => return Err(SpellCastDisposition::Rejected),
     };
     // §8.2: a monk accepts no command before its initialization evaluation. A spender's damage
-    // takes the multiplier of the current charges and Serene; no stance owner exists, so no
-    // virtue (§4 interim rule).
+    // takes the multiplier of the current charges, durable stance and Serene.
     let harmony_multiplier = match &state.monk {
         Some(monk) => {
             monk.accept_command()
@@ -150,7 +149,7 @@ pub(super) fn cast_resolved(
                 || caster.mana != state.mana
                 || caster.max_mana != state.facts.max_mana
                 || caster.soul != state.soul
-                || caster.harmony_multiplier != harmony_multiplier
+                || caster.harmony_multiplier.without_ascetic() != harmony_multiplier
             {
                 return Err(SpellCastDisposition::Rejected);
             }
@@ -260,7 +259,7 @@ pub(super) fn cast_resolved(
     }
     if let Some(plan) = &plan.effects {
         for effect in plan.effects() {
-            commit_effect(&mut next, spell, effect, context.caster)?;
+            commit_effect(&mut next, spell, effect, context.caster, context.now.get())?;
         }
     }
     // §8.2 PRIMARY COMMIT: Harmony changes in this same value, only because the cast succeeded
@@ -269,7 +268,9 @@ pub(super) fn cast_resolved(
         let monk = next.monk.as_mut().ok_or(SpellCastDisposition::Rejected)?;
         match role {
             HarmonyRole::Builder => monk.commit_builder().map(|_| ()),
-            HarmonyRole::Spender => monk.commit_spender().map(|_| ()),
+            HarmonyRole::Spender => monk.commit_spender_with_virtue(
+                next.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony)
+            ).map(|_| ()) ,
         }
         .map_err(|_| SpellCastDisposition::Rejected)?;
     }

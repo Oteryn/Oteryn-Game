@@ -661,6 +661,8 @@ pub fn stage_creature_hit(
     ),
     SpellCastDisposition,
 > {
+    let reduction = state.virtue_party_bonuses(now).damage_reduction.min(100);
+    let magnitude = (u64::from(magnitude) * u64::from(100 - reduction) / 100) as u32;
     stage_hit(state, magnitude, now, true)
 }
 
@@ -1317,6 +1319,21 @@ impl PlayerSpellState {
         Ok(OwnedSkillAdjustments {
             native,
             source: self.conditions.effective_attributes(now_us),
+            justice_percent: if self.stance
+                == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Justice)
+            {
+                if self
+                    .monk
+                    .as_ref()
+                    .is_some_and(super::harmony::MonkState::serene)
+                {
+                    16
+                } else {
+                    8
+                }
+            } else {
+                0
+            },
         })
     }
     /// Current seven skills from the already loaded durable build and live conditions.
@@ -1360,6 +1377,7 @@ impl PlayerSpellState {
 #[derive(Debug, Clone, Copy)]
 pub struct OwnedSkillAdjustments {
     native: oteryn_gameplay_foundation::foundation::condition::SkillAdjustments,
+    justice_percent: u32,
     source: oteryn_gameplay_domain::domain::condition::attributes::AttributeModifiers,
 }
 impl OwnedSkillAdjustments {
@@ -1396,7 +1414,12 @@ impl OwnedSkillAdjustments {
             6 => (0, None),
             _ => return None,
         };
-        Self::adjust(base, native, modifier)
+        let value = Self::adjust(base, native, modifier)?;
+        if index == 0 {
+            value.checked_add(base.checked_mul(self.justice_percent)? / 100)
+        } else {
+            Some(value)
+        }
     }
 }
 

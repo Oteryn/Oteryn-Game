@@ -2,8 +2,8 @@
 //! (`docs/architecture/OTERYN_SPELL_NATIVE_BEHAVIOURS_CANDIDATE_V1.md` part C.3, owner S27).
 //!
 //! Picks the party members one cast affects and computes the cast's mana. The party itself comes
-//! from a [`PartyWorld`]; no party service exists yet, so the live adapter is [`SoloParty`] and
-//! every party cast fails as for a caster without a party (C.3 step 1). The member condition is an
+//! from a [`PartyWorld`]. Native dispatch supplies its fenced World membership and physical
+//! actor view; [`SoloParty`] is the explicit route-less adapter. The member condition is an
 //! ordinary Effect, applied by its owner.
 
 use std::collections::BTreeMap;
@@ -19,7 +19,7 @@ pub trait PartyWorld {
     fn party(&self) -> Option<&[ChainCreature]>;
 }
 
-/// The live adapter while no party service exists: every caster is solo.
+/// Explicit solo adapter for route-less callers.
 pub struct SoloParty(pub ChainCreature);
 
 impl PartyWorld for SoloParty {

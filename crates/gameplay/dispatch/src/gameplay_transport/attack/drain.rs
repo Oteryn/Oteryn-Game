@@ -305,6 +305,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     continue;
                 };
+                if damage >= 0
+                    && let Some(state) = states.get(&runtime, entry.actor, entry.session)
+                {
+                    if state.monk.is_some() && state.hunting_premium_current(now.get()) {
+                        let stage = self
+                            .wheel_stages(
+                                entry.session,
+                                "monk",
+                                selected.character_facts.level,
+                                state.wheel_promoted(),
+                            )
+                            .revelation_stage("ascetic");
+                        damage =
+                            damage.saturating_add(i64::from(state.ascetic_attack_bonus(stage)));
+                    }
+                    damage = damage.saturating_mul(i64::from(
+                        100 + state.virtue_party_bonuses(now.get()).auto_attack,
+                    )) / 100;
+                }
                 if let Some(item_key) = selected.weapon.item_key.as_deref()
                     && let Ok(sessions) = self.states.proficiencies.lock()
                     && let Some(proficiency) = sessions.get(&entry.session)
