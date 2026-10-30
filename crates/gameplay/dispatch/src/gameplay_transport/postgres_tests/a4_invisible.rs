@@ -19,6 +19,15 @@ use oteryn_protocol_oteryn::actor_spell::{SpellCastDisposition, SpellCastIntent,
 
 #[test]
 fn a4_invisible_postgres_real_dispatch() -> TestResult {
+    invisibility_case::<false>()
+}
+
+#[test]
+fn a4_invisible_postgres_other_player_keeps_entity_while_monster_drops_target() -> TestResult {
+    invisibility_case::<true>()
+}
+
+fn invisibility_case<const WITH_OBSERVER: bool>() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -26,6 +35,10 @@ fn a4_invisible_postgres_real_dispatch() -> TestResult {
         run(async |admin| {
             let h = Harness::create_with_admission_seed(admin, "a4_invisible", true, false).await?;
             prepare_current_session(&h).await?;
+            if WITH_OBSERVER {
+                h.seed_pvp_target().await?;
+                super::appearance_change_postgres::observer_visibility_tests::admit(&h).await?;
+            }
             let seal = h.recovery.seal_current().map_err(debug)?;
             let authority = h
                 .root
@@ -52,8 +65,12 @@ fn a4_invisible_postgres_real_dispatch() -> TestResult {
                 room.map_revision_digest(),
                 (2, 11, -7),
             );
-            let mut deps =
-                Dependencies::with_content(cp.clone(), room.clone(), native.spell_book().clone())?;
+            let mut deps = Dependencies::with_content_and_capacity(
+                cp.clone(),
+                room.clone(),
+                native.spell_book().clone(),
+                if WITH_OBSERVER { 3 } else { 2 },
+            )?;
             let (actor, session) = (deps.actor, deps.admitted.game_session_id);
             {
                 let mut runtime = deps.runtime.lock().await;
@@ -157,6 +174,16 @@ fn a4_invisible_postgres_real_dispatch() -> TestResult {
                     .ok_or("rat AI")?;
                 assert_eq!(ai.target(), Some(actor));
             }
+            let observer = if WITH_OBSERVER {
+                Some(
+                    super::appearance_change_postgres::observer_visibility_tests::initialize(
+                        &deps, &owner,
+                    )
+                    .await?,
+                )
+            } else {
+                None
+            };
             let outcome = owner
                 .cast_spell_completion(
                     actor,
@@ -189,6 +216,31 @@ fn a4_invisible_postgres_real_dispatch() -> TestResult {
             assert!(!conditions.invisible_at(start + 200_000_000));
             drop(states);
             drop(runtime);
+            if let Some(observer) = observer {
+                // Crystal 201189f8 player.cpp:1383-1396: invisible players remain
+                // visible entities to other players (only their outfit is blanked).
+                let channel = owner
+                    .observe_visible_entities(observer)
+                    .await
+                    .ok_or("observer visibility")?;
+                let snapshot =
+                    crate::gameplay_transport::world_spatial::SessionVisibility::default()
+                        .snapshot(&channel, &mut |_| Ok(()))
+                        .map_err(debug)?;
+                let (_, bytes) =
+                    crate::gameplay_transport::world_spatial::encode_visibility_snapshot(
+                        &[6],
+                        &snapshot,
+                    )
+                    .map_err(debug)?;
+                let received = oteryn_protocol_oteryn::world_spatial_entities::decode_world_spatial_entities_snapshot(&bytes).map_err(debug)?;
+                assert!(
+                    received.entities.iter().any(|entity| entity.entity.identity
+                        == actor.placement_identity()
+                        && entity.entity.generation == actor.actor_local_generation()),
+                    "the spectator receives the invisible player's exact entity"
+                );
+            }
             owner.clock_origin -= std::time::Duration::from_secs(2);
             owner.drain_monster_melee().await;
             {
@@ -198,11 +250,19 @@ fn a4_invisible_postgres_real_dispatch() -> TestResult {
                     .creature_ai
                     .state(rat)
                     .ok_or("rat AI")?;
-                assert_eq!(
-                    ai.target(),
-                    None,
-                    "a rat without sense_invisible loses the caster"
-                );
+                if WITH_OBSERVER {
+                    assert_ne!(
+                        ai.target(),
+                        Some(actor),
+                        "the rat drops the invisible caster"
+                    );
+                } else {
+                    assert_eq!(
+                        ai.target(),
+                        None,
+                        "a rat without sense_invisible loses the caster"
+                    );
+                }
             }
             drop(owner);
             drop(authority);
