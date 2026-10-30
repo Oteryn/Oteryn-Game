@@ -38,7 +38,17 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
         command_id: command.command_id,
         item_fence: admitted.item_fence,
     };
-    let outcome = authority.hotkey_equip(actor, command, request).await?;
+    let outcome = if admitted
+        .continuity
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1)
+    {
+        authority
+            .hotkey_equip_carried(actor, command, request)
+            .await?
+    } else {
+        authority.hotkey_equip(actor, command, request).await?
+    };
     let mut deltas = Vec::new();
     if outcome == ItemMoveOutcome::Moved {
         match item_move::moved(authority, actor, command, view).await {

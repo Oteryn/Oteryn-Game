@@ -146,7 +146,7 @@ impl DurabilityRoot {
     }
 }
 
-pub(super) async fn read_use_inventory(
+pub(in crate::durability) async fn read_use_inventory(
     connection: &mut PgConnection,
     fence: &CurrentCharacterItemFence,
     content_revision: String,
@@ -204,7 +204,7 @@ pub(super) async fn read_use_inventory(
             || uuid_text(&row.try_get::<String, _>("item_world")?)? != *world_id.as_bytes()
             || uuid_text(&row.try_get::<String, _>("custody_world")?)? != *world_id.as_bytes()
             || depth > ITEM_LOOP_DEPTH_MAX
-            || !(0..=9).contains(&slot)
+            || !(slot == 0 || (1..=8).contains(&slot) || slot == 10)
         {
             return Err(ItemUseError::StaleState);
         }

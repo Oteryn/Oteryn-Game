@@ -49,6 +49,7 @@ pub mod mining;
 pub mod mount_taming;
 
 pub use carried_inventory::ItemUseInventory;
+pub(super) use carried_inventory::read_use_inventory;
 use carried_source::lock_use_path;
 
 /// The closed `ItemUseCause` kinds.

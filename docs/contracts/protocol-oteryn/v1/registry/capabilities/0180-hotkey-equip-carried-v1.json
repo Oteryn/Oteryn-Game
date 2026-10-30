@@ -1,0 +1,13 @@
+{
+  "id": 180,
+  "name": "HOTKEY_EQUIP_CARRIED_V1",
+  "owner_decision": "PKG5R2B-I17a-D2",
+  "owner": "Game equipment owner",
+  "requires": [
+    179
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: nested carried selection through the fenced equipment receipt. Command 348 and existing equipment replies are unchanged."
+}

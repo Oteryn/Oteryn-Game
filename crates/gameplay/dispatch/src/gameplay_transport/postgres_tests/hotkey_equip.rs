@@ -18,17 +18,59 @@ fn hotkey_equip_postgres_worn_item_toggles_with_spare_carried() -> TestResult {
 }
 
 fn scenario(spare: bool) -> TestResult {
-    scenario_options(spare, false)
+    scenario_options(spare, false, false, false, None, false)
 }
 
 #[test]
 fn hotkey_equip_postgres_feared_refuses_without_mutation() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-equip-feared", || {
-        scenario_options(false, true)
+        scenario_options(false, true, false, false, None, false)
     })
 }
 
-fn scenario_options(spare: bool, feared: bool) -> TestResult {
+#[test]
+fn hotkey_equip_postgres_nested_source_is_atomic_and_durable() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-equip-nested", || {
+        scenario_options(false, false, true, false, None, false)
+    })
+}
+
+#[test]
+fn hotkey_equip_postgres_first_started_copy_beats_unused_and_later_started() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-equip-started", || {
+        scenario_options(false, false, false, true, None, false)
+    })
+}
+
+#[test]
+fn hotkey_equip_postgres_nested_exchange_has_one_receipt_and_exact_edges() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-equip-nested-swap", || {
+        scenario_options(false, false, true, false, Some(false), false)
+    })
+}
+
+#[test]
+fn hotkey_equip_postgres_nested_exchange_full_main_refuses_atomically() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-equip-nested-full", || {
+        scenario_options(false, false, true, false, Some(true), false)
+    })
+}
+
+#[test]
+fn hotkey_equip_postgres_nested_search_with_equipped_extra_quiver() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-equip-extra-quiver", || {
+        scenario_options(false, false, true, false, None, true)
+    })
+}
+
+fn scenario_options(
+    spare: bool,
+    feared: bool,
+    nested: bool,
+    started: bool,
+    occupied: Option<bool>,
+    extra_quiver: bool,
+) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "hotkey_equip", true, false).await?;
@@ -44,10 +86,15 @@ fn scenario_options(spare: bool, feared: bool) -> TestResult {
             super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?;
         let generation = controller.active().ok_or("active")?;
         let native = generation.native_gameplay().ok_or("native")?;
+        let item_key = if started {
+            "oteryn:item.tibia.i6529"
+        } else {
+            "oteryn:item.tibia.i3264"
+        };
         let reference = native
             .item_index()
             .ok_or("index")?
-            .definition_ref("Item", "oteryn:item.tibia.i3264", "definition-r1")
+            .definition_ref("Item", item_key, "definition-r1")
             .ok_or("sword ref")?;
         let room = pin.qualified_room().clone();
         let frame_digest = pin.frame_binding().digest();
@@ -94,13 +141,91 @@ fn scenario_options(spare: bool, feared: bool) -> TestResult {
         if spare {
             entries.push(("oteryn:item.tibia.i3264", 1));
         }
+        if nested {
+            entries = vec![("oteryn:item.tibia.i2854", 1)];
+        }
+        if started {
+            entries = vec![(item_key, 1); 3];
+        }
+        if occupied == Some(true) {
+            entries.resize(20, ("oteryn:item.tibia.i3031", 1));
+        }
         item_look::seed_main_backpack(&harness, &entries).await?;
+        if occupied.is_some() {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::raw_sql(sqlx::AssertSqlSafe(
+                crate::durability::item_fee_burn::test_support::item(
+                    110,
+                    "oteryn:item.tibia.i3308",
+                    "definition-r1",
+                    1,
+                ),
+            ))
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,5,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($2,'hex')::uuid)")
+                .bind(id(41).as_slice()).bind(id(110).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+            tx.commit().await?;
+        }
+        if started {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            // Newest copy 73 has a stored FULL budget; 72 and 71 are started.
+            // Search order, rather than the smallest remaining budget, chooses 72.
+            for (seed, remaining) in [(71_u8, 13_000_000_i64), (72, 14_000_000), (73, 14_400_000)] {
+                sqlx::query("INSERT INTO game_item_timed_states(item_instance_id,remaining_ms,state_revision) VALUES(encode($1,'hex')::uuid,$2,1)")
+                    .bind(id(seed).as_slice()).bind(remaining).execute(&mut *tx).await?;
+            }
+            tx.commit().await?;
+        }
+        if nested {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            sqlx::raw_sql(sqlx::AssertSqlSafe(
+                crate::durability::item_fee_burn::test_support::item(
+                    100,
+                    "oteryn:item.tibia.i3264",
+                    "definition-r1",
+                    1,
+                ),
+            ))
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query("INSERT INTO game_item_nested_entries(item_instance_id,world_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,encode($1,'hex')::uuid)")
+                .bind(id(100).as_slice()).bind(id(42).as_slice()).bind(id(71).as_slice()).execute(&mut *tx).await?;
+            if extra_quiver {
+                sqlx::raw_sql(sqlx::AssertSqlSafe(
+                    crate::durability::item_fee_burn::test_support::item(
+                        111,
+                        "oteryn:item.tibia.i35562",
+                        "definition-r1",
+                        1,
+                    ),
+                ))
+                .execute(&mut *tx)
+                .await?;
+                sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,10,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($2,'hex')::uuid)")
+                    .bind(id(41).as_slice()).bind(id(111).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+            }
+            tx.commit().await?;
+        }
         let mut admitted = deps.admitted;
         admitted.item_fence = Some(fence);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.continuity.selected_capabilities = SelectedCapabilities::select(
             crate::gameplay_transport::capabilities::BUNDLE_WORLD_OFFERED_CAPABILITIES,
-            &[4, 6, 12, 14, 179],
+            if nested || started {
+                &[4, 6, 12, 14, 179, 180]
+            } else {
+                &[4, 6, 12, 14, 179]
+            },
         )
         .ok_or("capabilities")?;
         assert!(admitted.continuity.selected_capabilities.contains(179));
@@ -126,6 +251,41 @@ fn scenario_options(spare: bool, feared: bool) -> TestResult {
                 if envelope.message_type() == protocol::MessageType::SnapshotCommit {
                     break;
                 }
+            }
+            if let Some(full) = occupied {
+                assert_eq!(
+                    send(&mut client, 1, &request, protocol::CommandStatus::Accepted).await?,
+                    if full {
+                        ItemMoveOutcome::NoRoom
+                    } else {
+                        ItemMoveOutcome::Moved
+                    }
+                );
+                let receipts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts")
+                        .fetch_one(pool)
+                        .await?;
+                assert_eq!(receipts, if full { 0 } else { 1 });
+                let source_edges:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(100).as_slice()).fetch_one(pool).await?;
+                assert_eq!(source_edges, i64::from(full));
+                let old_main:i64=sqlx::query_scalar("SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(110).as_slice()).fetch_one(pool).await?;
+                assert_eq!(old_main, i64::from(!full));
+                if !full {
+                    assert_eq!(
+                        send(
+                            &mut client,
+                            1,
+                            &request,
+                            protocol::CommandStatus::DuplicateReplay
+                        )
+                        .await?,
+                        ItemMoveOutcome::Moved
+                    );
+                }
+                client.shutdown().await?;
+                return Ok(());
             }
             if feared {
                 assert_eq!(
@@ -155,7 +315,23 @@ fn scenario_options(spare: bool, feared: bool) -> TestResult {
                 send(&mut client, 2, &request, protocol::CommandStatus::Accepted).await?,
                 ItemMoveOutcome::Moved
             );
+            if extra_quiver {
+                assert_eq!(equipped_count(pool).await?, 2);
+                client.shutdown().await?;
+                return Ok(());
+            }
             assert_eq!(equipped_count(pool).await?, 1);
+            if started {
+                let chosen:String=sqlx::query_scalar("SELECT replace(item_instance_id::text,'-','') FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid")
+                    .bind(id(41).as_slice()).fetch_one(pool).await?;
+                assert_eq!(
+                    chosen,
+                    id(72)
+                        .iter()
+                        .map(|b| format!("{b:02x}"))
+                        .collect::<String>()
+                );
+            }
             // Foundation replay must not select the now-worn item and toggle it back.
             assert_eq!(
                 send(
@@ -192,18 +368,65 @@ fn scenario_options(spare: bool, feared: bool) -> TestResult {
         )
         .await
         .ok_or("reloaded equipment")?;
-        if feared {
+        if extra_quiver {
+            assert_eq!(equipment.items.len(), 2);
+            assert!(
+                equipment
+                    .items
+                    .iter()
+                    .any(|item| item.slot == 5 && item.item_instance_id == id(100))
+            );
+            assert!(
+                equipment
+                    .items
+                    .iter()
+                    .any(|item| item.slot == 10 && item.item_instance_id == id(111))
+            );
+        } else if let Some(full) = occupied {
+            assert_eq!(equipment.items.len(), 1);
+            assert_eq!(
+                equipment.items[0].item_instance_id,
+                if full { id(110) } else { id(100) }
+            );
+            let revision:String=sqlx::query_scalar("SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(100).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(revision, if full { "1" } else { "2" });
+        } else if started {
+            assert_eq!(equipment.items.len(), 1);
+            assert_eq!(equipment.items[0].item_instance_id, id(72));
+            assert_eq!(equipment.items[0].slot, 4);
+            let receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(receipts, 3);
+        } else if feared {
             assert!(equipment.items.is_empty());
         } else {
             assert_eq!(equipment.items.len(), 1);
             assert_eq!(
                 equipment.items[0].item_instance_id,
-                if spare { id(72) } else { id(71) }
+                if nested {
+                    id(100)
+                } else if spare {
+                    id(72)
+                } else {
+                    id(71)
+                }
             );
             assert_eq!(equipment.items[0].slot, 5);
         }
-        let quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3264' AND lifecycle=1").fetch_one(&harness.pool).await?;
-        assert_eq!(quantity, if spare { 2 } else { 1 });
+        let quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key=$1 AND lifecycle=1").bind(item_key).fetch_one(&harness.pool).await?;
+        assert_eq!(
+            quantity,
+            if started {
+                3
+            } else if spare {
+                2
+            } else {
+                1
+            }
+        );
         if spare {
             let untouched: String = sqlx::query_scalar("SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
                 .bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
@@ -211,6 +434,21 @@ fn scenario_options(spare: bool, feared: bool) -> TestResult {
             let receipts_for_worn: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts WHERE item_instance_id=encode($1,'hex')::uuid AND swap_item_instance_id IS NULL")
                 .bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(receipts_for_worn, 3);
+        }
+        if nested {
+            let evidence: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_equipment_nested_removals")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            assert_eq!(evidence, if occupied == Some(true) { 0 } else { 1 });
+            if occupied != Some(true) {
+                let mut tx = harness.pool.begin().await?;
+                sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
+                    .execute(&mut *tx)
+                    .await?;
+                assert!(sqlx::query("UPDATE game_equipment_nested_removals SET placement_ordinal=placement_ordinal").execute(&mut *tx).await.is_err());
+                tx.rollback().await?;
+            }
         }
         drop(reloaded);
         drop(owner);

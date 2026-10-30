@@ -5,8 +5,17 @@ const ITEM_SELECTED: &[u32] = &[4, 6];
 
 #[test]
 fn hotkey_equip_session_decodes_selected_equipment_snapshot_and_delta() -> Result<(), BoxError> {
-    block_on(async {
-        const SELECTED: &[u32] = &[4, 6, 12, 14, 179];
+    hotkey_equip_session_selection(&[4, 6, 12, 14, 179])
+}
+
+#[test]
+fn hotkey_equip_carried_session_reuses_equipment_snapshot_delta_and_reply() -> Result<(), BoxError>
+{
+    hotkey_equip_session_selection(&[4, 6, 12, 14, 179, 180])
+}
+
+fn hotkey_equip_session_selection(selected: &'static [u32]) -> Result<(), BoxError> {
+    block_on(async move {
         let inventory = CharacterInventory {
             equipment: vec![item_view::EquippedItem {
                 slot: item_view::EquipmentSlot::Head,
@@ -23,8 +32,8 @@ fn hotkey_equip_session_decodes_selected_equipment_snapshot_and_delta() -> Resul
         let peer = tokio::spawn(async move {
             join_peer_with(
                 &mut server,
-                SELECTED,
-                SELECTED,
+                selected,
+                selected,
                 &[],
                 item_snapshot(vec![])?,
                 &[(9, 1, 1, payload)],
@@ -52,7 +61,7 @@ fn hotkey_equip_session_decodes_selected_equipment_snapshot_and_delta() -> Resul
             Ok::<(), BoxError>(())
         });
         let mut admission = item_admission()?;
-        admission.supported_capabilities = SELECTED;
+        admission.supported_capabilities = selected;
         let mut session = Session::admit(client, admission).await?;
         assert_eq!(session.inventory(), Some(&inventory));
         let result = session
