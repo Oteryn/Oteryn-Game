@@ -39,11 +39,57 @@ const WORLD_ACTIONS_PER_TURN: u32 = 512;
 #[derive(Debug, Default)]
 pub struct WorldActionGate {
     started: Vec<(ExactActorRef, std::time::Duration)>,
+    /// D3: necklace and ring equip clocks are independent of ordinary actions.
+    jewelry: Vec<(ExactActorRef, u8, std::time::Duration)>,
     /// Interactions admitted since the owner's current turn began ([`Self::begin_turn`]).
     admitted: u32,
 }
 
 impl WorldActionGate {
+    /// Canary 52550d5e game.cpp:4171-4190,4272-4278: jewelry refuses; other
+    /// hotkey slots wait for the shared action clock. Slot codes are the durable ABI.
+    pub(super) fn equip_delay(
+        &self,
+        actor: ExactActorRef,
+        slot: u8,
+        now: std::time::Duration,
+    ) -> Option<std::time::Duration> {
+        let at = if matches!(slot, 7 | 8) {
+            self.jewelry
+                .iter()
+                .find(|(who, kind, _)| *who == actor && *kind == slot)
+                .map(|(_, _, at)| *at)
+        } else {
+            self.started
+                .iter()
+                .find(|(who, _)| *who == actor)
+                .map(|(_, at)| *at)
+        }?;
+        (at + WORLD_ACTION_COOLDOWN)
+            .checked_sub(now)
+            .filter(|delay| !delay.is_zero())
+    }
+
+    /// Called only after the equipment receipt commits; refusals never start a timer.
+    pub(super) fn equip_committed(
+        &mut self,
+        actor: ExactActorRef,
+        slot: u8,
+        now: std::time::Duration,
+    ) {
+        if matches!(slot, 7 | 8) {
+            self.jewelry.retain(|(who, kind, at)| {
+                now.saturating_sub(*at) < WORLD_ACTION_COOLDOWN && (*who != actor || *kind != slot)
+            });
+            self.jewelry.push((actor, slot, now));
+        } else {
+            self.started.retain(|(who, at)| {
+                now.saturating_sub(*at) < WORLD_ACTION_COOLDOWN && *who != actor
+            });
+            self.started.push((actor, now));
+        }
+    }
+
     /// Starts a new owner turn: the Channel owner calls it once per owner pass
     /// (`run_source_owner_cycles`), so the cap counts in the owner's own turns and not in
     /// elapsed wall time (FND-03 defines no fixed quantum).
