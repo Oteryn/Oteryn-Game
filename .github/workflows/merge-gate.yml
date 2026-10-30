@@ -897,6 +897,26 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
+      # mold 2.42.1 (released 2026-09-11), pinned by SHA-256. The nextest step links through its
+      # LD_PRELOAD wrapper, so RUSTFLAGS and the linker setting stay as in the protected-main
+      # cache producer and the restored target/ keeps matching; only the link step gets faster.
+      - name: Install pinned mold linker
+        if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true' && runner.environment == 'github-hosted'
+        env:
+          MOLD_VERSION: 2.42.1
+          MOLD_SHA256: 6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/mold.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
+            "https://github.com/rui314/mold/releases/download/v${MOLD_VERSION}/mold-${MOLD_VERSION}-x86_64-linux.tar.gz"
+          echo "${MOLD_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          mold_dir="$RUNNER_TEMP/mold-${MOLD_VERSION}-x86_64-linux"
+          "$mold_dir/bin/mold" --version
+          echo "MOLD_PATH=$mold_dir/bin/mold" >> "$GITHUB_ENV"
+          echo "MOLD_PRELOAD=$mold_dir/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
+
       # The lib and bin unit tests of the selected crates without a passed result, as in the
       # former per-crate loop. The build covers the whole workspace (see Clippy above for why);
       # the filter only selects which test binaries run. Hash partitioning splits each crate's
@@ -908,6 +928,7 @@ jobs:
         if: matrix.kind == 'tests' && steps.jr_hit.outputs.hit != 'true'
         env:
           SHARD: ${{ matrix.shard }}
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
           filters=()
