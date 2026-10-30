@@ -17,6 +17,7 @@ use crate::spell::cast::{CharacterCastFacts, SwingSkills};
 use crate::spell::combat_execution::actor_atom;
 use crate::spell::formula::FormulaInputs;
 use crate::world_runtime::LocalObjectRuntime;
+use oteryn_gameplay_combat_rules::attack::formulas::player_monk_formula;
 use oteryn_gameplay_combat_rules::attack::target::Swing;
 use oteryn_gameplay_combat_rules::resolution::{
     creature_physical_response, creature_physically_immune, swing_mitigated,
@@ -1190,6 +1191,39 @@ pub(super) fn select_swing(
     })
 }
 
+fn melee_swing_formula(
+    constants: &AttackConstants,
+    vocation: crate::spell::Vocation,
+    weapon: SwingWeapon,
+) -> (crate::spell::formula::Formula, u32, &'static str) {
+    if matches!(
+        vocation,
+        crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
+    ) {
+        let attack = match weapon {
+            SwingWeapon::Fists => constants.fist.attack,
+            SwingWeapon::Melee { attack, .. } => attack,
+        };
+        return (
+            player_monk_formula(constants),
+            attack,
+            "formula:player-monk",
+        );
+    }
+    match weapon {
+        SwingWeapon::Fists => (
+            player_fist_formula(constants),
+            constants.fist.attack,
+            "formula:player-fist",
+        ),
+        SwingWeapon::Melee { attack, .. } => (
+            player_melee_formula(constants),
+            attack,
+            "formula:player-melee",
+        ),
+    }
+}
+
 fn draw_swing_damage(
     entry: &mut ActorAttack,
     runtime: &ChannelRuntimeV1,
@@ -1234,18 +1268,7 @@ fn draw_swing_damage(
         }
         ranged.formula()?
     } else {
-        match selected.weapon.weapon {
-            SwingWeapon::Fists => (
-                player_fist_formula(constants),
-                constants.fist.attack,
-                "formula:player-fist",
-            ),
-            SwingWeapon::Melee { attack, .. } => (
-                player_melee_formula(constants),
-                attack,
-                "formula:player-melee",
-            ),
-        }
+        melee_swing_formula(constants, character_facts.vocation, selected.weapon.weapon)
     };
     let inputs = FormulaInputs {
         level: character_facts.level,
@@ -1418,7 +1441,83 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
 #[cfg(test)]
 mod tests {
-    use super::swing_lands;
+    use super::{melee_swing_formula, swing_lands};
+
+    #[test]
+    fn autoatk_monk_and_knight_select_their_own_formula() -> Result<(), Box<dyn std::error::Error>>
+    {
+        use crate::combat_attack::AttackConstants;
+        use crate::gameplay_transport::attack::SwingWeapon;
+        use crate::spell::Vocation;
+        use crate::spell::formula::FormulaInputs;
+
+        let constants = AttackConstants::checked_in().ok_or("checked-in constants parse")?;
+        for (vocation, expected, unarmed, revision) in [
+            (
+                Vocation::Monk,
+                (293, 872),
+                (129, 218),
+                "formula:player-monk",
+            ),
+            (
+                Vocation::ExaltedMonk,
+                (293, 872),
+                (129, 218),
+                "formula:player-monk",
+            ),
+            (
+                Vocation::Knight,
+                (196, 486),
+                (114, 159),
+                "formula:player-melee",
+            ),
+            (
+                Vocation::EliteKnight,
+                (196, 486),
+                (114, 159),
+                "formula:player-melee",
+            ),
+        ] {
+            let (formula, attack_value, actual_revision) = melee_swing_formula(
+                constants,
+                vocation,
+                SwingWeapon::Melee {
+                    attack: 44,
+                    skill: oteryn_gameplay_combat_rules::resolution::MeleeSkill::Fist,
+                },
+            );
+            let inputs = FormulaInputs {
+                level: 500,
+                magic_level: 0,
+                base_power: None,
+                attack_skill: 100,
+                attack_value,
+                attack_factor: 1.0,
+                shielding_skill: 0,
+                shield_defense: None,
+            };
+            assert_eq!(formula.bounds(&inputs), Ok(expected), "{vocation:?}");
+            assert_eq!(actual_revision, revision);
+            let (formula, attack_value, actual_revision) =
+                melee_swing_formula(constants, vocation, SwingWeapon::Fists);
+            assert_eq!(
+                formula.bounds(&FormulaInputs {
+                    attack_value,
+                    ..inputs
+                }),
+                Ok(unarmed)
+            );
+            assert_eq!(
+                actual_revision,
+                if revision == "formula:player-monk" {
+                    revision
+                } else {
+                    "formula:player-fist"
+                }
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn a_zero_swing_meets_the_targets_defence() {
