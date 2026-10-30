@@ -18,6 +18,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         fence: Option<CurrentCharacterGameplayFence>,
         slot: Option<&mut RevisionSlot>,
+        optional_pvp: Option<bool>,
     ) -> UseDisposition {
         if !runtime
             .player_control_facts(actor, session)
@@ -262,6 +263,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;
             };
+            states.stage_special_movement_step(
+                runtime,
+                map,
+                actor,
+                session,
+                self.owner_now().get(),
+                Some(expected.position()),
+                snapshot.position(),
+                optional_pvp,
+            );
             states.stage_underwater_step(
                 runtime,
                 actor,
