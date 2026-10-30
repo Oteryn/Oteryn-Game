@@ -5,6 +5,8 @@ use crate::foundation::{GameSessionState, RuntimeScopeRefV1};
 use crate::spell::delayed_execution::{Error, FireReport, NativeAiTimerSource, TimerPayload};
 use crate::spell::ordinary_timer::OrdinaryCastBinding;
 use crate::spell::{Execution, SpellBook};
+#[path = "spell_strike_callbacks.rs"]
+mod strikes;
 
 #[derive(Clone)]
 enum DueSource {
@@ -62,6 +64,13 @@ impl DueSource {
             return false;
         }
         match (self, payload) {
+            (
+                Self::Native(source),
+                TimerPayload::Strike(crate::spell::delayed_execution::SavedStrike {
+                    binding: saved,
+                    ..
+                }),
+            ) => source.spell.spell() == saved.spell.spell(),
             (Self::Native(source), TimerPayload::NativeOwnerEffect(saved)) => {
                 source.spell.spell() == saved.binding.spell.spell()
             }
@@ -200,6 +209,24 @@ fn apply_due_under_current_owners(
             outbox.release_definitely_uncommitted(&resolved.presentation);
         }
     }
+    let strikes = states
+        .spell_timers
+        .as_ref()
+        .map(|timer| {
+            timer.due_strikes(
+                crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+            )
+        })
+        .unwrap_or_default();
+    for saved in strikes.iter().filter(|s| {
+        runtime
+            .player_control_facts(s.binding.caster, s.binding.command.game_session_id())
+            .is_err()
+    }) {
+        if let (Some(resolved), Some(outbox)) = (&saved.resolved, states.presentations.as_mut()) {
+            outbox.release_definitely_uncommitted(&resolved.presentation);
+        }
+    }
     let report = states.drain_spell_timers(
         runtime,
         now,
@@ -220,6 +247,15 @@ fn apply_due_under_current_owners(
                 return Err(Error::StaleOwner);
             }
             let effect = match payload {
+                TimerPayload::Strike(saved) => {
+                    strikes::validate_numeric(runtime, states, saved)?;
+                    return Ok(saved
+                        .resolved
+                        .as_ref()
+                        .ok_or(Error::InvalidPayload)?
+                        .batch
+                        .clone());
+                }
                 TimerPayload::NativeOwnerEffect(saved) => saved.at_due(due)?,
                 TimerPayload::OrdinaryCombat(saved) => {
                     let deadline = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(
@@ -267,6 +303,17 @@ fn apply_due_under_current_owners(
         },
     )?;
     for receipt in &report.receipts {
+        if let Some(resolved) = strikes
+            .iter()
+            .find(|s| s.binding.command == receipt.occurrence.command)
+            .and_then(|s| s.resolved.as_ref())
+        {
+            states
+                .presentations
+                .as_mut()
+                .ok_or(Error::InvalidPayload)?
+                .install_preflighted((*resolved.presentation).clone(), &receipt.batch);
+        }
         if let Some(resolved) = proofs
             .iter()
             .find(|saved| {
@@ -305,7 +352,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
                 .unwrap_or_default()
         };
+        let delayed = {
+            let states = self.states.spell_states.lock().await;
+            states
+                .spell_timers
+                .as_ref()
+                .map(|t| {
+                    t.due_strikes(
+                        crate::foundation::owner_timer::SemanticTimeMicros::from_micros(now.get()),
+                    )
+                })
+                .unwrap_or_default()
+        };
         let mut access = Vec::new();
+        for saved in &delayed {
+            access.push((
+                saved.binding.caster,
+                saved.binding.command.game_session_id(),
+                self.refresh_spell_access(
+                    saved.binding.caster,
+                    saved.binding.command.game_session_id(),
+                )
+                .await,
+            ));
+        }
         for saved in &ordinary {
             if !access.iter().any(|(actor, session, _)| {
                 *actor == saved.binding.caster
@@ -342,7 +412,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .due_ordinary_payloads(at)
                     .into_iter()
                     .map(|saved| DueSource::Ordinary(saved.binding)),
-            );
+            )
+            .collect::<Vec<_>>();
         let mut casters: Vec<QualifiedCaster> = Vec::new();
         let store = FreshAdmissionStore::from_root(self.root.clone());
         for source in proposals {
@@ -366,9 +437,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok((current, _)) = store.current_session_at(session).await else {
                 continue;
             };
-            if !(current.session_state() == GameSessionState::Active
-                || matches!(source, DueSource::Ordinary(_))
-                    && current.session_state() == GameSessionState::Reconnectable)
+            let changed_strike_generation = states.spell_timers.as_ref().is_some_and(|timer| {
+                timer.payloads.iter().any(|p| match &p.payload {
+                    TimerPayload::Strike(saved) if saved.binding.command == source.command() => {
+                        saved.binding.cast_snapshot.as_ref().is_none_or(|snapshot| {
+                            snapshot.identity.session_generation
+                                != current.current_connection_generation().get()
+                        })
+                    }
+                    _ => false,
+                })
+            });
+            if changed_strike_generation
+                || !(current.session_state() == GameSessionState::Active
+                    || matches!(source, DueSource::Ordinary(_))
+                        && current.session_state() == GameSessionState::Reconnectable)
                 || current.commit().character_id() != source.attacker()
                 || current.current_runtime_scope()
                     != RuntimeScopeRefV1::channel(
@@ -377,6 +460,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                 || current.current_scope_generation() != runtime.binding().scope_generation()
             {
+                strikes::cancel(&runtime, &mut states, source.command())?;
                 continue;
             }
             let character = crate::domain::CharacterId::from_bytes(*source.attacker().as_bytes())
@@ -414,6 +498,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     return Ok(());
                 }
                 let binding = payload.binding();
+                if let TimerPayload::Strike(saved) = payload {
+                    strikes::validate_numeric(&runtime, &states, saved)?;
+                }
                 if let TimerPayload::OrdinaryCombat(saved) = payload {
                     validate_numeric_predecessor(&runtime, &states, saved)?;
                     let resolved = saved.resolved.as_ref().ok_or(Error::InvalidPayload)?;
@@ -442,18 +529,79 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(())
             })?;
         }
+        let next = states
+            .spell_timers
+            .as_ref()
+            .ok_or(Error::StaleOwner)?
+            .next_due_payload(&runtime, at)?;
+        // Both numerical families pass the existing gate at this one call site.
+        let room = if matches!(
+            next,
+            Some(TimerPayload::Strike(_) | TimerPayload::OrdinaryCombat(_))
+        ) {
+            Some(
+                self.rooms
+                    .gate_combat_timer_continuation()
+                    .ok_or(Error::StaleOwner)?,
+            )
+        } else {
+            None
+        };
+        let strike = match &next {
+            Some(TimerPayload::Strike(saved)) => Some(saved.clone()),
+            _ => None,
+        };
+        if let Some(saved) = strike {
+            let current = casters
+                .iter()
+                .find(|c| {
+                    c.source
+                        .matches_payload(&TimerPayload::Strike(saved.clone()))
+                })
+                .ok_or(Error::StaleOwner)?;
+            let access = access
+                .iter()
+                .find(|(a, s, _)| {
+                    *a == saved.binding.caster && *s == saved.binding.command.game_session_id()
+                })
+                .ok_or(Error::StaleOwner)?
+                .2
+                .clone();
+            let report = self
+                .resolve_strike_due(
+                    permit,
+                    &mut runtime,
+                    &mut states,
+                    room.ok_or(Error::StaleOwner)?,
+                    &saved,
+                    &current.fence,
+                    &casters,
+                    access.as_ref(),
+                )
+                .await?;
+            self.record_spell_kills(
+                &mut runtime,
+                &states,
+                report.receipts.iter().map(|r| &r.batch),
+            )
+            .await;
+            return Ok(report);
+        }
         // Resolve only the first ordinary phase in this turn. Later phases read
         // numerical owners after earlier real combat receipts have been applied.
-        let unresolved = states.spell_timers.as_ref().and_then(|timer| {
-            timer.due_ordinary_payloads(at).into_iter().find(|saved| {
-                saved.current_target(&runtime)
+        let unresolved = match next {
+            Some(TimerPayload::OrdinaryCombat(saved))
+                if saved.current_target(&runtime)
                     && saved.binding.active(self.spells, &runtime)
                     && casters.iter().any(|c| {
                         c.source
                             .matches_payload(&TimerPayload::OrdinaryCombat(saved.clone()))
-                    })
-            })
-        });
+                    }) =>
+            {
+                Some(saved)
+            }
+            _ => None,
+        };
         if let Some(saved) = unresolved {
             let occurrence = crate::spell::delayed_execution::SpellTimerOccurrence {
                 command: saved.binding.command,
@@ -490,23 +638,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &saved,
                 &current.fence,
                 &casters,
+                room.ok_or(Error::StaleOwner)?,
                 &mut accepted,
             );
             pass.run_with_context(&mut context, move |holder, deadline, ctx| {
                 Box::pin(async move {
                     use crate::durability::{DurabilityError, spell_item_transaction as item_tx};
                     use sha2::{Digest, Sha256};
-                    let (owner, runtime, states, objects, access, saved, fence, casters, accepted) =
-                        ctx;
+                    let (
+                        owner,
+                        runtime,
+                        states,
+                        objects,
+                        access,
+                        saved,
+                        fence,
+                        casters,
+                        room,
+                        accepted,
+                    ) = ctx;
                     let active = owner
                         .active_generation
                         .ok_or(DurabilityError::Unavailable)?;
                     let content = active
                         .native_gameplay()
-                        .ok_or(DurabilityError::Unavailable)?;
-                    let room = owner
-                        .rooms
-                        .gate_combat_timer_continuation()
                         .ok_or(DurabilityError::Unavailable)?;
                     if !saved.binding.active(owner.spells, runtime)
                         || !saved.current_target(runtime)

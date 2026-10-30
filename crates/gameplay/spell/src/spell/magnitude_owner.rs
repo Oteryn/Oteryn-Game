@@ -82,6 +82,39 @@ pub struct MagnitudeOwnedAttributes {
 }
 
 impl MagnitudeOwnedAttributes {
+    pub fn delayed_stance_snapshot(
+        &self,
+        resolved: super::native_delayed::Element,
+        revision: u64,
+        spell_id: u32,
+    ) -> Result<super::native_delayed::StanceSnapshot, Error> {
+        let a = self.resolved_for_policy();
+        let critical_chance_permyriad = u32::from(needed(a.base_critical_chance_permyriad)?)
+            .checked_add(u32::from(needed(a.equipment_critical_chance_permyriad)?))
+            .ok_or(Error::InvalidMagnitude)?;
+        let critical_damage_permyriad = u32::try_from(
+            needed(a.base_critical_extra_permyriad)?
+                .checked_add(needed(a.equipment_critical_extra_permyriad)?)
+                .ok_or(Error::InvalidMagnitude)?,
+        )
+        .map_err(|_| Error::InvalidMagnitude)?;
+        Ok(super::native_delayed::StanceSnapshot {
+            intrinsic: super::native_delayed::Element::Death,
+            resolved,
+            state_revision: revision,
+            spell_id,
+            damage_multiplier_permyriad: i32::try_from(
+                needed(a.source_damage_multiplier_percent)?
+                    .checked_add(100)
+                    .and_then(|v| v.checked_mul(100))
+                    .ok_or(Error::InvalidMagnitude)?,
+            )
+            .map_err(|_| Error::InvalidMagnitude)?,
+            critical_chance_permyriad,
+            critical_damage_permyriad,
+            converted: resolved != super::native_delayed::Element::Death,
+        })
+    }
     /// Unknown modifiers remain unknown in the owner facts. These names describe
     /// each omitted stage in the explicitly selected test baseline.
     pub fn omitted_modifiers(&self) -> Vec<&'static str> {
@@ -216,6 +249,44 @@ pub struct PreparedMagnitudeOwner {
     targets: Vec<Target>,
     shared_extensions: Option<(bool, bool)>,
     pvp_targets: Vec<(ExactActorRef, bool)>,
+    delayed_damage_percent: Option<u32>,
+}
+
+/// Values whose timing D.1.3 fixes at planting. Original owner observations stay
+/// separate, so delayed numerical validation still compares fresh real owners.
+#[derive(Debug, Clone)]
+pub struct StrikeCastModifiers {
+    pub flat_damage: i32,
+    source_bonus: u32,
+    damage_percent: u32,
+    base_damage_augments:
+        Vec<oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugment>,
+}
+impl StrikeCastModifiers {
+    pub fn capture(
+        attributes: &MagnitudeOwnedAttributes,
+        caster: &PlayerSpellState,
+        spell_name: &str,
+        now_ms: u64,
+    ) -> Result<Self, Error> {
+        let a = attributes.resolved_for_policy();
+        let damage_percent = match condition_attributes(caster, now_ms)? {
+            Some(ConditionValues::Attributes {
+                damage_dealt_percent,
+                ..
+            }) => damage_dealt_percent,
+            _ => 100,
+        };
+        Ok(Self {
+            flat_damage: needed(a.wheel_flat_damage)?,
+            source_bonus: needed(a.source_damage_multiplier_percent)?,
+            damage_percent,
+            base_damage_augments: a.item_augments.iter().filter(|augment| {
+                augment.spell.eq_ignore_ascii_case(spell_name)
+                    && augment.kind == oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind::BaseDamage
+            }).cloned().collect(),
+        })
+    }
 }
 
 fn invalid<T>() -> Result<T, Error> {
@@ -262,6 +333,36 @@ fn condition_attributes(
 }
 
 impl PreparedMagnitudeOwner {
+    /// F's planted raw/late-modifier split. This changes only numerical inputs;
+    /// `attributes` and `caster` remain intact for commit-time owner validation.
+    pub fn select_planted_strike(&mut self, snapshot: &StrikeCastModifiers) {
+        self.selected_item_augments.retain(|augment| augment.kind != oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind::BaseDamage);
+        self.selected_item_augments
+            .extend(snapshot.base_damage_augments.iter().cloned());
+        self.resolved_attributes.wheel_flat_damage = Some(0);
+        self.resolved_attributes.source_damage_multiplier_percent = Some(snapshot.source_bonus);
+        self.delayed_damage_percent = Some(snapshot.damage_percent);
+    }
+    pub fn select_echo_stance(
+        &mut self,
+        snapshot: &super::native_delayed::StanceSnapshot,
+    ) -> Result<(), Error> {
+        self.resolved_attributes.base_critical_chance_permyriad = Some(
+            u16::try_from(snapshot.critical_chance_permyriad)
+                .map_err(|_| Error::InvalidMagnitude)?,
+        );
+        self.resolved_attributes.equipment_critical_chance_permyriad = Some(0);
+        self.resolved_attributes.base_critical_extra_permyriad = Some(
+            i32::try_from(snapshot.critical_damage_permyriad)
+                .map_err(|_| Error::InvalidMagnitude)?,
+        );
+        self.resolved_attributes.equipment_critical_extra_permyriad = Some(0);
+        self.resolved_attributes.source_damage_multiplier_percent = Some(
+            u32::try_from(snapshot.damage_multiplier_permyriad / 100 - 100)
+                .map_err(|_| Error::InvalidMagnitude)?,
+        );
+        Ok(())
+    }
     /// Select only the named instant spell from the original fenced Item observations.
     /// Selection leaves those observations intact for commit-time revalidation.
     pub fn select_item_spell(&mut self, spell: &super::SpellDefinition) -> Result<(), Error> {
@@ -541,6 +642,7 @@ impl PreparedMagnitudeOwner {
             targets,
             shared_extensions: None,
             pvp_targets: pvp_targets.to_vec(),
+            delayed_damage_percent: None,
         })
     }
 
@@ -782,7 +884,12 @@ impl PreparedMagnitudeOwner {
                 ..
             }) = condition_attributes(&self.caster, self.now_ms)?
             {
-                value = percent(value, damage_dealt_percent)?;
+                value = percent(
+                    value,
+                    self.delayed_damage_percent.unwrap_or(damage_dealt_percent),
+                )?;
+            } else if let Some(percent_at_cast) = self.delayed_damage_percent {
+                value = percent(value, percent_at_cast)?;
             }
             let bonus = needed(a.source_damage_multiplier_percent)?
                 .checked_add(hit.bonus_percent)
@@ -808,7 +915,12 @@ impl PreparedMagnitudeOwner {
             ..
         }) = condition_attributes(&self.caster, self.now_ms)?
         {
-            value = percent(value, damage_dealt_percent)?;
+            value = percent(
+                value,
+                self.delayed_damage_percent.unwrap_or(damage_dealt_percent),
+            )?;
+        } else if let Some(percent_at_cast) = self.delayed_damage_percent {
+            value = percent(value, percent_at_cast)?;
         }
         let TargetOwner::Creature(creature) = &target.owner else {
             return invalid();

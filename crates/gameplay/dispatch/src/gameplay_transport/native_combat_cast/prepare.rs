@@ -7,6 +7,7 @@ struct SpatialPhase {
     tiles: BTreeMap<TilePosition, TileFlags>,
     operational: OperationalCastFacts,
     facts: NativeCombatFacts,
+    delayed: Option<crate::spell::native_delayed::NativeDelayedFacts>,
 }
 
 struct PreviewPhase {
@@ -44,6 +45,7 @@ pub async fn prepare_from_owners(
     training_occurrence: BuildOccurrence,
     now: SemanticTimeMicros,
     rune: Option<&ItemSpellCastIntent>,
+    attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<PreparedNativeCombatCast, SpellCastDisposition> {
     let Execution::NativeProfile(profile) = &spell.execution else {
@@ -53,6 +55,14 @@ pub async fn prepare_from_owners(
     let key = recipe["key"]
         .as_str()
         .ok_or(SpellCastDisposition::Rejected)?;
+    if matches!(intent.target, SpellTarget::Position(_))
+        && !spell
+            .authored
+            .as_ref()
+            .is_some_and(|p| p.header.targeting.cast_at_position == Some(true))
+    {
+        return reject();
+    }
     if !matches!(
         key,
         "wheel_combat"
@@ -60,8 +70,9 @@ pub async fn prepare_from_owners(
             | "monster_ai_override"
             | "mass_spirit_mend"
             | "mana_shield_capacity"
-    ) || intent.aim_at_target
-        || intent.target != SpellTarget::None
+            | "delayed_strike"
+    ) || (key != "delayed_strike"
+        && (intent.aim_at_target || intent.target != SpellTarget::None))
         || book.indexed(intent.spell) != Some(spell)
         || content.spell_book().indexed(intent.spell) != Some(spell)
         || !matches!(spell.carrier, crate::spell::Carrier::Instant { .. })
@@ -116,16 +127,27 @@ pub async fn prepare_from_owners(
     let training_formula = content
         .training_formula()
         .ok_or(SpellCastDisposition::Rejected)?;
-    let stage = match parameters.get("wheel") {
-        Some(w) => owned
-            .wheel_stage(
-                w["perk"].as_str().ok_or(SpellCastDisposition::Rejected)?,
-                now.get(),
-            )
-            .or_else(|error| {
-                wheel_stage_without_owner(w, error, owned.has_current_wheel(now.get()))
-            })?,
-        None => 0,
+    let stage = if key == "delayed_strike"
+        && spell
+            .authored
+            .as_ref()
+            .is_some_and(|p| p.header.requirements.wheel_unlock == Some(true))
+    {
+        owned
+            .wheel_stage(&spell.name, now.get())
+            .map_err(|_| SpellCastDisposition::Rejected)?
+    } else {
+        match parameters.get("wheel") {
+            Some(w) => owned
+                .wheel_stage(
+                    w["perk"].as_str().ok_or(SpellCastDisposition::Rejected)?,
+                    now.get(),
+                )
+                .or_else(|error| {
+                    wheel_stage_without_owner(w, error, owned.has_current_wheel(now.get()))
+                })?,
+            None => 0,
+        }
     };
     let elemental = if parameters.get("elemental_stance").is_some() {
         owned
@@ -158,9 +180,27 @@ pub async fn prepare_from_owners(
         tiles,
         operational,
         facts,
+        delayed,
     } = prepare_spatial(
-        tx, authority, runtime, states, room, objects, spell, intent, parameters, actor, stage,
-        elemental, now, &caster, &roster,
+        tx,
+        authority,
+        runtime,
+        states,
+        room,
+        objects,
+        spell,
+        intent,
+        parameters,
+        actor,
+        stage,
+        elemental,
+        now,
+        &caster,
+        &roster,
+        attack_target,
+        None,
+        owned,
+        before,
     )
     .await?;
     let players: Vec<_> = player_predecessors
@@ -191,6 +231,7 @@ pub async fn prepare_from_owners(
         &caster,
         &operational,
         &facts,
+        delayed.as_ref(),
         &bindings,
         &players,
         training_formula,
@@ -222,6 +263,7 @@ pub async fn prepare_from_owners(
         &caster,
         &operational,
         &facts,
+        delayed.as_ref(),
         &bindings,
         &players,
         training_formula,
@@ -279,6 +321,10 @@ async fn prepare_spatial(
         MovementPositionSnapshot,
         Option<GameSessionId>,
     )],
+    attack_target: Option<oteryn_protocol_oteryn::world_spatial_entities::EntityRef>,
+    saved: Option<&crate::spell::delayed_execution::SavedStrike>,
+    owned: &OwnedCastFacts,
+    before: &PlayerSpellState,
 ) -> Result<SpatialPhase, SpellCastDisposition> {
     let current = runtime
         .read_actor_position(actor)
@@ -294,42 +340,94 @@ async fn prepare_spatial(
         return reject();
     }
     let facing_direction = facing.map(direction).unwrap_or(Direction::North); // unused by symmetric/self recipes
-    let origin = match intent.target {
-        SpellTarget::Position(p) => TilePosition {
-            x: p.x,
-            y: p.y,
-            floor: p.floor,
-        },
-        SpellTarget::None if needs_direction => {
-            let (dx, dy) = delta(facing_direction);
-            offset(position, dx, dy)?
+    let is_delayed = parameters.get("delay_ms").is_some();
+    let held = is_delayed
+        .then(|| delayed_strikes::held_target(runtime, attack_target))
+        .flatten();
+    let origin = if let Some(saved) = saved {
+        saved.scheduled.position
+    } else {
+        match intent.target {
+            SpellTarget::Position(p) => TilePosition {
+                x: p.x,
+                y: p.y,
+                floor: p.floor,
+            },
+            SpellTarget::None if needs_direction => {
+                let (dx, dy) = delta(facing_direction);
+                offset(position, dx, dy)?
+            }
+            SpellTarget::None | SpellTarget::AttackTarget if is_delayed => {
+                if spell
+                    .authored
+                    .as_ref()
+                    .is_some_and(|p| p.header.targeting.cast_at_position == Some(true))
+                {
+                    held.map_or(position, |(_, p)| p)
+                } else {
+                    position
+                }
+            }
+            SpellTarget::None => position,
+            SpellTarget::AttackTarget => return reject(),
         }
-        SpellTarget::None => position,
-        SpellTarget::AttackTarget => return reject(),
     };
-    if origin.floor != position.floor {
+    if origin.floor != position.floor && saved.is_none() {
         return reject();
     }
-    let sight_origin = if needs_direction && origin != position {
+    let sight_origin = if saved.is_some() && parameters.get("chain").is_some() {
+        position
+    } else if needs_direction && origin != position {
         let (dx, dy) = delta(facing_direction);
         offset(origin, -dx, -dy)?
     } else {
         origin
     };
-    let mut candidates = area_candidates(parameters, origin, facing_direction)?;
+    let area_parameters;
+    let geometry_parameters = if parameters["area"].is_array() {
+        area_parameters = json!({"area":{"directional":false,"orthogonal":parameters["area"]}});
+        &area_parameters
+    } else {
+        parameters
+    };
+    let mut candidates = area_candidates(geometry_parameters, origin, facing_direction)?;
     candidates.insert(position);
     candidates.insert(origin);
     let TargetPhase {
         bindings,
         attackable,
         mut targets,
-    } = collect_targets(runtime, states, position, roster, &mut candidates)?;
+    } = collect_targets(
+        runtime,
+        states,
+        if saved.is_some() && parameters.get("chain").is_none() {
+            origin
+        } else {
+            position
+        },
+        roster,
+        &mut candidates,
+    )?;
     let caster_id = u64::from(actor.actor_local_id());
-    if !bindings.iter().any(|b| b.actor == actor) {
+    if saved.is_none() && !bindings.iter().any(|b| b.actor == actor) {
         return reject();
     }
     let mut paths = BTreeMap::new();
+    if saved.is_none() && position.floor == origin.floor {
+        paths.insert((position, origin), sight_steps(position, origin)?);
+    }
     for target in &candidates {
+        // At due time only the fixed area's sight (or the current chain's sight)
+        // matters. A teleport must not introduce a new caster-to-old-origin ray.
+        if saved.is_some()
+            && *target != sight_origin
+            && (*target == position || (parameters.get("chain").is_some() && *target == origin))
+        {
+            continue;
+        }
+        if target.floor != sight_origin.floor {
+            continue;
+        }
         paths.insert((sight_origin, *target), sight_steps(sight_origin, *target)?);
     }
     if parameters.get("chain").is_some() {
@@ -387,6 +485,14 @@ async fn prepare_spatial(
         );
     }
     let target_position = match intent.target {
+        _ if is_delayed
+            && spell
+                .authored
+                .as_ref()
+                .is_some_and(|p| p.header.targeting.cast_at_position == Some(true)) =>
+        {
+            Some(origin)
+        }
         SpellTarget::Position(_) => Some(origin),
         _ => None,
     };
@@ -397,7 +503,12 @@ async fn prepare_spatial(
         line_of_sight_clear: target_position
             .map(|p| p == position || clear_sight.contains(&(position, p))),
         direction_available: facing.is_some(),
-        wheel_unlocked: parameters.get("wheel").map(|_| stage > 0),
+        wheel_unlocked: (parameters.get("wheel").is_some()
+            || spell
+                .authored
+                .as_ref()
+                .is_some_and(|p| p.header.requirements.wheel_unlock == Some(true)))
+        .then_some(stage > 0),
         in_protection_zone: caster_tile.protection,
         target_tile_solid: tiles.get(&origin).map(|t| t.solid),
         target_tile_creature: Some(
@@ -436,12 +547,28 @@ async fn prepare_spatial(
         elemental_stance: elemental,
         incoming_hit: None,
     };
+    let delayed = if is_delayed {
+        Some(delayed_strikes::facts(
+            runtime,
+            owned,
+            before,
+            caster,
+            spell,
+            &facts,
+            &tiles,
+            held.map(|(a, _)| u64::from(a.actor_local_id())),
+            saved,
+        )?)
+    } else {
+        None
+    };
     Ok(SpatialPhase {
         position,
         bindings,
         tiles,
         operational,
         facts,
+        delayed,
     })
 }
 
@@ -561,6 +688,7 @@ fn prepare_preview(
     caster: &crate::spell::CasterState,
     operational: &OperationalCastFacts,
     facts: &NativeCombatFacts,
+    delayed: Option<&crate::spell::native_delayed::NativeDelayedFacts>,
     bindings: &[LiveActorBinding],
     players: &[(ExactActorRef, &PlayerSpellState)],
     training_formula: &crate::content::training_formula::CompiledTrainingFormula,
@@ -573,11 +701,12 @@ fn prepare_preview(
     let caster_id = u64::from(actor.actor_local_id());
     // A lower-bound preview is never committed and consumes no live random stream. It validates
     // common costs, source shape, all magnitude prerequisites and training before the first draw.
-    let mut preview = prepare_native_owner_cast_with_caster(
+    let (mut preview, delayed_plan) = delayed_strikes::paid(
         before,
         spell,
         operational,
-        Facts::Combat(facts),
+        facts,
+        delayed,
         now,
         &mut |minimum, _| minimum,
         caster,
@@ -618,16 +747,17 @@ fn prepare_preview(
             .select_item_spell(spell)
             .map_err(|_| SpellCastDisposition::Rejected)?;
     }
-    let binding = serde_json::to_vec(
-        &json!({"intent":source_cast_intent(intent,rune),"spell":profile.spell(),
+    let mut captured = json!({"intent":source_cast_intent(intent,rune),"spell":profile.spell(),
         "equipment_revision":b.equipment_revision,"character_revision":b.character_revision,
         "source_stage":stage,"capture_format":"owner-debug-r21",
         // Immutable receipts only; these captures grant no owner authority.
         "native_facts":format!("{facts:?}"),
         "magnitude_facts":format!("{:?}",owned.magnitude()),
-        "equipment_facts":format!("{:?}",owned.equipment())}),
-    )
-    .map_err(|_| SpellCastDisposition::Rejected)?;
+        "equipment_facts":format!("{:?}",owned.equipment())});
+    if let Some(delayed) = delayed {
+        captured["delayed_facts"] = json!(format!("{delayed:?}"));
+    }
+    let binding = serde_json::to_vec(&captured).map_err(|_| SpellCastDisposition::Rejected)?;
     let attacker = CharacterId::decode(&b.character).map_err(|_| SpellCastDisposition::Rejected)?;
     let preview_batch = OwnerCombatBatch {
         caster: actor,
@@ -679,8 +809,15 @@ fn prepare_preview(
     {
         return reject();
     }
-    let preview_cues =
-        presentation_requests(room, runtime, &preview_plan, profile, bindings, actor)?;
+    let preview_cues = delayed_strikes::cues(
+        room,
+        runtime,
+        &preview_plan,
+        delayed_plan.as_ref(),
+        profile,
+        bindings,
+        actor,
+    )?;
     let presentation_owner = states
         .presentations
         .as_mut()
@@ -708,7 +845,17 @@ fn prepare_preview(
         Some(preview.next.clone()),
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    let preview_requests = timer_requests(&preview_lowered, profile, occurrence, position, now)?;
+    let preview_requests = delayed_strikes::requests(
+        &preview_lowered,
+        delayed_plan.as_ref(),
+        delayed,
+        profile,
+        occurrence,
+        position,
+        now,
+        owned,
+        before,
+    )?;
     let stamp = if preview_requests.is_empty() {
         None
     } else {
@@ -760,6 +907,7 @@ fn prepare_payment(
     caster: &crate::spell::CasterState,
     operational: &OperationalCastFacts,
     facts: &NativeCombatFacts,
+    delayed: Option<&crate::spell::native_delayed::NativeDelayedFacts>,
     bindings: &[LiveActorBinding],
     players: &[(ExactActorRef, &PlayerSpellState)],
     training_formula: &crate::content::training_formula::CompiledTrainingFormula,
@@ -774,11 +922,12 @@ fn prepare_payment(
     let actor = b.actor;
     let session = command.game_session_id();
     let caster_id = u64::from(actor.actor_local_id());
-    let mut paid = prepare_native_owner_cast_with_caster(
+    let (mut paid, delayed_plan) = delayed_strikes::paid(
         before,
         spell,
         operational,
-        Facts::Combat(facts),
+        facts,
+        delayed,
         now,
         draw,
         caster,
@@ -850,7 +999,15 @@ fn prepare_payment(
     let Plan::Combat(final_plan) = &paid.plan else {
         return reject();
     };
-    let cues = presentation_requests(room, runtime, final_plan, profile, bindings, actor)?;
+    let cues = delayed_strikes::cues(
+        room,
+        runtime,
+        final_plan,
+        delayed_plan.as_ref(),
+        profile,
+        bindings,
+        actor,
+    )?;
     let presentation = states
         .presentations
         .as_mut()
@@ -877,7 +1034,17 @@ fn prepare_payment(
             now.get(),
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
-    let requests = timer_requests(&lowered, profile, occurrence, position, now)?;
+    let requests = delayed_strikes::requests(
+        &lowered,
+        delayed_plan.as_ref(),
+        delayed,
+        profile,
+        occurrence,
+        position,
+        now,
+        owned,
+        before,
+    )?;
     // Physical/timer capacity was also checked by the non-executed source preview before RNG.
     runtime
         .stage_spell_batch(&lowered.batch)
@@ -901,4 +1068,200 @@ fn prepare_payment(
         magnitude,
         presentation,
     })
+}
+
+/// Due-only planning has no payment anchor and cannot consume a second resource cost.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "fresh due SQL and physical owner inputs"
+)]
+pub(in crate::gameplay_transport) async fn prepare_strike_due(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    runtime: &mut ChannelRuntimeV1,
+    states: &mut ChannelSpellStates,
+    room: &QualifiedNativeEntryRoom,
+    objects: &LocalObjectRuntime,
+    content: &NativeGameplayState,
+    owned: &OwnedCastFacts,
+    book: &SpellBook,
+    saved: &crate::spell::delayed_execution::SavedStrike,
+    now: SemanticTimeMicros,
+    draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
+) -> Result<Option<crate::spell::delayed_execution::ResolvedStrike>, SpellCastDisposition> {
+    use crate::spell::native::CompiledNativeSpellPlanExt;
+    let index = (1_u32..)
+        .map_while(std::num::NonZeroU32::new)
+        .take_while(|i| book.source_indexed(*i).is_some())
+        .find(|i| {
+            book.source_indexed(*i).is_some_and(|(s, active)| {
+                active
+                    && matches!(&s.execution,
+            Execution::NativeProfile(p) if p.spell() == saved.binding.spell.spell())
+            })
+        })
+        .ok_or(SpellCastDisposition::Rejected)?;
+    let spell = book.indexed(index).ok_or(SpellCastDisposition::Rejected)?;
+    let before = states
+        .get(
+            runtime,
+            saved.binding.caster,
+            saved.binding.command.game_session_id(),
+        )
+        .ok_or(SpellCastDisposition::Rejected)?
+        .clone();
+    let caster = owned
+        .numerical_caster(
+            &before,
+            spell,
+            content,
+            before.owned_harmony_multiplier(spell)?,
+            now.get(),
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    let parameters = &saved.binding.spell.spell()["execution"]["native_behavior"]["parameters"];
+    let stage = if spell
+        .authored
+        .as_ref()
+        .is_some_and(|p| p.header.requirements.wheel_unlock == Some(true))
+    {
+        owned
+            .wheel_stage(&spell.name, now.get())
+            .map_err(|_| SpellCastDisposition::Rejected)?
+    } else {
+        0
+    };
+    let roster = runtime
+        .positioned_actor_census()
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    let intent = SpellCastIntent {
+        spell: index,
+        target: SpellTarget::None,
+        aim_at_target: false,
+    };
+    let spatial = prepare_spatial(
+        tx,
+        authority,
+        runtime,
+        states,
+        room,
+        objects,
+        spell,
+        &intent,
+        parameters,
+        saved.binding.caster,
+        stage,
+        ElementalStance::None,
+        now,
+        &caster,
+        &roster,
+        None,
+        Some(saved),
+        owned,
+        &before,
+    )
+    .await?;
+    let facts = spatial
+        .delayed
+        .as_ref()
+        .ok_or(SpellCastDisposition::Rejected)?;
+    // A due callback has no cost to roll back. A current planner refusal or no
+    // remaining victim consumes the pending strike instead of blocking the lane.
+    let Ok(Plan::Delayed(plan)) = saved.binding.spell.plan(Facts::Delayed(facts), draw) else {
+        return Ok(None);
+    };
+    let crate::spell::native_delayed::NativeDelayedPlan::Occurrence { strike, .. } = plan.as_ref()
+    else {
+        return reject();
+    };
+    let Some(strike) = strike.as_ref().filter(|s| !s.hits.is_empty()) else {
+        return Ok(None);
+    };
+    let plan = delayed_strikes::combat(Some(strike), None);
+    let players: Vec<_> = states
+        .actors
+        .iter()
+        .filter(|(a, s, _)| states.get(runtime, *a, *s).is_some())
+        .map(|(a, _, state)| (*a, state))
+        .collect();
+    let mut magnitude = PreparedMagnitudeOwner::qualify(
+        runtime,
+        &before,
+        saved.binding.caster,
+        saved.binding.command.game_session_id(),
+        owned.magnitude(),
+        &plan,
+        &spatial.bindings,
+        &players,
+        now.get() / 1000,
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
+    magnitude
+        .select_item_spell(spell)
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    if saved.scheduled.captured_raw_bounds.is_some() {
+        magnitude.select_planted_strike(&saved.cast_modifiers);
+    }
+    if let Some(stance) = &saved.scheduled.stance {
+        magnitude
+            .select_echo_stance(stance)
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+    }
+    let mut binding: Value = serde_json::from_slice(&saved.binding.parent_binding)
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    let object = binding
+        .as_object_mut()
+        .ok_or(SpellCastDisposition::Rejected)?;
+    object.remove("source_presentation_bytes");
+    object.insert("delayed_strike_due".into(), json!(true));
+    let batch = OwnerCombatBatch {
+        caster: saved.binding.caster,
+        attacker: saved.binding.attacker,
+        current_lease_generation: owned.binding().lease_generation,
+        command: saved.binding.command,
+        occurrence: saved.binding.occurrence.clone().into(),
+        binding: serde_json::to_vec(&binding).map_err(|_| SpellCastDisposition::Rejected)?,
+        anchor: None,
+        now_us: Some(now),
+        now_ms: now.get() / 1000,
+        effects: Vec::new(),
+        deferred: None,
+    };
+    let mut lowered = lower_native(
+        runtime,
+        batch,
+        u64::from(saved.binding.caster.actor_local_id()),
+        &plan,
+        &spatial.bindings,
+        saved.first_sub_ordinal,
+        &mut |plan, hit, target| magnitude.finish_with_damage_healing(plan, hit, target, draw),
+    )
+    .map_err(|_| SpellCastDisposition::Rejected)?;
+    states.apply_prey_spell_damage(runtime, &mut lowered.batch);
+    let cues = delayed_strikes::strike_cues(room, runtime, Some(strike), &spatial.bindings)?;
+    let presentation = states
+        .presentations
+        .as_mut()
+        .ok_or(SpellCastDisposition::Rejected)?
+        .prepare_positions(
+            runtime,
+            content,
+            index,
+            &saved.binding.spell,
+            &mut lowered.batch,
+            cues,
+        )
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    states
+        .presentations
+        .as_mut()
+        .ok_or(SpellCastDisposition::Rejected)?
+        .hold_prepared_before_sql(runtime, &presentation, &lowered.batch)
+        .map_err(|_| SpellCastDisposition::Rejected)?;
+    Ok(Some(crate::spell::delayed_execution::ResolvedStrike {
+        batch: lowered.batch,
+        presentation: std::sync::Arc::new(presentation),
+        magnitude: std::sync::Arc::new(magnitude),
+        owned: owned.clone(),
+    }))
 }
