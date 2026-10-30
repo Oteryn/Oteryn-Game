@@ -485,11 +485,16 @@ mod creature_field_initial_tests {
             // Owner Global PKG1R4: 2124 6x9 at 9 s, first on step-in;
             // no separate 19 entry hit, so only five ticks remain after entry.
             (2124, 9, 9_000, vec![(9, 5)]),
-            // PKG1R4 amendment: preserve main for unmapped campfire stages
-            // and unmeasured 10069..10071, including first pulse on entry.
-            (1998, 20, 4_000, vec![(20, 1)]),
-            (1999, 20, 4_000, vec![(20, 1)]),
-            (2000, 20, 4_000, vec![(20, 1)]),
+            // PKG1R6 owner Global 2026-10-30, 0% resistance: 1998 big
+            // flames, entry 19 at 17:43:03 + seven ticks of 9 through 17:44:06.
+            (1998, 19, 9_000, vec![(9, 7)]),
+            // 1999 medium, 17:46:45..17:47:30: six ticks of 9, first on
+            // step-in, so five remain; no separate entry hit.
+            (1999, 9, 9_000, vec![(9, 5)]),
+            // 2000 embers at 0% resistance: 17:36:18..17:37:03, six
+            // ticks of 9, first on step-in, so five remain; look 17:36:17.
+            (2000, 9, 9_000, vec![(9, 5)]),
+            // PKG1R4: preserve main for unmeasured 10069..10071.
             (10069, 10, 10_000, vec![(10, 6)]),
             (10070, 10, 10_000, vec![(10, 6)]),
             (10071, 10, 10_000, vec![(10, 6)]),

@@ -222,15 +222,19 @@ fn c07_owner_global_field_entry_and_residual_recipes() {
             ),
             // Owner Global PKG1R4: 2123 has a separate 19 entry hit, then
             // seven Burning ticks of 9 every 9 s (unchanged from PKG1R3).
-            2123 => (DotElement::Fire, 9_000, &[(19, 1), (9, 7)]),
+            // PKG1R6 owner 2026-10-30, 0% resistance, 1998 big flames:
+            // 17:43:03 entry 19, then seven Burning ticks of 9 through 17:44:06.
+            1998 | 2123 => (DotElement::Fire, 9_000, &[(19, 1), (9, 7)]),
             // Owner Global PKG1R4: 2124 has six Burning ticks of 9 every
             // 9 s, first on step-in, with no separate 19 entry hit.
-            2124 => (DotElement::Fire, 9_000, &[(9, 6)]),
+            // PKG1R6, 0% resistance, first tick on step-in: 1999 medium
+            // 17:46:45..17:47:30, 2000 embers 17:36:18..17:37:03.
+            1999 | 2000 | 2124 => (DotElement::Fire, 9_000, &[(9, 6)]),
             2120 | 2125 | 2133 => {
                 assert_eq!(steps(&recipe), None, "harmless final fire {item}");
                 continue;
             }
-            1998..=2000 | 10069..=10071 | 2126 | 2137 | 2138 | 7465..=7473 | 2140 => {
+            10069..=10071 | 2126 | 2137 | 2138 | 7465..=7473 | 2140 => {
                 assert_eq!(
                     steps(&recipe),
                     expected_steps(item),
@@ -256,6 +260,13 @@ fn c07_owner_global_field_entry_and_residual_recipes() {
             _ => continue,
         };
         covered.insert(item);
+        assert_eq!(
+            recipe.total_damage().unwrap(),
+            runs.iter()
+                .map(|(amount, count)| amount * count)
+                .sum::<u32>(),
+            "total damage {item}"
+        );
         let expected = runs
             .iter()
             .map(|&(amount, repetitions)| FieldDamageEntry {
@@ -268,19 +279,20 @@ fn c07_owner_global_field_entry_and_residual_recipes() {
     }
     assert_eq!(
         covered.into_iter().collect::<Vec<_>>(),
-        [105, 2118, 2119, 2122, 2123, 2124, 2132, 2134, 2135]
+        [
+            105, 1998, 1999, 2000, 2118, 2119, 2122, 2123, 2124, 2132, 2134, 2135
+        ]
     );
 }
 
-/// PKG1R4 amendment: campfire stages are not mapped; 10069..10071 are
-/// unmeasured. These exact pre-PKG1R3 main recipes must remain unchanged.
+/// PKG1R4: 10069..10071 remain unmeasured and retain main's recipes.
+/// PKG1R6 lifts the campfire exclusion using the owner's measured stages.
 #[test]
 fn c07_pkg1r4_unmeasured_fields_retain_main_recipes() {
     let mut covered = std::collections::BTreeSet::new();
     for recipe in production_recipes().into_iter().chain(profiles("canary")) {
         let item = recipe.source.server_item_id;
         let (amount, interval_ms, repetitions) = match item {
-            1998..=2000 => (20, 4_000, 2),
             10069..=10071 => (10, 10_000, 7),
             // Owner Global PKG1R4: 2125 causes zero damage on entry and
             // no Burning ticks (no damage interval), matching main/Crystal.
@@ -306,7 +318,7 @@ fn c07_pkg1r4_unmeasured_fields_retain_main_recipes() {
     }
     assert_eq!(
         covered.into_iter().collect::<Vec<_>>(),
-        [1998, 1999, 2000, 2125, 10069, 10070, 10071]
+        [2125, 10069, 10070, 10071]
     );
 }
 
@@ -342,16 +354,29 @@ fn c08_crystal_field_recipes_equal_crystal_items_xml() {
 /// Owner Global PKG1R4 measurements override Crystal for map fire:
 /// 2123 separate entry 19 + seven Burning ticks of 9 every 9 s;
 /// 2124 six Burning ticks of 9 every 9 s, first on step-in, no separate entry.
-/// Campfire remains excluded pending stage mapping (owner amendment).
+/// PKG1R6 owner 2026-10-30 campfire mapping and Global measurements:
+/// (0% resistance) 1998 big flames: 17:43:03 entry 19 + seven ticks of 9
+/// through 17:44:06; 1999 medium: six ticks of 9, 17:46:45..17:47:30;
+/// 2000 embers: six ticks of 9, 17:36:18..17:37:03.
+/// All Burning intervals are 9 s; 1999/2000 first tick on step-in, no entry hit.
 /// Unmeasured 10069..10071 retain main's recipe, without a Global override.
 /// Exact Global recipes are asserted separately; raw Crystal parity stays above.
 #[test]
 fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
-    const DIVERGENT: &[u32] = &[105, 2118, 2119, 2122, 2123, 2124, 2132, 2134, 2135, 21465];
+    const DIVERGENT: &[u32] = &[
+        105, 1998, 1999, 2000, 2118, 2119, 2122, 2123, 2124, 2132, 2134, 2135, 21465,
+    ];
     let recipes = production_recipes();
+    let canary = profiles("canary");
     assert!(recipes.len() >= 15, "{}", recipes.len());
     let mut divergent = Vec::new();
-    for recipe in &recipes {
+    // Campfires are qualified but absent from the current production Item export.
+    // Check their runtime lowering too, without broadening content admission.
+    for recipe in recipes.iter().chain(
+        canary
+            .iter()
+            .filter(|r| matches!(r.source.server_item_id, 1998..=2000)),
+    ) {
         assert_eq!(recipe.source.server, "canary");
         let item = recipe.source.server_item_id;
         if steps(recipe) == expected_steps(item) {
@@ -362,11 +387,7 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
     }
     divergent.sort_unstable();
     // Crystal: 2132/2134/2135 deal nothing, and 21465 is not a field; Canary damages.
-    assert_eq!(
-        divergent,
-        [105, 2118, 2119, 2122, 2123, 2124, 2132, 2134, 2135, 21465]
-    );
-    let canary = profiles("canary");
+    assert_eq!(divergent, DIVERGENT);
     for (item, expected) in [
         (2131, Some((DotElement::Fire, 20, 10_000, 7))),
         (2132, Some((DotElement::Fire, 10, 10_000, 7))),
