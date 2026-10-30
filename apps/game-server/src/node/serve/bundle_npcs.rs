@@ -23,6 +23,77 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
 
+const GHOSTLY_WOLF: &str = "oteryn:npc.ghostly_wolf";
+const TALILA: &str = "oteryn:npc.talila";
+const VALINDARA: &str = "oteryn:npc.valindara";
+
+#[derive(Debug, Clone, Copy)]
+pub(super) struct TimedNpcSpawns {
+    admitted: [bool; 3],
+}
+
+impl TimedNpcSpawns {
+    pub(super) fn from_boot(boot: Option<&NpcBoot>) -> Self {
+        let admitted = match boot {
+            Some(NpcBoot::Place { admitted, .. }) => [
+                admitted.contains(GHOSTLY_WOLF),
+                admitted.contains(TALILA),
+                admitted.contains(VALINDARA),
+            ],
+            _ => [false; 3],
+        };
+        Self { admitted }
+    }
+
+    pub(super) fn is_empty(self) -> bool {
+        !self.admitted.iter().any(|admitted| *admitted)
+    }
+
+    pub(super) fn reconcile(
+        self,
+        runtime: &mut ChannelRuntimeV1,
+        tibian_minute: u32,
+    ) -> Result<(), NpcPlacementError> {
+        let day = oteryn_gameplay_world::world_clock::in_world_time(
+            tibian_minute,
+            oteryn_gameplay_world::world_clock::SUNRISE_START,
+            oteryn_gameplay_world::world_clock::SUNSET_START,
+        );
+        let desired = [!day, !day, day];
+        let specifications = [
+            (GHOSTLY_WOLF, placement(33_332, 32_052)),
+            (TALILA, placement(33_504, 32_222)),
+            (VALINDARA, placement(33_504, 32_222)),
+        ];
+        for (index, ((key, _), wanted)) in specifications.iter().zip(desired).enumerate() {
+            if self.admitted[index] && !wanted {
+                runtime.remove_dynamic_npc(key)?;
+            }
+        }
+        let present: BTreeSet<String> = runtime
+            .visible_entities()
+            .npcs
+            .iter()
+            .filter_map(|npc| runtime.npc_key(npc.actor).map(str::to_owned))
+            .collect();
+        for (index, ((key, at), wanted)) in specifications.iter().zip(desired).enumerate() {
+            if self.admitted[index] && wanted && !present.contains(*key) {
+                runtime.place_dynamic_npc(key, *at)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+fn placement(x: u16, y: u16) -> NpcPlacement {
+    NpcPlacement {
+        floor: -7,
+        y,
+        x,
+        direction: MovementFacing::South,
+    }
+}
+
 /// The NPC frame of a verified bundle and the catalogue digest its compiler classified with.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct BundleNpcs {
@@ -290,6 +361,17 @@ mod tests {
         npc::catalogue_digest(&[("npcs/definitions/seed.json", seed.as_bytes())])
     }
 
+    fn timed_keys(runtime: &ChannelRuntimeV1) -> Vec<&str> {
+        let mut keys: Vec<_> = runtime
+            .visible_entities()
+            .npcs
+            .iter()
+            .filter_map(|npc| runtime.npc_key(npc.actor))
+            .collect();
+        keys.sort_unstable();
+        keys
+    }
+
     /// A one-floor synthetic bundle (native floor -7, legacy `z` 7) of walkable grass on row
     /// 0, x 1..=7, carrying `npcs` and compiled against the catalogue digest `catalogue`.
     fn bundle_with_npcs(npcs: &npc::Table, catalogue: &str) -> Vec<u8> {
@@ -452,6 +534,45 @@ mod tests {
             place(&mut runtime, Some(&boot)),
             Err(BootError::Readiness("NPC actor placement"))
         ));
+    }
+
+    #[test]
+    fn world_time_tick_swaps_day_and_night_npcs_at_sunrise_and_sunset() {
+        let catalogue = digest("v1");
+        let boot = NpcBoot::Place {
+            table: NpcPlacementTable::default(),
+            catalogue_sha256: catalogue,
+            admitted: [GHOSTLY_WOLF, TALILA, VALINDARA]
+                .into_iter()
+                .map(str::to_owned)
+                .collect(),
+            production: true,
+            talk: Arc::new(NpcTalkBook::default()),
+        };
+        let timed = TimedNpcSpawns::from_boot(Some(&boot));
+        let mut runtime = channel_runtime();
+        let clock = crate::world_clock::WorldClockSource::new(0);
+        let minute_at = |minute: u64| {
+            clock
+                .tibian_minute(minute * crate::world_clock::TIBIAN_MINUTE_MS)
+                .expect("world minute")
+        };
+
+        timed
+            .reconcile(&mut runtime, minute_at(359))
+            .expect("night");
+        assert_eq!(timed_keys(&runtime), [GHOSTLY_WOLF, TALILA]);
+
+        timed
+            .reconcile(&mut runtime, minute_at(360))
+            .expect("sunrise");
+        assert_eq!(timed_keys(&runtime), [VALINDARA]);
+
+        timed
+            .reconcile(&mut runtime, minute_at(1_050))
+            .expect("sunset");
+        assert_eq!(timed_keys(&runtime), [GHOSTLY_WOLF, TALILA]);
+        eprintln!("W05C_TIMED_NPCS_EXECUTED sunrise=360 sunset=1050");
     }
 
     /// §7: an NPC the loaded catalogue does not have refuses a production World and leaves the

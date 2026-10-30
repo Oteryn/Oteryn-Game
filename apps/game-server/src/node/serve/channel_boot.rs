@@ -26,6 +26,7 @@ pub(super) struct PreparedChannel {
     pub(super) door: Mutex<crate::world_runtime::LocalObjectRuntime>,
     pub(super) chest: crate::content::CanonicalReferencePlayableContent,
     pub(super) runtime: Mutex<ChannelRuntimeV1>,
+    pub(super) timed_npcs: bundle_npcs::TimedNpcSpawns,
     pub(super) required_capabilities: std::sync::Arc<
         crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities,
     >,
@@ -219,6 +220,17 @@ pub(super) async fn prepare_channel(
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot)?;
+    let timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot);
+    if let Some(minute) = crate::world_clock::now_utc_ms().and_then(|now| {
+        crate::world_clock::WorldClockSource::new(
+            crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
+        )
+        .tibian_minute(now)
+    }) {
+        timed_npcs
+            .reconcile(&mut channel_runtime, minute)
+            .map_err(|_| BootError::Readiness("timed NPC placement"))?;
+    }
     let (spawned_monsters, spawn_windows) = match &bundle {
         Some(world) => match realize_bundle_spawns(&mut channel_runtime, world, signalled).await? {
             Some(realized) => realized,
@@ -257,6 +269,7 @@ pub(super) async fn prepare_channel(
         door,
         chest,
         runtime,
+        timed_npcs,
         required_capabilities,
     }))
 }

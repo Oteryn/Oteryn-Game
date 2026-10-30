@@ -2614,6 +2614,7 @@ async fn boot_and_serve(
         door,
         chest,
         runtime,
+        timed_npcs,
         required_capabilities,
     } = channel;
     if signalled.is_cancelled() {
@@ -2729,6 +2730,7 @@ async fn boot_and_serve(
         reset_epoch,
         generation,
         signalled,
+        timed_npcs,
     })
     .await
 }
