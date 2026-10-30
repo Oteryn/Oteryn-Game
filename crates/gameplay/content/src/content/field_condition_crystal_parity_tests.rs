@@ -217,10 +217,10 @@ fn c07_owner_global_field_entry_and_residual_recipes() {
                 (DotElement::Fire, 9_000, &[(20, 1), (10, 7)])
             }
             2122 | 2135 => (DotElement::Energy, 11_000, &[(30, 1), (25, 1)]),
-            105 | 2134 => (
+            105 | 2121 | 2134 => (
                 DotElement::Poison,
                 4_000,
-                &[(5, 5), (4, 5), (3, 7), (2, 10), (1, 19)],
+                &[(4, 5), (3, 5), (2, 7), (1, 10)],
             ),
             // Owner Global PKG1R4: 2123 has a separate 19 entry hit, then
             // seven Burning ticks of 9 every 9 s (unchanged from PKG1R3).
@@ -282,8 +282,8 @@ fn c07_owner_global_field_entry_and_residual_recipes() {
     assert_eq!(
         covered.into_iter().collect::<Vec<_>>(),
         [
-            105, 1998, 1999, 2000, 2118, 2119, 2122, 2123, 2124, 2131, 2132, 2134, 2135, 10069,
-            10070, 10071
+            105, 1998, 1999, 2000, 2118, 2119, 2121, 2122, 2123, 2124, 2131, 2132, 2134, 2135,
+            10069, 10070, 10071
         ]
     );
 }
@@ -337,8 +337,8 @@ fn c08_crystal_field_recipes_equal_crystal_items_xml() {
 /// Global rune recipes (PKG1R7 donor chains: 2118/2119/2131/2132 and
 /// 10069..10071 entry 20 + seven ticks of 10 at 9 s;
 /// 2122/2135 entry 30 + one tick of 25 at 11 s;
-/// 105/2134 TibiaWiki sequence: entry 5 + 4x5, 5x4, 7x3, 10x2, 19x1
-/// at 4 s, totaling 105 including entry (PKG1R8 owner decision).
+/// 105/2121/2134 owner Global measurement 2026-10-30 overrides Poison Gas
+/// rev 1119032: entry 4 + 4x4, 3x5, 2x7, 1x10 at 4 s, totaling 59.
 /// Owner Global PKG1R4 measurements override Crystal for map fire:
 /// 2123 separate entry 19 + seven Burning ticks of 9 every 9 s;
 /// 2124 six Burning ticks of 9 every 9 s, first on step-in, no separate entry.
@@ -352,8 +352,8 @@ fn c08_crystal_field_recipes_equal_crystal_items_xml() {
 #[test]
 fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
     const DIVERGENT: &[u32] = &[
-        105, 1998, 1999, 2000, 2118, 2119, 2122, 2123, 2124, 2131, 2132, 2134, 2135, 10069, 10070,
-        10071, 21465,
+        105, 1998, 1999, 2000, 2118, 2119, 2121, 2122, 2123, 2124, 2131, 2132, 2134, 2135, 10069,
+        10070, 10071, 21465,
     ];
     let recipes = production_recipes();
     let canary = profiles("canary");
