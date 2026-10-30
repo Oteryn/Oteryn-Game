@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -263,6 +264,34 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     import item_spell_augment_profiles
     item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
     pin_repository_inputs(root, generated)
+    # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
+    # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
+    item_path = spell_import.PROVIDER_DESTINATIONS["item_profiles"]
+    items = json.loads(generated[item_path])
+    energy = next(row for row in items["records"]
+                  if row["production_definition"]["production_key"] == "oteryn:item.tibia.i2122")
+    energy["semantics"]["temporal"]["value"]["duration"]["value"] = 100_000
+    generated[item_path] = (json.dumps(items, indent=2, ensure_ascii=False) + "\n").encode()
+    native_manifest = json.loads(generated[NATIVE_MANIFEST])
+    native_manifest["item_profiles"]["sha256"] = hashlib.sha256(generated[item_path]).hexdigest()
+    # Destroy_Field_Rune rev 1189762 / Destroy_Field rev 1182654, same owner decision:
+    # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
+    catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]
+    catalog = json.loads(generated[catalog_path])
+    spec = importlib.util.spec_from_file_location(
+        "build_executable_catalog", root / "tools/content-schema/spell-authoring/build_executable_catalog.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_owner_decisions(catalog)
+    generated[catalog_path] = spell_import.canonical_bytes(catalog)
+    selection_path = spell_import.PROVIDER_DESTINATIONS["source_selection"]
+    selection = json.loads(generated[selection_path])
+    selection["catalog_sha256"] = hashlib.sha256(generated[catalog_path]).hexdigest()
+    generated[selection_path] = spell_import.canonical_bytes(selection)
+    for name, path in (("catalog", catalog_path), ("source_selection", selection_path)):
+        native_manifest[name]["sha256"] = hashlib.sha256(generated[path]).hexdigest()
+    generated[NATIVE_MANIFEST] = spell_import.canonical_bytes(native_manifest)
+
     descriptors = spell_import.descriptors(root, generated)
     for family, path in FAMILY_INDEXES.items():
         index = json.loads((root / path).read_bytes())

@@ -47,6 +47,20 @@ use oteryn_protocol_oteryn::item_view::{
 use oteryn_protocol_oteryn::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY;
 use std::sync::{Arc, Mutex};
 
+// Scoped to the polled resume future, so concurrent tests cannot share a barrier.
+#[cfg(test)]
+#[derive(Default)]
+pub(super) struct PrepareTestBarrier {
+    pub ready: tokio::sync::Notify,
+    pub delay: bool,
+    pub entered: tokio::sync::Notify,
+    pub release: tokio::sync::Notify,
+}
+#[cfg(test)]
+tokio::task_local! {
+    pub(super) static PREPARE_TEST_BARRIER: Arc<PrepareTestBarrier>;
+}
+
 /// Candidate lifetime: the widest the 5 s evidence freshness allows (FND-04B §18).
 const CANDIDATE_LIFETIME_SECONDS: i64 = 5;
 
@@ -245,6 +259,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .recovery_budget(session_id, epoch)
             .await
             .map_err(|_| Unavailable)?;
+        #[cfg(test)]
+        if let Ok(barrier) = PREPARE_TEST_BARRIER.try_with(Arc::clone) {
+            if barrier.delay {
+                // Model a pre-lock read still owning the root on a slow runner.
+                let delayed = Arc::clone(&barrier);
+                self.root
+                    .try_issue_semantic_pass()
+                    .map_err(|_| Unavailable)?
+                    .run(move |_, _| {
+                        Box::pin(async move {
+                            delayed.entered.notify_one();
+                            delayed.release.notified().await;
+                            Ok(())
+                        })
+                    })
+                    .await
+                    .map_err(|_| Unavailable)?;
+            }
+            barrier.ready.notify_one();
+        }
         let (facts, source_revision) = {
             let runtime = self.runtime.lock().await;
             let facts = runtime

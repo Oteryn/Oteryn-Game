@@ -73,3 +73,13 @@ fn modifier_steps_keep_their_fractional_remainders_out_of_later_steps() {
     // The final green-stamina half point is truncated too: floor(3*1.5)=4.
     assert_eq!(hunting_experience(3, 0, 0, 2520, true, 50), Ok(4));
 }
+
+#[test]
+fn daily_v2_percentages_are_additive_before_stamina() {
+    for percent in [10, 20, 25, 50] {
+        assert_eq!(
+            hunting_experience(100, 0, percent, 2000, false, 50),
+            Ok(100 + i64::from(percent))
+        );
+    }
+}

@@ -463,6 +463,148 @@ mod creature_field_initial_tests {
     #![allow(clippy::unwrap_used, clippy::expect_used)]
     use super::*;
     #[test]
+    fn global_field_step_in_entry_then_every_residual_tick() {
+        use oteryn_gameplay_content::content::field_condition::QualifiedFieldCondition;
+        let document: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../../tools/content-schema/spell-authoring/samples/native-field-profiles.json"
+        ))
+        .unwrap();
+        for (item, entry, interval_ms, runs) in [
+            (2118, 20, 9_000, vec![(10, 7)]),
+            (2119, 20, 9_000, vec![(10, 7)]),
+            (2132, 20, 9_000, vec![(10, 7)]),
+            (2122, 30, 11_000, vec![(25, 1)]),
+            (
+                105,
+                5,
+                4_000,
+                vec![(5, 5), (4, 5), (3, 7), (2, 10), (1, 19)],
+            ),
+            // Owner Global PKG1R4: 2123 separate entry 19 + 7x9 at 9 s.
+            (2123, 19, 9_000, vec![(9, 7)]),
+            // Owner Global PKG1R4: 2124 6x9 at 9 s, first on step-in;
+            // no separate 19 entry hit, so only five ticks remain after entry.
+            (2124, 9, 9_000, vec![(9, 5)]),
+            // PKG1R6 owner Global 2026-10-30, 0% resistance: 1998 big
+            // flames, entry 19 at 17:43:03 + seven ticks of 9 through 17:44:06.
+            (1998, 19, 9_000, vec![(9, 7)]),
+            // 1999 medium, 17:46:45..17:47:30: six ticks of 9, first on
+            // step-in, so five remain; no separate entry hit.
+            (1999, 9, 9_000, vec![(9, 5)]),
+            // 2000 embers at 0% resistance: 17:36:18..17:37:03, six
+            // ticks of 9, first on step-in, so five remain; look 17:36:17.
+            (2000, 9, 9_000, vec![(9, 5)]),
+            // PKG1R4: preserve main for unmeasured 10069..10071.
+            (10069, 10, 10_000, vec![(10, 6)]),
+            (10070, 10, 10_000, vec![(10, 6)]),
+            (10071, 10, 10_000, vec![(10, 6)]),
+        ] {
+            let record = document["profiles"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|r| {
+                    r["source"]["server"] == "canary" && r["source"]["server_item_id"] == item
+                })
+                .unwrap();
+            let recipe: QualifiedFieldCondition = serde_json::from_value(record.clone()).unwrap();
+            let element = recipe.element().unwrap().unwrap();
+            let definition = native::ConditionDefinition::new(
+                &format!("native.field.{item}"),
+                1,
+                recipe.condition_values().unwrap().unwrap(),
+            )
+            .unwrap();
+            let state = PlayerSpellState::new(
+                super::super::cast::CharacterCastFacts {
+                    vocation: super::super::Vocation::Knight,
+                    level: 100,
+                    magic_level: 10,
+                    max_health: 1000,
+                    max_mana: 500,
+                    max_soul: 100,
+                },
+                0,
+                0,
+            )
+            .unwrap();
+            let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([1; 32]);
+            let facts = native::ApplicationFacts {
+                now: 0,
+                base_speed: 100,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &root,
+                occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(
+                    [1; 16],
+                ),
+            };
+            // The actual player STEP contact rule consumes the entry immediately,
+            // even while standing on the field. No equipment or PvP reduction here.
+            let (mut state, damage) = state
+                .stage_creature_field_contact(
+                    format!("creature:field:{item}"),
+                    &definition,
+                    &facts,
+                    element,
+                )
+                .unwrap();
+            assert_eq!(damage, entry, "entry {item}");
+            assert_eq!(state.health, 1000 - entry, "entry HP {item}");
+            // Leave the tile: drive the canonical condition clock directly so unrelated
+            // natural regeneration cannot offset the HP assertions.
+            let mut now_ms = 0;
+            let mut total = entry;
+            for (amount, count) in runs {
+                for _ in 0..count {
+                    now_ms += interval_ms;
+                    assert!(
+                        state
+                            .conditions
+                            .take_due((now_ms - 1) * 1_000, native::TickFacts::default())
+                            .is_empty(),
+                        "early tick {item}"
+                    );
+                    let ticks = state
+                        .conditions
+                        .take_due(now_ms * 1_000, native::TickFacts::default());
+                    assert_eq!(ticks.len(), 1, "tick count {item} at {now_ms}");
+                    assert!(
+                        matches!(ticks[0].kind, native::TickKind::Damage {
+                        amount: got, refused: false, ..
+                    } if got == amount),
+                        "tick {item} at {now_ms}: {ticks:?}"
+                    );
+                    let (next, hit) = super::super::actor_conditions::stage_creature_hit(
+                        &state,
+                        amount,
+                        now_ms * 1_000,
+                    )
+                    .unwrap();
+                    assert_eq!(hit.applied, amount);
+                    state = next;
+                    total += amount;
+                    assert_eq!(state.health, 1000 - total, "tick HP {item}");
+                }
+            }
+            assert!(
+                state
+                    .conditions
+                    .take_due((now_ms + interval_ms) * 1_000, native::TickFacts::default())
+                    .is_empty(),
+                "extra tick {item}"
+            );
+            assert!(
+                state
+                    .conditions
+                    .get(values::ConflictKey::Element(element))
+                    .is_none()
+            );
+        }
+    }
+    #[test]
     fn player_field_entry_freezes_lineage_and_leaves_damage_to_the_live_owner() {
         let state = PlayerSpellState::new(
             super::super::cast::CharacterCastFacts {

@@ -208,6 +208,121 @@ fn expected_steps(item: u32) -> Option<(DotElement, Vec<FieldDamageEntry>)> {
 }
 
 #[test]
+fn c07_owner_global_field_entry_and_residual_recipes() {
+    let mut covered = std::collections::BTreeSet::new();
+    for recipe in production_recipes().into_iter().chain(profiles("canary")) {
+        let item = recipe.source.server_item_id;
+        let (element, interval, runs): (_, _, &[(u32, u32)]) = match item {
+            2118 | 2119 | 2132 => (DotElement::Fire, 9_000, &[(20, 1), (10, 7)]),
+            2122 | 2135 => (DotElement::Energy, 11_000, &[(30, 1), (25, 1)]),
+            105 | 2134 => (
+                DotElement::Poison,
+                4_000,
+                &[(5, 6), (4, 5), (3, 7), (2, 10), (1, 19)],
+            ),
+            // Owner Global PKG1R4: 2123 has a separate 19 entry hit, then
+            // seven Burning ticks of 9 every 9 s (unchanged from PKG1R3).
+            // PKG1R6 owner 2026-10-30, 0% resistance, 1998 big flames:
+            // 17:43:03 entry 19, then seven Burning ticks of 9 through 17:44:06.
+            1998 | 2123 => (DotElement::Fire, 9_000, &[(19, 1), (9, 7)]),
+            // Owner Global PKG1R4: 2124 has six Burning ticks of 9 every
+            // 9 s, first on step-in, with no separate 19 entry hit.
+            // PKG1R6, 0% resistance, first tick on step-in: 1999 medium
+            // 17:46:45..17:47:30, 2000 embers 17:36:18..17:37:03.
+            1999 | 2000 | 2124 => (DotElement::Fire, 9_000, &[(9, 6)]),
+            2120 | 2125 | 2133 => {
+                assert_eq!(steps(&recipe), None, "harmless final fire {item}");
+                continue;
+            }
+            10069..=10071 | 2126 | 2137 | 2138 | 7465..=7473 | 2140 => {
+                assert_eq!(
+                    steps(&recipe),
+                    expected_steps(item),
+                    "excluded hazard {item}"
+                );
+                continue;
+            }
+            21465 => {
+                assert_eq!(
+                    steps(&recipe),
+                    Some((
+                        DotElement::Fire,
+                        vec![FieldDamageEntry {
+                            amount: 10,
+                            interval_ms: 10_000,
+                            repetitions: 7,
+                        }]
+                    )),
+                    "excluded yellow flame"
+                );
+                continue;
+            }
+            _ => continue,
+        };
+        covered.insert(item);
+        assert_eq!(
+            recipe.total_damage().unwrap(),
+            runs.iter()
+                .map(|(amount, count)| amount * count)
+                .sum::<u32>(),
+            "total damage {item}"
+        );
+        let expected = runs
+            .iter()
+            .map(|&(amount, repetitions)| FieldDamageEntry {
+                amount,
+                interval_ms: interval,
+                repetitions,
+            })
+            .collect();
+        assert_eq!(steps(&recipe), Some((element, expected)), "item {item}");
+    }
+    assert_eq!(
+        covered.into_iter().collect::<Vec<_>>(),
+        [
+            105, 1998, 1999, 2000, 2118, 2119, 2122, 2123, 2124, 2132, 2134, 2135
+        ]
+    );
+}
+
+/// PKG1R4: 10069..10071 remain unmeasured and retain main's recipes.
+/// PKG1R6 lifts the campfire exclusion using the owner's measured stages.
+#[test]
+fn c07_pkg1r4_unmeasured_fields_retain_main_recipes() {
+    let mut covered = std::collections::BTreeSet::new();
+    for recipe in production_recipes().into_iter().chain(profiles("canary")) {
+        let item = recipe.source.server_item_id;
+        let (amount, interval_ms, repetitions) = match item {
+            10069..=10071 => (10, 10_000, 7),
+            // Owner Global PKG1R4: 2125 causes zero damage on entry and
+            // no Burning ticks (no damage interval), matching main/Crystal.
+            2125 => {
+                covered.insert(item);
+                assert_eq!(recipe.total_damage().unwrap(), 0);
+                assert_eq!(steps(&recipe), None);
+                continue;
+            }
+            _ => continue,
+        };
+        covered.insert(item);
+        let expected = Some((
+            DotElement::Fire,
+            vec![FieldDamageEntry {
+                amount,
+                interval_ms,
+                repetitions,
+            }],
+        ));
+        assert_eq!(steps(&recipe), expected, "main recipe {item}");
+        assert_eq!(steps(&recipe), expected_steps(item), "Crystal {item}");
+    }
+    assert_eq!(
+        covered.into_iter().collect::<Vec<_>>(),
+        [2125, 10069, 10070, 10071]
+    );
+}
+
+#[test]
 fn c08_crystal_field_recipes_equal_crystal_items_xml() {
     let crystal = profiles("crystal");
     for recipe in &crystal {
@@ -232,15 +347,36 @@ fn c08_crystal_field_recipes_equal_crystal_items_xml() {
     assert_eq!(crystal.len(), covered + CRYSTAL_NON_DAMAGING.len() + 1);
 }
 
-/// The production recipes follow Canary; they equal Crystal on every item but the
-/// Optional-PvP "neutral" field variants and Canary's yellow flame.
+/// Production retains the recorded Canary exceptions and C07-2 owner-approved
+/// Global rune recipes (PKG1R3 owner table: 2118/2119/2132 entry 20 +
+/// seven ticks of 10 at 9 s; 2122/2135 entry 30 + one tick of 25 at 11 s;
+/// 105/2134 entry 5 + 5x5, 5x4, 7x3, 10x2, 19x1 at 4 s).
+/// Owner Global PKG1R4 measurements override Crystal for map fire:
+/// 2123 separate entry 19 + seven Burning ticks of 9 every 9 s;
+/// 2124 six Burning ticks of 9 every 9 s, first on step-in, no separate entry.
+/// PKG1R6 owner 2026-10-30 campfire mapping and Global measurements:
+/// (0% resistance) 1998 big flames: 17:43:03 entry 19 + seven ticks of 9
+/// through 17:44:06; 1999 medium: six ticks of 9, 17:46:45..17:47:30;
+/// 2000 embers: six ticks of 9, 17:36:18..17:37:03.
+/// All Burning intervals are 9 s; 1999/2000 first tick on step-in, no entry hit.
+/// Unmeasured 10069..10071 retain main's recipe, without a Global override.
+/// Exact Global recipes are asserted separately; raw Crystal parity stays above.
 #[test]
 fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
-    const DIVERGENT: [u32; 5] = [2131, 2132, 2134, 2135, 21465];
+    const DIVERGENT: &[u32] = &[
+        105, 1998, 1999, 2000, 2118, 2119, 2122, 2123, 2124, 2132, 2134, 2135, 21465,
+    ];
     let recipes = production_recipes();
+    let canary = profiles("canary");
     assert!(recipes.len() >= 15, "{}", recipes.len());
     let mut divergent = Vec::new();
-    for recipe in &recipes {
+    // Campfires are qualified but absent from the current production Item export.
+    // Check their runtime lowering too, without broadening content admission.
+    for recipe in recipes.iter().chain(
+        canary
+            .iter()
+            .filter(|r| matches!(r.source.server_item_id, 1998..=2000)),
+    ) {
         assert_eq!(recipe.source.server, "canary");
         let item = recipe.source.server_item_id;
         if steps(recipe) == expected_steps(item) {
@@ -251,8 +387,7 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
     }
     divergent.sort_unstable();
     // Crystal: 2132/2134/2135 deal nothing, and 21465 is not a field; Canary damages.
-    assert_eq!(divergent, [2132, 2134, 2135, 21465]);
-    let canary = profiles("canary");
+    assert_eq!(divergent, DIVERGENT);
     for (item, expected) in [
         (2131, Some((DotElement::Fire, 20, 10_000, 7))),
         (2132, Some((DotElement::Fire, 10, 10_000, 7))),
@@ -264,7 +399,19 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
             .iter()
             .find(|r| r.source.server_item_id == item)
             .unwrap();
-        let got = steps(recipe).map(|(element, entries)| {
+        // Safe rune products now lower to the separately asserted Global recipe;
+        // preserve these donor assertions without changing the pinned capture.
+        let got = if matches!(item, 2132 | 2134 | 2135) {
+            match &recipe.condition {
+                FieldConditionKind::Damage { element, entries } if !entries.is_empty() => {
+                    Some((element.condition_element(), entries.clone()))
+                }
+                _ => None,
+            }
+        } else {
+            steps(recipe)
+        }
+        .map(|(element, entries)| {
             assert_eq!(entries.len(), 1);
             let e = entries[0];
             (element, e.amount, e.interval_ms, e.repetitions)
@@ -277,7 +424,9 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
 /// C07: decay timers are Item attributes, not the rune Lua combat callback.
 /// Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:
 /// 105:33-44, 2118..2122:4253-4310, 2132..2135:4393-4420.
-/// These values already match production; no Global/Crystal conflict is resolved here.
+/// Owner-approved Global exception (2026-10-30): 2122 lasts 100 s, not Crystal's 98 s.
+/// Two owner measurements and TibiaWiki Energy_Field_(Field) revision 1011133 win.
+/// Every other shared timer remains Crystal parity.
 #[test]
 fn c07_production_field_decay_equals_crystal_for_shared_field_items() {
     let document: serde_json::Value = serde_json::from_str(include_str!(
@@ -290,7 +439,7 @@ fn c07_production_field_decay_equals_crystal_for_shared_field_items() {
         (2118, 200_000, Some(2119)),
         (2119, 148_000, Some(2120)),
         (2120, 98_000, None),
-        (2122, 98_000, None),
+        (2122, 100_000, None),
         (2132, 120_000, Some(2133)),
         (2133, 120_000, None),
         (2134, 120_000, None),

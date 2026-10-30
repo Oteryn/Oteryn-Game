@@ -65,7 +65,13 @@ class CurrentSourceImportTests(unittest.TestCase):
         self.assertEqual(len(native_profiles), 67)
         for profile in native_profiles:
             qualified = by_name[(profile['name'], profile['carrier'])]
-            self.assertEqual(qualified['bundle']['spell'], profile['spell'])
+            expected_spell = copy.deepcopy(profile['spell'])
+            if expected_spell['identity']['key'] == 'candidate:spell/rune/destroy_field_rune':
+                # PKG1R2: the raw donor still has range 5; the owner-approved
+                # Global profile removes that cap at final registration only.
+                self.assertNotIn('range_tiles', expected_spell['targeting'])
+                expected_spell['targeting']['range_tiles'] = 5
+            self.assertEqual(qualified['bundle']['spell'], expected_spell)
             self.assertEqual(qualified['dependencies'], profile['dependencies'])
         a = json.loads(self.generated[current.SELECTION]); b = json.loads(actual[current.SELECTION])
         a.pop('catalog_sha256'); b.pop('catalog_sha256'); self.assertEqual(a, b)

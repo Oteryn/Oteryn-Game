@@ -66,6 +66,58 @@ pub enum FieldError {
     Bounds,
 }
 impl QualifiedFieldCondition {
+    /// C07-2, owner decision 2026-10-30. Keep the pinned donor record intact;
+    /// select Global damage only after that complete record has been validated.
+    /// Rune/bomb/wall: TibiaQA 24717; Fire Field Rune 1189770 (9 s),
+    /// Electrified 1040087 (11 s), Poisoned 937846 (4 s). The owner's poison
+    /// table wins over Poison Gas 1119032's four later ticks of five.
+    /// Map fire, owner Global PKG1R4: 2123 has a separate 19 entry hit,
+    /// then seven Burning ticks of 9 every 9 s; 2124 has six Burning ticks
+    /// of 9 every 9 s, first on step-in, with no separate entry hit.
+    /// Campfire, owner Global PKG1R6 (2026-10-30, 0% resistance): 1998 big
+    /// flames shares 2123 (17:43:03 entry through 17:44:06); 1999 medium
+    /// (17:46:45..17:47:30) and 2000 embers (17:36:18..17:37:03) share 2124.
+    /// Unmeasured 10069..10071 remain unchanged.
+    /// Final fire 2120/2125 stays harmless (Fire 1011382). Safe rune products
+    /// 2132 (21465's decay), 2134 and 2135 share their recipe; player immunity remains with the contact owner.
+    /// Yellow flame 21465 is explicitly excluded, even when rune-created.
+    fn global_entries(&self) -> Option<&'static [FieldDamageEntry]> {
+        const fn entry(amount: u32, interval_ms: u32, repetitions: u32) -> FieldDamageEntry {
+            FieldDamageEntry {
+                amount,
+                interval_ms,
+                repetitions,
+            }
+        }
+        const FIRE: &[FieldDamageEntry] = &[entry(20, 9_000, 1), entry(10, 9_000, 7)];
+        const ENERGY: &[FieldDamageEntry] = &[entry(30, 11_000, 1), entry(25, 11_000, 1)];
+        const POISON: &[FieldDamageEntry] = &[
+            entry(5, 4_000, 6),
+            entry(4, 4_000, 5),
+            entry(3, 4_000, 7),
+            entry(2, 4_000, 10),
+            entry(1, 4_000, 19),
+        ];
+        const BURNING_TICK_DAMAGE: u32 = 9;
+        const BURNING_TICK_INTERVAL_MS: u32 = 9_000;
+        const MAP_FIRE: &[FieldDamageEntry] = &[
+            entry(19, BURNING_TICK_INTERVAL_MS, 1),
+            entry(BURNING_TICK_DAMAGE, BURNING_TICK_INTERVAL_MS, 7),
+        ];
+        const MAP_FIRE_MEDIUM: &[FieldDamageEntry] =
+            &[entry(BURNING_TICK_DAMAGE, BURNING_TICK_INTERVAL_MS, 6)];
+        if self.source.server != "canary" {
+            return None;
+        }
+        match self.source.server_item_id {
+            2118 | 2119 | 2132 => Some(FIRE),
+            2122 | 2135 => Some(ENERGY),
+            105 | 2134 => Some(POISON),
+            1998 | 2123 => Some(MAP_FIRE),
+            1999 | 2000 | 2124 => Some(MAP_FIRE_MEDIUM),
+            _ => None,
+        }
+    }
     #[allow(
         dead_code,
         reason = "read only by the actual spell field owner, not mounted in every crate"
@@ -82,6 +134,7 @@ impl QualifiedFieldCondition {
             FieldConditionKind::None => Ok(None),
             FieldConditionKind::Unsupported { .. } => Err(FieldError::Unsupported),
             FieldConditionKind::Damage { element, entries } => {
+                let entries = self.global_entries().unwrap_or(entries);
                 if entries.is_empty() || self.total_damage()? == 0 {
                     return Ok(None);
                 }
@@ -146,6 +199,7 @@ impl QualifiedFieldCondition {
             FieldConditionKind::None => Ok(0),
             FieldConditionKind::Unsupported { .. } => Err(FieldError::Unsupported),
             FieldConditionKind::Damage { entries, .. } => {
+                let entries = self.global_entries().unwrap_or(entries);
                 entries.iter().try_fold(0u32, |sum, entry| {
                     sum.checked_add(
                         entry
@@ -185,7 +239,7 @@ mod tests {
     fn source_poison_preserves_ramp_fire_count_and_barrier_known_none() {
         let poison = profile(105);
         assert_eq!(poison.element().unwrap(), Some(DotElement::Poison));
-        assert_eq!(poison.total_damage().unwrap(), 100);
+        assert_eq!(poison.total_damage().unwrap(), 110);
         let FieldConditionKind::Damage { entries, .. } = poison.condition else {
             panic!("damage")
         };
@@ -196,7 +250,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![(5, 4), (4, 5), (3, 7), (2, 9), (1, 21)]
         );
-        assert_eq!(profile(2118).total_damage().unwrap(), 140);
+        assert_eq!(profile(2118).total_damage().unwrap(), 90);
         assert_eq!(profile(2128).element().unwrap(), None);
         assert_eq!(profile(2130).element().unwrap(), None);
     }
