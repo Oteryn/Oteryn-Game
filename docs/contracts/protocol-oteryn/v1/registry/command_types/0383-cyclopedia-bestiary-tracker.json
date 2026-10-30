@@ -6,5 +6,5 @@
   "payload_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-tracker-v1.md#request",
   "result_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-tracker-v1.md#snapshot",
   "max_payload_bytes": 129,
-  "max_result_payload_bytes": 33026
+  "max_result_payload_bytes": 65536
 }

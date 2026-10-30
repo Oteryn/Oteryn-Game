@@ -16,7 +16,6 @@ mod bank_credit_headroom;
 pub mod bestiary_progress;
 pub mod blessing_purchase;
 pub mod bosstiary;
-pub mod cyclopedia_tracker;
 #[allow(
     dead_code,
     reason = "APP-1 production caller awaits admitted content, sex and grant owners"
@@ -53,6 +52,7 @@ pub mod charm_state;
 pub mod chat_text;
 pub mod coin_exchange;
 pub mod content_activation;
+pub mod cyclopedia_tracker;
 mod db;
 pub mod depot_search;
 pub mod equipment_policy_abi;
