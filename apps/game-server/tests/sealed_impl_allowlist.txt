@@ -8,6 +8,7 @@ apps/game-server/src/qualification.rs | fresh_source_sealed::Sealed | RuntimeRea
 crates/gameplay/dispatch/src/gameplay_transport/resume.rs | recovery_source_sealed::Sealed | ChannelResumeSource
 crates/gameplay/dispatch/src/gameplay_transport/resume.rs | recovery_source_sealed::Sealed | Completion
 crates/gameplay/dispatch/src/gameplay_transport/spell_premium_coordinator.rs | PremiumGateOwner | SpellPremiumCoordinator
+crates/gameplay/dispatch/src/gameplay_transport/spell_strike_callbacks.rs | due_read_seal::Sealed | StrikeEvidence<'_>
 crates/gameplay/dispatch/src/gameplay_transport/spell_timer_callbacks.rs | due_read_seal::Sealed | DueEvidence<'_>
 crates/gameplay/dispatch/src/lifted_tests/durability_world_party_tests.rs | fresh_source_sealed::Sealed | Source
 # Test-only native-map TEXT fixture in the seal-owning durability crate; no reusable
