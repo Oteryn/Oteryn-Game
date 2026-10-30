@@ -30,6 +30,15 @@ pub struct ItemCraftRequest {
     pub station: Option<TypedDefinitionRef>,
     /// Original bounded USE bytes. Replay compares these before resolving current handles.
     pub intent: Vec<u8>,
+    pub gathering: Option<GatheringCraft>,
+}
+
+/// Server-resolved map operand; the terrain CAS and inventory proof commit together.
+#[derive(Debug, Clone)]
+pub struct GatheringCraft {
+    pub scope: super::terrain_tool::TerrainScope,
+    pub mutation: super::terrain_tool::TerrainMutation,
+    pub attempt: oteryn_gameplay_items::fishing::GatheringAttempt,
 }
 
 impl DurabilityRoot {
@@ -106,7 +115,22 @@ async fn write<C: ItemLoopContent>(
         production_key: source.try_get("definition_production_key")?,
         revision_ref: source.try_get("definition_revision_ref")?,
     };
-    let conversion = match (&request.station, request.tool) {
+    let consumes_source = request.gathering.as_ref().is_none_or(|g| g.attempt.consumes_bait);
+    let conversion = if let Some(gathering) = &request.gathering {
+        let tool_id = request.tool.unwrap_or(request.source);
+        let tool: Option<(String, String)> = sqlx::query_as("SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND e.world_id=i.world_id AND b.world_id=i.world_id AND i.lifecycle=1 AND i.quantity>0 FOR UPDATE OF i")
+            .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
+        if tool.as_ref().map(|(key, revision)| (key.as_str(), revision.as_str())) != Some((gathering.mutation.tool_key.as_str(), gathering.mutation.tool_revision.as_str()))
+            || tool_id != gathering.mutation.tool || gathering.scope.content_generation != native.source_digest()
+            || (consumes_source && definition.production_key != oteryn_gameplay_items::fishing::WORM) {
+            return Ok(UseDisposition::StaleState);
+        }
+        let outputs = gathering.attempt.yield_item.map(|id| {
+            let record = native.item_policy_for_source_id(u32::from(id))?.record();
+            Some((TypedDefinitionRef { family: record.production_definition.family.clone(), production_key: record.production_definition.production_key.clone(), revision_ref: record.production_definition.revision_ref.clone() }, 1))
+        }).into_iter().collect::<Option<Vec<_>>>();
+        outputs.map(|outputs| oteryn_gameplay_items::item_craft::CookingConversion { recipe: "oteryn:gathering.crystal".into(), outputs })
+    } else { match (&request.station, request.tool) {
         (Some(station), Some(tool_id)) => {
             let tool = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 FOR UPDATE OF i")
                 .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
@@ -122,7 +146,7 @@ async fn write<C: ItemLoopContent>(
             &definition,
             reward_bag_draw(*fence.game_session_id.as_bytes(), request.command.command_id().get(), request.source),
         ),
-    };
+    }};
     let Some(conversion) = conversion else {
         return Ok(UseDisposition::NothingToUse);
     };
@@ -137,7 +161,7 @@ async fn write<C: ItemLoopContent>(
              ON e.parent_item_instance_id=t.item_instance_id WHERE t.depth<8 \
          ) SELECT count(*) FROM (SELECT item_instance_id FROM tree LIMIT 501) bounded",
     ).bind(&parent).fetch_one(&mut ***tx).await?;
-    if tree_count + i64::try_from(conversion.outputs.len()).map_err(|_| DurabilityError::InvalidStoredState)? - i64::from(quantity == 1) > 500 {
+    if tree_count + i64::try_from(conversion.outputs.len()).map_err(|_| DurabilityError::InvalidStoredState)? - i64::from(consumes_source && quantity == 1) > 500 {
         return Ok(UseDisposition::NoRoom);
     }
     let bag = sqlx::query("SELECT definition_family,definition_production_key,definition_revision_ref FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1 FOR UPDATE")
@@ -155,7 +179,7 @@ async fn write<C: ItemLoopContent>(
     if occupied
         + i64::try_from(conversion.outputs.len())
             .map_err(|_| DurabilityError::InvalidStoredState)?
-        - i64::from(quantity == 1)
+        - i64::from(consumes_source && quantity == 1)
         > i64::from(capacity)
     {
         return Ok(UseDisposition::NoRoom);
@@ -193,7 +217,7 @@ async fn write<C: ItemLoopContent>(
     }
     let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await?;
     if carried
-        .checked_sub(u64::from(used_weight))
+        .checked_sub(if consumes_source { u64::from(used_weight) } else { 0 })
         .and_then(|w| w.checked_add(output_weight))
         .is_none_or(|w| w > capacity)
     {
@@ -205,7 +229,7 @@ async fn write<C: ItemLoopContent>(
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     let mut outputs = Vec::new();
     for (position, (definition, count)) in conversion.outputs.iter().enumerate() {
-        let output_ordinal = if quantity == 1 && position == 0 {
+        let output_ordinal = if consumes_source && quantity == 1 && position == 0 {
             source.try_get::<String, _>("ordinal")?
         } else {
             ordinal = ordinal.checked_add(1).ok_or(DurabilityError::InvalidStoredState)?;
@@ -230,11 +254,17 @@ async fn write<C: ItemLoopContent>(
         occurred,
         tuple.tuple(),
     )?;
-    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15))")
-        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).execute(&mut ***tx).await?;
+    if let Some(gathering) = &request.gathering
+        && !super::terrain_tool::apply_in_transaction(tx, fence, request.command, &request.intent, &gathering.scope, &gathering.mutation).await? {
+        return Ok(UseDisposition::StaleState);
+    }
+    sqlx::query("INSERT INTO game_item_craft_records(transaction_id,event_id,game_session_id,command_id,character_id,world_id,intent,recipe,source_item_instance_id,parent_item_instance_id,source_ordinal,before_item,outputs,occurred_at,envelope_sha256,consume_source) VALUES($1::uuid,$2::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid,encode($6,'hex')::uuid,$7,$8,encode($9,'hex')::uuid,encode($10,'hex')::uuid,$11::text::numeric,$12,$13,$14,sha256($15),$16)")
+        .bind(&transaction).bind(&event).bind(fence.game_session_id.as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&request.intent).bind(&conversion.recipe).bind(request.source.as_slice()).bind(&parent).bind(source.try_get::<String,_>("ordinal")?).bind(&before).bind(json!(outputs)).bind(occurred).bind(&envelope).bind(consumes_source).execute(&mut ***tx).await?;
+    if consumes_source {
     sqlx::query("UPDATE game_item_instances SET quantity=quantity-1,lifecycle=CASE WHEN quantity=1 THEN 2 ELSE 1 END,last_transaction_id=$2::uuid WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(request.source.as_slice()).bind(&transaction).execute(&mut ***tx).await?;
-    if quantity == 1 {
+    }
+    if consumes_source && quantity == 1 {
         sqlx::query(
             "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid",
         )

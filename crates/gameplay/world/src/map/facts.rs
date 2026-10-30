@@ -398,6 +398,55 @@ impl BundleFacts {
         true
     }
 
+    /// Recover a durable gathering replacement/removal under the Channel owner lock.
+    /// Removal retains a revision and the original facts while hiding the base placement.
+    pub fn install_gathering_state(
+        &self,
+        key: u64,
+        revision: u64,
+        before: EntryFacts,
+        after: Option<EntryFacts>,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if revision == 0
+            || self.house_tile(pos)
+            || self.terrain_tool_action(key) != Some(None)
+            || before.bound
+            || before.count != 1
+            || before.sub_type != 0
+        {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if let Some((current, facts)) = states.changed.get(&key) {
+            if *current > revision {
+                return true;
+            }
+            if *current == revision {
+                return *facts == after.unwrap_or(before)
+                    && states.hidden.contains(&key) == after.is_none();
+            }
+        }
+        if states.changed.len() + states.hidden.len() >= super::overlay::OVERLAY_BUDGET_BYTES / 512
+        {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        states
+            .changed
+            .insert(key, (revision, after.unwrap_or(before)));
+        if after.is_none() {
+            states.hidden.insert(key);
+        } else {
+            states.hidden.remove(&key);
+        }
+        true
+    }
+
     /// Commits a rotation resolved by the Channel owner from admitted Content. Fixed furniture
     /// only: pickup and house custody never acquire a changed definition through this overlay.
     /// The expected revision and facts are compared together, so a retry cannot rotate twice.

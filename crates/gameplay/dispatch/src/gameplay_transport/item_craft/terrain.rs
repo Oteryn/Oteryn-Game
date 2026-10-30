@@ -310,11 +310,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(map) = self.bundle_map() else {
             return;
         };
-        let Some(index) = self
+        let Some(native) = self
             .active_generation
             .and_then(crate::content::ActiveGeneration::native_gameplay)
-            .and_then(|n| n.item_index())
         else {
+            return;
+        };
+        let Some(index) = native.item_index() else {
             return;
         };
         for row in rows {
@@ -332,6 +334,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(tile) = view::compose_tile(&map.overlay, &facts, pos).ok().flatten() else {
                 return;
             };
+            if row.item == 0 && facts.base_hidden(key) {
+                continue;
+            }
             let Some(entry) = tile
                 .entries
                 .iter()
@@ -346,6 +351,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return;
             };
+            if row.item == 0 {
+                if !map.facts.install_gathering_state(
+                    key,
+                    u64::try_from(row.revision).unwrap_or(0),
+                    entry.facts,
+                    None,
+                ) {
+                    return;
+                }
+                continue;
+            }
             let Some(reference) = index.definition_ref(
                 "Item",
                 &format!("oteryn:item.tibia.i{}", row.item),
@@ -361,7 +377,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 appearance_id: u16::try_from(row.item).unwrap_or(0),
                 ..entry.facts
             };
-            if !map.facts.install_terrain_state(key, revision, after) {
+            let gathering = matches!(
+                row.item,
+                4012 | 4325 | 4026 | 4063 | 4098 | 4138 | 7442 | 7237 | 7200
+            );
+            if gathering {
+                let Some(policy) = native
+                    .item_policy_for_source_id(row.item)
+                    .map(|p| p.record())
+                else {
+                    return;
+                };
+                let crate::content::ReferenceItemField::Known(physical) =
+                    &policy.semantics.physical
+                else {
+                    return;
+                };
+                let crate::content::ReferenceItemField::Known(pickupable) = physical.pickupable
+                else {
+                    return;
+                };
+                let Some(blocks_projectile) = policy.attributes.blocks_projectile else {
+                    return;
+                };
+                let after = view::EntryFacts {
+                    pickupable,
+                    blocks_projectile,
+                    ..after
+                };
+                if !map
+                    .facts
+                    .install_gathering_state(key, revision, entry.facts, Some(after))
+                {
+                    return;
+                }
+            } else if !map.facts.install_terrain_state(key, revision, after) {
                 return;
             }
         }
