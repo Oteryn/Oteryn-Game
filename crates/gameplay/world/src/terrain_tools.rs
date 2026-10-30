@@ -95,7 +95,10 @@ pub fn dispatch<'a>(
 
 /// Bounded mappings. Digging and jungle grass are backed by Canary register_actions.lua at
 /// 47dfd51f and the pinned items.xml. Harvest plans are staged: the runtime must refuse them
-/// until their yield has an audited mint owner. Sickle parity remains UNVERIFIED.
+/// until their yield has an audited mint owner. The sickle plan is Crystal 201189f8
+/// sickle.lua:12-15 (5463 to 5462, 5466 created on the target tile) with items.xml:14996-15027
+/// regrowth. Crystal's crowbar (register_actions.lua:884-969) only serves quest uids/actions,
+/// so no crowbar terrain target is admitted.
 pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
     let mut bindings = vec![
         TerrainToolBinding {
@@ -192,7 +195,41 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
                 },
             ],
         },
+        TerrainToolBinding {
+            tool: TerrainTool::Sickle,
+            target: 5463,
+            required_action: None,
+            transformed: 5462,
+            yield_item: Some(5466),
+            decay: vec![
+                DecayStep {
+                    state: 5470,
+                    after: Duration::from_secs(240),
+                },
+                DecayStep {
+                    state: 5465,
+                    after: Duration::from_secs(240),
+                },
+            ],
+        },
     ];
+    // M08B terrain pick: Crystal 201189f8 register_actions.lua:633-648 transforms the stone,
+    // loose stone and loose ice piles and lets them decay back (items.xml:1002-1004 hole 594
+    // 60 s, :1046-1048 hole 615 300 s, :1029-1031 hole 609 300 s). Fragile ice (:629, 7236)
+    // and the 21341 pile (:637, 21342) have no decay in that items.xml, so they stay unadmitted.
+    bindings.extend([(593, 594, 60), (606, 615, 300), (608, 609, 300)].map(
+        |(target, transformed, secs)| TerrainToolBinding {
+            tool: TerrainTool::Pick,
+            target,
+            required_action: None,
+            transformed,
+            yield_item: None,
+            decay: vec![DecayStep {
+                state: target,
+                after: Duration::from_secs(secs),
+            }],
+        },
+    ));
     // Global's loose stone piles all open to their immediately following appearance. Keep this
     // family data-driven so the production USE_WITH path applies the same custody, CAS, receipt,
     // and deadline recovery as the large-hole mapping above.
@@ -247,16 +284,6 @@ mod tests {
             yield_item: None,
             decay: Vec::new(),
         });
-        assert!(
-            dispatch(
-                &crystal_core_bindings(),
-                "oteryn:item.tibia.i3293",
-                5463,
-                None,
-                0
-            )
-            .is_none()
-        );
         let cases = [
             ("oteryn:item.tibia.i3457", 593, 594),
             ("oteryn:item.tibia.i3457", 606, 607),
@@ -272,6 +299,10 @@ mod tests {
             ("oteryn:item.tibia.i9594", 17153, 17151),
             ("oteryn:item.tibia.i3308", 9001, 9002),
             ("oteryn:item.tibia.i3453", 3653, 3651),
+            ("oteryn:item.tibia.i3293", 5463, 5462),
+            ("oteryn:item.tibia.i3456", 593, 594),
+            ("oteryn:item.tibia.i3456", 606, 615),
+            ("oteryn:item.tibia.i3456", 608, 609),
             ("oteryn:item.tibia.i3293", 9020, 9021),
             ("oteryn:item.tibia.i3304", 9010, 9011),
             ("oteryn:item.tibia.i3457", 21341, 21342),
@@ -321,6 +352,32 @@ mod tests {
                 .map(|step| step.state)
                 .collect::<Vec<_>>(),
             [3652, 3653]
+        );
+    }
+
+    #[test]
+    fn m08b_pick_piles_decay_back_on_the_donor_clock_and_crowbar_has_no_terrain_target() {
+        let catalogue = crystal_core_bindings();
+        for (target, transformed, deadline) in
+            [(593, 594, 70_000), (606, 615, 310_000), (608, 609, 310_000)]
+        {
+            let plan = dispatch(&catalogue, "oteryn:item.tibia.i3456", target, None, 10_000)
+                .expect("terrain pick binding");
+            assert_eq!(plan.binding.transformed, transformed);
+            assert_eq!(plan.first_deadline_unix_ms, Some(deadline));
+            assert_eq!(plan.binding.decay.len(), 1);
+            assert_eq!(plan.binding.decay[0].state, target);
+        }
+        for undecayed in [7200, 21341] {
+            assert!(dispatch(&catalogue, "oteryn:item.tibia.i3456", undecayed, None, 0).is_none());
+        }
+        let sickle =
+            dispatch(&catalogue, "oteryn:item.tibia.i3293", 5463, None, 0).expect("sickle binding");
+        assert_eq!(sickle.binding.yield_item, Some(5466));
+        assert!(
+            catalogue
+                .iter()
+                .all(|binding| binding.tool != TerrainTool::Crowbar)
         );
     }
 }

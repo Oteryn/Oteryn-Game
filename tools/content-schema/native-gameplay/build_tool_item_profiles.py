@@ -5,6 +5,7 @@ Basic fishing: Crystal 201189f8 data-global/scripts/actions/other/fishing.lua;
 Global: Fishing Rod revision 1113826, Worm 1113950, Fish 1113662.
 Behaviour: Crystal 201189f8 data-global/scripts/lib/register_actions.lua:6-7,363,864.
 Global: Shovel revision 1113775; Machete 1147243; Jungle Grass 1113755.
+Pick piles: Crystal 201189f8 register_actions.lua:633-648; items.xml decay 1002-1004, 1029-1031, 1046-1048.
 Harvest remains excluded until the durable owner can commit its yield atomically.
 """
 import argparse
@@ -16,7 +17,7 @@ import build_source_item_profiles as native
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/tool-item-profiles.json'
-IDS = {867, 868, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
+IDS = {593, 594, 606, 608, 609, 615, 867, 868, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
 
 
 def build(directory):
