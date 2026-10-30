@@ -234,15 +234,14 @@ pub(super) async fn prepare_channel(
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot)?;
     let timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot);
-    if let Some(minute) = crate::world_clock::now_utc_ms().and_then(|now| {
-        crate::world_clock::WorldClockSource::new(
-            crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
-        )
-        .tibian_minute(now)
-    }) {
-        timed_npcs
-            .reconcile(&mut channel_runtime, minute)
-            .map_err(|_| BootError::Readiness("timed NPC placement"))?;
+    // W05c: the day/night NPCs of the current world minute; one that cannot stand yet is
+    // retried by the world tick (`supervision.rs` `timed_npc_loop`).
+    if let Some(Err(error)) =
+        crate::world_clock::now_utc_ms().and_then(|now| timed_npcs.tick(&mut channel_runtime, now))
+    {
+        event(&format!(
+            "event=timed_npc_boot state=retry reason={error:?}"
+        ));
     }
     let (spawned_monsters, spawn_windows) = match &bundle {
         Some(world) => match realize_bundle_spawns(&mut channel_runtime, world, signalled).await? {

@@ -267,23 +267,20 @@ async fn timed_npc_loop(
     if timed_npcs.is_empty() {
         return;
     }
-    let clock = crate::world_clock::WorldClockSource::new(
-        crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
-    );
     let mut tick =
         tokio::time::interval(Duration::from_millis(crate::world_clock::TIBIAN_MINUTE_MS));
     loop {
         if first(tick.tick(), stop.cancelled()).await.is_none() {
             return;
         }
-        let Some(minute) =
-            crate::world_clock::now_utc_ms().and_then(|now| clock.tibian_minute(now))
-        else {
+        let Some(now) = crate::world_clock::now_utc_ms() else {
             continue;
         };
         let mut runtime = runtime.lock().await;
-        if timed_npcs.reconcile(&mut runtime, minute).is_err() {
-            event("event=timed_npc_tick state=retry");
+        if let Some(Err(error)) = timed_npcs.tick(&mut runtime, now) {
+            event(&format!(
+                "event=timed_npc_tick state=retry reason={error:?}"
+            ));
         }
     }
 }

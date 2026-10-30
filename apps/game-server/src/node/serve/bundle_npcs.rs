@@ -23,25 +23,136 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::sync::Arc;
 
-const GHOSTLY_WOLF: &str = "oteryn:npc.ghostly_wolf";
-const TALILA: &str = "oteryn:npc.talila";
-const VALINDARA: &str = "oteryn:npc.valindara";
+/// W05c: NPCs that stand only by day or only by night. Donor
+/// `data-global/scripts/world_changes/spawns_npc_by_time.lua:3-130` (zimbadev/crystalserver
+/// @201189f8): a day NPC spawns at `LIGHT_STATE_SUNRISE` and leaves at `LIGHT_STATE_SUNSET`, a
+/// night NPC the reverse (`onPeriodChange`, :134-174). Crystal's periods start at its world
+/// minutes 360 and 1050 (`game.hpp:967-968`, `game.cpp:9061-9073`), the same instants as this
+/// world clock's `SUNRISE_START` and `SUNSET_START`. Positions are the donor's `(x, y, z)`.
+const TIMED_NPCS: [(&str, (u16, u16, i8), TimedPeriod); 21] = [
+    (
+        "oteryn:npc.ghostly_wolf",
+        (33_332, 32_052, 7),
+        TimedPeriod::Night,
+    ),
+    ("oteryn:npc.talila", (33_504, 32_222, 7), TimedPeriod::Night),
+    (
+        "oteryn:npc.valindara",
+        (33_504, 32_222, 7),
+        TimedPeriod::Day,
+    ),
+    (
+        "oteryn:npc.evrard_the_miller",
+        (32_422, 32_464, 7),
+        TimedPeriod::Day,
+    ),
+    ("oteryn:npc.evrard", (32_404, 32_493, 6), TimedPeriod::Night),
+    (
+        "oteryn:npc.innkeeper_alphonse",
+        (32_417, 32_501, 7),
+        TimedPeriod::Night,
+    ),
+    (
+        "oteryn:npc.wes_the_blacksmith_day",
+        (32_423, 32_481, 5),
+        TimedPeriod::Day,
+    ),
+    (
+        "oteryn:npc.wes_the_blacksmith_night",
+        (32_374, 32_467, 6),
+        TimedPeriod::Night,
+    ),
+    (
+        "oteryn:npc.onfroi_day",
+        (32_428, 32_489, 5),
+        TimedPeriod::Day,
+    ),
+    (
+        "oteryn:npc.onfroi_night",
+        (32_429, 32_487, 2),
+        TimedPeriod::Night,
+    ),
+    (
+        "oteryn:npc.dal_the_huntress_day",
+        (32_436, 32_492, 5),
+        TimedPeriod::Day,
+    ),
+    (
+        "oteryn:npc.dal_the_huntress_night",
+        (32_436, 32_494, 4),
+        TimedPeriod::Night,
+    ),
+    (
+        "oteryn:npc.jehan_the_baker_day",
+        (32_421, 32_481, 4),
+        TimedPeriod::Day,
+    ),
+    (
+        "oteryn:npc.jehan_the_baker_night",
+        (32_391, 32_458, 6),
+        TimedPeriod::Night,
+    ),
+    (
+        "oteryn:npc.fral_the_butcher_day",
+        (32_445, 32_480, 4),
+        TimedPeriod::Day,
+    ),
+    (
+        "oteryn:npc.fral_the_butcher_night",
+        (32_399, 32_496, 6),
+        TimedPeriod::Night,
+    ),
+    (
+        "oteryn:npc.fitzmaurice",
+        (32_411, 32_486, 7),
+        TimedPeriod::Night,
+    ),
+    (
+        "oteryn:npc.kesar_the_younger_day",
+        (32_365, 32_478, 2),
+        TimedPeriod::Day,
+    ),
+    (
+        "oteryn:npc.kesar_the_younger_night",
+        (32_368, 32_473, 3),
+        TimedPeriod::Night,
+    ),
+    (
+        "oteryn:npc.kesar_s_valet_day",
+        (32_367, 32_476, 2),
+        TimedPeriod::Day,
+    ),
+    (
+        "oteryn:npc.kesar_s_valet_night",
+        (32_372, 32_473, 3),
+        TimedPeriod::Night,
+    ),
+];
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TimedPeriod {
+    Day,
+    Night,
+}
+
+/// The day/night NPCs the loaded catalogue admits, kept on the map by the world clock.
+///
+/// Unlike the donor, which picks the startup set from the light level (`functions.lua:33-40`, so
+/// a start during dusk spawns the day set) and spawns 5 s after the period change
+/// (`spawns_npc_by_time.lua:159-170`), the set follows the world minute at boot and every tick.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct TimedNpcSpawns {
-    admitted: [bool; 3],
+    admitted: [bool; TIMED_NPCS.len()],
 }
 
 impl TimedNpcSpawns {
     pub(super) fn from_boot(boot: Option<&NpcBoot>) -> Self {
-        let admitted = match boot {
-            Some(NpcBoot::Place { admitted, .. }) => [
-                admitted.contains(GHOSTLY_WOLF),
-                admitted.contains(TALILA),
-                admitted.contains(VALINDARA),
-            ],
-            _ => [false; 3],
-        };
+        let mut admitted = [false; TIMED_NPCS.len()];
+        if let Some(NpcBoot::Place { admitted: keys, .. }) = boot {
+            for (index, (key, _, _)) in TIMED_NPCS.iter().enumerate() {
+                admitted[index] = keys.contains(*key);
+            }
+        }
         Self { admitted }
     }
 
@@ -49,7 +160,25 @@ impl TimedNpcSpawns {
         !self.admitted.iter().any(|admitted| *admitted)
     }
 
-    pub(super) fn reconcile(
+    /// One world-clock step at `now_utc_ms` (boot and every world tick): the clock the
+    /// transport's light uses (`snapshot.rs`), not a second one. `None` when the clock is
+    /// unreadable; otherwise whether every admitted NPC is where its period puts it.
+    pub(super) fn tick(
+        self,
+        runtime: &mut ChannelRuntimeV1,
+        now_utc_ms: u64,
+    ) -> Option<Result<(), NpcPlacementError>> {
+        let minute = crate::world_clock::WorldClockSource::new(
+            crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
+        )
+        .tibian_minute(now_utc_ms)?;
+        Some(self.reconcile(runtime, minute))
+    }
+
+    /// Removes the NPCs out of period, then places those in period that are missing. Each NPC
+    /// is reconciled on its own: one that cannot move now (its cell occupied) keeps the rest
+    /// going and is retried on the next tick; the first such error is returned.
+    fn reconcile(
         self,
         runtime: &mut ChannelRuntimeV1,
         tibian_minute: u32,
@@ -59,15 +188,12 @@ impl TimedNpcSpawns {
             oteryn_gameplay_world::world_clock::SUNRISE_START,
             oteryn_gameplay_world::world_clock::SUNSET_START,
         );
-        let desired = [!day, !day, day];
-        let specifications = [
-            (GHOSTLY_WOLF, placement(33_332, 32_052)),
-            (TALILA, placement(33_504, 32_222)),
-            (VALINDARA, placement(33_504, 32_222)),
-        ];
-        for (index, ((key, _), wanted)) in specifications.iter().zip(desired).enumerate() {
-            if self.admitted[index] && !wanted {
-                runtime.remove_dynamic_npc(key)?;
+        let wanted = |period: TimedPeriod| (period == TimedPeriod::Day) == day;
+        let mut outcome = Ok(());
+        for (index, (key, _, period)) in TIMED_NPCS.iter().enumerate() {
+            if self.admitted[index] && !wanted(*period) {
+                let removed = runtime.remove_dynamic_npc(key);
+                outcome = outcome.and(removed);
             }
         }
         let present: BTreeSet<String> = runtime
@@ -76,21 +202,21 @@ impl TimedNpcSpawns {
             .iter()
             .filter_map(|npc| runtime.npc_key(npc.actor).map(str::to_owned))
             .collect();
-        for (index, ((key, at), wanted)) in specifications.iter().zip(desired).enumerate() {
-            if self.admitted[index] && wanted && !present.contains(*key) {
-                runtime.place_dynamic_npc(key, *at)?;
+        for (index, (key, (x, y, z), period)) in TIMED_NPCS.iter().enumerate() {
+            if self.admitted[index] && wanted(*period) && !present.contains(*key) {
+                let placed = runtime.place_dynamic_npc(
+                    key,
+                    NpcPlacement {
+                        floor: -*z,
+                        y: *y,
+                        x: *x,
+                        direction: MovementFacing::South,
+                    },
+                );
+                outcome = outcome.and(placed.map(|_| ()));
             }
         }
-        Ok(())
-    }
-}
-
-fn placement(x: u16, y: u16) -> NpcPlacement {
-    NpcPlacement {
-        floor: -7,
-        y,
-        x,
-        direction: MovementFacing::South,
+        outcome
     }
 }
 
@@ -474,6 +600,10 @@ mod tests {
     }
 
     fn channel_runtime() -> ChannelRuntimeV1 {
+        channel_runtime_with(8)
+    }
+
+    fn channel_runtime_with(capacity: usize) -> ChannelRuntimeV1 {
         let world = WorldId::decode(&[1, 0, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1])
             .expect("world");
         let channel = ChannelId::decode(&[1, 0, 0, 0, 0, 2, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 2])
@@ -488,7 +618,7 @@ mod tests {
             1,
             1,
             "runtime-scope-assignment:1",
-            8,
+            capacity,
             oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
         )
         .expect("runtime")
@@ -536,43 +666,118 @@ mod tests {
         ));
     }
 
-    #[test]
-    fn world_time_tick_swaps_day_and_night_npcs_at_sunrise_and_sunset() {
-        let catalogue = digest("v1");
-        let boot = NpcBoot::Place {
+    fn timed_boot(keys: &[&str]) -> NpcBoot {
+        NpcBoot::Place {
             table: NpcPlacementTable::default(),
-            catalogue_sha256: catalogue,
-            admitted: [GHOSTLY_WOLF, TALILA, VALINDARA]
-                .into_iter()
-                .map(str::to_owned)
-                .collect(),
+            catalogue_sha256: digest("v1"),
+            admitted: keys.iter().map(|key| (*key).to_owned()).collect(),
             production: true,
             talk: Arc::new(NpcTalkBook::default()),
-        };
-        let timed = TimedNpcSpawns::from_boot(Some(&boot));
-        let mut runtime = channel_runtime();
-        let clock = crate::world_clock::WorldClockSource::new(0);
-        let minute_at = |minute: u64| {
-            clock
-                .tibian_minute(minute * crate::world_clock::TIBIAN_MINUTE_MS)
-                .expect("world minute")
-        };
+        }
+    }
 
+    /// The UTC instant of world minute `minute` on the production world clock.
+    fn at_minute(minute: u64) -> u64 {
+        let now = minute * crate::world_clock::TIBIAN_MINUTE_MS;
+        let clock = crate::world_clock::WorldClockSource::new(
+            crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
+        );
+        assert_eq!(clock.tibian_minute(now), u32::try_from(minute % 1_440).ok());
+        now
+    }
+
+    fn period_keys(period: TimedPeriod) -> Vec<&'static str> {
+        let mut keys: Vec<_> = TIMED_NPCS
+            .iter()
+            .filter(|(_, _, of)| *of == period)
+            .map(|(key, _, _)| *key)
+            .collect();
+        keys.sort_unstable();
+        keys
+    }
+
+    #[test]
+    fn world_time_tick_swaps_day_and_night_npcs_at_sunrise_and_sunset() {
+        let keys: Vec<&str> = TIMED_NPCS.iter().map(|(key, _, _)| *key).collect();
+        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&keys)));
+        let mut runtime = channel_runtime_with(32);
+        let (day, night) = (
+            period_keys(TimedPeriod::Day),
+            period_keys(TimedPeriod::Night),
+        );
+        assert_eq!((day.len(), night.len()), (9, 12));
+        for (minute, expected) in [
+            (359, &night),
+            (360, &day),
+            (1_049, &day),
+            (1_050, &night),
+            (1_439, &night),
+            (1_440 + 360, &day),
+        ] {
+            timed
+                .tick(&mut runtime, at_minute(minute))
+                .expect("clock")
+                .expect("reconciled");
+            assert_eq!(&timed_keys(&runtime), expected, "minute {minute}");
+        }
+        // Talila (night) and Valindara (day) share one cell: the swap frees it first.
+        let valindara = runtime
+            .visible_entities()
+            .npcs
+            .iter()
+            .find(|npc| runtime.npc_key(npc.actor) == Some("oteryn:npc.valindara"))
+            .map(|npc| (npc.position.x, npc.position.y, npc.position.floor));
+        assert_eq!(valindara, Some((33_504, 32_222, 7)));
+        // The NPCs the catalogue does not admit are never placed.
+        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&["oteryn:npc.talila"])));
+        let mut runtime = channel_runtime_with(32);
         timed
-            .reconcile(&mut runtime, minute_at(359))
+            .tick(&mut runtime, at_minute(359))
+            .expect("clock")
             .expect("night");
-        assert_eq!(timed_keys(&runtime), [GHOSTLY_WOLF, TALILA]);
+        assert_eq!(timed_keys(&runtime), ["oteryn:npc.talila"]);
+        assert!(TimedNpcSpawns::from_boot(None).is_empty());
+    }
 
+    #[test]
+    fn a_timed_npc_that_cannot_stand_yet_does_not_hold_back_the_others() {
+        let timed = TimedNpcSpawns::from_boot(Some(&timed_boot(&[
+            "oteryn:npc.valindara",
+            "oteryn:npc.evrard_the_miller",
+        ])));
+        let mut runtime = channel_runtime_with(32);
+        // Someone stands on Valindara's cell at sunrise.
+        runtime
+            .place_dynamic_npc(
+                "oteryn:npc.blocker",
+                NpcPlacement {
+                    floor: -7,
+                    y: 32_222,
+                    x: 33_504,
+                    direction: MovementFacing::South,
+                },
+            )
+            .expect("blocker");
+        assert_eq!(
+            timed.tick(&mut runtime, at_minute(360)).expect("clock"),
+            Err(NpcPlacementError::CellOccupied)
+        );
+        assert_eq!(
+            timed_keys(&runtime),
+            ["oteryn:npc.blocker", "oteryn:npc.evrard_the_miller"]
+        );
+        // The next tick places her once the cell is free.
+        runtime
+            .remove_dynamic_npc("oteryn:npc.blocker")
+            .expect("free");
         timed
-            .reconcile(&mut runtime, minute_at(360))
-            .expect("sunrise");
-        assert_eq!(timed_keys(&runtime), [VALINDARA]);
-
-        timed
-            .reconcile(&mut runtime, minute_at(1_050))
-            .expect("sunset");
-        assert_eq!(timed_keys(&runtime), [GHOSTLY_WOLF, TALILA]);
-        eprintln!("W05C_TIMED_NPCS_EXECUTED sunrise=360 sunset=1050");
+            .tick(&mut runtime, at_minute(361))
+            .expect("clock")
+            .expect("placed");
+        assert_eq!(
+            timed_keys(&runtime),
+            ["oteryn:npc.evrard_the_miller", "oteryn:npc.valindara"]
+        );
     }
 
     /// §7: an NPC the loaded catalogue does not have refuses a production World and leaves the
