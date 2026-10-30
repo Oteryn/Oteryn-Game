@@ -84,22 +84,166 @@ fn i14_admitted_consumables_match_crystal() {
     assert_eq!(food.regeneration_seconds, 180);
 }
 
-/// Crystal consumables the active generation does not admit: the item-use path resolves no
-/// record for them, so use answers `NothingToUse`. Pinned until their profiles are admitted.
+/// Matching Global/Crystal rows. Wiki revisions: Strong Health 1183253, Strong Mana
+/// 1183193, Great Health 1183256, Mana 1183192, Ultimate Health 1183257,
+/// Small Health 1139185, Ultimate Mana 1183206; Egg 1113787 and Fish 1113662.
+/// Crystal `201189f8` potions.lua:45-59 and foods.lua:2,8.
 #[test]
-fn i14_unadmitted_crystal_consumables_are_pinned() {
+fn i14_matching_restore_potions_and_foods_are_admitted() {
     let controller = native();
     let state = controller
         .active()
         .and_then(|active| active.native_gameplay())
         .expect("native gameplay");
-    for id in [
-        // Potions: strong/great/ultimate health and mana, spirit, small health, antidote,
-        // supreme health, ultimate mana and ultimate spirit.
-        236, 237, 238, 239, 268, 7642, 7643, 7644, 7876, 23373, 23374, 23375,
-        // Food: egg, fish, carrot, energy bar.
-        3606, 3578, 3250, 23535,
+    for (id, resource, min, max, flask, level, allowed) in [
+        (
+            236,
+            ReferenceRestoreResource::Health,
+            250,
+            350,
+            283,
+            50,
+            vec![Vocation::Knight, Vocation::Paladin, Vocation::Monk],
+        ),
+        (
+            237,
+            ReferenceRestoreResource::Mana,
+            115,
+            185,
+            283,
+            50,
+            vec![
+                Vocation::None,
+                Vocation::Knight,
+                Vocation::Paladin,
+                Vocation::Monk,
+                Vocation::Druid,
+                Vocation::Sorcerer,
+            ],
+        ),
+        (
+            239,
+            ReferenceRestoreResource::Health,
+            425,
+            575,
+            284,
+            80,
+            vec![Vocation::Knight],
+        ),
+        (
+            268,
+            ReferenceRestoreResource::Mana,
+            75,
+            125,
+            285,
+            1,
+            vec![
+                Vocation::None,
+                Vocation::Knight,
+                Vocation::Paladin,
+                Vocation::Monk,
+                Vocation::Druid,
+                Vocation::Sorcerer,
+            ],
+        ),
+        (
+            7643,
+            ReferenceRestoreResource::Health,
+            650,
+            850,
+            284,
+            130,
+            vec![Vocation::Knight],
+        ),
+        (
+            7876,
+            ReferenceRestoreResource::Health,
+            60,
+            90,
+            285,
+            1,
+            vec![
+                Vocation::None,
+                Vocation::Knight,
+                Vocation::Paladin,
+                Vocation::Monk,
+                Vocation::Druid,
+                Vocation::Sorcerer,
+            ],
+        ),
+        (
+            23373,
+            ReferenceRestoreResource::Mana,
+            425,
+            575,
+            284,
+            130,
+            vec![Vocation::Druid, Vocation::Sorcerer],
+        ),
     ] {
+        let policy = policy_of(state, id).unwrap_or_else(|| panic!("item {id} is admitted"));
+        let semantics = &policy.record().semantics;
+        let ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) =
+            &semantics.consumption
+        else {
+            panic!("{id} is a potion")
+        };
+        assert_eq!(potion.restores.len(), 1, "{id}");
+        assert_eq!(
+            (
+                potion.restores[0].resource,
+                potion.restores[0].min,
+                potion.restores[0].max
+            ),
+            (resource, min, max),
+            "{id}"
+        );
+        let ReferenceItemField::Known(returned) = &potion.empty_flask else {
+            panic!("{id} names a flask")
+        };
+        assert_eq!(returned.key, format!("oteryn:item.tibia.i{flask}"));
+        assert!(policy_of(state, flask).is_some());
+        for vocation in [
+            Vocation::None,
+            Vocation::Knight,
+            Vocation::Paladin,
+            Vocation::Monk,
+            Vocation::Druid,
+            Vocation::Sorcerer,
+        ] {
+            assert_eq!(
+                requirements_met(&semantics.use_requirements, facts_at(vocation, level)),
+                allowed.contains(&vocation),
+                "{id} {vocation:?}"
+            );
+            if level > 1 {
+                assert!(
+                    !requirements_met(&semantics.use_requirements, facts_at(vocation, level - 1)),
+                    "{id} below level"
+                );
+            }
+        }
+    }
+    for (id, seconds) in [(3606, 72), (3578, 144)] {
+        let policy = policy_of(state, id).expect("food is admitted");
+        let ReferenceItemField::Known(ReferenceItemConsumption::Food(food)) =
+            &policy.record().semantics.consumption
+        else {
+            panic!("{id} is food")
+        };
+        assert_eq!(food.regeneration_seconds, seconds);
+    }
+}
+
+/// Conflicting values and unsupported condition effects remain unadmitted.
+#[test]
+fn i14_unresolved_crystal_consumables_remain_unadmitted() {
+    let controller = native();
+    let state = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .expect("native gameplay");
+    for id in [238, 7642, 7644, 23374, 23375, 3250, 23535] {
         assert!(policy_of(state, id).is_none(), "item {id}");
     }
 }

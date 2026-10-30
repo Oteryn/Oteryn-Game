@@ -22,6 +22,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
     // All have speed_bonus=0.
     ("GOLDCONV", 4),
+    // I14: seven restore potions, two foods and the two larger flasks admitted from
+    // digest-pinned consumption facts. They carry no equipment/speed qualification.
+    ("I14", 11),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
     // The wooden chairs 2358..=2361 (tools/content-migration/item_transform_profiles.py).
@@ -61,6 +64,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("REWARD-BAG-2", 36),
     // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
     ("TIMEDITEMS2-1", 2),
+    // M08/M09: the eleven qualified shovel, machete, rod/bait/water and target policies
+    // in tool-item-profiles.json. The source importer records speed_bonus=0.
+    ("TOOLS-PKG4", 11),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),
@@ -128,6 +134,11 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             "oteryn:item.tibia.i10310".into(),
         ]
         .into_iter()
+        // I14 preserves unknown speed for the newly admitted non-equipment consumables.
+        .chain(
+            [236, 237, 239, 268, 283, 284, 3578, 3606, 7643, 7876, 23373]
+                .map(|id| format!("oteryn:item.tibia.i{id}")),
+        )
         // READ-WRITE-1: the 19 readable profiles carry no speed attribute and are not equipment.
         .chain(
             [
