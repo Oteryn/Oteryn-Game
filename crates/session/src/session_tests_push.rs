@@ -1,5 +1,59 @@
 // --- SESSION-PUSH-1: server-initiated deltas, the domain store and the bounded event queue.
 
+#[test]
+fn silent_peer_ends_even_across_short_idle_windows() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let (client, peer) = script_peer(vec![]);
+                let mut session = Session::admit(client, admission()?).await?;
+                let started = tokio::time::Instant::now();
+                let result = tokio::time::timeout(Duration::from_secs(21), async {
+                    loop {
+                        if let Err(error) = session.service_liveness(Duration::from_millis(50)).await {
+                            break Err::<(), _>(error);
+                        }
+                    }
+                })
+                .await;
+                assert!(matches!(result, Ok(Err(SessionError::Timeout("server silence")))));
+                assert!(started.elapsed() >= Duration::from_secs(20));
+                assert!(matches!(
+                    session.service_liveness(Duration::ZERO).await,
+                    Err(SessionError::SessionUnusable)
+                ));
+                drop(session);
+                peer.await??;
+                Ok::<(), BoxError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "silent peer test thread failed")?
+}
+
+#[test]
+fn a_probe_refreshes_the_silence_deadline() -> Result<(), BoxError> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            block_on(async {
+                let (mut session, mut peer) = vitals_pair().await?;
+                // Place a healthy session near the deadline without a wall-clock sleep.
+                session.last_received = tokio::time::Instant::now() - Duration::from_secs(19);
+                let before = session.last_received;
+                write_frame(&mut peer, &oteryn_protocol_oteryn::encode_liveness_probe(1, 1)?).await?;
+                session.service_liveness(Duration::from_millis(10)).await?;
+                assert!(session.last_received > before + Duration::from_secs(18));
+                let ack = read_frame(&mut peer).await?;
+                assert_eq!(decode_wire_envelope(&ack)?.message_type(), MessageType::LivenessAck);
+                Ok::<(), BoxError>(())
+            })?
+        })?
+        .join()
+        .map_err(|_| "probe deadline test thread failed")?
+}
+
 enum Step {
     Send(Vec<u8>),
     /// Frames written in one `write_all`, so the client can never read the first frame

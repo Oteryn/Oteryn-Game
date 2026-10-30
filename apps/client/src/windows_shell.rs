@@ -4,9 +4,10 @@ use oteryn_client::input::{MouseActions, StepDir};
 use oteryn_client::map::{START, World};
 use oteryn_client::play::{PlayEnd, PlayLink, PlayView};
 use oteryn_client::pre_native_status;
+use oteryn_client::reentry::Reentry;
 use oteryn_client::scene::Scene;
 use oteryn_client::spell::SpellHotkeys;
-use oteryn_client::{AdmittedSession, ClientBootstrap, GameplayEntryError};
+use oteryn_client::{ClientBootstrap, GameplayEntryError};
 use oteryn_foundation::ProcessGeneration;
 use oteryn_input_platform::InputPlatformAdapter;
 use oteryn_platform_client::native_login::PublicClass;
@@ -62,7 +63,7 @@ struct Application {
     scene: Option<Scene>,
     offline_own: TileCoord,
     offline_facing: StepDir,
-    client: Option<ClientBootstrap>,
+    entry: Option<Reentry>,
     play: Option<Play>,
     generation: ProcessGeneration,
     input: InputPlatformAdapter,
@@ -80,26 +81,11 @@ struct Play {
 }
 
 impl Application {
-    fn new(
-        smoke: bool,
-        play: Option<(ClientBootstrap, AdmittedSession)>,
-    ) -> Result<Self, ShellError> {
-        let (client, play) = match play {
-            Some((client, admitted)) => {
-                let (view, link) = client
-                    .start_play(admitted)
-                    .map_err(|_error| ShellError::RendererInitialization)?;
-                (
-                    Some(client),
-                    Some(Play {
-                        view,
-                        link,
-                        status: String::new(),
-                    }),
-                )
-            }
-            None => (None, None),
-        };
+    fn new(smoke: bool, client: Option<ClientBootstrap>) -> Result<Self, ShellError> {
+        let mut entry = client.map(Reentry::new);
+        if !smoke && let Some(entry) = &mut entry {
+            entry.request();
+        }
         Ok(Self {
             smoke,
             window: None,
@@ -108,8 +94,8 @@ impl Application {
             scene: None,
             offline_own: TileCoord::new(START.0, START.1),
             offline_facing: StepDir::South,
-            client,
-            play,
+            entry,
+            play: None,
             generation: ProcessGeneration::new(1),
             input: InputPlatformAdapter::new(),
             actions: MouseActions::new().map_err(|_error| ShellError::InputInitialization)?,
@@ -147,12 +133,55 @@ impl Application {
 
     fn leave_play(&mut self, message: &str) {
         self.play = None;
+        if let Some(entry) = &mut self.entry {
+            entry.leave_play();
+        }
         println!("Oteryn: {message}");
         if let Some(window) = &self.window {
-            window.set_title(&format!("Oteryn — {message}"));
+            window.set_title(&format!("Oteryn — {message} — Enter: log in again"));
         }
         if self.rebuild_offline().is_err() {
             self.scene = None;
+        }
+    }
+
+    fn request_entry(&mut self) {
+        if let Some(entry) = &mut self.entry
+            && entry.request()
+            && let Some(window) = &self.window
+        {
+            window.set_title("Oteryn — signing in…");
+        }
+    }
+
+    fn poll_entry(&mut self) {
+        let Some(result) = self.entry.as_mut().and_then(Reentry::poll) else {
+            return;
+        };
+        match result {
+            Ok((mut view, link)) => {
+                let center = view.map_center();
+                let (world, reason) = World::from_env(center);
+                if let Some(reason) = reason {
+                    println!("Oteryn: drawing without map sprites: {reason}");
+                }
+                let shown = world.map(Arc::new).and_then(|world| {
+                    view.set_world(Arc::clone(&world))?;
+                    self.world = Some(world);
+                    Ok(())
+                });
+                if shown.is_err() {
+                    self.return_to_login(PublicClass::SessionUnavailable);
+                    return;
+                }
+                self.scene = None;
+                self.play = Some(Play {
+                    view,
+                    link,
+                    status: String::new(),
+                });
+            }
+            Err(error) => self.leave_play(&error.to_string()),
         }
     }
 
@@ -188,7 +217,10 @@ impl ApplicationHandler for Application {
             return;
         }
         let attributes = WindowAttributes::default()
-            .with_title(format!("Oteryn — {}", pre_native_status()))
+            .with_title(format!(
+                "Oteryn — {} — Enter: log in again",
+                pre_native_status()
+            ))
             .with_inner_size(LogicalSize::new(960.0, 540.0));
         let Ok(window) = event_loop.create_window(attributes) else {
             self.fail(event_loop, ShellError::WindowCreation);
@@ -315,6 +347,7 @@ impl ApplicationHandler for Application {
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        self.poll_entry();
         if let Some(play) = &mut self.play
             && let Err(end) = play.view.tick(&play.link)
         {
@@ -342,16 +375,16 @@ impl ApplicationHandler for Application {
     }
 }
 
-pub fn run(play: Option<(ClientBootstrap, AdmittedSession)>) -> Result<(), ShellError> {
+pub fn run(client: Option<ClientBootstrap>) -> Result<(), ShellError> {
     let event_loop = EventLoop::new().map_err(|_error| ShellError::EventLoopCreation)?;
     let smoke = std::env::args().any(|argument| argument == "--smoke");
-    let mut application = Application::new(smoke, play)?;
+    let mut application = Application::new(smoke, client)?;
     let run_result = event_loop
         .run_app(&mut application)
         .map_err(|_error| ShellError::EventLoopRun);
     drop(application.play.take());
-    if let Some(client) = application.client.take() {
-        client.shutdown();
+    if let Some(entry) = application.entry.take() {
+        entry.shutdown();
     }
     if let Some(error) = application.fatal_error {
         return Err(error);
