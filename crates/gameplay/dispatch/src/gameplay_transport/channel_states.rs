@@ -74,6 +74,9 @@ pub struct ChannelSessionStates {
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
     pub(super) timed_items: super::timed_item::TimedRuntime,
+    /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title
+    /// predicate; refreshed on the actor's cadence like `level_refresh`. A leaf lock.
+    pub(super) title_refresh: level_up_live::LevelRefresh,
     pub(super) training: super::loop_training::TrainingRuntime,
     pub(super) tutorial_sessions: tutorial_session::TutorialSessions,
     /// Committed Atelier gems and grades, with the current Wheel vessel overlay.
