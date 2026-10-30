@@ -110,6 +110,8 @@ pub struct PlayerSpellState {
     pub(super) revision: u64,
     /// SPELL-D8 §8.2: a monk's live Harmony and Serene; `None` for every other vocation.
     pub monk: Option<MonkState>,
+    pub(super) virtue_party: (super::harmony::VirtuePartyBonuses, u64),
+    pub(super) equipped_mantra: u32,
     pub conditions: oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>,
     pub(super) base_speed: u32,
     pub(super) stance: Option<oteryn_gameplay_spell_rules::native_actor_states::StandardStance>,
@@ -202,6 +204,8 @@ impl PlayerSpellState {
                 stance_key: None,
                 pending_stance: None,
                 owned_skills: None,
+                virtue_party: Default::default(),
+                equipped_mantra: 0,
                 equipped_armor: 0,
                 equipped_mana_shield: false,
                 equipped_defence: None,

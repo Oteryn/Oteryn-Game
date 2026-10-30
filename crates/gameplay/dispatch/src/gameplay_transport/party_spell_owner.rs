@@ -425,13 +425,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         if states.has_pending_spell_commit(actor, session) {
             return None;
         }
-        let state = states.get(&runtime, actor, session)?;
-        if !matches!(
-            state.source_party_vocation(),
-            crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
-        ) {
-            return None;
-        }
+        states.get(&runtime, actor, session)?;
         // Legacy baseline has its own explicitly scoped solo behavior. This is the native source path.
         self.active_generation?.native_gameplay()?;
         let pass = self.root.try_issue_semantic_pass().ok()?;
@@ -464,12 +458,84 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 world
                     .validate_physical(runtime, states)
                     .map_err(|_| DurabilityError::Unavailable)?;
+                let mut bonuses = crate::spell::harmony::VirtuePartyBonuses::default();
+                let parameters = crate::spell::stance_execution::virtue_party_parameters()
+                    .ok_or(DurabilityError::Unavailable)?;
+                for (monk_actor, _, _, monk_state) in &world.physical {
+                    use oteryn_gameplay_spell_rules::native_actor_states::{
+                        PartyBonusKind, StandardStance, plan_party_bonuses,
+                    };
+                    if !matches!(
+                        monk_state.standard_stance(),
+                        Some(
+                            StandardStance::Harmony
+                                | StandardStance::Justice
+                                | StandardStance::Sustain
+                        )
+                    ) {
+                        continue;
+                    }
+                    let Some(facts) = world
+                        .member_facts
+                        .iter()
+                        .find(|f| f.id == u64::from(monk_actor.actor_local_id()))
+                    else {
+                        continue;
+                    };
+                    if !facts.alive || facts.removed {
+                        continue;
+                    }
+                    let serene = if *monk_actor == actor {
+                        let mut monk = monk_state
+                            .monk
+                            .clone()
+                            .ok_or(DurabilityError::Unavailable)?;
+                        monk.tick(owner.owner_now(), &world)
+                            .map_err(|_| DurabilityError::Unavailable)?;
+                        monk.serene()
+                    } else {
+                        monk_state
+                            .monk
+                            .as_ref()
+                            .is_some_and(crate::spell::harmony::MonkState::serene)
+                    };
+                    let plans =
+                        plan_party_bonuses(parameters, *facts, &world.member_facts, true, serene)
+                            .map_err(|_| DurabilityError::Unavailable)?;
+                    for plan in plans
+                        .into_iter()
+                        .filter(|p| p.target == u64::from(actor.actor_local_id()))
+                    {
+                        match plan.kind {
+                            PartyBonusKind::DamageTaken => {
+                                bonuses.damage_reduction =
+                                    bonuses.damage_reduction.max(plan.percent.unsigned_abs())
+                            }
+                            PartyBonusKind::AutoAttackDamage => {
+                                bonuses.auto_attack =
+                                    bonuses.auto_attack.max(plan.percent.unsigned_abs())
+                            }
+                            PartyBonusKind::SpellAndRuneDamage => {
+                                bonuses.spell_damage =
+                                    bonuses.spell_damage.max(plan.percent.unsigned_abs())
+                            }
+                            PartyBonusKind::SpellAndRuneHealing => {
+                                bonuses.spell_healing =
+                                    bonuses.spell_healing.max(plan.percent.unsigned_abs())
+                            }
+                        }
+                    }
+                }
                 let state = states
                     .get_mut(runtime, actor, session)
                     .ok_or(DurabilityError::Unavailable)?;
                 let changed = state
                     .tick_with_world(owner.owner_now(), &world)
                     .map_err(|_| DurabilityError::Unavailable)?;
+                let bonus_changed = state
+                    .install_virtue_party_bonuses(bonuses, owner.owner_now().get())
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                let changed = changed || bonus_changed;
                 let outcome = changed.then(|| (state.revision(), state.vitals()));
                 // Read-only SQL transaction owns all strong membership locks until this actual
                 // uninterrupted physical update completes. No durable cast/payment is invented.

@@ -94,6 +94,7 @@ impl CompiledTrainingFormula {
         }
         let digest = Sha256::new()
             .chain_update(b"oteryn:build-training:v1\0")
+            .chain_update(b"global-monk-formulae-1205374\0")
             .chain_update(bytes)
             .chain_update(content_revision.as_bytes())
             .finalize()
@@ -130,9 +131,17 @@ impl BuildFormula for CompiledTrainingFormula {
                 .iter()
                 .find(|row| row.key == skill_vocation(vocation))?;
             let index = family.checked_sub(1)?;
+            // C11PKG owner decision 2026-10-30, TibiaWiki Formulae r1205374.
+            // Preserve the pinned Canary extraction and its binary32 storage semantics;
+            // Global supersedes only the monk skill row, for both promotions.
+            let multiplier = if skill_vocation(vocation) == "monk" {
+                *[1.1_f32, 1.4, 1.4, 1.4, 1.5, 1.15, 1.1].get(index)?
+            } else {
+                v.skill_multipliers.get(index)?.parse::<f32>().ok()?
+            };
             skill_tries_required(
                 *self.profile.skill_bases.get(index)?,
-                f64::from(v.skill_multipliers.get(index)?.parse::<f32>().ok()?),
+                f64::from(multiplier),
                 level,
             )
         }
@@ -154,5 +163,33 @@ fn skill_vocation(vocation: &str) -> &str {
         "master_sorcerer" => "sorcerer",
         "royal_paladin" => "paladin",
         other => other,
+    }
+}
+
+#[cfg(test)]
+mod monk_training_tests {
+    use super::*;
+    #[test]
+    fn global_monk_skill_tries_use_formulae_1205374_for_both_promotions()
+    -> Result<(), TrainingError> {
+        let formula = CompiledTrainingFormula::from_profile(
+            include_bytes!(
+                "../../../../../tools/content-schema/native-gameplay/build-training.json"
+            ),
+            "content-1",
+        )?;
+        for vocation in ["monk", "exalted_monk"] {
+            for (index, expected) in [129, 1446, 1446, 1446, 1729, 404, 51]
+                .into_iter()
+                .enumerate()
+            {
+                assert_eq!(
+                    formula.required(vocation, index + 1, 21),
+                    Some(expected),
+                    "{vocation} family {index}"
+                );
+            }
+        }
+        Ok(())
     }
 }

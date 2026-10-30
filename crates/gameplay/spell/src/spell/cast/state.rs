@@ -49,6 +49,16 @@ impl PlayerSpellState {
         self.facts
     }
 
+    /// Compare the durable Character base without mistaking current Wheel maxima or
+    /// the Promotion/Premium soul projection for a changed Character build.
+    pub fn matches_character_base(&self, base: CharacterCastFacts) -> bool {
+        self.facts.vocation == base.vocation
+            && self.facts.level == base.level
+            && self.facts.magic_level == base.magic_level
+            && self.base_max_health == base.max_health
+            && self.base_max_mana == base.max_mana
+    }
+
     pub fn stage_committed_player_hit_history(
         &mut self,
         source: crate::foundation::ExactActorRef,
@@ -357,6 +367,8 @@ impl PlayerSpellState {
             && self.premium_current == before.premium_current
             && self.premium_valid_until_micros == before.premium_valid_until_micros
             && self.owned_skills == before.owned_skills
+            && self.virtue_party == before.virtue_party
+            && self.equipped_mantra == before.equipped_mantra
             && self.equipped_armor == before.equipped_armor
             && self.equipped_mana_shield == before.equipped_mana_shield
             && self.equipped_defence == before.equipped_defence
@@ -559,5 +571,59 @@ impl PlayerSpellState {
         next.monk = MonkState::load(next.facts.vocation, 0, 0).ok()?;
         next.make_playable(now).ok()?;
         Some(next)
+    }
+}
+
+impl PlayerSpellState {
+    pub fn wheel_promoted(&self) -> bool {
+        self.stored_promotion
+    }
+    pub fn install_equipped_mantra(&mut self, mantra: u32) {
+        self.equipped_mantra = mantra;
+    }
+    pub fn ascetic_attack_bonus(&self, stage: u8) -> u32 {
+        if self.monk.is_some() && stage <= 3 {
+            self.equipped_mantra.saturating_mul(u32::from(stage))
+        } else {
+            0
+        }
+    }
+    pub fn sustain_healing_percent(&self) -> u32 {
+        if self.stance
+            == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Sustain)
+        {
+            if self.monk.as_ref().is_some_and(MonkState::serene) {
+                170
+            } else {
+                135
+            }
+        } else {
+            100
+        }
+    }
+    pub fn virtue_party_bonuses(&self, now: u64) -> super::super::harmony::VirtuePartyBonuses {
+        if now < self.virtue_party.1 {
+            self.virtue_party.0
+        } else {
+            Default::default()
+        }
+    }
+    pub fn install_virtue_party_bonuses(
+        &mut self,
+        value: super::super::harmony::VirtuePartyBonuses,
+        now: u64,
+    ) -> Result<bool, SpellCastDisposition> {
+        let changed = self.virtue_party.0 != value;
+        let deadline = now
+            .checked_add(1_000_000)
+            .ok_or(SpellCastDisposition::Rejected)?;
+        if changed {
+            self.revision = self
+                .revision
+                .checked_add(1)
+                .ok_or(SpellCastDisposition::Rejected)?;
+        }
+        self.virtue_party = (value, deadline);
+        Ok(changed)
     }
 }

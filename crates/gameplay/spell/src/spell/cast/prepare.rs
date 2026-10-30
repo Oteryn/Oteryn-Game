@@ -255,7 +255,7 @@ pub fn prepare_ordinary_owner_cast_with_caster(
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul
-        || caster.harmony_multiplier != state.owned_harmony_multiplier(spell)?
+        || caster.harmony_multiplier.without_ascetic() != state.owned_harmony_multiplier(spell)?
     {
         return Err(SpellCastDisposition::Rejected);
     }
@@ -318,8 +318,19 @@ pub fn prepare_ordinary_owner_cast_with_caster(
                 harmony_gained = monk
                     .commit_builder()
                     .map_err(|_| SpellCastDisposition::Rejected)?;
-                if harmony_gained > 0 {
-                    harmony_gain_healing = oteryn_gameplay_spell_rules::native_actor_states::plan_harmony_gain_healing(
+            }
+            HarmonyRole::Spender => {
+                let virtue = next.stance
+                    == Some(
+                        oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony,
+                    );
+                monk.commit_spender_with_virtue(virtue)
+                    .map_err(|_| SpellCastDisposition::Rejected)?;
+                harmony_gained = u8::from(virtue);
+            }
+        }
+        if harmony_gained > 0 {
+            harmony_gain_healing = oteryn_gameplay_spell_rules::native_actor_states::plan_harmony_gain_healing(
                         crate::spell::actor_execution::harmony_gain_profile()?,
                         harmony_gained,
                         next.facts.level,
@@ -327,12 +338,6 @@ pub fn prepare_ordinary_owner_cast_with_caster(
                         next.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Sustain),
                     )
                     .map_err(|_| SpellCastDisposition::Rejected)?;
-                }
-            }
-            HarmonyRole::Spender => {
-                monk.commit_spender()
-                    .map_err(|_| SpellCastDisposition::Rejected)?;
-            }
         }
     }
     let anchor = crate::spell::combat_batch::SpellAnchor {
@@ -455,7 +460,7 @@ fn prepare_native_owner_cast_impl(
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul
-        || caster.harmony_multiplier != multiplier
+        || caster.harmony_multiplier.without_ascetic() != multiplier
     {
         return Err(SpellCastDisposition::Rejected);
     }
@@ -487,7 +492,9 @@ fn prepare_native_owner_cast_impl(
         let monk = next.monk.as_mut().ok_or(SpellCastDisposition::Rejected)?;
         match role {
             HarmonyRole::Builder => monk.commit_builder().map(|_| ()),
-            HarmonyRole::Spender => monk.commit_spender().map(|_| ()),
+            HarmonyRole::Spender => monk.commit_spender_with_virtue(
+                next.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony)
+            ).map(|_| ()) ,
         }
         .map_err(|_| SpellCastDisposition::Rejected)?;
     }
@@ -610,7 +617,7 @@ fn prepare_native_callback_owner_cast_core(
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul
-        || caster.harmony_multiplier != multiplier
+        || caster.harmony_multiplier.without_ascetic() != multiplier
     {
         return Err(SpellCastDisposition::Rejected);
     }
@@ -650,7 +657,9 @@ fn prepare_native_callback_owner_cast_core(
         let monk = next.monk.as_mut().ok_or(SpellCastDisposition::Rejected)?;
         match role {
             HarmonyRole::Builder => monk.commit_builder().map(|_| ()),
-            HarmonyRole::Spender => monk.commit_spender().map(|_| ()),
+            HarmonyRole::Spender => monk.commit_spender_with_virtue(
+                next.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony)
+            ).map(|_| ()) ,
         }
         .map_err(|_| SpellCastDisposition::Rejected)?;
     }
@@ -719,7 +728,7 @@ pub fn prepare_conjure_owner_cast_with_caster(
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul
-        || caster.harmony_multiplier != multiplier
+        || caster.harmony_multiplier.without_ascetic() != multiplier
     {
         return Err(SpellCastDisposition::Rejected);
     }
@@ -764,7 +773,9 @@ pub fn prepare_conjure_owner_cast_with_caster(
         let monk = next.monk.as_mut().ok_or(SpellCastDisposition::Rejected)?;
         match role {
             HarmonyRole::Builder => monk.commit_builder().map(|_| ()),
-            HarmonyRole::Spender => monk.commit_spender().map(|_| ()),
+            HarmonyRole::Spender => monk.commit_spender_with_virtue(
+                next.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony)
+            ).map(|_| ()) ,
         }
         .map_err(|_| SpellCastDisposition::Rejected)?;
     }
@@ -845,7 +856,7 @@ pub fn prepare_named_player_failure_owner_cast_with_caster(
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul
-        || caster.harmony_multiplier != state.owned_harmony_multiplier(spell)?
+        || caster.harmony_multiplier.without_ascetic() != state.owned_harmony_multiplier(spell)?
     {
         return Err(SpellCastDisposition::Rejected);
     }
@@ -911,11 +922,19 @@ pub(super) fn commit_effect(
     spell: &SpellDefinition,
     effect: &Effect,
     caster: &str,
+    now: u64,
 ) -> Result<(), SpellCastDisposition> {
     match effect {
         Effect::Heal { target, magnitude } if target.as_str() == caster && *magnitude > 0 => {
+            let magnitude = u64::try_from(*magnitude)
+                .unwrap_or(u64::MAX)
+                .saturating_mul(u64::from(next.sustain_healing_percent()))
+                / 100;
+            let magnitude = magnitude.saturating_mul(u64::from(
+                100 + next.virtue_party_bonuses(now).spell_healing,
+            )) / 100;
             let healed = u64::from(next.health)
-                .saturating_add(u64::try_from(*magnitude).unwrap_or(u64::MAX))
+                .saturating_add(magnitude)
                 .min(u64::from(next.facts.max_health));
             next.health = u32::try_from(healed).map_err(|_| SpellCastDisposition::Rejected)?;
             Ok(())

@@ -1253,3 +1253,126 @@ fn position_gate_admits_only_cast_at_position_before_common_cost_checks() {
         );
     }
 }
+
+#[test]
+fn c11_justice_and_sustain_follow_the_single_current_stance_and_serene() {
+    use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
+    let mut state = playable_monk(5);
+    state.owned_skills = Some([100; 7]);
+    state.stance = Some(StandardStance::Justice);
+    assert_eq!(state.live_skill(0, 0), Some(116));
+    assert_eq!(state.live_skill(1, 0), Some(100));
+    assert_eq!(state.sustain_healing_percent(), 100);
+    state.stance = Some(StandardStance::Sustain);
+    assert_eq!(state.live_skill(0, 0), Some(100));
+    assert_eq!(state.sustain_healing_percent(), 170);
+    // A fresh monk has not yet evaluated Serene; numerical stance effects still use false.
+    let mut uninitialized = PlayerSpellState::new(monk(20), 0, 0).expect("monk");
+    uninitialized.owned_skills = Some([100; 7]);
+    uninitialized.stance = Some(StandardStance::Justice);
+    assert_eq!(uninitialized.live_skill(0, 0), Some(108));
+    uninitialized.stance = Some(StandardStance::Sustain);
+    assert_eq!(uninitialized.sustain_healing_percent(), 135);
+}
+
+#[test]
+fn c11_successful_spender_refunds_one_only_with_harmony_virtue() {
+    use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
+    let book = monk_book("spender");
+    for stance in [
+        None,
+        Some(StandardStance::Harmony),
+        Some(StandardStance::Justice),
+        Some(StandardStance::Sustain),
+    ] {
+        let mut state = playable_monk(5);
+        state.health = 1;
+        state.stance = stance;
+        let next = run(
+            &book,
+            &state,
+            &intent(1, SpellTarget::None),
+            at(0),
+            &mut Vec::new(),
+        )
+        .expect("cast");
+        assert_eq!(
+            next.vitals().harmony,
+            u32::from(stance == Some(StandardStance::Harmony))
+        );
+        assert_eq!(state.vitals().harmony, 5);
+    }
+}
+
+#[test]
+fn c11_mantra_ascetic_and_party_bonus_lifetime_are_owned_projections() {
+    let mut state = playable_monk(0);
+    state.install_equipped_mantra(17);
+    assert_eq!(
+        [0, 1, 2, 3, 4].map(|stage| state.ascetic_attack_bonus(stage)),
+        [0, 17, 34, 51, 0]
+    );
+    let bonuses = super::super::harmony::VirtuePartyBonuses {
+        auto_attack: 8,
+        damage_reduction: 4,
+        spell_damage: 8,
+        spell_healing: 16,
+    };
+    assert!(
+        state
+            .install_virtue_party_bonuses(bonuses, 100)
+            .expect("install")
+    );
+    assert_eq!(state.virtue_party_bonuses(1_000_099), bonuses);
+    assert_eq!(state.virtue_party_bonuses(1_000_100), Default::default());
+    state.install_equipped_mantra(0);
+    assert_eq!(state.ascetic_attack_bonus(3), 0);
+}
+
+#[test]
+fn c11_sustain_scales_the_successful_heal_without_changing_its_roll_or_cost() {
+    use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
+    let book = monk_book("builder");
+    let mut state = playable_monk(0);
+    state.health = 1;
+    let mut base_draws = Vec::new();
+    let base = run(
+        &book,
+        &state,
+        &intent(1, SpellTarget::None),
+        at(0),
+        &mut base_draws,
+    )
+    .expect("base heal");
+    state.stance = Some(StandardStance::Sustain);
+    let mut sustain_draws = Vec::new();
+    let boosted = run(
+        &book,
+        &state,
+        &intent(1, SpellTarget::None),
+        at(0),
+        &mut sustain_draws,
+    )
+    .expect("Sustain heal");
+    assert_eq!(base_draws, sustain_draws);
+    assert_eq!(boosted.health - 1, (base.health - 1) * 170 / 100);
+    assert_eq!(boosted.mana, base.mana);
+    assert_eq!(boosted.cooldowns, base.cooldowns);
+}
+
+#[test]
+fn c11_stance_base_match_retains_wheel_and_current_promotion_projections() {
+    let mut state = playable_monk(0);
+    let base = state.character_facts();
+    state
+        .apply_owner_promotion_transition(true, true, Some(10_000_000))
+        .expect("promotion");
+    state.apply_wheel_maximum_bonus(500, 200).expect("Wheel");
+    assert!(state.matches_character_base(base));
+    let mut changed = base;
+    changed.magic_level += 1;
+    assert!(!state.matches_character_base(changed));
+    changed = base;
+    changed.max_health += 1;
+    assert!(!state.matches_character_base(changed));
+}

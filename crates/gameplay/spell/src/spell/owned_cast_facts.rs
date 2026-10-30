@@ -342,6 +342,24 @@ impl OwnedCastFacts {
             return Err(OwnedFactsError::UnavailableEquipment);
         }
         let (attack_skill, attack_value, melee_weapon) = attack.unwrap_or((0, 0, false));
+        let harmony = if spell.harmony_role == Some(super::HarmonyRole::Spender) {
+            if let Some(monk) = &state.monk {
+                let stage = if self.has_current_wheel(now) {
+                    self.wheel_stage("ascetic", now)?
+                } else {
+                    0
+                };
+                HarmonyMultiplier::with_ascetic(
+                    facts.level, monk.harmony(),
+                    state.standard_stance() == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony),
+                    monk.serene(), stage,
+                ).ok_or(OwnedFactsError::UnavailableWheel)?
+            } else {
+                harmony
+            }
+        } else {
+            harmony
+        };
         Ok(CasterState {
             vocation: facts.vocation,
             level: facts.level,

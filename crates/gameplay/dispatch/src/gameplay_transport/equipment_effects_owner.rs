@@ -31,6 +31,35 @@ fn canonical_slot(slot: u8) -> Option<(EquipmentSlot, ReferenceEquipmentSlot)> {
     })
 }
 
+/// Mantra is a flat item attribute on body/Extra slots, including Ammo.
+fn equipped_mantra(equipment: &EquipmentSnapshot, content: &NativeGameplayState) -> Option<u32> {
+    use crate::content::{ReferenceModifierParameter, ReferenceSkillModifierKind};
+    let mut total = 0_i64;
+    for item in &equipment.items {
+        if !matches!(item.slot, 1 | 2 | 3 | 4 | 7 | 8 | 10) {
+            continue;
+        }
+        let policy = content.item_policy(
+            &item.definition.production_key,
+            &item.definition.revision_ref,
+        )?;
+        if let ReferenceItemField::Known(group) = &policy.record().semantics.skill_modifiers
+            && let ReferenceItemField::Known(modifiers) = &group.modifiers
+        {
+            for modifier in modifiers {
+                if modifier.kind == ReferenceSkillModifierKind::Mantra
+                    && let ReferenceItemField::Known(ReferenceModifierParameter::SignedPoints(
+                        points,
+                    )) = modifier.parameter
+                {
+                    total = total.checked_add(i64::from(points.0))?;
+                }
+            }
+        }
+    }
+    u32::try_from(total.max(0)).ok()
+}
+
 pub(in crate::gameplay_transport) fn equipment_effects(
     equipment: &EquipmentSnapshot,
     content: &NativeGameplayState,
@@ -401,8 +430,10 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         if let Some((effects, armor, defence, mana_shield, offence, equipment)) = effects {
             self.install_proficiency_equipment(runtime, actor, session, &equipment)
                 .await?;
+            let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
+            state.install_equipped_mantra(mantra);
             state.install_equipped_physical_protection(physical_protection(&effects));
             use crate::content::ReferenceResistanceKind as Kind;
             for kind in [

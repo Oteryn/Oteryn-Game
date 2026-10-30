@@ -101,6 +101,7 @@ fn modify_conditions<S: Clone>(
     immunities: &[oteryn_gameplay_domain::domain::condition::ConditionType],
     facts: &oteryn_gameplay_foundation::foundation::condition::ApplicationFacts<'_>,
     shield_required: bool,
+    party_damage_bonus: u32,
 ) -> Result<(), SpellCastDisposition> {
     use oteryn_gameplay_domain::domain::condition::ConditionRefusal;
     use oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind;
@@ -123,8 +124,31 @@ fn modify_conditions<S: Clone>(
                 profile,
                 dependencies,
             } if profile.operation == "condition" => {
-                let definition =
+                let mut definition =
                     crate::spell::actor_conditions::condition_definition(profile, dependencies)?;
+                // The source condition retains its cast-time magnitude, as its fixed ticks
+                // do for all other caster inputs. Repeated pulses never compound this bonus.
+                if party_damage_bonus > 0 {
+                    use oteryn_gameplay_domain::domain::condition::ConditionValues;
+                    if let ConditionValues::DamageSequence {
+                        element,
+                        mut steps,
+                        len,
+                        delayed,
+                    } = definition.values()
+                    {
+                        for step in steps.iter_mut().take(usize::from(len)) {
+                            step.amount = u32::try_from(
+                                u64::from(step.amount) * (100 + u64::from(party_damage_bonus))
+                                    / 100,
+                            )
+                            .map_err(|_| SpellCastDisposition::Rejected)?;
+                        }
+                        definition = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+                            definition.key(), definition.revision(), ConditionValues::DamageSequence { element, steps, len, delayed },
+                        ).ok_or(SpellCastDisposition::Rejected)?;
+                    }
+                }
                 let source_kind =
                     if definition.condition_type().is_negative() && !facts.target_is_player {
                         ConditionSourceKind::Player
@@ -665,6 +689,7 @@ fn lower(
                 &next.policy.condition_immunities,
                 &facts,
                 spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield",
+                before.virtue_party_bonuses(now.get()).spell_damage,
             )?;
             if next.conditions != expected.state.conditions {
                 change = Some(OwnerCombatChange::CompanionConditions(Box::new(
@@ -705,6 +730,7 @@ fn lower(
                 &[],
                 &facts,
                 spell.authored.is_some() && spell.key == "candidate:spell/cancel_magic_shield",
+                before.virtue_party_bonuses(now.get()).spell_damage,
             )?;
             if next != expected {
                 change = Some(OwnerCombatChange::PlayerConditions {
@@ -1321,6 +1347,7 @@ mod tests {
             &[],
             &facts,
             true,
+            0,
         )?;
         Ok(OwnerCombatBatch {
             caster: f.actor,
@@ -2100,6 +2127,55 @@ mod tests {
         };
         assert!(amount(&second) > amount(&first));
         assert_eq!(paid.next.vitals().mana, 5000 - paid.anchor.paid_mana);
+    }
+
+    #[test]
+    fn c11_sorcerer_party_bonus_scales_every_retained_ignite_tick_once() {
+        use oteryn_gameplay_domain::domain::condition::ConditionValues;
+        use oteryn_gameplay_foundation::foundation::condition::{ApplicationFacts, ConditionStore};
+        let spell = source("candidate:spell/ignite");
+        let dependencies = &spell.authored.as_ref().unwrap().dependencies;
+        let profile = dependencies
+            .effects
+            .iter()
+            .find(|p| p.operation == "condition")
+            .unwrap();
+        let effects = [ResolvedEffect::ResolvedOther {
+            profile: profile.clone(),
+            dependencies: dependencies.clone(),
+        }];
+        let mut store = ConditionStore::<String>::new();
+        let root = oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes([31; 32]);
+        let facts = ApplicationFacts {
+            now: 0,
+            base_speed: 100,
+            mana_shield_capacity: 0,
+            target_reentry_protected: false,
+            source_reentry_protected: false,
+            target_is_player: false,
+            decision_root: &root,
+            occurrence: oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes([32; 16]),
+        };
+        modify_conditions(
+            &mut store,
+            &effects,
+            Some("caster".into()),
+            &[],
+            &facts,
+            false,
+            8,
+        )
+        .unwrap();
+        let ConditionValues::DamageSequence { steps, len, .. } =
+            store.instances()[0].definition().values()
+        else {
+            panic!("Ignite damage sequence");
+        };
+        assert_eq!(len, 1);
+        assert_eq!(
+            (steps[0].amount, steps[0].repetitions, steps[0].interval_ms),
+            (48, 25, 3000)
+        );
     }
 
     #[test]

@@ -385,10 +385,10 @@ impl SpellPresentationOwner {
                 add(&presentation.caster_effect_asset_binding, &mut allowed);
             }
         }
-        // The current exact source definition's Harmony builder marker also
-        // carries the accepted provisional gained-charge heal presentation.
+        // The current exact source definition's Harmony role also carries the
+        // accepted gained-charge heal cue, including a Harmony spender refund.
         // This is closed cue provenance, not recipient or current cast authority.
-        if definition.harmony_role == Some(crate::spell::HarmonyRole::Builder) {
+        if definition.harmony_role.is_some() {
             let profile = crate::spell::actor_execution::harmony_gain_profile()
                 .map_err(|_| Error::UnqualifiedSource)?;
             let binding = profile["presentation"]["effect_asset_binding"]

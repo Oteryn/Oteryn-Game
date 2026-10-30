@@ -10,10 +10,9 @@
 //! 1000 ms ([`MonkState::tick`]); no command is accepted before the first. Builders, spenders and
 //! Focus spells change Harmony at the cast's PRIMARY COMMIT; a failed cast calls none of them.
 //!
-//! The party comes from a [`SereneWorld`]. No party service exists, so the live adapter is
-//! [`SoloParty`] and a solo monk is always Serene (§A.2 step 6). No stance owner exists either, so
-//! the owner passes no virtue (the interim rule of §4); the durable field, virtues, the death reset
-//! and the Wheel's Ascetic points belong to other children.
+//! Native dispatch supplies the fenced World party view. `SoloParty` remains the explicit
+//! route-less adapter. Stances are owned by the durable standard slot; Ascetic comes from
+//! the current qualified Wheel cast projection.
 
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
@@ -27,7 +26,7 @@ pub use oteryn_gameplay_spell_rules::harmony::{
     FOCUS_SERENITY_MICROS, SERENE_CROWD, SERENE_EVALUATION_MICROS, SereneWorld, serene_by_rule,
 };
 
-/// The live adapter while no party service exists: every monk is solo, so always Serene.
+/// Explicit solo adapter for route-less callers: a solo monk is always Serene.
 impl SereneWorld for SoloParty {
     fn monk(&self) -> &super::chain::ChainCreature {
         &self.0
@@ -254,6 +253,19 @@ impl MonkState {
         Ok(std::mem::take(&mut self.harmony))
     }
 
+    /// A successful spender under the standard Harmony virtue retains its one-point refund.
+    /// Returns the charges spent; failed casts never call this transition.
+    pub fn commit_spender_with_virtue(
+        &mut self,
+        virtue_of_harmony: bool,
+    ) -> Result<u8, MonkStateError> {
+        let spent = self.commit_spender()?;
+        if virtue_of_harmony {
+            self.commit_builder()?;
+        }
+        Ok(spent)
+    }
+
     /// A Focus spell's fill (§A.2 step 9): Harmony becomes 5. Returns the charges gained.
     pub fn commit_fill(&mut self) -> Result<u8, MonkStateError> {
         self.accept_command()?;
@@ -278,3 +290,12 @@ impl MonkState {
 pub use oteryn_gameplay_spell_rules::harmony::{
     HarmonyMultiplier, MAX_HARMONY, MULTIPLIER_DENOMINATOR,
 };
+
+/// Nonstacking numerical bonuses projected by the fenced party owner for one evaluation.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct VirtuePartyBonuses {
+    pub damage_reduction: u32,
+    pub auto_attack: u32,
+    pub spell_damage: u32,
+    pub spell_healing: u32,
+}
