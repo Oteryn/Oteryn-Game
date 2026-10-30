@@ -2,8 +2,9 @@
 //!
 //! The caller freezes the equipped weapon and contributor timestamps with the lethal commit.
 //! This owner deduplicates death occurrences, accrues the existing durable track shape, and
-//! applies selected attack perks before damage is handed to the combat owner. Checkpoints
-//! serialize this state through the existing Character proficiency writer.
+//! applies selected attack perks before damage is handed to the combat owner. An active
+//! modification row (P08) replaces its level's selected perk with its shaped value.
+//! Checkpoints serialize this state through the existing Character proficiency writer.
 
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::Arc;
@@ -12,12 +13,13 @@ use crate::durability::character_proficiency::{
     ProficiencyDefinitions, ResolvedProficiencyDefinition,
 };
 use oteryn_gameplay_content::content::{
-    ImportedWeaponProficiencyData, ProjectV2ProficiencyPerk, ProjectV2ProficiencyThresholdClass,
+    ImportedShapingUnit, ImportedWeaponProficiencyData, ProjectV2ExactRatio,
+    ProjectV2ProficiencyPerk, ProjectV2ProficiencyThresholdClass,
     import_committed_weapon_proficiency_data,
 };
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
-    ProficiencyKillContributor, ProficiencySelectionShape, ProficiencyThresholdClass,
-    proficiency_kill_credit,
+    ProficiencyKillContributor, ProficiencyModifiedPerk, ProficiencySelectionShape,
+    ProficiencyThresholdClass, proficiency_kill_credit, proficiency_modification_active,
 };
 use sha2::{Digest, Sha256};
 
@@ -134,6 +136,7 @@ impl ProductionProficiencyCatalogue {
             shape,
             progress: 0,
             selections: vec![None; usize::from(shape.track_shape().perk_levels())],
+            modifications: [None, None],
             effects: ProficiencyAttackEffects {
                 denominator: 1,
                 ..Default::default()
@@ -185,16 +188,78 @@ impl ProductionProficiencyCatalogue {
         }
         let progress = u32::try_from(stored.state.progress()).ok()?;
         let selections = stored.state.selections().to_vec();
+        let effects =
+            self.attack_effects(&resolved, progress, &selections, &stored.modifications)?;
+        Some(LiveProficiencyTrack {
+            shape: resolved.shape,
+            progress,
+            selections,
+            modifications: stored.modifications.clone(),
+            effects,
+        })
+    }
+
+    /// Recompute a live track's effects after its committed modification rows changed.
+    pub(super) fn refresh_effects(
+        &self,
+        item_key: &str,
+        track: &mut LiveProficiencyTrack,
+    ) -> Option<()> {
+        let resolved = self.resolved(item_key)?;
+        track.effects = self.attack_effects(
+            &resolved,
+            track.progress,
+            &track.selections,
+            &track.modifications,
+        )?;
+        Some(())
+    }
+
+    /// An active modification row replaces its level's selected perk for PROF-EFFECT-0
+    /// with its shaped value; a row without a known value fails closed like a malformed
+    /// selection. Shaped percentages are fractions of 100, the catalogue's are exact fractions.
+    fn attack_effects(
+        &self,
+        resolved: &ResolvedProficiencyDefinition,
+        progress: u32,
+        selections: &[Option<u8>],
+        modifications: &[Option<ProficiencyModifiedPerk>; 2],
+    ) -> Option<ProficiencyAttackEffects> {
         let definition = self.data.definitions().get(&resolved.definition_key)?;
         let mut effects = ProficiencyAttackEffects {
             denominator: 1,
             ..Default::default()
         };
+        let mut replaced = Vec::new();
+        for (slot, row) in (1..).zip(modifications) {
+            let Some(row) = row else { continue };
+            if !proficiency_modification_active(resolved.shape, progress, selections, slot, row) {
+                continue;
+            }
+            replaced.push(row.level);
+            let (identity, unit, value) = shaping::modified_value(row, &resolved.definition_key)?;
+            let target = match identity {
+                "alpha_strike_damage" => AttackFraction::Alpha,
+                "omega_strike_damage" => AttackFraction::Omega,
+                _ => continue,
+            };
+            if unit != ImportedShapingUnit::Percent {
+                return None;
+            }
+            let fraction = ProjectV2ExactRatio {
+                numerator: value.numerator,
+                denominator: value.denominator.checked_mul(100)?,
+            };
+            effects.add_fraction(fraction, target)?;
+        }
         for selected in resolved
             .shape
-            .active_selections(progress, &selections)
+            .active_selections(progress, selections)
             .ok()?
         {
+            if replaced.contains(&selected.level) {
+                continue;
+            }
             let perk = definition
                 .levels
                 .get(usize::from(selected.level))?
@@ -218,12 +283,7 @@ impl ProductionProficiencyCatalogue {
                 _ => {}
             }
         }
-        Some(LiveProficiencyTrack {
-            shape: resolved.shape,
-            progress,
-            selections,
-            effects,
-        })
+        Some(effects)
     }
 }
 
@@ -274,11 +334,7 @@ enum AttackFraction {
 }
 
 impl ProficiencyAttackEffects {
-    fn add_fraction(
-        &mut self,
-        value: oteryn_gameplay_content::content::ProjectV2ExactRatio,
-        target: AttackFraction,
-    ) -> Option<()> {
+    fn add_fraction(&mut self, value: ProjectV2ExactRatio, target: AttackFraction) -> Option<()> {
         let denominator = i64::try_from(value.denominator).ok()?;
         if denominator <= 0 || value.numerator < 0 {
             return None;
@@ -313,6 +369,8 @@ pub struct LiveProficiencyTrack {
     pub shape: ProficiencySelectionShape,
     pub progress: u32,
     pub selections: Vec<Option<u8>>,
+    /// Committed modification rows by slot (index 0 is slot 1).
+    pub modifications: [Option<ProficiencyModifiedPerk>; 2],
     pub effects: ProficiencyAttackEffects,
 }
 
@@ -453,6 +511,7 @@ mod tests {
             .expect("shape"),
             progress: 1_750,
             selections: vec![Some(0), None, None, None, None, None, None],
+            modifications: [None, None],
             effects: ProficiencyAttackEffects {
                 flat_attack: 2,
                 damage_numerator: 5,
@@ -500,6 +559,7 @@ mod tests {
             .expect("durable track"),
             committed_character_revision: CharacterRevision::new(7).expect("revision"),
             last_proficiency_occurrence_id: [0; 16],
+            modifications: [None, None],
         };
         let live = catalogue.live_track(&stored).expect("resolved live track");
         assert_eq!(live.effects.flat_attack, 1);
@@ -509,6 +569,86 @@ mod tests {
             owner.dispatch_attack(stored.state.item_key(), 100, 50, 100),
             101
         );
+    }
+
+    #[test]
+    fn an_active_modification_replaces_its_level_perk_in_attack_damage() {
+        use crate::domain::CharacterRevision;
+        use crate::durability::character_proficiency::{
+            DurableProficiencyState, StoredProficiencyTrack,
+        };
+        use oteryn_gameplay_domain::domain::weapon_proficiency::PROFICIENCY_FIRST_MODIFICATION_LEVEL;
+
+        const SWORD: &str = "oteryn:item.tibia.i3264";
+        let catalogue = ProductionProficiencyCatalogue::embedded().expect("committed catalogue");
+        let resolved = catalogue.resolve_weapon(SWORD).expect("sword definition");
+        let shape = resolved.shape.track_shape();
+        let progress = (1..=u32::MAX / 2)
+            .map(|step| step * 50)
+            .find(|progress| shape.level(*progress) >= PROFICIENCY_FIRST_MODIFICATION_LEVEL)
+            .expect("first modification level");
+        let mut selections = vec![None; usize::from(shape.perk_levels())];
+        selections[0] = Some(0);
+        let stored = |modification: Option<ProficiencyModifiedPerk>| StoredProficiencyTrack {
+            state: DurableProficiencyState::new(
+                SWORD,
+                &resolved.definition_key,
+                &resolved.definition_revision,
+                u64::from(progress),
+                selections.clone(),
+            )
+            .expect("durable track"),
+            committed_character_revision: CharacterRevision::new(7).expect("revision"),
+            last_proficiency_occurrence_id: [0; 16],
+            modifications: [modification, None],
+        };
+        // Pool entry 0 is Alpha Strike Extra Damage: 2% at rank 0, 10% at rank 10 (shaping.json).
+        let row = |rank| ProficiencyModifiedPerk {
+            level: 0,
+            shaping_key: resolved
+                .definition_key
+                .replace("oteryn:proficiency.", "oteryn:proficiency-shaping."),
+            shaping_revision: "shaping-r1".to_owned(),
+            entry_index: 0,
+            rank,
+            pending_offer: None,
+        };
+        let damage = |modification, health| {
+            let mut owner = WeaponProficiencyDispatch::default();
+            let track = catalogue
+                .live_track(&stored(modification))
+                .expect("live track");
+            owner.install_track(SWORD, track);
+            owner.dispatch_attack(SWORD, 100, health, 100)
+        };
+        let selected = (damage(None, 100), damage(None, 50));
+        assert_eq!(
+            (damage(Some(row(10)), 100), damage(Some(row(10)), 50)),
+            (110, 100)
+        );
+        assert_eq!(damage(Some(row(0)), 100), 102);
+        assert_ne!(selected, (110, 100));
+        // A row of another revision, or an unpublished rank, has no known value: fail closed.
+        let mut retired = row(10);
+        retired.shaping_revision = "shaping-r0".to_owned();
+        assert!(catalogue.live_track(&stored(Some(retired))).is_none());
+        assert!(catalogue.live_track(&stored(Some(row(5)))).is_none());
+        // A modified level without its selection is stored and inactive.
+        let mut unselected = stored(Some(row(10)));
+        unselected.state = DurableProficiencyState::new(
+            SWORD,
+            &resolved.definition_key,
+            &resolved.definition_revision,
+            u64::from(progress),
+            vec![None; usize::from(shape.perk_levels())],
+        )
+        .expect("unselected track");
+        let mut owner = WeaponProficiencyDispatch::default();
+        owner.install_track(
+            SWORD,
+            catalogue.live_track(&unselected).expect("live track"),
+        );
+        assert_eq!(owner.dispatch_attack(SWORD, 100, 100, 100), 100);
     }
 
     #[test]

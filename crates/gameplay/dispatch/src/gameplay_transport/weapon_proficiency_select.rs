@@ -361,6 +361,8 @@ pub(super) async fn execute(
         state: receipt.lines.first()?.after().clone(),
         committed_character_revision: receipt.committed_character_revision,
         last_proficiency_occurrence_id: receipt.occurrence_id,
+        // A selection never moves a modification row (a modified level is refused).
+        modifications: stored.modifications,
     };
     if let Some(track) = catalogue.live_track(&committed)
         && let Ok(mut states) = owner.states.proficiencies.lock()
@@ -380,6 +382,7 @@ impl WeaponProficiencyDispatch {
         match self.tracks.get_mut(item_key) {
             Some(live) => {
                 live.selections = track.selections;
+                live.modifications = track.modifications;
                 live.effects = track.effects;
             }
             None => self.install_track(item_key, track),

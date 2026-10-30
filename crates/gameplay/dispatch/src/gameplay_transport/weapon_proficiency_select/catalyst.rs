@@ -124,11 +124,16 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
     }
     let item_key = resolved.canonical_item_key;
     let shape = resolved.shape.track_shape();
+    let mut modifications = [None, None];
     let before = match tracks
         .into_iter()
         .find(|track| track.state.item_key() == item_key)
     {
-        Some(track) => track.state,
+        Some(track) => {
+            // A catalyst moves no modification row; the live effects keep the committed ones.
+            modifications = track.modifications;
+            track.state
+        }
         None => DurableProficiencyState::new(
             item_key.clone(),
             resolved.definition_key,
@@ -225,6 +230,7 @@ pub(in crate::gameplay_transport) async fn use_catalyst(
         state: receipt.lines.first()?.after().clone(),
         committed_character_revision: receipt.committed_character_revision,
         last_proficiency_occurrence_id: receipt.occurrence_id,
+        modifications,
     };
     if let Some(track) = catalogue.live_track(&committed)
         && let Ok(mut states) = owner.states.proficiencies.lock()

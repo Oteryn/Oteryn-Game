@@ -6,11 +6,12 @@
 use super::ProductionProficiencyCatalogue;
 use crate::durability::character_proficiency_modification::ProficiencyShapingSource;
 use oteryn_gameplay_content::content::{
-    ImportedProficiencyShaping, import_committed_proficiency_shaping, proficiency_perk_identity,
+    ImportedProficiencyShaping, ImportedShapingUnit, ProjectV2ExactRatio,
+    import_committed_proficiency_shaping, proficiency_perk_identity,
 };
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
-    PROFICIENCY_MODIFICATION_RANK_MAX, PROFICIENCY_MODIFICATION_RANKS, ProficiencyShapingEntry,
-    ProficiencyShapingRevision,
+    PROFICIENCY_MODIFICATION_RANK_MAX, PROFICIENCY_MODIFICATION_RANKS, ProficiencyModifiedPerk,
+    ProficiencyShapingEntry, ProficiencyShapingRevision,
 };
 use std::sync::{Arc, OnceLock};
 
@@ -21,19 +22,47 @@ pub struct ProductionProficiencyShaping {
     catalogue: Arc<ProductionProficiencyCatalogue>,
 }
 
+/// The committed shaping values, imported once per process.
+fn committed() -> Option<&'static Arc<ImportedProficiencyShaping>> {
+    static SHAPING: OnceLock<Option<Arc<ImportedProficiencyShaping>>> = OnceLock::new();
+    SHAPING
+        .get_or_init(|| import_committed_proficiency_shaping().ok().map(Arc::new))
+        .as_ref()
+}
+
 impl ProductionProficiencyShaping {
-    /// The committed shaping values, imported once per process.
     pub fn embedded(catalogue: Arc<ProductionProficiencyCatalogue>) -> Option<Arc<Self>> {
-        static SHAPING: OnceLock<Option<Arc<ImportedProficiencyShaping>>> = OnceLock::new();
         Some(Arc::new(Self {
-            shaping: Arc::clone(
-                SHAPING
-                    .get_or_init(|| import_committed_proficiency_shaping().ok().map(Arc::new))
-                    .as_ref()?,
-            ),
+            shaping: Arc::clone(committed()?),
             catalogue,
         }))
     }
+}
+
+/// PROF-EFFECT-0 value of a stored modification row: its pool entry's identity, unit and rank 0
+/// or rank 10 value. The row must name `definition_key`'s shaping key and the committed
+/// revision; any other row, and an unpublished rank 1-9, has no known value.
+pub(super) fn modified_value(
+    row: &ProficiencyModifiedPerk,
+    definition_key: &str,
+) -> Option<(&'static str, ImportedShapingUnit, ProjectV2ExactRatio)> {
+    let shaping = committed()?;
+    let rest = definition_key.strip_prefix("oteryn:proficiency.")?;
+    if row.shaping_key != format!("oteryn:proficiency-shaping.{rest}")
+        || row.shaping_revision != shaping.revision
+    {
+        return None;
+    }
+    let entry = shaping
+        .pools
+        .get(shaping.definition_vocations.get(definition_key)?)?
+        .get(usize::from(row.entry_index))?;
+    let value = match row.rank {
+        0 => entry.rank0,
+        PROFICIENCY_MODIFICATION_RANK_MAX => entry.rank10,
+        _ => return None,
+    };
+    Some((entry.identity.as_str(), entry.unit, value))
 }
 
 impl ProficiencyShapingSource for ProductionProficiencyShaping {

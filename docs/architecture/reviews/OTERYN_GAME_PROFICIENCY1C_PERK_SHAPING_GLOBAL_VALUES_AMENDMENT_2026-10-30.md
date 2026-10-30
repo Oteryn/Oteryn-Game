@@ -72,6 +72,15 @@ definitions and the migration's list differ, and a later revision activates by a
 migration. The draw seed's server secret (SIM-DETERMINISM-01 §10) is created once by 0575 and
 never reseeded.
 
+## 5b. Effects of a modified perk
+
+The retained proficiency read returns each track's modification rows. An active row (an unlocked
+slot whose level still has a selection) replaces that level's selected perk in the attack
+effects: Alpha and Omega Strike Extra Damage add their rank 0 or rank 10 percentage, and other
+pool identities have no consumer in the attack stage, like the catalogue perks of the same kind.
+A row of another revision or an unpublished rank 1-9 has no known value and fails closed. A
+committed modification command refreshes the session's live track at once.
+
 ## 6. Catalysts (amends PROFICIENCY-1 §4)
 
 Admitted by the owner on 2026-10-30 as a progress grant, the composed burn-plus-receipt shape:

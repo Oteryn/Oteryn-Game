@@ -488,6 +488,35 @@ async fn load_rows(
     Ok(slots)
 }
 
+/// Every track's stored rows by item key, by slot (index 0 is slot 1), for the retained read.
+/// The caller holds the Character root lock, so no writer moves a row before it commits.
+pub(in crate::durability) async fn load_track_modifications(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> StoredResult<std::collections::BTreeMap<String, [Option<ProficiencyModifiedPerk>; 2]>> {
+    let rows = sqlx::query(
+        "SELECT item_key, slot, level, shaping_key, shaping_revision, entry_index, rank, \
+         pending_offer, coalesce(pending_offer IS NULL OR (array_ndims(pending_offer)=1 \
+             AND array_lower(pending_offer,1)=1),false) AS canonical_offer \
+         FROM game_character_proficiency_modifications \
+         WHERE character_id=encode($1,'hex')::uuid ORDER BY item_key, slot",
+    )
+    .bind(character.as_bytes().as_slice())
+    .fetch_all(&mut **tx)
+    .await?;
+    let mut tracks = std::collections::BTreeMap::<String, [Option<ProficiencyModifiedPerk>; 2]>::new();
+    for row in rows {
+        let slot = usize::from(small(row.try_get("slot")?)?);
+        let target = tracks
+            .entry(row.try_get("item_key")?)
+            .or_default()
+            .get_mut(slot.wrapping_sub(1))
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        *target = decode_perk(&row, "", "canonical_offer")?;
+    }
+    Ok(tracks)
+}
+
 /// §8: hold the key's shared retention lock until commit and find the revision retained.
 async fn retained(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -1318,7 +1347,10 @@ pub(in crate::durability) async fn verify_modification_history(
             OR h.character_id<>m.character_id OR h.cause<>m.cause \
             OR h.committed_character_revision<>m.committed_character_revision \
             OR m.dust_spent<>m.dust_cost OR m.orbs_spent<>m.orb_cost \
-            OR (m.cause='migration')<>(m.operation='MIGRATION_CLEAR') OR m.orb_cost<>0 \
+            OR (m.cause='migration')<>(m.operation='MIGRATION_CLEAR') \
+            OR (m.operation='ORB_RANK')<>(m.orb_cost=1) OR (m.orb_cost=1 AND NOT EXISTS ( \
+              SELECT 1 FROM game_item_use_records u WHERE u.transaction_id=m.proficiency_occurrence_id \
+                AND u.character_id=m.character_id AND u.cause_kind=495 AND u.shape=1)) \
             OR m.dust_spent<>coalesce((SELECT sum(e.amount) FROM game_character_forge_dust_entries e \
               WHERE e.character_id=m.character_id AND e.cause='proficiency' AND e.kind='SPEND' \
                 AND e.cause_occurrence_id=m.proficiency_occurrence_id),0)) \

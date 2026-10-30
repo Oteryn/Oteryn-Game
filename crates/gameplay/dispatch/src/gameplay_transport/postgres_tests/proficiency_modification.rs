@@ -217,6 +217,41 @@ fn scenario() -> TestResult {
             send(command_id, operation, track_revision().await?).await
         };
 
+        // PROF-EFFECT-0: the retained read carries the slot's row, and the command refreshed the
+        // live track the attack path reads to the same row and effects.
+        let binding = owner.progression_binding(session).ok_or("progression")?;
+        let definitions =
+            catalogue.for_content(&binding.context.content) as Arc<dyn ProficiencyDefinitions>;
+        let character = crate::domain::CharacterId::from_bytes(id(41)).map_err(debug)?;
+        let live_agrees = async |rank: Option<u8>| -> TestResult {
+            let (tracks, _) = harness
+                .root
+                .read_character_proficiency_with_definitions(
+                    &authority,
+                    character,
+                    None,
+                    Arc::clone(&definitions),
+                )
+                .await
+                .map_err(debug)?;
+            let stored = tracks
+                .iter()
+                .find(|track| track.state.item_key() == SWORD)
+                .ok_or("durable track")?;
+            assert_eq!(stored.modifications[0].as_ref().map(|row| row.rank), rank);
+            let durable = catalogue.live_track(stored).ok_or("durable live track")?;
+            let states = owner.states.proficiencies.lock().map_err(|_| "states")?;
+            let live = states
+                .get(&session)
+                .and_then(|state| state.track(SWORD))
+                .ok_or("live track")?;
+            assert_eq!(
+                (&live.modifications, live.effects),
+                (&durable.modifications, durable.effects)
+            );
+            Ok(())
+        };
+
         // 1B §5 check 4: every modification needs a protection zone.
         assert!(in_zone, "the fixture tile (5, 1, 8) is a protection zone");
 
@@ -226,6 +261,7 @@ fn scenario() -> TestResult {
         let slot = modified.slot.ok_or("modified slot")?;
         assert_eq!((slot.level, slot.rank, slot.pending_offer), (0, 0, None));
         assert_eq!(dust().await?, 750);
+        live_agrees(Some(0)).await?;
         // RANK_UP reads unpublished rank 1-9 values: not admitted, nothing spent.
         assert_eq!(
             modify(11, ModificationOperation::RankUp).await?.result,
@@ -256,6 +292,7 @@ fn scenario() -> TestResult {
             ranked
         );
         assert_eq!((orbs().await?, burns().await?), (1, 1));
+        live_agrees(Some(10)).await?;
         assert_eq!(
             modify(13, ModificationOperation::OrbRank).await?.result,
             ModificationResult::RankMax
@@ -265,6 +302,7 @@ fn scenario() -> TestResult {
         let cleared = modify(14, ModificationOperation::Clear).await?;
         assert_eq!((cleared.result, cleared.slot), (ModificationResult::Accepted, None));
         assert_eq!(dust().await?, 750);
+        live_agrees(None).await?;
 
         // A second MODIFY, then ORB_RANK burns the last orb; a third finds none.
         assert_eq!(

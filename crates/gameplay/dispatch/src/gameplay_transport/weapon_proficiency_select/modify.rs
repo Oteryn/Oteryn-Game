@@ -13,7 +13,9 @@ use crate::durability::character_proficiency_modification::{
     ProficiencyModificationContext, ProficiencyModificationOutcome, ProficiencyShapingSource,
     proficiency_shaping_key,
 };
-use crate::gameplay_transport::weapon_proficiency::ProductionProficiencyShaping;
+use crate::gameplay_transport::weapon_proficiency::{
+    ProductionProficiencyCatalogue, ProductionProficiencyShaping, ProficiencyAttackEffects,
+};
 use oteryn_gameplay_domain::domain::CharacterRevision;
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
     ProficiencyModificationCommandKind, ProficiencyModificationResult,
@@ -79,6 +81,37 @@ fn reply(outcome: &ProficiencyModificationOutcome) -> ModificationReply {
     ModificationReply {
         result: result(outcome.result()),
         slot,
+    }
+}
+
+/// PROF-EFFECT-0 applies a committed row at once: the session's live track takes the slot's
+/// row and recomputes its attack effects. A row without a known value grants no effect.
+fn refresh_live(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    catalogue: &ProductionProficiencyCatalogue,
+    session: GameSessionId,
+    outcome: &ProficiencyModificationOutcome,
+) {
+    if let ProficiencyModificationOutcome::Committed(committed)
+    | ProficiencyModificationOutcome::AlreadyCommitted(committed) = outcome
+        && let Ok(mut states) = owner.states.proficiencies.lock()
+        && let Some(track) = states
+            .get_mut(&session)
+            .and_then(|state| state.tracks.get_mut(&committed.item_key))
+        && let Some(row) = track
+            .modifications
+            .get_mut(usize::from(committed.slot).wrapping_sub(1))
+    {
+        row.clone_from(&committed.after);
+        if catalogue
+            .refresh_effects(&committed.item_key, track)
+            .is_none()
+        {
+            track.effects = ProficiencyAttackEffects {
+                denominator: 1,
+                ..Default::default()
+            };
+        }
     }
 }
 
@@ -305,7 +338,10 @@ pub(in crate::gameplay_transport) async fn execute(
         .await;
     drop(slot);
     match outcome {
-        Ok(outcome) => Some(reply(&outcome)),
+        Ok(outcome) => {
+            refresh_live(owner, catalogue, session, &outcome);
+            Some(reply(&outcome))
+        }
         Err(CharacterProgressionError::ConflictingOccurrence) => {
             refused(ModificationResult::Conflict)
         }
@@ -323,7 +359,10 @@ pub(in crate::gameplay_transport) async fn execute(
             )
             .await
             .ok()?
-            .map(|outcome| reply(&outcome)),
+            .map(|outcome| {
+                refresh_live(owner, catalogue, session, &outcome);
+                reply(&outcome)
+            }),
     }
 }
 
