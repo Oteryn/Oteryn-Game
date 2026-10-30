@@ -287,6 +287,35 @@ pub(super) async fn grant_missing(
     Ok(())
 }
 
+/// Count one event toward `key` for the Character and grant it when the count reaches `total`.
+/// A count at its total stays there and writes nothing (Crystal `register_achievements.lua:696`).
+pub(super) async fn add_progress(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: CharacterId,
+    key: &str,
+    total: u32,
+    source_kind: &str,
+    event_id: &[u8],
+) -> std::result::Result<(), DurabilityError> {
+    let progress: Option<i64> = sqlx::query_scalar(
+        "INSERT INTO game_character_achievement_progress AS p \
+                (character_id, achievement_key, progress) \
+         VALUES (encode($1,'hex')::uuid, $2, 1) \
+         ON CONFLICT (character_id, achievement_key) \
+         DO UPDATE SET progress = p.progress + 1 WHERE p.progress < $3 \
+         RETURNING progress",
+    )
+    .bind(character_id.as_bytes().as_slice())
+    .bind(key)
+    .bind(i64::from(total))
+    .fetch_optional(&mut **tx)
+    .await?;
+    if progress == Some(i64::from(total)) {
+        grant_missing(tx, character_id, &[key], source_kind, event_id).await?;
+    }
+    Ok(())
+}
+
 async fn load_fact(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     account: &str,

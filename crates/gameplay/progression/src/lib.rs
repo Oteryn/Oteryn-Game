@@ -8,6 +8,7 @@ pub mod bestiary_achievement;
 pub mod charm_effects;
 pub mod daily_reward;
 pub mod hit_training;
+pub mod item_use_achievement;
 pub mod loop_training;
 pub mod loyalty;
 pub mod mana_training;

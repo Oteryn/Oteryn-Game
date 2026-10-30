@@ -16,6 +16,7 @@
 //! backpack. The record, the item changes, the entry changes and the one audit event (type 2,
 //! `item_use`) commit together; the database guards of 0083 admit each change only with them.
 
+use super::account_achievement::add_progress;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, assert_item_only_fence, numeric_u64, uuid_text,
@@ -38,6 +39,7 @@ use super::item_use_audit::{
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_progression::item_use_achievement;
 use oteryn_gameplay_items::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -422,6 +424,24 @@ impl DurabilityRoot {
                     }
                     match write(&mut tx, &fence, &request, tuple).await {
                         Ok(outcome) => {
+                            let counted = match request.kind {
+                                ItemUseKind::Potion => Some(item_use_achievement::POTION_ADDICT),
+                                ItemUseKind::PickRefine { .. } => {
+                                    Some(item_use_achievement::PETROLOGIST)
+                                }
+                                ItemUseKind::Food | ItemUseKind::MountTaming => None,
+                            };
+                            if let Some(counted) = counted {
+                                add_progress(
+                                    &mut tx,
+                                    fence.character_id,
+                                    counted.key,
+                                    counted.total,
+                                    item_use_achievement::SOURCE_KIND,
+                                    &request.event_id,
+                                )
+                                .await?;
+                            }
                             tx.commit(deadline).await?;
                             Ok(Ok(outcome))
                         }
