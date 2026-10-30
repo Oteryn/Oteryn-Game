@@ -39,7 +39,11 @@ fn floor(inner: Expression) -> Expression {
 /// The level term is the official curve (`LevelBaseDamageHealing`, equal to TibiaTools' `flat`).
 /// The attack factor is 1.0 in Offensive, the mode the fixtures bind; other modes scale `v` and
 /// stay `PARITY_PENDING`.
-fn player_melee_bounds(constants: &AttackConstants, attack: Expression) -> Formula {
+fn player_melee_bounds(
+    constants: &AttackConstants,
+    attack: Expression,
+    attack_factor: Expression,
+) -> Formula {
     let melee = constants.player_melee;
     let stepped = floor(binary(
         Binary::Div,
@@ -60,7 +64,7 @@ fn player_melee_bounds(constants: &AttackConstants, attack: Expression) -> Formu
         binary(Binary::Mul, stepped, skill),
         constant(f64::from(melee.skill_divisor)),
     );
-    let v = binary(Binary::Mul, scaled, var(Input::AttackFactor));
+    let v = binary(Binary::Mul, scaled, attack_factor);
     let level = || Expression::LevelBaseDamageHealing(Box::new(var(Input::Level)));
     Formula {
         minimum: floor(binary(
@@ -86,13 +90,31 @@ fn player_melee_bounds(constants: &AttackConstants, attack: Expression) -> Formu
 
 /// Player melee weapon damage, the weapon's attack in `attack_value`.
 pub fn player_melee_formula(constants: &AttackConstants) -> Formula {
-    player_melee_bounds(constants, var(Input::AttackValue))
+    player_melee_bounds(constants, var(Input::AttackValue), var(Input::AttackFactor))
+}
+
+/// Monk raw auto-attack bounds: TibiaTools `fe745abf` `damage-calc/damage.ts:13-26`,
+/// called by `calc.ts:102,132`. With `v = floor(6 * attack / 5) * (skill + 4) / 28`,
+/// the monk-only base factor is 2: `[floor(L + v), floor(L + 4 * v)]` in Offensive.
+/// Fist fighting is passed in `attack_skill`; `attack_value` is the fist weapon's attack
+/// (or the unarmed fist attack). Other fight modes scale `v` and remain `PARITY_PENDING`.
+/// This includes no Harmony, stance, skill multiplier or Ascetic Mantra bonus.
+pub fn player_monk_formula(constants: &AttackConstants) -> Formula {
+    player_melee_bounds(
+        constants,
+        var(Input::AttackValue),
+        binary(Binary::Mul, var(Input::AttackFactor), constant(2.0)),
+    )
 }
 
 /// Player fist damage: the melee formula with the fist attack value; it does not read
 /// `attack_value`.
 pub fn player_fist_formula(constants: &AttackConstants) -> Formula {
-    player_melee_bounds(constants, constant(f64::from(constants.fist.attack)))
+    player_melee_bounds(
+        constants,
+        constant(f64::from(constants.fist.attack)),
+        var(Input::AttackFactor),
+    )
 }
 
 /// Creature melee damage `[0, ceil(skill * (attack * 0.05) + attack * 0.5)]`
@@ -207,5 +229,52 @@ pub fn armor_reduction_bounds(constants: &AttackConstants, armor: u32) -> (u32, 
         (1, 1)
     } else {
         (0, 0)
+    }
+}
+
+#[cfg(test)]
+mod autoatk_tests {
+    use super::*;
+    use oteryn_gameplay_content::content::spell_data::formula::FormulaInputs;
+
+    #[test]
+    fn autoatk_monk_fist_weapon_matches_saved_api_responses()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let constants = AttackConstants::checked_in().ok_or("checked-in constants parse")?;
+        let formula = player_monk_formula(constants);
+        // Amber Kusarigama (481), a monk fist weapon, attack 44. research/autoatk/.
+        for (level, skill, expected, response) in [
+            (
+                300,
+                80,
+                (216, 684),
+                "monk-amber-kusarigama-300.response.json",
+            ),
+            (
+                500,
+                100,
+                (293, 872),
+                "monk-amber-kusarigama-500.response.json",
+            ),
+            (
+                1000,
+                120,
+                (413, 1104),
+                "monk-amber-kusarigama-1000.response.json",
+            ),
+        ] {
+            let inputs = FormulaInputs {
+                level,
+                magic_level: 0,
+                base_power: None,
+                attack_skill: skill,
+                attack_value: 44,
+                attack_factor: 1.0,
+                shielding_skill: 0,
+                shield_defense: None,
+            };
+            assert_eq!(formula.bounds(&inputs), Ok(expected), "{response}");
+        }
+        Ok(())
     }
 }

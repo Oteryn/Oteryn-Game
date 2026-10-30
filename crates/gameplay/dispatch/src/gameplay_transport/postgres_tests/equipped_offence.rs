@@ -177,7 +177,17 @@ async fn qualify_global_baseline(
             shielding_skill: skills.shielding,
             shield_defense: None,
         };
-        let (minimum, maximum) = player_fist_formula(constants)
+        // Production selects the monk formula for monks (drain.rs
+        // melee_swing_formula); mirror that choice for the unarmed swing.
+        let formula = if matches!(
+            facts.vocation,
+            crate::spell::Vocation::Monk | crate::spell::Vocation::ExaltedMonk
+        ) {
+            oteryn_gameplay_combat_rules::attack::formulas::player_monk_formula(constants)
+        } else {
+            player_fist_formula(constants)
+        };
+        let (minimum, maximum) = formula
             .bounds(&inputs)
             .map_err(debug)?;
         let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
