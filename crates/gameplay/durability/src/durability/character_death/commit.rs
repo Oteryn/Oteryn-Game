@@ -2,6 +2,10 @@
 use super::*;
 
 impl DurabilityRoot {
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "existing fenced death inputs plus the owner decision root"
+    )]
     pub(in crate::durability) async fn commit_character_death_inner<const N: usize>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
@@ -10,6 +14,7 @@ impl DurabilityRoot {
         request: CharacterDeathRequest<N>,
         formula: Option<&dyn BuildFormula>,
         premium: Option<&dyn promotion::DeathPremiumOwner>,
+        selection_root: Option<[u8; 32]>,
     ) -> Result<CharacterDeathOutcome> {
         validate_request(&fence, &request)?;
         let binding = command_binding(&fence, &request)?;
@@ -48,6 +53,10 @@ impl DurabilityRoot {
                                 }
                                 build_command_binding(&binding, build)
                             }
+                        };
+                        let expected = match &committed.items {
+                            Some(items) => items::binding(&expected, items),
+                            None => expected,
                         };
                         if stored != expected {
                             return Ok(Err(CharacterProgressionError::ConflictingOccurrence));
@@ -269,13 +278,25 @@ impl DurabilityRoot {
                         oteryn_gameplay_combat_rules::pvp::death::BlessingDisposition::ConsumeRegular => held.iter().filter(|key| key.as_str() == twist_key).cloned().collect(),
                         oteryn_gameplay_combat_rules::pvp::death::BlessingDisposition::ConsumeTwist => held.iter().filter(|key| key.as_str() != twist_key).cloned().collect(),
                     };
+                    let items = match selection_root {
+                        Some(root) => Some(items::select(
+                            &mut tx, fence.character_id, &request, level,
+                            regular_blessings, adventurer_applied, effective_red_or_black, root,
+                            committed_at,
+                        ).await?),
+                        None => None,
+                    };
+                    let binding = match &items {
+                        Some(items) => items::binding(&binding, items),
+                        None => binding,
+                    };
                     let receipt = sqlx::query(
                         "INSERT INTO game_character_death_receipts(\
                            death_occurrence_id, command_binding, policy_digest, character_id, \
                            original_character_revision, committed_character_revision, \
                            level_before, level_after, experience_before, experience_after, \
                            experience_lost, blessings_before, blessings_after, \
-                           amulet_of_loss_item_id, lost_item_ids, death_world_id, \
+                           amulet_of_loss_item_id, lost_item_ids, item_selection_root, death_world_id, \
                            death_channel_id, death_spatial_position, death_map_revision, \
                            respawn_position, death_policy_revision, profile_revision, \
                            ruleset_revision, content_revision, simulation_revision, \
@@ -284,7 +305,7 @@ impl DurabilityRoot {
                            vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after) \
                          VALUES (encode($1,'hex')::uuid, $2, $3, encode($4,'hex')::uuid, \
                            $5::text::numeric(20,0), $6::text::numeric(20,0), $7, $8, $9, $10, \
-                           $11, $12, $13, NULL, ARRAY[]::uuid[], encode($14,'hex')::uuid, \
+                           $11, $12, $13, $62::text::uuid, $63::text[]::uuid[], $64, encode($14,'hex')::uuid, \
                            encode($15,'hex')::uuid, $16, $17, $18, $19, $20, $21, $22, $23, \
                            $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61)",
                     )
@@ -316,7 +337,11 @@ impl DurabilityRoot {
                     .bind(&request.policy_revision)
                     .bind(&request.reward_revision)
                     .bind(committed_at);
-                    bind_death_build(receipt, build_loss.as_ref())
+                    let receipt = bind_death_build(receipt, build_loss.as_ref())
+                        .bind(items.as_ref().and_then(|i| i.amulet.map(items::uuid)))
+                        .bind(items.as_ref().map(|i| i.lost.iter().copied().map(items::uuid).collect::<Vec<_>>()).unwrap_or_default())
+                        .bind(items.as_ref().map(|i| i.root.to_vec()));
+                    receipt
                         .execute(&mut *tx)
                         .await?;
                     if let Err(error) =
@@ -378,6 +403,7 @@ impl DurabilityRoot {
                         death_cell: request.death_cell.clone(),
                         respawn_position: request.respawn_position.clone(),
                         build_loss,
+                        items,
                     };
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(CharacterDeathOutcome::Committed(committed)))

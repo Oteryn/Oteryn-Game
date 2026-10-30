@@ -147,6 +147,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 drop(runtime);
                 let snapshot = match origin {
                     Some(origin) => {
+                        let snapshot = self
+                            .citizen_step(actor, session, direction, origin, snapshot)
+                            .await;
                         self.step_quest_callback(&permit, actor, session, origin, snapshot)
                             .await
                     }

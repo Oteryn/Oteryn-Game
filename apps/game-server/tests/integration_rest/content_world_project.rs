@@ -371,6 +371,9 @@ fn project_keeps_terrain_world_objects_and_loot_typed_and_client_safe() {
                 min_count: 1,
                 max_count: 2,
                 probability_ppm: None,
+                children: Vec::new(),
+                unique: false,
+                subtype: None,
             }],
         },
     ]);
@@ -420,6 +423,9 @@ fn new_project_families_reject_wrong_shape_and_unsupported_loot_semantics() {
             min_count: 1,
             max_count: 1,
             probability_ppm: None,
+            children: Vec::new(),
+            unique: false,
+            subtype: None,
         }],
     });
     assert!(CanonicalProjectDocuments::from_draft(wrong_item, limits()).is_err());
@@ -448,6 +454,9 @@ fn new_project_families_reject_wrong_shape_and_unsupported_loot_semantics() {
             min_count: 1,
             max_count: 1,
             probability_ppm: None,
+            children: Vec::new(),
+            unique: false,
+            subtype: None,
         }],
     });
     assert!(

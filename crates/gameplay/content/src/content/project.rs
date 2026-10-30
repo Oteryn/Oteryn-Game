@@ -930,6 +930,12 @@ pub struct LootEntryDocument {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub children: Vec<LootEntryDocument>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub unique: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub subtype: Option<u16>,
 }
 
 impl LootEntryDocument {
@@ -940,6 +946,13 @@ impl LootEntryDocument {
             min_count: self.min_count,
             max_count: self.max_count,
             probability_ppm: self.probability_ppm,
+            children: self
+                .children
+                .iter()
+                .map(Self::lower)
+                .collect::<Result<_, _>>()?,
+            unique: self.unique,
+            subtype: self.subtype,
         })
     }
 }

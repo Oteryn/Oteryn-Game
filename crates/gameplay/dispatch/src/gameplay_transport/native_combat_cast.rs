@@ -2518,7 +2518,8 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 let mut owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
                     command,runtime,actor,state,active,*access,owner.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
                 if pending.is_none(){
-                    if states.apply_current_premium(runtime,actor,session,&owned,owner.owner_now().get())
+                    let promoted=crate::durability::character_promotion::read_durable_promotion(&mut tx,fence.character_id).await?;
+                    if states.apply_current_premium(runtime,actor,session,&owned,owner.owner_now().get(),promoted)
                         .map_err(|_|DurabilityError::Unavailable)? {
                         let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
                         owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,

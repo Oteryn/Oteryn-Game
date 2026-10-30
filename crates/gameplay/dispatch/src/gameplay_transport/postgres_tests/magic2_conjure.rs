@@ -213,6 +213,13 @@ fn scenario(full: bool, missing_reagent: bool) -> TestResult {
             .observe_vitals(actor, session)
             .await
             .ok_or("paid vitals")?;
+        // T-SOULCAP: this Premium caster has never purchased promotion.
+        {
+            let runtime = deps.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let state = states.get(&runtime, actor, session).ok_or("caster")?;
+            assert_eq!(state.character_facts().max_soul, 100);
+        }
         assert_eq!(after.1.mana, before.1.mana - if full { 350 } else { 100 });
         assert_eq!(after.1.soul, before.1.soul - if full { 2 } else { 1 });
         assert_eq!(quantity(&h, BLANK).await?, i64::from(full));

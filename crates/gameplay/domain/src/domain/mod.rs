@@ -2,6 +2,7 @@
 
 pub mod appearance;
 pub mod bestiary;
+pub mod bosstiary;
 pub mod carrier_values;
 pub mod character_build;
 pub mod character_name;

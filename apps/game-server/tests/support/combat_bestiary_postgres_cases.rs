@@ -76,6 +76,7 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
                 min_count: 1,
                 max_count: 1,
                 probability_ppm: Some(1_000_000),
+                details: Default::default(),
             }],
         },
         ground: DeathGroundContext {
@@ -122,6 +123,7 @@ fn input(xp_amount: i64) -> TestResult<CreatureDeathRewardInput<2>> {
 
 fn bestiary(race: bool) -> TestResult<CreatureDeathBestiaryInput> {
     Ok(CreatureDeathBestiaryInput {
+        boss: None,
         race: if race {
             Some(BestiaryRace::new(RAT, "definition-r1", vec![5, 50, 500]).map_err(debug)?)
         } else {

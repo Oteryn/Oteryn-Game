@@ -547,6 +547,7 @@ struct PremiumOwnerBinding {
     equipment: crate::durability::character_equipment::EquipmentSnapshot,
     build: crate::durability::character_build::DurableBuildState,
     level: u32,
+    promoted: bool,
 }
 impl ComposedFreshAdmission<'_, '_, '_> {
     async fn current_premium_binding(
@@ -592,6 +593,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if raw.account != *record.account_id.as_bytes() {
             return None;
         }
+        let promoted = self
+            .root
+            .read_promotion_for_session(self.character, self.holder, raw.fence)
+            .await
+            .ok()?;
         let runtime = self.runtime.lock().await;
         let scope = RuntimeScopeRefV1::channel(
             runtime.binding().world_id(),
@@ -624,6 +630,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             equipment: raw.equipment,
             build: raw.build,
             level: raw.level,
+            promoted,
         })
     }
     /// Apply the account transition only to the genuine current actor, after all current
@@ -705,7 +712,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             projections,
         )?;
         states
-            .apply_current_premium(&runtime, actor, session, &facts, now)
+            .apply_current_premium(&runtime, actor, session, &facts, now, current.promoted)
             .map_err(|_| AccessFactsError::Unavailable("Premium transition refused"))
     }
     pub(super) async fn refresh_and_apply_spell_access(

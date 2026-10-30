@@ -7,8 +7,8 @@
 //! the consumption of every held blessing and the pending respawn at the
 //! recorded position, and empties the monk Harmony and remaining forced Serene
 //! time (SPELL-D8 §8.2 cross-owner item, migration 0026).  It writes Character
-//! state only.  Until DEATH-3 a death selects no Amulet of Loss and loses no
-//! item. PREM-2b supplies durable promotion and per-use Premium under the fence
+//! state and the immutable item selection. The Channel owner applies the selected
+//! one-item operations before respawn. PREM-2b supplies durable promotion and per-use Premium under the fence
 //! for the D66 reduction; PREM-5 supplies the held blessing set.
 //!
 //! DEATH-2 adds the consumption of the pending respawn (DEATH-0 §3.4) and the
@@ -119,6 +119,8 @@ pub struct CommittedCharacterDeath {
     pub respawn_position: Vec<u8>,
     /// None means no build changed, including a retained pre-build-loss death.
     pub build_loss: Option<CommittedDeathBuildLoss>,
+    /// Immutable selection and audit context; absent on pre-C20b receipts.
+    pub items: Option<items::DeathItemSelection>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -154,6 +156,7 @@ pub struct ConsumedRespawn {
 
 mod adventurer;
 mod commit;
+pub mod items;
 pub mod promotion;
 mod settlement;
 
@@ -180,6 +183,7 @@ impl DurabilityRoot {
             request,
             None,
             None,
+            None,
         )
         .await
     }
@@ -201,6 +205,7 @@ impl DurabilityRoot {
             fence,
             request,
             Some(formula),
+            None,
             None,
         )
         .await
@@ -350,6 +355,9 @@ impl DurabilityRoot {
                             respawn_position: row.try_get("respawn_position")?,
                         }),
                     };
+                    if !items::completed(&mut tx, occurrence).await? {
+                        return Ok(Err(CharacterProgressionError::RespawnPending));
+                    }
                     let Some(place) = context.0.take() else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
@@ -830,6 +838,20 @@ fn decode_death_build(
     let before = decode_build_state(row, vocation.as_deref(), "_before")?;
     let after = decode_build_state(row, vocation.as_deref(), "_after")?;
     let binding: Vec<u8> = row.try_get("command_binding")?;
+    // C20b appends the selection digest to the original versioned death/build
+    // binding. Keep decoding the original header and optional formula digest.
+    let binding = if row
+        .try_get::<Option<Vec<u8>>, _>("item_selection_root")?
+        .is_some()
+    {
+        let end = binding
+            .len()
+            .checked_sub(32)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        &binding[..end]
+    } else {
+        binding.as_slice()
+    };
     match (before, after) {
         (None, None) if binding.len() == 33 && binding[0] == DEATH_BINDING_VERSION => Ok(None),
         (Some(before), Some(after))
@@ -942,7 +964,7 @@ async fn load_receipt(
                 level_before, level_after, experience_before, experience_after, \
                 experience_lost, blessings_before, blessings_after, death_world_id::text, \
                 death_channel_id::text, death_spatial_position, death_map_revision, \
-                respawn_position, vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after \
+                amulet_of_loss_item_id::text, ARRAY(SELECT v::text FROM unnest(lost_item_ids) AS v) AS lost_item_ids_text, item_selection_root, committed_at, content_revision, ruleset_revision, simulation_revision, respawn_position, vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after \
            FROM game_character_death_receipts \
           WHERE death_occurrence_id = encode($1,'hex')::uuid",
     )
@@ -990,6 +1012,7 @@ fn decode_receipt(
         },
         respawn_position: row.try_get("respawn_position")?,
         build_loss: decode_death_build(row)?,
+        items: items::decode(row)?,
     })
 }
 

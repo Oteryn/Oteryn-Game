@@ -493,6 +493,7 @@ fn rat_loot_table() -> LootTableDefinition {
             min_count: 1,
             max_count: 1,
             probability_ppm: Some(1_000_000),
+            details: Default::default(),
         }],
     }
 }
@@ -513,6 +514,7 @@ fn guaranteed_entry(key: &str) -> LootTableEntry {
         min_count: 1,
         max_count: 1,
         probability_ppm: Some(1_000_000),
+        details: Default::default(),
     }
 }
 
@@ -1511,6 +1513,7 @@ mod kill_reward_live {
                 max_count: count("max_count")?,
                 // A guaranteed draw keeps the minted plan exact.
                 probability_ppm: Some(1_000_000),
+                details: Default::default(),
             });
         }
         assert_eq!(table["algorithm"], "IndependentBernoulliPpm");

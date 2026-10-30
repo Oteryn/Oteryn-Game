@@ -179,9 +179,7 @@ fn summer_population_wayland_has_both_global_placements() -> TestResult {
                     cell["x"].as_u64(),
                     cell["y"].as_u64(),
                     cell["floor"].as_i64(),
-                    row["declaration"]["direction"]
-                        .as_str()
-                        .map(str::to_owned),
+                    row["declaration"]["direction"].as_str().map(str::to_owned),
                 ));
             }
         }
@@ -251,6 +249,7 @@ fn summer_population_all_six_execute_exact_pinned_loot_plans_and_replay() -> Tes
                     min_count: e.min_count,
                     max_count: e.max_count,
                     probability_ppm: e.probability_ppm,
+                    details: Default::default(),
                 })
                 .collect(),
         };

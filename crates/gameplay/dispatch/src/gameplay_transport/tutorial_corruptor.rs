@@ -11,7 +11,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence: CurrentCharacterGameplayFence,
         entry: &kill_reward::PendingKillSettlement,
     ) -> Result<LootTableDefinition, ()> {
-        let mut table = entry.row.loot_table.clone();
+        let mut table = entry.row.as_ref().ok_or(())?.loot_table.clone();
         if entry.creature != "oteryn:creature.the_corruptor" || !self.tutorial_enabled().await {
             return Ok(table);
         }
@@ -61,6 +61,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 min_count: 1,
                 max_count: 1,
                 probability_ppm: Some(1_000_000),
+                details: Default::default(),
             });
         }
         Ok(table)

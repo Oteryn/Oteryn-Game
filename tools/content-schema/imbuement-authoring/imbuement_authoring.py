@@ -20,7 +20,7 @@ SCHEMA = HERE / "imbuement.schema.json"
 EVIDENCE_PINS = {
     "owner-authoring-policy.json": "c71b9351980fe70b8a83aafcfcca3e03a1ff9445427fedd842214ee89ae73079",
     "global-research-closure.json": "0ccab4e6907570413f74e5c5a05d3a390900af4b92b7516ea7dcdbd15c73050a",
-    "imbuement-bindings.json": "1b7640df513afe5cf79297c1701282e288c28dfc6587de19cbf2655fa980bfea",
+    "imbuement-bindings.json": "7cade4a724e26f53436099591b82078e3038f791d149a34fc73ecdf34e088bb4",
     "imbuement-access.json": "c05984cb8f0ac0e41b4f8bebd7bc2c93be24ea3cbbb86c0d95859e0a8a917f2d",
     "imbuement-eligibility.json": "6206c9a93006dcf7b0db715789bb7e216d4c352a0df99dcf5a7400923730c69b",
     "global-rules-evidence.json": "5f04de7e15226dfa57b36cd9d6f6d03c847f020bbc0efebe118bde02742e3413",

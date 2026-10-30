@@ -1,4 +1,4 @@
-//! MAP-LOAD-1: the `OTERYN_WORLD_BUNDLE/v5` byte layout, its fail-closed reader and its caps,
+//! MAP-LOAD-1: the `OTERYN_WORLD_BUNDLE/v6` byte layout, its fail-closed reader and its caps,
 //! shared by the compiler (`tools/world-bundle-compiler`, the writer) and the game server (the
 //! reader). Format document `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`; ADR-0021 §4.2;
 //! decision MAP-LOAD-PACKET-1 §1.2; the NPC frame, decision NPC-PLACE-1 §3.

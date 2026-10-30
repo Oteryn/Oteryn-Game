@@ -1,4 +1,4 @@
-//! `OTERYN_WORLD_BUNDLE/v5`: the byte layout and the fail-closed reader. The writer lives in
+//! `OTERYN_WORLD_BUNDLE/v6`: the byte layout and the fail-closed reader. The writer lives in
 //! the compiler and applies the same `validate_*` functions.
 //!
 //! Layout (little endian), specified in `docs/contracts/OTERYN_WORLD_BUNDLE_FORMAT_V1.md`:
@@ -14,13 +14,13 @@ use crate::Error;
 use crate::sector::{self, Budget, SECTOR_SIZE, Tile, TileLimits};
 use crate::{npc, spawn};
 
-pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v5";
-pub const VERSION: u16 = 5;
+pub const FORMAT: &str = "OTERYN_WORLD_BUNDLE/v6";
+pub const VERSION: u16 = 6;
 pub const MAGIC: &[u8; 4] = b"OTWB";
 /// The node's runtime-compatibility version (`identity.min_runtime_version`), not the format
 /// `VERSION`. Raise it by one only in a PR whose content needs runtime behaviour a node built
 /// from the previous value lacks; it never goes down (decision ARCH-WORLD-CONTENT-SERVE-1 §1.2).
-pub const RUNTIME_VERSION: u32 = 3;
+pub const RUNTIME_VERSION: u32 = 4;
 /// The sorted, unique capabilities the node implements. A PR adds a value only with the runtime
 /// code that implements it. Empty today.
 pub const SUPPORTED_CAPABILITIES: &[&str] = &[];
@@ -629,7 +629,7 @@ pub fn visit_budgeted(
     )?;
     check(
         &data[..4] == MAGIC && le16(data, 4) == VERSION,
-        "not an OTERYN_WORLD_BUNDLE/v5",
+        "not an OTERYN_WORLD_BUNDLE/v6",
     )?;
     check(le16(data, 6) == 0, "reserved header bytes are not zero")?;
     let (body, trailer) = data.split_at(data.len() - DIGEST);

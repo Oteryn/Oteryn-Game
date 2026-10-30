@@ -1,70 +1,17 @@
-//! VSL-COMBAT-01 Combat D2a: a pure, deterministic loot plan for one creature
-//! death.
-//!
-//! This module computes *what* a death drops. It has no durability, no
-//! foundation wiring and no XP: it never constructs a real
-//! `foundation::CreatureDeathOccurrenceKey`, never calls
-//! `durability::item_mint`, and never loads content. Converting a real
-//! committed death into [`LootPlanDeathKey`], loading the loot table content
-//! (`content::reference_playable::ReferenceLootDefinition`, validated at
-//! content-load time by `validate_loot_definition`,
-//! `apps/game-server/src/content/reference_playable.rs:1946-1980`) into
-//! [`LootTableDefinition`], and turning a [`LootPlan`] into
-//! `ItemMintCause`/`ItemMintRequest` calls, is production wiring left to a
-//! later stage (D2b).
-//!
-//! This module intentionally does not import `crate::content` or
-//! `crate::durability`: `combat.rs` (and so this submodule) is also compiled,
-//! unchanged, by several `apps/game-server/tests/*.rs` PostgreSQL/composition
-//! harnesses that re-declare `foundation` at their own crate root without the
-//! full Content module. [`LootTableDefinition`],
-//! [`LootTableEntry`], [`LootSelectionAlgorithm`] and [`LootDefinitionRef`]
-//! are this module's own minimal shapes, deliberately field-compatible with
-//! `content::reference_playable::{ReferenceLootDefinition, ReferenceLootEntry,
-//! ReferenceLootSelectionAlgorithm, TypedDefinitionRef}` (same fields,
-//! same algorithm names) so D2b's conversion from the real content types is a
-//! straight field copy, and with `durability::item_mint::TypedDefinitionRef`
-//! (`family`/`production_key`/`revision_ref`, all `String`) so its own
-//! conversion into `ItemMintCause`/`ItemMintRequest` is too. This mirrors the
-//! precedent `durability::item_mint::TypedDefinitionRef` itself already set
-//! for the same reason (it does not import `content::TypedDefinitionRef`
-//! either).
-//!
-//! Every [`LootPlanEntry`] this module returns maps 1:1 onto the inputs
-//! `durability::item_mint::ItemMintCause::from_creature_death` and
-//! `ItemMintRequest` take besides the death key and the loot table's own ref
-//! (carried once on [`LootPlan::loot_table`], since it is shared by every
-//! entry): an item ref and `quantity` (`ItemMintRequest`), and a
-//! `purpose_key` and `draw_ordinal` (`ItemMintCause`).
-//!
-//! Algorithm (VSL-COMBAT-01 §19 / evidence packet Q2, content schema
-//! `algorithm: "IndependentBernoulliPpm"`): one independent chance draw and
-//! one quantity draw per loot-table entry, both deterministically derived
-//! from the death key, the loot table's own identity and the entry's ordinal
-//! (`COMBAT01-LOOT-RNG-DRAWS`), so a replayed death always produces the same
-//! plan.
-//!
-//! Resource rows enforced here
-//! (`docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, VSL-COMBAT-01 resource
-//! rows decision D77, §4.1/§4.1.1): `COMBAT01-LOOT-PLAN-ENTRIES`,
-//! `COMBAT01-LOOT-PLAN-ITEMS`, `COMBAT01-LOOT-PLAN-BYTES` and
-//! `COMBAT01-LOOT-RNG-DRAWS`.
+//! Deterministic creature loot planning. Independent rolls retain their original entropy;
+//! nested children are flattened after their parent so the kill owner can reserve every MINT
+//! and commit a container tree atomically. A failed container roll suppresses its descendants.
 
 use sha2::{Digest, Sha256};
 
-/// `COMBAT01-LOOT-PLAN-ENTRIES`: at most 16 loot-table entries can be planned
-/// for one death (D77).
-pub const COMBAT01_LOOT_PLAN_ENTRIES_MAX: usize = 16;
-/// `COMBAT01-LOOT-PLAN-ITEMS`: at most 16 `ItemInstance`s per death (one MINT
-/// per plan entry; a stack is one instance with a quantity) (D77).
-pub const COMBAT01_LOOT_PLAN_ITEMS_MAX: usize = 16;
-/// `COMBAT01-LOOT-PLAN-BYTES`: the plan's typed-identity footprint, derived
-/// the way `durability/item_mint.rs` encodes a `TypedDefinitionRef` and a
-/// content key (VSL-COMBAT-01 §4.1.1): `16 * 1,792 B + 2,048 B = 30,720 B`.
-pub const COMBAT01_LOOT_PLAN_BYTES_MAX: usize = 30_720;
-/// `COMBAT01-LOOT-RNG-DRAWS`: one chance draw and one quantity draw per
-/// loot-table entry, at most 16 entries (32 draws), checked before planning.
-pub const COMBAT01_LOOT_RNG_DRAWS_MAX: usize = 32;
+/// Source entries per death, including descendants (the native section record bound).
+pub const COMBAT01_LOOT_PLAN_ENTRIES_MAX: usize = 4096;
+/// Maximum MINTs per death, including nested children and additional daily rolls.
+pub const COMBAT01_LOOT_PLAN_ITEMS_MAX: usize = 4096;
+/// Maximum typed-identity footprint: 4,096 maximum-width entries plus the header.
+pub const COMBAT01_LOOT_PLAN_BYTES_MAX: usize = 4096 * 1792 + 2048;
+/// Two deterministic draws per source entry.
+pub const COMBAT01_LOOT_RNG_DRAWS_MAX: usize = 8192;
 
 /// Content schema `probability_ppm` scale (parts per million), matching
 /// `content::reference_playable::REFERENCE_LOOT_PROBABILITY_PPM_SCALE`.
@@ -116,6 +63,13 @@ pub struct LootPlanEntry {
     pub quantity: u32,
     pub draw_ordinal: u32,
     pub purpose_key: String,
+    /// Index of the parent in this flattened, parent-before-child plan; None means corpse.
+    pub parent: Option<usize>,
+    pub placement_ordinal: u32,
+    pub subtype: Option<u16>,
+    /// Full charges from the admitted Item definition (lazy timed-state default).
+    pub charges: Option<u32>,
+    pub unique: bool,
 }
 
 /// The complete, bounded loot plan of one death: at most
@@ -134,7 +88,7 @@ pub enum LootPlanError {
     /// `COMBAT01-LOOT-PLAN-ENTRIES`: the source loot table has more entries
     /// than one death may ever plan.
     TooManyTableEntries,
-    /// `COMBAT01-LOOT-RNG-DRAWS`: planning the table would need more than 32
+    /// `COMBAT01-LOOT-RNG-DRAWS`: planning the table would need more than the registered budget of
     /// deterministic draws.
     TooManyRngDraws,
     /// `COMBAT01-LOOT-PLAN-ITEMS`: the plan accepted more entries than one
@@ -146,6 +100,8 @@ pub enum LootPlanError {
     /// The loot table's algorithm is not the one this D2a slice implements
     /// (`IndependentBernoulliPpm`).
     UnsupportedAlgorithm,
+    /// Instance subtype storage is not admitted by the custody-only migration.
+    UnsupportedItemSubtype,
     /// An entry's `min_count`/`max_count` is zero or out of order.
     InvalidQuantityRange,
     /// An `IndependentBernoulliPpm` entry has no `probability_ppm`, or one
@@ -170,6 +126,9 @@ impl std::fmt::Display for LootPlanError {
             }
             Self::UnsupportedAlgorithm => {
                 formatter.write_str("loot table algorithm is not IndependentBernoulliPpm")
+            }
+            Self::UnsupportedItemSubtype => {
+                formatter.write_str("loot instance subtype requires durable state support")
             }
             Self::InvalidQuantityRange => {
                 formatter.write_str("loot entry has a zero or out-of-order quantity range")
@@ -257,41 +216,79 @@ fn plan_roll(
     loot_table: &LootTableDefinition,
     roll: u8,
 ) -> Result<LootPlan, LootPlanError> {
-    if loot_table.algorithm != LootSelectionAlgorithm::IndependentBernoulliPpm {
+    if !matches!(
+        loot_table.algorithm,
+        LootSelectionAlgorithm::IndependentBernoulliPpm | LootSelectionAlgorithm::NestedGroups
+    ) {
         return Err(LootPlanError::UnsupportedAlgorithm);
     }
-    if loot_table.entries.len() > COMBAT01_LOOT_PLAN_ENTRIES_MAX {
+    let sources = validate_tree(&loot_table.entries, 0)?;
+    if sources > COMBAT01_LOOT_PLAN_ENTRIES_MAX {
         return Err(LootPlanError::TooManyTableEntries);
     }
-    let draws_needed = loot_table
-        .entries
-        .len()
-        .checked_mul(2)
-        .ok_or(LootPlanError::TooManyRngDraws)?;
-    if draws_needed > COMBAT01_LOOT_RNG_DRAWS_MAX {
-        return Err(LootPlanError::TooManyRngDraws);
+    let mut state = RollState {
+        entries: Vec::new(),
+        unique: std::collections::HashSet::new(),
+        ordinal: 0,
+        bytes: charge_plan_bytes(0, header_footprint_bytes(loot_table_ref))?,
+    };
+    roll_entries(
+        death_key,
+        loot_table_ref,
+        &loot_table.entries,
+        roll,
+        None,
+        &mut state,
+    )?;
+    Ok(LootPlan {
+        loot_table: loot_table_ref.clone(),
+        entries: state.entries,
+    })
+}
+
+fn validate_tree(entries: &[LootTableEntry], depth: usize) -> Result<usize, LootPlanError> {
+    if depth > 8 || entries.len() > COMBAT01_LOOT_PLAN_ENTRIES_MAX {
+        return Err(LootPlanError::TooManyTableEntries);
     }
-    for entry in &loot_table.entries {
+    let mut count = entries.len();
+    for entry in entries {
         validate_entry_shape(entry)?;
-    }
-
-    let mut total_bytes = charge_plan_bytes(0, header_footprint_bytes(loot_table_ref))?;
-    let mut entries = Vec::with_capacity(loot_table.entries.len());
-
-    for (index, entry) in loot_table.entries.iter().enumerate() {
-        if is_surprise_bag(entry) && !is_global_event_loot_table(loot_table_ref) {
-            continue;
+        if !entry.details.children.is_empty() && entry.details.container_capacity.is_none() {
+            return Err(LootPlanError::UnsupportedAlgorithm);
         }
-        let draw_ordinal = index as u32;
-        // Validated by `validate_entry_shape` above for every entry.
-        let probability_ppm = match entry.probability_ppm {
-            Some(value) => value,
-            None => return Err(LootPlanError::InvalidProbability),
-        };
+        count = count
+            .checked_add(validate_tree(&entry.details.children, depth + 1)?)
+            .filter(|count| *count <= COMBAT01_LOOT_PLAN_ENTRIES_MAX)
+            .ok_or(LootPlanError::TooManyTableEntries)?;
+    }
+    Ok(count)
+}
 
-        let chance_draw = deterministic_draw(
-            death_key,
-            loot_table_ref,
+struct RollState {
+    entries: Vec<LootPlanEntry>,
+    unique: std::collections::HashSet<String>,
+    ordinal: u32,
+    bytes: usize,
+}
+
+fn roll_entries(
+    death: LootPlanDeathKey,
+    reference: &LootDefinitionRef,
+    source: &[LootTableEntry],
+    roll: u8,
+    parent: Option<usize>,
+    state: &mut RollState,
+) -> Result<(), LootPlanError> {
+    let mut placement_ordinal = 0;
+    for entry in source {
+        let draw_ordinal = state.ordinal;
+        state.ordinal += 1;
+        let probability = entry
+            .probability_ppm
+            .ok_or(LootPlanError::InvalidProbability)?;
+        let chance = deterministic_draw(
+            death,
+            reference,
             draw_ordinal,
             if roll == 0 {
                 DrawKind::Chance
@@ -299,13 +296,16 @@ fn plan_roll(
                 DrawKind::BoostedChance(roll)
             },
         );
-        if !bernoulli_success(chance_draw, probability_ppm) {
+        if (is_surprise_bag(entry) && !is_global_event_loot_table(reference))
+            || state.unique.contains(&entry.item.production_key)
+            || !bernoulli_success(chance, probability)
+        {
+            state.ordinal += validate_tree(&entry.details.children, 0)? as u32;
             continue;
         }
-
         let quantity_draw = deterministic_draw(
-            death_key,
-            loot_table_ref,
+            death,
+            reference,
             draw_ordinal,
             if roll == 0 {
                 DrawKind::Quantity
@@ -313,30 +313,62 @@ fn plan_roll(
                 DrawKind::BoostedQuantity(roll)
             },
         );
-        let quantity = quantity_in_range(quantity_draw, entry.min_count, entry.max_count);
+        let quantity = if entry.details.container_capacity.is_some() {
+            // Donor containers are non-stackable: their count is not a stack quantity.
+            1
+        } else {
+            match entry.details.charges {
+                Some(charges) if entry.details.stackable => charges,
+                Some(_) => 1,
+                None => quantity_in_range(quantity_draw, entry.min_count, entry.max_count),
+            }
+        };
+        if quantity == 0 {
+            return Err(LootPlanError::InvalidQuantityRange);
+        }
         let purpose_key = entry.item.production_key.clone();
-
-        total_bytes = charge_plan_bytes(
-            total_bytes,
+        state.bytes = charge_plan_bytes(
+            state.bytes,
             entry_footprint_bytes(&entry.item, &purpose_key),
         )?;
-
-        entries.push(LootPlanEntry {
+        if state.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
+            return Err(LootPlanError::TooManyPlanItems);
+        }
+        placement_ordinal += 1;
+        let index = state.entries.len();
+        state.entries.push(LootPlanEntry {
             item: entry.item.clone(),
             quantity,
             draw_ordinal,
             purpose_key,
+            parent,
+            placement_ordinal,
+            subtype: entry.details.subtype,
+            charges: entry.details.charges,
+            unique: entry.details.unique,
         });
+        if entry.details.unique {
+            state.unique.insert(entry.item.production_key.clone());
+        }
+        roll_entries(
+            death,
+            reference,
+            &entry.details.children,
+            roll,
+            Some(index),
+            state,
+        )?;
+        if let Some(capacity) = entry.details.container_capacity {
+            let children = state.entries[index + 1..]
+                .iter()
+                .filter(|child| child.parent == Some(index))
+                .count();
+            if children > capacity as usize {
+                return Err(LootPlanError::TooManyPlanItems);
+            }
+        }
     }
-
-    if entries.len() > COMBAT01_LOOT_PLAN_ITEMS_MAX {
-        return Err(LootPlanError::TooManyPlanItems);
-    }
-
-    Ok(LootPlan {
-        loot_table: loot_table_ref.clone(),
-        entries,
-    })
+    Ok(())
 }
 
 // All rolls share the existing per-death draw, Item and plan-byte ceilings.
@@ -354,9 +386,10 @@ fn plan_daily_boosted(
     if table.entries.len() > COMBAT01_LOOT_PLAN_ENTRIES_MAX {
         return Err(LootPlanError::TooManyTableEntries);
     }
-    // Bounds above prove this arithmetic is at most 128; reject before cloning
-    // or drawing if this death would exceed its existing 32-draw budget.
-    let draws = 2 * (table.entries.len() + boosted_entries * usize::from(extra_rolls));
+    // Include descendants in the preflight before any additional roll is allocated.
+    let draws = 2
+        * (validate_tree(&table.entries, 0)?
+            + validate_tree(&table.entries[..boosted_entries], 0)? * usize::from(extra_rolls));
     if draws > COMBAT01_LOOT_RNG_DRAWS_MAX {
         return Err(LootPlanError::TooManyRngDraws);
     }
@@ -364,16 +397,38 @@ fn plan_daily_boosted(
     ordinary.algorithm = LootSelectionAlgorithm::IndependentBernoulliPpm;
     let mut plan = plan_creature_loot(death_key, table_ref, &ordinary)?;
     ordinary.entries.truncate(boosted_entries);
+    // Preserve previously admitted small tables' durable boosted MINT ordinals.
+    let stride = validate_tree(&table.entries, 0)?.max(16) as u32;
     for roll in 1..=extra_rolls {
         let extra = plan_roll(death_key, table_ref, &ordinary, roll)?;
-        for mut entry in extra.entries {
+        let mut remapped = vec![None; extra.entries.len()];
+        for (index, mut entry) in extra.entries.into_iter().enumerate() {
+            if plan
+                .entries
+                .iter()
+                .any(|old| old.unique && old.item == entry.item)
+            {
+                continue;
+            }
+            if let Some(parent) = entry.parent {
+                let Some(parent) = remapped[parent] else {
+                    continue;
+                };
+                entry.parent = Some(parent);
+            }
+            entry.placement_ordinal = 1 + plan
+                .entries
+                .iter()
+                .filter(|old| old.parent == entry.parent)
+                .count() as u32;
+            remapped[index] = Some(plan.entries.len());
             if plan.entries.len() >= COMBAT01_LOOT_PLAN_ITEMS_MAX {
                 return Err(LootPlanError::TooManyPlanItems);
             }
             // Each successful roll mints its own Item. Combining quantities would
             // manufacture stacks of non-stackable equipment. The ordinal is also
             // part of the durable MINT occurrence, so retries keep each roll distinct.
-            entry.draw_ordinal += u32::from(roll) * COMBAT01_LOOT_PLAN_ENTRIES_MAX as u32;
+            entry.draw_ordinal += u32::from(roll) * stride;
             plan.entries.push(entry);
         }
     }
@@ -520,6 +575,7 @@ mod tests {
                 min_count,
                 max_count,
                 probability_ppm,
+                details: Default::default(),
             }],
         }
     }
@@ -533,6 +589,7 @@ mod tests {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(probability_ppm),
+                    details: Default::default(),
                 })
                 .collect(),
         }
@@ -547,12 +604,14 @@ mod tests {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(356_433),
+                    details: Default::default(),
                 },
                 LootTableEntry {
                     item: item_ref("oteryn:item.tibia.i3031"),
                     min_count: 1,
                     max_count: 4,
                     probability_ppm: Some(903_036),
+                    details: Default::default(),
                 },
             ],
         }
@@ -641,7 +700,7 @@ mod tests {
     }
 
     #[test]
-    fn sixteen_entries_use_exactly_the_registered_rng_draw_budget() {
+    fn maximum_entries_use_exactly_the_registered_rng_draw_budget() {
         let table = many_entries_table(COMBAT01_LOOT_PLAN_ENTRIES_MAX, 0);
         assert_eq!(table.entries.len() * 2, COMBAT01_LOOT_RNG_DRAWS_MAX);
     }
@@ -660,7 +719,7 @@ mod tests {
     }
 
     #[test]
-    fn sixteen_maximum_width_entries_fit_exactly_at_the_registered_byte_ceiling() {
+    fn maximum_width_entries_fit_exactly_at_the_registered_byte_ceiling() {
         // Mirrors VSL-COMBAT-01 §4.1.1's own worst case: every content key at
         // its FIRST_PRODUCTION_MAX_KEY_BYTES/ATOM_BYTES ceiling (512 B).
         let max_key = |prefix: &str| format!("{prefix}:{}", "k".repeat(512 - prefix.len() - 1));
@@ -676,6 +735,7 @@ mod tests {
                 min_count: 1,
                 max_count: 1,
                 probability_ppm: Some(1_000_000),
+                details: Default::default(),
             })
             .collect();
         let table = LootTableDefinition {
@@ -710,12 +770,14 @@ mod tests {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(0),
+                    details: Default::default(),
                 },
                 LootTableEntry {
                     item: item_ref("oteryn:item.chance.always"),
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(1_000_000),
+                    details: Default::default(),
                 },
             ],
         };
@@ -854,12 +916,14 @@ mod daily_boost_tests {
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(1_000_000),
+                    details: Default::default(),
                 },
                 LootTableEntry {
                     item: item("oteryn:item.sliver"),
                     min_count: 3,
                     max_count: 3,
                     probability_ppm: Some(1_000_000),
+                    details: Default::default(),
                 },
             ],
         };
@@ -922,6 +986,7 @@ mod daily_boost_tests {
                 min_count: 1,
                 max_count: 1,
                 probability_ppm: Some(500_000),
+                details: Default::default(),
             }],
         };
         let mut seen = [false; 3];
@@ -935,6 +1000,171 @@ mod daily_boost_tests {
             seen[quantity as usize] = true;
         }
         assert_eq!(seen, [true; 3]);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod w22a_tests {
+    use super::*;
+
+    fn entry(key: &str) -> LootTableEntry {
+        LootTableEntry {
+            item: LootDefinitionRef::new("Item", key, "definition-r1"),
+            min_count: 1,
+            max_count: 1,
+            probability_ppm: Some(1_000_000),
+            details: Default::default(),
+        }
+    }
+
+    #[test]
+    fn every_canonical_loot_table_can_be_planned() -> Result<(), Box<dyn std::error::Error>> {
+        use oteryn_gameplay_content::content::creature_reward::SectionLootTable;
+        let directory =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content/loot");
+        let mut tables = 0;
+        let mut large = 0;
+        for path in std::fs::read_dir(directory)? {
+            let path = path?.path();
+            if !path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .is_some_and(|s| s.starts_with("loot-") && s.ends_with(".json"))
+            {
+                continue;
+            }
+            let document: serde_json::Value = serde_json::from_slice(&std::fs::read(path)?)?;
+            for record in document["records"].as_array().ok_or("canonical records")? {
+                let mut definition = record["definition"].clone();
+                definition
+                    .as_object_mut()
+                    .ok_or("canonical definition")?
+                    .remove("kind");
+                let table: SectionLootTable = serde_json::from_value(definition)?;
+                let lower = |r: &oteryn_gameplay_content::content::creature_reward::SectionRef| {
+                    LootDefinitionRef::new(&r.family, &r.key, &r.revision)
+                };
+                let entries = table
+                    .entries
+                    .iter()
+                    .map(|e| {
+                        assert!(
+                            e.children.is_empty(),
+                            "canonical descendants require Item facts in this fixture"
+                        );
+                        LootTableEntry {
+                            item: lower(&e.item),
+                            min_count: e.min_count,
+                            max_count: e.max_count,
+                            probability_ppm: e.probability_ppm,
+                            details: Default::default(),
+                        }
+                    })
+                    .collect();
+                assert_eq!(table.algorithm, "IndependentBernoulliPpm");
+                let source = LootTableDefinition {
+                    algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+                    entries,
+                };
+                let reference = lower(&table.identity);
+                let death = LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1);
+                let plan = plan_creature_loot(death, &reference, &source)?;
+                assert_eq!(plan, plan_creature_loot(death, &reference, &source)?);
+                tables += 1;
+                large += usize::from(source.entries.len() > 16);
+            }
+        }
+        assert!(tables > 0 && large > 0);
+        Ok(())
+    }
+
+    #[test]
+    fn nested_container_rolls_children_inside_their_parent_deterministically()
+    -> Result<(), LootPlanError> {
+        let mut bag = entry("oteryn:item.bag");
+        bag.min_count = 2;
+        bag.max_count = 2;
+        bag.details.container_capacity = Some(8);
+        bag.details.children = vec![entry("oteryn:item.gold"), entry("oteryn:item.apple")];
+        let table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::NestedGroups,
+            entries: vec![bag],
+        };
+        let death = LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1);
+        let reference = LootDefinitionRef::new("Loot", "oteryn:loot.nested", "definition-r1");
+        let plan = plan_creature_loot(death, &reference, &table)?;
+        assert_eq!(
+            plan.entries[0].quantity, 1,
+            "a non-stackable container is one Item"
+        );
+        assert_eq!(
+            plan.entries.iter().map(|e| e.parent).collect::<Vec<_>>(),
+            vec![None, Some(0), Some(0)]
+        );
+        assert_eq!(
+            plan.entries
+                .iter()
+                .map(|e| e.placement_ordinal)
+                .collect::<Vec<_>>(),
+            vec![1, 1, 2]
+        );
+        assert_eq!(plan, plan_creature_loot(death, &reference, &table)?);
+        let mut failed = table;
+        failed.entries[0].probability_ppm = Some(0);
+        assert!(
+            plan_creature_loot(death, &reference, &failed)?
+                .entries
+                .is_empty()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn charged_item_uses_full_charges_and_unique_entry_rolls_once() -> Result<(), LootPlanError> {
+        let mut rune = entry("oteryn:item.rune");
+        rune.details.charges = Some(10);
+        rune.details.subtype = Some(10);
+        rune.details.unique = true;
+        let table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+            entries: vec![rune.clone(), rune],
+        };
+        let plan = plan_creature_loot(
+            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+            &LootDefinitionRef::new("Loot", "oteryn:loot.charges", "definition-r1"),
+            &table,
+        )?;
+        assert_eq!(plan.entries.len(), 1);
+        assert_eq!(plan.entries[0].quantity, 1);
+        assert_eq!(plan.entries[0].charges, Some(10));
+        assert_eq!(plan.entries[0].subtype, Some(10));
+        Ok(())
+    }
+
+    #[test]
+    fn forty_entry_table_plans_every_guaranteed_drop() -> Result<(), LootPlanError> {
+        let table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::IndependentBernoulliPpm,
+            entries: (0..40)
+                .map(|index| LootTableEntry {
+                    item: LootDefinitionRef::new(
+                        "Item",
+                        format!("oteryn:item.drop{index}"),
+                        "definition-r1",
+                    ),
+                    min_count: 1,
+                    max_count: 1,
+                    probability_ppm: Some(1_000_000),
+                    details: Default::default(),
+                })
+                .collect(),
+        };
+        let death = LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1);
+        let reference = LootDefinitionRef::new("Loot", "oteryn:loot.forty", "definition-r1");
+        let plan = plan_creature_loot(death, &reference, &table)?;
+        assert_eq!(plan.entries.len(), 40);
+        assert_eq!(plan, plan_creature_loot(death, &reference, &table)?);
         Ok(())
     }
 }

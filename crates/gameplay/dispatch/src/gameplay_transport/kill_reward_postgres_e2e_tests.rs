@@ -55,7 +55,7 @@ fn auto_attack_kill_settles_xp_and_a_linked_corpse_with_loot_on_postgres() -> Te
     scenario_thread::run("kill-reward-e2e", scenario)
 }
 
-fn scenario() -> TestResult {
+pub(super) fn scenario() -> TestResult {
     scenario_with_decay(None)
 }
 
@@ -270,12 +270,14 @@ fn scenario_with_creature_charmed(
         let world = WorldId::decode(&id(42)).map_err(debug)?;
         let channel = ChannelId::decode(&id(43)).map_err(debug)?;
         let session = GameSessionId::decode(&id(50)).map_err(debug)?;
+        let w22a_tables = super::w22a_loot::table_override()?;
         let (controller, pin) =
-            crate::content::native_gameplay::test_support::activated_with_loot_tables(
+            crate::content::native_gameplay::test_support::activated_with_custom_loot_tables(
                 world,
                 Some(include_bytes!(
                     "../../../../../tools/content-schema/native-gameplay/canary-thalom-world.json"
                 )),
+                w22a_tables.as_deref(),
             );
         let active = controller.active().expect("activated generation");
         let native = active.native_gameplay().expect("native gameplay state");
@@ -1302,7 +1304,10 @@ fn scenario_with_creature_charmed(
                 return Err("daily boosted kill".into());
             };
             let entry = taken.entry().ok_or("daily entry")?;
-            assert_eq!(entry.row.xp_amount.get(), queued_xp);
+            assert_eq!(
+                entry.row.as_ref().expect("reward row").xp_amount.get(),
+                queued_xp
+            );
             let death = entry.facts.death;
             let plan = oteryn_gameplay_items::loot_plan::plan_creature_loot(
                 oteryn_gameplay_items::loot_plan::LootPlanDeathKey::new(
@@ -1312,8 +1317,8 @@ fn scenario_with_creature_charmed(
                     death.actor_local_id(),
                     death.actor_local_generation(),
                 ),
-                &entry.row.loot_table_ref,
-                &entry.row.loot_table,
+                &entry.row.as_ref().expect("reward row").loot_table_ref,
+                &entry.row.as_ref().expect("reward row").loot_table,
             )
             .map_err(debug)?;
             daily_expected_loot = Some(
@@ -1323,7 +1328,10 @@ fn scenario_with_creature_charmed(
                     .collect::<Vec<_>>(),
             );
 
-            match (target, entry.row.loot_table.algorithm) {
+            match (
+                target,
+                entry.row.as_ref().expect("reward row").loot_table.algorithm,
+            ) {
                 (
                     "creature",
                     crate::combat::LootSelectionAlgorithm::DailyBoosted { extra_rolls: 1, .. },
@@ -1424,6 +1432,7 @@ fn scenario_with_creature_charmed(
             "{creature_key} commits a positive native loot plan"
         );
 
+        super::w22a_loot::qualify(&mut owner, &harness).await?;
         if let Some(expected) = daily_expected_loot {
             let actual: Vec<(String,i64)> = sqlx::query_as("SELECT i.definition_production_key,i.quantity FROM game_item_corpse_container_entries e JOIN game_item_instances i ON i.item_instance_id=e.item_instance_id JOIN game_item_mint_receipts r ON r.item_instance_id=i.item_instance_id ORDER BY r.draw_ordinal LIMIT 17").fetch_all(&harness.pool).await?;
             assert_eq!(

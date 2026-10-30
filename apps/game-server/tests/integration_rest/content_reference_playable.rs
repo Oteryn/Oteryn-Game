@@ -301,12 +301,18 @@ fn source_with_creature_loot() -> Result<ReferencePlayableContentSource, Content
                     min_count: 1,
                     max_count: 1,
                     probability_ppm: Some(125_000),
+                    children: Vec::new(),
+                    unique: false,
+                    subtype: None,
                 },
                 ReferenceLootEntry {
                     item: primary_item,
                     min_count: 1,
                     max_count: 3,
                     probability_ppm: Some(750_000),
+                    children: Vec::new(),
+                    unique: false,
+                    subtype: None,
                 },
             ],
         }),
@@ -958,10 +964,16 @@ fn loot_algorithm_probability_and_count_domains_fail_closed() -> Result<(), Cont
 
     let mut nested = source_with_creature_loot()?;
     typed_loot_kind_mut(&mut nested)?.algorithm = ReferenceLootSelectionAlgorithm::NestedGroups;
+    // The lifted algorithm keeps the same typed Item and probability proofs.
+    link_reference_playable(nested.clone())?;
+    let child = typed_loot_kind_mut(&mut nested)?.entries[1].clone();
+    typed_loot_kind_mut(&mut nested)?.entries[0]
+        .children
+        .push(child);
     assert!(matches!(
         link_reference_playable(nested),
         Err(ContentError::InvalidArtifact(
-            "reference-playable nested loot groups require separately accepted typed group references"
+            "reference-playable nested loot parent must be a typed container"
         ))
     ));
 
@@ -969,12 +981,7 @@ fn loot_algorithm_probability_and_count_domains_fail_closed() -> Result<(), Cont
     let empty_nested_loot = typed_loot_kind_mut(&mut empty_nested)?;
     empty_nested_loot.algorithm = ReferenceLootSelectionAlgorithm::NestedGroups;
     empty_nested_loot.entries.clear();
-    assert!(matches!(
-        link_reference_playable(empty_nested),
-        Err(ContentError::InvalidArtifact(
-            "reference-playable nested loot groups require separately accepted typed group references"
-        ))
-    ));
+    link_reference_playable(empty_nested)?;
     Ok(())
 }
 
