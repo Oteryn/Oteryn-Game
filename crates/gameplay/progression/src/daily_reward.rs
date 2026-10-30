@@ -132,7 +132,7 @@ fn fallback_milestone(next_day: u8) -> u8 {
     }
 }
 
-/// Most recent Berlin 10:00 reset day, expressed as civil days since 1970-01-01.
+/// Most recent Berlin 06:00 reset day, expressed as civil days since 1970-01-01.
 /// The caller resolves Europe/Berlin using the upstream timezone database first;
 /// seconds are local civil seconds, never a fixed UTC offset or a 24-hour window.
 /// This labels reset history; it cannot open a claim window or invent an epoch.
@@ -143,7 +143,7 @@ pub fn daily_reward_reset_day(
     if local_seconds >= 86_400 {
         return Err(DailyRewardRuleError::InvalidResetTime);
     }
-    if local_seconds < 36_000 {
+    if local_seconds < 21_600 {
         berlin_civil_day
             .checked_sub(1)
             .ok_or(DailyRewardRuleError::InvalidResetTime)

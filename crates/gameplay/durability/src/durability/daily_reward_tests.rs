@@ -41,7 +41,7 @@ fn request(epoch: u64, transaction: u8) -> TestResult<DailyRewardClaimRequest> {
 
 // Migration-owner fixtures provide committed history, never a runtime epoch producer.
 async fn reset(h: &Harness, epoch: u64, timestamp: &str) -> TestResult {
-    sqlx::query("INSERT INTO public.game_world_reset_history(world_id,reset_epoch,reset_day,reset_at_unix_ms,committed_at_unix_ms) SELECT encode($1,'hex')::uuid,$2::text::numeric(20,0),((t AT TIME ZONE 'Europe/Berlin')-INTERVAL '10 hours')::date-DATE '1970-01-01',floor(extract(epoch FROM t)*1000)::bigint,floor(extract(epoch FROM t)*1000)::bigint FROM (SELECT $3::text::timestamptz t) x")
+    sqlx::query("INSERT INTO public.game_world_reset_history(world_id,reset_epoch,reset_day,reset_at_unix_ms,committed_at_unix_ms) SELECT encode($1,'hex')::uuid,$2::text::numeric(20,0),((t AT TIME ZONE 'Europe/Berlin')-INTERVAL '6 hours')::date-DATE '1970-01-01',floor(extract(epoch FROM t)*1000)::bigint,floor(extract(epoch FROM t)*1000)::bigint FROM (SELECT $3::text::timestamptz t) x")
         .bind(id(WORLD).as_slice()).bind(epoch.to_string()).bind(timestamp).execute(&h.pool).await?;
     Ok(())
 }

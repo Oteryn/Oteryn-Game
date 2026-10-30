@@ -7,7 +7,7 @@ pub fn announcement_for_epoch(epoch: u64) -> Option<&'static str> {
     (epoch % 2 == 1).then_some("World gathering is active until the next server save.")
 }
 
-/// Canary `global_server_save.lua:29,48` warns once a minute from
+/// Crystal `data/scripts/globalevents/global_server_save.lua:22-34,42-51` warns once a minute from
 /// `globalServerSaveNotifyDuration` (5) down to 1 minute before the server save.
 pub const SERVER_SAVE_WARNING_MINUTES_MAX: u8 = 5;
 const MINUTE_MS: i64 = 60_000;
@@ -50,8 +50,8 @@ mod tests {
 
     /// PAR-W05: Crystal `201189f8` `global_server_save.lua:21-52` broadcasts
     /// `globalServerSaveNotifyDuration` (5) at the save event, then every 60 s
-    /// 4, 3, 2, 1, and saves 60 s after the last one. Crystal's 06:00 config default is a
-    /// DIFF against Oteryn's 10:00 Europe/Berlin calendar (`world_reset.rs`).
+    /// 4, 3, 2, 1, and saves 60 s after the last one. Crystal's 06:00 config default
+    /// matches Oteryn's Europe/Berlin calendar (`config.lua.dist:604`).
     #[test]
     fn w05_crystal_server_save_warning_cadence() {
         let started = RESET - 60 * MINUTE_MS;
