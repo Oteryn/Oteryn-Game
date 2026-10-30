@@ -4,6 +4,9 @@
     dead_code,
     reason = "spell import candidate; awaits its production owner caller"
 )]
+#[path = "character_equipment/hotkey.rs"]
+mod hotkey;
+
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::equipment_policy_abi::{EquipmentPolicyLookup, claims};
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
@@ -127,8 +130,21 @@ pub enum EquipmentIntent {
         from_slot: Option<u8>,
         to_slot: Option<u8>,
     },
+    /// Server-selected custody, resolved under the same fenced equipment transaction.
+    Hotkey {
+        #[serde(serialize_with = "serialize_equipment_definition")]
+        definition: super::item_mint::TypedDefinitionRef,
+        slot: u8,
+    },
     SetCombatMode(CombatMode),
 }
+fn serialize_equipment_definition<S: serde::Serializer>(
+    definition: &super::item_mint::TypedDefinitionRef,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error> {
+    json!({"family":definition.family,"production_key":definition.production_key,"revision_ref":definition.revision_ref}).serialize(serializer)
+}
+
 #[derive(Debug)]
 pub struct EquipmentReceipt {
     pub transaction_id: [u8; 16],
@@ -405,6 +421,17 @@ pub async fn apply_equipment_in_transaction(
     content: &impl EquipmentMoveContent,
     intent: &EquipmentIntent,
 ) -> Result<EquipmentReceipt> {
+    apply_resolved_equipment_in_transaction(tx, authority, expected, content, intent, intent).await
+}
+
+async fn apply_resolved_equipment_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &EquipmentAuthority,
+    expected: &EquipmentSnapshot,
+    content: &impl EquipmentMoveContent,
+    intent: &EquipmentIntent,
+    binding_intent: &EquipmentIntent,
+) -> Result<EquipmentReceipt> {
     same_transaction(tx, authority).await?;
     let command = authority
         .command
@@ -423,11 +450,11 @@ pub async fn apply_equipment_in_transaction(
     };
     let mut envelope = if let Some(old) = displaced {
         json!({"schema":"OTERYN_EQUIPMENT_COMMAND/v2", "character":expected.character,
-            "owner_revision":expected.revision,"content_digest":expected.content_digest,"intent":intent,
+            "owner_revision":expected.revision,"content_digest":expected.content_digest,"intent":binding_intent,
             "swap":{"item":old.item_instance_id,"state_revision":old.state_revision,
                 "from_slot":old.slot,"to":"MAIN_BACKPACK"}})
     } else {
-        json!({"schema":"OTERYN_EQUIPMENT_COMMAND/v1","character":expected.character,"owner_revision":expected.revision,"content_digest":expected.content_digest,"intent":intent})
+        json!({"schema":"OTERYN_EQUIPMENT_COMMAND/v1","character":expected.character,"owner_revision":expected.revision,"content_digest":expected.content_digest,"intent":binding_intent})
     };
     let binding_bytes = serde_json::to_vec(&envelope).map_err(|_| rejected("equipment binding"))?;
     let binding: Vec<u8> = Sha256::digest(&binding_bytes).to_vec();
@@ -478,7 +505,9 @@ pub async fn apply_equipment_in_transaction(
     let mut ordinal = None;
     let mut item_revision = None;
     let mut swap: Option<(EquippedItem, u64)> = None;
+    let mut nested_source_parent = None;
     let operation = match intent {
+        EquipmentIntent::Hotkey { .. } => return Err(rejected("unresolved equipment hotkey")),
         EquipmentIntent::SetCombatMode(value) => {
             mode = Some(*value);
             2_i16
@@ -585,9 +614,21 @@ pub async fn apply_equipment_in_transaction(
                 // This transaction already holds the Character, source item and
                 // backpack locks. Immutable placement rows need no UPDATE grant.
                 let source=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND parent_item_instance_id=encode($3,'hex')::uuid")
-                    .bind(identity.as_slice()).bind(authority.fence.character_id.as_bytes().as_slice()).bind(backpack_id.as_slice()).fetch_optional(&mut **tx).await?.ok_or(rejected("equipment source is not direct backpack entry"))?;
-                ordinal = Some(number(source.try_get("placement_ordinal")?)?);
+                    .bind(identity.as_slice()).bind(authority.fence.character_id.as_bytes().as_slice()).bind(backpack_id.as_slice()).fetch_optional(&mut **tx).await?;
+                ordinal = Some(if let Some(source) = source {
+                    number(source.try_get("placement_ordinal")?)?
+                } else if matches!(binding_intent, EquipmentIntent::Hotkey { .. }) {
+                    let (parent, source_ordinal) =
+                        hotkey::lock_nested_source(tx, authority, *identity, backpack_id).await?;
+                    nested_source_parent = Some(parent);
+                    source_ordinal
+                } else {
+                    return Err(rejected("equipment source is not direct backpack entry"));
+                });
                 if let Some(old) = actual.items.iter().find(|old| old.slot == *slot) {
+                    if nested_source_parent.is_some() {
+                        hotkey::main_vacancy(tx, authority, content, backpack_id).await?;
+                    }
                     let key: String = row.try_get("definition_production_key")?;
                     let revision: String = row.try_get("definition_revision_ref")?;
                     if !content.is_quiver_item(&key, &revision)
@@ -624,6 +665,7 @@ pub async fn apply_equipment_in_transaction(
                     let maximum: String = sqlx::query_scalar("SELECT COALESCE(max(placement_ordinal),0)::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
                         .bind(backpack_id.as_slice()).fetch_one(&mut **tx).await?;
                     let replacement = number(maximum)?
+                        .max(ordinal.ok_or(rejected("equipment ordinal"))?)
                         .checked_add(1)
                         .ok_or(rejected("equipment backpack ordinal exhausted"))?;
                     let incoming_revision = number(row.try_get("state_revision")?)?;
@@ -638,8 +680,8 @@ pub async fn apply_equipment_in_transaction(
                         .map_err(|_| rejected("equipment item quantity"))?;
                     let source_ordinal = ordinal.ok_or(rejected("equipment ordinal"))?;
                     envelope["locations"] = json!([
-                        {"item":identity,"operation":"REMOVE","kind":"MAIN_BACKPACK_ENTRY",
-                            "character":actual.character,"world":authority.world,"parent":backpack_id,"ordinal":source_ordinal},
+                        {"item":identity,"operation":"REMOVE","kind":if nested_source_parent.is_some() { "NESTED_CONTAINER_ENTRY" } else { "MAIN_BACKPACK_ENTRY" },
+                            "character":actual.character,"world":authority.world,"parent":nested_source_parent.unwrap_or(backpack_id),"ordinal":source_ordinal},
                         {"item":identity,"operation":"PLACE","kind":"CHARACTER_EQUIPMENT",
                             "character":actual.character,"world":authority.world,"slot":slot},
                         {"item":old.item_instance_id,"operation":"REMOVE","kind":"CHARACTER_EQUIPMENT",
@@ -698,6 +740,12 @@ pub async fn apply_equipment_in_transaction(
             1_i16
         }
     };
+    if let Some(source_parent) = nested_source_parent {
+        envelope["nested_source"] = json!({"parent":source_parent,"ordinal":ordinal});
+    }
+    if matches!(binding_intent, EquipmentIntent::Hotkey { .. }) {
+        envelope["resolved"] = json!(intent);
+    }
     // All four resolved location lines and both item successors are now immutable
     // observations under the held locks; bind the complete event before any write.
     let binding_bytes = serde_json::to_vec(&envelope).map_err(|_| rejected("equipment binding"))?;
@@ -705,12 +753,12 @@ pub async fn apply_equipment_in_transaction(
     let ids=sqlx::query("SELECT game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id").fetch_one(&mut **tx).await?;
     let transaction_id = uuid(ids.try_get("transaction_id")?)?;
     let event_id = uuid(ids.try_get("event_id")?)?;
-    // Legacy one-item and combat-mode commands retain the original SQL ABI.
-    // Only the new swap shape requires the separately approved additive schema.
+    // Legacy commands keep their original binding. The optional nested source
+    // parent is NULL on those receipts; a swap also binds its second member.
     let statement = if swap.is_some() {
-        "INSERT INTO game_character_equipment_receipts(transaction_id,event_id,character_id,game_session_id,command_id,connection_generation,lease_generation,world_id,channel_id,scope_generation,content_digest,revision_before,revision_after,mode_before,mode_after,operation,item_instance_id,state_revision_before,from_slot,to_slot,backpack_item_instance_id,backpack_ordinal,binding,intent,swap_item_instance_id,swap_state_revision_before,swap_backpack_ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric,$11,$12::text::numeric,$13::text::numeric,$14,$15,$16,CASE WHEN $17::bytea IS NULL THEN NULL ELSE encode($17,'hex')::uuid END,$18::text::numeric,$19,$20,CASE WHEN $21::bytea IS NULL THEN NULL ELSE encode($21,'hex')::uuid END,$22::text::numeric,$23,$24,CASE WHEN $25::bytea IS NULL THEN NULL ELSE encode($25,'hex')::uuid END,$26::text::numeric,$27::text::numeric)"
+        "INSERT INTO game_character_equipment_receipts(transaction_id,event_id,character_id,game_session_id,command_id,connection_generation,lease_generation,world_id,channel_id,scope_generation,content_digest,revision_before,revision_after,mode_before,mode_after,operation,item_instance_id,state_revision_before,from_slot,to_slot,backpack_item_instance_id,backpack_ordinal,binding,intent,swap_item_instance_id,swap_state_revision_before,swap_backpack_ordinal,nested_source_parent_item_instance_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric,$11,$12::text::numeric,$13::text::numeric,$14,$15,$16,CASE WHEN $17::bytea IS NULL THEN NULL ELSE encode($17,'hex')::uuid END,$18::text::numeric,$19,$20,CASE WHEN $21::bytea IS NULL THEN NULL ELSE encode($21,'hex')::uuid END,$22::text::numeric,$23,$24,CASE WHEN $25::bytea IS NULL THEN NULL ELSE encode($25,'hex')::uuid END,$26::text::numeric,$27::text::numeric,CASE WHEN $28::bytea IS NULL THEN NULL ELSE encode($28,'hex')::uuid END)"
     } else {
-        "INSERT INTO game_character_equipment_receipts(transaction_id,event_id,character_id,game_session_id,command_id,connection_generation,lease_generation,world_id,channel_id,scope_generation,content_digest,revision_before,revision_after,mode_before,mode_after,operation,item_instance_id,state_revision_before,from_slot,to_slot,backpack_item_instance_id,backpack_ordinal,binding,intent) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric,$11,$12::text::numeric,$13::text::numeric,$14,$15,$16,CASE WHEN $17::bytea IS NULL THEN NULL ELSE encode($17,'hex')::uuid END,$18::text::numeric,$19,$20,CASE WHEN $21::bytea IS NULL THEN NULL ELSE encode($21,'hex')::uuid END,$22::text::numeric,$23,$24)"
+        "INSERT INTO game_character_equipment_receipts(transaction_id,event_id,character_id,game_session_id,command_id,connection_generation,lease_generation,world_id,channel_id,scope_generation,content_digest,revision_before,revision_after,mode_before,mode_after,operation,item_instance_id,state_revision_before,from_slot,to_slot,backpack_item_instance_id,backpack_ordinal,binding,intent,nested_source_parent_item_instance_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,$6::text::numeric,$7::text::numeric,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric,$11,$12::text::numeric,$13::text::numeric,$14,$15,$16,CASE WHEN $17::bytea IS NULL THEN NULL ELSE encode($17,'hex')::uuid END,$18::text::numeric,$19,$20,CASE WHEN $21::bytea IS NULL THEN NULL ELSE encode($21,'hex')::uuid END,$22::text::numeric,$23,$24,CASE WHEN $25::bytea IS NULL THEN NULL ELSE encode($25,'hex')::uuid END)"
     };
     let query = sqlx::query(statement)
         .bind(transaction_id.as_slice())
@@ -745,9 +793,15 @@ pub async fn apply_equipment_in_transaction(
     } else {
         query
     };
-    query.execute(&mut **tx).await?;
+    query
+        .bind(nested_source_parent.map(|id| id.to_vec()))
+        .execute(&mut **tx)
+        .await?;
     if let Some(item) = item {
-        if to.is_some() {
+        if to.is_some() && nested_source_parent.is_some() {
+            sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(item.as_slice()).execute(&mut **tx).await?;
+        } else if to.is_some() {
             sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid").bind(item.as_slice()).execute(&mut **tx).await?;
         } else {
             sqlx::query("DELETE FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid").bind(actual.character.as_slice()).bind(item.as_slice()).execute(&mut **tx).await?;
@@ -1125,6 +1179,13 @@ pub enum EquipmentMoveRefusal {
 
 /// The Content an equipment move reads besides the slot claims of [`EquipmentPolicyLookup`].
 pub trait EquipmentMoveContent: EquipmentPolicyLookup + Sync {
+    /// Qualified full budget for D2; absent for definitions without a hosted timed budget.
+    fn full_timed_values(
+        &self,
+        _definition: &super::item_mint::TypedDefinitionRef,
+    ) -> Option<crate::domain::timed_item::TimedValues> {
+        None
+    }
     /// True only when the definition is known to carry no `container` semantics.
     fn is_plain_item(&self, production_key: &str, revision_ref: &str) -> bool;
     fn is_quiver_item(&self, _production_key: &str, _revision_ref: &str) -> bool {
@@ -1343,6 +1404,57 @@ impl DurabilityRoot {
         std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
         DurabilityError,
     > {
+        self.commit_equipment_intent(
+            recovery,
+            node,
+            fence,
+            command,
+            content,
+            EquipmentIntent::Move {
+                item: request.item,
+                from_slot: request.from_slot,
+                to_slot: request.to_slot,
+            },
+        )
+        .await
+    }
+
+    /// Capability 180: selection and custody commit share the equipment owner transaction.
+    pub async fn commit_hotkey_equipment<C: EquipmentMoveContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        selection: (super::item_mint::TypedDefinitionRef, u8),
+    ) -> std::result::Result<
+        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+        DurabilityError,
+    > {
+        self.commit_equipment_intent(
+            recovery,
+            node,
+            fence,
+            command,
+            content,
+            EquipmentIntent::Hotkey { definition:selection.0, slot:selection.1 },
+        )
+        .await
+    }
+
+    async fn commit_equipment_intent<C: EquipmentMoveContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        intent: EquipmentIntent,
+    ) -> std::result::Result<
+        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+        DurabilityError,
+    > {
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
@@ -1358,11 +1470,6 @@ impl DurabilityRoot {
                     let attempt: Result<
                         std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
                     > = async {
-                        let intent = EquipmentIntent::Move {
-                            item: request.item,
-                            from_slot: request.from_slot,
-                            to_slot: request.to_slot,
-                        };
                         // Replay first under the CommandRef's lock: an attempt of the same
                         // command that committed first answers with its own receipt.
                         lock_equipment_command(&mut tx, command).await?;
@@ -1381,13 +1488,35 @@ impl DurabilityRoot {
                         )
                         .await?;
                         let snapshot = read_equipment_in_transaction(&mut tx, &authority).await?;
+                        let resolved = match &intent {
+                            EquipmentIntent::Hotkey { definition, slot } => {
+                                hotkey::resolve(
+                                    &mut tx, &authority, &snapshot, content, definition, *slot,
+                                )
+                                .await?
+                            }
+                            _ => intent.clone(),
+                        };
+                        let EquipmentIntent::Move {
+                            item,
+                            from_slot,
+                            to_slot,
+                        } = resolved
+                        else {
+                            return Err(rejected("equipment move intent"));
+                        };
+                        let request = EquipmentMove {
+                            item,
+                            from_slot,
+                            to_slot,
+                        };
                         if let Some(refusal) =
                             precheck_move(&mut tx, &authority, &snapshot, content, request).await?
                         {
                             return Ok(Err(refusal));
                         }
-                        apply_equipment_in_transaction(
-                            &mut tx, &authority, &snapshot, content, &intent,
+                        apply_resolved_equipment_in_transaction(
+                            &mut tx, &authority, &snapshot, content, &resolved, &intent,
                         )
                         .await
                         .map(Ok)

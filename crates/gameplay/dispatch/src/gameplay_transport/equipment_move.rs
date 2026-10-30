@@ -52,6 +52,13 @@ impl oteryn_gameplay_domain::domain::equipment_policy_abi::EquipmentPolicyLookup
 /// A plain item names a Known definition with container semantics `NotApplicable`; a container
 /// or an item with unknown container semantics never enters a slot in this slice.
 impl EquipmentMoveContent for NativeItemWeights<'_> {
+    fn full_timed_values(
+        &self,
+        definition: &crate::durability::item_mint::TypedDefinitionRef,
+    ) -> Option<crate::domain::timed_item::TimedValues> {
+        super::timed_item_content::facts(self.0, definition).map(|(facts, _)| facts.full)
+    }
+
     fn equipment_stack_class(
         &self,
         production_key: &str,
@@ -278,7 +285,14 @@ pub(super) async fn move_equipment(
     command: UseCommand,
     request: EquipmentMove,
 ) -> EquipmentMoveResult {
-    move_equipment_inner(admission, actor, command, request, false).await
+    move_equipment_inner(
+        admission,
+        actor,
+        command,
+        MoveRequest::Exact(request),
+        false,
+    )
+    .await
 }
 
 /// Hotkeys share the same equipment transaction and recheck fear under its writer lane.
@@ -288,14 +302,39 @@ pub(super) async fn move_hotkey_equipment(
     command: UseCommand,
     request: EquipmentMove,
 ) -> EquipmentMoveResult {
-    move_equipment_inner(admission, actor, command, request, true).await
+    move_equipment_inner(admission, actor, command, MoveRequest::Exact(request), true).await
+}
+
+enum MoveRequest {
+    Exact(EquipmentMove),
+    Hotkey {
+        definition: crate::durability::item_mint::TypedDefinitionRef,
+        slot: u8,
+    },
+}
+
+pub(super) async fn move_hotkey_carried(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    command: UseCommand,
+    definition: crate::durability::item_mint::TypedDefinitionRef,
+    slot: u8,
+) -> EquipmentMoveResult {
+    move_equipment_inner(
+        admission,
+        actor,
+        command,
+        MoveRequest::Hotkey { definition, slot },
+        true,
+    )
+    .await
 }
 
 async fn move_equipment_inner(
     admission: &ComposedFreshAdmission<'_, '_, '_>,
     actor: crate::foundation::ExactActorRef,
     command: UseCommand,
-    request: EquipmentMove,
+    request: MoveRequest,
     hotkey: bool,
 ) -> EquipmentMoveResult {
     let refused = EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected);
@@ -304,16 +343,25 @@ async fn move_equipment_inner(
     let Some(_permit) = admission.spell_lane_permit().await else {
         return EquipmentMoveResult::Unknown;
     };
-    let key = match request {
-        EquipmentMove::Equip { item, .. } | EquipmentMove::Unequip { item, .. } => item,
+    let trade_ready = match &request {
+        MoveRequest::Hotkey { .. } => admission
+            .states
+            .player_trades
+            .physical_service(command.game_session_id),
+        MoveRequest::Exact(request) => {
+            let key = match request {
+                EquipmentMove::Equip { item, .. } | EquipmentMove::Unequip { item, .. } => item,
+            };
+            admission.states.player_trades.physical(
+                command.game_session_id,
+                match key {
+                    ItemKey::Instance(id) => Some(*id),
+                    _ => None,
+                },
+            )
+        }
     };
-    if !admission.states.player_trades.physical(
-        command.game_session_id,
-        match key {
-            ItemKey::Instance(id) => Some(id),
-            _ => None,
-        },
-    ) {
+    if !trade_ready {
         return refused;
     }
     if !admission
@@ -345,23 +393,40 @@ async fn move_equipment_inner(
     let Some(fence) = command.item_fence else {
         return refused;
     };
-    let Some(durable) = durable_move(request) else {
-        return refused;
-    };
     let Ok(command_id) = CommandId::new(command.command_id) else {
         return refused;
     };
-    let committed = admission
-        .root
-        .commit_equipment_move(
-            admission.character,
-            admission.holder,
-            &fence,
-            CommandRef::new(command.game_session_id, command_id),
-            &NativeItemWeights(native),
-            durable,
-        )
-        .await;
+    let committed = match request {
+        MoveRequest::Hotkey { definition, slot } => {
+            admission
+                .root
+                .commit_hotkey_equipment(
+                    admission.character,
+                    admission.holder,
+                    &fence,
+                    CommandRef::new(command.game_session_id, command_id),
+                    &NativeItemWeights(native),
+                    (definition, slot),
+                )
+                .await
+        }
+        MoveRequest::Exact(request) => {
+            let Some(durable) = durable_move(request) else {
+                return refused;
+            };
+            admission
+                .root
+                .commit_equipment_move(
+                    admission.character,
+                    admission.holder,
+                    &fence,
+                    CommandRef::new(command.game_session_id, command_id),
+                    &NativeItemWeights(native),
+                    durable,
+                )
+                .await
+        }
+    };
     // ATTACK-2: the swing weapon read before this move is no longer the equipment's, whatever
     // the outcome; the next swing waits for a fresh read.
     admission

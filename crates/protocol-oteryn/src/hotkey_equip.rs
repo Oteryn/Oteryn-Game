@@ -2,6 +2,8 @@
 use std::num::NonZeroU32;
 
 pub const CAPABILITY_HOTKEY_EQUIP_V1: u32 = 179;
+/// Selects nested carried sources and started-copy preference on command 348.
+pub const CAPABILITY_HOTKEY_EQUIP_CARRIED_V1: u32 = 180;
 pub const COMMAND_TYPE_HOTKEY_EQUIP: u32 = 348;
 
 /// The existing equipment move refusal vocabulary, also used by command 348.

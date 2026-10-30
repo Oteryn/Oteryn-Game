@@ -1,0 +1,15 @@
+{
+  "mechanic": "0180-hotkey-equip-carried",
+  "kind": "handlers",
+  "id": "0180-hotkey-equip-carried-unsupported",
+  "status": "unsupported",
+  "reason": "The existing hotkey command and equipment decoder are reused; native hotkey input binding remains unfinished.",
+  "commands": [],
+  "not_applicable": {
+    "state": "Existing inventory and equipment domains.",
+    "protocol": "Supplemental selection capability with no new message format.",
+    "view": "No additional view.",
+    "input": "Native hotkey input remains unfinished.",
+    "settings": "No additional settings."
+  }
+}

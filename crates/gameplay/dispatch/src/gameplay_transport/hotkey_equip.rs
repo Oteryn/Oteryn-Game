@@ -13,6 +13,14 @@ use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome, wire_slo
 
 macro_rules! authority_methods {
     () => {
+        fn hotkey_equip_carried(
+            &self,
+            _actor: $crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+            _request: oteryn_protocol_oteryn::hotkey_equip::Request,
+        ) -> impl std::future::Future<Output = Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome>> {
+            async { Some(oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected) }
+        }
         fn hotkey_equip(
             &self,
             _actor: $crate::foundation::ExactActorRef,
@@ -26,13 +34,23 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn hotkey_equip_carried(
+            &self,
+            actor: $crate::foundation::ExactActorRef,
+            command: $crate::gameplay_transport::connection::UseCommand,
+            request: oteryn_protocol_oteryn::hotkey_equip::Request,
+        ) -> Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome> {
+            $crate::gameplay_transport::hotkey_equip::execute(self, actor, command, request, true)
+                .await
+        }
         async fn hotkey_equip(
             &self,
             actor: $crate::foundation::ExactActorRef,
             command: $crate::gameplay_transport::connection::UseCommand,
             request: oteryn_protocol_oteryn::hotkey_equip::Request,
         ) -> Option<oteryn_protocol_oteryn::item_view::ItemMoveOutcome> {
-            $crate::gameplay_transport::hotkey_equip::execute(self, actor, command, request).await
+            $crate::gameplay_transport::hotkey_equip::execute(self, actor, command, request, false)
+                .await
         }
     };
 }
@@ -43,6 +61,7 @@ pub(super) async fn execute(
     actor: ExactActorRef,
     command: UseCommand,
     request: Request,
+    carried: bool,
 ) -> Option<ItemMoveOutcome> {
     // Foundation binds command id, type and payload before this route. Replay must precede
     // lookup: the selected item has already left its original location after a commit.
@@ -101,6 +120,11 @@ pub(super) async fn execute(
     if !action_ready(owner, actor, command, slot).await? {
         return Some(ItemMoveOutcome::Rejected);
     }
+    if carried {
+        let outcome =
+            equipment_move::move_hotkey_carried(owner, actor, command, definition, slot).await;
+        return finish(owner, actor, slot, outcome);
+    }
     // A queued command resolves custody after its wait, like the source's rescheduled call.
     let inventory = owner
         .root
@@ -140,7 +164,21 @@ pub(super) async fn execute(
             ItemMoveOutcome::Stale
         });
     };
-    match equipment_move::move_hotkey_equipment(owner, actor, command, request).await {
+    finish(
+        owner,
+        actor,
+        slot,
+        equipment_move::move_hotkey_equipment(owner, actor, command, request).await,
+    )
+}
+
+fn finish(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    slot: u8,
+    outcome: EquipmentMoveResult,
+) -> Option<ItemMoveOutcome> {
+    match outcome {
         EquipmentMoveResult::Committed => {
             owner.states.world_gate.lock().ok()?.equip_committed(
                 actor,
