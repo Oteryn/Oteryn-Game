@@ -6,6 +6,8 @@ use std::sync::Arc;
 
 #[path = "weapon_proficiency_select/catalyst.rs"]
 pub(super) mod catalyst;
+#[path = "weapon_proficiency_select/modify.rs"]
+pub(super) mod modify;
 
 use sha2::{Digest, Sha256};
 
@@ -62,6 +64,24 @@ macro_rules! authority_methods {
         > {
             async { None }
         }
+
+        /// P08: one perk modification command (PROFICIENCY-1B §11.1).
+        fn weapon_proficiency_modify(
+            &self,
+            _actor: $crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+            _request: oteryn_protocol_oteryn::weapon_proficiency::ModificationRequest,
+        ) -> impl std::future::Future<
+            Output = Option<oteryn_protocol_oteryn::weapon_proficiency::ModificationReply>,
+        > {
+            async {
+                Some(oteryn_protocol_oteryn::weapon_proficiency::ModificationReply {
+                    result:
+                        oteryn_protocol_oteryn::weapon_proficiency::ModificationResult::NotAdmitted,
+                    slot: None,
+                })
+            }
+        }
     };
 }
 pub(super) use authority_methods;
@@ -88,6 +108,18 @@ macro_rules! composed_methods {
         ) -> Option<$crate::gameplay_transport::connection::UseOutcome> {
             $crate::gameplay_transport::weapon_proficiency_select::catalyst::use_catalyst(
                 self, actor, command, catalyst, weapon,
+            )
+            .await
+        }
+
+        async fn weapon_proficiency_modify(
+            &self,
+            actor: $crate::foundation::ExactActorRef,
+            command: $crate::gameplay_transport::connection::UseCommand,
+            request: oteryn_protocol_oteryn::weapon_proficiency::ModificationRequest,
+        ) -> Option<oteryn_protocol_oteryn::weapon_proficiency::ModificationReply> {
+            $crate::gameplay_transport::weapon_proficiency_select::modify::execute(
+                self, actor, command, request,
             )
             .await
         }

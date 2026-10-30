@@ -3,7 +3,8 @@
 P08 candidate. Capability 195 requires item views (4), whose domain 9 generation index
 names the weapon. Command 378 selects, changes or clears one perk of one Weapon Proficiency
 track through the existing Character proficiency writer (`perk_selection` receipts,
-PROFICIENCY-0 §4.3). No value is spent.
+PROFICIENCY-0 §4.3). No value is spent. Commands 379, 380 and 392-395 modify a selected perk
+through the `perk_modification` writer (PROFICIENCY-1B, PROFICIENCY-1C).
 
 ## Request
 
@@ -45,6 +46,49 @@ the track is read carries `n = 0`.
 - After a commit the session's proficiency projection is refreshed from the committed track,
   so the selected perk applies to the next attack.
 
-Perk modification (modify, refine, maximise, reshape, clear) is not part of this capability:
-PROFICIENCY-1B §3.3 keeps every operation `NOT_ADMITTED` until shaping content with evidenced
-pools, rank values and costs exists.
+## Modification request
+
+Commands 379 `PROFICIENCY_MODIFY`, 380 `PROFICIENCY_RANK_UP`, 392 `PROFICIENCY_ORB_RANK`,
+393 `PROFICIENCY_RESHAPE_OFFER`, 394 `PROFICIENCY_RESHAPE_CHOOSE` and 395 `PROFICIENCY_CLEAR`
+(PROFICIENCY-1B §11.1; the command type is the operation). The payload is the weapon's nonzero
+item definition reference (u32, big endian), the slot (1 or 2), for 379 the zero-based level
+(below 7) and for 394 the choice (0-2, or 3 to decline the offer), then the track's expected
+committed revision (nonzero u64, big endian): 14 bytes for 379 and 394, 13 for the others,
+within `PROF1B-RL-01` (24 B). Any other payload is a `REJECTED` command status with no result.
+
+## Modification reply
+
+Carried in an accepted command result: one result byte (PROFICIENCY-1B §11.2), then, after an
+accepted command whose slot is still modified, six bytes: level, shaping pool entry index, rank
+and the pending offer's three entry indexes (`255 255 255` = no offer). At most 7 bytes.
+
+| Byte | Result | Byte | Result |
+|---|---|---|---|
+| 0 | `ACCEPTED` | 10 | `SLOT_OCCUPIED` |
+| 1 | `NOT_ADMITTED` | 11 | `LEVEL_TAKEN` |
+| 2 | `NOT_UNLOCKED` | 12 | `NOT_MODIFIED` |
+| 3 | `NOT_IN_PROTECTION_ZONE` | 13 | `RANK_MAX` |
+| 4 | `UNKNOWN_TRACK` | 14 | `OFFER_PENDING` |
+| 5 | `STALE_REVISION` | 15 | `NO_OFFER` |
+| 6 | `REVISION_CHANGED` | 16 | `POOL_TOO_SMALL` |
+| 7 | `RATE_LIMITED` | 17 | `SHAPING_OUTDATED` |
+| 8 | `CONFLICT` | 18 | `INSUFFICIENT_DUST` |
+| 9 | `NO_SELECTION` | 19 | `NO_ORB` |
+
+`NOT_ADMITTED` also answers an unknown definition, a weapon without shaping content and an
+operation whose costs or values are unevidenced (PROFICIENCY-1C §3: `RANK_UP` while ranks 1-9 are
+unpublished).
+
+## Modification rules
+
+- Every operation needs a protection zone. Checks run in PROFICIENCY-1B §5 order: the
+  occurrence's receipt or terminal record answers first, then `PROF1B-RL-03` (two new
+  occurrences per second) is charged, then the writer checks the bound revisions, admission,
+  track, expected revision, zone, the operation and its dust under the Character cursor.
+- Costs and pools are the Global values of PROFICIENCY-1C (`shaping.json`): slot 1 250 dust at
+  proficiency level 3, slot 2 1,000 dust when mastered, reshape offer 250 dust, clear free,
+  one Lunar Ascension Orb to reach rank 10.
+- Draws use the durable `proficiency_shaping` server seed (SIM-DETERMINISM-01 §10) with the
+  occurrence, so a retry draws the same entries and a restart reseeds nothing.
+- The occurrence derives from the CommandId, actor and GameSession; a replay never charges or
+  draws again.

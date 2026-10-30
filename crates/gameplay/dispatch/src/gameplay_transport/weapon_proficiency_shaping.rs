@@ -12,19 +12,25 @@ use oteryn_gameplay_content::content::{
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
     PROFICIENCY_MODIFICATION_RANK_MAX, ProficiencyShapingEntry, ProficiencyShapingRevision,
 };
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 /// Immutable shaping content bound to the catalogue whose perks it modifies.
 #[derive(Debug)]
 pub struct ProductionProficiencyShaping {
-    shaping: ImportedProficiencyShaping,
+    shaping: Arc<ImportedProficiencyShaping>,
     catalogue: Arc<ProductionProficiencyCatalogue>,
 }
 
 impl ProductionProficiencyShaping {
+    /// The committed shaping values, imported once per process.
     pub fn embedded(catalogue: Arc<ProductionProficiencyCatalogue>) -> Option<Arc<Self>> {
+        static SHAPING: OnceLock<Option<Arc<ImportedProficiencyShaping>>> = OnceLock::new();
         Some(Arc::new(Self {
-            shaping: import_committed_proficiency_shaping().ok()?,
+            shaping: Arc::clone(
+                SHAPING
+                    .get_or_init(|| import_committed_proficiency_shaping().ok().map(Arc::new))
+                    .as_ref()?,
+            ),
             catalogue,
         }))
     }

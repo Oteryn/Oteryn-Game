@@ -317,13 +317,16 @@ pub struct LiveProficiencyTrack {
 }
 
 /// Session-local state. `seen_deaths` implements PROF-EFFECT0-RL-01; both it and
-/// uncheckpointed progress disappear on restart by design.
+/// uncheckpointed progress disappear on restart by design. `modification_cap` is the session's
+/// `PROF1B-RL-03` window.
 #[derive(Debug, Default)]
 pub struct WeaponProficiencyDispatch {
     pub(super) tracks: BTreeMap<String, LiveProficiencyTrack>,
     pub(super) pending_progress: BTreeMap<String, u32>,
     pub(super) dirty_since: Option<u64>,
     pub(super) checkpoint: Option<super::proficiency_checkpoint::ProficiencyCheckpoint>,
+    pub(super) modification_cap:
+        oteryn_gameplay_domain::domain::weapon_proficiency::ProficiencyModificationRateCap,
     seen_deaths: VecDeque<[u8; 16]>,
 }
 

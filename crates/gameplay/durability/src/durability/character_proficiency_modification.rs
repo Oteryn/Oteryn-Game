@@ -1053,6 +1053,26 @@ impl DurabilityRoot {
             })
             .await?
     }
+
+    /// The server seed of `proficiency_shaping` draws (SIM-DETERMINISM-01 §10): a durable
+    /// secret (migration 0575) that clients never see, so no restart reseeds a draw.
+    pub async fn read_proficiency_shaping_secret(&self) -> Result<[u8; 32]> {
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    let secret: Vec<u8> = sqlx::query_scalar(
+                        "SELECT secret FROM game_proficiency_shaping_decision_root WHERE singleton",
+                    )
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(<[u8; 32]>::try_from(secret)
+                        .map_err(|_| DurabilityError::InvalidStoredState)?))
+                })
+            })
+            .await?
+    }
 }
 
 /// Whether the occurrence has a modification terminal record: the PROF-1 writer's replay treats
