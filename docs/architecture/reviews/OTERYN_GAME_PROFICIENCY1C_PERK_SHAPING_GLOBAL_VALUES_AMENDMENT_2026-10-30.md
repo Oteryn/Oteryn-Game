@@ -53,13 +53,24 @@ Values keep the source's display unit (`percent` or `points`); the effect consum
 "10 refinement ranks", refine table from rank 1 to rank 10). Migration 0575 widens the rank CHECKs
 of 0055 forward (0055 is never edited), and the domain, the resource-limit entry
 `docs/contracts/resource-limits/entries/0432-PROF1-RL-02.json` and the wire change with it in the
-same batch. Until then the production shaping source exposes only cells the 1..10 model can carry,
-so nothing is admitted on a value it cannot represent.
+same batch. The production shaping source exposes the rank 0 and rank 10 values; every rank step
+cost stays unevidenced, so `RANK_UP` answers `NOT_ADMITTED`.
 
 ## 5. Orb burn (amends 1B §7.2)
 
 `ORB_RANK` burns one Lunar Ascension Orb through the item-use record (cause ordinal 495, shape
-Burn) in the receipt's transaction. Migration 0575 lifts 0060's `orb_cost = 0` pin forward.
+Burn) in the receipt's transaction. Migration 0575 lifts 0060's `orb_cost = 0` pin forward and
+pairs the burn with its single `ORB_RANK` line at commit. The command path reserves the first
+carried orb outside a trade (main backpack entries, then nested containers breadth first; an orb
+is never equipped); none answers `NO_ORB`.
+
+## 5a. Activation and draw seed
+
+Migration 0575 activates `shaping-r1` for every shaped definition through the 1B §8 activation
+function, so production needs no manual control-plane step; a unit test fails when shaping.json's
+definitions and the migration's list differ, and a later revision activates by a forward
+migration. The draw seed's server secret (SIM-DETERMINISM-01 §10) is created once by 0575 and
+never reseeded.
 
 ## 6. Catalysts (amends PROFICIENCY-1 §4)
 

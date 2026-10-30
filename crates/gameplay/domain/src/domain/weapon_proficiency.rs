@@ -467,8 +467,11 @@ pub fn proficiency_kill_credit<'a>(
 
 /// `PROF1-RL-01`: modification slots per track.
 pub const PROFICIENCY_MODIFICATION_SLOTS: u8 = 2;
-/// `PROF1-RL-02`: the highest rank of a modified perk.
+/// `PROF1-RL-02`: the highest rank of a modified perk. MODIFY lands on rank 0 and ten
+/// refinement steps reach this rank (PROFICIENCY-1C §4).
 pub const PROFICIENCY_MODIFICATION_RANK_MAX: u8 = 10;
+/// Ranks 0..=10.
+pub const PROFICIENCY_MODIFICATION_RANKS: usize = PROFICIENCY_MODIFICATION_RANK_MAX as usize + 1;
 /// `PROF1B-RL-02`: entries of a pending reshape offer.
 pub const PROFICIENCY_RESHAPE_OFFER_SIZE: usize = 3;
 /// `PROF1B-RL-03`: modification commands per character per second, charged at reservation.
@@ -596,7 +599,7 @@ impl ProficiencyModifiedPerk {
         let index = |value: u8| usize::from(value) < PROFICIENCY_SHAPING_POOL_MAX;
         self.level < PROFICIENCY_PERK_LEVELS_MAX
             && index(self.entry_index)
-            && (1..=PROFICIENCY_MODIFICATION_RANK_MAX).contains(&self.rank)
+            && self.rank <= PROFICIENCY_MODIFICATION_RANK_MAX
             && self.pending_offer.is_none_or(|offer| {
                 offer
                     .iter()
@@ -614,8 +617,8 @@ pub struct ProficiencyShapingEntry {
     /// Canonical non-value perk identity, comparable with a selected perk's identity.
     pub perk_identity: String,
     pub weight: Option<u32>,
-    /// Whether the entry's values at ranks 1..=10 are evidenced.
-    pub rank_values: [bool; PROFICIENCY_MODIFICATION_RANK_MAX as usize],
+    /// Whether the entry's values at ranks 0..=10 are evidenced, indexed by rank.
+    pub rank_values: [bool; PROFICIENCY_MODIFICATION_RANKS],
 }
 
 /// One `ProficiencyShaping` revision as resolved from content (PROFICIENCY-1B §3.1). Every
@@ -626,8 +629,8 @@ pub struct ProficiencyShapingRevision {
     pub revision: String,
     pub pool: Option<Vec<ProficiencyShapingEntry>>,
     pub modify_cost: [Option<u64>; PROFICIENCY_MODIFICATION_SLOTS as usize],
-    /// Dust for the steps 1→2 … 9→10.
-    pub rank_step_cost: [Option<u64>; PROFICIENCY_MODIFICATION_RANK_MAX as usize - 1],
+    /// Dust for the steps 0→1 … 9→10, indexed by the rank before the step.
+    pub rank_step_cost: [Option<u64>; PROFICIENCY_MODIFICATION_RANK_MAX as usize],
     pub reshape_offer_cost: Option<u64>,
     pub clear_cost: Option<u64>,
     /// Orbs ORB_RANK burns: 1 if consumed, 0 if not.
@@ -665,7 +668,7 @@ impl ProficiencyShapingRevision {
     fn values_known(&self, rank: u8) -> bool {
         self.pool.as_ref().is_some_and(|pool| {
             pool.iter()
-                .all(|entry| entry.rank_values[usize::from(rank) - 1])
+                .all(|entry| entry.rank_values[usize::from(rank)])
         })
     }
 
@@ -673,7 +676,7 @@ impl ProficiencyShapingRevision {
         self.pool
             .as_ref()
             .and_then(|pool| pool.get(usize::from(entry)))
-            .is_some_and(|entry| entry.rank_values[usize::from(rank) - 1])
+            .is_some_and(|entry| entry.rank_values[usize::from(rank)])
     }
 
     /// PROFICIENCY-1B §3.3: `Some(cost)` when every cell the operation reads is evidenced.
@@ -689,13 +692,13 @@ impl ProficiencyShapingRevision {
         match command {
             ProficiencyModificationCommandKind::Modify { .. } => {
                 let cost = (*self.modify_cost.get(usize::from(slot).checked_sub(1)?)?)?;
-                (self.drawable().is_some() && self.values_known(1)).then_some(dust(cost))
+                (self.drawable().is_some() && self.values_known(0)).then_some(dust(cost))
             }
             ProficiencyModificationCommandKind::RankUp => match row {
                 None => Some(dust(0)),
                 Some(row) if row.rank >= PROFICIENCY_MODIFICATION_RANK_MAX => Some(dust(0)),
                 Some(row) => {
-                    let cost = self.rank_step_cost[usize::from(row.rank) - 1]?;
+                    let cost = self.rank_step_cost[usize::from(row.rank)]?;
                     self.entry_known(row.entry_index, row.rank + 1)
                         .then_some(dust(cost))
                 }
@@ -945,7 +948,7 @@ pub fn plan_proficiency_modification(
                     shaping_key: input.active.shaping_key.clone(),
                     shaping_revision: input.active.revision.clone(),
                     entry_index: drawn[0],
-                    rank: 1,
+                    rank: 0,
                     pending_offer: None,
                 }),
             )
@@ -1489,7 +1492,7 @@ mod modification_tests {
         ProficiencyShapingEntry {
             perk_identity: identity.into(),
             weight: Some(1),
-            rank_values: [true; 10],
+            rank_values: [true; PROFICIENCY_MODIFICATION_RANKS],
         }
     }
 
@@ -1499,7 +1502,7 @@ mod modification_tests {
             revision: revision.into(),
             pool: Some((0..entries).map(|i| entry(&format!("perk-{i}"))).collect()),
             modify_cost: [Some(0); 2],
-            rank_step_cost: [Some(0); 9],
+            rank_step_cost: [Some(0); PROFICIENCY_MODIFICATION_RANK_MAX as usize],
             reshape_offer_cost: Some(0),
             clear_cost: Some(0),
             orb_count: Some(0),
@@ -1600,7 +1603,7 @@ mod modification_tests {
         );
         // RESHAPE_OFFER reads every entry's values at the row's rank, not only its own.
         let mut values = full.clone();
-        values.pool.as_mut().expect("pool")[3].rank_values[1] = false;
+        values.pool.as_mut().expect("pool")[3].rank_values[2] = false;
         assert!(
             values
                 .admitted(Command::ReshapeOffer, 1, Some(&row))
@@ -1613,8 +1616,25 @@ mod modification_tests {
                 .is_some()
         );
         let mut next = full.clone();
-        next.pool.as_mut().expect("pool")[1].rank_values[2] = false;
+        next.pool.as_mut().expect("pool")[1].rank_values[3] = false;
         assert!(next.admitted(Command::RankUp, 1, Some(&row)).is_none());
+        // MODIFY lands on rank 0, so it reads every entry's rank 0 value (PROFICIENCY-1C §4).
+        let mut initial = full.clone();
+        initial.pool.as_mut().expect("pool")[2].rank_values[0] = false;
+        assert!(
+            initial
+                .admitted(Command::Modify { level: 0 }, 1, None)
+                .is_none()
+        );
+        // The step from rank 0 is priced by the first step cost.
+        let mut first = full.clone();
+        first.rank_step_cost[0] = None;
+        assert!(
+            first
+                .admitted(Command::RankUp, 1, Some(&perk("r1", 0, 1, 0)))
+                .is_none()
+        );
+        assert!(first.admitted(Command::RankUp, 1, Some(&row)).is_some());
         let mut orb = full.clone();
         orb.orb_count = None;
         assert!(orb.admitted(Command::OrbRank, 1, Some(&row)).is_none());
@@ -1712,7 +1732,7 @@ mod modification_tests {
         assert_eq!(plan.operation, ProficiencyModificationOperation::Modify);
         let after = plan.after.clone().expect("modified");
         assert_ne!(after.entry_index, 0, "the selected perk is never drawn");
-        assert_eq!((after.level, after.rank, after.pending_offer), (0, 1, None));
+        assert_eq!((after.level, after.rank, after.pending_offer), (0, 0, None));
         assert!(after.is_well_formed());
         assert_eq!(plan, modify(0, [None; 2], LEVEL_THREE).expect("same draw"));
     }
@@ -1901,7 +1921,8 @@ mod modification_tests {
         assert!(row.is_well_formed());
         row.rank += 1;
         assert!(!row.is_well_formed());
-        row.rank = 1;
+        row.rank = 0;
+        assert!(row.is_well_formed(), "rank 0 is the initial rank");
         row.entry_index = 64;
         assert!(!row.is_well_formed());
         row.entry_index = 1;

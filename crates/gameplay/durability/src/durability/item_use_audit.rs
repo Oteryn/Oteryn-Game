@@ -286,6 +286,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | super::item_use::mining::PICK_REFINE_CAUSE
             | super::item_use::mount_taming::TAMING_CAUSE
             | super::item_use::proficiency_catalyst::CATALYST_CAUSE
+            | super::item_use::proficiency_orb::ORB_CAUSE
     ) || command.command_id == 0
         || command.game_session_id != value.expected_game_session_id
         || value.expected_session_generation == 0
@@ -316,7 +317,8 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             ITEM_USE_CAUSE_FOOD
             | ITEM_USE_CAUSE_POTION
             | super::item_use::mount_taming::TAMING_CAUSE
-            | super::item_use::proficiency_catalyst::CATALYST_CAUSE,
+            | super::item_use::proficiency_catalyst::CATALYST_CAUSE
+            | super::item_use::proficiency_orb::ORB_CAUSE,
             None,
             false,
         ) => ItemUseShape::Burn,
@@ -781,6 +783,15 @@ mod tests {
         let mut value = burn();
         value.cause.as_mut().unwrap().kind =
             super::super::item_use::proficiency_catalyst::CATALYST_CAUSE;
+        assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
+        value.flask = flask_new().flask;
+        assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));
+    }
+
+    #[test]
+    fn proficiency_orb_is_an_audited_one_unit_burn_without_a_flask() {
+        let mut value = burn();
+        value.cause.as_mut().unwrap().kind = super::super::item_use::proficiency_orb::ORB_CAUSE;
         assert_eq!(check_item_use(&value), Ok(ItemUseShape::Burn));
         value.flask = flask_new().flask;
         assert_eq!(check_item_use(&value), Err(AuditError::InvalidInput));

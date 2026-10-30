@@ -1,8 +1,7 @@
 //! Production [`ProficiencyShapingSource`] over the committed Global shaping values
-//! (PROFICIENCY-1C). A definition's shaping key resolves to its vocation's 64-perk pool. Until
-//! the rank model moves to Global's 0..10 (migration 0575), only the values the 1..10 model can
-//! carry are exposed: rank 10 values, the slot, reshape and clear costs and the orb count. Rank
-//! steps stay unevidenced, so every operation that reads them answers `NOT_ADMITTED`.
+//! (PROFICIENCY-1C). A definition's shaping key resolves to its vocation's 64-perk pool. Only the
+//! evidenced cells are exposed: rank 0 and rank 10 values, the slot, reshape and clear costs and
+//! the orb count. Rank 1-9 values are unpublished, so `RANK_UP` answers `NOT_ADMITTED` (1C §3).
 
 use super::ProductionProficiencyCatalogue;
 use crate::durability::character_proficiency_modification::ProficiencyShapingSource;
@@ -10,7 +9,8 @@ use oteryn_gameplay_content::content::{
     ImportedProficiencyShaping, import_committed_proficiency_shaping, proficiency_perk_identity,
 };
 use oteryn_gameplay_domain::domain::weapon_proficiency::{
-    PROFICIENCY_MODIFICATION_RANK_MAX, ProficiencyShapingEntry, ProficiencyShapingRevision,
+    PROFICIENCY_MODIFICATION_RANK_MAX, PROFICIENCY_MODIFICATION_RANKS, ProficiencyShapingEntry,
+    ProficiencyShapingRevision,
 };
 use std::sync::{Arc, OnceLock};
 
@@ -45,8 +45,9 @@ impl ProficiencyShapingSource for ProductionProficiencyShaping {
             .shaping
             .pools
             .get(self.shaping.definition_vocations.get(&definition)?)?;
-        let mut rank_values = [false; PROFICIENCY_MODIFICATION_RANK_MAX as usize];
-        rank_values[usize::from(PROFICIENCY_MODIFICATION_RANK_MAX) - 1] = true;
+        let mut rank_values = [false; PROFICIENCY_MODIFICATION_RANKS];
+        rank_values[0] = true;
+        rank_values[usize::from(PROFICIENCY_MODIFICATION_RANK_MAX)] = true;
         let [first, second] = self.shaping.modify_dust;
         let revision = ProficiencyShapingRevision {
             shaping_key: shaping_key.to_owned(),
@@ -61,7 +62,7 @@ impl ProficiencyShapingSource for ProductionProficiencyShaping {
                     .collect(),
             ),
             modify_cost: [Some(first), Some(second)],
-            rank_step_cost: [None; PROFICIENCY_MODIFICATION_RANK_MAX as usize - 1],
+            rank_step_cost: [None; PROFICIENCY_MODIFICATION_RANK_MAX as usize],
             reshape_offer_cost: Some(self.shaping.reshape_offer_dust),
             clear_cost: Some(self.shaping.clear_dust),
             orb_count: Some(self.shaping.orb_count),
@@ -121,20 +122,46 @@ mod tests {
             ),
             (Some(250), Some(0), Some(1))
         );
-        // Rank 1 of the current model is not Global's rank 0: MODIFY waits for migration 0575.
-        assert_eq!(
-            revision.admitted(
-                ProficiencyModificationCommandKind::Modify { level: 0 },
-                1,
-                None
-            ),
-            None
+        // MODIFY lands on the evidenced rank 0; ranks 1-9 are unpublished, so RANK_UP is not.
+        assert!(
+            revision
+                .admitted(
+                    ProficiencyModificationCommandKind::Modify { level: 0 },
+                    1,
+                    None
+                )
+                .is_some()
         );
+        assert!(revision.rank_step_cost.iter().all(Option::is_none));
         assert!(
             revision
                 .admitted(ProficiencyModificationCommandKind::Clear, 1, None)
                 .is_some()
         );
+    }
+
+    #[test]
+    fn migration_0575_activates_exactly_the_shaped_definitions() {
+        const MIGRATION: &str = include_str!(
+            "../../../../../apps/game-server/migrations/0575_proficiency_perk_shaping.sql"
+        );
+        let shaping = import_committed_proficiency_shaping().expect("shaping");
+        let list = &MIGRATION[MIGRATION.find("unnest(ARRAY[").expect("activation list")..];
+        let list = &list[..list.find("]::TEXT[]").expect("list end")];
+        let activated: std::collections::BTreeSet<_> =
+            list.split('\'').skip(1).step_by(2).collect();
+        let shaped: std::collections::BTreeSet<_> = shaping
+            .definition_vocations
+            .keys()
+            .filter_map(|key| key.strip_prefix("oteryn:proficiency."))
+            .map(|rest| format!("oteryn:proficiency-shaping.{rest}"))
+            .collect();
+        assert_eq!(
+            activated,
+            shaped.iter().map(String::as_str).collect(),
+            "a shaping.json definition change needs a forward activation migration"
+        );
+        assert!(MIGRATION.contains(&format!("'{}', NULL)", shaping.revision)));
     }
 
     #[test]

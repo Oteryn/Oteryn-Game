@@ -2,7 +2,12 @@
 //! §11.1 through the `perk_modification` writer, with the Global shaping values of
 //! PROFICIENCY-1C. Checks follow 1B §5: replay by occurrence first, then the `PROF1B-RL-03`
 //! rate cap for an unseen occurrence only, then the writer's own checks under the cursor.
+//! `ORB_RANK` reserves the first carried Lunar Ascension Orb not in a trade (1B §5: main
+//! backpack entries, then nested containers breadth first; an orb is never equipped) and the
+//! writer burns it in the receipt's transaction (1C §5).
 use super::*;
+use crate::durability::item_use::proficiency_orb::LUNAR_ASCENSION_ORB;
+use crate::durability::item_use::{ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::durability::character_proficiency_modification::{
     ProficiencyModificationBoundRevisions, ProficiencyModificationCommand,
     ProficiencyModificationContext, ProficiencyModificationOutcome, ProficiencyShapingSource,
@@ -81,14 +86,10 @@ const fn refused(result: ModificationResult) -> Option<ModificationReply> {
     Some(ModificationReply { result, slot: None })
 }
 
-/// The occurrence of one modification, bound to its CommandRef and actor (1B §6.1).
-fn occurrence(
-    actor: ExactActorRef,
-    session: GameSessionId,
-    command_id: u64,
-) -> Option<ProficiencyOccurrence> {
+/// A UUIDv7-shaped identity of one modification, bound to its CommandRef and actor (1B §6.1).
+fn derived(label: &[u8], actor: ExactActorRef, session: GameSessionId, command_id: u64) -> [u8; 16] {
     let digest = Sha256::new()
-        .chain_update(b"oteryn:proficiency-modification-occurrence:v1")
+        .chain_update(label)
         .chain_update(actor.placement_identity())
         .chain_update(session.as_bytes())
         .chain_update(command_id.to_be_bytes())
@@ -97,7 +98,73 @@ fn occurrence(
     bytes.copy_from_slice(&digest[..16]);
     bytes[6] = (bytes[6] & 15) | 0x70;
     bytes[8] = (bytes[8] & 63) | 0x80;
-    ProficiencyOccurrence::from_bytes(bytes).ok()
+    bytes
+}
+
+fn occurrence(
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command_id: u64,
+) -> Option<ProficiencyOccurrence> {
+    ProficiencyOccurrence::from_bytes(derived(
+        b"oteryn:proficiency-modification-occurrence:v1",
+        actor,
+        session,
+        command_id,
+    ))
+    .ok()
+}
+
+/// The burn of the first carried orb not in a trade, or `None` when the Character carries none.
+async fn reserve_orb(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    occurrence: &ProficiencyOccurrence,
+) -> Option<ItemUseRequest> {
+    let session = command.game_session_id;
+    let inventory = owner
+        .root
+        .read_item_use_inventory(owner.character, owner.holder, command.item_fence?)
+        .await
+        .ok()?;
+    let orb = inventory
+        .backpack
+        .iter()
+        .flat_map(|bag| &bag.entries)
+        .chain(inventory.nested.iter().map(|(_, entry)| entry))
+        .map(|entry| &entry.item)
+        .find(|item| {
+            item.definition.production_key == LUNAR_ASCENSION_ORB
+                && owner
+                    .states
+                    .player_trades
+                    .physical(session, Some(item.item_instance_id))
+        })?;
+    let occurred_at_unix_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .and_then(|elapsed| i64::try_from(elapsed.as_millis()).ok())?;
+    Some(ItemUseRequest {
+        kind: ItemUseKind::ProficiencyOrb,
+        command_id: command.command_id,
+        content_revision: inventory.content_revision.clone(),
+        ruleset_revision: inventory.ruleset_revision.clone(),
+        sim_revision: crate::interaction_chest_use::entry_chest::SIM_REVISION.to_owned(),
+        transaction_id: *occurrence.as_bytes(),
+        event_id: derived(
+            b"oteryn:proficiency-orb-event:v1",
+            actor,
+            session,
+            command.command_id,
+        ),
+        occurred_at_unix_ms,
+        server_build_id: crate::durability::character_authority::SERVER_BUILD_ID.to_owned(),
+        source_item_instance_id: orb.item_instance_id,
+        source_definition: orb.definition.clone(),
+        source_quantity_before: orb.quantity,
+        flask: ItemUseFlaskPlan::None,
+    })
 }
 
 /// `None` disconnects: the session is fenced out or the outcome stays unknown.
@@ -184,6 +251,13 @@ pub(in crate::gameplay_transport) async fn execute(
         return refused(ModificationResult::RateLimited);
     }
     let server_seed = owner.root.read_proficiency_shaping_secret().await.ok()?;
+    // 1C §5: the writer answers `NO_ORB` when ORB_RANK has nothing to burn.
+    let orb = match request.operation {
+        ModificationOperation::OrbRank => {
+            reserve_orb(owner, actor, command, &modification.occurrence()).await
+        }
+        _ => None,
+    };
     let mut slot = owner.revision_sequencer.acquire(current.character_id).await;
     let root = owner
         .root
@@ -224,6 +298,7 @@ pub(in crate::gameplay_transport) async fn execute(
                 in_protection_zone,
                 server_seed,
             },
+            orb,
             definitions,
             shaping,
         )

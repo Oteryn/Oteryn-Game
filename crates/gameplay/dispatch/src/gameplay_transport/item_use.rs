@@ -98,7 +98,8 @@ impl ItemUseGate {
             ItemUseKind::Potion => (&mut self.potion_ready_ms, POTION_COOLDOWN_MS),
             ItemUseKind::PickRefine { .. }
             | ItemUseKind::MountTaming
-            | ItemUseKind::ProficiencyCatalyst => {
+            | ItemUseKind::ProficiencyCatalyst
+            | ItemUseKind::ProficiencyOrb => {
                 return Err(UseDisposition::Rejected);
             }
         };

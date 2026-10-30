@@ -530,6 +530,7 @@ impl RevisionSlot {
         fence: CurrentCharacterGameplayFence,
         command: ProficiencyModificationCommand,
         context: ProficiencyModificationContext,
+        orb: Option<super::item_use::ItemUseRequest>,
         definitions: std::sync::Arc<dyn ProficiencyDefinitions>,
         shaping: std::sync::Arc<dyn ProficiencyShapingSource>,
     ) -> Result<ProficiencyModificationOutcome, CharacterProgressionError> {
@@ -544,6 +545,7 @@ impl RevisionSlot {
                     fence,
                     command.clone(),
                     context,
+                    orb.clone(),
                     std::sync::Arc::clone(&definitions),
                     std::sync::Arc::clone(&shaping),
                 )
