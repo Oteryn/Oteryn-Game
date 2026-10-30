@@ -671,8 +671,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .await
             .map_err(debug)?;
     }
-    if matches!(case, Case::Foreign | Case::ForgeForeign) {
-        let (actor, session) = players[2];
+    if matches!(case, Case::Foreign | Case::ForgeForeign | Case::Pz) {
+        // PZ tests settlement, not competing content-seeded swing draws. Bank at
+        // least five damage for the leader, then let the member finish the rat:
+        // each must earn a nonzero raw share of its five XP even without sharing.
+        let (actor, session) = players[if matches!(case, Case::Pz) { 0 } else { 2 }];
         {
             let runtime = owner.runtime.lock().await;
             if matches!(case, Case::ForgeForeign) {
@@ -723,7 +726,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 );
                 break;
             }
-            assert!(pass + 1 < REAL_SWING_PASSES, "foreign contributor hit");
+            assert!(pass + 1 < REAL_SWING_PASSES, "initial contributor hit");
             drop(runtime);
             owner.clock_origin = owner
                 .clock_origin
@@ -802,6 +805,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     for (index, (actor, session)) in players.iter().copied().enumerate() {
         if index == 2
+            || (index == 0 && matches!(case, Case::Pz))
             || (index == 1 && matches!(case, Case::Inactive | Case::OneHit | Case::ForgeIdle))
         {
             continue;
@@ -1191,7 +1195,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     } else if matches!(case, Case::Exhausted) {
         assert_eq!((first_award, second_award), (8, 0));
     } else if matches!(case, Case::Pz) {
-        assert!(first_award > 0 && second_award > 0);
+        assert!(
+            first_award > 0 && second_award > 0,
+            "both damage contributors earn XP: first={first_award}, second={second_award}"
+        );
         assert!(first_award + second_award <= 10);
         let shared: bool = sqlx::query_scalar("SELECT shared FROM game_party_kill_xp_receipts")
             .fetch_one(&h.pool)
