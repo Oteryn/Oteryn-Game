@@ -177,11 +177,13 @@ impl BundleFacts {
                 let required_level = self.palette.get(item.palette as usize).and_then(|entry| {
                     super::door_registry::level_door_of(u32::from(entry.facts.appearance_id))
                         .and(item.attrs.action)
-                        .and_then(|action| u32::from(action).checked_sub(1000))
+                        .filter(|action| *action > 0)
+                        .map(|action| u32::from(action).saturating_sub(1000))
                 });
                 let required_storage = self.palette.get(item.palette as usize).and_then(|entry| {
                     super::door_registry::quest_door_of(u32::from(entry.facts.appearance_id))
                         .and(item.attrs.action)
+                        .filter(|action| *action > 0)
                 });
                 // Preserve the source House and door numbers before ordinary Channel door
                 // classification deliberately seals House doors.
@@ -208,7 +210,18 @@ impl BundleFacts {
                 let quest_action = required_storage.is_some()
                     && item.attrs.unique.is_none()
                     && item.attrs.door.is_none();
+                let missing_predicate =
+                    self.palette
+                        .get(item.palette as usize)
+                        .is_some_and(|entry| {
+                            let appearance = u32::from(entry.facts.appearance_id);
+                            (super::door_registry::level_door_of(appearance).is_some()
+                                && required_level.is_none())
+                                || (super::door_registry::quest_door_of(appearance).is_some()
+                                    && required_storage.is_none())
+                        });
                 let door = if dropped
+                    || missing_predicate
                     || (bound(&item.attrs) && !key_action && !level_action && !quest_action)
                 {
                     PaletteDoor::No
@@ -230,9 +243,9 @@ impl BundleFacts {
                         open,
                         open_solid,
                         locked,
+                        key_forms,
                         ..
                     } => {
-                        let locked = locked || matches!(item.attrs.action, Some(101 | 1001));
                         self.doors.push(
                             key,
                             closed_solid,
@@ -243,6 +256,7 @@ impl BundleFacts {
                             required_level,
                             required_storage,
                         );
+                        self.doors.set_key_forms(key_forms);
                     }
                     PaletteDoor::Sealed => {
                         self.doors.push_sealed();
@@ -395,6 +409,55 @@ impl BundleFacts {
             return false;
         }
         Arc::make_mut(&mut states).insert(key, (revision, after));
+        true
+    }
+
+    /// Recover a durable gathering replacement/removal under the Channel owner lock.
+    /// Removal retains a revision and the original facts while hiding the base placement.
+    pub fn install_gathering_state(
+        &self,
+        key: u64,
+        revision: u64,
+        before: EntryFacts,
+        after: Option<EntryFacts>,
+    ) -> bool {
+        let Some((pos, _)) = view::placement_of(key) else {
+            return false;
+        };
+        if revision == 0
+            || self.house_tile(pos)
+            || self.terrain_tool_action(key) != Some(None)
+            || before.bound
+            || before.count != 1
+            || before.sub_type != 0
+        {
+            return false;
+        }
+        let Ok(mut states) = self.callbacks.lock() else {
+            return false;
+        };
+        if let Some((current, facts)) = states.changed.get(&key) {
+            if *current > revision {
+                return true;
+            }
+            if *current == revision {
+                return *facts == after.unwrap_or(before)
+                    && states.hidden.contains(&key) == after.is_none();
+            }
+        }
+        if states.changed.len() + states.hidden.len() >= super::overlay::OVERLAY_BUDGET_BYTES / 512
+        {
+            return false;
+        }
+        let states = Arc::make_mut(&mut states);
+        states
+            .changed
+            .insert(key, (revision, after.unwrap_or(before)));
+        if after.is_none() {
+            states.hidden.insert(key);
+        } else {
+            states.hidden.remove(&key);
+        }
         true
     }
 
@@ -711,8 +774,30 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     if definition.solid != Some(false) || definition.blocks_projectile {
         return PaletteDoor::Sealed;
     }
+    let key_forms =
+        super::door_registry::key_closed_forms(closed).and_then(|(unlocked, locked)| {
+            let face = |appearance| {
+                let key = door::open_key(key, closed, appearance)?;
+                let definition = item(&key)?;
+                if definition.solid != Some(true) || !definition.blocks_projectile {
+                    return None;
+                }
+                Some(EntryFacts {
+                    definition: MapDefinition::Item(definition.reference),
+                    appearance_id: u16::try_from(appearance).ok()?,
+                    blocks_projectile: true,
+                    terrain_kind: None,
+                    pickupable: false,
+                    bound: false,
+                    count: 1,
+                    sub_type: 0,
+                })
+            };
+            Some([face(unlocked)?, face(locked)?])
+        });
     PaletteDoor::Pair {
         key_door: key_door.is_some(),
+        key_forms,
         locked: key_door.is_some_and(|(_, locked)| locked),
         open: EntryFacts {
             definition: MapDefinition::Item(definition.reference),

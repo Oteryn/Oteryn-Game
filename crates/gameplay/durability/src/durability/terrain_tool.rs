@@ -65,7 +65,7 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+        let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
@@ -87,15 +87,7 @@ impl DurabilityRoot {
             let tool: Option<(String, String)> = sqlx::query_as("WITH RECURSIVE carried AS (SELECT e.item_instance_id,1 AS depth FROM game_item_container_entries e JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE e.character_id=encode($1,'hex')::uuid AND e.world_id=encode($2,'hex')::uuid UNION ALL SELECT e.item_instance_id,c.depth+1 FROM carried c JOIN game_item_nested_entries e ON e.parent_item_instance_id=c.item_instance_id WHERE c.depth<8) SELECT i.definition_production_key,i.definition_revision_ref FROM game_item_instances i WHERE i.item_instance_id=encode($3,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND i.quantity>0 AND i.definition_family='Item' AND NOT EXISTS(SELECT 1 FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id) AND NOT EXISTS(SELECT 1 FROM game_item_nested_entries WHERE parent_item_instance_id=i.item_instance_id) AND i.item_instance_id IN (SELECT item_instance_id FROM carried LIMIT 501) FOR UPDATE OF i")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(mutation.tool.as_slice()).fetch_optional(&mut **tx).await?;
             if tool.as_ref().map(|(key, revision)| (key.as_str(), revision.as_str())) != Some((mutation.tool_key.as_str(), mutation.tool_revision.as_str())) { return Ok(Some(UseDisposition::StaleState)); }
-            let states: Vec<i64> = mutation.decay.iter().map(|(state, _)| i64::from(*state)).collect();
-            let delays: Vec<i64> = mutation.decay.iter().map(|(_, delay)| *delay).collect();
-            let applied: bool = sqlx::query_scalar("SELECT game_apply_terrain_tool_transform(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8,$9,$10,$11,$12,$13,$14,$15,$16)")
-                .bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string())
-                .bind(fence.character_id.as_bytes().as_slice()).bind(mutation.tool.as_slice()).bind(&intent)
-                .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(mutation.placement)
-                .bind(scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch)
-                .bind(mutation.expected_revision).bind(i64::from(mutation.before)).bind(i64::from(mutation.after))
-                .bind(states).bind(delays).fetch_one(&mut **tx).await?;
+            let applied = apply_in_transaction(&mut tx, fence, command, &intent, &scope, &mutation).await?;
             if applied { tx.commit(deadline).await?; }
             Ok(Some(if applied { UseDisposition::Committed } else { UseDisposition::StaleState }))
         })).await
@@ -134,4 +126,55 @@ impl DurabilityRoot {
             Ok(result)
         })).await
     }
+}
+
+/// The item craft owner uses this CAS in its own inventory transaction.
+pub(super) async fn apply_in_transaction(
+    tx: &mut super::item_mint_audit::Type2Transaction<'_>,
+    fence: CurrentCharacterItemFence,
+    command: CommandRef,
+    intent: &[u8],
+    scope: &TerrainScope,
+    mutation: &TerrainMutation,
+) -> Result<bool, DurabilityError> {
+    let (world, channel) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let placement: &[u8; 40] = mutation
+        .placement
+        .as_slice()
+        .try_into()
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let reset_epoch =
+        u64::try_from(scope.reset_epoch).map_err(|_| DurabilityError::InvalidStoredState)?;
+    super::map_item_mint::lock_placement(
+        tx,
+        world.as_bytes(),
+        channel.as_bytes(),
+        placement,
+        reset_epoch,
+    )
+    .await?;
+    let placement_key = u64::from_be_bytes(
+        placement[32..]
+            .try_into()
+            .map_err(|_| DurabilityError::InvalidStoredState)?,
+    );
+    let taken: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_map_item_mint_receipts WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND base_bundle_digest=$3 AND placement_key=$4::text::numeric AND reset_epoch=$5::text::numeric)")
+        .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&placement[..32]).bind(placement_key.to_string()).bind(reset_epoch.to_string()).fetch_one(&mut ***tx).await?;
+    if taken {
+        return Ok(false);
+    }
+    let states: Vec<i64> = mutation
+        .decay
+        .iter()
+        .map(|(state, _)| i64::from(*state))
+        .collect();
+    let delays: Vec<i64> = mutation.decay.iter().map(|(_, delay)| *delay).collect();
+    let applied: bool = sqlx::query_scalar("SELECT game_apply_terrain_tool_transform(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8,$9,$10,$11,$12,$13,$14,$15,$16)")
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(command.command_id().get().to_string())
+                .bind(fence.character_id.as_bytes().as_slice()).bind(mutation.tool.as_slice()).bind(intent)
+                .bind(world.as_bytes().as_slice()).bind(channel.as_bytes().as_slice()).bind(&mutation.placement)
+                .bind(&scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch)
+                .bind(mutation.expected_revision).bind(i64::from(mutation.before)).bind(i64::from(mutation.after))
+                .bind(states).bind(delays).fetch_one(&mut ***tx).await?;
+    Ok(applied)
 }

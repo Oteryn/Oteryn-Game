@@ -19,7 +19,8 @@ OUTPUT = 'tools/content-schema/native-gameplay/tool-item-profiles.json'
 IDS = {867, 868, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
 
 
-def build(directory):
+def build(directory, ids=None):
+    ids = IDS if ids is None else ids
     xml = (directory / 'items.xml').read_bytes()
     appearances = (directory / 'appearances.dat').read_bytes()
     proof = json.loads((ROOT / 'tools/content-schema/native-gameplay/canary-ground-proof.json').read_bytes())
@@ -31,9 +32,9 @@ def build(directory):
     bindings = native.binding_index(native.BINDINGS.read_bytes())
     index = native.xml_index(xml)
     objects = native.engine_items.load_appearance_objects(appearances)
-    physical = {row['server_item_id']: row for row in native.policies(appearances, xml, IDS)}
+    physical = {row['server_item_id']: row for row in native.policies(appearances, xml, ids)}
     records = [native.profile(item, index[item], objects[item], physical[item], bindings, None)
-               for item in sorted(IDS)]
+               for item in sorted(ids)]
     bound = native.bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
                                  bindings, set(index))
     return {
