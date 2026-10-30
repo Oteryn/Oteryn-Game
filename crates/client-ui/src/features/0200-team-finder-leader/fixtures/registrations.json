@@ -1,0 +1,20 @@
+[
+  {
+    "mechanic": "0200-team-finder-leader",
+    "kind": "handlers",
+    "id": "0200-team-finder-leader-unsupported",
+    "status": "unsupported",
+    "reason": "S14a implements the server leader listing; the client Team Finder window remains pending.",
+    "commands": [
+      390,
+      391
+    ],
+    "not_applicable": {
+      "state": "Unsupported until the owning mechanic migration.",
+      "protocol": "Unsupported until the owning mechanic migration.",
+      "view": "Unsupported until the owning mechanic migration.",
+      "input": "Unsupported until the owning mechanic migration.",
+      "settings": "Unsupported until the owning mechanic migration."
+    }
+  }
+]
