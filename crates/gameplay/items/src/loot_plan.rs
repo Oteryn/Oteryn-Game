@@ -10,12 +10,19 @@ pub const COMBAT01_LOOT_PLAN_ENTRIES_MAX: usize = 4096;
 pub const COMBAT01_LOOT_PLAN_ITEMS_MAX: usize = 4096;
 /// Maximum typed-identity footprint: 4,096 maximum-width entries plus the header.
 pub const COMBAT01_LOOT_PLAN_BYTES_MAX: usize = 4096 * 1792 + 2048;
-/// Two deterministic draws per source entry.
+/// Two deterministic draws per source entry: the chance (which also yields the count) and the
+/// loot factor.
 pub const COMBAT01_LOOT_RNG_DRAWS_MAX: usize = 8192;
 
 /// Content schema `probability_ppm` scale (parts per million), matching
 /// `content::reference_playable::REFERENCE_LOOT_PROBABILITY_PPM_SCALE`.
 const LOOT_PROBABILITY_PPM_SCALE: u32 = 1_000_000;
+/// Donor `MAX_LOOTCHANCE` (100,000) is a tenth of the ppm scale; the count is taken from the
+/// chance draw at the donor's resolution.
+const DONOR_LOOT_CHANCE_DIVISOR: u32 = 10;
+/// Donor per-entry loot factor `math.random(95, 105) / 100`, inclusive.
+const LOOT_FACTOR_PERCENT_MIN: u32 = 95;
+const LOOT_FACTOR_PERCENT_SPAN: u64 = 11;
 
 /// Global's blue and red anniversary surprise bags. Crystal can inject these
 /// into an arbitrary monster's corpse when its server-wide switch is enabled;
@@ -179,9 +186,9 @@ impl LootPlanDeathKey {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DrawKind {
     Chance,
-    Quantity,
+    Factor,
     BoostedChance(u8),
-    BoostedQuantity(u8),
+    BoostedFactor(u8),
 }
 
 /// Plan a death's loot from its already-loaded, already-validated loot table.
@@ -296,23 +303,23 @@ fn roll_entries(
                 DrawKind::BoostedChance(roll)
             },
         );
-        if (is_surprise_bag(entry) && !is_global_event_loot_table(reference))
-            || state.unique.contains(&entry.item.production_key)
-            || !bernoulli_success(chance, probability)
-        {
-            state.ordinal += validate_tree(&entry.details.children, 0)? as u32;
-            continue;
-        }
-        let quantity_draw = deterministic_draw(
+        let factor = loot_factor_percent(deterministic_draw(
             death,
             reference,
             draw_ordinal,
             if roll == 0 {
-                DrawKind::Quantity
+                DrawKind::Factor
             } else {
-                DrawKind::BoostedQuantity(roll)
+                DrawKind::BoostedFactor(roll)
             },
-        );
+        ));
+        if (is_surprise_bag(entry) && !is_global_event_loot_table(reference))
+            || state.unique.contains(&entry.item.production_key)
+            || !factored_success(chance, probability, factor)
+        {
+            state.ordinal += validate_tree(&entry.details.children, 0)? as u32;
+            continue;
+        }
         let quantity = if entry.details.container_capacity.is_some() {
             // Donor containers are non-stackable: their count is not a stack quantity.
             1
@@ -320,7 +327,7 @@ fn roll_entries(
             match entry.details.charges {
                 Some(charges) if entry.details.stackable => charges,
                 Some(_) => 1,
-                None => quantity_in_range(quantity_draw, entry.min_count, entry.max_count),
+                None => quantity_in_range(chance, entry.min_count, entry.max_count),
             }
         };
         if quantity == 0 {
@@ -489,17 +496,31 @@ fn header_footprint_bytes(loot_table_ref: &LootDefinitionRef) -> usize {
         + loot_table_ref.revision_ref.len()
 }
 
-/// `success = draw_ppm < probability_ppm`, `draw_ppm` uniform over
-/// `0..1,000,000`: `probability_ppm == 0` never succeeds, and
-/// `probability_ppm == 1,000,000` always succeeds.
-fn bernoulli_success(draw: u64, probability_ppm: u32) -> bool {
-    let draw_ppm = (draw % u64::from(LOOT_PROBABILITY_PPM_SCALE)) as u32;
-    draw_ppm < probability_ppm
+fn draw_ppm(draw: u64) -> u64 {
+    draw % u64::from(LOOT_PROBABILITY_PPM_SCALE)
 }
 
-fn quantity_in_range(draw: u64, min_count: u32, max_count: u32) -> u32 {
+/// The donor's per-entry loot factor, `95..=105` percent (Crystal and Canary
+/// `MonsterType:generateLootRoll`, `dynamicFactor = factor * math.random(95, 105) / 100`).
+fn loot_factor_percent(draw: u64) -> u32 {
+    LOOT_FACTOR_PERCENT_MIN + (draw % LOOT_FACTOR_PERCENT_SPAN) as u32
+}
+
+/// `success = draw_ppm < probability_ppm * factor / 100`, compared exactly, `draw_ppm` uniform
+/// over `0..1,000,000`: `probability_ppm == 0` never succeeds. An entry at the full scale always
+/// succeeds whatever the factor: Oteryn keeps guaranteed drops guaranteed (the donor lets a 95%
+/// factor drop a 100% entry; Global is unverified there).
+fn factored_success(draw: u64, probability_ppm: u32, factor_percent: u32) -> bool {
+    probability_ppm == LOOT_PROBABILITY_PPM_SCALE
+        || draw_ppm(draw) * 100 < u64::from(probability_ppm) * u64::from(factor_percent)
+}
+
+/// The donor takes the count from the same random value as the chance:
+/// `randValue % (maxCount - minCount + 1) + minCount`, `randValue` on its 0..100,000 scale.
+fn quantity_in_range(chance_draw: u64, min_count: u32, max_count: u32) -> u32 {
     let span = u64::from(max_count - min_count) + 1;
-    min_count + (draw % span) as u32
+    let donor_value = draw_ppm(chance_draw) / u64::from(DONOR_LOOT_CHANCE_DIVISOR);
+    min_count + (donor_value % span) as u32
 }
 
 /// One deterministic SHA-256 counter-mode draw, keyed by the death, the loot
@@ -529,9 +550,9 @@ fn deterministic_draw(
     hasher.update(draw_ordinal.to_be_bytes());
     hasher.update([match kind {
         DrawKind::Chance => 0_u8,
-        DrawKind::Quantity => 1_u8,
+        DrawKind::Factor => 1_u8,
         DrawKind::BoostedChance(roll) => 2 * roll,
-        DrawKind::BoostedQuantity(roll) => 2 * roll + 1,
+        DrawKind::BoostedFactor(roll) => 2 * roll + 1,
     }]);
     let digest = hasher.finalize();
     let mut buf = [0_u8; 8];
@@ -548,7 +569,7 @@ mod tests {
         LootDefinitionRef::new("Item", key, "definition-r1")
     }
 
-    fn table_ref(key: &str) -> LootDefinitionRef {
+    pub(super) fn table_ref(key: &str) -> LootDefinitionRef {
         LootDefinitionRef::new("Loot", key, "definition-r1")
     }
 
@@ -562,7 +583,7 @@ mod tests {
         )
     }
 
-    fn one_entry_table(
+    pub(super) fn one_entry_table(
         item_key: &str,
         min_count: u32,
         max_count: u32,
@@ -619,7 +640,8 @@ mod tests {
 
     const GOLDEN_CHANCE: u64 = 10_348_850_681_732_701_394;
     const GOLDEN_QUANTITY: u64 = 9_517_304_501_960_542_980;
-    const GOLDEN_RAT_PLAN: &str = r#"[("oteryn:item.tibia.i3031", 1, 1)]"#;
+    // W22a: the donor count comes from the chance draw, so the pinned rat plan re-rolled 1 -> 3.
+    const GOLDEN_RAT_PLAN: &str = r#"[("oteryn:item.tibia.i3031", 3, 1)]"#;
 
     #[test]
     fn deterministic_draw_is_pinned_by_golden_vectors() {
@@ -628,7 +650,7 @@ mod tests {
         let table_ref = table_ref("oteryn:loot.creature.rat");
         let key = death_key(7);
         let chance = deterministic_draw(key, &table_ref, 0, DrawKind::Chance);
-        let quantity = deterministic_draw(key, &table_ref, 1, DrawKind::Quantity);
+        let quantity = deterministic_draw(key, &table_ref, 1, DrawKind::Factor);
         assert_eq!((chance, quantity), (GOLDEN_CHANCE, GOLDEN_QUANTITY));
         let plan = plan_creature_loot(key, &table_ref, &rat_loot_table()).expect("rat plan");
         let summary: Vec<(String, u32, u32)> = plan
@@ -1165,6 +1187,74 @@ mod w22a_tests {
         let plan = plan_creature_loot(death, &reference, &table)?;
         assert_eq!(plan.entries.len(), 40);
         assert_eq!(plan, plan_creature_loot(death, &reference, &table)?);
+        Ok(())
+    }
+
+    #[test]
+    fn loot_factor_covers_the_donor_inclusive_95_to_105_percent() {
+        assert_eq!(loot_factor_percent(0), 95);
+        assert_eq!(loot_factor_percent(10), 105);
+        assert_eq!(loot_factor_percent(11), 95);
+        let seen: std::collections::BTreeSet<u32> = (0..64).map(loot_factor_percent).collect();
+        assert_eq!(seen, (95..=105).collect());
+    }
+
+    #[test]
+    fn loot_factor_scales_the_chance_exactly_at_its_boundaries() {
+        // 50%: a 95% factor admits draws below 475,000 ppm, a 105% factor below 525,000.
+        assert!(factored_success(474_999, 500_000, 95));
+        assert!(!factored_success(475_000, 500_000, 95));
+        assert!(factored_success(524_999, 500_000, 105));
+        assert!(!factored_success(525_000, 500_000, 105));
+        assert!(factored_success(499_999, 500_000, 100));
+        assert!(!factored_success(500_000, 500_000, 100));
+        // A fractional threshold (356,433 * 0.95 = 338,611.35) is compared without rounding.
+        assert!(factored_success(338_611, 356_433, 95));
+        assert!(!factored_success(338_612, 356_433, 95));
+        assert!(!factored_success(0, 0, 105));
+        assert!(factored_success(999_999, 1_000_000, 95));
+        // The draw is reduced to ppm first.
+        assert!(!factored_success(1_000_000 + 475_000, 500_000, 95));
+        assert!(factored_success(1_000_000 + 474_999, 500_000, 95));
+    }
+
+    #[test]
+    fn count_comes_from_the_chance_draw_at_the_donor_resolution() {
+        // draw 123,456 ppm is donor value 12,345; 12,345 % 4 = 1.
+        assert_eq!(quantity_in_range(123_456, 1, 4), 2);
+        assert_eq!(quantity_in_range(123_459, 1, 4), 2);
+        assert_eq!(quantity_in_range(123_460, 1, 4), 3);
+        assert_eq!(quantity_in_range(999_999, 3, 9), 3 + 99_999 % 7);
+        assert_eq!(quantity_in_range(5, 7, 7), 7);
+    }
+
+    #[test]
+    fn planned_rolls_apply_the_loot_factor_and_take_the_count_from_the_chance_draw()
+    -> Result<(), LootPlanError> {
+        let reference = super::tests::table_ref("oteryn:loot.factor.table");
+        let table = super::tests::one_entry_table("oteryn:item.factor.coin", 1, 4, Some(500_000));
+        let (mut above, mut below) = (false, false);
+        for actor in 0..4_096_u32 {
+            let death = LootPlanDeathKey::new([3; 16], [4; 16], 1, actor, 1);
+            let chance = deterministic_draw(death, &reference, 0, DrawKind::Chance);
+            let ppm = draw_ppm(chance);
+            let plan = plan_creature_loot(death, &reference, &table)?;
+            let factor =
+                loot_factor_percent(deterministic_draw(death, &reference, 0, DrawKind::Factor));
+            assert_eq!(
+                plan.entries.len() == 1,
+                ppm * 100 < 500_000 * u64::from(factor),
+                "actor {actor}"
+            );
+            if let Some(entry) = plan.entries.first() {
+                assert_eq!(entry.quantity, 1 + ((ppm / 10) % 4) as u32);
+                above |= ppm >= 500_000;
+            } else {
+                below |= ppm < 500_000;
+            }
+        }
+        // Some draw above the nominal chance drops (factor > 100%), some below misses (< 100%).
+        assert!(above && below);
         Ok(())
     }
 }
