@@ -2,7 +2,8 @@
 //! `docs/architecture/reviews/OTERYN_GAME_RANGED0_DISTANCE_WEAPONS_AMMUNITION_WANDS_AND_CHASE_DECISION_2026-10-01.md`):
 //! the distance hit-chance table, the hit roll, the distance and throwing damage expression and the
 //! wand bounds. Pure: the swing variant, validity, ammunition and item consequences belong to the
-//! Channel owner. Every value is `PARITY_PENDING` until RANGED-PARITY-1.
+//! Channel owner. AUTOATK-1 pins Offensive raw damage bounds; hit chance, the damage
+//! distribution and other fight modes remain `PARITY_PENDING`.
 
 use oteryn_gameplay_content::content::spell_data::formula::{
     Binary, Expression, Formula, Input, Unary,
@@ -80,43 +81,57 @@ pub fn shot_hits(chance: u32, draw: u64) -> bool {
     u64::from(chance) > draw % 100
 }
 
-/// Canary's distance damage coefficient (`weapons.cpp:899-940`).
-const DISTANCE_COEFFICIENT: f64 = 0.09;
-
-/// Distance and throwing damage (§5) over `attack_skill` (the distance skill), `attack_value` (bow
-/// plus ammunition attack), `attack_factor` (the fight mode) and the official level term `L`:
+/// Distance and throwing raw bounds from TibiaTools `fe745abf`:
+/// `damage-calc/calc.ts:102,132` calls `damage.ts:13-26`. Bows and crossbows add
+/// ammunition attack to launcher attack (`character-state.ts:75`); throwing weapons use
+/// their own attack. The distance skill is `attack_skill` and their total attack is `attack_value`.
 ///
 /// ```text
-/// min = floor(L)
-/// max = floor(L + 0.09 * attack_factor * attack_skill * attack_value + 0.5)
+/// v = floor(6 * attack_value / 5) * (attack_skill + 4) / 28 * attack_factor
+/// min = floor(L + v / 2)
+/// max = floor(L + 2 * v)
 /// ```
 ///
-/// Canary rounds `max` and uses `level / 5` for `L`; the curve equals it up to level 500.
+/// `L` is the official level curve. The API fixtures bind Offensive (factor 1.0);
+/// other fight modes scale `v` and remain `PARITY_PENDING`.
 pub fn player_distance_formula() -> Formula {
     let level = || Expression::LevelBaseDamageHealing(Box::new(Expression::Var(Input::Level)));
-    let mul = |left, right| Expression::Binary(Binary::Mul, Box::new(left), Box::new(right));
-    let scaled = mul(
-        mul(
-            mul(
-                Expression::Const(DISTANCE_COEFFICIENT),
-                Expression::Var(Input::AttackFactor),
-            ),
-            Expression::Var(Input::AttackSkill),
+    let binary = |op, left, right| Expression::Binary(op, Box::new(left), Box::new(right));
+    let floor = |inner| Expression::Unary(Unary::Floor, Box::new(inner));
+    let attack = floor(binary(
+        Binary::Div,
+        binary(
+            Binary::Mul,
+            Expression::Const(6.0),
+            Expression::Var(Input::AttackValue),
         ),
-        Expression::Var(Input::AttackValue),
-    );
-    let rounded = Expression::Binary(
+        Expression::Const(5.0),
+    ));
+    let skill = binary(
         Binary::Add,
-        Box::new(Expression::Binary(
-            Binary::Add,
-            Box::new(level()),
-            Box::new(scaled),
-        )),
-        Box::new(Expression::Const(0.5)),
+        Expression::Var(Input::AttackSkill),
+        Expression::Const(4.0),
+    );
+    let v = binary(
+        Binary::Mul,
+        binary(
+            Binary::Div,
+            binary(Binary::Mul, attack, skill),
+            Expression::Const(28.0),
+        ),
+        Expression::Var(Input::AttackFactor),
     );
     Formula {
-        minimum: Expression::Unary(Unary::Floor, Box::new(level())),
-        maximum: Expression::Unary(Unary::Floor, Box::new(rounded)),
+        minimum: floor(binary(
+            Binary::Add,
+            level(),
+            binary(Binary::Div, v.clone(), Expression::Const(2.0)),
+        )),
+        maximum: floor(binary(
+            Binary::Add,
+            level(),
+            binary(Binary::Mul, v, Expression::Const(2.0)),
+        )),
     }
 }
 
@@ -216,18 +231,54 @@ mod tests {
     }
 
     #[test]
-    fn distance_damage_rounds_canarys_maximum_over_the_level_term() {
+    fn distance_damage_uses_the_calculator_bounds_over_the_level_term() {
         let formula = player_distance_formula();
-        // Level 100, distance 80, attack 25 (spear), offensive: 0.09 * 80 * 25 = 180 over L = 20.
+        // Level 100 / distance 80 / spear 25: v = 90 over L = 20.
+        // Minimum changes 20 -> 65 because the calculator includes v / 2; max stays 200.
         assert_eq!(
             formula.bounds(&inputs(100, 80, 25, FightMode::Offensive)),
-            Ok((20, 200))
+            Ok((65, 200))
         );
-        // Level 8, distance 11, attack 25: L = 1, 1 + 0.09 * 275 = 25.75 rounds up to 26.
+        // Level 8 / distance 11 / spear 25: L = 1, v = 450 / 28.
+        // (1, 26) -> (9, 33): include v / 2 in min and floor L + 2*v in max.
         assert_eq!(
             formula.bounds(&inputs(8, 11, 25, FightMode::Offensive)),
-            Ok((1, 26))
+            Ok((9, 33))
         );
+    }
+
+    #[test]
+    fn autoatk_paladin_bow_matches_saved_api_responses() {
+        let formula = player_distance_formula();
+        // Bow (184) + Arrow (1), total attack 25. Evidence: research/autoatk/.
+        for (level, skill, expected, response) in [
+            (300, 80, (105, 240), "paladin-bow-300.response.json"),
+            (500, 100, (155, 322), "paladin-bow-500.response.json"),
+            (1000, 120, (249, 448), "paladin-bow-1000.response.json"),
+        ] {
+            assert_eq!(
+                formula.bounds(&inputs(level, skill, 25, FightMode::Offensive)),
+                Ok(expected),
+                "{response}"
+            );
+        }
+    }
+
+    #[test]
+    fn autoatk_paladin_spear_matches_saved_api_responses() {
+        let formula = player_distance_formula();
+        // Royal Spear (717), attack 35. Evidence: research/autoatk/.
+        for (level, skill, expected, response) in [
+            (300, 80, (123, 312), "paladin-spear-300.response.json"),
+            (500, 100, (178, 412), "paladin-spear-500.response.json"),
+            (1000, 120, (276, 555), "paladin-spear-1000.response.json"),
+        ] {
+            assert_eq!(
+                formula.bounds(&inputs(level, skill, 35, FightMode::Offensive)),
+                Ok(expected),
+                "{response}"
+            );
+        }
     }
 
     #[test]
