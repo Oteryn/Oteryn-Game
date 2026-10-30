@@ -6,6 +6,7 @@ use super::{
 };
 mod execute;
 
+use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{
     character_progression::CurrentCharacterGameplayFence,
     quest_state::{QuestCause, QuestTransitionOutcome, QuestTransitionRequest},
@@ -248,7 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 if let Some(origin) = pending.origin {
                     self.refuse_quest_step(
                         &mut runtime,
-                        &states,
+                        &mut states,
                         pending.actor,
                         pending.session,
                         map,
@@ -441,7 +442,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if result != UseDisposition::Committed && !unresolved {
                 self.refuse_quest_step(
                     &mut runtime,
-                    &states,
+                    &mut states,
                     actor,
                     session,
                     map,
@@ -479,7 +480,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     fn refuse_quest_step(
         &self,
         runtime: &mut ChannelRuntimeV1,
-        states: &ChannelSpellStates,
+        states: &mut ChannelSpellStates,
         actor: ExactActorRef,
         session: GameSessionId,
         map: &BundleMap,
@@ -501,8 +502,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             origin.position(),
             blocked,
             &closed,
-        ) {
-            let _ = runtime.commit_source_step(proof);
+        ) && let Ok(snapshot) = runtime.commit_source_step(proof)
+        {
+            states.stage_underwater_step(
+                runtime,
+                actor,
+                session,
+                self.owner_now().get(),
+                underwater(map, entered.position()),
+                underwater(map, snapshot.position()),
+            );
         }
         if let Some(message) = &callback.failure_message {
             self.states.chat.push_quest_feedback(session, message);

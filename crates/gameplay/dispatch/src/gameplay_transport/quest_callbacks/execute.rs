@@ -245,10 +245,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ) {
             return UseDisposition::Rejected;
         }
-        if let Some(proof) = teleport
-            && runtime.commit_source_step(proof).is_err()
-        {
-            return UseDisposition::Rejected;
+        if let Some(proof) = teleport {
+            let Ok(snapshot) = runtime.commit_source_step(proof) else {
+                return UseDisposition::Rejected;
+            };
+            states.stage_underwater_step(
+                runtime,
+                actor,
+                session,
+                self.owner_now().get(),
+                underwater(map, expected.position()),
+                underwater(map, snapshot.position()),
+            );
         }
         if let Ok(mut pending) = self.states.quest_callbacks.records.lock() {
             pending.remove(&session);

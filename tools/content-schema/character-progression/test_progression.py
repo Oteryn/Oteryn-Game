@@ -97,6 +97,14 @@ class FormulaEvidence(unittest.TestCase):
 
 
 class Revisions(unittest.TestCase):
+    def test_low_level_declaration_records_the_implemented_global_bonus(self):
+        record = next(r for r in lib.build_differences()["records"]
+                      if r["id"] == "low-level-experience-bonus")
+        self.assertIn("1161628", record["reference"])
+        self.assertIn("100%", record["oteryn"])
+        self.assertIn("level 50", record["oteryn"])
+        self.assertNotIn("Not modelled", record["oteryn"])
+
     def test_changes_propagate(self):
         base = lib.revisions(docs())
         for field in ("provenance_url", "recorded_on", "extraction_method"):

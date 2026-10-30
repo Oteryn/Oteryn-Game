@@ -18,10 +18,38 @@ use std::time::Duration;
 
 #[test]
 fn underwater_drowning_postgres_step_in_drowns_helmets_protect_step_out_removes() -> TestResult {
+    on_thread(|| scenario(None, false))
+}
+
+#[test]
+fn underwater_drowning_postgres_quest_relocation_enters_and_leaves_water() -> TestResult {
+    on_thread(|| {
+        scenario(Some((0, 2, false)), false)?;
+        scenario(Some((3, 4, false)), false)
+    })
+}
+
+#[test]
+fn underwater_drowning_postgres_refused_quest_step_restores_water_state() -> TestResult {
+    on_thread(|| {
+        scenario(Some((2, 1, true)), false)?;
+        scenario(Some((1, 2, true)), false)
+    })
+}
+
+#[test]
+fn underwater_drowning_postgres_portal_landings_enter_and_leave_water() -> TestResult {
+    on_thread(|| scenario(None, true))
+}
+
+fn on_thread(scenario: fn() -> TestResult) -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
     std::thread::Builder::new()
         .name("underwater-drowning-postgres".into())
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario().map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "underwater drowning PostgreSQL thread panicked")??;
     Ok(())
@@ -29,7 +57,7 @@ fn underwater_drowning_postgres_step_in_drowns_helmets_protect_step_out_removes(
 
 /// One row at native floor -7: dry ground at x 1 and x 4, underwater ground (5405, 5406) at
 /// x 2 and x 3. The ground keys are real appearance ids, as the real World routes them.
-fn underwater_row() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
+fn underwater_row(portals: bool) -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     use oteryn_world_bundle::sector::{Attrs, Item, Tile};
     let ground = |key: &str, id| PaletteEntry {
         key: key.into(),
@@ -81,7 +109,18 @@ fn underwater_row() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
         items: vec![Item {
             palette,
             depth: 0,
-            attrs: Attrs::default(),
+            attrs: Attrs {
+                teleport: if portals {
+                    match x {
+                        0 => Some((2, 0, (-7_i8).to_ne_bytes()[0])),
+                        4 => Some((1, 0, (-7_i8).to_ne_bytes()[0])),
+                        _ => None,
+                    }
+                } else {
+                    None
+                },
+                ..Attrs::default()
+            },
         }],
     };
     let bytes = write(
@@ -90,7 +129,7 @@ fn underwater_row() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
             floor: -7,
             sx: 0,
             sy: 0,
-            tiles: vec![tile(1, 0), tile(2, 1), tile(3, 2), tile(4, 0)],
+            tiles: vec![tile(0, 0), tile(1, 0), tile(2, 1), tile(3, 2), tile(4, 0)],
         }],
         &Default::default(),
     )
@@ -180,27 +219,35 @@ async fn install(
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn scenario(callback: Option<(u16, u16, bool)>, portals: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "underwater_drown", true, false).await?;
         eprintln!("POSTGRES_STARTED PAR-M10");
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
-        let authority = h.root.open_character_authority(&seal).await.map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
         let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
         let (controller, pin) = activated_with_loot_tables(world, None);
         let active = controller.active().ok_or("active")?;
         // Activated content digests (custody reads pin them), the test row's map binding.
         let channel = Dependencies::new()?.admitted.channel_id;
-        let (bytes, pins) = underwater_row()?;
+        let (bytes, pins) = underwater_row(portals)?;
         let base = crate::map::load(&bytes, &pins).map_err(debug)?;
         let map = boot(
             &bytes,
             &BootPins {
                 map_revision: crate::map::overlay::map_revision(&base),
                 bundle: pins,
-                start: TilePos { x: 1, y: 0, floor: -7 },
+                start: TilePos {
+                    x: 1,
+                    y: 0,
+                    floor: -7,
+                },
             },
             world,
             channel,
@@ -241,6 +288,88 @@ fn scenario() -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(active.identity().server_artifact_digest().as_slice()).bind(active.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&h.pool).await?;
         let (actor, session) = (deps.actor, deps.admitted.game_session_id);
+        if portals {
+            install(&owner, actor, session, false).await?;
+            step(&mut owner, actor, session, StepDirection::West, 2).await?;
+            assert!(
+                drowning(&owner, actor, session).await?,
+                "dry portal lands underwater"
+            );
+            step(&mut owner, actor, session, StepDirection::East, 3).await?;
+            step(&mut owner, actor, session, StepDirection::East, 1).await?;
+            assert!(
+                !drowning(&owner, actor, session).await?,
+                "wet actor lands on dry ground"
+            );
+            return Ok(());
+        }
+        if let Some((trigger, destination, refused)) = callback {
+            use oteryn_gameplay_quests::quest::world_callbacks::{
+                Callback, Position, Selector, Storage, Trigger,
+            };
+            let position = |x| Position { x, y: 0, floor: -7 };
+            // The production callback selector and movement proof operate on real bundle
+            // ground. An unknown storage track refuses before any callback mutation.
+            let fixture = Callback {
+                key: "fixture:underwater-callback".into(),
+                quest: "fixture:underwater".into(),
+                trigger: Trigger::StepIn,
+                selector: Selector {
+                    position: Some(position(trigger)),
+                    unique: None,
+                    action: None,
+                    appearance: None,
+                },
+                lever: None,
+                reversible: false,
+                passages: vec![],
+                teleport: Some(position(destination)),
+                storage: if refused {
+                    vec![Storage {
+                        track: "fixture:unknown-track".into(),
+                        minimum: 0,
+                        maximum: 0,
+                        set: 1,
+                    }]
+                } else {
+                    vec![]
+                },
+                offerings: vec![],
+                item_on_target: None,
+                return_on_failure: refused,
+                failure_message: None,
+                sources: vec![],
+            };
+            install(&owner, actor, session, false).await?;
+            // Outward callbacks and returns into water start from a real wet step.
+            if trigger == 3 || (trigger == 1 && refused) {
+                step(&mut owner, actor, session, StepDirection::East, 2).await?;
+                assert!(drowning(&owner, actor, session).await?);
+            }
+            owner
+                .states
+                .quest_callbacks
+                .fixture
+                .set(vec![fixture])
+                .map_err(|_| "callback fixture already installed")?;
+            let direction = if trigger <= 1 {
+                StepDirection::West
+            } else {
+                StepDirection::East
+            };
+            let final_x = if refused {
+                if trigger == 2 { 1 } else { 2 }
+            } else {
+                destination
+            };
+            step(&mut owner, actor, session, direction, i32::from(final_x)).await?;
+            assert_eq!(
+                drowning(&owner, actor, session).await?,
+                final_x == 2,
+                "callback trigger {trigger}, destination {destination}, refused {refused}"
+            );
+            return Ok(());
+        }
         assert_eq!(
             deps.runtime
                 .lock()
@@ -248,21 +377,37 @@ fn scenario() -> TestResult {
                 .read_actor_position(actor)
                 .map_err(debug)?
                 .position(),
-            MovementLocalPosition { x: 1, y: 0, floor: 7 }
+            MovementLocalPosition {
+                x: 1,
+                y: 0,
+                floor: 7
+            }
         );
         // Unprotected: StepIn drowns, underwater to underwater keeps drowning, StepOut removes.
         install(&owner, actor, session, false).await?;
         assert!(!drowning(&owner, actor, session).await?);
         step(&mut owner, actor, session, StepDirection::East, 2).await?;
-        assert!(drowning(&owner, actor, session).await?, "step into 5405 drowns");
+        assert!(
+            drowning(&owner, actor, session).await?,
+            "step into 5405 drowns"
+        );
         step(&mut owner, actor, session, StepDirection::East, 3).await?;
-        assert!(drowning(&owner, actor, session).await?, "5405 to 5406 keeps drowning");
+        assert!(
+            drowning(&owner, actor, session).await?,
+            "5405 to 5406 keeps drowning"
+        );
         step(&mut owner, actor, session, StepDirection::East, 4).await?;
-        assert!(!drowning(&owner, actor, session).await?, "step out removes drown");
+        assert!(
+            !drowning(&owner, actor, session).await?,
+            "step out removes drown"
+        );
         // A diving helmet's installed suppression refuses the StepIn drown.
         install(&owner, actor, session, true).await?;
         step(&mut owner, actor, session, StepDirection::West, 3).await?;
-        assert!(!drowning(&owner, actor, session).await?, "diving helmet protects");
+        assert!(
+            !drowning(&owner, actor, session).await?,
+            "diving helmet protects"
+        );
         step(&mut owner, actor, session, StepDirection::West, 2).await?;
         assert!(!drowning(&owner, actor, session).await?, "still protected");
         // Taking it off restores the unprotected StepIn.

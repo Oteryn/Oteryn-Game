@@ -67,8 +67,19 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
             floors: vec![-7],
         },
         palette: vec![
-            terrain("oteryn:terrain.tibia.i4526", 0, TerrainKind::Ground, Some(true)),
+            terrain(
+                "oteryn:terrain.tibia.i4526",
+                0,
+                TerrainKind::Ground,
+                Some(true),
+            ),
             terrain("oteryn:terrain.tibia.i1026", 1, TerrainKind::Wall, None),
+            terrain(
+                "oteryn:terrain.tibia.i5405",
+                2,
+                TerrainKind::Ground,
+                Some(true),
+            ),
         ],
         draft_areas: vec![],
         skipped_provisional_keys: vec![],
@@ -79,7 +90,7 @@ fn bundle() -> TestResult<(Vec<u8>, crate::map::BundlePins)> {
     let mut tiles = Vec::new();
     for y in 0..=8 {
         for x in 0..=12 {
-            let mut palettes = vec![0];
+            let mut palettes = vec![if (x, y) == (3, 5) { 2 } else { 0 }];
             if (x, y) == (5, 2) {
                 palettes.push(1);
             }
@@ -251,6 +262,27 @@ fn scenario(seed: &'static str, unpushable: bool) -> Result<(), String> {
     .map_err(|error| error.to_string())
 }
 
+async fn drowning(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    session: GameSessionId,
+) -> TestResult<bool> {
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let state = states
+        .get(&runtime, actor, session)
+        .ok_or("pushed player spell state")?;
+    Ok(state
+        .owned_conditions()
+        .instances()
+        .iter()
+        .any(|condition| {
+            crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
+                condition.provenance(),
+            )
+        }))
+}
+
 async fn position(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     actor: ExactActorRef,
@@ -418,13 +450,19 @@ async fn client_scenario(
     let target_ref = reference(owner, target).await?;
     assert_eq!(push(client, 10, target_ref, at(3, 5)).await?, MOVED);
     assert_eq!(position(owner, target).await?, at(3, 5));
+    assert!(drowning(owner, target, target_admitted.game_session_id).await?);
+    tokio::time::sleep(Duration::from_millis(1100)).await;
+    place(owner, player_session, at(3, 4)).await?;
+    assert_eq!(push(client, 11, target_ref, at(3, 6)).await?, MOVED);
+    assert_eq!(position(owner, target).await?, at(3, 6));
+    assert!(!drowning(owner, target, target_admitted.game_session_id).await?);
     tokio::time::sleep(Duration::from_millis(1100)).await;
     // Canary game.cpp:1865: out of a protection zone only onto another protection zone.
     place(owner, target_admitted, at(8, 5)).await?;
     place(owner, player_session, at(7, 4)).await?;
-    assert_eq!(push(client, 11, target_ref, at(7, 5)).await?, NOT_POSSIBLE);
+    assert_eq!(push(client, 12, target_ref, at(7, 5)).await?, NOT_POSSIBLE);
     assert_eq!(position(owner, target).await?, at(8, 5));
-    assert_eq!(push(client, 12, target_ref, at(8, 6)).await?, MOVED);
+    assert_eq!(push(client, 13, target_ref, at(8, 6)).await?, MOVED);
     assert_eq!(position(owner, target).await?, at(8, 6));
     Ok(())
 }

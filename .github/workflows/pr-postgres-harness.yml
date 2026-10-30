@@ -131,6 +131,26 @@ jobs:
           tar -xzf "$archive" -C "$RUNNER_TEMP/nextest-bin"
           echo "$RUNNER_TEMP/nextest-bin" >> "$GITHUB_PATH"
 
+      # mold 2.42.1 (released 2026-09-11), pinned by SHA-256. The archive steps link through its
+      # LD_PRELOAD wrapper, so RUSTFLAGS and the linker setting stay as in the protected-main
+      # cache producer and the restored target/ keeps matching; only the link step gets faster.
+      - name: Install pinned mold linker
+        if: steps.scope.outputs.empty != 'true'
+        env:
+          MOLD_VERSION: 2.42.1
+          MOLD_SHA256: 6ff270c9bf07d2bec5c98aa324eb7c4daf6a1a4d815c05ff1708049616047855
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/mold.tar.gz"
+          curl --proto '=https' --tlsv1.2 -fsSL --retry 3 -o "$archive" \
+            "https://github.com/rui314/mold/releases/download/v${MOLD_VERSION}/mold-${MOLD_VERSION}-x86_64-linux.tar.gz"
+          echo "${MOLD_SHA256}  ${archive}" | sha256sum -c -
+          tar -xzf "$archive" -C "$RUNNER_TEMP"
+          mold_dir="$RUNNER_TEMP/mold-${MOLD_VERSION}-x86_64-linux"
+          "$mold_dir/bin/mold" --version
+          echo "MOLD_PATH=$mold_dir/bin/mold" >> "$GITHUB_ENV"
+          echo "MOLD_PRELOAD=$mold_dir/lib/mold/mold-wrapper.so" >> "$GITHUB_ENV"
+
       # Verify every registered target before compiling the selected game-server targets.
       # Any target removed or renamed against the protected base still fails custody.
       - name: Archive registered PostgreSQL E2E targets
@@ -140,6 +160,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PACKAGES: ${{ steps.scope.outputs.packages }}
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
           archived_targets=()
@@ -248,6 +269,7 @@ jobs:
         if: steps.scope.outputs.empty != 'true'
         env:
           LIB_PACKAGES: ${{ steps.scope.outputs.lib_packages }}
+          LD_PRELOAD: ${{ env.MOLD_PRELOAD }}
         run: |
           set -euo pipefail
           mapfile -t packages < <(python3 -c 'import json, os; print("\n".join(json.loads(os.environ["LIB_PACKAGES"])))')
@@ -256,6 +278,17 @@ jobs:
           test "${#args[@]}" -gt 0
           cargo +1.99.1 nextest archive --locked "${args[@]}" --lib \
             --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst"
+
+      # Fail closed if mold did not link: every test binary relinked in this job must carry its tag.
+      - name: Confirm mold linked the test binaries
+        if: steps.scope.outputs.empty != 'true'
+        run: |
+          set -euo pipefail
+          mapfile -t linked < <(find target/debug/deps -maxdepth 1 -type f -executable -newer "$RUNNER_TEMP/mold.tar.gz")
+          echo "relinked test binaries: ${#linked[@]}"
+          for binary in "${linked[@]}"; do
+            readelf -p .comment "$binary" | grep -q 'mold ' || { echo "not linked by mold: $binary" >&2; exit 1; }
+          done
 
       - name: Record archive digests and head
         if: steps.scope.outputs.empty != 'true'
