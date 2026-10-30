@@ -11,6 +11,7 @@ pub mod hit_training;
 pub mod loop_training;
 pub mod loyalty;
 pub mod mana_training;
+pub mod npc_trade_achievement;
 pub mod prey;
 pub mod proficiency;
 pub mod proficiency_modification;

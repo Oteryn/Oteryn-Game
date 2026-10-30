@@ -30,10 +30,12 @@
 //! timed state or contents).
 
 use oteryn_gameplay_economy::npc_trade as rules;
+use oteryn_gameplay_progression::npc_trade_achievement;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
 };
 
+use super::account_achievement::grant_missing;
 use super::character_authority::{
     ReconciledCharacterAuthority, SERVER_BUILD_ID, assert_recovery_fence,
 };
@@ -794,6 +796,14 @@ impl DurabilityRoot {
                         &plan,
                         &envelope,
                         tuple,
+                    )
+                    .await?;
+                    grant_missing(
+                        &mut tx,
+                        fence.character_id,
+                        &npc_trade_achievement::keys(&request.cause.npc_key),
+                        npc_trade_achievement::SOURCE_KIND,
+                        &request.transaction_id,
                     )
                     .await?;
                     tx.commit(deadline).await?;
