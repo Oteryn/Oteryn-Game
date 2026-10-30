@@ -13,6 +13,7 @@ pub(super) struct Serving<'a, 'f, 's> {
     pub(super) reset_epoch: u64,
     pub(super) generation: u64,
     pub(super) signalled: &'a CancellationToken,
+    pub(super) timed_npcs: bundle_npcs::TimedNpcSpawns,
 }
 
 pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootError> {
@@ -29,12 +30,14 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
         reset_epoch,
         generation,
         signalled,
+        timed_npcs,
     } = serving;
     let root = owners.root;
     let authority = owners.character;
     let proof = owners.holder;
     let evidence = owners.evidence;
     let achievements = owners.achievements;
+    let runtime = owners.runtime;
     let config = &material.config;
     let loops_stop = CancellationToken::new();
     let reset_watch = world_reset::ResetWatch::default();
@@ -106,17 +109,20 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     ));
     let mut projection_done = false;
     // Never gates serving either; disabled unless configured.
-    let mut commands = pin!(character_commands_loop(
-        root,
-        authority,
-        proof,
-        evidence,
-        material
-            .character_commands
-            .lock()
-            .ok()
-            .and_then(|mut commands| commands.take()),
-        &loops_stop
+    let mut commands = pin!(both(
+        character_commands_loop(
+            root,
+            authority,
+            proof,
+            evidence,
+            material
+                .character_commands
+                .lock()
+                .ok()
+                .and_then(|mut commands| commands.take()),
+            &loops_stop
+        ),
+        timed_npc_loop(runtime, timed_npcs, &loops_stop),
     ));
     let mut commands_done = false;
     let mut signal = pin!(signalled.cancelled());
@@ -251,4 +257,33 @@ pub(super) async fn supervise(serving: Serving<'_, '_, '_>) -> Result<(), BootEr
     let _ = std::fs::remove_file(&config.control.socket_path);
     event("event=shutdown state=complete");
     world_reset::classify_exit(&reset_watch, serve_error)
+}
+
+async fn timed_npc_loop(
+    runtime: &Mutex<ChannelRuntimeV1>,
+    timed_npcs: bundle_npcs::TimedNpcSpawns,
+    stop: &CancellationToken,
+) {
+    if timed_npcs.is_empty() {
+        return;
+    }
+    let clock = crate::world_clock::WorldClockSource::new(
+        crate::world_clock::DEFAULT_WORLD_CLOCK_EPOCH_UTC_MS,
+    );
+    let mut tick =
+        tokio::time::interval(Duration::from_millis(crate::world_clock::TIBIAN_MINUTE_MS));
+    loop {
+        if first(tick.tick(), stop.cancelled()).await.is_none() {
+            return;
+        }
+        let Some(minute) =
+            crate::world_clock::now_utc_ms().and_then(|now| clock.tibian_minute(now))
+        else {
+            continue;
+        };
+        let mut runtime = runtime.lock().await;
+        if timed_npcs.reconcile(&mut runtime, minute).is_err() {
+            event("event=timed_npc_tick state=retry");
+        }
+    }
 }
