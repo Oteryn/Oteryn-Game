@@ -72,6 +72,15 @@ pub struct ItemOnTarget {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
+pub struct MonkReward {
+    pub item_source_id: Option<u32>,
+    pub learn_spell: Option<String>,
+    #[serde(default)]
+    pub final_shrine: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
 pub struct Callback {
     pub key: String,
     pub quest: String,
@@ -83,6 +92,13 @@ pub struct Callback {
     pub passages: Vec<Passage>,
     pub teleport: Option<Position>,
     pub storage: Vec<Storage>,
+    /// Checked against the progression owner in the same fenced quest transaction.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub minimum_level: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub experience: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub monk_reward: Option<MonkReward>,
     pub offerings: Vec<Offering>,
     #[serde(default)]
     pub item_on_target: Option<ItemOnTarget>,
@@ -128,7 +144,29 @@ fn parse(text: &str) -> Result<Vec<Callback>, String> {
             || unique_storage.len() != callback.storage.len()
             || callback.passages.len() > MAX_EFFECTS
             || callback.storage.len() > MAX_EFFECTS
+            || callback
+                .minimum_level
+                .is_some_and(|level| level == 0 || callback.storage.is_empty())
             || callback.offerings.len() > MAX_EFFECTS
+            || callback
+                .experience
+                .is_some_and(|xp| !(1..=super::QUESTGATE0_RL_05).contains(&xp))
+            || callback.monk_reward.as_ref().is_some_and(|reward| {
+                callback.quest != super::monk_shrines::QUEST
+                    || callback.trigger != Trigger::Use
+                    || callback.storage.is_empty()
+                    || reward.item_source_id.is_some_and(|id| {
+                        ![50267, 50271, 50269, 50273, 50274, 50272, 50268].contains(&id)
+                    })
+                    || reward.learn_spell.as_deref().is_some_and(|key| {
+                        ![
+                            "candidate:spell/mystic_repulse",
+                            "candidate:spell/forceful_uppercut",
+                            "candidate:spell/focus_harmony",
+                        ]
+                        .contains(&key)
+                    })
+            })
             || (!callback.offerings.is_empty() && callback.storage.is_empty())
             || callback.sources.is_empty()
             || !callback.sources.iter().any(|source| {
@@ -203,7 +241,7 @@ pub(super) fn extend(catalogue: QuestStateCatalogue) -> Result<QuestStateCatalog
                 })
                 .collect(),
             completes: false,
-            experience: None,
+            experience: callback.experience,
         });
     }
     QuestStateCatalogue::new(catalogue.content_revision, tracks, transitions)
@@ -245,6 +283,15 @@ mod tests {
     fn quest_world_callbacks_reject_ambiguous_and_unbounded_authoring() -> Result<(), String> {
         let source: serde_json::Value =
             serde_json::from_str(EMBEDDED).map_err(|e| e.to_string())?;
+        let callbacks = source["callbacks"].as_array().ok_or("callbacks")?;
+        let offerings = callbacks
+            .iter()
+            .position(|c| c["key"] == "oteryn:quest-callback/paradox-skulls")
+            .ok_or("offerings callback")?;
+        let item = callbacks
+            .iter()
+            .position(|c| c["key"] == "oteryn:quest-callback/fish-napping-key")
+            .ok_or("item callback")?;
         for case in 0..10 {
             let mut bad = source.clone();
             match case {
@@ -253,19 +300,19 @@ mod tests {
                 }
                 1 => bad["callbacks"][0]["extra"] = true.into(),
                 2 => {
-                    bad["callbacks"][3]["offerings"][1] =
-                        bad["callbacks"][3]["offerings"][0].clone()
+                    bad["callbacks"][offerings]["offerings"][1] =
+                        bad["callbacks"][offerings]["offerings"][0].clone()
                 }
-                3 => bad["callbacks"][3]["offerings"][0]["count"] = 101.into(),
-                4 => bad["callbacks"][6]["item_on_target"]["target_replacement"] = 0.into(),
+                3 => bad["callbacks"][offerings]["offerings"][0]["count"] = 101.into(),
+                4 => bad["callbacks"][item]["item_on_target"]["target_replacement"] = 0.into(),
                 5 => bad["callbacks"][0]["sources"] = serde_json::json!(["crystal:unverified"]),
-                6 => bad["callbacks"][6]["item_on_target"]["replacement"] = "bad".into(),
+                6 => bad["callbacks"][item]["item_on_target"]["replacement"] = "bad".into(),
                 7 => {
-                    bad["callbacks"][6]["item_on_target"]["replacement"] =
+                    bad["callbacks"][item]["item_on_target"]["replacement"] =
                         "oteryn:item.tibia.i3114".into();
-                    bad["callbacks"][6]["item_on_target"]["count"] = 2.into();
+                    bad["callbacks"][item]["item_on_target"]["count"] = 2.into();
                 }
-                8 => bad["callbacks"][6]["storage"] = serde_json::json!([]),
+                8 => bad["callbacks"][item]["storage"] = serde_json::json!([]),
                 _ => bad["callbacks"][0]["failure_message"] = "x".repeat(257).into(),
             }
             assert!(parse(&bad.to_string()).is_err(), "case {case}");
@@ -295,15 +342,15 @@ mod tests {
                 "storage" => serde_json::json!({"track":format!("oteryn:quest-progress/bounded-{index}"),"minimum":-1,"maximum":1,"set":1}),
                 _ => serde_json::json!({"position":{"x":index,"y":1,"floor":-1},"item":"oteryn:item.tibia.i3114","count":100}),
             }).collect::<Vec<_>>();
-            bounded["callbacks"][3][field] = serde_json::json!(entries);
+            bounded["callbacks"][offerings][field] = serde_json::json!(entries);
             assert!(parse(&bounded.to_string()).is_ok(), "{field} at its bound");
-            let mut extra = bounded["callbacks"][3][field][0].clone();
+            let mut extra = bounded["callbacks"][offerings][field][0].clone();
             if field == "storage" {
                 extra["track"] = "oteryn:quest-progress/overflow".into();
             } else {
                 extra["position"]["x"] = 100.into();
             }
-            bounded["callbacks"][3][field]
+            bounded["callbacks"][offerings][field]
                 .as_array_mut()
                 .ok_or("entries")?
                 .push(extra);

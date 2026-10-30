@@ -16,6 +16,18 @@ use super::db::{
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 
+/// The quest writer calls this only after its gameplay fence and root lock, inside
+/// the same transaction as the earned shrine flag. Existing automatic knowledge is kept.
+pub(super) async fn grant_quest_spell(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: crate::domain::CharacterId,
+    key: &str,
+) -> Result<(), DurabilityError> {
+    sqlx::query("INSERT INTO game_character_known_spells(character_id,spell_key) VALUES(encode($1,'hex')::uuid,$2) ON CONFLICT DO NOTHING")
+        .bind(character.as_bytes().as_slice()).bind(key).execute(&mut **tx).await?;
+    Ok(())
+}
+
 impl DurabilityRoot {
     /// Add dispatch-qualified keys under the current session and catalogue snapshot revision.
     pub async fn acquire_automatic_spells(

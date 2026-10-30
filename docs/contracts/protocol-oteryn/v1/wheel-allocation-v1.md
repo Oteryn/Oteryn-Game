@@ -30,3 +30,10 @@ decreases fail closed without town evidence.
 This command persists allocations only. Runtime HP/mana, skill and leech contributions are
 deferred with all of W-FX-1 until resistance is available, as required by WHEEL0-FX-1
 in the accepted Wheel delivery decision §5.2. See `WHEEL3-FINAL.md` for split evidence.
+
+MONKQUEST3 (owner decision 2026-10-30) supplies the accepted Monk-quest extra-point
+source: the once-only final report to Enpa-Deia Pema contributes 10 points, owned
+by `content/quests/monk-pilgrimage.json`. The Wheel allocation transaction reads the
+durable final-report flag under its Character lock and adds this reward to the
+existing level and gem points with checked arithmetic. Repeated reports cannot
+multiply the reward. Ordinary Wheel eligibility and allocation rules still apply.

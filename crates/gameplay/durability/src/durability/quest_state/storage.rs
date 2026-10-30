@@ -120,6 +120,10 @@ impl DurabilityRoot {
                         copy.tracks
                             .insert(row.try_get("track_key")?, row.try_get("value")?);
                     }
+                    oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut copy.tracks);
+                    if copy.tracks.len() > QUESTSTATE0_RL_08_TRACKS {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
                     for row in &states {
                         copy.states.insert(
                             row.try_get("quest_key")?,

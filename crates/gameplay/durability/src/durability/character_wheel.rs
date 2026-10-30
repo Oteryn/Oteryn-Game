@@ -224,6 +224,8 @@ impl DurabilityRoot {
         facts: WheelChangeFacts,
         gate: &G,
     ) -> Result<WheelCommitOutcome> {
+        let pilgrimage_points = oteryn_gameplay_quests::quest::monk_shrines::final_points()
+            .ok_or(CharacterProgressionError::InvalidInput)?;
         if fence.character_lease_generation == 0
             || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
         {
@@ -358,10 +360,17 @@ impl DurabilityRoot {
                             0
                         }
                     });
+                    let pilgrimage_complete: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=1)")
+                        .bind(fence.character_id.as_bytes().as_slice())
+                        .bind(oteryn_gameplay_quests::quest::monk_shrines::FINAL_TRACK)
+                        .fetch_one(&mut *tx).await?;
+                    let available = available_points(level).checked_add(gem_points)
+                        .and_then(|points| points.checked_add(if pilgrimage_complete { pilgrimage_points } else { 0 }))
+                        .ok_or(DurabilityError::InvalidStoredState)?;
                     if let Err(refusal) = ruleset.validate(
                         &before,
                         &request.slots,
-                        available_points(level).saturating_add(gem_points),
+                        available,
                         facts.at_temple,
                     ) {
                         return refuse(refusal);

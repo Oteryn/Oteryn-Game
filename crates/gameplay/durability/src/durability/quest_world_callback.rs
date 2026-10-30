@@ -72,6 +72,18 @@ pub(super) async fn consume(
     if !pinned {
         return Ok(false);
     }
+    if let Some(minimum) = callback.minimum_level {
+        let level: Option<i64> = sqlx::query_scalar(
+            "SELECT level FROM game_character_progression_state \
+             WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(fence.character_id.as_bytes().as_slice())
+        .fetch_optional(&mut **tx)
+        .await?;
+        if level.is_none_or(|level| level < i64::from(minimum)) {
+            return Ok(false);
+        }
+    }
     if callback.offerings.is_empty() && callback.item_on_target.is_none() {
         return Ok(true);
     }

@@ -1,8 +1,11 @@
 use super::*;
 
-pub(super) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
+pub(crate) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> TestResult {
+    let monk = name.starts_with("monk-guidance");
     let target_swap = name == "fish-napping-key-target-swap";
-    let mut callback = callback(if target_swap {
+    let mut callback = callback(if monk {
+        "monk-guidance"
+    } else if target_swap {
         "fish-napping-key"
     } else {
         name
@@ -62,7 +65,7 @@ pub(super) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
             1,
             1,
             "runtime-scope-assignment:1",
-            2,
+            if monk { 4 } else { 2 },
             pin,
         )
         .map_err(debug)?;
@@ -143,7 +146,18 @@ pub(super) fn scenario(name: &str, trigger: Position, lever_fixture: bool) -> Te
         owner.admit_progression_session(&mut admitted).await;
         deps.initialize(&owner).await;
         owner.admit_quest_session(&admitted).await;
-        if callback.item_on_target.is_some()
+        if monk {
+            super::super::monk_shrines::exercise(
+                &mut owner,
+                &mut admitted,
+                &h,
+                &authority,
+                &world,
+                name.ends_with("full-backpack"),
+                name.ends_with("capacity"),
+            )
+            .await?;
+        } else if callback.item_on_target.is_some()
             || name == "outlaw-camp-door"
             || name == "travelling-trader-delivery"
         {

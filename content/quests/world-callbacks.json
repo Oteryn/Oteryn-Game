@@ -69,6 +69,46 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/fish-napping-key",
+      "quest": "oteryn:quest.the_thieves_guild_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 51394,
+        "appearance": null
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": {
+        "x": 32359,
+        "y": 32788,
+        "floor": -6
+      },
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
+          "minimum": 2,
+          "maximum": 2,
+          "set": 2
+        }
+      ],
+      "offerings": [],
+      "item_on_target": {
+        "item": "oteryn:item.tibia.i7934",
+        "count": 1,
+        "replacement": null,
+        "target_replacement": null
+      },
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/giant-smithhammer",
       "quest": "oteryn:quest.giant_smithhammer_quest",
       "trigger": "use",
@@ -104,6 +144,60 @@
       ]
     },
     {
+      "key": "oteryn:quest-callback/hellgate-bridge",
+      "quest": "oteryn:quest.hellgate_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 50027,
+        "appearance": 2772
+      },
+      "lever": [
+        2772,
+        2773
+      ],
+      "reversible": true,
+      "passages": [
+        {
+          "position": {
+            "x": 32627,
+            "y": 31699,
+            "floor": -10
+          },
+          "appearance": 622,
+          "replacement": 5770
+        },
+        {
+          "position": {
+            "x": 32628,
+            "y": 31699,
+            "floor": -10
+          },
+          "appearance": 622,
+          "replacement": 5770
+        },
+        {
+          "position": {
+            "x": 32629,
+            "y": 31699,
+            "floor": -10
+          },
+          "appearance": 622,
+          "replacement": 5770
+        }
+      ],
+      "teleport": null,
+      "storage": [],
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": null,
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/others/actions_hellgate_lever.lua:1-34",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_hellgate_lever.lua:1-34"
+      ]
+    },
+    {
       "key": "oteryn:quest-callback/liquid-black-shortcut",
       "quest": "oteryn:quest.liquid_black_quest",
       "trigger": "step_in",
@@ -135,6 +229,574 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/liquid_black/movements_shortcut.lua:1-23",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/liquid_black/movements_shortcut.lua:1-23"
+      ]
+    },
+    {
+      "key": "oteryn:quest-callback/monk-empathy",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32532,
+          "y": 31569,
+          "floor": -13
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/empathy",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/legacy",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 50,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 15000,
+      "monk_reward": {
+        "item_source_id": 50273,
+        "learn_spell": null,
+        "final_shrine": false
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/monk-eternity",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33842,
+          "y": 31622,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/eternity",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/serenity",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 275,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 500000,
+      "monk_reward": {
+        "item_source_id": null,
+        "learn_spell": "candidate:spell/focus_harmony",
+        "final_shrine": true
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/monk-guidance",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32454,
+          "y": 32292,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/guidance",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 6,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 300,
+      "monk_reward": {
+        "item_source_id": 50267,
+        "learn_spell": null,
+        "final_shrine": false
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/monk-harmony",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32966,
+          "y": 32649,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/harmony",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/empathy",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 70,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 30000,
+      "monk_reward": {
+        "item_source_id": 50274,
+        "learn_spell": null,
+        "final_shrine": false
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/monk-knowledge",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 33369,
+          "y": 31156,
+          "floor": -8
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/knowledge",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/power",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 110,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 75000,
+      "monk_reward": {
+        "item_source_id": null,
+        "learn_spell": "candidate:spell/forceful_uppercut",
+        "final_shrine": false
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/monk-legacy",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32610,
+          "y": 31634,
+          "floor": -7
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/legacy",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/respect",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 40,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 10000,
+      "monk_reward": {
+        "item_source_id": 50269,
+        "learn_spell": null,
+        "final_shrine": false
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/monk-power",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32890,
+          "y": 32352,
+          "floor": -15
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/power",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/harmony",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 100,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 60000,
+      "monk_reward": {
+        "item_source_id": 50272,
+        "learn_spell": null,
+        "final_shrine": false
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/monk-respect",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32410,
+          "y": 31272,
+          "floor": -3
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/respect",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/tranquility",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 30,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 5000,
+      "monk_reward": {
+        "item_source_id": null,
+        "learn_spell": "candidate:spell/mystic_repulse",
+        "final_shrine": false
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/monk-serenity",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32778,
+          "y": 31525,
+          "floor": -9
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/serenity",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/knowledge",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 150,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 150000,
+      "monk_reward": {
+        "item_source_id": 50268,
+        "learn_spell": null,
+        "final_shrine": false
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/monk-tranquility",
+      "quest": "oteryn:quest.the_way_of_the_monk_quest",
+      "trigger": "use",
+      "selector": {
+        "position": {
+          "x": 32323,
+          "y": 32380,
+          "floor": -6
+        },
+        "unique": null,
+        "action": null,
+        "appearance": 50242
+      },
+      "lever": null,
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/tranquility",
+          "minimum": 0,
+          "maximum": 0,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/guidance",
+          "minimum": 1,
+          "maximum": 1,
+          "set": 1
+        },
+        {
+          "track": "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "minimum_level": 20,
+      "offerings": [],
+      "return_on_failure": false,
+      "failure_message": "Visit the preceding shrine and reach the required level first.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+        "tibiawiki:1169052:The_Way_of_the_Monk_Quest",
+        "tibiawiki:1203780:The_Way_of_the_Monk_Quest/Spoiler"
+      ],
+      "experience": 2500,
+      "monk_reward": {
+        "item_source_id": 50271,
+        "learn_spell": null,
+        "final_shrine": false
+      }
+    },
+    {
+      "key": "oteryn:quest-callback/outlaw-camp-door",
+      "quest": "oteryn:quest.the_travelling_trader_quest",
+      "trigger": "use",
+      "selector": {
+        "position": null,
+        "unique": null,
+        "action": 1108,
+        "appearance": 1642
+      },
+      "lever": [
+        1642,
+        1643
+      ],
+      "reversible": false,
+      "passages": [],
+      "teleport": null,
+      "storage": [
+        {
+          "track": "oteryn:quest-progress/quest/u8_1/the_travelling_trader/mission02",
+          "minimum": 3,
+          "maximum": 3,
+          "set": 3
+        }
+      ],
+      "offerings": [],
+      "item_on_target": null,
+      "return_on_failure": false,
+      "failure_message": "The door seems to be sealed against unwanted intruders.",
+      "sources": [
+        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_travelling_trader/actions_outlaw_camp_door.lua:1-15",
+        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_travelling_trader/actions_outlaw_camp_door.lua:1-15"
       ]
     },
     {
@@ -206,134 +868,6 @@
       "sources": [
         "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_paradox_tower/movement_sacrifice_skulls.lua:1-41",
         "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_paradox_tower/movement_sacrifice_skulls.lua:1-41"
-      ]
-    },
-    {
-      "key": "oteryn:quest-callback/hellgate-bridge",
-      "quest": "oteryn:quest.hellgate_quest",
-      "trigger": "use",
-      "selector": {
-        "position": null,
-        "unique": null,
-        "action": 50027,
-        "appearance": 2772
-      },
-      "lever": [
-        2772,
-        2773
-      ],
-      "reversible": true,
-      "passages": [
-        {
-          "position": {
-            "x": 32627,
-            "y": 31699,
-            "floor": -10
-          },
-          "appearance": 622,
-          "replacement": 5770
-        },
-        {
-          "position": {
-            "x": 32628,
-            "y": 31699,
-            "floor": -10
-          },
-          "appearance": 622,
-          "replacement": 5770
-        },
-        {
-          "position": {
-            "x": 32629,
-            "y": 31699,
-            "floor": -10
-          },
-          "appearance": 622,
-          "replacement": 5770
-        }
-      ],
-      "teleport": null,
-      "storage": [],
-      "offerings": [],
-      "return_on_failure": false,
-      "failure_message": null,
-      "sources": [
-        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/others/actions_hellgate_lever.lua:1-34",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/others/actions_hellgate_lever.lua:1-34"
-      ]
-    },
-    {
-      "key": "oteryn:quest-callback/outlaw-camp-door",
-      "quest": "oteryn:quest.the_travelling_trader_quest",
-      "trigger": "use",
-      "selector": {
-        "position": null,
-        "unique": null,
-        "action": 1108,
-        "appearance": 1642
-      },
-      "lever": [
-        1642,
-        1643
-      ],
-      "reversible": false,
-      "passages": [],
-      "teleport": null,
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_1/the_travelling_trader/mission02",
-          "minimum": 3,
-          "maximum": 3,
-          "set": 3
-        }
-      ],
-      "offerings": [],
-      "item_on_target": null,
-      "return_on_failure": false,
-      "failure_message": "The door seems to be sealed against unwanted intruders.",
-      "sources": [
-        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_travelling_trader/actions_outlaw_camp_door.lua:1-15",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_travelling_trader/actions_outlaw_camp_door.lua:1-15"
-      ]
-    },
-    {
-      "key": "oteryn:quest-callback/fish-napping-key",
-      "quest": "oteryn:quest.the_thieves_guild_quest",
-      "trigger": "use",
-      "selector": {
-        "position": null,
-        "unique": null,
-        "action": 51394,
-        "appearance": null
-      },
-      "lever": null,
-      "reversible": false,
-      "passages": [],
-      "teleport": {
-        "x": 32359,
-        "y": 32788,
-        "floor": -6
-      },
-      "storage": [
-        {
-          "track": "oteryn:quest-progress/quest/u8_2/the_thieves_guild_quest/mission06",
-          "minimum": 2,
-          "maximum": 2,
-          "set": 2
-        }
-      ],
-      "offerings": [],
-      "item_on_target": {
-        "item": "oteryn:item.tibia.i7934",
-        "count": 1,
-        "replacement": null,
-        "target_replacement": null
-      },
-      "return_on_failure": false,
-      "failure_message": null,
-      "sources": [
-        "canary:47dfd51f45280a59a1d3e50ba7edd573d7234446:data-otservbr-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18",
-        "crystal:201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/quests/the_thieves_guild_quest/actions_fish_napping_key.lua:1-18"
       ]
     },
     {
