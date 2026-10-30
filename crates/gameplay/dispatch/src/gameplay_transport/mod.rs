@@ -1138,6 +1138,21 @@ fn achievement_earned(
     )
 }
 
+/// Crystal `src/creatures/players/achievement/player_achievement.cpp:27-42` sends this
+/// advance text only for newly unlocked achievements (line 38 has no name quotes).
+fn achievement_notification_text(name: &str) -> String {
+    format!("Congratulations! You earned the achievement {name}.")
+}
+
+fn achievement_notification(notice: &connection::EarnedNotice) -> Option<String> {
+    match notice {
+        connection::EarnedNotice::Earned(earned) => {
+            Some(achievement_notification_text(&earned.name))
+        }
+        connection::EarnedNotice::NoneEarned | connection::EarnedNotice::Unknown => None,
+    }
+}
+
 /// ACH-NOTIFY-2: the notice of a `USE`'s grant. A `Granted` grant whose notice cannot be derived
 /// (a fact key the catalogue lacks) and an `Unknown` read are both `Unknown`, never
 /// `NoneEarned`, and each is one operator defect event through `log`.
