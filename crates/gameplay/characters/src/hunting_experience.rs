@@ -18,7 +18,7 @@ pub fn hunting_experience(
     premium: bool,
     level: u32,
 ) -> Result<i64, InvalidHuntingExperience> {
-    if !matches!(xp_boost_percent, 0 | 50)
+    if !matches!(xp_boost_percent, 0 | 10 | 20 | 25 | 50)
         || share < 0
         || !(0..=100).contains(&prey_percent)
         || !(0..=2520).contains(&stamina_minutes)

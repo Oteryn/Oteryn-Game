@@ -1,6 +1,6 @@
 {
-  "schema": "OTERYN_DAILY_REWARDS/v1",
-  "revision": "oteryn:daily-rewards.r1",
+  "schema": "OTERYN_DAILY_REWARDS/v2",
+  "revision": "oteryn:daily-rewards.r2",
   "entry_shrine": {
     "placement": "oteryn:placement/daily-reward-shrine",
     "coordinate_frame": "oteryn:entry.frame",
@@ -16,54 +16,576 @@
     25802,
     25803
   ],
-  "potion_source_ids": [
-    266
-  ],
-  "items": [
+  "days": [
     {
-      "key": "oteryn:item.tibia.i25719",
-      "charges": 100,
-      "kind": "converter"
+      "day": 1,
+      "free": {
+        "cosmetic_tokens": 2,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 4,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
     },
     {
-      "key": "oteryn:item.tibia.i28540",
-      "charges": 50,
-      "kind": "training"
+      "day": 2,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 2,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
     },
     {
-      "key": "oteryn:item.tibia.i28541",
-      "charges": 50,
-      "kind": "training"
+      "day": 3,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
     },
     {
-      "key": "oteryn:item.tibia.i28542",
-      "charges": 50,
-      "kind": "training"
+      "day": 4,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 10,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 25,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      }
     },
     {
-      "key": "oteryn:item.tibia.i50292",
-      "charges": 50,
-      "kind": "training"
+      "day": 5,
+      "free": {
+        "cosmetic_tokens": 3,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 6,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
     },
     {
-      "key": "oteryn:item.tibia.i28543",
-      "charges": 50,
-      "kind": "training"
+      "day": 6,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 2,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
     },
     {
-      "key": "oteryn:item.tibia.i28545",
-      "charges": 50,
-      "kind": "training"
+      "day": 7,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 20,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 50,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      }
     },
     {
-      "key": "oteryn:item.tibia.i28544",
-      "charges": 50,
-      "kind": "training"
+      "day": 8,
+      "free": {
+        "cosmetic_tokens": 2,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 4,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
     },
     {
-      "key": "oteryn:item.tibia.i44064",
-      "charges": 50,
-      "kind": "training"
+      "day": 9,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 2,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 10,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 11,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 10,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 25,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 12,
+      "free": {
+        "cosmetic_tokens": 3,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 6,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 13,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 2,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 14,
+      "free": {
+        "cosmetic_tokens": 2,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 20,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 4,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 50,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 15,
+      "free": {
+        "cosmetic_tokens": 2,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 4,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 16,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 2,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 17,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 18,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 10,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 25,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 19,
+      "free": {
+        "cosmetic_tokens": 3,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 6,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 20,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 2,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 21,
+      "free": {
+        "cosmetic_tokens": 3,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 20,
+        "xp_boost_minutes": 45,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 6,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 50,
+        "xp_boost_minutes": 45,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 22,
+      "free": {
+        "cosmetic_tokens": 2,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 4,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 23,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 2,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 24,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 25,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 10,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 25,
+        "xp_boost_minutes": 30,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 26,
+      "free": {
+        "cosmetic_tokens": 3,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 6,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 27,
+      "free": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 0,
+        "prey_wildcards": 2,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 28,
+      "free": {
+        "cosmetic_tokens": 4,
+        "prey_wildcards": 1,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 20,
+        "xp_boost_minutes": 60,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 8,
+        "prey_wildcards": 2,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 50,
+        "xp_boost_minutes": 60,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 29,
+      "free": {
+        "cosmetic_tokens": 2,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 4,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 0,
+        "xp_boost_percent": 0,
+        "xp_boost_minutes": 0,
+        "bounty_reroll_tokens": 1
+      }
+    },
+    {
+      "day": 30,
+      "free": {
+        "cosmetic_tokens": 5,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 20,
+        "xp_boost_minutes": 60,
+        "bounty_reroll_tokens": 1
+      },
+      "premium": {
+        "cosmetic_tokens": 10,
+        "prey_wildcards": 0,
+        "temple_teleport_scrolls": 1,
+        "xp_boost_percent": 50,
+        "xp_boost_minutes": 60,
+        "bounty_reroll_tokens": 1
+      }
     }
   ]
 }

@@ -1975,6 +1975,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let Some(owner) = sessions.get_mut(&contributor.session) else {
                     continue;
                 };
+                use sha2::{Digest, Sha256};
+                let roll = Sha256::new()
+                    .chain_update(b"oteryn:daily-proficiency:v2\0")
+                    .chain_update(entry.facts.occurrence)
+                    .chain_update(contributor.session.as_bytes())
+                    .finalize();
+                let roll = u16::from_be_bytes([roll[0], roll[1]]) % 100;
+                let streak = self
+                    .states
+                    .resting_areas
+                    .streak(contributor.session, contributor.actor)
+                    .unwrap_or(0);
+                let points = daily_proficiency_points(points, streak, roll as u8);
                 if credit_proficiency(
                     owner,
                     entry.facts.occurrence,
@@ -1994,6 +2007,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         for (actor, session) in checkpoints {
             let _ = self.save_weapon_proficiency(actor, session, false).await;
         }
+    }
+}
+
+/// The death/session binding makes retrying a kill unable to reroll the bonus.
+fn daily_proficiency_points(points: Option<u32>, streak: u32, roll: u8) -> Option<u32> {
+    let points = points?;
+    if roll < oteryn_gameplay_progression::daily_reward::proficiency_bonus_chance(streak) {
+        points.checked_mul(2)
+    } else {
+        Some(points)
     }
 }
 

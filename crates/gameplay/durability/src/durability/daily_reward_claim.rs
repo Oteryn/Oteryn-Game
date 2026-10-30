@@ -182,11 +182,23 @@ pub(super) async fn write_claim(
                 .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
                 .bind(i16::from(advance.next.lane_day)).bind(i32::try_from(advance.next.streak).map_err(|_| DurabilityError::InvalidStoredState)?)
                 .bind(epoch.to_string()).bind(day).execute(&mut **tx).await?;
-    sqlx::query("INSERT INTO public.game_character_daily_reward_claims(character_id,world_id,reset_epoch,reset_day,transaction_id,request_binding,lane_day,streak_before,streak_after,jokers_spent,premium) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric(20,0),$4,encode($5,'hex')::uuid,$6,$7,$8,$9,$10,$11)")
+    let reward =
+        oteryn_gameplay_progression::daily_reward::reward_for_day(receipt.lane_day, premium)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+    let specification = serde_json::to_string(&[
+        reward.cosmetic_tokens,
+        reward.prey_wildcards,
+        reward.temple_teleport_scrolls,
+        reward.xp_boost_percent,
+        reward.xp_boost_minutes,
+        reward.bounty_reroll_tokens,
+    ])
+    .map_err(|_| DurabilityError::InvalidStoredState)?;
+    sqlx::query("INSERT INTO public.game_character_daily_reward_claims(character_id,world_id,reset_epoch,reset_day,transaction_id,request_binding,lane_day,streak_before,streak_after,jokers_spent,premium,reward_version,reward_spec) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric(20,0),$4,encode($5,'hex')::uuid,$6,$7,$8,$9,$10,$11,2,$12::jsonb)")
                 .bind(fence.character_id.as_bytes().as_slice()).bind(world_id.as_bytes().as_slice())
                 .bind(epoch.to_string()).bind(day).bind(receipt.transaction_id.as_slice()).bind(receipt.request_binding.as_slice())
                 .bind(i16::from(receipt.lane_day)).bind(i32::try_from(receipt.streak_before).map_err(|_| DurabilityError::InvalidStoredState)?).bind(i32::try_from(receipt.streak_after).map_err(|_| DurabilityError::InvalidStoredState)?)
-                .bind(i16::from(receipt.jokers_spent)).bind(premium).execute(&mut **tx).await?;
+                .bind(i16::from(receipt.jokers_spent)).bind(premium).bind(specification).execute(&mut **tx).await?;
     Ok(DailyRewardClaimOutcome::Committed(receipt))
 }
 

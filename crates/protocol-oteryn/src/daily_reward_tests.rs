@@ -11,39 +11,48 @@ fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std:
         assert!(matches.next().is_none());
         Ok(entry)
     };
-    assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&CAPABILITY_DAILY_REWARD_V1));
-    assert_eq!(
-        crate::validate_acceptance_value(1, 1, 1, &[CAPABILITY_DAILY_REWARD_V1]),
-        Ok(())
-    );
-    let capability = only("capabilities", CAPABILITY_DAILY_REWARD_V1)?;
-    assert_eq!(capability["name"], "DAILY_REWARD_V1");
-    let expected = [
-        32, // DAILY_REWARD_CLAIM
-        33, // DAILY_REWARD_QUERY
-    ];
-    assert_eq!(capability["command_types"], serde_json::json!(expected));
-    assert_eq!(capability["state_domains"], serde_json::json!([24]));
-    assert_eq!(capability["offered"], false);
-    for (id, limit) in [
+    // V1 is retained registry history; v2 must not rewrite its contract.
+    for (id, name, commands, domains, claim_limit) in [
         (
-            COMMAND_TYPE_DAILY_REWARD_CLAIM,
+            CAPABILITY_DAILY_REWARD_V1,
+            "DAILY_REWARD_V1",
+            &[32, 33][..],
+            &[24][..],
+            10_500,
+        ),
+        (
+            CAPABILITY_DAILY_REWARD_V2,
+            "DAILY_REWARD_V2",
+            &[
+                COMMAND_TYPE_DAILY_REWARD_CLAIM,
+                COMMAND_TYPE_DAILY_REWARD_QUERY,
+            ][..],
+            &[][..],
             MAX_DAILY_REWARD_CLAIM_BYTES,
         ),
-        (COMMAND_TYPE_DAILY_REWARD_QUERY, 0),
     ] {
-        let entry = only("command_types", id)?;
-        assert_eq!(entry["capability"], CAPABILITY_DAILY_REWARD_V1);
-        assert_eq!(entry["max_payload_bytes"], limit);
+        assert!(crate::REGISTERED_CAPABILITY_IDS_V1.contains(&id));
+        assert_eq!(crate::validate_acceptance_value(1, 1, 1, &[id]), Ok(()));
+        let capability = only("capabilities", id)?;
+        assert_eq!(capability["name"], name);
+        assert_eq!(capability["command_types"], serde_json::json!(commands));
+        assert_eq!(capability["state_domains"], serde_json::json!(domains));
+        assert_eq!(capability["offered"], false);
+        for (command, limit, result_limit) in [
+            (commands[0], claim_limit, MAX_DAILY_REWARD_RESULT_BYTES),
+            (commands[1], 0, MAX_DAILY_REWARD_VIEW_BYTES),
+        ] {
+            let entry = only("command_types", command)?;
+            assert_eq!(entry["capability"], id);
+            assert_eq!(entry["max_payload_bytes"], limit);
+            assert_eq!(entry["max_result_payload_bytes"], result_limit);
+        }
+        assert!(crate::capability_tables::GATED.iter().any(
+            |(candidate, registered_commands, registered_domains)| *candidate == id
+                && *registered_commands == commands
+                && *registered_domains == domains
+        ));
     }
-    assert_eq!(
-        only("command_types", COMMAND_TYPE_DAILY_REWARD_CLAIM)?["max_result_payload_bytes"],
-        MAX_DAILY_REWARD_RESULT_BYTES
-    );
-    assert_eq!(
-        only("command_types", COMMAND_TYPE_DAILY_REWARD_QUERY)?["max_result_payload_bytes"],
-        MAX_DAILY_REWARD_VIEW_BYTES
-    );
     let domain = only("state_domains", STATE_DOMAIN_DAILY_REWARD)?;
     assert_eq!(domain["capability"], CAPABILITY_DAILY_REWARD_V1);
     for kind in ["delta_types", "snapshot_types"] {
@@ -56,12 +65,5 @@ fn daily_reward_registry_uses_only_cp_allocated_ids() -> Result<(), Box<dyn std:
             "docs/contracts/protocol-oteryn/v1/daily_reward_v1.proto#DailyRewardWallV1"
         );
     }
-    assert!(
-        crate::capability_tables::GATED
-            .iter()
-            .any(|(id, commands, domains)| *id == CAPABILITY_DAILY_REWARD_V1
-                && *commands == [32, 33]
-                && *domains == [24])
-    );
     Ok(())
 }
