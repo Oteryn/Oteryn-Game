@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -275,9 +276,11 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     # the live map viewport and LOS bound the cast, rather than Crystal's five tiles.
     catalog_path = spell_import.PROVIDER_DESTINATIONS["catalog"]
     catalog = json.loads(generated[catalog_path])
-    destroy = next(entry["bundle"]["spell"] for entry in catalog["bundles"]
-                   if entry["bundle"]["spell"]["identity"]["key"] == "candidate:spell/rune/destroy_field_rune")
-    del destroy["targeting"]["range_tiles"]
+    spec = importlib.util.spec_from_file_location(
+        "build_executable_catalog", root / "tools/content-schema/spell-authoring/build_executable_catalog.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_owner_decisions(catalog)
     generated[catalog_path] = spell_import.canonical_bytes(catalog)
     selection_path = spell_import.PROVIDER_DESTINATIONS["source_selection"]
     selection = json.loads(generated[selection_path])

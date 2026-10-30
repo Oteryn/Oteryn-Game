@@ -75,11 +75,20 @@ def build_selection(catalog, catalog_digest, sources):
 def apply_owner_decisions(catalog):
     # PKG1R2, owner 2026-10-30; Global revs 1189762 / 1182654.
     # Keep donor provenance, with the accepted viewport/LOS rule in compiler input.
-    spell = next(entry["bundle"]["spell"] for entry in catalog["bundles"]
+    entry = next(entry for entry in catalog["bundles"]
                  if entry["bundle"]["spell"]["identity"]["key"] == "candidate:spell/rune/destroy_field_rune")
+    spell = entry["bundle"]["spell"]
     if spell["targeting"].get("range_tiles") not in (None, 5):
         raise ValueError("unexpected Destroy Field donor range")
     spell["targeting"].pop("range_tiles", None)
+    resolution = {
+        "destination": "/spell/spell/targeting/range_tiles", "kind": "field",
+        "source_field": "range", "source_file": "data/scripts/runes/destroy_field_rune.lua",
+        "source_index": 0, "source_line": 41, "status": "resolved_native_behavior",
+        "resolution": "owner 2026-10-30 PKG1R2: viewport and line of sight replace the donor five-tile range; Global revs 1189762 / 1182654",
+    }
+    if resolution not in entry["manifest"]["entries"]:
+        entry["manifest"]["entries"].append(resolution)
     return catalog
 
 
