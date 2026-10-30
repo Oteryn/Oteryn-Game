@@ -212,9 +212,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             };
-            // Harvest must use the audited item mint owner. Never transform and silently lose
-            // the promised yield while that slice remains unqualified.
-            if plan.binding.yield_item.is_some() {
+            let yield_definition = plan.binding.yield_item.and_then(|item| {
+                index
+                    .definition_ref(
+                        "Item",
+                        &format!("oteryn:item.tibia.i{item}"),
+                        &target.revision_ref,
+                    )
+                    .map(|_| TypedDefinitionRef {
+                        family: "Item".into(),
+                        production_key: format!("oteryn:item.tibia.i{item}"),
+                        revision_ref: target.revision_ref.clone(),
+                    })
+            });
+            if plan.binding.yield_item.is_some() && yield_definition.is_none() {
                 return Ok(Some(outcome(UseDisposition::NothingToUse)));
             }
             for state in std::iter::once(plan.binding.transformed)
@@ -238,6 +249,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_revision: i64::try_from(facts.object_revision(key)).map_err(|_| ())?,
                 before: state,
                 after: plan.binding.transformed,
+                yield_definition,
                 decay: plan
                     .binding
                     .decay

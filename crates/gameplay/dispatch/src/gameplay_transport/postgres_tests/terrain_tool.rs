@@ -12,32 +12,54 @@ use oteryn_protocol_oteryn::world_object::{
 
 #[test]
 fn terrain_tool_wire_durable_replay_and_deadline_revert() -> TestResult {
-    run_case("oteryn:item.tibia.i3457", 867, 868)
+    run_case("oteryn:item.tibia.i3457", 867, 868, None)
 }
 
 #[test]
 fn m08_machete_cuts_jungle_grass_through_wire_and_recovers_regrowth() -> TestResult {
-    run_case("oteryn:item.tibia.i3308", 3696, 3695)
+    run_case("oteryn:item.tibia.i3308", 3696, 3695, None)
 }
 
 #[test]
 fn m08_machete_cuts_grass_through_wire_and_recovers_regrowth() -> TestResult {
-    run_case("oteryn:item.tibia.i3308", 3702, 3701)
+    run_case("oteryn:item.tibia.i3308", 3702, 3701, None)
 }
 
-fn run_case(tool: &'static str, before: u16, after: u16) -> TestResult {
+#[test]
+fn m08b_scythe_harvests_wheat_through_the_production_route() -> TestResult {
+    run_case("oteryn:item.tibia.i3453", 3653, 3651, Some(3605))
+}
+
+#[test]
+fn m08b_sickle_harvests_sugar_cane_through_the_production_route() -> TestResult {
+    run_case("oteryn:item.tibia.i3293", 5463, 5462, Some(5466))
+}
+
+#[test]
+fn m08b_crowbar_breaks_and_recovers_a_canopic_jar_through_the_production_route() -> TestResult {
+    run_case("oteryn:item.tibia.i3304", 4995, 4996, None)
+}
+
+#[test]
+fn m08b_pick_opens_terrain_through_the_production_route() -> TestResult {
+    run_case("oteryn:item.tibia.i3456", 867, 868, None)
+}
+
+fn run_case(tool: &'static str, before: u16, after: u16, yield_item: Option<u16>) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
+        eprintln!("M08B_PG_CASE_SKIPPED_NO_ADMIN tool={tool} target={before}");
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(move || scenario(tool, before, after).map_err(|e| e.to_string()))?
+        .spawn(move || scenario(tool, before, after, yield_item).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "terrain tool e2e panic")??;
+    eprintln!("M08B_PG_CASE_EXECUTED tool={tool} target={before}");
     Ok(())
 }
 
-fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
+fn scenario(tool: &str, before: u16, after: u16, yield_item: Option<u16>) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "terrain_tool", true, false).await?;
@@ -158,10 +180,12 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.identity().server_artifact_digest().as_slice()).bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice()).execute(&harness.pool).await?;
-        super::item_look::seed_main_backpack(
-            &harness,
-            &[(shovel, 1), ("oteryn:item.tibia.i3577", 1)],
-        )
+        let yield_key = yield_item.map(|item| format!("oteryn:item.tibia.i{item}"));
+        let mut inventory = vec![(shovel, 1), ("oteryn:item.tibia.i3577", 1)];
+        if let Some(key) = yield_key.as_deref() {
+            inventory.push((key, 1));
+        }
+        super::item_look::seed_main_backpack(&harness, &inventory)
         .await?;
         let mut admitted = deps.admitted;
         admitted.runtime_actor = Some(deps.actor);
@@ -198,6 +222,17 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
                 .await
                 .map_err(|e| format!("initial use: {e}"))?;
         assert_eq!(result, UseDisposition::Committed);
+        if let Some(key) = yield_key {
+            assert_eq!(
+                sqlx::query_scalar::<_, i64>(
+                    "SELECT quantity FROM game_item_instances WHERE definition_production_key=$1"
+                )
+                .bind(key)
+                .fetch_one(&harness.pool)
+                .await?,
+                2
+            );
+        }
         let state: (i64,i64,bool) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms > floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
         assert_eq!(state, (i64::from(after), 1, true));
         let key = crate::map::view::placement_key(target_pos, 1).ok_or("key")?;
@@ -348,6 +383,7 @@ fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
             expected_revision: 2,
             before: u32::from(before),
             after: u32::from(after),
+            yield_definition: None,
             decay: vec![(
                 u32::from(before),
                 if before == 867 { 600_000 } else { 300_000 },

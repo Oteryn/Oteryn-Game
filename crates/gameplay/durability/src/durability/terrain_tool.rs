@@ -4,6 +4,7 @@ use super::character_authority::ReconciledCharacterAuthority;
 use super::character_equipment::assert_current_equipment_in_transaction;
 use super::db::begin_type2_transaction;
 use super::item_decay_retire::{CorpseDecayFence, fence_is_live};
+use super::item_mint::TypedDefinitionRef;
 use super::item_transfer::{CurrentCharacterItemFence, scope_of};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::spell_owner_commit::SpellLanePermit;
@@ -21,6 +22,9 @@ pub struct TerrainMutation {
     pub expected_revision: i64,
     pub before: u32,
     pub after: u32,
+    /// Optional harvest output. Harvests merge one item into a matching carried stack in the
+    /// same transaction as the terrain compare-and-swap.
+    pub yield_definition: Option<TypedDefinitionRef>,
     /// Successive states and delays from the preceding durable deadline, milliseconds.
     pub decay: Vec<(u32, i64)>,
 }
@@ -96,6 +100,11 @@ impl DurabilityRoot {
                 .bind(scope.map_revision).bind(scope.content_generation.as_slice()).bind(scope.reset_epoch)
                 .bind(mutation.expected_revision).bind(i64::from(mutation.before)).bind(i64::from(mutation.after))
                 .bind(states).bind(delays).fetch_one(&mut **tx).await?;
+            if applied && let Some(yield_definition) = mutation.yield_definition {
+                let granted = sqlx::query("UPDATE game_item_instances i SET quantity=i.quantity+1,state_revision=i.state_revision+1,last_transaction_id=encode($1,'hex')::uuid FROM game_item_container_entries e WHERE e.item_instance_id=i.item_instance_id AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND i.definition_family=$4 AND i.definition_production_key=$5 AND i.definition_revision_ref=$6 AND i.quantity<100")
+                    .bind(fence.game_session_id.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).bind(&yield_definition.family).bind(&yield_definition.production_key).bind(&yield_definition.revision_ref).execute(&mut **tx).await?;
+                if granted.rows_affected() != 1 { return Ok(Some(UseDisposition::Rejected)); }
+            }
             if applied { tx.commit(deadline).await?; }
             Ok(Some(if applied { UseDisposition::Committed } else { UseDisposition::StaleState }))
         })).await

@@ -192,6 +192,34 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
                 },
             ],
         },
+        TerrainToolBinding {
+            tool: TerrainTool::Sickle,
+            target: 5463,
+            required_action: None,
+            transformed: 5462,
+            yield_item: Some(5466),
+            decay: vec![
+                DecayStep {
+                    state: 5470,
+                    after: Duration::from_secs(240),
+                },
+                DecayStep {
+                    state: 5465,
+                    after: Duration::from_secs(240),
+                },
+            ],
+        },
+        TerrainToolBinding {
+            tool: TerrainTool::Crowbar,
+            target: 4995,
+            required_action: None,
+            transformed: 4996,
+            yield_item: None,
+            decay: vec![DecayStep {
+                state: 4995,
+                after: Duration::from_secs(300),
+            }],
+        },
     ];
     // Global's loose stone piles all open to their immediately following appearance. Keep this
     // family data-driven so the production USE_WITH path applies the same custody, CAS, receipt,
@@ -247,16 +275,6 @@ mod tests {
             yield_item: None,
             decay: Vec::new(),
         });
-        assert!(
-            dispatch(
-                &crystal_core_bindings(),
-                "oteryn:item.tibia.i3293",
-                5463,
-                None,
-                0
-            )
-            .is_none()
-        );
         let cases = [
             ("oteryn:item.tibia.i3457", 593, 594),
             ("oteryn:item.tibia.i3457", 606, 607),
@@ -272,6 +290,8 @@ mod tests {
             ("oteryn:item.tibia.i9594", 17153, 17151),
             ("oteryn:item.tibia.i3308", 9001, 9002),
             ("oteryn:item.tibia.i3453", 3653, 3651),
+            ("oteryn:item.tibia.i3293", 5463, 5462),
+            ("oteryn:item.tibia.i3304", 4995, 4996),
             ("oteryn:item.tibia.i3293", 9020, 9021),
             ("oteryn:item.tibia.i3304", 9010, 9011),
             ("oteryn:item.tibia.i3457", 21341, 21342),
