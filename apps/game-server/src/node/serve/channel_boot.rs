@@ -16,6 +16,7 @@ pub(super) struct PreparedChannel {
     pub(super) qualified_room: crate::content::QualifiedNativeEntryRoom,
     pub(super) movement_cells: crate::content::NativeEntryMovementCells,
     pub(super) bundle: Option<crate::map::boot::BundleWorld>,
+    pub(super) daily_world_change: oteryn_gameplay_world_change::daily::DailyWorldChange,
     pub(super) combat_room: Option<crate::content::QualifiedNativeEntryRoom>,
     pub(super) spells: crate::spell::SpellBook,
     pub(super) imported_charms: crate::content::charm_source::CanonicalCharmCatalogue,
@@ -45,6 +46,18 @@ pub(super) async fn prepare_channel(
         signalled,
     } = boot;
     let config = &material.config;
+    // W05b: the committed reset epoch owns one stable daily roll. Deriving its draw from that
+    // durable epoch keeps restart recovery on the same day without a second state owner.
+    let daily_world_change = oteryn_gameplay_world_change::daily::DailyWorldChange::roll(
+        reset_epoch,
+        (reset_epoch % 100) as u8,
+    );
+    event(&format!(
+        "event=daily_world_change reset_epoch={} thawing={} placed_items={}",
+        daily_world_change.reset_epoch(),
+        daily_world_change.thawing_active(),
+        daily_world_change.placed_items().count()
+    ));
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
     let generation = assignment.ownership_generation;
     let fact = proof.fact();
@@ -247,6 +260,7 @@ pub(super) async fn prepare_channel(
         qualified_room,
         movement_cells,
         bundle,
+        daily_world_change,
         combat_room,
         spells,
         imported_charms,

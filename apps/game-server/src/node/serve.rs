@@ -2604,6 +2604,7 @@ async fn boot_and_serve(
         qualified_room,
         movement_cells,
         bundle,
+        daily_world_change: _daily_world_change,
         combat_room,
         spells,
         imported_charms,
