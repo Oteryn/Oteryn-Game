@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0195-weapon-proficiency",
+    "kind": "handlers",
+    "id": "0195-weapon-proficiency-unsupported",
+    "status": "unsupported",
+    "reason": "The perk selection codec exists in protocol-oteryn; no native proficiency panel is wired yet.",
+    "commands": [
+      378
+    ],
+    "not_applicable": {
+      "state": "Proficiency tracks are not projected into client state yet.",
+      "protocol": "The codec lives in protocol-oteryn.",
+      "view": "No native proficiency panel is wired yet.",
+      "input": "No native perk selection input is wired yet.",
+      "settings": "No proficiency setting exists."
+    }
+  }
+]

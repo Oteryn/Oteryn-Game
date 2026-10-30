@@ -1,0 +1,11 @@
+{
+  "id": 195,
+  "name": "WEAPON_PROFICIENCY_V1",
+  "owner_decision": "P08",
+  "owner": "Game Character proficiency owner",
+  "requires": [4],
+  "command_types": [378],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle Worlds with the promoted proficiency catalogue and the fenced Character proficiency writer."
+}
