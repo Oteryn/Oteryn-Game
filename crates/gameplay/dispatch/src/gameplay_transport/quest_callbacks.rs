@@ -5,6 +5,7 @@ use super::{
     connection::{UseCommand, UseOutcome},
 };
 mod execute;
+mod rewards;
 
 use super::paced_movement::underwater_drown::underwater;
 use crate::durability::{
@@ -83,13 +84,31 @@ fn matches(map: &BundleMap, callback: &Callback, key: u64) -> bool {
         && (selector.position.is_none()
             || selector.unique.is_some()
             || selector.action.is_some()
+            || selector.appearance.is_some()
             || ordinal == 0)
-        && map.facts.quest_callback_matches(
-            key,
-            selector.unique,
-            selector.action,
-            selector.appearance,
-        )
+        && map
+            .facts
+            .quest_callback_matches(key, selector.unique, selector.action, None)
+        && (map
+            .facts
+            .quest_callback_matches(key, None, None, selector.appearance)
+            || (selector.position.is_some()
+                && selector.appearance.is_some_and(|appearance| {
+                    // Plain placements are omitted from the sparse attribute index. Resolve
+                    // their palette through the selected base stack, never a client item id.
+                    map.overlay
+                        .base()
+                        .tile(pos.x, pos.y, pos.floor)
+                        .and_then(|tile| {
+                            tile.ids()
+                                .iter()
+                                .zip(tile.depths())
+                                .filter(|(_, depth)| **depth == 0)
+                                .nth(usize::from(ordinal))
+                        })
+                        .and_then(|(id, _)| map.facts.base_entry(pos, ordinal, *id))
+                        .is_some_and(|facts| facts.appearance_id == appearance)
+                })))
 }
 
 fn step_command(
@@ -327,7 +346,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(id) = CommandId::new(command.command_id) else {
                 return UseDisposition::Rejected;
             };
-            self.execute_quest_callback(
+            let result = self.execute_quest_callback(
                 &permit,
                 &mut runtime,
                 &mut states,
@@ -341,7 +360,23 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 slot.as_mut(),
             )
-            .await
+            .await;
+            drop(states);
+            drop(runtime);
+            drop(slot);
+            if matches!(result, UseDisposition::Committed | UseDisposition::Rejected)
+                && let Some(fence) = fence
+                && let Some(delivery) = self.deliver_monk_reward(actor, command, callback, fence).await
+            {
+                if delivery == UseDisposition::Committed { return delivery; }
+                if result == UseDisposition::Committed {
+                    self.states.chat.push_quest_feedback(command.game_session_id,
+                        "Your shrine reward is earned. Make room and capacity in your backpack and use this shrine again to collect it.");
+                    return result;
+                }
+                return delivery;
+            }
+            result
         })
         .await
         .unwrap_or(UseDisposition::Rejected);

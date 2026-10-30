@@ -306,6 +306,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 else {
                     continue;
                 };
+                // The drawn primary auto-attack receives one additive shrine multiplier
+                // before any target defence or armor. Ranged attacks are not Monk melee.
+                if selected.weapon.ranged.is_none()
+                    && damage >= 0
+                    && super::monk_shrines::is_monk(selected.character_facts.vocation)
+                {
+                    let serene = states
+                        .get(&runtime, entry.actor, entry.session)
+                        .and_then(|state| state.monk.as_ref())
+                        .is_some_and(|monk| monk.serene());
+                    let Some(boosted) =
+                        oteryn_gameplay_combat_rules::monk_shrines::MonkShrineBonuses::checked_in()
+                            .and_then(|tuning| {
+                                tuning.attack(
+                                    damage,
+                                    super::monk_shrines::counts(
+                                        &self.states.quest_sessions,
+                                        entry.session,
+                                    )
+                                    .1,
+                                    super::monk_shrines::is_monk(selected.character_facts.vocation),
+                                    serene,
+                                )
+                            })
+                    else {
+                        continue;
+                    };
+                    damage = boosted;
+                }
                 if damage >= 0
                     && let Some(state) = states.get(&runtime, entry.actor, entry.session)
                 {
@@ -889,6 +918,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             None
         };
         let mut vitals = PlayerBiteVitals {
+            quest_sessions: Some(&self.states.quest_sessions),
             charm: None,
             states: &mut *states,
             attack: &mut *attack,
@@ -933,6 +963,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 apply_protection(mitigated, sum).unwrap_or(mitigated)
             }
             _ => mitigated,
+        };
+        let magnitude = if hit.weapon.ranged.is_none() {
+            let Some(state) = states.get(runtime, hit.target, target_session) else {
+                return;
+            };
+            let Some(reduced) = super::monk_shrines::taken(
+                &self.states.quest_sessions,
+                target_session,
+                state.character_facts().vocation,
+                magnitude,
+            ) else {
+                return;
+            };
+            reduced
+        } else {
+            magnitude
         };
         let magnitude = if !hit.extension
             && hit

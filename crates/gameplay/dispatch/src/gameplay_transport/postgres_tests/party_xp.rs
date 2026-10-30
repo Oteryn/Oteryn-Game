@@ -137,9 +137,14 @@ pub(super) fn run(case: Case) -> TestResult {
                     // recovery directory, which concurrent cases must not share.
                     let tag = format!("party_xp_{}", case as u8);
                     let h = Harness::create(admin, &tag, false).await?;
-                    eprintln!("PARTY-XP-1 POSTGRES_DATABASE_STARTED PostgreSQL=170006");
+                    eprintln!("PARTY-XP-1 POSTGRES_DATABASE_STARTED case={tag}");
+                    let started = std::time::Instant::now();
                     let result = scenario(&h, case).await;
                     h.cleanup().await?;
+                    eprintln!(
+                        "PARTY-XP-1 POSTGRES_CASE_COMPLETED case={tag} elapsed_seconds={:.2}",
+                        started.elapsed().as_secs_f64()
+                    );
                     result
                 })
                 .map_err(|e| e.to_string())
@@ -671,8 +676,18 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .await
             .map_err(debug)?;
     }
-    if matches!(case, Case::Foreign | Case::ForgeForeign) {
-        let (actor, session) = players[2];
+    let staged_contributors: &[usize] = match case {
+        Case::Foreign => &[2, 0],
+        Case::ForgeForeign => &[2],
+        Case::Pz | Case::Concurrent => &[0],
+        _ => &[],
+    };
+    // These cases test settlement, not competing content-seeded swing draws.
+    // Bank at least five real damage per staged contributor. When sharing is
+    // required, leave only five HP for the member so the leader's committed
+    // activity is recent at death even with slow, content-seeded fist draws.
+    for &index in staged_contributors {
+        let (actor, session) = players[index];
         {
             let runtime = owner.runtime.lock().await;
             if matches!(case, Case::ForgeForeign) {
@@ -699,6 +714,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
             );
         }
+        let initial_health = {
+            let runtime = owner.runtime.lock().await;
+            runtime.companion_snapshot(creature.actor).map_err(debug)?.health
+        };
         for pass in 0..REAL_SWING_PASSES {
             owner.refresh_attack_weapon(actor, session).await;
             owner.drain_auto_attacks().await;
@@ -711,7 +730,14 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 .and_then(|c| runtime.companion_snapshot(c.actor).ok())
                 .ok_or("living rat")?
                 .health;
-            if health <= 15 {
+            let contributed = if matches!(case, Case::ForgeForeign) {
+                health <= 15
+            } else if index == 0 && matches!(case, Case::Concurrent | Case::Foreign) {
+                health <= 5
+            } else {
+                initial_health - health >= 5
+            };
+            if contributed {
                 owner.states.attack.lock().await.set_target(
                     &runtime,
                     Some(&room),
@@ -723,7 +749,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 );
                 break;
             }
-            assert!(pass + 1 < REAL_SWING_PASSES, "foreign contributor hit");
+            assert!(pass + 1 < REAL_SWING_PASSES, "initial contributor hit");
             drop(runtime);
             owner.clock_origin = owner
                 .clock_origin
@@ -802,6 +828,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     for (index, (actor, session)) in players.iter().copied().enumerate() {
         if index == 2
+            || (index == 0 && matches!(case, Case::Pz | Case::Concurrent | Case::Foreign))
             || (index == 1 && matches!(case, Case::Inactive | Case::OneHit | Case::ForgeIdle))
         {
             continue;
@@ -1191,7 +1218,10 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     } else if matches!(case, Case::Exhausted) {
         assert_eq!((first_award, second_award), (8, 0));
     } else if matches!(case, Case::Pz) {
-        assert!(first_award > 0 && second_award > 0);
+        assert!(
+            first_award > 0 && second_award > 0,
+            "both damage contributors earn XP: first={first_award}, second={second_award}"
+        );
         assert!(first_award + second_award <= 10);
         let shared: bool = sqlx::query_scalar("SELECT shared FROM game_party_kill_xp_receipts")
             .fetch_one(&h.pool)

@@ -28,3 +28,9 @@ query reads those native owners and does not persist derived aggregate data.
 Permanent titles remain earned. Conditional titles are displayable only while their predicate is
 true. Rotation titles carry the next-rotation expiry. A read or look requalifies the selected title;
 the fenced durable owner clears a selection that is no longer qualified.
+
+The stable Game title catalogue appends Pensive Wanderer as ID 5 (MONKQUEST3,
+owner decision 2026-10-30). IDs 1–4 retain their meanings. Honouring the Shrine of
+Eternity earns this permanent title in the same fenced quest transaction; the
+Character title owner supplies its ordinary query, unlock and selection behavior.
+The existing `u8` title fields and capability 97 are unchanged.

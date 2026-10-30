@@ -335,6 +335,9 @@ fn scenario(callback: Option<(u16, u16, bool)>, portals: bool) -> TestResult {
                     vec![]
                 },
                 offerings: vec![],
+                minimum_level: None,
+                experience: None,
+                monk_reward: None,
                 item_on_target: None,
                 return_on_failure: refused,
                 failure_message: None,

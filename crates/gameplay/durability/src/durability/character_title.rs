@@ -15,6 +15,18 @@ use oteryn_protocol_oteryn::character_info::{
 };
 use sqlx::Row;
 
+/// Only the fenced quest transaction calls this after persisting the Eternity flag.
+pub(super) async fn grant_pensive_in_transaction(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+) -> Result<(), super::DurabilityError> {
+    sqlx::query("INSERT INTO game_character_titles(character_id,title,earned_at_unix_ms) SELECT encode($1,'hex')::uuid,$2,floor(extract(epoch FROM statement_timestamp())*1000)::bigint WHERE EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$3 AND value=1) ON CONFLICT DO NOTHING")
+        .bind(character.as_bytes().as_slice()).bind(i16::from(CharacterTitle::PensiveWanderer.id()))
+        .bind(format!("{}eternity", oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX))
+        .execute(&mut **tx).await?;
+    Ok(())
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CharacterTitleState {
     pub earned: Vec<(CharacterTitle, Option<i64>)>,
@@ -56,8 +68,12 @@ impl DurabilityRoot {
             assert_recovery_fence(&mut tx, &recovery).await?;
             let row = sqlx::query("SELECT COALESCE((SELECT greatest(sword_level,axe_level,club_level,distance_level)>=100 FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid),false) AS weapon_mastery, COALESCE((SELECT (progress->>'discovered')::boolean FROM game_character_cyclopedia WHERE character_id=encode($1,'hex')::uuid),false) AS map_discovered")
                 .bind(character.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+            let monk_pilgrimage: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND track_key=$2 AND value=1)")
+                .bind(character.as_bytes().as_slice())
+                .bind(format!("{}eternity", oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX))
+                .fetch_one(&mut *tx).await?;
             commit_semantic_transaction(tx, deadline).await?;
-            Ok(Ok(TitleFacts { weapon_mastery: row.try_get("weapon_mastery")?, all_map_areas_discovered: row.try_get("map_discovered")?, ..TitleFacts::default() }))
+            Ok(Ok(TitleFacts { monk_pilgrimage, weapon_mastery: row.try_get("weapon_mastery")?, all_map_areas_discovered: row.try_get("map_discovered")?, ..TitleFacts::default() }))
         })).await?
     }
 
@@ -282,10 +298,11 @@ mod tests {
             (2, CharacterTitle::AdeptEnhancer),
             (3, CharacterTitle::Globetrotter),
             (4, CharacterTitle::ReigningDromeChampion),
+            (5, CharacterTitle::PensiveWanderer),
         ] {
             assert!(matches!(decode_title(stored), Ok(decoded) if decoded == title));
         }
-        for invalid in [0, 5, -1, 256] {
+        for invalid in [0, 6, -1, 256] {
             assert!(matches!(
                 decode_title(invalid),
                 Err(CharacterAuthorityError::Rejected)
@@ -293,6 +310,7 @@ mod tests {
         }
         assert_eq!(revoked_conditional_titles(TitleFacts::default()), [2, 3]);
         let all = TitleFacts {
+            monk_pilgrimage: true,
             weapon_mastery: true,
             all_grade_three_mods: true,
             all_map_areas_discovered: true,

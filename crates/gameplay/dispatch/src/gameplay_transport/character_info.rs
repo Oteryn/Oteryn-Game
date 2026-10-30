@@ -302,7 +302,7 @@ mod tests {
     fn selection_clear() {
         assert_eq!(decode(&[3, 0]), Ok(CharacterInfoOperation::Select(None)));
     }
-    /// PAR-P12: the Global-named titles keep the registered wire ids 1-4.
+    /// PAR-P12: the Global-named titles keep their registered wire ids.
     #[test]
     fn p12_global_titles_keep_wire_ids() {
         for (raw, title) in [
@@ -310,6 +310,8 @@ mod tests {
             (2, CharacterTitle::AdeptEnhancer),
             (3, CharacterTitle::Globetrotter),
             (4, CharacterTitle::ReigningDromeChampion),
+            // Monk pilgrimage reward: Crystal data-global/npc/enpa_deia_pema.lua.
+            (5, CharacterTitle::PensiveWanderer),
         ] {
             assert_eq!(decode(&[2, raw]), Ok(CharacterInfoOperation::Unlock(title)));
             assert_eq!(
@@ -318,7 +320,7 @@ mod tests {
             );
         }
         assert_eq!(decode(&[2, 0]), Err(DecodeError));
-        assert_eq!(decode(&[2, 5]), Err(DecodeError));
-        assert_eq!(decode(&[3, 5]), Err(DecodeError));
+        assert_eq!(decode(&[2, 6]), Err(DecodeError));
+        assert_eq!(decode(&[3, 6]), Err(DecodeError));
     }
 }

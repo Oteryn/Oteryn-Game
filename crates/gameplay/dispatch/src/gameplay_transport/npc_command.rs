@@ -36,6 +36,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 /// The instants of the talk intents of the last second of one session.
 type RecentIntents = VecDeque<u64>;
 mod coin_exchange;
+mod monk;
 mod premium_purchase;
 mod service_context;
 pub(super) use premium_purchase::resume_npc_talk;
@@ -51,6 +52,7 @@ struct SessionNpc {
     bank: Option<PendingBank>,
     exchange: Option<coin_exchange::Pending>,
     premium: Option<premium_purchase::PendingPurchase>,
+    monk: Option<monk::Pending>,
 }
 
 pub struct PendingBank {
@@ -616,6 +618,10 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(step) = monk::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return monk::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = premium_purchase::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);
