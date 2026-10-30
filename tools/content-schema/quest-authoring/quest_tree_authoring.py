@@ -143,11 +143,66 @@ def build_records(quests, claims, readiness_reports=None, gates=None, gate_check
     return records
 
 
+def monk_native_lowering(root):
+    callbacks = [c for c in read(root, 'content/quests/world-callbacks.json')['callbacks']
+                 if c['quest'] == 'oteryn:quest.the_way_of_the_monk_quest']
+    names = ('guidance', 'tranquility', 'respect', 'legacy', 'empathy', 'harmony',
+             'power', 'knowledge', 'serenity', 'eternity')
+    if {c['key'] for c in callbacks} != {'oteryn:quest-callback/monk-' + n for n in names}:
+        raise ValueError('Monk lowering needs every mainland shrine')
+    if any(not c.get('monk_reward') or not c.get('experience') for c in callbacks):
+        raise ValueError('Monk lowering needs every shrine reward')
+    rewards = read(root, 'content/quests/monk-pilgrimage.json')
+    if rewards['schema'] != 'OTERYN_MONK_PILGRIMAGE/v1' or rewards['final_promotion_points'] != 10:
+        raise ValueError('Monk lowering needs the final report reward')
+    return {
+        'state': 'READY',
+        'canonical_interaction_refs': sorted([c['key'] for c in callbacks] + [
+            'oteryn:quest-transition/monk-pilgrimage/' + step
+            for step in ('invitation', 'start', 'finish')]),
+        'canonical_progress_refs': sorted({s['track'] for c in callbacks for s in c['storage']} | {
+            'oteryn:quest-progress/quest/u14_15/the_way_of_the_monk/shrines_count',
+            'oteryn:quest-progress/quest/u14_15/the_way_of_the_monk/quest_line',
+            'oteryn:quest-progress/monk-pilgrimage/final-report'}),
+        'reason': 'MONKQUEST3: native NPC invitation/start/report, ten ordered level-gated world '
+                  'callbacks, journal, transactional XP/spell/title/achievement rewards, durable '
+                  'equipment entitlements through RewardClaim MINT and final Wheel points. '
+                  'The frozen SOURCE facts and data-only recipe admission are unchanged.',
+    }
+
+
+def source_projection(root, records):
+    """Validate and remove only the compiled native annotation from the SOURCE view.
+
+    Frozen SOURCE receipts still compare every original field byte for byte. Native
+    references are compiler output, checked exactly against the callback input, and
+    cannot change Source facts, readiness, holds, or the selected data-only recipe.
+    """
+    result = copy.deepcopy(records)
+    for row in result:
+        definition = row['definition']
+        if definition['identity']['key'] != 'oteryn:quest.the_way_of_the_monk_quest':
+            continue
+        original = {'state': 'WAITING_IMPLEMENTATION', 'canonical_progress_refs': [],
+                    'canonical_interaction_refs': [],
+                    'reason': 'QuestState tracks, bounds, transitions and requested-by bindings have not been lowered'}
+        if definition['native_lowering'] == original:
+            continue
+        if definition['native_lowering'] != monk_native_lowering(root):
+            raise ValueError('native annotation differs from the callback compilation')
+        definition['native_lowering'] = original
+    return result
+
+
 def validate(records, quests, claims, readiness_reports=None, gates=None, gate_checks=None, source_data=None):
     """Validate exact regenerated content, including source ownership and missing-data truth."""
     expected = build_records(quests, claims, readiness_reports, gates, gate_checks, source_data)
     errors = []
-    if records != expected:
+    try:
+        source = source_projection(Path(__file__).resolve().parents[3], records)
+    except ValueError as error:
+        return [str(error)]
+    if source != expected:
         errors.append('Quest records differ from the source-bound Quest projection')
     return errors
 
@@ -224,6 +279,10 @@ def expected_files(root, include_registration=False):
     gates = read(root, GATES)['gates']
     records = build_records(quests, claims, reports, gates, read(root, GATE_MANIFEST)['entries'], bound_source_data(root, quests, gates))
     from quest_completion_authoring import attach
+    # The reviewed receipt covers the compiled annotation as part of the core.
+    for row in records:
+        if row['definition']['identity']['key'] == 'oteryn:quest.the_way_of_the_monk_quest':
+            row['definition']['native_lowering'] = monk_native_lowering(root)
     records = attach(root, records)
     # Keep the digest-bound SOURCE compiler and original recipe witnesses intact.
     # This finite correction belongs to the chosen recipe projection only.
@@ -279,6 +338,7 @@ def expected_files(root, include_registration=False):
         'authoring_sources': [{'path': path, 'sha256': digest(root, path)} for path in (SOURCE, CLAIM_INDEX, MANIFEST, READINESS, GATES, GATE_MANIFEST, INTERACTION_MANIFEST, PROGRESS, INTERACTIONS, BUNDLE,
             'tools/content-schema/quest-authoring/ots_readiness.py',
             'tools/content-schema/quest-authoring/quest_tree_authoring.py',
+            'content/quests/world-callbacks.json',
             'tools/content-schema/quest-authoring/quest_donor_attachment.py',
             'tools/content-schema/quest-authoring/quest_donor_attachment.schema.json',
             'tools/content-schema/quest-authoring/quest_requirement_followup.py',

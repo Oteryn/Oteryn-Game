@@ -57,6 +57,8 @@ impl ChannelAttackStates {
 /// armor, with the block budget and fight mode of the attack states. A block trains shielding
 /// (SKILL-TRAIN-1) by `formula`; players whose tries reach a level go to `trained`.
 pub(in crate::gameplay_transport) struct PlayerBiteVitals<'a> {
+    pub(in crate::gameplay_transport) quest_sessions:
+        Option<&'a super::monk_shrines::QuestSessions>,
     pub(in crate::gameplay_transport) charm: Option<IncomingCharm<'a>>,
     pub(in crate::gameplay_transport) states: &'a mut ChannelSpellStates,
     pub(in crate::gameplay_transport) attack: &'a mut ChannelAttackStates,
@@ -65,6 +67,29 @@ pub(in crate::gameplay_transport) struct PlayerBiteVitals<'a> {
 }
 
 impl CreatureBiteVitals for PlayerBiteVitals<'_> {
+    fn melee_damage_taken(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        damage: u32,
+    ) -> u32 {
+        let Some(sessions) = self.quest_sessions else {
+            return damage;
+        };
+        let Some(state) = self.states.get(runtime, target, session) else {
+            return damage;
+        };
+        super::monk_shrines::taken(
+            sessions,
+            session,
+            state.character_facts().vocation,
+            i64::from(damage),
+        )
+        .and_then(|n| n.try_into().ok())
+        .unwrap_or(damage)
+    }
+
     fn dodge_creature_attack(
         &mut self,
         runtime: &ChannelRuntimeV1,

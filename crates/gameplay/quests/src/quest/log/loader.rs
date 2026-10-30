@@ -136,6 +136,8 @@ fn parse(quests: &str, texts: &str, lowered: &LoweredQuestState) -> Result<Loade
             missions,
         });
     }
+    entries.retain(|entry| entry.key != super::super::monk_shrines::QUEST);
+    entries.push(super::super::monk_shrines::journal());
     let catalogue = QuestLogCatalogue::new(lowered.catalogue(), entries)
         .map_err(|e| format!("journal catalogue: {e:?}"))?;
     Ok(LoadedQuestLog {

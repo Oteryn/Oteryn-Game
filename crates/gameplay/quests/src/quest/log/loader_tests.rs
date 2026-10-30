@@ -27,7 +27,7 @@ fn quest_log_content_loads_real_journals_and_records_unbound_entries() {
         matches!(&first.missions[0].journal, super::super::QuestJournal::PerStage(entries) if entries.len() == 2)
     );
     let source: serde_json::Value = serde_json::from_str(QUESTS).expect("source");
-    // Every source mission is either admitted in its original position or explicitly excluded.
+    // Source missions retain their order, except for the native Monk pilgrimage journal.
     for quest in source["quests"].as_array().expect("quests") {
         let key = quest["identity"]["key"]
             .as_str()
@@ -50,17 +50,35 @@ fn quest_log_content_loads_real_journals_and_records_unbound_entries() {
             );
             continue;
         };
-        let expected: Vec<_> = quest["missions"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter(|mission| {
-                !loaded.exclusions.iter().any(|entry| {
-                    entry.quest == key && entry.mission.as_deref() == mission["key"].as_str()
+        let expected: Vec<_> = if key == super::super::super::monk_shrines::QUEST {
+            // The native Monk journal replaces The Invitation and Dawnport Shrines with
+            // The Three-Fold Path plus the ten mainland shrines, in pilgrimage order.
+            vec![
+                "The Three-Fold Path",
+                "Shrine of Guidance",
+                "Shrine of Tranquility",
+                "Shrine of Respect",
+                "Shrine of Legacy",
+                "Shrine of Empathy",
+                "Shrine of Harmony",
+                "Shrine of Power",
+                "Shrine of Knowledge",
+                "Shrine of Serenity",
+                "Shrine of Eternity",
+            ]
+        } else {
+            quest["missions"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter(|mission| {
+                    !loaded.exclusions.iter().any(|entry| {
+                        entry.quest == key && entry.mission.as_deref() == mission["key"].as_str()
+                    })
                 })
-            })
-            .map(|mission| mission["name"].as_str().expect("name"))
-            .collect();
+                .map(|mission| mission["name"].as_str().expect("name"))
+                .collect()
+        };
         assert_eq!(
             admitted
                 .missions

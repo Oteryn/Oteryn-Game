@@ -68,6 +68,8 @@ impl DurabilityRoot {
         } else {
             None
         };
+        let achievement = super::super::quest_monk_rewards::prepare(callback.as_ref())
+            .map_err(|_| CharacterProgressionError::InvalidInput)?;
         // Altar transitions cannot be invoked through a weaker generic quest caller.
         if context.is_none()
             && oteryn_gameplay_quests::quest::world_callbacks::load()
@@ -75,7 +77,11 @@ impl DurabilityRoot {
                 .iter()
                 .any(|c| {
                     c.key == request.transition_key
-                        && (!c.offerings.is_empty() || c.item_on_target.is_some())
+                        && (!c.offerings.is_empty()
+                            || c.item_on_target.is_some()
+                            || c.minimum_level.is_some()
+                            || c.experience.is_some()
+                            || c.monk_reward.is_some())
                 })
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -240,11 +246,17 @@ impl DurabilityRoot {
                             )
                         }
                     };
-                    let keys: Vec<&str> = transition
+                    let final_flags: Vec<String> = if request.transition_key == oteryn_gameplay_quests::quest::monk_shrines::FINISH {
+                        oteryn_gameplay_quests::quest::monk_shrines::NAMES.iter().map(|name|
+                            format!("{}{name}", oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX)).collect()
+                    } else { Vec::new() };
+                    let mut keys: Vec<&str> = transition
                         .effects
                         .iter()
                         .map(|effect| effect.track.as_str())
                         .collect();
+                    keys.extend(final_flags.iter().map(String::as_str));
+                    keys.sort_unstable(); keys.dedup();
                     let rows = sqlx::query(
                         "SELECT track_key, quest_key, value FROM game_character_quest_tracks \
                           WHERE character_id = encode($1,'hex')::uuid \
@@ -262,20 +274,34 @@ impl DurabilityRoot {
                         }
                         stored.insert(row.try_get::<String, _>("track_key")?, row.try_get("value")?);
                     }
+                    let refusal = refusal.or_else(|| {
+                        (!final_flags.is_empty() && oteryn_gameplay_quests::quest::monk_shrines::completed_count(&stored) != 10)
+                            .then_some(QuestRefusal::StageMismatch)
+                    });
                     let refusal = match refusal {
                         Some(refusal) => Some(refusal),
                         None if rows.len() < keys.len() => {
-                            let tracks: i64 = sqlx::query_scalar(
-                                "SELECT count(*) FROM game_character_quest_tracks \
+                            let (tracks, has_counter, has_flags): (i64, bool, bool) = sqlx::query_as(
+                                "SELECT count(*), coalesce(bool_or(track_key=$2),false), \
+                                  coalesce(bool_or(left(track_key,length($3))=$3),false) \
+                                  FROM game_character_quest_tracks \
                                   WHERE character_id = encode($1,'hex')::uuid",
                             )
                             .bind(id)
+                            .bind(oteryn_gameplay_quests::quest::monk_shrines::COUNT_TRACK)
+                            .bind(oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX)
                             .fetch_one(&mut *tx)
                             .await?;
+                            // A flag-only character needs one additional counter in its
+                            // read projection. Reserve it before committing any new row.
+                            let has_counter = has_counter || keys.contains(&oteryn_gameplay_quests::quest::monk_shrines::COUNT_TRACK);
+                            let has_flags = has_flags || keys.iter().any(|key| key.starts_with(oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX));
                             let after = usize::try_from(tracks)
                                 .unwrap_or(usize::MAX)
-                                .saturating_add(keys.len() - rows.len());
-                            (after > QUESTSTATE0_RL_01).then_some(QuestRefusal::CapacityExceeded)
+                                .saturating_add(keys.len() - rows.len())
+                                .saturating_add(usize::from(has_flags && !has_counter));
+                            (after > QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
+                                .then_some(QuestRefusal::CapacityExceeded)
                         }
                         None => None,
                     };
@@ -512,6 +538,10 @@ impl DurabilityRoot {
                         if consumed.rows_affected() != 1 {
                             return Err(DurabilityError::InvalidStoredState);
                         }
+                    }
+                    if let (Some(callback), Some((_, context))) = (&callback, &context) {
+                        super::super::quest_monk_rewards::earn(&mut tx, fence, &request, callback,
+                            &context.content_revision, achievement.as_ref()).await?;
                     }
                     let committed = CommittedQuestTransition {
                         character_id: character,

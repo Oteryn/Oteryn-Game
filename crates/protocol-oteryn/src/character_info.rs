@@ -63,14 +63,16 @@ pub enum CharacterTitle {
     AdeptEnhancer = 2,
     Globetrotter = 3,
     ReigningDromeChampion = 4,
+    PensiveWanderer = 5,
 }
 
 impl CharacterTitle {
-    pub const ALL: [Self; 4] = [
+    pub const ALL: [Self; 5] = [
         Self::AdeptArmorer,
         Self::AdeptEnhancer,
         Self::Globetrotter,
         Self::ReigningDromeChampion,
+        Self::PensiveWanderer,
     ];
 
     /// The `u8` wire id, which is also the stored `SMALLINT` value.
@@ -89,6 +91,7 @@ impl CharacterTitle {
             Self::AdeptEnhancer => "Adept Enhancer",
             Self::Globetrotter => "Globetrotter",
             Self::ReigningDromeChampion => "Reigning Drome Champion",
+            Self::PensiveWanderer => "Pensive Wanderer",
         }
     }
 }
@@ -102,6 +105,7 @@ pub enum TitleLifetime {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct TitleFacts {
+    pub monk_pilgrimage: bool,
     pub weapon_mastery: bool,
     pub all_grade_three_mods: bool,
     pub all_map_areas_discovered: bool,
@@ -118,6 +122,10 @@ pub struct Qualification {
 
 pub fn qualify(title: CharacterTitle, facts: TitleFacts) -> Qualification {
     match title {
+        CharacterTitle::PensiveWanderer => Qualification {
+            eligible: facts.monk_pilgrimage,
+            lifetime: TitleLifetime::Permanent,
+        },
         CharacterTitle::AdeptArmorer => Qualification {
             eligible: facts.weapon_mastery,
             lifetime: TitleLifetime::Permanent,
@@ -196,6 +204,23 @@ pub struct CharacterSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn monk_pilgrimage_title_has_an_appended_id_and_requires_the_earned_flag() {
+        assert_eq!(CharacterTitle::ALL.len(), 5);
+        assert_eq!(CharacterTitle::PensiveWanderer.id(), 5);
+        assert_eq!(CharacterTitle::PensiveWanderer.name(), "Pensive Wanderer");
+        assert!(!qualify(CharacterTitle::PensiveWanderer, TitleFacts::default()).eligible);
+        let qualified = qualify(
+            CharacterTitle::PensiveWanderer,
+            TitleFacts {
+                monk_pilgrimage: true,
+                ..TitleFacts::default()
+            },
+        );
+        assert!(qualified.eligible);
+        assert_eq!(qualified.lifetime, TitleLifetime::Permanent);
+    }
 
     #[test]
     fn catalogue_has_distinct_permanent_conditional_and_rotation_rules() {
@@ -295,7 +320,12 @@ mod tests {
     #[test]
     fn p12_crystal_title_registry_parity() {
         let crystal_ids = 1..=95_u16;
-        let oteryn = CharacterTitle::ALL;
+        let oteryn = [
+            CharacterTitle::AdeptArmorer,
+            CharacterTitle::AdeptEnhancer,
+            CharacterTitle::Globetrotter,
+            CharacterTitle::ReigningDromeChampion,
+        ];
         // Wire ids overlap Crystal ids 1-4, so the same id names a different title: DIFF.
         assert!(
             oteryn
@@ -319,8 +349,13 @@ mod tests {
             assert_eq!(CharacterTitle::from_id(title.id()), Some(title));
         }
         assert_eq!(CharacterTitle::from_id(0), None);
-        assert_eq!(CharacterTitle::from_id(5), None);
+        assert_eq!(
+            CharacterTitle::from_id(5),
+            Some(CharacterTitle::PensiveWanderer)
+        );
+        assert_eq!(CharacterTitle::from_id(6), None);
         let all = TitleFacts {
+            monk_pilgrimage: true,
             weapon_mastery: true,
             all_grade_three_mods: true,
             all_map_areas_discovered: true,

@@ -169,6 +169,17 @@ pub enum BiteRejection {
 /// The Channel owner's vitals of its present player actors (SPELL-D2). The vitals owner
 /// implements it; a bite reaches the player's health only through this one method.
 pub trait CreatureBiteVitals {
+    /// Called only for melee auto-attacks, after defence, armor and physical protection.
+    fn melee_damage_taken(
+        &self,
+        _runtime: &ChannelRuntimeV1,
+        _target: ExactActorRef,
+        _session: GameSessionId,
+        damage: u32,
+    ) -> u32 {
+        damage
+    }
+
     /// Evaluate the incoming occurrence before spending blocks or committing damage. A true
     /// result cancels this hit; an unavailable Charm view returns false and combat proceeds.
     fn dodge_creature_attack(
@@ -391,6 +402,8 @@ fn resolve_and_apply(
         armored,
         vitals.target_physical_protection(runtime, intent.target, intent.target_session),
     );
+    let mitigated =
+        vitals.melee_damage_taken(runtime, intent.target, intent.target_session, mitigated);
     if !vitals.reflect_equipment_damage(
         runtime,
         intent.issuer,

@@ -95,7 +95,7 @@ impl QuestCause {
 
     /// The stored (id, ordinal): a CommandRef is (GameSessionId, CommandId), an occurrence is
     /// (occurrence, 0).
-    fn key(self) -> ([u8; 16], u64) {
+    pub(super) fn key(self) -> ([u8; 16], u64) {
         match self {
             Self::Command(command)
             | Self::Use(command)
@@ -237,7 +237,8 @@ impl QuestStateCopy {
             .get(&format!("oteryn:quest-progress/storage/{action}"))
             .is_some_and(|value| *value != -1)
     }
-    /// Stored track values; a track without a row reads as its declared initial value.
+    /// Stored track values with supported read projections (including the Monk shrine count).
+    /// A stored track without a row reads as its declared initial value.
     #[must_use]
     pub fn tracks(&self) -> &BTreeMap<String, i64> {
         &self.tracks
@@ -275,7 +276,17 @@ impl QuestStateCopy {
             .changes
             .iter()
             .filter(|change| !self.tracks.contains_key(&change.track))
-            .count();
+            .count()
+            + usize::from(
+                !self
+                    .tracks
+                    .contains_key(oteryn_gameplay_quests::quest::monk_shrines::COUNT_TRACK)
+                    && committed.changes.iter().any(|change| {
+                        change
+                            .track
+                            .starts_with(oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX)
+                    }),
+            );
         let new_state = usize::from(!self.states.contains_key(&committed.quest_key));
         let new_xp = committed
             .experience
@@ -290,6 +301,7 @@ impl QuestStateCopy {
         for change in &committed.changes {
             self.tracks.insert(change.track.clone(), change.after);
         }
+        oteryn_gameplay_quests::quest::monk_shrines::derive_count(&mut self.tracks);
         let state = self
             .states
             .entry(committed.quest_key.clone())

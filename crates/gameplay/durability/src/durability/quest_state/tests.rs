@@ -146,3 +146,41 @@ fn the_copy_applies_receipts_and_settles_obligations() {
     }
     assert!(!full.apply(&committed), "over RL-08");
 }
+
+#[test]
+fn monk_copy_derives_count_once_and_reserves_projection_capacity_atomically() {
+    use oteryn_gameplay_quests::quest::monk_shrines::{COUNT_TRACK, FLAG_PREFIX};
+    let committed = CommittedQuestTransition {
+        character_id: CharacterId::from_bytes(id(1)).expect("character"),
+        cause: QuestCause::Use(command(5, 1)),
+        transition_key: "oteryn:quest-callback/monk-guidance".into(),
+        quest_key: "oteryn:quest.the_way_of_the_monk_quest".into(),
+        original_character_revision: CharacterRevision::new(1).expect("revision"),
+        committed_character_revision: CharacterRevision::new(2).expect("revision"),
+        pinned_content_revision: "content-1".into(),
+        definition_hash: [7; 32],
+        completes: false,
+        changes: vec![QuestTrackChange {
+            track: format!("{FLAG_PREFIX}guidance"),
+            before: 0,
+            after: 1,
+        }],
+        experience: None,
+    };
+    let mut copy = QuestStateCopy::default();
+    for index in 0..QUESTSTATE0_RL_08_TRACKS - 1 {
+        copy.tracks.insert(format!("oteryn:t/{index}"), 0);
+    }
+    let before = copy.clone();
+    assert!(!copy.apply(&committed));
+    assert_eq!(
+        copy, before,
+        "a refused copy update cannot partially add a flag"
+    );
+    copy.tracks.remove("oteryn:t/0");
+    assert!(copy.apply(&committed));
+    assert_eq!(copy.tracks().len(), QUESTSTATE0_RL_08_TRACKS);
+    assert_eq!(copy.tracks().get(COUNT_TRACK), Some(&1));
+    assert!(copy.apply(&committed));
+    assert_eq!(copy.tracks().get(COUNT_TRACK), Some(&1));
+}

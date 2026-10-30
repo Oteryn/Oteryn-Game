@@ -13,6 +13,16 @@ use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome, wire_slo
 
 macro_rules! authority_methods {
     () => {
+        /// Read-only ordinary-slot readiness for transport coalescing. Jewelry and invalid
+        /// definitions return None; the equipment owner rechecks all gates at execution.
+        fn hotkey_equip_wait(
+            &self,
+            _actor: $crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+            _request: oteryn_protocol_oteryn::hotkey_equip::Request,
+        ) -> impl std::future::Future<Output = Option<std::time::Duration>> {
+            async { None }
+        }
         fn hotkey_equip_carried(
             &self,
             _actor: $crate::foundation::ExactActorRef,
@@ -34,6 +44,15 @@ macro_rules! authority_methods {
 pub(super) use authority_methods;
 macro_rules! composed_methods {
     () => {
+        async fn hotkey_equip_wait(
+            &self,
+            actor: $crate::foundation::ExactActorRef,
+            command: $crate::gameplay_transport::connection::UseCommand,
+            request: oteryn_protocol_oteryn::hotkey_equip::Request,
+        ) -> Option<std::time::Duration> {
+            $crate::gameplay_transport::hotkey_equip::ordinary_delay(self, actor, command, request)
+                .await
+        }
         async fn hotkey_equip_carried(
             &self,
             actor: $crate::foundation::ExactActorRef,
@@ -55,6 +74,54 @@ macro_rules! composed_methods {
     };
 }
 pub(super) use composed_methods;
+
+/// This observation grants no custody or input authority. The normal executor rechecks
+/// session, conditions, timing and item custody after the transport's bounded wait.
+pub(super) async fn ordinary_delay(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    request: Request,
+) -> Option<std::time::Duration> {
+    let runtime = owner.runtime.lock().await;
+    let states = owner.states.spell_states.lock().await;
+    let native = equipment_move::native_for_move(
+        &runtime,
+        owner.active_generation,
+        states.is_dead(actor),
+        states.has_pending_spell_commit(actor, command.game_session_id),
+    )?;
+    runtime
+        .player_control_facts(actor, command.game_session_id)
+        .ok()?;
+    if !condition_allows_equip(
+        &runtime,
+        actor,
+        command.game_session_id,
+        owner.owner_now().get(),
+    ) {
+        return None;
+    }
+    let index = pinned_index(&runtime, owner.active_generation)?;
+    let (key, revision) = index.definition_at(request.definition)?;
+    let policy = native.equipment_policy(key, revision)?;
+    let (slot, _) = policy
+        .claims()
+        .iter()
+        .find(|(slot, claim)| *slot != 10 && claim.is_ok())?;
+    if matches!(slot, 7 | 8) {
+        return None;
+    }
+    Some(
+        owner
+            .states
+            .world_gate
+            .lock()
+            .ok()?
+            .equip_delay(actor, *slot, owner.clock_origin.elapsed())
+            .unwrap_or_default(),
+    )
+}
 
 pub(super) async fn execute(
     owner: &ComposedFreshAdmission<'_, '_, '_>,

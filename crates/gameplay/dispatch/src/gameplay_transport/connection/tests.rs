@@ -2,6 +2,9 @@
 #[path = "tests/capability_tests.rs"]
 mod capability_tests;
 
+#[path = "tests/hotkey_coalescing.rs"]
+mod hotkey_coalescing;
+
 #[path = "tests/idle_kick.rs"]
 mod idle_kick;
 

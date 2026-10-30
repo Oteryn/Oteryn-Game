@@ -279,6 +279,8 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     writable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import summer_source_qualification
     summer_source_qualification.apply_native(root, generated, spell_import.canonical_bytes)
+    import monk_reward_profiles
+    monk_reward_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quest_callback_profiles
     quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quick_loot_item_profiles

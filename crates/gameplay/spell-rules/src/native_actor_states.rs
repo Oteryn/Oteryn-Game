@@ -200,6 +200,17 @@ pub struct HealingRollPlan {
 }
 
 impl HealingRollPlan {
+    pub fn draw_normal(
+        &self,
+        draw: &mut dyn FnMut(i64, i64) -> i64,
+    ) -> Result<i64, ActorPlanError> {
+        self.finish_draw(virtue_normal_draw(
+            self.bounds.minimum,
+            self.bounds.maximum,
+            draw,
+        )?)
+    }
+
     pub fn finish_draw(&self, roll: i64) -> Result<i64, ActorPlanError> {
         if !(self.bounds.minimum..=self.bounds.maximum).contains(&roll) {
             return Err(ActorPlanError::InvalidBounds);
@@ -207,6 +218,49 @@ impl HealingRollPlan {
         i64::try_from(i128::from(roll) * i128::from(100 + self.sustain_percent_after_draw) / 100)
             .map_err(|_| ActorPlanError::InvalidBounds)
     }
+}
+
+// Canary 47dfd51f tools.cpp:466-476: N(0.5, 0.25), conditioned on [0,1],
+// then round to the integer interval. Inverting the truncated CDF consumes one bounded
+// world draw without rejection loops or a second independent RNG stream.
+fn virtue_normal_draw(
+    minimum: i64,
+    maximum: i64,
+    draw: &mut dyn FnMut(i64, i64) -> i64,
+) -> Result<i64, ActorPlanError> {
+    const RESOLUTION: i64 = (1_i64 << 32) - 1;
+    let sample = draw(0, RESOLUTION);
+    if !(0..=RESOLUTION).contains(&sample) || maximum < minimum {
+        return Err(ActorPlanError::InvalidBounds);
+    }
+    if sample == 0 {
+        return Ok(minimum);
+    }
+    if sample == RESOLUTION {
+        return Ok(maximum);
+    }
+    let cdf = |z: f64| {
+        let x = z.abs() / std::f64::consts::SQRT_2;
+        let t = 1.0 / (1.0 + 0.3275911 * x);
+        let erf = 1.0
+            - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t
+                + 0.254829592)
+                * t)
+                * (-x * x).exp();
+        (1.0 + z.signum() * erf) * 0.5
+    };
+    let probability = cdf(-2.0) + (sample as f64 / RESOLUTION as f64) * (cdf(2.0) - cdf(-2.0));
+    let (mut low, mut high) = (-2.0, 2.0);
+    for _ in 0..32 {
+        let middle = (low + high) * 0.5;
+        if cdf(middle) < probability {
+            low = middle;
+        } else {
+            high = middle;
+        }
+    }
+    let fraction = (0.5 + 0.25 * (low + high) * 0.5) as f32;
+    Ok(minimum + (f64::from(fraction) * (maximum - minimum) as f64).round() as i64)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -224,8 +278,8 @@ pub struct FocusPlan {
     pub rearm_cast_cooldowns: bool,
 }
 
-/// Shared accepted provisional gained-charge healing calculation. Recipient
-/// selection remains the existing source profile, not an inferred Global policy.
+/// PKG8 Q2: shared builder, spender, refund and Focus healing bounds.
+/// Sustain retains its existing application after the normal world roll.
 pub fn plan_harmony_gain_healing(
     parameters: &Value,
     gained_charges: u8,
@@ -245,11 +299,19 @@ pub fn plan_harmony_gain_healing(
         {
             return Err(ActorPlanError::InvalidParameters("sustain_application"));
         }
+        // Retain the closed profile's structural/numeric validation. Q2 replaces
+        // its provisional S5 flat helper, without relaxing profile qualification.
         let vars = BTreeMap::from([
             ("level", f64::from(level)),
             ("gained_charges", f64::from(gained_charges)),
         ]);
-        let raw = expression_bounds(required(heal, "bounds")?, &vars)?;
+        expression_bounds(required(heal, "bounds")?, &vars)?;
+        let flat = harmony_flat_healing(level);
+        let multiplier = 1.0 + 0.05 * f64::from(gained_charges);
+        let raw = bounds(
+            (flat * 2.0 * multiplier).ceil().max(10.0),
+            (flat * 2.3 * multiplier).ceil().max(25.0),
+        )?;
         let boost = if sustain_active {
             percent(
                 heal,
@@ -268,6 +330,26 @@ pub fn plan_harmony_gain_healing(
         })
     };
     Ok(healing)
+}
+
+// Owner PKG8 Q2: Canary 47dfd51f player.cpp:596-618. Preserve the donor's
+// tier aggregation, final ceiling and uint16 saturation (distinct from the S5 curve).
+fn harmony_flat_healing(level: u32) -> f64 {
+    let mut baseline = 0.0;
+    let mut current = 0;
+    let mut tier = 1_u64;
+    let mut threshold = 500_u64;
+    let mut step = 600_u64;
+    while u64::from(level) >= threshold {
+        current = threshold;
+        baseline += threshold as f64 * (1.0 / (4 + tier) as f64);
+        tier += 1;
+        threshold += step;
+        step += 100;
+    }
+    (baseline + (u64::from(level) - current) as f64 * (1.0 / (4 + tier) as f64))
+        .ceil()
+        .min(f64::from(u16::MAX))
 }
 
 pub fn plan_focus(parameters: &Value, facts: FocusFacts) -> Result<FocusPlan, ActorPlanError> {
@@ -959,6 +1041,7 @@ pub struct PartyMemberFacts {
     pub alive: bool,
     pub removed: bool,
     pub health: u64,
+    pub max_health: u64,
 }
 
 fn visible(
@@ -985,11 +1068,15 @@ pub fn focus_healing_target(
 ) -> Result<u64, ActorPlanError> {
     let window = required(required(parameters, "harmony_gain_healing")?, "visibility")?;
     let mut target: Option<PartyMemberFacts> = None;
-    // Caller supplies party order as owned input. Equal HP retains the earlier
-    // choice, as in the source; percentage deficits are not substituted.
+    // Caller supplies party order as owned input. Equal percentages retain the earlier
+    // choice. PKG8 Q3 overrides Canary absolute HP with the current percentage.
     for member in members {
         if visible(&caster, member, window)?
-            && target.is_none_or(|target| member.health < target.health)
+            && member.max_health > 0
+            && target.is_none_or(|target| {
+                u128::from(member.health) * u128::from(target.max_health)
+                    < u128::from(target.health) * u128::from(member.max_health)
+            })
         {
             target = Some(*member);
         }
@@ -1047,6 +1134,17 @@ pub fn plan_party_bonuses(
     active_virtue: bool,
     serene: bool,
 ) -> Result<Vec<PartyBonusPlan>, ActorPlanError> {
+    plan_party_bonuses_with_guiding(parameters, caster, members, active_virtue, serene, false)
+}
+
+pub fn plan_party_bonuses_with_guiding(
+    parameters: &Value,
+    caster: PartyMemberFacts,
+    members: &[PartyMemberFacts],
+    active_virtue: bool,
+    serene: bool,
+    guiding_presence: bool,
+) -> Result<Vec<PartyBonusPlan>, ActorPlanError> {
     let spec = required(parameters, "party_bonus")?;
     if !active_virtue || caster.party_id.is_none() {
         return Ok(Vec::new());
@@ -1068,7 +1166,14 @@ pub fn plan_party_bonuses(
         let vocation = Vocation::from_key(text(bonus, "vocation")?)
             .ok_or(ActorPlanError::InvalidParameters("vocation"))?;
         let kind = text(bonus, "kind")?;
-        let value = percent(bonus, "percent")?;
+        // The closed profile carries news 8944's Guiding Presence values (4/8/8/16).
+        // Q5: without the conviction use 3/6/6/12; the Serene copy uses the same value.
+        let guided = percent(bonus, "percent")?;
+        let value = if guiding_presence {
+            guided
+        } else {
+            guided * 3 / 4
+        };
         let mut targets: Vec<u64> = visible_members
             .values()
             .filter(|m| base_vocation(m.vocation) == vocation)
@@ -1531,7 +1636,115 @@ mod tests {
     }
 
     #[test]
-    fn lowest_absolute_hp_and_party_union_obey_exact_visibility_and_nonstack_keys() {
+    fn pkg8_focus_healing_uses_canary_flat_curve() {
+        let plan = plan_harmony_gain_healing(&profile("focus harmony"), 1, 757, true, false)
+            .expect("healing")
+            .expect("gained charge");
+        assert_eq!((plan.bounds.minimum, plan.bounds.maximum), (301, 346));
+    }
+
+    #[test]
+    fn pkg8_virtue_party_base_and_lowest_percentage() {
+        let caster = PartyMemberFacts {
+            id: 1,
+            party_id: Some(1),
+            vocation: Vocation::Monk,
+            x: 0,
+            y: 0,
+            floor: 7,
+            alive: true,
+            removed: false,
+            health: 1,
+            max_health: 1000,
+        };
+        let knight = PartyMemberFacts {
+            id: 2,
+            vocation: Vocation::Knight,
+            health: 400,
+            max_health: 1000,
+            ..caster
+        };
+        let druid = PartyMemberFacts {
+            id: 3,
+            vocation: Vocation::Druid,
+            health: 100,
+            max_health: 200,
+            ..caster
+        };
+        let members = [caster, knight, druid];
+        assert_eq!(
+            focus_healing_target(&profile("focus harmony"), caster, &members),
+            Ok(2)
+        );
+        let bonuses =
+            plan_party_bonuses(&profile("virtue of harmony"), caster, &members, true, true)
+                .expect("bonuses");
+        assert_eq!(
+            bonuses
+                .iter()
+                .find(|b| b.target == 2)
+                .expect("knight")
+                .percent,
+            -3
+        );
+        assert_eq!(
+            bonuses
+                .iter()
+                .find(|b| b.target == 3)
+                .expect("druid")
+                .percent,
+            12
+        );
+    }
+
+    #[test]
+    fn pkg8_guiding_presence_scales_all_four_bonuses_and_serene_copy() {
+        let caster = PartyMemberFacts {
+            id: 1,
+            party_id: Some(1),
+            vocation: Vocation::Monk,
+            x: 0,
+            y: 0,
+            floor: 7,
+            alive: true,
+            removed: false,
+            health: 100,
+            max_health: 100,
+        };
+        let members = [
+            Vocation::Knight,
+            Vocation::Paladin,
+            Vocation::Sorcerer,
+            Vocation::Druid,
+        ]
+        .map(|vocation| PartyMemberFacts {
+            id: vocation as u64 + 10,
+            vocation,
+            ..caster
+        });
+        let profile = profile("virtue of harmony");
+        for (guided, expected) in [(false, [-3, 6, 6, 12]), (true, [-4, 8, 8, 16])] {
+            let plans =
+                plan_party_bonuses_with_guiding(&profile, caster, &members, true, true, guided)
+                    .expect("plans");
+            assert_eq!(plans.len(), 8);
+            for (member, percent) in members.iter().zip(expected) {
+                for target in [caster.id, member.id] {
+                    assert_eq!(
+                        plans
+                            .iter()
+                            .find(|p| p.target == target && p.vocation == member.vocation)
+                            .expect("bonus")
+                            .percent,
+                        percent
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn lowest_percentage_hp_and_party_union_obey_exact_visibility_and_nonstack_keys() {
         let caster = PartyMemberFacts {
             id: 1,
             party_id: Some(10),
@@ -1542,6 +1755,7 @@ mod tests {
             alive: true,
             removed: false,
             health: 10000,
+            max_health: 10000,
         };
         let knight = PartyMemberFacts {
             id: 2,
@@ -1605,14 +1819,14 @@ mod tests {
         assert!(
             serene
                 .iter()
-                .any(|b| b.target == 2 && b.kind == PartyBonusKind::DamageTaken && b.percent == -4)
+                .any(|b| b.target == 2 && b.kind == PartyBonusKind::DamageTaken && b.percent == -3)
         );
         assert!(serene.iter().any(|b| b.target == 3
             && b.kind == PartyBonusKind::AutoAttackDamage
-            && b.percent == 8));
+            && b.percent == 6));
         assert!(serene.iter().any(|b| b.target == 4
             && b.kind == PartyBonusKind::SpellAndRuneHealing
-            && b.percent == 16));
+            && b.percent == 12));
         assert_eq!(
             plan_party_bonuses(&p, caster, &members, false, true),
             Ok(Vec::new())
