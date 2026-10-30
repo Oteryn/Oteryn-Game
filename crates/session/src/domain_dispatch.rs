@@ -198,8 +198,11 @@ impl<S: SessionStream> Session<S> {
                     item_view::DELTA_TYPE_CHARACTER_INVENTORY_V1,
                     self.inventory_revision,
                 )?;
-                let value = item_view::decode_character_inventory(delta.payload)
-                    .map_err(SessionError::ItemView)?;
+                let value = item_view::decode_character_inventory_with_equip_drop(
+                    delta.payload,
+                    self.is_selected(item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                )
+                .map_err(SessionError::ItemView)?;
                 self.inventory = Some(value.clone());
                 self.inventory_revision = new_revision;
                 Ok(SessionEvent::Inventory(applied(

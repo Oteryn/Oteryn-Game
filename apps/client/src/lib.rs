@@ -4,6 +4,7 @@ pub mod cyclopedia;
 pub mod input;
 pub mod map;
 pub mod play;
+pub mod reentry;
 pub mod scene;
 pub mod spell;
 #[cfg(windows)]

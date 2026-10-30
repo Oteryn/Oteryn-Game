@@ -20,9 +20,11 @@ mod appearance_state;
 mod depot;
 mod domain_dispatch;
 mod gated_command;
+mod hotkey_equip_transport;
 mod map_transport;
 mod quest_log_transport;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
+pub use oteryn_protocol_oteryn::hotkey_equip;
 /// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
 mod guild_chat;
@@ -873,6 +875,7 @@ impl WorldEntities {
 pub struct Session<S> {
     stream: S,
     deadline: Duration,
+    last_received: tokio::time::Instant,
     connection_generation: u64,
     next_command_id: u64,
     last_server_sequence: u64,
@@ -923,6 +926,10 @@ pub struct DuplicateOutcome {
 
 /// Most duplicate results retained between `take_duplicate_outcomes` calls; more fails closed.
 const MAX_RETAINED_DUPLICATES: usize = 64;
+
+/// Client-side dead-link detection only, never server authority to replace a session.
+/// FND04B-LIVENESS-IDLE-PROBE-MS (5000) * (IDLE-MISSED (3) + first probe).
+const SERVER_SILENCE_DEADLINE: Duration = Duration::from_secs(20);
 
 impl<S: SessionStream> Session<S> {
     /// Admits over the established `stream` with `admission` and decodes the join snapshot the
@@ -1192,8 +1199,12 @@ impl<S: SessionStream> Session<S> {
                     item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
                 ) if item_selected => {
                     inventory = Some(
-                        item_view::decode_character_inventory(domain.payload)
-                            .map_err(SessionError::ItemView)?,
+                        item_view::decode_character_inventory_with_equip_drop(
+                            domain.payload,
+                            selected_capabilities
+                                .contains(&item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                        )
+                        .map_err(SessionError::ItemView)?,
                     );
                     inventory_revision = domain.revision;
                 }
@@ -1311,6 +1322,7 @@ impl<S: SessionStream> Session<S> {
         Ok(Self {
             stream,
             deadline: admission.deadline,
+            last_received: tokio::time::Instant::now(),
             connection_generation: session_generation,
             first_command_id: accepted_fields.next_command_id,
             next_command_id: accepted_fields.next_command_id,
@@ -1473,8 +1485,9 @@ impl<S: SessionStream> Session<S> {
     /// Keeps an otherwise idle session alive: for up to `duration`, reads frames, answers each
     /// `LivenessProbe` with a `LivenessAck` (last applied `server_sequence`) and applies each
     /// pushed `StateDelta`, queueing it for `take_events`. Returns `Ok` when
-    /// the time elapses. Any other frame, a failed validation, a closed connection or an I/O
-    /// error fails closed and makes the session unusable. Runs on the caller's task only.
+    /// the time elapses. A peer silent for the 20-second idle liveness window times out even
+    /// across repeated short calls. Any other frame, a failed validation, a closed connection
+    /// or an I/O error fails closed and makes the session unusable. Runs on the caller's task only.
     pub async fn service_liveness(&mut self, duration: Duration) -> Result<(), SessionError> {
         self.ensure_usable()?;
         let until = tokio::time::Instant::now() + duration;
@@ -1487,6 +1500,10 @@ impl<S: SessionStream> Session<S> {
         until: tokio::time::Instant,
     ) -> Result<(), SessionError> {
         loop {
+            let silence_until = self.last_received + SERVER_SILENCE_DEADLINE;
+            if tokio::time::Instant::now() >= silence_until {
+                return Err(SessionError::Timeout("server silence"));
+            }
             // Tokio may poll a ready read before an expired timeout. A continuously
             // readable peer must not extend the caller's idle window indefinitely.
             if tokio::time::Instant::now() >= until {
@@ -1496,7 +1513,12 @@ impl<S: SessionStream> Session<S> {
             // consumes nothing), so the idle window can end without losing part of a frame; the
             // rest of a started frame is then read under the ordinary per-frame deadline.
             let mut first = [0_u8; 1];
-            match tokio::time::timeout_at(until, self.stream.read(&mut first)).await {
+            match tokio::time::timeout_at(until.min(silence_until), self.stream.read(&mut first))
+                .await
+            {
+                Err(_elapsed) if tokio::time::Instant::now() >= silence_until => {
+                    return Err(SessionError::Timeout("server silence"));
+                }
                 Err(_elapsed) => return Ok(()),
                 Ok(Err(error)) => return Err(error.into()),
                 Ok(Ok(0)) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
@@ -1508,6 +1530,7 @@ impl<S: SessionStream> Session<S> {
                 read_frame_after(&mut self.stream, first[0]),
             )
             .await?;
+            self.last_received = tokio::time::Instant::now();
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;
@@ -2131,6 +2154,7 @@ impl<S: SessionStream> Session<S> {
     async fn read_post_admission(&mut self, label: &'static str) -> Result<Vec<u8>, SessionError> {
         loop {
             let frame = bounded(self.deadline, label, read_frame(&mut self.stream)).await?;
+            self.last_received = tokio::time::Instant::now();
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
             self.check_generation(&envelope)?;

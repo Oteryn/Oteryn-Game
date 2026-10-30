@@ -1,0 +1,10 @@
+{
+  "id": 348,
+  "name": "HOTKEY_EQUIP",
+  "owner_decision": "PKG5-I17",
+  "capability": 179,
+  "payload_schema": "hotkey-equip-v1.md#request",
+  "result_schema": "hotkey-equip-v1.md#reply",
+  "max_payload_bytes": 4,
+  "max_result_payload_bytes": 4
+}

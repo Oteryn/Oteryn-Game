@@ -32,6 +32,9 @@ impl Application {
             }
             return;
         }
+        if oteryn_client::reentry::login_key(events) {
+            self.request_entry();
+        }
         if let Some(direction) = arrow_step(events) {
             self.offline_own = direction.from(self.offline_own);
             self.offline_facing = direction;
