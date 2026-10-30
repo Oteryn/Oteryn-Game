@@ -3,6 +3,27 @@
 
 pub const STREAK_MAX: u32 = 100_000;
 pub const JOKERS_MAX: u8 = 3;
+pub const CYCLE_DAYS: u8 = 30;
+
+pub use oteryn_gameplay_content::content::daily_reward::DailyRewardTier as DailyRewardSet;
+
+/// Resolve the authored v2 table; there is no second runtime reward table.
+pub fn reward_for_day(day: u8, premium: bool) -> Option<DailyRewardSet> {
+    oteryn_gameplay_content::content::daily_reward::DailyRewardContent::catalogue()?
+        .reward(day, premium)
+}
+
+/// Chance, as a whole percentage, to double weapon proficiency XP.
+pub fn proficiency_bonus_chance(streak: u32) -> u8 {
+    match streak {
+        0 => 0,
+        1..=7 => streak as u8,
+        8..=13 => 7,
+        14..=20 => 8,
+        21..=27 => 9,
+        _ => 10,
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DailyRewardState {
@@ -43,7 +64,7 @@ pub fn advance_daily_reward(
     epoch: u64,
     jokers: u8,
 ) -> Result<DailyRewardAdvance, DailyRewardRuleError> {
-    if !(1..=7).contains(&state.lane_day)
+    if !(1..=CYCLE_DAYS).contains(&state.lane_day)
         || state.streak > STREAK_MAX
         || jokers > JOKERS_MAX
         || match state.last_claim_epoch {
@@ -56,8 +77,8 @@ pub fn advance_daily_reward(
     if epoch == 0 {
         return Err(DailyRewardRuleError::InvalidEpoch);
     }
-    let (streak, jokers_spent) = match state.last_claim_epoch {
-        None => (1, 0),
+    let (streak, jokers_spent, claimed_lane_day) = match state.last_claim_epoch {
+        None => (1, 0, state.lane_day),
         Some(last) => {
             let elapsed = epoch
                 .checked_sub(last)
@@ -74,25 +95,41 @@ pub fn advance_daily_reward(
                         .ok_or(DailyRewardRuleError::InvalidState)?
                         .min(STREAK_MAX),
                     spent,
+                    state.lane_day,
                 )
             } else {
-                (1, 0)
+                let milestone = fallback_milestone(state.lane_day);
+                (
+                    u32::from(milestone + 1),
+                    0,
+                    if milestone == 0 { 1 } else { milestone + 1 },
+                )
             }
         }
     };
     Ok(DailyRewardAdvance {
         next: DailyRewardState {
-            lane_day: if state.lane_day == 7 {
+            lane_day: if claimed_lane_day == CYCLE_DAYS {
                 1
             } else {
-                state.lane_day + 1
+                claimed_lane_day + 1
             },
             streak,
             last_claim_epoch: Some(epoch),
         },
-        claimed_lane_day: state.lane_day,
+        claimed_lane_day,
         jokers_spent,
     })
+}
+
+fn fallback_milestone(next_day: u8) -> u8 {
+    match next_day {
+        8..=14 => 7,
+        15..=21 => 14,
+        22..=28 => 21,
+        29..=30 => 28,
+        _ => 0,
+    }
 }
 
 /// Most recent Berlin 10:00 reset day, expressed as civil days since 1970-01-01.

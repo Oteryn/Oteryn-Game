@@ -446,7 +446,17 @@ fn idle_kick_classification_excludes_queries_and_status_polling() {
         (12, &[][..], false),
         (25, &[][..], false),
         (31, &[][..], false),
-        (32, &[][..], true),
+        (32, &[][..], false),
+        (
+            oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM,
+            &[][..],
+            true,
+        ),
+        (
+            oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM,
+            &[255][..],
+            false,
+        ),
         (40, &[][..], false),
         (45, &[][..], false),
         (56, &[][..], false),
@@ -457,6 +467,11 @@ fn idle_kick_classification_excludes_queries_and_status_polling() {
         (93, &[][..], false),
         (97, &[][..], false),
         (33, &[][..], false),
+        (
+            oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_QUERY,
+            &[][..],
+            false,
+        ),
         (69, &[][..], false),
         (78, &[][..], false),
         (98, &[][..], false),
@@ -504,12 +519,16 @@ fn idle_kick_queries_unknown_and_malformed_input_do_not_extend_deadline()
                 (1, 1),
                 (2, 12),
                 (3, 14),
-                (4, 33),
+                (
+                    4,
+                    oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_QUERY,
+                ),
                 (5, 67),
                 (6, 69),
                 (7, 78),
                 (8, 98),
                 (9, 1000),
+                (10, 33),
             ] {
                 let frame = oteryn_protocol_oteryn::encode_client_command(
                     1,

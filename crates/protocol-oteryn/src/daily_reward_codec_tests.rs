@@ -1,4 +1,5 @@
 use super::*;
+use crate::charm_wire::{read_bytes, read_varint};
 
 fn pick(key: &[u8], count: u64) -> Vec<u8> {
     let mut value = Vec::new();
@@ -10,13 +11,9 @@ fn pick(key: &[u8], count: u64) -> Vec<u8> {
 }
 #[test]
 fn daily_reward_claim_codec_canonicalizes_and_bounds_every_field() -> WireResult<()> {
-    let mut bytes = pick(b"oteryn:item.b", 2);
-    bytes.extend(pick(b"oteryn:item.a", 3));
-    let claim = DailyRewardClaim::decode(&bytes)?;
-    assert_eq!(claim.picks[0].definition, "oteryn:item.a");
-    assert_eq!(claim.picks.iter().map(|p| p.count).sum::<u32>(), 5);
-    assert!(DailyRewardClaim::decode(&pick(b"a", 20)).is_ok());
-    assert!(DailyRewardClaim::decode(&pick(&[b'a'; 512], 1)).is_ok());
+    assert_eq!(DailyRewardClaim::decode(&[]), Ok(DailyRewardClaim));
+    assert!(DailyRewardClaim::decode(&pick(b"a", 20)).is_err());
+    assert!(DailyRewardClaim::decode(&pick(&[b'a'; 512], 1)).is_err());
     for bytes in [
         pick(b"", 1),
         pick(b"a", 0),
@@ -42,7 +39,7 @@ fn daily_reward_claim_codec_canonicalizes_and_bounds_every_field() -> WireResult
 #[test]
 fn daily_reward_wall_and_result_follow_the_reserved_proto_and_bounds() -> WireResult<()> {
     let wall = DailyRewardWall {
-        lane_day: 7,
+        lane_day: 30,
         streak: 100_000,
         jokers: 3,
         claimed: true,
@@ -50,6 +47,19 @@ fn daily_reward_wall_and_result_follow_the_reserved_proto_and_bounds() -> WireRe
     }
     .encode()?;
     assert!(wall.len() <= MAX_DAILY_REWARD_VIEW_BYTES);
+    for day in [0, 31] {
+        assert!(
+            DailyRewardWall {
+                lane_day: day,
+                streak: 1,
+                jokers: 0,
+                claimed: false,
+                claim_enabled: true
+            }
+            .encode()
+            .is_err()
+        );
+    }
     let mut at = 0;
     let mut parts = Vec::new();
     while at < wall.len() {
@@ -60,10 +70,7 @@ fn daily_reward_wall_and_result_follow_the_reserved_proto_and_bounds() -> WireRe
             let _ = read_varint(&wall, &mut at)?;
         }
     }
-    assert_eq!(
-        parts,
-        [[1, 5], [1, 5], [2, 1], [1, 10], [3, 1], [4, 1], [5, 10]]
-    );
+    assert_eq!(parts, Vec::<[u32; 2]>::new());
     let mut id = [0; 16];
     id[6] = 0x70;
     id[8] = 0x80;

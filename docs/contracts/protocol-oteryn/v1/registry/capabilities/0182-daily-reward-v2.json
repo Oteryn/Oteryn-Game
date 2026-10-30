@@ -1,0 +1,13 @@
+{
+  "id": 182,
+  "name": "DAILY_REWARD_V2",
+  "owner_decision": "DAILY30 O1-O5; DAILY30B reserved capability 182",
+  "owner": "Character + World daily rewards; Account + World jokers",
+  "command_types": [
+    354,
+    355
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES remains conditional: admitted v2 content and native atomic claim owner required. Only selected v2 clients may issue commands 354/355."
+}

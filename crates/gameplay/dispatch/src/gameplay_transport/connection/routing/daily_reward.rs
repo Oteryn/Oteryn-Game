@@ -1,4 +1,5 @@
-//! Daily reward command body; predicate and connection control flow stay in `connection.rs`.
+//! One-click v2 commands 354/355; connection dispatch enforces capability 182.
+//! Payload validation and server-owned reward resolution stay with the daily owner.
 
 use super::super::super as transport;
 use super::super::{AdmittedSession, ExactActorRef, FreshAdmissionAuthority, UseCommand};

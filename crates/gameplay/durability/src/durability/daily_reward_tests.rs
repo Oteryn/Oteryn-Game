@@ -128,9 +128,9 @@ fn daily_reward_postgres_claim_replay_gap_and_restart() -> TestResult {
                 gap.streak_after,
                 gap.jokers_spent
             ),
-            (3, 2, 1, 0)
+            (1, 2, 1, 0)
         );
-        assert_eq!(projection(h).await?.0, 4);
+        assert_eq!(projection(h).await?.0, 2);
         assert_eq!(h.root_revision().await?, "1");
         Ok(())
     })
@@ -324,7 +324,7 @@ fn daily_reward_postgres_schema_constraints_privileges_and_dst() -> TestResult {
         claim(h, request(1, 61)?).await?;
         let before = projection(h).await?;
         for query in [
-            "UPDATE game_character_daily_rewards SET lane_day=8",
+            "UPDATE game_character_daily_rewards SET lane_day=31",
             "UPDATE game_character_daily_rewards SET streak=100001",
             "UPDATE game_character_daily_rewards SET streak=0",
             "UPDATE game_character_daily_rewards SET last_claim_epoch=NULL,last_claim_day=NULL,streak=1",

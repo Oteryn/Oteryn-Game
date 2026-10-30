@@ -72,24 +72,13 @@ async fn replay_claim(
     let (end, output) = serve(
         owner,
         &mut fresh,
-        &[(33, &[]), (33, &[]), (33, &[]), (32, claim)],
+        &[(wire::COMMAND_TYPE_DAILY_REWARD_QUERY, &[]), (wire::COMMAND_TYPE_DAILY_REWARD_QUERY, &[]), (wire::COMMAND_TYPE_DAILY_REWARD_QUERY, &[]), (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, claim)],
     )
     .await?;
     let values = results(&output)?;
     assert_eq!(values.len(), 4, "{end}; {values:?}");
     assert_eq!(values[3].0, 4);
     Ok((values[3].2.clone(), fresh))
-}
-pub(super) fn pick(key: &str, quantity: u8) -> TestResult<Vec<u8>> {
-    let mut bytes = vec![
-        10,
-        u8::try_from(key.len() + 4)?,
-        10,
-        u8::try_from(key.len())?,
-    ];
-    bytes.extend(key.as_bytes());
-    bytes.extend([16, quantity]);
-    Ok(bytes)
 }
 pub(super) fn results(
     output: &[u8],
@@ -141,7 +130,7 @@ async fn unrelated_custody_event(h: &Harness) -> TestResult {
 }
 
 #[test]
-fn daily_reward_real_dispatch_delivers_replays_reloads_and_orders_seven_days() -> TestResult {
+fn daily_reward_real_dispatch_delivers_replays_reloads_and_orders_thirty_days() -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
@@ -261,16 +250,16 @@ fn scenario(premium: bool) -> TestResult {
             owner.daily_reward_available(),
         );
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offer, &[1, wire::CAPABILITY_DAILY_REWARD_V1])
+            SelectedCapabilities::select(&offer, &[1, wire::CAPABILITY_DAILY_REWARD_V2])
                 .ok_or("selection")?;
         assert!(
             admitted
                 .continuity
                 .selected_capabilities
-                .contains(wire::CAPABILITY_DAILY_REWARD_V1)
+                .contains(wire::CAPABILITY_DAILY_REWARD_V2)
         );
         epoch(&harness, 1).await?;
-        let potion = pick("oteryn:item.tibia.i266", 5)?;
+        let potion = Vec::<u8>::new();
         let shrine = oteryn_protocol_oteryn::world_object::encode_use_intent(
             &oteryn_protocol_oteryn::world_object::WorldObjectTarget {
                 placement: b"oteryn:placement/daily-reward-shrine".to_vec(),
@@ -284,12 +273,12 @@ fn scenario(premium: bool) -> TestResult {
             &owner,
             &mut admitted,
             &[
-                (33, &[]),
-                (32, &potion),
+                (wire::COMMAND_TYPE_DAILY_REWARD_QUERY, &[]),
+                (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &potion),
                 (2, &shrine),
-                (32, &potion),
-                (33, &[]),
-                (32, &potion),
+                (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &potion),
+                (wire::COMMAND_TYPE_DAILY_REWARD_QUERY, &[]),
+                (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &potion),
             ],
         )
         .await?;
@@ -302,23 +291,23 @@ fn scenario(premium: bool) -> TestResult {
         let first_id = values[3].2[4..20].to_vec();
         assert_eq!(values[5].2, [8, 2]);
         let receipt: (i64,i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_daily_reward_claims),(SELECT count(*) FROM game_character_daily_reward_lines),(SELECT count(*) FROM game_item_bindings),(SELECT count(*) FROM game_item_character_inbox_locations)").fetch_one(&harness.pool).await?;
-        assert_eq!(receipt, (1, 1, 1, 1));
+        assert_eq!(receipt, (1, 2, 0, 0));
         let proof_seen: bool = sqlx::query_scalar(
             "SELECT EXISTS(SELECT 1 FROM daily_fixture_custody_proofs JOIN game_item_bindings USING(item_instance_id))",
         )
         .fetch_one(&harness.pool)
         .await?;
         assert!(
-            proof_seen,
-            "bound MINT must still run the real custody proof"
+            !proof_seen,
+            "currency grants must not fabricate item custody"
         );
         unrelated_custody_event(&harness).await?;
-        let quantity:i64=sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE minted_transaction_id=encode($1,'hex')::uuid").bind(&first_id).fetch_one(&harness.pool).await?;
-        assert_eq!(quantity, 5);
+        let quantity:i64=sqlx::query_scalar("SELECT amount::bigint FROM game_character_cosmetic_token_entries WHERE claim_id=encode($1,'hex')::uuid").bind(&first_id).fetch_one(&harness.pool).await?;
+        assert_eq!(quantity, if premium { 4 } else { 2 });
         // Same-session new connection bytes settle a lost acknowledgement: the retained
         // result replays and the reserved CommandId never becomes a second claim.
         let last = admitted.continuity.next_command_id - 1;
-        let (end, output) = serve_from(&owner, &mut admitted, last, &[(32, &potion)]).await?;
+        let (end, output) = serve_from(&owner, &mut admitted, last, &[(wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &potion)]).await?;
         assert_eq!(
             results(&output)?,
             [(
@@ -338,7 +327,7 @@ fn scenario(premium: bool) -> TestResult {
         let selected = admitted.continuity.selected_capabilities;
         let mut legacy = admitted;
         legacy.continuity.selected_capabilities = SelectedCapabilities::NONE;
-        let (_, output) = serve(&owner, &mut legacy, &[(32, &potion)]).await?;
+        let (_, output) = serve(&owner, &mut legacy, &[(wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &potion)]).await?;
         assert!(
             results(&output)?
                 .iter()
@@ -351,20 +340,15 @@ fn scenario(premium: bool) -> TestResult {
                 .fetch_one(&harness.pool)
                 .await?;
         assert_eq!(count, 1);
-        for day in 2..=7 {
+        for day in 2..=30 {
             epoch(&harness, day).await?;
-            let picks = match day {
-                2 => potion.clone(),
-                4 => pick("oteryn:item.tibia.i266", 10)?,
-                6 => pick("oteryn:item.tibia.i28540", 1)?,
-                _ => Vec::new(),
-            };
+            let picks = Vec::<u8>::new();
             if matches!(day, 3 | 7) {
                 // Fail after all effect writes. The enclosing claim transaction must roll back.
                 sqlx::raw_sql("CREATE FUNCTION dailyfx_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'DAILYFX injected failure'; END $$; CREATE CONSTRAINT TRIGGER dailyfx_fail AFTER INSERT ON game_character_daily_reward_lines DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION dailyfx_fail()")
                     .execute(&harness.pool).await?;
                 let (_, output) =
-                    serve(&owner, &mut admitted, &[(2, &shrine), (32, &picks)]).await?;
+                    serve(&owner, &mut admitted, &[(2, &shrine), (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &picks)]).await?;
                 assert_ne!(results(&output)?.last().and_then(|r| r.2.get(1)), Some(&1));
                 let claims: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_claims WHERE reset_epoch=$1::text::numeric")
                     .bind(day.to_string()).fetch_one(&harness.pool).await?;
@@ -373,11 +357,11 @@ fn scenario(premium: bool) -> TestResult {
                     sqlx::query_scalar("SELECT count(*) FROM game_account_prey_wildcard_entries")
                         .fetch_one(&harness.pool)
                         .await?;
-                assert_eq!(entries, if day == 3 { 0 } else { 1 });
+                assert_eq!(entries, if day == 3 { 1 } else { 2 });
                 sqlx::raw_sql("DROP TRIGGER dailyfx_fail ON game_character_daily_reward_lines; DROP FUNCTION dailyfx_fail()")
                     .execute(&harness.pool).await?;
             }
-            let (end, output) = serve(&owner, &mut admitted, &[(2, &shrine), (32, &picks)]).await?;
+            let (end, output) = serve(&owner, &mut admitted, &[(2, &shrine), (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &picks)]).await?;
             let values = results(&output)?;
             assert_eq!(
                 values.last().and_then(|r| r.2.get(1)),
@@ -385,7 +369,7 @@ fn scenario(premium: bool) -> TestResult {
                 "day {day}: {end}; {values:?}"
             );
             if matches!(day, 3 | 7) {
-                let (_, output) = serve(&owner, &mut admitted, &[(32, &picks)]).await?;
+                let (_, output) = serve(&owner, &mut admitted, &[(wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &picks)]).await?;
                 assert_eq!(
                     results(&output)?.last().map(|r| r.2.as_slice()),
                     Some([8, 2].as_slice())
@@ -393,47 +377,44 @@ fn scenario(premium: bool) -> TestResult {
             }
         }
         let lines:Vec<(i16,String,i32,String,Option<i32>)>=sqlx::query_as("SELECT c.lane_day,l.kind,l.quantity,l.status,l.charges FROM game_character_daily_reward_lines l JOIN game_character_daily_reward_claims c ON c.transaction_id=l.claim_id ORDER BY c.reset_epoch,l.line").fetch_all(&harness.pool).await?;
-        assert_eq!(lines.len(), 7);
-        assert_eq!(
-            lines[2],
-            (
-                3,
-                "PREY_WILDCARD".into(),
-                if premium { 3 } else { 1 },
-                "DELIVERED".into(),
-                None
-            )
-        );
-        assert_eq!(lines[4].4, Some(100));
-        assert_eq!(lines[5].4, Some(50));
-        assert_eq!(
-            lines[6],
-            (
-                7,
-                "XP_BOOST".into(),
-                if premium { 30 } else { 10 },
-                "DELIVERED".into(),
-                None
-            )
-        );
+        let mut expected = Vec::new();
+        for day in 1..=30 {
+            let reward = oteryn_gameplay_progression::daily_reward::reward_for_day(day, premium).ok_or("day")?;
+            for (kind, amount) in [
+                ("BOUNTY_REROLL", reward.bounty_reroll_tokens),
+                ("COSMETIC_TOKEN", reward.cosmetic_tokens),
+                ("TEMPLE_SCROLL", reward.temple_teleport_scrolls),
+                ("PREY_WILDCARD", reward.prey_wildcards),
+                ("XP_BOOST", reward.xp_boost_minutes),
+            ] {
+                if amount > 0 {
+                    expected.push((i16::from(day), kind.to_string(), i32::from(amount),
+                        if kind == "TEMPLE_SCROLL" { "PENDING" } else { "DELIVERED" }.to_string(), None));
+                }
+            }
+        }
+        assert_eq!(lines, expected);
         let balance: (i16,i64) = sqlx::query_as("SELECT balance,(SELECT count(*) FROM game_account_prey_wildcard_entries) FROM game_account_prey_wildcards").fetch_one(&harness.pool).await?;
-        assert_eq!(balance, (if premium { 3 } else { 1 }, 1));
+        assert_eq!(balance, (if premium { 19 } else { 10 }, 10));
+        let tokens: (i64,i64,i64) = sqlx::query_as("SELECT (SELECT balance FROM game_character_cosmetic_tokens),(SELECT balance FROM game_character_bounty_reroll_tokens),(SELECT count(*) FROM game_character_bounty_reroll_token_entries)").fetch_one(&harness.pool).await?;
+        let total = (1..=30).filter_map(|d| oteryn_gameplay_progression::daily_reward::reward_for_day(d, premium)).map(|r| i64::from(r.cosmetic_tokens)).sum::<i64>();
+        assert_eq!(tokens, (total,30,30));
         let flags: i64 = sqlx::query_scalar(
             "SELECT count(*) FROM game_character_daily_reward_claims WHERE premium=$1",
         )
         .bind(premium)
         .fetch_one(&harness.pool)
         .await?;
-        assert_eq!(flags, 7);
-        let minutes: i32 = sqlx::query_scalar("SELECT (extract(epoch FROM (effect_expires_at-effect_started_at))/60)::integer FROM game_character_daily_reward_lines WHERE kind='XP_BOOST'").fetch_one(&harness.pool).await?;
-        assert_eq!(minutes, if premium { 30 } else { 10 });
+        assert_eq!(flags, 30);
+        let minutes: i32 = sqlx::query_scalar("SELECT max(extract(epoch FROM (effect_expires_at-effect_started_at))/60)::integer FROM game_character_daily_reward_lines WHERE kind='XP_BOOST'").fetch_one(&harness.pool).await?;
+        assert_eq!(minutes, 60);
         // New composed owners reload the saved grant; no in-memory boost flag is carried over.
-        effects::kills_before_and_at_expiry(&harness, &authority).await?;
+        effects::kills_before_and_at_expiry(&harness, &authority, premium).await?;
         let state: (i16, i32) =
             sqlx::query_as("SELECT lane_day,streak FROM game_character_daily_rewards")
                 .fetch_one(&harness.pool)
                 .await?;
-        assert_eq!(state, (1, 7));
+        assert_eq!(state, (1, 30));
         // Rebuild the composed owner and replay an OLD command after later epochs.
         let mut rebuilt = dependencies.owner(&harness, &authority);
         rebuilt.active_generation = generation.active();
@@ -444,22 +425,24 @@ fn scenario(premium: bool) -> TestResult {
             sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_claims")
                 .fetch_one(&harness.pool)
                 .await?;
-        assert_eq!(count, 7);
-        epoch(&harness, 9).await?;
-        let gap: [(u32, &[u8]); 2] = [(2, &shrine), (32, &potion)];
+        assert_eq!(count, 30);
+        epoch(&harness, 32).await?;
+        let gap: [(u32, &[u8]); 2] = [(2, &shrine), (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &potion)];
         let (_, output) = serve(&owner, &mut admitted, &gap).await?;
         assert_eq!(results(&output)?.last().and_then(|r| r.2.get(1)), Some(&1));
         let jokers:(i16,i32,i16)=sqlx::query_as("SELECT j.jokers,s.streak,c.jokers_spent FROM game_account_daily_reward_jokers j JOIN game_character_daily_rewards s USING(world_id) JOIN game_character_daily_reward_claims c ON c.character_id=s.character_id AND c.reset_epoch=s.last_claim_epoch").fetch_one(&harness.pool).await?;
-        assert_eq!(jokers, (0, 8, 1));
-        // A deferred proof failure AFTER native MINT rolls back every value row.
-        epoch(&harness, 10).await?;
+        assert_eq!(jokers, (1, 31, 1));
+        // A deferred proof failure AFTER all reward writes rolls back every value row.
+        let before_balances = ledger_snapshot(&harness).await?;
+        epoch(&harness, 33).await?;
         sqlx::raw_sql("CREATE FUNCTION daily_fixture_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected DAILY line failure'; END $$; CREATE CONSTRAINT TRIGGER daily_fixture_fail AFTER INSERT ON game_character_daily_reward_lines DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION daily_fixture_fail()")
             .execute(&harness.pool).await?;
-        let retry: [(u32, &[u8]); 2] = [(2, &shrine), (32, &potion)];
+        let retry: [(u32, &[u8]); 2] = [(2, &shrine), (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &potion)];
         let (_, output) = serve(&owner, &mut admitted, &retry).await?;
         assert_ne!(results(&output)?.last().and_then(|r| r.2.get(1)), Some(&1));
         let rollback:(i64,i64,i64,i64)=sqlx::query_as("SELECT (SELECT count(*) FROM game_character_daily_reward_claims),(SELECT count(*) FROM game_character_daily_reward_lines),(SELECT count(*) FROM game_item_bindings),(SELECT count(*) FROM game_item_character_inbox_locations)").fetch_one(&harness.pool).await?;
-        assert_eq!(rollback, (8, 8, 6, 6));
+        assert_eq!(rollback, (31, i64::try_from(expected.len())? + 2, 0, 0));
+        assert_eq!(ledger_snapshot(&harness).await?, before_balances);
         sqlx::query("DROP TRIGGER daily_fixture_fail ON game_character_daily_reward_lines")
             .execute(&harness.pool)
             .await?;
@@ -472,8 +455,8 @@ fn scenario(premium: bool) -> TestResult {
             "retry end={end}; results={retried:?}"
         );
 
-        epoch(&harness, 11).await?;
-        let (_, output) = serve(&owner, &mut admitted, &[(32, &[255]), (32, &potion)]).await?;
+        epoch(&harness, 34).await?;
+        let (_, output) = serve(&owner, &mut admitted, &[(wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[255]), (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[10, 0])]).await?;
         assert_eq!(
             results(&output)?
                 .iter()
@@ -495,12 +478,12 @@ fn scenario(premium: bool) -> TestResult {
                 command_id: stale_command,
                 item_fence: stale.item_fence,
             },
-            32,
+            wire::COMMAND_TYPE_DAILY_REWARD_CLAIM,
             &[],
         )
         .await;
         assert_eq!(refused, Some(vec![8, 5]));
-        let (_, output) = serve(&owner, &mut stale, &[(32, &[])]).await?;
+        let (_, output) = serve(&owner, &mut stale, &[(wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[])]).await?;
         assert!(
             results(&output)?.is_empty(),
             "the connection drops a stale generation before command ingress"
@@ -524,7 +507,7 @@ fn scenario(premium: bool) -> TestResult {
             sqlx::query_scalar("SELECT count(*) FROM game_character_daily_reward_claims")
                 .fetch_one(&harness.pool)
                 .await?;
-        assert_eq!(count, 9);
+        assert_eq!(count, 32);
         // Claim-time status is resolved again: this reconstructed owner has no
         // current Premium source, even if the earlier grant was Premium.
         // Carry the replay connection's complete continuity, including the server
@@ -532,15 +515,28 @@ fn scenario(premium: bool) -> TestResult {
         let (end, output) = serve(
             &restarted,
             &mut resumed,
-            &[(2, &shrine), (32, &[]), (32, &[])],
+            &[(2, &shrine), (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[]), (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[])],
         )
         .await?;
         let values = results(&output)?;
         assert_eq!(values.len(), 3, "resumed DAILY: {end}; {values:?}");
         assert_eq!(values[1].2.get(1), Some(&1));
         assert_eq!(values[2].2, [8, 2]);
-        let latest: (i16, bool) = sqlx::query_as("SELECT p.balance,c.premium FROM game_account_prey_wildcards p JOIN game_character_daily_reward_claims c ON c.transaction_id=p.last_claim_id").fetch_one(&harness.pool).await?;
-        assert_eq!(latest, (if premium { 4 } else { 2 }, false));
+        let latest: (i16, bool) = sqlx::query_as("SELECT p.balance,(SELECT premium FROM game_character_daily_reward_claims ORDER BY reset_epoch DESC LIMIT 1) FROM game_account_prey_wildcards p").fetch_one(&harness.pool).await?;
+        assert_eq!(latest, (if premium { 21 } else { 11 }, false));
+        // An uncovered gap must preview the actual fallback claim, not the saved lane.
+        epoch(&harness, 37).await?;
+        let (_, output) = serve(&restarted, &mut resumed, &[(wire::COMMAND_TYPE_DAILY_REWARD_QUERY, &[])]).await?;
+        assert_eq!(&results(&output)?[0].2[..2], &[8, 1]);
+        let (_, output) = serve(&restarted, &mut resumed, &[(2, &shrine), (wire::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[])]).await?;
+        assert_eq!(results(&output)?.last().and_then(|r| r.2.get(1)), Some(&1));
+        let fallback: (i16,i32) = sqlx::query_as("SELECT lane_day,streak FROM game_character_daily_rewards").fetch_one(&harness.pool).await?;
+        assert_eq!(fallback, (2,1));
+        for table in ["game_character_cosmetic_token_entries", "game_character_bounty_reroll_token_entries"] {
+            let privileges: (bool,bool,bool) = sqlx::query_as("SELECT has_table_privilege('oteryn_game_runtime',$1,'SELECT,INSERT'),has_table_privilege('oteryn_game_runtime',$1,'UPDATE,DELETE'),has_table_privilege('oteryn_game_control',$1,'SELECT')")
+                .bind(table).fetch_one(&harness.pool).await?;
+            assert_eq!(privileges, (true,false,true));
+        }
         drop(restarted);
         drop(authority);
         drop(seal);
@@ -548,4 +544,9 @@ fn scenario(premium: bool) -> TestResult {
         eprintln!("DAILY-DISPATCH-PG cleanup database={database}");
         Ok(())
     })
+}
+
+async fn ledger_snapshot(h: &Harness) -> TestResult<(i64,i64,i64,i64,i64,i64)> {
+    Ok(sqlx::query_as("SELECT (SELECT balance FROM game_character_cosmetic_tokens),(SELECT balance FROM game_character_bounty_reroll_tokens),(SELECT balance::bigint FROM game_account_prey_wildcards),(SELECT count(*) FROM game_character_cosmetic_token_entries),(SELECT count(*) FROM game_character_bounty_reroll_token_entries),(SELECT count(*) FROM game_account_prey_wildcard_entries)")
+        .fetch_one(&h.pool).await?)
 }
