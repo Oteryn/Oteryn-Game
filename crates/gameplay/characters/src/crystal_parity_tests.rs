@@ -12,8 +12,9 @@
 //!   `regenerate_stamina.lua` with `timeToRegenMinuteStamina = 180`,
 //!   `timeToRegenMinutePremiumStamina = 360` (`config.lua.dist`).
 //!
-//! Recorded divergences are pinned, not adopted: the Monk skill rows (Oteryn follows Canary
-//! `47dfd51f`), and the XP composition rounding and low-level bonus (D118, declared differences).
+//! Recorded divergences are pinned, not adopted: the Monk skill rows (Oteryn follows Global
+//! TibiaWiki Formulae r1205374), and the XP composition rounding and low-level bonus (D118,
+//! declared differences).
 #![allow(clippy::expect_used)]
 
 use crate::hunting_experience::hunting_experience;
@@ -71,8 +72,9 @@ const CRYSTAL_VOCATIONS: [(&str, f32, [f32; 7], u32, u32); 9] = [
 
 /// Crystal Monk and Exalted Monk: `manamultiplier`, skill multipliers, `gainhp`, `gainmana`.
 const CRYSTAL_MONK: (f32, [f32; 7], u32, u32) = (1.3, [1.1, 1.2, 1.2, 1.2, 1.5, 1.1, 1.1], 10, 10);
-/// Canary `47dfd51f` Monk skill multipliers, which the admitted build-training profile carries.
-const CANARY_MONK_SKILLS: [f32; 7] = [1.1, 1.5, 1.5, 1.5, 2.0, 1.2, 1.1];
+/// Global TibiaWiki Formulae r1205374 Monk skill multipliers, adopted by the owner decision
+/// of 2026-10-30 (#2742, C11PKG).
+const GLOBAL_MONK_SKILLS: [f32; 7] = [1.1, 1.4, 1.4, 1.4, 1.5, 1.15, 1.1];
 
 fn formula() -> CompiledTrainingFormula {
     CompiledTrainingFormula::from_profile(
@@ -148,7 +150,7 @@ fn c14_skill_tries_and_magic_mana_equal_crystal_for_every_non_monk_vocation() {
 }
 
 #[test]
-fn c14_monk_magic_matches_and_skill_rows_are_the_recorded_canary_crystal_conflict() {
+fn c14_monk_magic_matches_and_skill_rows_are_the_recorded_global_crystal_conflict() {
     let formula = formula();
     let (mana, crystal_skills, _, _) = CRYSTAL_MONK;
     for key in ["monk", "exalted_monk"] {
@@ -158,19 +160,25 @@ fn c14_monk_magic_matches_and_skill_rows_are_the_recorded_canary_crystal_conflic
                 Some(crystal_mana(mana, level))
             );
         }
-        // UNVERIFIED: no constant set is admitted as the Global formula
-        // (docs/reference/content-prep/skill-formulas-content-1). Oteryn keeps Canary's row.
-        for (skill, multiplier) in CANARY_MONK_SKILLS.into_iter().enumerate() {
-            assert_eq!(
-                formula.required(key, skill + 1, 12),
-                Some(crystal_skill_tries(skill, multiplier, 12))
-            );
+        for (skill, multiplier) in GLOBAL_MONK_SKILLS.into_iter().enumerate() {
+            for level in 11..=200 {
+                let expected = crystal_skill_tries(skill, multiplier, level);
+                // Near 2^63 Crystal's u64 cast saturates; Oteryn refuses the level.
+                if expected >= 1 << 62 {
+                    break;
+                }
+                assert_eq!(
+                    formula.required(key, skill + 1, level),
+                    Some(expected),
+                    "{key} skill {skill} level {level}"
+                );
+            }
         }
     }
     let differing: Vec<usize> = (0..7)
-        .filter(|&skill| CANARY_MONK_SKILLS[skill] != crystal_skills[skill])
+        .filter(|&skill| GLOBAL_MONK_SKILLS[skill] != crystal_skills[skill])
         .collect();
-    assert_eq!(differing, [1, 2, 3, 4, 5]);
+    assert_eq!(differing, [1, 2, 3, 5]);
 }
 
 #[test]
