@@ -32,6 +32,7 @@ mod cyclopedia;
 mod death_promotion;
 mod npc_purchase;
 mod npc_travel;
+mod proficiency_catalyst;
 #[cfg(test)]
 mod writer_registration_tests;
 

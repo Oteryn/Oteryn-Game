@@ -4,6 +4,9 @@
 //! the protection-zone rule follows English TibiaWiki `Weapon_Proficiency` (Global wins).
 use std::sync::Arc;
 
+#[path = "weapon_proficiency_select/catalyst.rs"]
+pub(super) mod catalyst;
+
 use sha2::{Digest, Sha256};
 
 use super::ComposedFreshAdmission;
@@ -46,6 +49,19 @@ macro_rules! authority_methods {
                 })
             }
         }
+
+        /// P08: a Proficiency Catalyst used on a weapon; `None` when the source is no catalyst.
+        fn use_proficiency_catalyst(
+            &self,
+            _actor: $crate::foundation::ExactActorRef,
+            _command: $crate::gameplay_transport::connection::UseCommand,
+            _catalyst: $crate::gameplay_transport::item_view::ItemKey,
+            _weapon: $crate::gameplay_transport::item_view::ItemKey,
+        ) -> impl std::future::Future<
+            Output = Option<$crate::gameplay_transport::connection::UseOutcome>,
+        > {
+            async { None }
+        }
     };
 }
 pub(super) use authority_methods;
@@ -59,6 +75,19 @@ macro_rules! composed_methods {
         ) -> Option<oteryn_protocol_oteryn::weapon_proficiency::SelectPerkReply> {
             $crate::gameplay_transport::weapon_proficiency_select::execute(
                 self, actor, command, request,
+            )
+            .await
+        }
+
+        async fn use_proficiency_catalyst(
+            &self,
+            actor: $crate::foundation::ExactActorRef,
+            command: $crate::gameplay_transport::connection::UseCommand,
+            catalyst: $crate::gameplay_transport::item_view::ItemKey,
+            weapon: $crate::gameplay_transport::item_view::ItemKey,
+        ) -> Option<$crate::gameplay_transport::connection::UseOutcome> {
+            $crate::gameplay_transport::weapon_proficiency_select::catalyst::use_catalyst(
+                self, actor, command, catalyst, weapon,
             )
             .await
         }

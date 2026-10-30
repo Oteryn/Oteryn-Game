@@ -93,6 +93,9 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
                 if let (Some(source), Some(target)) = (source, target)
                     && let Some(outcome) = authority.use_coin_converter(actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence }, source, target).await
                 { return Some(Dispatch::Use(outcome)); }
+                if let (Some(source), Some(target)) = (source, target)
+                    && let Some(outcome) = authority.use_proficiency_catalyst(actor, UseCommand { game_session_id: admitted.game_session_id, command_id: command.command_id, item_fence: admitted.item_fence }, source, target).await
+                { return Some(Dispatch::Use(outcome)); }
                 if let Some(outcome) = authority
                     .use_imbuement_item(
                         actor,

@@ -47,6 +47,7 @@ mod carried_inventory;
 mod carried_source;
 pub mod mining;
 pub mod mount_taming;
+pub mod proficiency_catalyst;
 
 pub use carried_inventory::ItemUseInventory;
 pub(super) use carried_inventory::read_use_inventory;
@@ -58,6 +59,8 @@ pub enum ItemUseKind {
     Food,
     Potion,
     MountTaming,
+    /// P08: one unit composed with its `catalyst` proficiency receipt.
+    ProficiencyCatalyst,
     PickRefine {
         tool: [u8; 16],
         wire_binding: [u8; 32],
@@ -71,6 +74,7 @@ impl ItemUseKind {
             Self::Food => ITEM_USE_CAUSE_FOOD,
             Self::Potion => ITEM_USE_CAUSE_POTION,
             Self::MountTaming => mount_taming::TAMING_CAUSE,
+            Self::ProficiencyCatalyst => proficiency_catalyst::CATALYST_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
     }
@@ -187,9 +191,15 @@ impl ItemUseRequest {
         let flask_valid = match (&self.flask, self.kind) {
             (
                 ItemUseFlaskPlan::None,
-                ItemUseKind::Food | ItemUseKind::Potion | ItemUseKind::MountTaming,
+                ItemUseKind::Food
+                | ItemUseKind::Potion
+                | ItemUseKind::MountTaming
+                | ItemUseKind::ProficiencyCatalyst,
             ) => true,
-            (_, ItemUseKind::Food | ItemUseKind::MountTaming) => false,
+            (
+                _,
+                ItemUseKind::Food | ItemUseKind::MountTaming | ItemUseKind::ProficiencyCatalyst,
+            ) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
                 ItemUseFlaskPlan::Stack {
@@ -338,7 +348,9 @@ impl DurabilityRoot {
     ) -> Result<ItemUseOutcome> {
         if matches!(
             request.kind,
-            ItemUseKind::PickRefine { .. } | ItemUseKind::MountTaming
+            ItemUseKind::PickRefine { .. }
+                | ItemUseKind::MountTaming
+                | ItemUseKind::ProficiencyCatalyst
         ) {
             return Err(ItemUseError::InvalidInput);
         }

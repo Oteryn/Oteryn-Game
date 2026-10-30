@@ -20,6 +20,7 @@ const SEQUENCED_WRITERS: &[(&str, &str)] = &[
     (".commit_cyclopedia(", "durability/character_revision_sequencer/cyclopedia.rs"),
     (".commit_npc_purchase(", "durability/character_revision_sequencer/npc_purchase.rs"),
     (".commit_npc_travel(", "durability/character_revision_sequencer/npc_travel.rs"),
+    (".commit_proficiency_catalyst(", "durability/character_revision_sequencer/proficiency_catalyst.rs"),
     (".reset_character_wheel(", "durability/character_revision_sequencer.rs"),
 ];
 
