@@ -35,6 +35,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("LOOP-TRAIN-1", 23),
     // The pick 3456, shiny stone 10310 and small diamond 3028.
     ("MINING-1", 3),
+    // Monk shrine rewards 50267..=50269 and 50271..=50274 from
+    // tools/content-migration/monk_reward_profiles.py. All have speed_bonus=0.
+    ("MONKQUEST", 7),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
