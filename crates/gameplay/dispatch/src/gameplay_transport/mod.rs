@@ -109,6 +109,7 @@ mod party_spell_feedback;
 mod party_spell_owner;
 mod party_xp;
 mod party_xp_command;
+mod player_death_items;
 mod proficiency_checkpoint;
 mod promotion_death;
 mod promotion_login;

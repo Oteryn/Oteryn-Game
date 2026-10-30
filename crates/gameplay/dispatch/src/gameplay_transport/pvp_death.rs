@@ -15,8 +15,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         formula: Option<&dyn BuildFormula>,
         premium: Option<&dyn DeathPremiumOwner>,
     ) -> Result<CommittedCharacterDeath, CharacterProgressionError> {
-        self.root
-            .settle_runtime_player_death(
+        let permit = self
+            .spell_lane_permit()
+            .await
+            .ok_or(CharacterProgressionError::AuthorityRejected)?;
+        let root = self
+            .runtime
+            .lock()
+            .await
+            .content_pin()
+            .server_artifact_digest();
+        let death = self
+            .root
+            .settle_runtime_player_death_with_items(
                 &self.revision_sequencer,
                 self.character,
                 self.holder,
@@ -24,7 +35,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 request,
                 formula,
                 premium,
+                Some(root),
             )
-            .await
+            .await?;
+        self.apply_player_death_items(&permit, fence, &death)
+            .await?;
+        Ok(death)
     }
 }

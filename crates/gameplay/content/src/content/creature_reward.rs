@@ -15,6 +15,7 @@ use super::{
     ProjectV2DefinitionRef,
 };
 use crate::domain::bestiary::BestiaryRace;
+use crate::domain::bosstiary::{BosstiaryBoss, progress};
 use oteryn_gameplay_domain::domain::loot_data::{
     GAMEITEM01_CORPSE_CONTAINER_ENTRIES_MAX, LootDefinitionRef, LootSelectionAlgorithm,
     LootTableDefinition, LootTableEntry,
@@ -34,6 +35,7 @@ pub struct CreatureRewardRow {
     pub loot_table_ref: LootDefinitionRef,
     pub loot_table: LootTableDefinition,
     pub race: Option<BestiaryRace>,
+    pub boss: Option<BosstiaryBoss>,
 }
 
 /// Why a creature's kill settles nothing.
@@ -71,11 +73,17 @@ impl NoSettlementReason {
 #[derive(Debug, Clone, Default)]
 pub struct CreatureRewardTable {
     rows: HashMap<String, Result<Arc<CreatureRewardRow>, NoSettlementReason>>,
+    bosses: HashMap<String, BosstiaryBoss>,
     forge_sliver: Option<LootDefinitionRef>,
     daily_boss_equipment: HashSet<String>,
 }
 
 impl CreatureRewardTable {
+    /// Boss credit is independent of corpse and loot materialization admission.
+    pub fn boss(&self, creature: &str) -> Option<&BosstiaryBoss> {
+        self.bosses.get(creature)
+    }
+
     /// Equipment membership comes from this generation's admitted Item policies.
     pub fn is_daily_boss_equipment(&self, key: &str) -> bool {
         self.daily_boss_equipment.contains(key)
@@ -171,6 +179,12 @@ pub struct SectionLootEntry {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
+    #[serde(default)]
+    pub children: Vec<SectionLootEntry>,
+    #[serde(default)]
+    pub unique: bool,
+    #[serde(default)]
+    pub subtype: Option<u16>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -188,6 +202,10 @@ pub struct SectionItemFacts {
     pub item: SectionRef,
     pub materializable: bool,
     pub container_capacity: Option<u32>,
+    #[serde(default)]
+    pub charges: Option<u32>,
+    #[serde(default)]
+    pub stackable: bool,
 }
 
 /// The pinned `loot_tables` section (`OTERYN_NATIVE_LOOT_TABLES/v1`).
@@ -202,6 +220,42 @@ pub struct LootTablesSection {
 
 fn refuse(reason: &'static str) -> ContentError {
     ContentError::InvalidArtifact(reason)
+}
+
+fn lower_loot_entries(
+    entries: &[SectionLootEntry],
+    items: &HashMap<&SectionRef, &SectionItemFacts>,
+    depth: usize,
+) -> Result<Vec<LootTableEntry>, NoSettlementReason> {
+    if depth > 8 || entries.len() > LOOT_SECTION_RECORDS_MAX {
+        return Err(NoSettlementReason::LootItemInadmissible);
+    }
+    entries
+        .iter()
+        .map(|entry| {
+            let facts = items
+                .get(&entry.item)
+                .filter(|facts| facts.materializable)
+                .ok_or(NoSettlementReason::LootItemInadmissible)?;
+            if !entry.children.is_empty() && facts.container_capacity.is_none() {
+                return Err(NoSettlementReason::LootItemInadmissible);
+            }
+            Ok(LootTableEntry {
+                item: entry.item.lower(),
+                min_count: entry.min_count,
+                max_count: entry.max_count,
+                probability_ppm: entry.probability_ppm,
+                details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                    children: lower_loot_entries(&entry.children, items, depth + 1)?,
+                    container_capacity: facts.container_capacity,
+                    charges: facts.charges,
+                    stackable: facts.stackable,
+                    subtype: entry.subtype,
+                    unique: entry.unique,
+                },
+            })
+        })
+        .collect()
 }
 
 fn algorithm(name: &str) -> Option<LootSelectionAlgorithm> {
@@ -361,10 +415,24 @@ impl CreatureRewardTable {
                             .get(&target.key)
                             .filter(|race| race.definition_revision() == target.revision)
                             .cloned();
-                        row(profile, *loot, &tables, &items, race)
+                        row(profile, *loot, &tables, &items, race).map(|mut row| {
+                            row.boss = boss_metadata(profile, &target.key);
+                            row
+                        })
                     })
                     .map(Arc::new);
                 (target.key.clone(), row)
+            })
+            .collect();
+        let bosses = creatures
+            .records
+            .iter()
+            .filter_map(|record| {
+                let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+                    return None;
+                };
+                let key = &record.profile.target.key;
+                Some((key.clone(), boss_metadata(profile, key)?))
             })
             .collect();
         let forge_sliver = section
@@ -374,6 +442,7 @@ impl CreatureRewardTable {
             .map(|facts| facts.item.lower());
         Self {
             rows,
+            bosses,
             forge_sliver,
             daily_boss_equipment: HashSet::new(),
         }
@@ -422,20 +491,7 @@ fn row(
             let table = tables
                 .get(reference)
                 .ok_or(NoSettlementReason::LootTableMissing)?;
-            let entries = table
-                .entries
-                .iter()
-                .map(|entry| {
-                    admitted(&entry.item)
-                        .map(|_| LootTableEntry {
-                            item: entry.item.lower(),
-                            min_count: entry.min_count,
-                            max_count: entry.max_count,
-                            probability_ppm: entry.probability_ppm,
-                        })
-                        .ok_or(NoSettlementReason::LootItemInadmissible)
-                })
-                .collect::<Result<_, _>>()?;
+            let entries = lower_loot_entries(&table.entries, items, 0)?;
             (
                 reference.lower(),
                 LootTableDefinition {
@@ -453,5 +509,29 @@ fn row(
         loot_table_ref,
         loot_table,
         race,
+        boss: None,
+    })
+}
+
+fn boss_metadata(profile: &ProjectV2CreatureAuthoring, key: &str) -> Option<BosstiaryBoss> {
+    let category = profile
+        .details
+        .as_ref()
+        .and_then(|details| {
+            details
+                .bosstiary
+                .as_ref()
+                .map(|boss| boss.category.as_str())
+        })
+        .or_else(|| {
+            profile
+                .bosstiary
+                .as_ref()
+                .map(|boss| boss.category.as_str())
+        })?;
+    progress(category, 0)?;
+    Some(BosstiaryBoss {
+        key: key.to_owned(),
+        category: category.to_owned(),
     })
 }

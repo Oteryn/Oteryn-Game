@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from item_taxonomy import build_taxonomy, legacy_profile, taxonomy_inputs
-from world_project_v2_to_tree import capability_relations
+from world_project_v2_to_tree import apply_summer_item_admissions, capability_relations
 
 ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
@@ -726,6 +726,7 @@ def main() -> int:
         expected_start = payload["shard"]["end"] + 1
 
     legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
+    apply_summer_item_admissions(legacy_items, ROOT)
     require(migrated_items == legacy_items and expected_start == 34043, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")

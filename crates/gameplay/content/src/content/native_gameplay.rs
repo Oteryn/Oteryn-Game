@@ -1775,8 +1775,8 @@ pub mod test_support {
 
     mod activation_fixture;
     pub use activation_fixture::{
-        activated_loop_monster, activated_loop_monster_missing_child, activated_with_loot_tables,
-        loop_monster_inner_digest,
+        activated_loop_monster, activated_loop_monster_missing_child,
+        activated_with_custom_loot_tables, activated_with_loot_tables, loop_monster_inner_digest,
     };
 }
 
@@ -2777,6 +2777,18 @@ mod tests {
             oteryn_simulation_determinism::ExactI64::new(5)
         );
         assert!(!rat.loot_table.entries.is_empty());
+        assert!(rat.boss.is_none());
+        assert!(
+            native
+                .reward_table()
+                .row("oteryn:creature.ferumbras")
+                .is_err()
+        );
+        let boss = native
+            .reward_table()
+            .boss("oteryn:creature.ferumbras")
+            .unwrap();
+        assert_eq!(boss.category.as_str(), "nemesis");
     }
     #[test]
     fn item_key_set_section_is_pinned_digest_bound_and_absent_or_empty_offers_no_index() {

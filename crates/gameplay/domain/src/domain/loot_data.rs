@@ -60,6 +60,20 @@ pub struct LootTableEntry {
     pub min_count: u32,
     pub max_count: u32,
     pub probability_ppm: Option<u32>,
+    pub details: LootEntryDetails,
+}
+
+/// Per-entry container and item state carried by the admitted loot table.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct LootEntryDetails {
+    pub children: Vec<LootTableEntry>,
+    pub container_capacity: Option<u32>,
+    /// Full native charges; a fresh non-stackable item starts at its definition default.
+    pub charges: Option<u32>,
+    /// Stackable charged items use the count as their stack quantity.
+    pub stackable: bool,
+    pub subtype: Option<u16>,
+    pub unique: bool,
 }
 
 /// Mirrors `content::reference_playable::ReferenceLootDefinition`: the

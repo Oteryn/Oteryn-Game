@@ -137,6 +137,15 @@ def git_blob_sha(path: Path) -> str:
     data = path.read_bytes()
     return hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\0" + data).hexdigest()
 
+
+def apply_summer_item_admissions(definitions, root=ROOT):
+    spec = importlib.util.spec_from_file_location(
+        "summer_corpse_items", root / "tools/content-schema/native-gameplay/summer_corpse_items.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.apply_admissions(definitions, root)
+
+
 def main() -> int:
     # D1093: canonical cosmetics are tree-first. Validate before writing any derived output;
     # historical identity-only Mount/Outfit packets are never reinterpreted as authored facts.
@@ -172,6 +181,7 @@ def main() -> int:
     # Accepted reward Item facts are tree-first; retain them across legacy regeneration.
     from quest_reward_item_semantics import apply_admissions
     apply_admissions(item_records, ROOT)
+    apply_summer_item_admissions(item_records)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []

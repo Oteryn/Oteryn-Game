@@ -245,6 +245,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 expected_character_revision: character_revision,
             };
         if self
+            .resume_pending_player_death_items(&permit, position_fence)
+            .await
+            .is_err()
+        {
+            return (FirstEntryOutcome::RefusedUnavailable, None, None);
+        }
+        if self
             .bundle_map()
             .and_then(|map| map.overlay.base().subareas.default_town)
             .is_some()

@@ -34,7 +34,7 @@
     },
     "dom_helper": {
       "path": "tools/content-migration/item_external_family_refinement.py",
-      "sha256": "e178f7db6bed07567dece0fe8e008f3835a6c03eb542b14d70ec1efe5e9f8cd1"
+      "sha256": "392502106954e622a81a5bdc5922ae34660771b4b7e85c4d1f2ee993722230b6"
     },
     "a12_helper": {
       "path": "tools/content-migration/item_official_navigation.py",
