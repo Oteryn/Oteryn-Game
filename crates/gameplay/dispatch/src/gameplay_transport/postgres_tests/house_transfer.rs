@@ -58,7 +58,7 @@ fn a_same_session_resume_waits_for_a_busy_holder_at_prepare_postgres() -> TestRe
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(false).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "busy-holder resume thread panicked")??;
     Ok(())
@@ -71,12 +71,25 @@ fn a_resumed_loss_retries_an_unreadable_history_without_releasing_the_session_po
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(true).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "resumed-loss thread panicked")??;
     Ok(())
 }
-fn resume_scenario(history_read_fails: bool) -> TestResult {
+#[test]
+fn c08_conditions_postgres_reconnect_preserves_poison_and_haste() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| resume_scenario(false, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "condition reconnect thread panicked")??;
+    Ok(())
+}
+
+fn resume_scenario(history_read_fails: bool, conditions: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         return Ok(());
     };
@@ -88,7 +101,7 @@ fn resume_scenario(history_read_fails: bool) -> TestResult {
         false,
     ))?;
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        rt.block_on(resume_case(&h, history_read_fails))
+        rt.block_on(resume_case(&h, history_read_fails, conditions))
     }));
     let cleanup = rt.block_on(h.cleanup());
     match result {
@@ -99,7 +112,7 @@ fn resume_scenario(history_read_fails: bool) -> TestResult {
         Err(panic) => std::panic::resume_unwind(panic),
     }
 }
-async fn resume_case(h: &Harness, history_read_fails: bool) -> TestResult {
+async fn resume_case(h: &Harness, history_read_fails: bool, conditions: bool) -> TestResult {
     let recovery_source = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -126,6 +139,11 @@ async fn resume_case(h: &Harness, history_read_fails: bool) -> TestResult {
     admitted.item_fence = crate::gameplay_transport::item_fence_of(current);
     admitted.continuity.selected_capabilities =
         SelectedCapabilities::select(owner.offered_capabilities(), &[86]).ok_or("selection")?;
+    let before_conditions = if conditions {
+        Some(install_reconnect_conditions(&owner, &deps).await?)
+    } else {
+        None
+    };
     owner.states.command_ingress.admit(admitted.game_session_id);
     // The served connection ends at once; its loss is recorded as the listener records it.
     let (mut server, client) = tokio::io::duplex(1 << 20);
@@ -162,6 +180,19 @@ async fn resume_case(h: &Harness, history_read_fails: bool) -> TestResult {
     let resumed = resumed?;
     assert_eq!(resumed.game_session_id, admitted.game_session_id);
     assert_eq!(resumed.continuity.connection_generation, 2);
+    if let Some(before) = before_conditions {
+        assert_eq!(resumed.runtime_actor, Some(deps.actor));
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let after = states
+            .get(&runtime, deps.actor, resumed.game_session_id)
+            .ok_or("resumed condition state")?;
+        assert_eq!(
+            after.owned_conditions(),
+            &before,
+            "reconnect keeps definition, provenance, sequence, remaining damage and tick clock"
+        );
+    }
     let (current, _) = FreshAdmissionStore::from_root(h.root.clone())
         .current_session_at(admitted.game_session_id)
         .await?;
@@ -235,6 +266,74 @@ async fn resume_case(h: &Harness, history_read_fails: bool) -> TestResult {
     );
     Ok(())
 }
+async fn install_reconnect_conditions(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    deps: &Dependencies,
+) -> TestResult<oteryn_gameplay_foundation::foundation::condition::ConditionStore<String>> {
+    use oteryn_gameplay_domain::domain::condition::{ConditionValues, DotElement, SpeedRange};
+    use oteryn_gameplay_foundation::foundation::condition::{
+        ApplicationFacts, ConditionDefinition,
+    };
+    use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+    // Synthetic condition magnitudes isolate lifetime from combat/content balance. The
+    // framed ClientResume below drives the real PostgreSQL reconnect owner unchanged.
+    let definitions = [
+        ConditionDefinition::new(
+            "fixture:reconnect.poison",
+            1,
+            ConditionValues::DamageOverTime {
+                element: DotElement::Poison,
+                total_min: 100,
+                total_max: 100,
+                per_tick: 5,
+                interval_ms: 5_000,
+                delayed: true,
+            },
+        )
+        .ok_or("poison fixture")?,
+        ConditionDefinition::new(
+            "fixture:reconnect.haste",
+            1,
+            ConditionValues::Speed {
+                paralysis: false,
+                range: SpeedRange {
+                    a_min: 1000,
+                    b_min: 100_000,
+                    a_max: 1000,
+                    b_max: 100_000,
+                },
+                duration_ms: 60_000,
+            },
+        )
+        .ok_or("haste fixture")?,
+    ];
+    let runtime = owner.runtime.lock().await;
+    let mut states = owner.states.spell_states.lock().await;
+    let state = states
+        .get(&runtime, deps.actor, deps.admitted.game_session_id)
+        .ok_or("condition fixture state")?;
+    let root = GameplayDecisionRoot::from_bytes([7; 32]);
+    let next = state
+        .stage_owned_test_conditions(
+            &definitions,
+            &ApplicationFacts {
+                now: owner.owner_now().get(),
+                base_speed: 220,
+                mana_shield_capacity: 0,
+                target_reentry_protected: false,
+                source_reentry_protected: false,
+                target_is_player: true,
+                decision_root: &root,
+                occurrence: DecisionOccurrenceId::from_bytes([7; 16]),
+            },
+        )
+        .ok_or("condition fixture stage")?;
+    assert_eq!(next.owned_conditions().instances().len(), 2);
+    let snapshot = next.owned_conditions().clone();
+    assert!(states.commit(&runtime, deps.actor, deps.admitted.game_session_id, next));
+    Ok(snapshot)
+}
+
 async fn resume_same_session(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     source: crate::foundation::GameSessionId,
