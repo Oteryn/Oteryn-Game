@@ -57,6 +57,7 @@ pub mod guild_war;
 pub mod hazard;
 pub mod highscores;
 pub mod hireling;
+pub mod hotkey_equip;
 pub mod house;
 pub mod house_move_out;
 pub mod house_podium;

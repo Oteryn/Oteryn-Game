@@ -3,6 +3,69 @@
 
 const ITEM_SELECTED: &[u32] = &[4, 6];
 
+#[test]
+fn hotkey_equip_session_decodes_selected_equipment_snapshot_and_delta() -> Result<(), BoxError> {
+    block_on(async {
+        const SELECTED: &[u32] = &[4, 6, 12, 14, 179];
+        let inventory = CharacterInventory {
+            equipment: vec![item_view::EquippedItem {
+                slot: item_view::EquipmentSlot::Head,
+                item: entry(2, 3351, 1),
+            }],
+            ..CharacterInventory::default()
+        };
+        let updated = CharacterInventory::default();
+        let payload = item_view::encode_character_inventory_with_equip_drop(&inventory, true)
+            .map_err(|e| format!("{e:?}"))?;
+        let delta = item_view::encode_character_inventory_with_equip_drop(&updated, true)
+            .map_err(|e| format!("{e:?}"))?;
+        let (client, mut server) = tokio::io::duplex(256 * 1024);
+        let peer = tokio::spawn(async move {
+            join_peer_with(
+                &mut server,
+                SELECTED,
+                SELECTED,
+                &[],
+                item_snapshot(vec![])?,
+                &[(9, 1, 1, payload)],
+            )
+            .await?;
+            let command = read_frame(&mut server).await?;
+            let envelope = decode_wire_envelope(&command)?;
+            let command = envelope.client_command(1)?;
+            assert_eq!(command.command_type, 348);
+            assert_eq!(command.payload, &[0, 0, 0, 1]);
+            write_frame(&mut server, &encode_state_delta(1, 41, 9, 1, 2, 1, &delta)?).await?;
+            write_frame(
+                &mut server,
+                &encode_command_result(
+                    1,
+                    42,
+                    command.command_id,
+                    CommandStatus::Accepted,
+                    &[8, 1],
+                )?,
+            )
+            .await?;
+            let mut rest = Vec::new();
+            server.read_to_end(&mut rest).await?;
+            Ok::<(), BoxError>(())
+        });
+        let mut admission = item_admission()?;
+        admission.supported_capabilities = SELECTED;
+        let mut session = Session::admit(client, admission).await?;
+        assert_eq!(session.inventory(), Some(&inventory));
+        let result = session
+            .equip_item_definition(std::num::NonZeroU32::MIN)
+            .await?;
+        assert_eq!(result.outcome, ItemMoveOutcome::Moved);
+        assert_eq!(session.inventory(), Some(&updated));
+        drop(session);
+        peer.await??;
+        Ok::<(), BoxError>(())
+    })?
+}
+
 fn handle(value: u64) -> ItemHandle {
     ItemHandle::new(value).unwrap_or(ItemHandle::MIN)
 }

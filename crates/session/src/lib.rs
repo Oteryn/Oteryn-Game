@@ -20,9 +20,11 @@ mod appearance_state;
 mod depot;
 mod domain_dispatch;
 mod gated_command;
+mod hotkey_equip_transport;
 mod map_transport;
 mod quest_log_transport;
 pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, DepotReply};
+pub use oteryn_protocol_oteryn::hotkey_equip;
 /// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
 mod guild_chat;
@@ -1192,8 +1194,12 @@ impl<S: SessionStream> Session<S> {
                     item_view::SNAPSHOT_TYPE_CHARACTER_INVENTORY_V1,
                 ) if item_selected => {
                     inventory = Some(
-                        item_view::decode_character_inventory(domain.payload)
-                            .map_err(SessionError::ItemView)?,
+                        item_view::decode_character_inventory_with_equip_drop(
+                            domain.payload,
+                            selected_capabilities
+                                .contains(&item_view::CAPABILITY_ITEM_EQUIP_DROP_V1),
+                        )
+                        .map_err(SessionError::ItemView)?,
                     );
                     inventory_revision = domain.revision;
                 }
