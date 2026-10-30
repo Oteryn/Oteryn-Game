@@ -103,6 +103,7 @@ pub enum Element {
     Death,
     Ice,
     Earth,
+    Holy,
     Healing,
 }
 #[derive(Debug, Clone, PartialEq, Eq)]

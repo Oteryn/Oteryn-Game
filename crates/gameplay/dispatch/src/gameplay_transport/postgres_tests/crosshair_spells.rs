@@ -119,7 +119,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
         cp,
         room.clone(),
         native.spell_book().clone(),
-        2,
+        3,
     )?;
     deps.combat_room = Some(room);
     // Every spell here is premium: the account holds a Current Premium.
@@ -238,7 +238,7 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 "oteryn:creature.rat".into(),
                 u64::try_from(health)?,
             )])
-            .map_err(debug)?;
+            .map_err(|error| format!("realize crosshair target spawn: {error:?}"))?;
         target = runtime
             .visible_entities()
             .creatures
