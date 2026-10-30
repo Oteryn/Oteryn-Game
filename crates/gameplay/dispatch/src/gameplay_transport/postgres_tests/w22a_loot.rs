@@ -11,6 +11,7 @@ enum Case {
     Large,
     Nested,
     Outside,
+    ChargedSubtype,
 }
 thread_local! { static CASE: Cell<Option<Case>> = const { Cell::new(None) }; }
 
@@ -25,6 +26,13 @@ fn w22a_more_than_sixteen_entries_drop_into_the_kill_corpse() -> TestResult {
 fn w22a_nested_container_drop_mints_its_children_inside_the_container() -> TestResult {
     scenario_thread::run("w22a-nested", || {
         CASE.set(Some(Case::Nested));
+        scenario()
+    })
+}
+#[test]
+fn w22a_charged_loot_with_a_subtype_mints_with_its_full_charges() -> TestResult {
+    scenario_thread::run("w22a-charged-subtype", || {
+        CASE.set(Some(Case::ChargedSubtype));
         scenario()
     })
 }
@@ -55,6 +63,13 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
         .ok_or("rat table")?;
     match case {
         Case::Large => table["entries"] = Value::Array(vec![entry(3031); 20]),
+        Case::ChargedSubtype => {
+            // A stone skin amulet (5 charges) whose loot names its subtype, as donor content
+            // derives it from the charges (`register_monster_type.lua`).
+            let mut amulet = entry(3081);
+            amulet["subtype"] = json!(5);
+            table["entries"] = json!([amulet]);
+        }
         Case::Nested | Case::Outside => {
             table["algorithm"] = json!("NestedGroups");
             let mut bag = entry(2871);
@@ -84,6 +99,17 @@ pub(super) async fn qualify(
         Case::Large => {
             assert_eq!(direct, 20);
             assert_eq!(nested, 0);
+        }
+        Case::ChargedSubtype => {
+            assert_eq!(nested, 0);
+            let minted: Vec<(String, i64)> = sqlx::query_as("SELECT i.definition_production_key, i.quantity FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) LIMIT 2")
+                .fetch_all(&h.pool).await?;
+            assert_eq!(minted, vec![("oteryn:item.tibia.i3081".to_owned(), 1)]);
+            // No partial charge state is written: the amulet reads its full definition charges.
+            let partial: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_timed_states")
+                .fetch_one(&h.pool)
+                .await?;
+            assert_eq!(partial, 0);
         }
         Case::Nested | Case::Outside => {
             assert_eq!(direct, 1);

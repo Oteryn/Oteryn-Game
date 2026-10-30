@@ -79,6 +79,16 @@ pub struct LootPlanEntry {
     pub unique: bool,
 }
 
+impl LootPlanEntry {
+    /// Whether minting this entry would have to store its loot subtype. The donor drops a charged
+    /// item with its full charges and a stackable one with its count, and applies `subType` only
+    /// to any other item (Crystal `Container:addLoot`, the fluid of a fluid container). Full
+    /// charges are the lazy timed-state default, so only the latter needs state Oteryn lacks.
+    pub fn needs_subtype_state(&self) -> bool {
+        self.subtype.is_some() && self.charges.is_none()
+    }
+}
+
 /// The complete, bounded loot plan of one death: at most
 /// `COMBAT01_LOOT_PLAN_ENTRIES_MAX` entries, already within
 /// `COMBAT01_LOOT_PLAN_BYTES_MAX` of typed-identity footprint.
@@ -107,7 +117,7 @@ pub enum LootPlanError {
     /// The loot table's algorithm is not the one this D2a slice implements
     /// (`IndependentBernoulliPpm`).
     UnsupportedAlgorithm,
-    /// Instance subtype storage is not admitted by the custody-only migration.
+    /// The loot subtype of an uncharged Item (a fluid) needs instance state Oteryn does not store.
     UnsupportedItemSubtype,
     /// An entry's `min_count`/`max_count` is zero or out of order.
     InvalidQuantityRange,
@@ -1255,6 +1265,35 @@ mod w22a_tests {
         }
         // Some draw above the nominal chance drops (factor > 100%), some below misses (< 100%).
         assert!(above && below);
+        Ok(())
+    }
+
+    #[test]
+    fn only_an_uncharged_subtype_needs_instance_state() -> Result<(), LootPlanError> {
+        let reference = super::tests::table_ref("oteryn:loot.subtype.table");
+        let mut table = super::tests::one_entry_table("oteryn:item.subtype", 1, 1, Some(1_000_000));
+        table.entries[0].details.subtype = Some(5);
+        let fluid = plan_creature_loot(
+            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+            &reference,
+            &table,
+        )?;
+        assert!(fluid.entries[0].needs_subtype_state());
+        table.entries[0].details.charges = Some(5);
+        let charged = plan_creature_loot(
+            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+            &reference,
+            &table,
+        )?;
+        assert!(!charged.entries[0].needs_subtype_state());
+        table.entries[0].details.subtype = None;
+        table.entries[0].details.charges = None;
+        let plain = plan_creature_loot(
+            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+            &reference,
+            &table,
+        )?;
+        assert!(!plain.entries[0].needs_subtype_state());
         Ok(())
     }
 }
