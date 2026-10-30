@@ -120,8 +120,17 @@ pub(super) fn cast_resolved(
         // Target Resolver, so it resolves no target and `aim_at_target`, honoured only with
         // one (SPELL-D7), is ignored.
         SpellTarget::AttackTarget => false,
-        // SPELL-D7: only a `cast_at_position` spell takes a position, and the core admits none.
-        SpellTarget::Position(_) => return Err(SpellCastDisposition::Rejected),
+        // Spatial owners still prove floor, range, sight and tile legality.
+        SpellTarget::Position(_) => {
+            if !spell
+                .authored
+                .as_ref()
+                .is_some_and(|p| p.header.targeting.cast_at_position == Some(true))
+            {
+                return Err(SpellCastDisposition::Rejected);
+            }
+            false
+        }
     };
     // §8.2: a monk accepts no command before its initialization evaluation. A spender's damage
     // takes the multiplier of the current charges, durable stance and Serene.
