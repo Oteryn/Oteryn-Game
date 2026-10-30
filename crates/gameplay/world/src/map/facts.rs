@@ -177,11 +177,13 @@ impl BundleFacts {
                 let required_level = self.palette.get(item.palette as usize).and_then(|entry| {
                     super::door_registry::level_door_of(u32::from(entry.facts.appearance_id))
                         .and(item.attrs.action)
-                        .and_then(|action| u32::from(action).checked_sub(1000))
+                        .filter(|action| *action > 0)
+                        .map(|action| u32::from(action).saturating_sub(1000))
                 });
                 let required_storage = self.palette.get(item.palette as usize).and_then(|entry| {
                     super::door_registry::quest_door_of(u32::from(entry.facts.appearance_id))
                         .and(item.attrs.action)
+                        .filter(|action| *action > 0)
                 });
                 // Preserve the source House and door numbers before ordinary Channel door
                 // classification deliberately seals House doors.
@@ -208,7 +210,18 @@ impl BundleFacts {
                 let quest_action = required_storage.is_some()
                     && item.attrs.unique.is_none()
                     && item.attrs.door.is_none();
+                let missing_predicate =
+                    self.palette
+                        .get(item.palette as usize)
+                        .is_some_and(|entry| {
+                            let appearance = u32::from(entry.facts.appearance_id);
+                            (super::door_registry::level_door_of(appearance).is_some()
+                                && required_level.is_none())
+                                || (super::door_registry::quest_door_of(appearance).is_some()
+                                    && required_storage.is_none())
+                        });
                 let door = if dropped
+                    || missing_predicate
                     || (bound(&item.attrs) && !key_action && !level_action && !quest_action)
                 {
                     PaletteDoor::No
@@ -230,9 +243,9 @@ impl BundleFacts {
                         open,
                         open_solid,
                         locked,
+                        key_forms,
                         ..
                     } => {
-                        let locked = locked || matches!(item.attrs.action, Some(101 | 1001));
                         self.doors.push(
                             key,
                             closed_solid,
@@ -243,6 +256,7 @@ impl BundleFacts {
                             required_level,
                             required_storage,
                         );
+                        self.doors.set_key_forms(key_forms);
                     }
                     PaletteDoor::Sealed => {
                         self.doors.push_sealed();
@@ -711,8 +725,30 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     if definition.solid != Some(false) || definition.blocks_projectile {
         return PaletteDoor::Sealed;
     }
+    let key_forms =
+        super::door_registry::key_closed_forms(closed).and_then(|(unlocked, locked)| {
+            let face = |appearance| {
+                let key = door::open_key(key, closed, appearance)?;
+                let definition = item(&key)?;
+                if definition.solid != Some(true) || !definition.blocks_projectile {
+                    return None;
+                }
+                Some(EntryFacts {
+                    definition: MapDefinition::Item(definition.reference),
+                    appearance_id: u16::try_from(appearance).ok()?,
+                    blocks_projectile: true,
+                    terrain_kind: None,
+                    pickupable: false,
+                    bound: false,
+                    count: 1,
+                    sub_type: 0,
+                })
+            };
+            Some([face(unlocked)?, face(locked)?])
+        });
     PaletteDoor::Pair {
         key_door: key_door.is_some(),
+        key_forms,
         locked: key_door.is_some_and(|(_, locked)| locked),
         open: EntryFacts {
             definition: MapDefinition::Item(definition.reference),
