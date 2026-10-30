@@ -4,8 +4,8 @@ use oteryn_protocol_oteryn::charm::{
 
 #[test]
 fn derived_gated_routes_match_previous_table() {
-    // Frozen contents of the former GATED_ROUTES table. Compare sets because the
-    // protocol registry generates its entries in capability order.
+    // Former GATED_ROUTES contents plus the PKG5 hotkey command. Compare sets because
+    // the protocol registry generates its entries in capability order.
     let expected: &[(u32, &[u32], &[u32])] = &[
         (16, &[22], &[16]),
         (18, &[], &[17]),
@@ -16,6 +16,7 @@ fn derived_gated_routes_match_previous_table() {
         (8, &[], &[13]),
         (10, &[], &[15]),
         (14, &[21], &[14]),
+        (179, &[348], &[]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();

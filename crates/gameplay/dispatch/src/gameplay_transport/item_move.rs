@@ -461,7 +461,7 @@ async fn take_from_corpse<A: FreshAdmissionAuthority>(
 /// `MOVED`, then the open corpse's domain 11 delta and the domain 9 delta. The backpack view is
 /// updated first: an entry taken whole keeps its ItemKey, so it moves from the corpse view into
 /// the backpack view and keeps its handle instead of leaving every view in between.
-async fn moved<A: FreshAdmissionAuthority>(
+pub(super) async fn moved<A: FreshAdmissionAuthority>(
     authority: &A,
     actor: ExactActorRef,
     command: UseCommand,

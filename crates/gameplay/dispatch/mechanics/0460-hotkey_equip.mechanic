@@ -1,0 +1,7 @@
+name=hotkey_equip
+commands=348
+transport=hotkey_equip
+composed=hotkey_equip
+authority=hotkey_equip
+[route]
+match routing::hotkey_equip::route(authority, session.actor, &mut session.admitted, command, &mut session.item_view, &mut session.container_views).await { Some(dispatch) => dispatch, None => return Err(ServeEnd::Disconnected) }
