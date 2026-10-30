@@ -198,6 +198,7 @@ def profile_from_bundle(directory):
 
 
 def assemble(profiles):
+    profiles = copy.deepcopy(profiles)
     seen = set()
     schemas = native_catalog.schemas()
     owners = expected_operations()
@@ -211,6 +212,13 @@ def assemble(profiles):
         check_revisions(profile['spell'], profile_id(profile) + '/spell')
         check_revisions(profile['dependencies'], profile_id(profile) + '/dependencies')
         identity = profile_id(profile)
+        if identity == 'rune-destroy_field_rune':
+            # PKG1R2, owner 2026-10-30; Global revs 1189762 / 1182654.
+            # The current map viewport and LOS replace the donor's five-tile limit.
+            targeting = profile['spell']['targeting']
+            if targeting.get('range_tiles') not in (None, 5):
+                raise ValueError('unexpected Destroy Field donor range')
+            targeting.pop('range_tiles', None)
         check_operation_owner(profile, owners)
         execution = profile['execution']
         native = execution.get('native_behavior')

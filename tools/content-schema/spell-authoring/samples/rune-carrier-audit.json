@@ -1605,13 +1605,14 @@
      "verdict": "agree"
     },
     "range_tiles": {
-     "ours": 5,
+     "ours": null,
      "pass": true,
      "references": {
       "canary": 5,
       "crystal": 5
      },
-     "verdict": "agree"
+     "resolution": "owner 2026-10-30 PKG1R2: viewport and line of sight replace the donor five-tile range; Global revs 1189762 / 1182654",
+     "verdict": "native_resolution"
     },
     "registrars": {
      "pass": true,

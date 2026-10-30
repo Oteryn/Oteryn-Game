@@ -91,6 +91,28 @@ fn decision(
     ExivaDecision::Denied
 }
 
+// PKG1R2 owner decision, Updates/11.49.6018 rev 856355: only Optional PvP
+// bypasses target privacy for opponents in an active guild war. Staff hiding
+// remains a separate decision above this relationship exception.
+async fn war_opponent_allowed(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &SpellItemAuthority,
+    target: [u8; 16],
+) -> Result<bool, SpellItemError> {
+    let crate::foundation::RuntimeScopeRefV1::Channel { world_id, .. } = authority.runtime_scope() else {
+        return Ok(false);
+    };
+    let opponents: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_guild_members a JOIN game_guild_members b ON b.character_id=encode($2,'hex')::uuid JOIN game_guild_wars w ON w.world_id=encode($3,'hex')::uuid AND w.state=2 AND ((w.declaring_guild=a.guild_id AND w.opposing_guild=b.guild_id) OR (w.opposing_guild=a.guild_id AND w.declaring_guild=b.guild_id)) WHERE a.character_id=encode($1,'hex')::uuid)")
+        .bind(authority.character_id_bytes().as_slice()).bind(target.as_slice()).bind(world_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
+    if !opponents {
+        return Ok(false);
+    }
+    let world = super::spell_field_policy::read_world_field_policy_in_transaction(
+        tx, &authority.root, authority.runtime_scope(), authority.scope_generation(),
+    ).await?;
+    Ok(world.is_some_and(|world| world.bind(tx).mode() == super::spell_field_policy::FieldWorldType::NoPvp))
+}
+
 async fn relationship_allowed(
     tx: &mut Transaction<'_, Postgres>,
     preferences: &ExivaPreferences,
@@ -221,6 +243,11 @@ async fn read_exiva_decision_with_roles_in_transaction(
         .map_err(|_| SpellItemError::Rejected("stored Exiva preference shape"))?;
     preferences.validate()?;
     let basic = decision(&preferences, source, caster_staff, target_staff);
+    if matches!(basic, ExivaDecision::Denied | ExivaDecision::UnknownRelationships)
+        && war_opponent_allowed(tx, authority, target).await?
+    {
+        return Ok(ExivaDecision::Allowed);
+    }
     if basic == ExivaDecision::UnknownRelationships {
         return Ok(
             if relationship_allowed(tx, &preferences, source, target).await? {

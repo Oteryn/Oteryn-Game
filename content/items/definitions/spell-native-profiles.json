@@ -12069,7 +12069,7 @@
             },
             "duration": {
               "state": "KNOWN",
-              "value": 98000
+              "value": 100000
             },
             "stop_duration": {
               "state": "KNOWN",
