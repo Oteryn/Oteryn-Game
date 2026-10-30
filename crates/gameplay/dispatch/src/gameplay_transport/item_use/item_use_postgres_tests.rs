@@ -81,6 +81,17 @@ fn nested_food_hotkey_and_potion_handle_commit_through_wire_dispatch_on_postgres
 }
 
 fn run_scenario(case: Option<item_use_view_refresh_tests::Case>) -> TestResult {
+    run_scenario_items(case, false)
+}
+
+pub(crate) fn run_matching_crystal_consumables() -> TestResult {
+    run_scenario_items(None, true)
+}
+
+fn run_scenario_items(
+    case: Option<item_use_view_refresh_tests::Case>,
+    crystal: bool,
+) -> TestResult {
     let Some(admin) = configured_admin() else {
         return Ok(());
     };
@@ -89,7 +100,7 @@ fn run_scenario(case: Option<item_use_view_refresh_tests::Case>) -> TestResult {
         .spawn(move || {
             postgres_fixture::runtime()
                 .map_err(|error| error.to_string())?
-                .block_on(scenario(admin, case))
+                .block_on(scenario(admin, case, crystal))
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -97,9 +108,14 @@ fn run_scenario(case: Option<item_use_view_refresh_tests::Case>) -> TestResult {
         .map_err(Into::into)
 }
 
-async fn scenario(admin: String, case: Option<item_use_view_refresh_tests::Case>) -> TestResult {
+async fn scenario(
+    admin: String,
+    case: Option<item_use_view_refresh_tests::Case>,
+    crystal: bool,
+) -> TestResult {
     use item_use_view_refresh_tests::Case;
     let tag = match case {
+        None if crystal => "crystal_use_wire",
         None => "bags_use_wire",
         Some(Case::LastCharge) => "bags_use_last",
         Some(Case::PotionFlask) => "bags_use_flask",
@@ -123,8 +139,16 @@ async fn scenario(admin: String, case: Option<item_use_view_refresh_tests::Case>
     let native = active.native_gameplay().expect("native content");
     let index = native.item_index().expect("item index");
     let room = pin.qualified_room().clone();
-    let food_key = "oteryn:item.tibia.i3577";
-    let potion_key = "oteryn:item.tibia.i266";
+    let food_key = if crystal {
+        "oteryn:item.tibia.i3578"
+    } else {
+        "oteryn:item.tibia.i3577"
+    };
+    let potion_key = if crystal {
+        "oteryn:item.tibia.i268"
+    } else {
+        "oteryn:item.tibia.i266"
+    };
     let bag_key = "oteryn:item.tibia.i2854";
     let mut tx = harness.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")

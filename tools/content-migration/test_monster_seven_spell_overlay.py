@@ -57,7 +57,7 @@ class AcceptedOverlayTests(unittest.TestCase):
             self.assertEqual(new, old)
         added = [r for r in after["records"]
                  if r["production_definition"]["production_key"] in registration.POTION_KEYS]
-        self.assertEqual(len(added), 2)
+        self.assertEqual(len(added), 13)
         world = json.loads((ROOT / 'content/world/definitions/reference.json').read_bytes())
         for record in added:
             source = next(r for r in world["records"] if r["identity"] == record["authoring"]["item"])

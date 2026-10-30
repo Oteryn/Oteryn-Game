@@ -1,13 +1,8 @@
 #[cfg(windows)]
 mod windows_shell;
 
-/// Native gameplay entry when `OTERYN_PLATFORM_URL` and the other native login settings are set.
-/// Only the public outcome is printed: never a token, ticket or grant. An admitted session is
-/// returned with the client whose runtime it is bound to.
-fn native_entry() -> Option<(
-    oteryn_client::ClientBootstrap,
-    oteryn_client::AdmittedSession,
-)> {
+/// Build the process runtime once; the window owns every native entry attempt.
+fn native_client() -> Option<oteryn_client::ClientBootstrap> {
     let config = match oteryn_client::NativeLoginConfig::from_env(|name| std::env::var(name).ok()) {
         Ok(Some(config)) => config,
         Ok(None) => return None,
@@ -16,25 +11,10 @@ fn native_entry() -> Option<(
             return None;
         }
     };
-    let client = match oteryn_client::ClientBootstrap::new() {
-        Ok(client) => client.with_native_login(config),
+    match oteryn_client::ClientBootstrap::new() {
+        Ok(client) => Some(client.with_native_login(config)),
         Err(error) => {
             println!("Oteryn: {error}");
-            return None;
-        }
-    };
-    match client.request_gameplay_entry() {
-        Ok(admitted) => {
-            println!(
-                "Oteryn: admitted to World {} channel {}",
-                admitted.world_id(),
-                admitted.channel_id()
-            );
-            Some((client, admitted))
-        }
-        Err(error) => {
-            println!("Oteryn: {error}");
-            client.shutdown();
             None
         }
     }
@@ -51,7 +31,7 @@ fn main() -> std::process::ExitCode {
             return std::process::ExitCode::from(3);
         }
     };
-    match windows_shell::run(native_entry()) {
+    match windows_shell::run(native_client()) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("Error: {error:?}");
@@ -62,8 +42,13 @@ fn main() -> std::process::ExitCode {
 
 #[cfg(not(windows))]
 fn main() {
-    if let Some((client, _admitted)) = native_entry() {
-        client.shutdown();
+    if let Some(client) = native_client() {
+        let mut entry = oteryn_client::reentry::Reentry::new(client);
+        entry.request();
+        while entry.poll().is_none() {
+            std::thread::park_timeout(std::time::Duration::from_millis(10));
+        }
+        entry.shutdown();
     }
     println!("Oteryn pre-native client: Windows desktop target only");
 }

@@ -12,18 +12,32 @@ use oteryn_protocol_oteryn::world_object::{
 
 #[test]
 fn terrain_tool_wire_durable_replay_and_deadline_revert() -> TestResult {
+    run_case("oteryn:item.tibia.i3457", 867, 868)
+}
+
+#[test]
+fn m08_machete_cuts_jungle_grass_through_wire_and_recovers_regrowth() -> TestResult {
+    run_case("oteryn:item.tibia.i3308", 3696, 3695)
+}
+
+#[test]
+fn m08_machete_cuts_grass_through_wire_and_recovers_regrowth() -> TestResult {
+    run_case("oteryn:item.tibia.i3308", 3702, 3701)
+}
+
+fn run_case(tool: &'static str, before: u16, after: u16) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(move || scenario(tool, before, after).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "terrain tool e2e panic")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn scenario(tool: &str, before: u16, after: u16) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "terrain_tool", true, false).await?;
@@ -44,9 +58,16 @@ fn scenario() -> TestResult {
         let active = controller.active().ok_or("active")?;
         let native = active.native_gameplay().ok_or("native")?;
         let index = native.item_index().ok_or("index")?;
-        let closed_hole = "oteryn:item.tibia.i867";
+        let target_key = format!("oteryn:item.tibia.i{before}");
+        let closed_hole = target_key.as_str();
         let bag = "oteryn:item.tibia.i2854";
-        let shovel = "oteryn:item.tibia.i3457";
+        let shovel = tool;
+        for key in [shovel, closed_hole, &format!("oteryn:item.tibia.i{after}")] {
+            assert!(
+                native.item_policy(key, "definition-r1").is_some(),
+                "native terrain profile {key}"
+            );
+        }
         let reference = |key: &str| index.definition_ref("Item", key, "definition-r1");
         let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
             (bag, reference(bag).ok_or("bag")?.get() - 1),
@@ -178,7 +199,7 @@ fn scenario() -> TestResult {
                 .map_err(|e| format!("initial use: {e}"))?;
         assert_eq!(result, UseDisposition::Committed);
         let state: (i64,i64,bool) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms > floor(extract(epoch FROM clock_timestamp())*1000)::bigint FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
-        assert_eq!(state, (868, 1, true));
+        assert_eq!(state, (i64::from(after), 1, true));
         let key = crate::map::view::placement_key(target_pos, 1).ok_or("key")?;
         assert_eq!(map.facts().pinned().object_revision(key), 1);
         // A new owner recovers the committed state and original receipt without current handles.
@@ -231,20 +252,20 @@ fn scenario() -> TestResult {
                 )
                 .ok_or("recovered entry")?
                 .appearance_id,
-            868
+            after
         );
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT state_item_id FROM game_terrain_tool_transforms")
                 .fetch_one(&harness.pool)
                 .await?,
-            868
+            i64::from(after)
         );
         // Test clock arrangement: advance the persisted deadline; no wall-clock sleep or bypass
         // of the production clock path is needed.
         sqlx::query("UPDATE game_terrain_tool_transforms SET decay_at_unix_ms=floor(extract(epoch FROM clock_timestamp())*1000)::bigint-1").execute(&harness.pool).await?;
         restarted.refresh_terrain_tools().await;
         let state: (i64,i64,bool) = sqlx::query_as("SELECT state_item_id,object_revision,decay_at_unix_ms IS NULL FROM game_terrain_tool_transforms").fetch_one(&harness.pool).await?;
-        assert_eq!(state, (867, 2, true));
+        assert_eq!(state, (i64::from(before), 2, true));
         assert_eq!(restored_map.facts().pinned().object_revision(key), 2);
         assert_eq!(
             restored_map
@@ -257,7 +278,7 @@ fn scenario() -> TestResult {
                 )
                 .ok_or("reverted entry")?
                 .appearance_id,
-            867
+            before
         );
         restarted.refresh_terrain_tools().await;
         assert_eq!(
@@ -325,9 +346,12 @@ fn scenario() -> TestResult {
             tool_revision: "definition-r1".into(),
             placement: target.placement.clone(),
             expected_revision: 2,
-            before: 867,
-            after: 868,
-            decay: vec![(867, 600_000)],
+            before: u32::from(before),
+            after: u32::from(after),
+            decay: vec![(
+                u32::from(before),
+                if before == 867 { 600_000 } else { 300_000 },
+            )],
         };
         let result = harness
             .root

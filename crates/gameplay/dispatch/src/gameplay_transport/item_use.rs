@@ -669,4 +669,4 @@ mod crystal_parity_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
-mod item_use_postgres_tests;
+pub(super) mod item_use_postgres_tests;
