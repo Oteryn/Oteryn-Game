@@ -146,7 +146,7 @@ pub(super) fn meaningful(
         12 => oteryn_protocol_oteryn::attack::decode_fight_modes_intent(command.payload).is_ok(),
         25 => oteryn_protocol_oteryn::appearance::Change::decode(command.payload).is_ok(),
         31 => oteryn_protocol_oteryn::bed::decode_bed_sleep_intent(command.payload).is_ok(),
-        32 => {
+        oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM => {
             oteryn_protocol_oteryn::daily_reward::DailyRewardClaim::decode(command.payload).is_ok()
         }
         40 => oteryn_protocol_oteryn::guild::decode_guild_intent(command.payload).is_ok(),

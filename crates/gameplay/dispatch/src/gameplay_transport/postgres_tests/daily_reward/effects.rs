@@ -7,6 +7,7 @@ use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 pub(super) async fn kills_before_and_at_expiry(
     h: &Harness,
     authority: &ReconciledCharacterAuthority<'_, '_>,
+    premium: bool,
 ) -> TestResult {
     let world = crate::foundation::WorldId::decode(&id(42)).map_err(debug)?;
     let (generation, pin) =
@@ -171,8 +172,8 @@ pub(super) async fn kills_before_and_at_expiry(
                 .await?;
         assert_eq!(
             xp,
-            if expired { 22 } else { 12 },
-            "level 1: 5 rat XP * (100% + 50% boost + 100% low-level) = 12, then 12 + 5 * 2 = 22"
+            if premium { if expired { 22 } else { 12 } } else if expired { 21 } else { 11 },
+            "level 1: daily tier percentage adds to the 100% low-level bonus, then expires"
         );
     }
     Ok(())

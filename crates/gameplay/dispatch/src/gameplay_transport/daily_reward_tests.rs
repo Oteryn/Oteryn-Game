@@ -3,7 +3,7 @@
 
 use super::*;
 use oteryn_protocol_oteryn::daily_reward::{
-    CAPABILITY_DAILY_REWARD_V1, COMMAND_TYPE_DAILY_REWARD_CLAIM, COMMAND_TYPE_DAILY_REWARD_QUERY,
+    CAPABILITY_DAILY_REWARD_V2, COMMAND_TYPE_DAILY_REWARD_CLAIM, COMMAND_TYPE_DAILY_REWARD_QUERY,
     STATE_DOMAIN_DAILY_REWARD,
 };
 
@@ -17,11 +17,11 @@ fn daily_reward_uncomposed_offer_is_not_selected() {
         assert!(
             offered
                 .iter()
-                .all(|entry| entry.id != CAPABILITY_DAILY_REWARD_V1)
+                .all(|entry| entry.id != CAPABILITY_DAILY_REWARD_V2 && entry.id != oteryn_protocol_oteryn::daily_reward::CAPABILITY_DAILY_REWARD_V1)
         );
-        let selected = SelectedCapabilities::select(offered, &[CAPABILITY_DAILY_REWARD_V1])
+        let selected = SelectedCapabilities::select(offered, &[CAPABILITY_DAILY_REWARD_V2])
             .expect("bounded selection");
-        assert!(!selected.contains(CAPABILITY_DAILY_REWARD_V1));
+        assert!(!selected.contains(CAPABILITY_DAILY_REWARD_V2));
         assert!(!selected.command_selected(COMMAND_TYPE_DAILY_REWARD_CLAIM));
         assert!(!selected.command_selected(COMMAND_TYPE_DAILY_REWARD_QUERY));
         assert!(!selected.domain_selected(STATE_DOMAIN_DAILY_REWARD));
@@ -33,7 +33,7 @@ fn daily_reward_uncomposed_authority_refuses_through_real_dispatch() -> Result<(
     run(async {
         let authority = NegotiatingAuthority::new(None);
         let (admitted, accepted) =
-            admit(&authority, &bootstrap(&[CAPABILITY_DAILY_REWARD_V1])?).await?;
+            admit(&authority, &bootstrap(&[CAPABILITY_DAILY_REWARD_V2])?).await?;
         assert!(accepted_selection(&accepted)?.is_empty());
         let admitted = admitted.map_err(|end| format!("admission failed: {end:?}"))?;
         let commands = [

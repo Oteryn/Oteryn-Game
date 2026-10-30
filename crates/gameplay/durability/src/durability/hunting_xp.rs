@@ -37,7 +37,7 @@ pub(super) async fn read_in_transaction(
         prey_epoch: None,
         prey_grade: None,
         prey_percent: 0,
-        xp_boost_percent: sqlx::query_scalar("SELECT CASE WHEN l.effect_started_at<=public.game_daily_effect_now() AND l.effect_expires_at>public.game_daily_effect_now() THEN 50::smallint ELSE 0::smallint END FROM public.game_character_daily_reward_claims c JOIN public.game_character_daily_reward_lines l ON l.claim_id=c.transaction_id WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid AND c.lane_day=7 AND l.kind='XP_BOOST' AND l.status='DELIVERED' ORDER BY c.reset_epoch DESC LIMIT 1")
+        xp_boost_percent: sqlx::query_scalar("SELECT CASE WHEN l.effect_started_at<=public.game_daily_effect_now() AND l.effect_expires_at>public.game_daily_effect_now() THEN l.xp_boost_percent ELSE 0::smallint END FROM public.game_character_daily_reward_claims c JOIN public.game_character_daily_reward_lines l ON l.claim_id=c.transaction_id WHERE c.character_id=encode($1,'hex')::uuid AND c.world_id=encode($2,'hex')::uuid AND l.kind='XP_BOOST' AND l.status='DELIVERED' ORDER BY c.reset_epoch DESC LIMIT 1")
             .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut **tx).await?.unwrap_or(0),
         stamina_minutes: stamina.unwrap_or(2520),
         level: level
