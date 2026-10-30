@@ -85,7 +85,7 @@ macro_rules! authority_methods {
 }
 pub(super) use authority_methods;
 
-fn unix_now_ms() -> i64 {
+pub(super) fn unix_now_ms() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .ok()
@@ -94,7 +94,8 @@ fn unix_now_ms() -> i64 {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// PAR-P12a automatic unlock of `session`'s Character from its native facts. Best effort:
+    /// PAR-P12a/b automatic title unlock and account badge grant for `session`'s Character from
+    /// its native facts. Best effort:
     /// a failed refresh keeps every stored title and is repeated at the next trigger.
     pub(super) async fn refresh_session_titles(&self, session: crate::foundation::GameSessionId) {
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
@@ -108,9 +109,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             runtime_scope: fence.runtime_scope,
             scope_ownership_generation: fence.scope_ownership_generation,
         };
+        let now = unix_now_ms();
         let _ = self
             .root
-            .refresh_character_titles(self.character, self.holder, item_fence, unix_now_ms())
+            .refresh_character_titles(self.character, self.holder, item_fence, now)
+            .await;
+        // PAR-P12b: badges share the trigger points (Crystal checks both at login).
+        let _ = self
+            .root
+            .refresh_account_badges(self.character, self.holder, item_fence, now)
             .await;
     }
 

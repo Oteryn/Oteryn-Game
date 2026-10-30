@@ -1,0 +1,7 @@
+name=cyclopedia_character
+commands=387
+transport=cyclopedia_character
+composed=cyclopedia_character
+authority=cyclopedia_character
+[route]
+routing::cyclopedia_character::route(authority, &session.admitted, command).await

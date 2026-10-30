@@ -42,6 +42,7 @@ mod contract_registries;
 mod count_bounds_tests;
 pub mod creature_push;
 pub mod cyclopedia;
+pub mod cyclopedia_character;
 pub mod daily_boost;
 pub mod daily_reward;
 pub mod damage_element;

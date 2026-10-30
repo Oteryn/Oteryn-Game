@@ -1,0 +1,17 @@
+{
+  "mechanic": "0199-cyclopedia-character",
+  "kind": "handlers",
+  "id": "0199-cyclopedia-character-unsupported",
+  "status": "unsupported",
+  "reason": "PAR-P12 Cyclopedia character tabs are server-only; native client presentation is pending.",
+  "commands": [
+    387
+  ],
+  "not_applicable": {
+    "state": "Server-only slice.",
+    "protocol": "Server-only slice.",
+    "view": "Server-only slice.",
+    "input": "Server-only slice.",
+    "settings": "Server-only slice."
+  }
+}

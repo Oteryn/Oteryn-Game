@@ -6,6 +6,7 @@
 
 // Keep sorted by module name; insert in order, never append.
 pub mod account_achievement;
+pub mod account_badge;
 pub mod account_characters_projection;
 pub mod admission_authority_guards;
 pub mod admission_journal;
