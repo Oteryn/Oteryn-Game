@@ -44,6 +44,9 @@ pub struct AccessProjections {
     pub premium: Option<CurrentProjection<bool>>,
     pub learned: Option<CurrentProjection<BTreeSet<String>>>,
     pub wheel: Option<CurrentProjection<BTreeMap<String, u8>>>,
+    /// Durable promotion read in the same Wheel cast transaction as `wheel`. The build keeps
+    /// the base vocation, so a promoted vocation name never proves promotion.
+    pub wheel_promoted: bool,
     pub elemental_stance: Option<CurrentProjection<super::native_combat::ElementalStance>>,
     pub magnitude: Option<super::magnitude_owner::MagnitudeOwnedAttributes>,
 }
