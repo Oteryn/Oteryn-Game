@@ -58,7 +58,7 @@ fn a_same_session_resume_waits_for_a_busy_holder_at_prepare_postgres() -> TestRe
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(false, false).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "busy-holder resume thread panicked")??;
     Ok(())
@@ -71,7 +71,7 @@ fn a_resumed_loss_retries_an_unreadable_history_without_releasing_the_session_po
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(true, false).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(true, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "resumed-loss thread panicked")??;
     Ok(())
@@ -83,13 +83,26 @@ fn c08_conditions_postgres_reconnect_preserves_poison_and_haste() -> TestResult 
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| resume_scenario(false, true).map_err(|e| e.to_string()))?
+        .spawn(|| resume_scenario(false, true, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "condition reconnect thread panicked")??;
     Ok(())
 }
 
-fn resume_scenario(history_read_fails: bool, conditions: bool) -> TestResult {
+#[test]
+fn c08_conditions_postgres_reconnect_with_delayed_pre_prepare_reads() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| resume_scenario(false, true, true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "delayed condition reconnect thread panicked")??;
+    Ok(())
+}
+
+fn resume_scenario(history_read_fails: bool, conditions: bool, delayed_reads: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         return Ok(());
     };
@@ -101,7 +114,7 @@ fn resume_scenario(history_read_fails: bool, conditions: bool) -> TestResult {
         false,
     ))?;
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        rt.block_on(resume_case(&h, history_read_fails, conditions))
+        rt.block_on(resume_case(&h, history_read_fails, conditions, delayed_reads))
     }));
     let cleanup = rt.block_on(h.cleanup());
     match result {
@@ -112,7 +125,31 @@ fn resume_scenario(history_read_fails: bool, conditions: bool) -> TestResult {
         Err(panic) => std::panic::resume_unwind(panic),
     }
 }
-async fn resume_case(h: &Harness, history_read_fails: bool, conditions: bool) -> TestResult {
+/// Drive the real resume until it is pending at the signalled boundary, with a deadline.
+async fn wait_for_resume_barrier(
+    mut resume: std::pin::Pin<&mut impl std::future::Future<Output = TestResult<AdmittedSession>>>,
+    signal: &tokio::sync::Notify,
+) -> TestResult {
+    let mut notified = std::pin::pin!(signal.notified());
+    tokio::time::timeout(std::time::Duration::from_secs(10), std::future::poll_fn(|cx| {
+        use std::future::Future;
+        use std::task::Poll;
+        if let Poll::Ready(early) = resume.as_mut().poll(cx) {
+            return Poll::Ready(Err(format!("resume ended before barrier: {early:?}")));
+        }
+        notified.as_mut().poll(cx).map(Ok)
+    }))
+    .await
+    .map_err(|_| "resume did not reach barrier before deadline")??;
+    Ok(())
+}
+
+async fn resume_case(
+    h: &Harness,
+    history_read_fails: bool,
+    conditions: bool,
+    delayed_reads: bool,
+) -> TestResult {
     let recovery_source = RecoverySource::start(h).await?;
     prepare_owned_session(h).await?;
     let seal = h.recovery.seal_current().map_err(debug)?;
@@ -162,17 +199,26 @@ async fn resume_case(h: &Harness, history_read_fails: bool, conditions: bool) ->
     // The held runtime stops the resume after its pre-PREPARE reads; the holder is taken
     // before the runtime is released, so PREPARE is the first pass that finds it busy.
     let runtime = owner.runtime.lock().await;
-    let mut resume = std::pin::pin!(resume_same_session(
-        &owner,
-        admitted.game_session_id,
-        &token,
-        10
+    let barrier = std::sync::Arc::new(crate::gameplay_transport::resume::PrepareTestBarrier {
+        delay: delayed_reads,
+        ..Default::default()
+    });
+    let mut resume = std::pin::pin!(crate::gameplay_transport::resume::PREPARE_TEST_BARRIER.scope(
+        barrier.clone(),
+        resume_same_session(&owner, admitted.game_session_id, &token, 10)
     ));
-    if let Ok(early) =
-        tokio::time::timeout(std::time::Duration::from_millis(500), resume.as_mut()).await
-    {
-        return Err(format!("the resume did not wait for the runtime: {early:?}").into());
+    if delayed_reads {
+        wait_for_resume_barrier(resume.as_mut(), &barrier.entered).await?;
+        // Keep a real root pass pending across the entire former 500 ms barrier.
+        // This is the regression's injected delay, never the readiness condition.
+        if let Ok(early) =
+            tokio::time::timeout(std::time::Duration::from_millis(500), resume.as_mut()).await
+        {
+            return Err(format!("resume ended during delayed read: {early:?}").into());
+        }
+        barrier.release.notify_one();
     }
+    wait_for_resume_barrier(resume.as_mut(), &barrier.ready).await?;
     let busy = hold_holder(&h.root, std::time::Duration::from_millis(300))?;
     drop(runtime);
     let resumed = resume.await;
