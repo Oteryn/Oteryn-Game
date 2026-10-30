@@ -279,7 +279,7 @@ fn equipped(scenario: Scenario) -> bool {
 
 fn equipped_hit(scenario: Scenario, output: u32, ordinal: u32) -> u32 {
     if scenario==Scenario::EquippedPair {return 0;}
-    let damage = field_player_hit(output);
+    let damage = field_player_hit(output, ordinal);
     if scenario==Scenario::EquippedMantraAmmo {return damage.saturating_sub(if ordinal==0 {3}else{0});}
     if !equipped(scenario) || scenario == Scenario::EquippedWrongSlot || scenario == Scenario::EquippedLastCharge && ordinal > 0 { return damage; }
     // The admitted fixture profile combines 30% elemental + 20% field absorb,
@@ -468,32 +468,36 @@ fn field_runes_postgres_energy_and_poison_hit_players_and_creatures() -> TestRes
     })
 }
 
-fn field_player_hit(output: u32) -> u32 {
-    // Authored entry pulses (20 fire, 25 energy, 5 poison), then the
-    // accepted 50% PvP factor, rounded down before target mitigation.
-    match output {
-        2122 => 12,
-        105 => 2,
-        _ => 10,
+fn field_player_hit(output: u32, ordinal: u32) -> u32 {
+    // C07-2 Global entry/residual recipes, then the accepted 50% PvP factor.
+    match (output, ordinal) {
+        (2122, 0) => 15,
+        (2122, _) => 12,
+        (105, _) => 2,
+        (_, 0) => 10,
+        _ => 5,
     }
 }
 
-fn field_creature_hit(output: u32) -> i64 {
-    // The production cyclops has 0.97% mitigation, 25% energy resistance
-    // and -10% earth resistance. Mitigation truncates before resistance.
-    match output {
-        2122 => 18,
-        105 => 4,
+fn field_creature_hit(output: u32, ordinal: u32) -> i64 {
+    // Cyclops: 0.97% mitigation, 25% energy resistance, -10% earth resistance.
+    // Mitigation truncates before resistance; Global entry differs from residual.
+    match (output, ordinal) {
+        // This case intentionally exercises excluded yellow flame, not Global rune fire.
+        (21465, _) => 9,
+        (2122, 0) => 22,
+        (2122, _) => 18,
+        (105, _) => 4,
+        (_, 0) => 19,
         _ => 9,
     }
 }
 
 fn field_residual_ticks(output: u32) -> u32 {
     match output {
-        // The source energy recipe contains only its immediate pulse.
-        2122 => 0,
-        // Poison has two due five-second segments in the eleven-second turn.
+        // Two four-second poison ticks in the eleven-second turn.
         105 => 2,
+        // Fire at nine seconds; energy at eleven seconds.
         _ => 1,
     }
 }
@@ -1677,7 +1681,7 @@ async fn field_scenario_inner(
                 player_health(&owner, target, target_session).await?,
                 before
                     - if matches!(scenario,Scenario::Aged|Scenario::RevokedCaster|Scenario::DepartedCaster) {
-                        20
+                        10
                     } else if residual {
                         (1..=field_residual_ticks(output)).map(|ordinal| equipped_hit(scenario,output,ordinal)).sum()
                     } else {
@@ -1975,13 +1979,12 @@ async fn qualify_creature_entry(
         .map_err(debug)?;
     assert_eq!(
         snapshot.health,
-        snapshot.maximum_health - field_creature_hit(output),
+        snapshot.maximum_health - field_creature_hit(output, 0),
         "the real creature entry owner applies its source mitigation and elemental resistance"
     );
-    assert_eq!(
-        snapshot.state.conditions.instances().is_empty(),
-        output == 2122,
-        "the source energy recipe is exhausted by its immediate pulse; fire and poison retain residual segments"
+    assert!(
+        !snapshot.state.conditions.instances().is_empty(),
+        "Global fire, energy and poison retain residual segments after entry"
     );
     step_creature_on_field(owner, creature, crate::movement::CardinalStep::South).await?;
     Ok(creature)
@@ -2108,7 +2111,7 @@ async fn qualify_creature_residual(
         .health;
     assert_eq!(
         after,
-        before - field_creature_hit(output) * i64::from(field_residual_ticks(output)),
+        before - field_creature_hit(output, 1) * i64::from(field_residual_ticks(output)),
         "the real periodic creature owner consumes residual damage after the durable field decays"
     );
     Ok(())
