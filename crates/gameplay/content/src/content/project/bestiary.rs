@@ -103,11 +103,33 @@ pub fn canonical_bestiary_rows(
     decode_sources(INDEX, &SHARDS, limits)
 }
 
+/// The canonical races with their Bestiary difficulty (`harmless` to `challenging`), as the
+/// Bestiary achievements count fully unlocked entries by difficulty.
+pub fn canonical_bestiary_difficulties(
+    limits: ProjectEvidenceLimits,
+) -> Result<Vec<(BestiaryRace, String)>, ProjectError> {
+    Ok(decode_sources_with_difficulty(INDEX, &SHARDS, limits)?
+        .into_iter()
+        .map(|(race, _, difficulty)| (race, difficulty))
+        .collect())
+}
+
 fn decode_sources(
     index_bytes: &[u8],
     shards: &[(&str, &[u8])],
     limits: ProjectEvidenceLimits,
 ) -> Result<Vec<(BestiaryRace, u32)>, ProjectError> {
+    Ok(decode_sources_with_difficulty(index_bytes, shards, limits)?
+        .into_iter()
+        .map(|(race, charm_points, _)| (race, charm_points))
+        .collect())
+}
+
+fn decode_sources_with_difficulty(
+    index_bytes: &[u8],
+    shards: &[(&str, &[u8])],
+    limits: ProjectEvidenceLimits,
+) -> Result<Vec<(BestiaryRace, u32, String)>, ProjectError> {
     let limits = limits.validate()?;
     limits.check(
         "Bestiary source documents",
@@ -210,7 +232,7 @@ fn decode_sources(
                 .map_err(|_| {
                     ProjectError::InvalidProject("invalid Bestiary identity or thresholds")
                 })?;
-                rows.push((race, u32::from(bestiary.charm_points)));
+                rows.push((race, u32::from(bestiary.charm_points), bestiary.difficulty));
             }
             seen += 1;
         }

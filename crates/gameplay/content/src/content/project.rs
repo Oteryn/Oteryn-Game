@@ -15,7 +15,7 @@ mod v2;
     unused_imports,
     reason = "native Charm generation binding consumes this next"
 )]
-pub use bestiary::canonical_bestiary_rows;
+pub use bestiary::{canonical_bestiary_difficulties, canonical_bestiary_rows};
 pub use native_entry::*;
 pub use native_house_tiles::*;
 pub use native_spell_tiles::*;
