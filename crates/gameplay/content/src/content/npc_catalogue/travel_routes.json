@@ -684,6 +684,19 @@
     "carpet": false
   },
   {
+    "key": "oteryn:service.travel.captain_seagull/yalahar",
+    "keyword": "yalahar",
+    "price": 160,
+    "premium": false,
+    "x": 32816,
+    "y": 31272,
+    "floor": 6,
+    "postman": true,
+    "held": false,
+    "carpet": false,
+    "yalahar_gate": true
+  },
+  {
     "key": "oteryn:service.travel.captain_seahorse/ab_dendriel",
     "keyword": "ab_dendriel",
     "price": 70,

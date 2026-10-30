@@ -1,6 +1,7 @@
-//! TRAVEL-CONTENT-1 corrections over the NPC's existing admitted route membership.
+//! Paid travel corrections and qualified additions to admitted captain services.
 //! `travel_routes.json` projects source-correction-check and admission-evidence in
-//! docs/reference/content-prep/travel-content-1. Unmapped custom/quest guards stay held.
+//! docs/reference/content-prep/travel-content-1, plus the native S10S Yalahar addition.
+//! Unmapped custom/quest guards stay held.
 use super::NpcServiceModel;
 use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
 use serde::Deserialize;
@@ -14,6 +15,7 @@ pub struct TravelRoute {
     pub postman: bool,
     pub carpet: bool,
     pub held: bool,
+    pub yalahar_gate: bool,
 }
 
 #[derive(Deserialize)]
@@ -28,6 +30,8 @@ struct Correction {
     postman: bool,
     carpet: bool,
     held: bool,
+    #[serde(default)]
+    yalahar_gate: bool,
 }
 
 pub fn resolve(model: &NpcServiceModel, services: &[ProjectV2DefinitionRef]) -> Vec<TravelRoute> {
@@ -39,10 +43,24 @@ pub fn resolve(model: &NpcServiceModel, services: &[ProjectV2DefinitionRef]) -> 
         .iter()
         .filter_map(|service| model.services().get(service).map(|entry| (service, entry)))
         .flat_map(|(service, entry)| {
-            entry.routes.iter().filter_map(|route| {
-                let key = format!("{}/{}", service.key, route.key);
-                let correction = corrections.iter().find(|row| row.key == key)?;
-                let mut route = route.clone();
+            let prefix = format!("{}/", service.key);
+            corrections.iter().filter_map(move |correction| {
+                let key = correction.key.strip_prefix(&prefix)?;
+                let mut route = entry
+                    .routes
+                    .iter()
+                    .find(|route| route.key == key)
+                    .or_else(|| {
+                        // S10S adds the qualified native route without modifying generated
+                        // legacy membership. It shares this captain's coordinate frame.
+                        if correction.yalahar_gate {
+                            entry.routes.first()
+                        } else {
+                            None
+                        }
+                    })?
+                    .clone();
+                route.key = key.to_owned();
                 route.price = correction.price;
                 route.premium = correction.premium;
                 route.min_level = None;
@@ -56,6 +74,7 @@ pub fn resolve(model: &NpcServiceModel, services: &[ProjectV2DefinitionRef]) -> 
                     postman: correction.postman,
                     carpet: correction.carpet,
                     held: correction.held,
+                    yalahar_gate: correction.yalahar_gate,
                 })
             })
         })
@@ -76,17 +95,22 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 195);
+        assert_eq!(corrections.len(), 196);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 195);
+        assert_eq!(keys.len(), 196);
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
-        assert_eq!(sources.len(), corrections.len());
-        assert_eq!(evidence.len(), corrections.len());
-        for ((row, source), evidence) in corrections.iter().zip(sources).zip(evidence) {
+        let corrected = corrections
+            .iter()
+            .filter(|row| row.key != "oteryn:service.travel.captain_seagull/yalahar")
+            .collect::<Vec<_>>();
+        assert_eq!(corrected.len(), 195);
+        assert_eq!(sources.len(), 195);
+        assert_eq!(evidence.len(), 195);
+        for ((row, source), evidence) in corrected.into_iter().zip(sources).zip(evidence) {
             assert_eq!(serde_json::json!(row.key), source["key"]);
             assert_eq!(serde_json::json!(row.keyword), source["keyword"]);
             assert_eq!(serde_json::json!(row.price), source["selected_fare"]);
@@ -111,7 +135,7 @@ mod tests {
     // Crystal 201189f8 data-global/npc/captain_seagull.lua:64-69 and kendra.lua:70, read as
     // reference data (Canary 47dfd51f identical). Crystal sails every Seagull route without a
     // premium gate and gates Yalahar on a quest storage; Oteryn keeps the Edron and Gray Island
-    // premium flags from its admitted correction and has no Yalahar route.
+    // premium flags from its admitted correction and adds the gated Yalahar route.
     #[test]
     fn crystal_seagull_and_kendra_fares_and_arrivals() -> Result<(), Box<dyn std::error::Error>> {
         let corrections: Vec<super::Correction> =
@@ -176,7 +200,48 @@ mod tests {
             premium_diffs,
             ["captain_seagull/gray_island", "captain_seagull/edron"]
         );
-        assert!(find("captain_seagull/yalahar").is_none());
+        let yalahar = find("captain_seagull/yalahar").ok_or("captain_seagull/yalahar")?;
+        assert_eq!(
+            (
+                yalahar.price,
+                yalahar.premium,
+                yalahar.x,
+                yalahar.y,
+                yalahar.floor,
+                yalahar.postman,
+                yalahar.held,
+                yalahar.yalahar_gate
+            ),
+            (160, false, 32_816, 31_272, 6, true, false, true)
+        );
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        let seagull = model
+            .npcs()
+            .iter()
+            .find(|(reference, _)| reference.key == "oteryn:npc.captain_seagull")
+            .map(|(_, npc)| npc)
+            .ok_or("Captain Seagull")?;
+        let routes = super::resolve(&model, &seagull.services);
+        let route = routes
+            .iter()
+            .find(|route| route.keyword == "yalahar")
+            .ok_or("resolved Yalahar route")?;
+        assert_eq!(route.route.price, 160);
+        assert_eq!(
+            (
+                route.route.destination.x,
+                route.route.destination.y,
+                route.route.destination.floor
+            ),
+            (32_816, 31_272, 6)
+        );
+        assert!(route.yalahar_gate);
+        assert!(!route.held);
         Ok(())
     }
 }
