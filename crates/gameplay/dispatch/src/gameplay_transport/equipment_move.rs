@@ -278,6 +278,26 @@ pub(super) async fn move_equipment(
     command: UseCommand,
     request: EquipmentMove,
 ) -> EquipmentMoveResult {
+    move_equipment_inner(admission, actor, command, request, false).await
+}
+
+/// Hotkeys share the same equipment transaction and recheck fear under its writer lane.
+pub(super) async fn move_hotkey_equipment(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    command: UseCommand,
+    request: EquipmentMove,
+) -> EquipmentMoveResult {
+    move_equipment_inner(admission, actor, command, request, true).await
+}
+
+async fn move_equipment_inner(
+    admission: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: crate::foundation::ExactActorRef,
+    command: UseCommand,
+    request: EquipmentMove,
+    hotkey: bool,
+) -> EquipmentMoveResult {
     let refused = EquipmentMoveResult::Refused(EquipmentMoveRefusal::Rejected);
     // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard; the move is a key-33
     // writer. `None` is retryable with no side effect while the lane is fenced.
@@ -307,6 +327,16 @@ pub(super) async fn move_equipment(
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
         let pending = states.has_pending_spell_commit(actor, command.game_session_id);
+        if hotkey
+            && !super::hotkey_equip::condition_allows_equip(
+                &runtime,
+                actor,
+                command.game_session_id,
+                admission.owner_now().get(),
+            )
+        {
+            return refused;
+        }
         native_for_move(&runtime, admission.active_generation, dead, pending)
     };
     let Some(native) = native else {

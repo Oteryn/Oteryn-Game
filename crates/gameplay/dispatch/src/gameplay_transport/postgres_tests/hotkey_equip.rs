@@ -9,10 +9,26 @@ use tokio::io::AsyncWriteExt;
 
 #[test]
 fn hotkey_equip_postgres_dispatch_toggle_replay_and_durable_reload() -> TestResult {
-    super::kill_reward_e2e::scenario_thread::run("hotkey-equip", scenario)
+    super::kill_reward_e2e::scenario_thread::run("hotkey-equip", || scenario(false))
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn hotkey_equip_postgres_worn_item_toggles_with_spare_carried() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-equip-spare", || scenario(true))
+}
+
+fn scenario(spare: bool) -> TestResult {
+    scenario_options(spare, false)
+}
+
+#[test]
+fn hotkey_equip_postgres_feared_refuses_without_mutation() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-equip-feared", || {
+        scenario_options(false, true)
+    })
+}
+
+fn scenario_options(spare: bool, feared: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "hotkey_equip", true, false).await?;
@@ -55,6 +71,15 @@ fn scenario() -> TestResult {
         let mut owner = deps.owner(&harness, &authority);
         owner.active_generation = Some(generation);
         deps.initialize(&owner).await;
+        if feared {
+            crate::gameplay_transport::hotkey_equip::tests::apply_status(
+                &mut *deps.runtime.lock().await,
+                deps.actor,
+                deps.admitted.game_session_id,
+                crate::foundation::StatusKind::Feared,
+                owner.owner_now(),
+            )?;
+        }
         let current = crate::durability::fresh_admission::FreshAdmissionStore::from_root(
             harness.root.clone(),
         )
@@ -65,7 +90,11 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_character_equipment_state(character_id,revision) VALUES(encode($1,'hex')::uuid,1)").bind(id(41).as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,4)").bind(id(42).as_slice()).bind(id(43).as_slice()).execute(&harness.pool).await?;
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,NULL,$3,$4,$5)").bind(id(42).as_slice()).bind(id(43).as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(frame_digest.as_slice()).execute(&harness.pool).await?;
-        item_look::seed_main_backpack(&harness, &[("oteryn:item.tibia.i3264", 1)]).await?;
+        let mut entries = vec![("oteryn:item.tibia.i3264", 1)];
+        if spare {
+            entries.push(("oteryn:item.tibia.i3264", 1));
+        }
+        item_look::seed_main_backpack(&harness, &entries).await?;
         let mut admitted = deps.admitted;
         admitted.item_fence = Some(fence);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -97,6 +126,20 @@ fn scenario() -> TestResult {
                 if envelope.message_type() == protocol::MessageType::SnapshotCommit {
                     break;
                 }
+            }
+            if feared {
+                assert_eq!(
+                    send(&mut client, 1, &request, protocol::CommandStatus::Accepted).await?,
+                    ItemMoveOutcome::Rejected
+                );
+                assert_eq!(equipped_count(pool).await?, 0);
+                let receipts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts")
+                        .fetch_one(pool)
+                        .await?;
+                assert_eq!(receipts, 0);
+                client.shutdown().await?;
+                return Ok(());
             }
             assert_eq!(
                 send(
@@ -149,11 +192,26 @@ fn scenario() -> TestResult {
         )
         .await
         .ok_or("reloaded equipment")?;
-        assert_eq!(equipment.items.len(), 1);
-        assert_eq!(equipment.items[0].item_instance_id, id(71));
-        assert_eq!(equipment.items[0].slot, 5);
+        if feared {
+            assert!(equipment.items.is_empty());
+        } else {
+            assert_eq!(equipment.items.len(), 1);
+            assert_eq!(
+                equipment.items[0].item_instance_id,
+                if spare { id(72) } else { id(71) }
+            );
+            assert_eq!(equipment.items[0].slot, 5);
+        }
         let quantity: i64 = sqlx::query_scalar("SELECT sum(quantity)::bigint FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3264' AND lifecycle=1").fetch_one(&harness.pool).await?;
-        assert_eq!(quantity, 1);
+        assert_eq!(quantity, if spare { 2 } else { 1 });
+        if spare {
+            let untouched: String = sqlx::query_scalar("SELECT state_revision::text FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(untouched, "1");
+            let receipts_for_worn: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts WHERE item_instance_id=encode($1,'hex')::uuid AND swap_item_instance_id IS NULL")
+                .bind(id(72).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(receipts_for_worn, 3);
+        }
         drop(reloaded);
         drop(owner);
         drop(authority);
