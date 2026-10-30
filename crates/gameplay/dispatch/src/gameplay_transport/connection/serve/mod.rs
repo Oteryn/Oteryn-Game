@@ -5,6 +5,7 @@ use super::*;
 mod autowalk;
 mod command;
 mod creature_push;
+mod hotkey_equip;
 mod house_transfer;
 mod idle;
 mod inbound;

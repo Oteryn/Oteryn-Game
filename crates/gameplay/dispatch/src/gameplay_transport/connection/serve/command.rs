@@ -120,6 +120,8 @@ where
         )
         .await;
     }
+    // Read/coalesce only before the input permit and before any equipment writer starts.
+    let replaced = super::hotkey_equip::replaced(stream, authority, session, command).await?;
     let mut input_permit = authority
         .enter_input(session.admitted.game_session_id)
         .await;
@@ -239,6 +241,12 @@ where
             .command_selected(command.command_type)
     {
         Dispatch::Unregistered
+    } else if replaced {
+        Dispatch::ItemMove(
+            oteryn_protocol_oteryn::item_view::ItemMoveOutcome::Rejected,
+            Vec::new(),
+            None,
+        )
     } else if command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT {
         match route::step(authority, session, command, arrived_while_buffered).await {
             route::StepAction::Wait(due) => {

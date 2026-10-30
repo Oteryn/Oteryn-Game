@@ -71,6 +71,30 @@ fn scenario_options(
     occupied: Option<bool>,
     extra_quiver: bool,
 ) -> TestResult {
+    scenario_options_impl(
+        spare,
+        feared,
+        nested,
+        started,
+        occupied,
+        extra_quiver,
+        false,
+    )
+}
+
+pub(super) fn coalescing_scenario() -> TestResult {
+    scenario_options_impl(false, false, false, false, None, false, true)
+}
+
+fn scenario_options_impl(
+    spare: bool,
+    feared: bool,
+    nested: bool,
+    started: bool,
+    occupied: Option<bool>,
+    extra_quiver: bool,
+    coalescing: bool,
+) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "hotkey_equip", true, false).await?;
@@ -321,6 +345,70 @@ fn scenario_options(
                 return Ok(());
             }
             assert_eq!(equipped_count(pool).await?, 1);
+            if coalescing {
+                // All three presses arrive during the cooldown of command 2. Only 5
+                // may toggle the sword; 3 and 4 must have no durable equipment receipt.
+                for command_id in 3..=5 {
+                    let frame = protocol::encode_client_command(
+                        1,
+                        &protocol::ClientCommandValue {
+                            command_id,
+                            command_type: protocol::hotkey_equip::COMMAND_TYPE_HOTKEY_EQUIP,
+                            payload: &request,
+                        },
+                    )
+                    .map_err(debug)?;
+                    client.write_u32(u32::try_from(frame.len())?).await?;
+                    client.write_all(&frame).await?;
+                }
+                for (command_id, expected) in [
+                    (3, ItemMoveOutcome::Rejected),
+                    (4, ItemMoveOutcome::Rejected),
+                    (5, ItemMoveOutcome::Moved),
+                ] {
+                    loop {
+                        let frame = item_look::read_frame(&mut client).await?;
+                        let envelope = protocol::decode_wire_envelope(&frame).map_err(debug)?;
+                        if envelope.message_type() == protocol::MessageType::CommandResult {
+                            let result = protocol::decode_command_result(envelope.payload())
+                                .map_err(debug)?;
+                            assert_eq!(result.command_id, command_id);
+                            assert_eq!(result.status, protocol::CommandStatus::Accepted);
+                            assert_eq!(
+                                protocol::hotkey_equip::decode_reply(result.payload)
+                                    .map_err(debug)?,
+                                expected
+                            );
+                            break;
+                        }
+                    }
+                }
+                assert_eq!(equipped_count(pool).await?, 0);
+                let cancelled_receipts:i64=sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts WHERE command_id IN (3,4)").fetch_one(pool).await?;
+                assert_eq!(cancelled_receipts, 0);
+                assert_eq!(
+                    send(&mut client, 6, &request, protocol::CommandStatus::Accepted).await?,
+                    ItemMoveOutcome::Moved
+                );
+                assert_eq!(
+                    send(
+                        &mut client,
+                        6,
+                        &request,
+                        protocol::CommandStatus::DuplicateReplay
+                    )
+                    .await?,
+                    ItemMoveOutcome::Moved
+                );
+                assert_eq!(equipped_count(pool).await?, 1);
+                let receipts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_character_equipment_receipts")
+                        .fetch_one(pool)
+                        .await?;
+                assert_eq!(receipts, 3);
+                client.shutdown().await?;
+                return Ok(());
+            }
             if started {
                 let chosen:String=sqlx::query_scalar("SELECT replace(item_instance_id::text,'-','') FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid")
                     .bind(id(41).as_slice()).fetch_one(pool).await?;
@@ -449,6 +537,11 @@ fn scenario_options(
                 assert!(sqlx::query("UPDATE game_equipment_nested_removals SET placement_ordinal=placement_ordinal").execute(&mut *tx).await.is_err());
                 tx.rollback().await?;
             }
+        }
+        if coalescing {
+            eprintln!(
+                "PKG7_POSTGRES_EXECUTED: burst 3,4,5; zero cancelled receipts; replay 6; durable reload; PostgreSQL 18.6"
+            );
         }
         drop(reloaded);
         drop(owner);
