@@ -21,6 +21,9 @@ const LOOT_PROBABILITY_PPM_SCALE: u32 = 1_000_000;
 /// chance draw at the donor's resolution.
 const DONOR_LOOT_CHANCE_DIVISOR: u32 = 10;
 /// Donor per-entry loot factor `math.random(95, 105) / 100`, inclusive.
+///
+/// UNVERIFIED: the factor is not applied to an entry at the full scale (100%), which Oteryn
+/// keeps guaranteed. The donor would let a 95% factor miss it; no source confirms Global either way.
 const LOOT_FACTOR_PERCENT_MIN: u32 = 95;
 const LOOT_FACTOR_PERCENT_SPAN: u64 = 11;
 
