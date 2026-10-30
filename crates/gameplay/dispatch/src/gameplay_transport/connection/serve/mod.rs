@@ -181,3 +181,39 @@ where
         }
     }
 }
+
+/// Drive the actual STEP router with a production admission snapshot in dispatch regressions.
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn regression_routed_step<A: FreshAdmissionAuthority>(
+    authority: &A,
+    mut admitted: AdmittedSession,
+    actor: ExactActorRef,
+    direction: StepDirection,
+) -> Result<StepOutcome, &'static str> {
+    let (mut stream, _client) = tokio::io::duplex(1 << 22);
+    let baseline = authority.observe(actor).await.ok_or("step baseline")?;
+    let mut session = setup::prepare(
+        &mut stream,
+        &mut admitted,
+        authority,
+        IDLE_LIVENESS,
+        actor,
+        baseline,
+        integrity::Integrity::default(),
+    )
+    .await
+    .map_err(|_| "step setup")?;
+    let payload = oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction);
+    let command = oteryn_protocol_oteryn::ClientCommandView {
+        command_id: admitted.continuity.next_command_id,
+        command_type: oteryn_protocol_oteryn::world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        payload: &payload,
+    };
+    loop {
+        match route::step(authority, &mut session, command, false).await {
+            route::StepAction::Dispatch(Dispatch::Step(outcome, _)) => return Ok(outcome),
+            route::StepAction::Wait(due) => tokio::time::sleep_until(due).await,
+            _ => return Err("step router did not dispatch"),
+        }
+    }
+}

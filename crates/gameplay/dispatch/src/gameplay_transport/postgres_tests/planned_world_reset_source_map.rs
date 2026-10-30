@@ -67,7 +67,7 @@ fn scenario(epoch: u64) -> TestResult {
         );
         // The active pointer is a fixture of a completed reset. This scenario
         // qualifies the source owner, not the still-unimplemented step-4 writer.
-        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$3::text::numeric,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),'2026-10')")
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$3::text::numeric,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
             .bind(world.as_bytes().as_slice()).bind([7_u8;32].as_slice()).bind(epoch.to_string()).execute(&harness.pool).await?;
         sqlx::query(
             "INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric)",

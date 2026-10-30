@@ -1063,7 +1063,7 @@ fn map_item_mint_takes_an_entry_into_ground_then_transfers_it_once_per_channel_a
         // Model boot after activation: the request epoch must match the
         // durable World pointer. The activation writer has its own PG cases.
         let mut tx = harness.pool.begin().await?;
-        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,$3,$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '10 hours','YYYY-MM'))")
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,1,$2,$3,$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'))")
             .bind(id(WORLD).as_slice()).bind(DIGEST.as_slice()).bind(audit::map_revision_of(&DIGEST)).execute(&mut *tx).await?;
         sqlx::query("INSERT INTO game_world_reset_active(world_id,reset_epoch) VALUES(encode($1,'hex')::uuid,1)")
             .bind(id(WORLD).as_slice()).execute(&mut *tx).await?;

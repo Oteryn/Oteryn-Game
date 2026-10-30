@@ -95,6 +95,7 @@ pub struct ConditionDefinition {
     damage_schedule: Option<DamageSchedule>,
     appearance_selection: Option<crate::domain::appearance::AppearanceSelection<String>>,
     item_appearance: Option<TemporaryItemAppearance>,
+    permanent_outfit: bool,
 }
 
 impl ConditionDefinition {
@@ -208,7 +209,22 @@ impl ConditionDefinition {
             damage_schedule: None,
             appearance_selection: None,
             item_appearance: None,
+            permanent_outfit: false,
         })
+    }
+
+    /// Crystal swimming.lua:1-3: an outfit with ticks -1 has no expiry deadline.
+    pub fn new_permanent_outfit(key: &str, revision: u32, look_type: u32) -> Option<Self> {
+        let mut definition = Self::new(
+            key,
+            revision,
+            ConditionValues::Outfit {
+                look_type,
+                duration_ms: 1,
+            },
+        )?;
+        definition.permanent_outfit = true;
+        Some(definition)
     }
 
     pub fn new_damage_schedule(
@@ -224,6 +240,7 @@ impl ConditionDefinition {
             damage_schedule: Some(schedule),
             appearance_selection: None,
             item_appearance: None,
+            permanent_outfit: false,
         })
     }
 
@@ -738,6 +755,11 @@ impl<S: Clone> ConditionStore<S> {
             | ConditionValues::Agony { interval_ms, .. } => interval_ms,
             ConditionValues::FoodRegeneration { .. } => FOOD_REGENERATION_CAP_MS,
         };
+        let bound_ms = if definition.permanent_outfit {
+            0
+        } else {
+            bound_ms
+        };
         now.checked_add(u64::from(bound_ms) * MICROS_PER_MS)
             .ok_or(ConditionRefusal::ArithmeticBounds)?;
         let condition_type = definition.condition_type();
@@ -1007,7 +1029,11 @@ impl<S: Clone> ConditionStore<S> {
                 {
                     return Err(ConditionRefusal::KeptCurrent);
                 }
-                instance.ends_at = Some(now + ms(duration_ms));
+                instance.ends_at = if definition.permanent_outfit {
+                    None
+                } else {
+                    Some(now + ms(duration_ms))
+                };
             }
             ConditionValues::Light { duration_ms, .. }
             | ConditionValues::SpellLight { duration_ms, .. } => {
