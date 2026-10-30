@@ -267,8 +267,8 @@ def build_differences():
     records = [
         {
             "id": "low-level-experience-bonus",
-            "reference": "characters.md 5.1.1: a qualitative experience bonus applies below level 50; no formula is in evidence.",
-            "oteryn": "Not modelled: kill experience carries no low-level bonus.",
+            "reference": "Global: TibiaWiki Experience Point, revision 1161628, Actual XP bonus table (https://tibia.fandom.com/api.php?action=query&prop=revisions&revids=1161628&rvprop=ids%7Ccontent&format=json). Crystal 201189f:data/events/scripts/player.lua uses a configurable flat 50% through level 50 instead.",
+            "oteryn": "Global low-level bonus: 100% through level 2, decreasing by 2 1/12 percentage points per level to 0% at level 50. Added to the daily XP boost after Prey and before stamina; each modifier step truncates to an integer.",
         },
         {
             "id": "experience-table-not-checked-against-official",

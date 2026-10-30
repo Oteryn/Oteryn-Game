@@ -55,3 +55,21 @@ fn low_level_bonus_adds_to_the_daily_boost_before_stamina() {
     assert_eq!(hunting_experience(100, 0, 0, 840, false, 1), Ok(100));
     assert_eq!(hunting_experience(100, 0, 0, 0, false, 1), Ok(0));
 }
+
+#[test]
+fn modifier_steps_keep_their_fractional_remainders_out_of_later_steps() {
+    // D118 amendment preserves the existing modifier order/rounding, rather than defining
+    // one final round. These examples deliberately differ from Crystal 201189f player.lua
+    // :523 (ceil Prey) and :627 (combine boost, low-level and stamina before returning).
+    // Level 26: floor(101*1.4)=141; floor(141*(1+.5+.5))=282; floor(282*1.5)=423.
+    assert_eq!(hunting_experience(101, 40, 50, 2520, true, 26), Ok(423));
+    // Crystal's Prey ceil alone would make the same remaining integer steps award 426.
+    assert_eq!(hunting_experience(142, 0, 50, 2520, true, 26), Ok(426));
+    // Level 3: floor(7*1.15)=8; floor(8*2375/1200)=15; floor(15*1.5)=22.
+    // Retaining every fraction until the end would instead give floor(23.8984375)=23.
+    assert_eq!(hunting_experience(7, 15, 0, 2520, true, 3), Ok(22));
+    // Orange stamina also consumes the already-truncated boost: floor(15/2)=7.
+    assert_eq!(hunting_experience(7, 15, 0, 840, false, 3), Ok(7));
+    // The final green-stamina half point is truncated too: floor(3*1.5)=4.
+    assert_eq!(hunting_experience(3, 0, 0, 2520, true, 50), Ok(4));
+}
