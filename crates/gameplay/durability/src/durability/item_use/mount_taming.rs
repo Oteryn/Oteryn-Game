@@ -252,9 +252,15 @@ async fn attempt(
     let outcome = rule.decide(request.draw);
     let (consume, remove, _) = rule.effects(outcome).ok_or(ItemUseError::InvalidInput)?;
     if outcome == 0 {
-        if request.achievements.len() != 2
-            || request.achievements[0].achievement_key != rule.achievement_key
-            || request.achievements[1].achievement_key != "oteryn:achievement/natural_born_cowboy"
+        let authored = rule.achievement_key.iter().map(String::as_str);
+        let expected = authored.chain(std::iter::once(
+            "oteryn:achievement/natural_born_cowboy",
+        ));
+        if !request
+            .achievements
+            .iter()
+            .map(|achievement| achievement.achievement_key.as_str())
+            .eq(expected)
             || request.achievements.iter().any(|a| {
                 a.source.kind != "mount_taming" || a.source.event_id != item.transaction_id
             })

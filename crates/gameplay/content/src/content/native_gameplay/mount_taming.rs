@@ -1,4 +1,4 @@
-//! Source-qualified creature taming. Probabilities are Canary values, not proven Global rates.
+//! Source-qualified creature taming. Probabilities are Canary/Crystal values, not proven Global rates.
 //! Rules apply only when their exact mount is present in the active cosmetics generation.
 use serde::Deserialize;
 use std::sync::OnceLock;
@@ -23,7 +23,8 @@ pub struct TamingRule {
     pub break_item: bool,
     pub failures: Vec<TamingFailure>,
     pub success_text: String,
-    pub achievement_key: String,
+    #[serde(default)]
+    pub achievement_key: Option<String>,
     #[serde(default)]
     pub required_equipment: Option<String>,
     pub source: String,
@@ -72,7 +73,7 @@ pub fn rules() -> &'static [TamingRule] {
                 || rule.failures.len() > 3
                 || (rule.chance != 100 && rule.failures.is_empty())
                 || rule.failures.iter().any(|f| !(1..=4).contains(&f.action))
-                || !rule.source.starts_with("canary:")
+                || !(rule.source.starts_with("canary:") || rule.source.starts_with("crystal:"))
             {
                 return Vec::new();
             }
@@ -87,7 +88,7 @@ mod tests {
 
     #[test]
     fn mount_taming_bear_threshold_and_reference_effects() -> Result<(), &'static str> {
-        assert_eq!(rules().len(), 44);
+        assert_eq!(rules().len(), 47);
         let bear = rules()
             .iter()
             .find(|r| r.item_key == "oteryn:item.tibia.i5907")
@@ -194,12 +195,62 @@ mod tests {
         Ok(())
     }
 
-    /// S06 divergences pinned until the owner decides: Crystal's Wild Horse (12802) branch
-    /// tames on 3/100 and flees on 3/100 of the rest; Oteryn keeps the Canary 15% row. Crystal
-    /// rows Battlefrazzle 52638, Giant Beaver 39548, tin lizzard 12305, uniwheel 12801,
-    /// wind-up loco 37397 and Foxmouse 43901 have no Oteryn rule.
+    fn assert_s06_rule(item: u32, chance: u8, success: &str, failure: Option<&str>) {
+        let found = rule_for(item);
+        assert_eq!(found.len(), 1, "item {item}");
+        let rule = found[0];
+        let mount = match item {
+            52638 => "oteryn:content.mount.battlefrazzle",
+            39548 => "oteryn:content.mount.giant_beaver_mount",
+            43901 => "oteryn:content.mount.foxmouse_mount",
+            _ => unreachable!("only the three admitted creature rows"),
+        };
+        assert_eq!(rule.mount_key, mount);
+        if chance == 100 {
+            assert_eq!(rule.decide(u64::MAX), 0);
+        }
+        assert_eq!(rule.chance, chance);
+        assert_eq!(rule.effects(0).map(|effect| effect.2), Some(success));
+        assert_eq!(rule.failures.first().map(|row| row.text.as_str()), failure);
+    }
+
+    macro_rules! s06_rule_test {
+        ($name:ident, $item:literal, $chance:literal, $success:literal, $failure:expr) => {
+            #[test]
+            fn $name() {
+                assert_s06_rule($item, $chance, $success, $failure);
+            }
+        };
+    }
+
+    s06_rule_test!(
+        battlefrazzle_taming_rule,
+        52638,
+        40,
+        "The tamed frazzlemaw hungers for fish and this one is a particular rare treat. You command this one now, take good care of it!",
+        Some(
+            "The tamed frazzlemaw devours the rare fish but otherwise takes no notice of your advancement."
+        )
+    );
+    s06_rule_test!(
+        giant_beaver_taming_rule,
+        39548,
+        40,
+        "You tamed the giant beaver.",
+        Some("The giant beaver ran away.")
+    );
+    s06_rule_test!(
+        foxmouse_taming_rule,
+        43901,
+        100,
+        "You have tamed the foxmouse.",
+        Some("The foxmouse ran away.")
+    );
+
+    /// S06 keeps Global's 15% Wild Horse rule and admits the three missing creature rows.
+    /// Item targets need a different production consumer and remain unadmitted.
     #[test]
-    fn s06_crystal_taming_divergences_are_pinned() {
+    fn s06_missing_crystal_taming_rows_are_admitted_and_global_horse_wins() {
         let horse = rule_for(12802);
         let oats: Vec<_> = horse
             .iter()
@@ -208,8 +259,11 @@ mod tests {
         assert_eq!(oats.len(), 1);
         assert_eq!(oats[0].chance, 15);
         assert!(oats[0].break_item);
-        for item in [52638, 39548, 12305, 12801, 37397, 43901] {
-            assert!(rule_for(item).is_empty(), "item {item}");
+        for item in [52638, 39548, 43901] {
+            assert_eq!(rule_for(item).len(), 1, "item {item}");
+        }
+        for item in [12305, 12801, 37397, 21897] {
+            assert!(rule_for(item).is_empty(), "item-only target {item}");
         }
     }
 }

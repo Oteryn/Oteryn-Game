@@ -1,5 +1,5 @@
-//! D118's closed modifier order: a Character's party/damage share, Prey, daily XP boost plus the
-//! low-level bonus, then stamina.
+//! Global modifier order: a Character's party/damage share, Prey, daily XP boost plus the
+//! low-level bonus, then stamina, with integer conversion once at the end.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct InvalidHuntingExperience;
 
@@ -25,19 +25,21 @@ pub fn hunting_experience(
     {
         return Err(InvalidHuntingExperience);
     }
-    let prey = i128::from(share) * (100 + i128::from(prey_percent)) / 100;
-    // Additive with the daily boost, as Crystal and Canary add `boost` and `lowLevel` percents.
-    let boosted =
-        prey * (1200 + 12 * i128::from(xp_boost_percent) + low_level_bonus_1200ths(level)) / 1200;
-    let award = if stamina_minutes == 0 {
-        0
+    // Owner C15 adopts Global single final truncation for all modifiers. Crystal 201189f
+    // data/events/scripts/player.lua:523 ceils Prey first; :627 combines the remaining factors.
+    let numerator = i128::from(share)
+        * (100 + i128::from(prey_percent))
+        * (1200 + 12 * i128::from(xp_boost_percent) + low_level_bonus_1200ths(level));
+    let (stamina_numerator, stamina_denominator) = if stamina_minutes == 0 {
+        (0, 1)
     } else if stamina_minutes <= 840 {
-        boosted / 2
+        (1, 2)
     } else if stamina_minutes > 2340 && premium {
-        boosted * 3 / 2
+        (3, 2)
     } else {
-        boosted
+        (1, 1)
     };
+    let award = numerator * stamina_numerator / (100 * 1200 * stamina_denominator);
     i64::try_from(award).map_err(|_| InvalidHuntingExperience)
 }
 
