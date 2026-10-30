@@ -441,7 +441,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         let (facts, build) = initialize_build(
             &owner,
             session,
-            if index == 0 || matches!(case, Case::Modifiers) {
+            // PZ settlement needs two nonzero damage XP shares. A knight beside a
+            // monk can deal too little of the 20-HP rat to earn one base XP.
+            if index == 0 || matches!(case, Case::Modifiers | Case::Pz) {
                 "monk"
             } else {
                 "knight"
@@ -1189,6 +1191,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     } else if matches!(case, Case::Exhausted) {
         assert_eq!((first_award, second_award), (8, 0));
     } else if matches!(case, Case::Pz) {
+        assert!(first_award > 0 && second_award > 0);
         assert!(first_award + second_award <= 10);
         let shared: bool = sqlx::query_scalar("SELECT shared FROM game_party_kill_xp_receipts")
             .fetch_one(&h.pool)
