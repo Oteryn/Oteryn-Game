@@ -90,3 +90,31 @@ fn proficiency_kill_credit_full_points_window_replay_and_checkpoint_decision() {
     );
     assert!(first.checkpoint_due(400_001_000, false));
 }
+
+#[test]
+fn daily_proficiency_bonus_credits_exact_chance_and_never_replays() {
+    for (streak, chance) in [(0, 0), (1, 1), (7, 7), (14, 8), (21, 9), (28, 10), (60, 10)] {
+        let mut doubled = 0;
+        for roll in 0..100 {
+            let points = daily_proficiency_points(Some(100), streak, roll);
+            assert_eq!(points, Some(if roll < chance { 200 } else { 100 }));
+            let mut owner = owner();
+            assert_eq!(
+                credit_proficiency(
+                    &mut owner, [1; 16], 400_000, points, true, 100_000, "weapon"
+                ),
+                points
+            );
+            assert_eq!(
+                credit_proficiency(
+                    &mut owner, [1; 16], 400_000, points, true, 100_000, "weapon"
+                ),
+                None
+            );
+            doubled += u8::from(points == Some(200));
+        }
+        assert_eq!(doubled, chance);
+    }
+    assert_eq!(daily_proficiency_points(None, 28, 0), None);
+    assert_eq!(daily_proficiency_points(Some(u32::MAX), 28, 0), None);
+}

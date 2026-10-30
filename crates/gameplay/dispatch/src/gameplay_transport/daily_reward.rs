@@ -5,13 +5,10 @@ use super::capabilities::OfferedCapability;
 use super::connection::{FreshAdmissionAuthority, UseCommand, UseOutcome};
 use crate::content::daily_reward::DailyRewardContent;
 use crate::content::native_gameplay::NativeGameplayState;
-use crate::durability::character_inbox::RewardClaimInboxMintOutput;
 use crate::durability::daily_reward_claim::{
     DailyRewardClaimError, DailyRewardClaimOutcome, DailyRewardClaimRequest,
 };
 use crate::durability::daily_reward_delivery::DailyRewardDeliveryPlan;
-use crate::durability::item_mint::TypedDefinitionRef;
-use crate::durability::item_transfer::{ItemDefinitionFacts, ItemStackClass};
 use crate::foundation::{CommandId, CommandRef, ExactActorRef, GameSessionId};
 use oteryn_protocol_oteryn::daily_reward as wire;
 use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
@@ -57,7 +54,7 @@ pub(super) fn offered(base: &[OfferedCapability], available: bool) -> Vec<Offere
     let mut result = base.to_vec();
     if available {
         result.push(OfferedCapability {
-            id: wire::CAPABILITY_DAILY_REWARD_V1,
+            id: wire::CAPABILITY_DAILY_REWARD_V2,
             requires: &[],
         });
     }
@@ -85,7 +82,7 @@ pub(super) fn result(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    pub(super) fn daily_content(&self) -> Option<(&NativeGameplayState, DailyRewardContent)> {
+    pub(super) fn daily_content(&self) -> Option<(&NativeGameplayState, &'static DailyRewardContent)> {
         let native = self.active_generation?.native_gameplay()?;
         Some((native, DailyRewardContent::load(native)?))
     }
@@ -197,7 +194,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let fence = command.item_fence?;
         let reachable = target.expected_revision == 0
             && self
-                .daily_in_reach(actor, command.game_session_id, &content)
+                .daily_in_reach(actor, command.game_session_id, content)
                 .await;
         if reachable {
             let runtime = self.runtime.lock().await;
@@ -226,7 +223,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         command: UseCommand,
         claim: Option<wire::DailyRewardClaim>,
     ) -> Option<Vec<u8>> {
-        let (native, content) = self.daily_content()?;
+        let (_, content) = self.daily_content()?;
         let fence = command.item_fence?;
         let command_ref = CommandRef::new(
             command.game_session_id,
@@ -234,7 +231,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         );
         let _permit = self.spell_lane_permit().await?;
         let reachable = self
-            .daily_in_reach(actor, command.game_session_id, &content)
+            .daily_in_reach(actor, command.game_session_id, content)
             .await;
         let opened = self
             .states
@@ -256,7 +253,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.states
             .resting_areas
             .install(command.game_session_id, actor, view.streak);
-        let Some(claim) = claim else {
+        let Some(_claim) = claim else {
             return wire::DailyRewardWall {
                 lane_day: view.lane_day,
                 streak: view.streak,
@@ -274,16 +271,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return refusal(5);
         }
-        // The canonical pick binding survives reconnect and is independent of
-        // random output identities. The native mint reservation binds those too.
-        let mut digest = Sha256::new()
-            .chain_update(b"oteryn:daily-reward-picks:v1\0")
+        // One immutable server plan per content revision. No client choices enter it.
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:daily-reward:v2\0")
             .chain_update(content.revision.as_bytes());
-        for pick in &claim.picks {
-            digest.update((pick.definition.len() as u32).to_be_bytes());
-            digest.update(pick.definition.as_bytes());
-            digest.update(pick.count.to_be_bytes());
-        }
         let binding = digest.finalize().into();
         if let Some(receipt) = view.settled.or(view.receipt) {
             return refusal(if receipt.request_binding == binding {
@@ -295,30 +286,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if !opened || !reachable {
             return refusal(4);
         }
-        let vocation = {
-            let runtime = self.runtime.lock().await;
+        {
             let states = self.states.spell_states.lock().await;
             if states.has_pending_spell_commit(actor, command.game_session_id) {
                 return refusal(7);
             }
-            states
-                .get(&runtime, actor, command.game_session_id)?
-                .character_facts()
-                .vocation
-        };
-        let Some(mut plan) = plan(native, &content, view.lane_day, &claim, vocation) else {
-            return refusal(3);
-        };
-        plan.content_revision = native
-            .source_digest()
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect();
-        let transaction_id = crate::operator_files::uuid_v7().ok()?;
-        for _ in &plan.outputs {
-            plan.item_instance_ids
-                .push(crate::operator_files::uuid_v7().ok()?);
         }
+        let plan = plan(content, view.lane_day)?;
+        let transaction_id = crate::operator_files::uuid_v7().ok()?;
         let request = DailyRewardClaimRequest {
             command: command_ref,
             reset_epoch: view.epoch,
@@ -359,100 +334,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
-fn plan(
-    native: &NativeGameplayState,
-    content: &DailyRewardContent,
-    day: u8,
-    claim: &wire::DailyRewardClaim,
-    vocation: crate::spell::Vocation,
-) -> Option<DailyRewardDeliveryPlan> {
-    let mut plan = DailyRewardDeliveryPlan {
-        lane_day: day,
-        content_revision: String::new(),
-        definition_revision: content.revision.clone(),
-        outputs: Vec::new(),
-        charges: Vec::new(),
-        item_instance_ids: Vec::new(),
-    };
-    let total: u32 = claim.picks.iter().map(|p| p.count).sum();
-    let expected = match day {
-        1 | 2 => 5,
-        4 => 10,
-        6 => 1,
-        3 | 5 | 7 => 0,
-        _ => return None,
-    };
-    if total != expected {
-        return None;
-    }
-    for pick in &claim.picks {
-        let (facts, charges) = if matches!(day, 1 | 2 | 4) {
-            let record = content
-                .potion_source_ids
-                .iter()
-                .filter_map(|id| native.item_policy_for_source_id(*id))
-                .map(|p| p.record())
-                .find(|r| r.production_definition.production_key == pick.definition)?;
-            // The unpromoted vocation has no mana lane; no level filter is applied.
-            if vocation == crate::spell::Vocation::None
-                && record
-                    .production_definition
-                    .production_key
-                    .ends_with(".i268")
-            {
-                return None;
-            }
-            let definition = TypedDefinitionRef {
-                family: "Item".into(),
-                production_key: pick.definition.clone(),
-                revision_ref: record.production_definition.revision_ref.clone(),
-            };
-            (
-                super::item_ref_admission::generation_item_facts(native, &definition).ok()?,
-                None,
-            )
-        } else {
-            let item = content
-                .items
-                .iter()
-                .find(|i| i.kind == "training" && i.key == pick.definition)?;
-            (
-                original_item(&item.key, &content.revision),
-                Some(item.charges),
-            )
-        };
-        plan.outputs.push(RewardClaimInboxMintOutput {
-            source_line: plan.outputs.len() as u32,
-            item: facts,
-            quantity: pick.count,
-            key_number: None,
-        });
-        plan.charges.push(charges);
-    }
-    if day == 5 {
-        let item = content.items.iter().find(|i| i.kind == "converter")?;
-        plan.outputs.push(RewardClaimInboxMintOutput {
-            source_line: 0,
-            item: original_item(&item.key, &content.revision),
-            quantity: 1,
-            key_number: None,
-        });
-        plan.charges.push(Some(item.charges));
-    }
-    Some(plan)
-}
-fn original_item(key: &str, revision: &str) -> ItemDefinitionFacts {
-    ItemDefinitionFacts {
-        definition: TypedDefinitionRef {
-            family: "Item".into(),
-            production_key: key.into(),
-            revision_ref: revision.into(),
-        },
-        weight: Some(0),
-        stack: ItemStackClass::NonStackable,
-        container_capacity: None,
-        container_slot_equip_pattern: false,
-    }
+fn plan(content: &DailyRewardContent, day: u8) -> Option<DailyRewardDeliveryPlan> {
+    content.reward(day, false)?;
+    Some(DailyRewardDeliveryPlan {
+        content_revision: content.revision.clone(),
+    })
 }
 
 macro_rules! authority_methods {

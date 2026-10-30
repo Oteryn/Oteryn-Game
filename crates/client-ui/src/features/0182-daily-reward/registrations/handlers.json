@@ -1,0 +1,18 @@
+{
+  "mechanic": "0182-daily-reward",
+  "kind": "handlers",
+  "id": "0182-daily-reward-unsupported",
+  "status": "unsupported",
+  "reason": "DAILY30B implements the server claim; the client reward view and claim input remain pending (Build 7).",
+  "commands": [
+    354,
+    355
+  ],
+  "not_applicable": {
+    "state": "Unsupported until the owning mechanic migration.",
+    "protocol": "Unsupported until the owning mechanic migration.",
+    "view": "Unsupported until the owning mechanic migration.",
+    "input": "Unsupported until the owning mechanic migration.",
+    "settings": "Unsupported until the owning mechanic migration."
+  }
+}

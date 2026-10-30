@@ -34,6 +34,13 @@ fn scenario() -> TestResult {
         ))
         .execute(&h.pool)
         .await?;
+        // Reapply the current daily successor too: v2 adds two-card grants to
+        // PREY's sole Account/World ledger and preserves its spend proof.
+        sqlx::raw_sql(include_str!(
+            "../../../../../../apps/game-server/migrations/0547_daily_reward_v2.sql"
+        ))
+        .execute(&h.pool)
+        .await?;
         prepare_current_session(&h).await?;
         let seal = h.recovery.seal_current().map_err(debug)?;
         let authority = h
@@ -109,7 +116,7 @@ fn scenario() -> TestResult {
         let offered = crate::gameplay_transport::prey::offered(&base, true);
         assert!(offered.iter().any(|c| c.id == 140));
         admitted.continuity.selected_capabilities =
-            SelectedCapabilities::select(&offered, &[1, 6, 32, 140]).ok_or("prey capability")?;
+            SelectedCapabilities::select(&offered, &[1, 6, 182, 140]).ok_or("prey capability")?;
         sqlx::query("UPDATE game_prey_decision_root SET secret=decode($1,'hex')")
             .bind("a9f248eab2b6a601f753a75c7741a6c8be1e428c3923b13995e3f3ef64b0ac2a")
             .execute(&h.pool)
@@ -119,7 +126,7 @@ fn scenario() -> TestResult {
         let query = wire::encode_request(&wire::Request::Query).map_err(debug)?;
         let values = exchange(&owner, &mut admitted, &[(1, &query)]).await?;
         assert!(
-            admitted.continuity.selected_capabilities.contains(32),
+            admitted.continuity.selected_capabilities.contains(182),
             "negotiated daily capability survives Prey query"
         );
         assert_eq!(values[0].0, CommandStatus::Accepted);
@@ -285,17 +292,10 @@ fn scenario() -> TestResult {
             },
         )
         .map_err(debug)?;
-        for day in 1..=24 {
+        for day in 1..=20 {
             super::daily_reward::epoch(&h, day).await?;
-            let lane = (day - 1) % 7 + 1;
-            let pick = match lane {
-                1 | 2 => super::daily_reward::pick("oteryn:item.tibia.i266", 5)?,
-                4 => super::daily_reward::pick("oteryn:item.tibia.i266", 10)?,
-                6 => super::daily_reward::pick("oteryn:item.tibia.i28540", 1)?,
-                _ => vec![],
-            };
             let (end, bytes) =
-                super::daily_reward::serve(&owner, &mut admitted, &[(2, &shrine), (32, &pick)])
+                super::daily_reward::serve(&owner, &mut admitted, &[(2, &shrine), (oteryn_protocol_oteryn::daily_reward::COMMAND_TYPE_DAILY_REWARD_CLAIM, &[])])
                     .await?;
             let results = super::daily_reward::results(&bytes)?;
             assert_eq!(

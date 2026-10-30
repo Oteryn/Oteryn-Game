@@ -1,10 +1,6 @@
 //! Complete DAILY transaction: Character then Account/World serialization, all
-//! ordered lines, native Inbox MINT and permanent item bindings in one commit.
+//! ordered v2 reward lines and their value ledgers in one commit.
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::character_inbox::{
-    RewardClaimInboxError, RewardClaimInboxMintOutput, RewardClaimInboxMintRequest,
-    RewardClaimInboxOutcome, RewardClaimInboxPlan,
-};
 use super::daily_reward::{load_receipt, load_state};
 use super::daily_reward_claim::{
     DailyRewardClaimError, DailyRewardClaimOutcome, DailyRewardClaimRequest, write_claim,
@@ -12,12 +8,11 @@ use super::daily_reward_claim::{
 use super::db::{
     begin_semantic_transaction, commit_semantic_transaction, lock_admission_relations,
 };
-use super::item_mint::TypedDefinitionRef;
 use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current};
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::{CommandRef, RuntimeScopeRefV1};
-use sqlx::{Postgres, Row, Transaction};
+use sqlx::{Postgres, Transaction};
 use std::future::Future;
 
 /// The existing Premium owner resolves current status inside the claim transaction.
@@ -31,12 +26,7 @@ pub trait DailyRewardPremiumGate: Sync {
 
 #[derive(Debug, Clone)]
 pub struct DailyRewardDeliveryPlan {
-    pub lane_day: u8,
     pub content_revision: String,
-    pub definition_revision: String,
-    pub outputs: Vec<RewardClaimInboxMintOutput>,
-    pub charges: Vec<Option<u32>>,
-    pub item_instance_ids: Vec<[u8; 16]>,
 }
 
 #[derive(Debug, Clone)]
@@ -100,47 +90,37 @@ impl DurabilityRoot {
             let epoch = epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?;
             let state = load_state(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes()).await?;
             let receipt = load_receipt(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes(), epoch).await?;
-            let jokers: Option<i16> = sqlx::query_scalar("SELECT j.jokers FROM public.game_account_daily_reward_jokers j JOIN public.game_character_roots r ON r.account_id=j.account_id AND r.world_id=j.world_id WHERE r.character_id=encode($1,'hex')::uuid")
-                .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
+            let jokers: Option<i16> = sqlx::query_scalar("SELECT least(3,coalesce(j.jokers,0)+(SELECT count(*) FROM (SELECT DISTINCT to_char(to_timestamp(h.reset_at_unix_ms/1000.0) AT TIME ZONE 'UTC','YYYY-MM') AS month FROM public.game_world_reset_history h WHERE h.world_id=r.world_id AND h.reset_epoch<=$2::text::numeric AND to_char(to_timestamp(h.reset_at_unix_ms/1000.0) AT TIME ZONE 'UTC','YYYY-MM')>coalesce(j.last_grant_month,'') ORDER BY month DESC LIMIT 3) pending))::smallint FROM public.game_character_roots r LEFT JOIN public.game_account_daily_reward_jokers j ON r.account_id=j.account_id AND r.world_id=j.world_id WHERE r.character_id=encode($1,'hex')::uuid")
+                .bind(fence.character_id.as_bytes().as_slice()).bind(epoch.to_string()).fetch_optional(&mut *tx).await?;
             let saved: Option<String> = sqlx::query_scalar("SELECT c.reset_epoch::text FROM public.game_daily_reward_commands d JOIN public.game_character_daily_reward_claims c ON c.transaction_id=d.claim_id WHERE d.game_session_id=encode($1,'hex')::uuid AND d.command_id=$2::text::numeric AND c.character_id=encode($3,'hex')::uuid AND c.world_id=encode($4,'hex')::uuid")
                 .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string())
                 .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let settled = match saved { Some(epoch) => load_receipt(&mut tx, fence.character_id.as_bytes(), fence.runtime_scope.world_id().as_bytes(), epoch.parse().map_err(|_| DurabilityError::InvalidStoredState)?).await?, None => None };
-            Ok(Ok(DailyRewardView { epoch, lane_day: state.lane_day, streak: state.streak,
-                jokers: u8::try_from(jokers.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)?, receipt, settled }))
+            let jokers = u8::try_from(jokers.unwrap_or(0)).map_err(|_| DurabilityError::InvalidStoredState)?;
+            let lane_day = if receipt.is_none() {
+                oteryn_gameplay_progression::daily_reward::advance_daily_reward(state, epoch, jokers)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?.claimed_lane_day
+            } else { state.lane_day };
+            Ok(Ok(DailyRewardView { epoch, lane_day, streak: state.streak, jokers, receipt, settled }))
         })).await?
     }
 
-    /// All value writes share the MAIL-owned transaction when items are present.
-    /// The non-item days use the same native recovery/admission/fence boundary.
+    /// Every v2 reward shares the native recovery/admission/fence transaction.
     pub async fn commit_daily_reward_claim<G: DailyRewardPremiumGate>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterItemFence,
         request: DailyRewardClaimRequest,
-        mut plan: DailyRewardDeliveryPlan,
+        plan: DailyRewardDeliveryPlan,
         gate: &G,
     ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
         use DailyRewardClaimError as Error;
         if request.reset_epoch == 0
             || request.transaction_id[6] >> 4 != 7
             || request.transaction_id[8] >> 6 != 2
-            || !(1..=7).contains(&plan.lane_day)
-            || plan.outputs.len() > 20
-            || plan
-                .outputs
-                .iter()
-                .enumerate()
-                .any(|(index, output)| output.source_line != index as u32)
-            || plan
-                .charges
-                .iter()
-                .flatten()
-                .any(|charges| !(1..=65535).contains(charges))
-            || plan.charges.len() != plan.outputs.len()
-            || plan.item_instance_ids.len() != plan.outputs.len()
-            || (matches!(plan.lane_day, 3 | 7) != plan.outputs.is_empty())
+            || oteryn_gameplay_content::content::daily_reward::DailyRewardContent::catalogue()
+                .is_none_or(|content| content.revision != plan.content_revision)
         {
             return Err(Error::InvalidRequest);
         }
@@ -165,29 +145,6 @@ impl DurabilityRoot {
                 Err(Error::BindingMismatch)
             };
         }
-        if view.lane_day != plan.lane_day {
-            return Err(Error::InvalidRequest);
-        }
-        if !plan.outputs.is_empty() {
-            // Reuse a preparation of this CommandRef after an ambiguous attempt/restart.
-            // These immutable identities define the plan, never the current fence.
-            if let Some((transaction, items)) = self
-                .daily_prepared_ids(authority, request.command, request.request_binding)
-                .await?
-            {
-                plan.item_instance_ids = items;
-                let request = DailyRewardClaimRequest {
-                    transaction_id: transaction,
-                    ..request
-                };
-                return self
-                    .commit_daily_items(authority, node, fence, request, plan, gate)
-                    .await;
-            }
-            return self
-                .commit_daily_items(authority, node, fence, request, plan, gate)
-                .await;
-        }
         let recovery = authority
             .record_for(self)
             .map_err(|_| Error::AuthorityRejected)?;
@@ -202,7 +159,7 @@ impl DurabilityRoot {
                     if !current(&mut tx, &node, fence, request.command).await? {
                         return Ok(Err(Error::AuthorityRejected));
                     }
-                    let outcome = apply(&mut tx, fence, request, &plan, *gate).await;
+                    let outcome = apply(&mut tx, fence, request, *gate).await;
                     if outcome.is_ok() {
                         commit_semantic_transaction(tx, deadline).await?;
                     }
@@ -210,115 +167,6 @@ impl DurabilityRoot {
                 })
             })
             .await?
-    }
-
-    async fn commit_daily_items<G: DailyRewardPremiumGate>(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterItemFence,
-        request: DailyRewardClaimRequest,
-        plan: DailyRewardDeliveryPlan,
-        gate: &G,
-    ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
-        let RuntimeScopeRefV1::Channel {
-            world_id,
-            channel_id,
-        } = fence.runtime_scope
-        else {
-            return Err(DailyRewardClaimError::AuthorityRejected);
-        };
-        let source = RewardClaimInboxPlan {
-            command: request.command,
-            character_id: fence.character_id,
-            world_id,
-            channel_id,
-            transaction_id: request.transaction_id,
-            source_binding: request.request_binding,
-            item_instance_ids: plan.item_instance_ids.clone(),
-        };
-        let mint = RewardClaimInboxMintRequest {
-            claim: TypedDefinitionRef {
-                family: "RewardClaim".into(),
-                production_key: "oteryn:daily-reward".into(),
-                revision_ref: plan.definition_revision.clone(),
-            },
-            content_revision: plan.content_revision.clone(),
-            ruleset_revision: "daily-reward-r1".into(),
-            sim_revision: "daily-reward-r1".into(),
-            outputs: plan.outputs.clone(),
-        };
-        let mut candidate = self
-            .prepare_reward_claim_inbox_mint(authority, node, fence, &source, mint)
-            .await
-            .map_err(inbox_error)?;
-        let mut participant = (None, gate);
-        let result = self
-            .commit_reward_claim_inbox_mint(
-                authority,
-                node,
-                fence,
-                &mut candidate,
-                &mut participant,
-                move |context, (outcome, gate)| {
-                    Box::pin(async move {
-                        let result =
-                            apply(context.transaction(), fence, request, &plan, *gate).await;
-                        let committed = matches!(result, Ok(DailyRewardClaimOutcome::Committed(_)));
-                        *outcome = Some(result);
-                        if committed {
-                            Ok(())
-                        } else {
-                            Err(RewardClaimInboxError::SourceRefused)
-                        }
-                    })
-                },
-            )
-            .await;
-        match (result, participant.0) {
-            (Ok(RewardClaimInboxOutcome::Committed { .. }), Some(result)) => result,
-            (Err(RewardClaimInboxError::SourceRefused), Some(result)) => result,
-            (Err(error), _) => Err(inbox_error(error)),
-            (Ok(RewardClaimInboxOutcome::AlreadyCommitted(_)), _) => {
-                let view = self
-                    .read_daily_reward_view(authority, node, fence, request.command)
-                    .await?;
-                view.receipt
-                    .filter(|r| r.request_binding == request.request_binding)
-                    .map(DailyRewardClaimOutcome::AlreadyClaimed)
-                    .ok_or(DailyRewardClaimError::BindingMismatch)
-            }
-            _ => Err(DailyRewardClaimError::InvalidRequest),
-        }
-    }
-
-    async fn daily_prepared_ids(
-        &self,
-        authority: &ReconciledCharacterAuthority<'_, '_>,
-        command: CommandRef,
-        binding: [u8; 32],
-    ) -> Result<Option<([u8; 16], Vec<[u8; 16]>)>, DailyRewardClaimError> {
-        let recovery = authority
-            .record_for(self)
-            .map_err(|_| DailyRewardClaimError::AuthorityRejected)?;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
-            let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            assert_recovery_fence(&mut tx, &recovery).await?;
-            let row = sqlx::query("SELECT transaction_id::text, item_instance_ids::text[], source_binding FROM public.game_reward_claim_inbox_mint_reservations WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric")
-                .bind(command.game_session_id().as_bytes().as_slice()).bind(command.command_id().get().to_string()).fetch_optional(&mut *tx).await?;
-            let Some(row) = row else { return Ok(Ok(None)); };
-            if row.try_get::<Vec<u8>,_>("source_binding")? != binding { return Ok(Err(DailyRewardClaimError::BindingMismatch)); }
-            let items = row.try_get::<Vec<String>,_>("item_instance_ids")?.iter().map(|s| super::item_mint::uuid_text(s)).collect::<Result<Vec<_>,_>>()?;
-            Ok(Ok(Some((super::item_mint::uuid_text(row.try_get("transaction_id")?)?, items))))
-        })).await?
-    }
-}
-
-fn inbox_error(error: RewardClaimInboxError) -> DailyRewardClaimError {
-    match error {
-        RewardClaimInboxError::Unavailable(e) => DailyRewardClaimError::Durability(e),
-        RewardClaimInboxError::ConflictingDelivery => DailyRewardClaimError::BindingMismatch,
-        _ => DailyRewardClaimError::AuthorityRejected,
     }
 }
 
@@ -351,7 +199,6 @@ async fn apply<G: DailyRewardPremiumGate>(
     tx: &mut Transaction<'_, Postgres>,
     fence: CurrentCharacterItemFence,
     request: DailyRewardClaimRequest,
-    plan: &DailyRewardDeliveryPlan,
     gate: &G,
 ) -> Result<DailyRewardClaimOutcome, DailyRewardClaimError> {
     let world = fence.runtime_scope.world_id();
@@ -370,10 +217,6 @@ async fn apply<G: DailyRewardPremiumGate>(
             Err(DailyRewardClaimError::BindingMismatch)
         };
     }
-    let state = load_state(tx, fence.character_id.as_bytes(), world.as_bytes()).await?;
-    if state.lane_day != plan.lane_day {
-        return Err(DailyRewardClaimError::InvalidRequest);
-    }
     let account: String = sqlx::query_scalar("SELECT account_id::text FROM public.game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(fence.character_id.as_bytes().as_slice()).fetch_one(&mut **tx).await?;
     let premium = gate
@@ -388,22 +231,6 @@ async fn apply<G: DailyRewardPremiumGate>(
     sqlx::query("INSERT INTO public.game_daily_reward_commands VALUES(encode($1,'hex')::uuid,$2::text::numeric,encode($3,'hex')::uuid)")
         .bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string())
         .bind(request.transaction_id.as_slice()).execute(&mut **tx).await?;
-    if plan.outputs.is_empty() {
-        super::daily_reward_effects::grant(tx, fence, request, plan.lane_day, premium).await?;
-    }
-    for (index, ((output, item), charges)) in plan
-        .outputs
-        .iter()
-        .zip(&plan.item_instance_ids)
-        .zip(&plan.charges)
-        .enumerate()
-    {
-        sqlx::query("INSERT INTO public.game_item_bindings VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,'DAILY_REWARD')")
-            .bind(item.as_slice()).bind(world.as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).execute(&mut **tx).await?;
-        sqlx::query("INSERT INTO public.game_character_daily_reward_lines(claim_id,line,kind,definition,quantity,status,delivering_transaction_id,item_instance_id,charges) VALUES(encode($1,'hex')::uuid,$2,'ITEM',$3,$4,'DELIVERED',encode($1,'hex')::uuid,encode($5,'hex')::uuid,$6)")
-            .bind(request.transaction_id.as_slice()).bind(index as i16).bind(&output.item.definition.production_key)
-            .bind(i32::try_from(output.quantity).map_err(|_| DailyRewardClaimError::InvalidRequest)?)
-            .bind(item.as_slice()).bind(charges.map(|c| c as i32)).execute(&mut **tx).await?;
-    }
+    super::daily_reward_effects::grant(tx, fence, request, receipt.lane_day, premium).await?;
     Ok(outcome)
 }
