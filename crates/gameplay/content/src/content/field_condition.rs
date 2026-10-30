@@ -77,7 +77,8 @@ impl QualifiedFieldCondition {
     /// Campfire, owner Global PKG1R6 (2026-10-30, 0% resistance): 1998 big
     /// flames shares 2123 (17:43:03 entry through 17:44:06); 1999 medium
     /// (17:46:45..17:47:30) and 2000 embers (17:36:18..17:37:03) share 2124.
-    /// Unmeasured 10069..10071 remain unchanged.
+    /// PKG1R7 owner-approved donor chains: 2131 shares 2118's record;
+    /// Zaoan fire 10069..10071 shares 2119's record, so both use FIRE.
     /// Final fire 2120/2125 stays harmless (Fire 1011382). Safe rune products
     /// 2132 (21465's decay), 2134 and 2135 share their recipe; player immunity remains with the contact owner.
     /// Yellow flame 21465 is explicitly excluded, even when rune-created.
@@ -90,9 +91,13 @@ impl QualifiedFieldCondition {
             }
         }
         const FIRE: &[FieldDamageEntry] = &[entry(20, 9_000, 1), entry(10, 9_000, 7)];
+        /// TibiaWiki Energy Field (Field) rev 1011133 and Energy Field Rune
+        /// rev 1189766: 30 on entry, then 25 after leaving the field.
+        /// Electrified rev 1040087 gives the 11 s interval.
         const ENERGY: &[FieldDamageEntry] = &[entry(30, 11_000, 1), entry(25, 11_000, 1)];
+        // PKG1R8: TibiaWiki total 105 includes entry as the first of five 5s.
         const POISON: &[FieldDamageEntry] = &[
-            entry(5, 4_000, 6),
+            entry(5, 4_000, 5),
             entry(4, 4_000, 5),
             entry(3, 4_000, 7),
             entry(2, 4_000, 10),
@@ -110,7 +115,7 @@ impl QualifiedFieldCondition {
             return None;
         }
         match self.source.server_item_id {
-            2118 | 2119 | 2132 => Some(FIRE),
+            2118 | 2119 | 2131 | 2132 | 10069..=10071 => Some(FIRE),
             2122 | 2135 => Some(ENERGY),
             105 | 2134 => Some(POISON),
             1998 | 2123 => Some(MAP_FIRE),
@@ -239,7 +244,7 @@ mod tests {
     fn source_poison_preserves_ramp_fire_count_and_barrier_known_none() {
         let poison = profile(105);
         assert_eq!(poison.element().unwrap(), Some(DotElement::Poison));
-        assert_eq!(poison.total_damage().unwrap(), 110);
+        assert_eq!(poison.total_damage().unwrap(), 105);
         let FieldConditionKind::Damage { entries, .. } = poison.condition else {
             panic!("damage")
         };
