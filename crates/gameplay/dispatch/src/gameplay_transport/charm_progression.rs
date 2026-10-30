@@ -28,6 +28,11 @@ struct Bestiary {
     facts: BestiaryCharmFacts,
 }
 
+/// W18: a podium of tenacity shows only a canonical Bestiary race.
+pub(super) fn bestiary_race_known(key: &str) -> bool {
+    bestiary().is_some_and(|bestiary| bestiary.races.iter().any(|race| race.key() == key))
+}
+
 fn bestiary() -> Option<&'static Bestiary> {
     static BESTIARY: LazyLock<Option<Bestiary>> = LazyLock::new(|| {
         // The creature reward table's evidence limits for the same source.

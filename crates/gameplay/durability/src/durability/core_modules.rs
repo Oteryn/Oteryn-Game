@@ -72,6 +72,7 @@ pub mod house_interior;
 pub mod house_interior_audit;
 pub mod house_ownership;
 mod house_ownership_audit;
+pub mod house_podium;
 pub mod house_scope_handoff;
 pub mod house_spell_acl;
 pub mod imbuement;
