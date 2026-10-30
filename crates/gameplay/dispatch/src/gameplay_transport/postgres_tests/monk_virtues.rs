@@ -212,8 +212,74 @@ pub(super) async fn scenario(
                 .ok_or("monk")?
                 .virtue_party_bonuses(owner.owner_now().get())
                 .damage_reduction,
-            4
+            3
         );
+    }
+    // PKG8 Q5: a current Guiding Presence allocation scales both the ally and Serene copy.
+    // A full green domain reaches Guiding Presence through the actual topology;
+    // restore the original blue Ascetic allocation before the spender assertions.
+    for (guided, expected_revision, occurrence, percent) in [(true, 1, 205, 4), (false, 2, 206, 3)]
+    {
+        for (index, slot) in data.wheel()["topology"]
+            .as_array()
+            .ok_or("topology")?
+            .iter()
+            .enumerate()
+        {
+            points[index] = if slot["domain"] == if guided { "green" } else { "blue" } {
+                u16::try_from(slot["capacity"].as_u64().ok_or("capacity")?)?
+            } else {
+                0
+            };
+        }
+        let current = owner
+            .current_quest_fence(player.1)
+            .await
+            .map_err(|_| "wheel fence")?
+            .ok_or("wheel fence")?;
+        let outcome = owner
+            .revision_sequencer
+            .acquire(current.character_id)
+            .await
+            .commit_wheel(
+                owner.root,
+                owner.character,
+                owner.holder,
+                current,
+                WheelChangeRequest {
+                    occurrence: WheelOccurrence::from_bytes(id(occurrence)).map_err(debug)?,
+                    expected_wheel_revision: expected_revision,
+                    slots: WheelSlots::new(points).map_err(debug)?,
+                    vessels: None,
+                },
+                Arc::clone(&rules),
+                // Both domain replacements remove points and require the temple fact.
+                WheelChangeFacts { at_temple: true },
+                premium,
+            )
+            .await
+            .map_err(debug)?;
+        assert!(
+            matches!(outcome, WheelCommitOutcome::Committed(_)),
+            "{outcome:?}"
+        );
+        for recipient in [player, players[1]] {
+            owner
+                .refresh_source_party_serene(recipient.0, recipient.1)
+                .await;
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            assert_eq!(
+                states
+                    .get(&runtime, recipient.0, recipient.1)
+                    .ok_or("party actor")?
+                    .virtue_party_bonuses(owner.owner_now().get())
+                    .damage_reduction,
+                percent,
+                "Guiding={guided}, recipient={:?}",
+                recipient.0
+            );
+        }
     }
     // Eight adjacent monsters stay fixed; moving the knight across the screen boundary toggles Serene.
     let target;
@@ -317,7 +383,7 @@ pub(super) async fn scenario(
                     .ok_or("knight")?
                     .virtue_party_bonuses(owner.owner_now().get())
                     .damage_reduction,
-                if serene { 0 } else { 4 }
+                if serene { 0 } else { 3 }
             );
         }
         {
@@ -330,6 +396,7 @@ pub(super) async fn scenario(
             let monk = state.monk.as_mut().ok_or("monk state")?;
             assert_eq!(monk.serene(), serene);
             monk.commit_fill().map_err(debug)?;
+            state.health = 1;
         }
         let expected_bounds = {
             let runtime = owner.runtime.lock().await;
@@ -447,7 +514,21 @@ pub(super) async fn scenario(
                 .harmony,
             1
         );
-        eprintln!("C11_DISPATCH serene={serene} damage={damage} ascetic_stage=3");
+        let healed = states
+            .get(&runtime, player.0, player.1)
+            .ok_or("healed monk")?;
+        assert_eq!(healed.character_facts().level, 1340);
+        // Canary flat F=318: spent@5 795..915 plus refund@1 668..768.
+        // The real dispatcher must apply both rolls to the monk in the same cast.
+        assert!(
+            (1464..=1684).contains(&healed.vitals().health),
+            "spent + refund HP {}",
+            healed.vitals().health
+        );
+        eprintln!(
+            "C11_DISPATCH serene={serene} damage={damage} ascetic_stage=3 healing_hp={}",
+            healed.vitals().health
+        );
     }
     Ok(())
 }

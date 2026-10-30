@@ -427,24 +427,25 @@ fn lower(
         applications.len(),
         geometry.len()
     );
-    let harmony_heal_target = if paid.harmony_gain_healing.is_some() {
-        let profile = crate::spell::actor_execution::harmony_gain_profile()?;
-        let party_world = party.as_ref().ok_or(SpellCastDisposition::Rejected)?;
-        let selected = oteryn_gameplay_spell_rules::native_actor_states::focus_healing_target(
-            profile,
-            party_world.caster_facts(),
-            party_world.member_facts(),
-        )
-        .map_err(|_| SpellCastDisposition::Rejected)?;
-        Some(
-            party_world
-                .actor_for_id(selected)
-                .ok_or(SpellCastDisposition::Rejected)?
-                .0,
-        )
-    } else {
-        None
-    };
+    let harmony_heal_target =
+        if paid.harmony_gain_healing.is_some() || paid.harmony_refund_healing.is_some() {
+            let profile = crate::spell::actor_execution::harmony_gain_profile()?;
+            let party_world = party.as_ref().ok_or(SpellCastDisposition::Rejected)?;
+            let selected = oteryn_gameplay_spell_rules::native_actor_states::focus_healing_target(
+                profile,
+                party_world.caster_facts(),
+                party_world.member_facts(),
+            )
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+            Some(
+                party_world
+                    .actor_for_id(selected)
+                    .ok_or(SpellCastDisposition::Rejected)?
+                    .0,
+            )
+        } else {
+            None
+        };
     let source_protected = runtime
         .current_player_reentry_protection(
             owned.binding().actor,
@@ -892,21 +893,76 @@ fn lower(
         capture["ordinary_item_creations"] = json!(format!("{items:?}"));
         batch.binding = serde_json::to_vec(&capture).map_err(|_| SpellCastDisposition::Rejected)?;
     }
-    if let Some(cue) = append_harmony_gain_healing(
-        &mut batch,
+    let mut heal_ordinal = ordinal;
+    let mut healing_members = party
+        .as_ref()
+        .map(|p| p.member_facts().to_vec())
+        .unwrap_or_default();
+    let mut healing_caster = party.as_ref().map(|p| p.caster_facts());
+    for healing in [
         paid.harmony_gain_healing.as_ref(),
-        harmony_heal_target,
-        ordinal,
-        delayed.len(),
-        draw,
-    )? {
-        if harmony_heal_target != Some(batch.caster) {
-            cues.push(LocatedCueRequest {
-                binding: cue.binding.clone(),
-                target: CueTarget::Actor(batch.caster),
-            });
+        paid.harmony_refund_healing.as_ref(),
+    ] {
+        let Some(healing) = healing else {
+            continue;
+        };
+        let target = if let (Some(world), Some(caster)) = (party.as_ref(), healing_caster) {
+            let selected = oteryn_gameplay_spell_rules::native_actor_states::focus_healing_target(
+                crate::spell::actor_execution::harmony_gain_profile()?,
+                caster,
+                &healing_members,
+            )
+            .map_err(|_| SpellCastDisposition::Rejected)?;
+            Some(
+                world
+                    .actor_for_id(selected)
+                    .ok_or(SpellCastDisposition::Rejected)?
+                    .0,
+            )
+        } else {
+            harmony_heal_target
+        };
+        let start = batch.effects.len();
+        if let Some(cue) = append_harmony_gain_healing(
+            &mut batch,
+            Some(healing),
+            target,
+            heal_ordinal,
+            delayed.len(),
+            draw,
+        )? {
+            if target != Some(batch.caster) {
+                cues.push(LocatedCueRequest {
+                    binding: cue.binding.clone(),
+                    target: CueTarget::Actor(batch.caster),
+                });
+            }
+            cues.push(cue);
         }
-        cues.push(cue);
+        // The refund is a second Harmony gain. Re-select its ally after the spent-charge
+        // heal, using effective capped HP, just as two successive source transitions do.
+        for effect in &batch.effects[start..] {
+            if let OwnerCombatChange::Heal { magnitude, .. } = effect.change {
+                let amount =
+                    u64::try_from(magnitude).map_err(|_| SpellCastDisposition::Rejected)?;
+                for member in &mut healing_members {
+                    if member.id == u64::from(effect.target.actor_local_id()) {
+                        member.health = member.health.saturating_add(amount).min(member.max_health);
+                    }
+                }
+                if let Some(caster) = healing_caster.as_mut()
+                    && caster.id == u64::from(effect.target.actor_local_id())
+                {
+                    caster.health = caster.health.saturating_add(amount).min(caster.max_health);
+                }
+            }
+        }
+        heal_ordinal = heal_ordinal
+            .checked_add(
+                u16::try_from(batch.effects.len() - start)
+                    .map_err(|_| SpellCastDisposition::Rejected)?,
+            )
+            .ok_or(SpellCastDisposition::Rejected)?;
     }
     #[cfg(test)]
     eprintln!(
@@ -973,7 +1029,7 @@ fn append_harmony_gain_healing(
         .checked_add(1)
         .ok_or(SpellCastDisposition::Rejected)?;
     let magnitude = healing
-        .finish_draw(draw(healing.bounds.minimum, healing.bounds.maximum))
+        .draw_normal(draw)
         .map_err(|_| SpellCastDisposition::Rejected)?;
     batch.effects.push(OwnerCombatEffect {
         target,
@@ -1725,6 +1781,69 @@ mod tests {
             .creature_combat_facts(f.target, 100)
             .unwrap()
             .health
+    }
+
+    #[test]
+    fn pkg8_virtue_healing_receipt_reports_only_missing_hp() {
+        use crate::foundation::runtime_actor_spell_types::PlayerBatchProof;
+        let mut f = builder_owner_fixture(0);
+        let healing = oteryn_gameplay_spell_rules::native_actor_states::HealingRollPlan {
+            bounds: oteryn_gameplay_spell_rules::native_actor_states::MagnitudeBounds {
+                minimum: 10000,
+                maximum: 10000,
+            },
+            sustain_percent_after_draw: 0,
+        };
+        append_harmony_gain_healing(
+            &mut f.batch,
+            Some(&healing),
+            Some(f.actor),
+            1,
+            0,
+            &mut |low, _| low,
+        )
+        .unwrap();
+        let proof =
+            stage_player_batch(&f.runtime, &f.states, &f.batch, Some(f.paid.next.clone())).unwrap();
+        let receipt = proof.health_receipt(f.actor, 1).unwrap();
+        assert_eq!(receipt.health_before, 10);
+        assert_eq!(
+            receipt.health_after,
+            i64::from(f.before.character_facts().max_health)
+        );
+        assert_eq!(
+            receipt.health_after - receipt.health_before,
+            i64::from(f.before.character_facts().max_health - 10)
+        );
+    }
+
+    #[test]
+    fn pkg8_virtue_healing_draw_has_normal_quartile() {
+        let mut f = builder_owner_fixture(0);
+        let healing = oteryn_gameplay_spell_rules::native_actor_states::HealingRollPlan {
+            bounds: oteryn_gameplay_spell_rules::native_actor_states::MagnitudeBounds {
+                minimum: 100,
+                maximum: 1100,
+            },
+            sustain_percent_after_draw: 0,
+        };
+        append_harmony_gain_healing(
+            &mut f.batch,
+            Some(&healing),
+            Some(f.actor),
+            1,
+            0,
+            &mut |low, high| low + (high - low) / 4,
+        )
+        .unwrap();
+        let OwnerCombatChange::Heal { magnitude, .. } = f.batch.effects.last().unwrap().change
+        else {
+            panic!("heal");
+        };
+        assert!(
+            (400..500).contains(&magnitude),
+            "normal lower quartile: {magnitude}"
+        );
     }
 
     #[test]

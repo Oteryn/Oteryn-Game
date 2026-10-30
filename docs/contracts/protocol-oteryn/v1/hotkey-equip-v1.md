@@ -21,6 +21,16 @@ main backpack. Capability 180 extends carried selection below. Both routes share
 the existing equip timers and feared gate. Managed destinations, automatic hand
 conflicts and ammunition-to-quiver routing remain follow-up work.
 
+During the shared ordinary-slot delay, a later consecutive valid ordinary equip
+press replaces the pending press. Each superseded command receives the existing
+`ItemMoveOutcome::Rejected` in command order; only the latest press reaches the
+equipment writer. Jewelry, malformed or unknown definitions, replayed commands
+and unrelated commands do not replace it. A committed receipt always takes
+precedence. The existing 200 ms cooldown starts after each successful equip;
+replacement does not restart it. Crystal `201189f871d23597b82caf88fd611454a2ddefb8`
+`src/game/game.cpp:3718-3732` and `src/creatures/players/player.cpp:3038-3054`
+provide the pending-action replacement evidence (`OTS_HYPOTHESIS_ONLY`).
+
 ## Carried selection extension (capability 180)
 
 `HOTKEY_EQUIP_CARRIED_V1` requires 179 and changes server selection for the same
