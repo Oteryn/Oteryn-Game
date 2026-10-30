@@ -180,6 +180,22 @@ fn equipment_effects_owner_time_ring_grants_speed_only_in_ring_slot() -> TestRes
     Ok(())
 }
 
+/// I05: custody keeps the inactive time ring 3053; worn, it takes the active 3090's +30 speed
+/// (Crystal `items.xml`, `transformEquipTo` 3090, `speed` 30) in the ring slot only.
+#[test]
+fn equipment_effects_owner_inactive_time_ring_takes_worn_speed_only_in_ring_slot() -> TestResult {
+    let content = native(&input()?)?;
+    for slot in 1..=10 {
+        let equipment = snapshot(&content, "oteryn:item.tibia.i3053", slot);
+        assert_eq!(
+            speed_term(&equipment, &content),
+            Some(if slot == 8 { 30 } else { 0 }),
+            "slot {slot}"
+        );
+    }
+    Ok(())
+}
+
 /// I05: the active dwarven ring 3099 (Crystal `items.xml:7477-7489`, `suppressdrunk`) suppresses
 /// drunkenness in the ring slot only.
 #[test]

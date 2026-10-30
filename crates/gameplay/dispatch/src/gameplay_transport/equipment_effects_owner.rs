@@ -99,20 +99,21 @@ fn equipment_effects_inner(
                 in_own_slot,
                 profile: item_ability_profile(semantics).ok()?,
             };
-            // I05: custody keeps a timed ring's inactive form; the worn view's suppression
-            // applies (dwarven ring 3097 -> 3099 suppressdrunk, Crystal items.xml:7477-7489).
+            // I05: custody keeps a timed ring's inactive form; the worn view's speed and
+            // suppression apply (time ring 3053 -> 3090 speed 30, Crystal items.xml:7381-7385;
+            // dwarven ring 3097 -> 3099 suppressdrunk, items.xml:7477-7489).
             let worn =
                 super::super::timed_item_content::equipped_definition(content, &item.definition)?;
             if worn != item.definition {
                 use oteryn_gameplay_content::content::item_abilities::ItemAbility;
                 let active = content.item_policy(&worn.production_key, &worn.revision_ref)?;
                 let active = item_ability_profile(&active.record().semantics).ok()?;
-                input.profile.abilities.extend(
-                    active
-                        .abilities
-                        .into_iter()
-                        .filter(|ability| matches!(ability, ItemAbility::Suppress(_))),
-                );
+                input
+                    .profile
+                    .abilities
+                    .extend(active.abilities.into_iter().filter(|ability| {
+                        matches!(ability, ItemAbility::Speed(_) | ItemAbility::Suppress(_))
+                    }));
             }
             for installed in imbuements
                 .iter()
