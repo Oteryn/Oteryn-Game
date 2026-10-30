@@ -72,6 +72,17 @@ def build_selection(catalog, catalog_digest, sources):
             "catalog_sha256": catalog_digest, "selections": rows}
 
 
+def apply_owner_decisions(catalog):
+    # PKG1R2, owner 2026-10-30; Global revs 1189762 / 1182654.
+    # Keep donor provenance, with the accepted viewport/LOS rule in compiler input.
+    spell = next(entry["bundle"]["spell"] for entry in catalog["bundles"]
+                 if entry["bundle"]["spell"]["identity"]["key"] == "candidate:spell/rune/destroy_field_rune")
+    if spell["targeting"].get("range_tiles") not in (None, 5):
+        raise ValueError("unexpected Destroy Field donor range")
+    spell["targeting"].pop("range_tiles", None)
+    return catalog
+
+
 def build(root):
     readiness = json.loads((root / "readiness.json").read_text())
     if readiness["revision"] != REVISION or len(readiness["spells"]) != 252:
@@ -117,7 +128,7 @@ def build(root):
                             "evidence": proof[0], "source_identity": provenance})
     if len(bundles) != 246 or len(removed) != 6:
         raise ValueError("incomplete coverage")
-    return {"schema": SCHEMA, "revision": REVISION, "bundles": bundles, "removed": removed}
+    return apply_owner_decisions({"schema": SCHEMA, "revision": REVISION, "bundles": bundles, "removed": removed})
 
 
 if __name__ == "__main__":

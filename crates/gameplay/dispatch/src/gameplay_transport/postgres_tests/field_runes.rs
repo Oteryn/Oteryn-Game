@@ -220,10 +220,30 @@ fn field_runes_postgres_destroy_field_removes_listed_field_and_refuses_without_p
     }))
 }
 
+#[test]
+fn field_runes_postgres_destroy_field_visible_screen_and_los() -> TestResult {
+    large_stack(|| run(async |admin| {
+        for scenario in [Scenario::DestroyFar, Scenario::DestroyBlocked, Scenario::DestroyOffScreen] {
+            field_scenario(admin.clone(), 3164, 1, 2135, true, false, false, scenario).await?;
+        }
+        for (rune, output) in [(3188, 21465), (3156, 2130)] {
+            field_scenario(admin.clone(), rune, 1, output, true, false, false, Scenario::DestroyField).await?;
+        }
+        Ok(())
+    }))
+}
+
+fn destroy_scenario(scenario: Scenario) -> bool {
+    matches!(scenario, Scenario::DestroyField | Scenario::DestroyFar | Scenario::DestroyBlocked | Scenario::DestroyOffScreen)
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Scenario {
     Ordinary,
     DestroyField,
+    DestroyFar,
+    DestroyBlocked,
+    DestroyOffScreen,
     Aged,
     ProtectedTarget,
     ProtectedCaster,
@@ -596,7 +616,9 @@ async fn field_scenario_inner(
     let active = controller.active().ok_or("active generation")?;
     let native = active.native_gameplay().ok_or("native gameplay")?;
     let entry_room = pin.qualified_room();
-    let map = if matches!(scenario, Scenario::PzTick | Scenario::NoPvpTick) {
+    let map = if scenario == Scenario::DestroyBlocked {
+        field_world_inner(world, 0, true)?
+    } else if matches!(scenario, Scenario::PzTick | Scenario::NoPvpTick) {
         field_world(world, if scenario == Scenario::PzTick { 1 } else { 4 })?
     } else if protection {
         crate::map::spell_tiles::tests::world()
@@ -810,7 +832,7 @@ async fn field_scenario_inner(
             1,
         ));
     }
-    if scenario == Scenario::DestroyField {
+    if destroy_scenario(scenario) {
         inventory.push(("oteryn:item.tibia.i3148".into(), 3));
     }
     seed_main_backpack(
@@ -1079,10 +1101,27 @@ async fn field_scenario_inner(
                 "a replay never refreshes the cast block"
             );
         }
-        if scenario == Scenario::DestroyField {
+        if destroy_scenario(scenario) {
             wait_field_client(&mut client, std::time::Duration::from_secs(2)).await?;
-            for (offset, (dx, floor, accepted)) in [(2, start.floor, false), (6, start.floor, false), (1, start.floor + 1, false), (1, start.floor, output == 2135)].into_iter().enumerate() {
-                let command_id = admitted.continuity.next_command_id + 1 + u64::try_from(offset)?;
+            let eligible = matches!(output, 2135 | 21465);
+            let mut first_command = admitted.continuity.next_command_id + 1;
+            let probes = if scenario == Scenario::DestroyField {
+                vec![(2, start.floor, false), (6, start.floor, false), (1, start.floor + 1, false), (1, start.floor, eligible)]
+            } else {
+                // Walk around the static wall; the field remains at x=101.
+                move_field_caster(&mut client, first_command, StepDirection::North).await?;
+                first_command += 1;
+                for _ in 0..if scenario == Scenario::DestroyOffScreen { 11 } else { 8 } {
+                    move_field_caster(&mut client, first_command, StepDirection::East).await?;
+                    first_command += 1;
+                }
+                move_field_caster(&mut client, first_command, StepDirection::South).await?;
+                first_command += 1;
+                vec![(1, start.floor, scenario == Scenario::DestroyFar)]
+            };
+            let removed = probes.iter().any(|(_, _, accepted)| *accepted);
+            for (offset, (dx, floor, accepted)) in probes.into_iter().enumerate() {
+                let command_id = first_command + u64::try_from(offset)?;
                 let destroy_intent = UseIntent {
                     target: UseTarget::Item(destroy.ok_or("Destroy Field handle")?),
                     use_with: None,
@@ -1098,16 +1137,21 @@ async fn field_scenario_inner(
                     if envelope.message_type() == MessageType::CommandResult {
                         let result = decode_command_result(envelope.payload()).map_err(debug)?;
                         assert_eq!(result.command_id, command_id);
-                        assert_eq!(decode_use_result(result.payload).map_err(debug)?, if accepted { UseDisposition::Committed } else if dx == 6 { UseDisposition::TooFar } else { UseDisposition::TargetIllegal }, "Destroy Field dx={dx} floor={floor} output={output}");
+                        assert_eq!(decode_use_result(result.payload).map_err(debug)?, if accepted { UseDisposition::Committed } else { UseDisposition::TargetIllegal }, "Destroy Field dx={dx} floor={floor} output={output}");
                         break;
                     }
                 }
                 let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3148'").fetch_one(&harness.pool).await?;
                 assert_eq!(quantity, if accepted { 2 } else { 3 }, "only a successful removal consumes one charge");
             }
-            assert_eq!(projected_field_count(&owner, actor, output).await?, if output == 2135 { 0 } else { 1 });
+            if scenario == Scenario::DestroyOffScreen {
+                for command_id in first_command + 1..first_command + 4 {
+                    move_field_caster(&mut client, command_id, StepDirection::West).await?;
+                }
+            }
+            assert_eq!(projected_field_count(&owner, actor, output).await?, if removed { 0 } else { 1 });
             let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations").fetch_one(&harness.pool).await?;
-            assert_eq!(remaining, if output == 2135 { 0 } else { 1 }, "removal changes durable Ground custody");
+            assert_eq!(remaining, if removed { 0 } else { 1 }, "removal changes durable Ground custody");
             client.shutdown().await?;
             return Ok::<_, Box<dyn std::error::Error>>(());
         }
@@ -1387,7 +1431,7 @@ async fn field_scenario_inner(
     )
     .await??;
     eprintln!("FIELD-RUNES transport complete rune={rune} scenario={scenario:?}");
-    if scenario == Scenario::DestroyField {
+    if destroy_scenario(scenario) {
         drop(owner);
         drop(authority);
         drop(seal);
@@ -1766,6 +1810,10 @@ fn field_world(
     world: crate::foundation::WorldId,
     zone: u32,
 ) -> TestResult<crate::map::boot::BundleWorld> {
+    field_world_inner(world, zone, false)
+}
+
+fn field_world_inner(world: crate::foundation::WorldId, zone: u32, wall: bool) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{
         sector::{Attrs, Item, Tile},
         writer::{
@@ -1802,6 +1850,11 @@ fn field_world(
                 walkable: Some(true),
                 ground_speed: Some(150),
             }),
+        }, PaletteEntry {
+            family: Family::Terrain,
+            key: "oteryn:item.tibia.i1100".into(),
+            id: 1,
+            terrain: Some(Terrain { kind: TerrainKind::Wall, walkable: None, ground_speed: None }),
         }],
         draft_areas: vec![],
         skipped_provisional_keys: vec![],
@@ -1819,7 +1872,7 @@ fn field_world(
                 house: 0,
                 zones: vec![],
                 items: vec![Item {
-                    palette: 0,
+                    palette: if wall && (x,y) == (104,100) { 1 } else { 0 },
                     depth: 0,
                     attrs: Attrs::default(),
                 }],

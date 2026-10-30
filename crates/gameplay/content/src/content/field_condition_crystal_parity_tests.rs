@@ -277,7 +277,9 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
 /// C07: decay timers are Item attributes, not the rune Lua combat callback.
 /// Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:
 /// 105:33-44, 2118..2122:4253-4310, 2132..2135:4393-4420.
-/// These values already match production; no Global/Crystal conflict is resolved here.
+/// Owner-approved Global exception (2026-10-30): 2122 lasts 100 s, not Crystal's 98 s.
+/// Two owner measurements and TibiaWiki Energy_Field_(Field) revision 1011133 win.
+/// Every other shared timer remains Crystal parity.
 #[test]
 fn c07_production_field_decay_equals_crystal_for_shared_field_items() {
     let document: serde_json::Value = serde_json::from_str(include_str!(
@@ -290,7 +292,7 @@ fn c07_production_field_decay_equals_crystal_for_shared_field_items() {
         (2118, 200_000, Some(2119)),
         (2119, 148_000, Some(2120)),
         (2120, 98_000, None),
-        (2122, 98_000, None),
+        (2122, 100_000, None),
         (2132, 120_000, Some(2133)),
         (2133, 120_000, None),
         (2134, 120_000, None),

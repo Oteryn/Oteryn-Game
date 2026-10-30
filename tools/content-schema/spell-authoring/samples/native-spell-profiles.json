@@ -21514,7 +21514,6 @@
           "block_walls": true,
           "allow_on_self": true,
           "check_floor": true,
-          "range_tiles": 5,
           "parameter": "none"
         },
         "pz_locks_caster": false,
