@@ -1376,3 +1376,71 @@ fn c11_stance_base_match_retains_wheel_and_current_promotion_projections() {
     changed.max_health += 1;
     assert!(!state.matches_character_base(changed));
 }
+
+#[test]
+fn pkg8_ordinary_virtue_healing_uses_added_and_spent_charges() {
+    use oteryn_gameplay_spell_rules::native_actor_states::StandardStance;
+    for (role, charges, expected_bounds, after) in [
+        ("builder", 0, Some((301, 346)), 1),
+        ("builder", 4, Some((301, 346)), 5),
+        ("builder", 5, None, 5),
+        ("spender", 5, Some((358, 412)), 1),
+        ("spender", 0, None, 1),
+    ] {
+        let book = monk_book(role);
+        let spell = book.indexed(index(1)).expect("spell");
+        let mut state = PlayerSpellState::new(
+            CharacterCastFacts {
+                level: 757,
+                ..monk(20)
+            },
+            charges,
+            0,
+        )
+        .expect("monk");
+        state.make_playable(at(0)).expect("playable");
+        state.stance = Some(StandardStance::Harmony);
+        let operational = OperationalCastFacts {
+            caster_position: TilePosition {
+                x: 0,
+                y: 0,
+                floor: 7,
+            },
+            target_position: None,
+            target: None,
+            line_of_sight_clear: Some(true),
+            direction_available: true,
+            wheel_unlocked: None,
+            in_protection_zone: false,
+            target_tile_solid: None,
+            target_tile_creature: None,
+        };
+        let caster = state.caster(state.owned_harmony_multiplier(spell).expect("multiplier"));
+        let paid = prepare_ordinary_owner_cast_with_caster(
+            &book,
+            &state,
+            spell,
+            &operational,
+            at(0),
+            &caster,
+            None,
+            None,
+            &mut |min, _| min,
+        )
+        .expect("paid cast");
+        assert_eq!(
+            paid.harmony_gain_healing
+                .map(|p| (p.bounds.minimum, p.bounds.maximum)),
+            expected_bounds,
+            "{role}@{charges}"
+        );
+        assert_eq!(
+            paid.harmony_refund_healing
+                .map(|p| (p.bounds.minimum, p.bounds.maximum)),
+            (role == "spender").then_some((301, 346)),
+            "refund {role}@{charges}"
+        );
+        assert_eq!(paid.next.vitals().harmony, after);
+        assert_eq!(state.vitals().harmony, u32::from(charges));
+    }
+}

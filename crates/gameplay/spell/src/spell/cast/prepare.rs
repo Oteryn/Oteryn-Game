@@ -221,6 +221,8 @@ pub struct PaidOrdinaryCast {
     pub anchor: crate::spell::combat_batch::SpellAnchor,
     pub resolution: crate::spell::CastResolution,
     pub harmony_gained: u8,
+    pub harmony_refund_healing:
+        Option<oteryn_gameplay_spell_rules::native_actor_states::HealingRollPlan>,
     pub harmony_gain_healing:
         Option<oteryn_gameplay_spell_rules::native_actor_states::HealingRollPlan>,
 }
@@ -311,28 +313,37 @@ pub fn prepare_ordinary_owner_cast_with_caster(
         .ok_or(SpellCastDisposition::Rejected)?;
     let mut harmony_gained = 0;
     let mut harmony_gain_healing = None;
+    let mut harmony_refund_healing = None;
     if let Some(role) = spell.harmony_role {
         let monk = next.monk.as_mut().ok_or(SpellCastDisposition::Rejected)?;
-        match role {
+        let healing_charges = match role {
             HarmonyRole::Builder => {
                 harmony_gained = monk
                     .commit_builder()
                     .map_err(|_| SpellCastDisposition::Rejected)?;
+                harmony_gained
             }
             HarmonyRole::Spender => {
                 let virtue = next.stance
                     == Some(
                         oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Harmony,
                     );
-                monk.commit_spender_with_virtue(virtue)
+                let spent = monk
+                    .commit_spender_with_virtue(virtue)
                     .map_err(|_| SpellCastDisposition::Rejected)?;
                 harmony_gained = u8::from(virtue);
+                if virtue {
+                    harmony_refund_healing = oteryn_gameplay_spell_rules::native_actor_states::plan_harmony_gain_healing(
+                        crate::spell::actor_execution::harmony_gain_profile()?, 1, next.facts.level, monk.serene(), false,
+                    ).map_err(|_| SpellCastDisposition::Rejected)?;
+                }
+                spent
             }
-        }
-        if harmony_gained > 0 {
+        };
+        if healing_charges > 0 {
             harmony_gain_healing = oteryn_gameplay_spell_rules::native_actor_states::plan_harmony_gain_healing(
                         crate::spell::actor_execution::harmony_gain_profile()?,
-                        harmony_gained,
+                        healing_charges,
                         next.facts.level,
                         monk.serene(),
                         next.stance == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Sustain),
@@ -353,6 +364,7 @@ pub fn prepare_ordinary_owner_cast_with_caster(
         resolution,
         harmony_gained,
         harmony_gain_healing,
+        harmony_refund_healing,
     })
 }
 /// Source chain callbacks obtain a fresh numerical cast from actual due owner

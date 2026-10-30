@@ -48,9 +48,8 @@ fn qualified_parameters(parameters: &Value) -> bool {
         .is_some_and(|values| values.iter().any(|value| value == parameters))
 }
 
-/// The existing source-qualified Focus profiles share the accepted provisional
-/// gained-charge healing rules. Ordinary builders consume that same closed profile;
-/// this does not claim resolution of Global A.2-Q2/Q3.
+/// Focus and ordinary Harmony transitions share the source-qualified profile.
+/// PKG8 Q2/Q3 select the Canary flat curve and percentage-health recipient policy.
 pub fn harmony_gain_profile() -> Result<&'static Value, SpellCastDisposition> {
     static HEALING: OnceLock<Option<Value>> = OnceLock::new();
     HEALING
@@ -136,9 +135,8 @@ pub fn apply_focus(
     let health = match &plan.healing {
         None => next.health,
         Some(heal) => {
-            let roll = draw(heal.bounds.minimum, heal.bounds.maximum);
             let magnitude =
-                u64::try_from(heal.finish_draw(roll).map_err(reject)?).map_err(reject)?;
+                u64::try_from(heal.draw_normal(draw).map_err(reject)?).map_err(reject)?;
             u32::try_from(
                 u64::from(next.health)
                     .saturating_add(magnitude)
