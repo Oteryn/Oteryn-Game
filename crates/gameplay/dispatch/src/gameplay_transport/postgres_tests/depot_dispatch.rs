@@ -1,4 +1,6 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
+#[path = "depot_dispatch/mail_cases.rs"]
+mod mail_cases;
 #[path = "depot_dispatch/stash_cases.rs"]
 mod stash_cases;
 #[path = "depot_dispatch/write_text_depot_session.rs"]
@@ -49,6 +51,19 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
 }
 
 #[test]
+fn mail_dispatch_posts_a_carried_letter_into_a_mailbox_once() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(false, false, false, false, false, None, true)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "mail e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -70,6 +85,7 @@ fn stash_session_dispatch_conserves_and_replays() -> TestResult {
                 false,
                 false,
                 Some(EntitlementState::Active),
+                false,
             )
             .map_err(|e| e.to_string())
         })?
@@ -90,6 +106,7 @@ fn stash_session_dispatch_expired_premium_stows_withdraws_and_replays() -> TestR
                 false,
                 false,
                 Some(EntitlementState::Expired),
+                false,
             )
             .map_err(|e| e.to_string())
         })?
@@ -152,6 +169,7 @@ fn scenario(
         depot_session,
         ground_movement,
         None,
+        false,
     )
 }
 
@@ -162,6 +180,7 @@ fn scenario_with_premium(
     depot_session: bool,
     ground_movement: bool,
     stash_premium: Option<EntitlementState>,
+    mail: bool,
 ) -> TestResult {
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
@@ -243,6 +262,30 @@ fn scenario_with_premium(
             .find(|t| t.x == 6)
             .ok_or("locker tile")?;
         locker.items.get_mut(1).ok_or("locker item")?.attrs.depot = Some(0);
+        if mail {
+            // An authored mailbox (Canary items.xml 3501) beside the start and one out of reach.
+            let mut entry = bundle.manifest.palette.get(3).ok_or("item palette")?.clone();
+            entry.key = "oteryn:item.tibia.i3501".into();
+            entry.id = index
+                .definition_ref("Item", &entry.key, "definition-r1")
+                .ok_or("mailbox ref")?
+                .get()
+                - 1;
+            bundle.manifest.palette.push(entry);
+            let palette = u32::try_from(bundle.manifest.palette.len() - 1)?;
+            let sector = bundle.sectors.first_mut().ok_or("sector")?;
+            let mut tile = sector
+                .tiles
+                .iter()
+                .find(|tile| tile.x == 7)
+                .ok_or("start")?
+                .clone();
+            tile.items.get_mut(1).ok_or("start item")?.palette = palette;
+            for x in [8, 10] {
+                tile.x = x;
+                sector.tiles.push(tile.clone());
+            }
+        }
         if ground_movement {
             let sector = bundle.sectors.first_mut().ok_or("sector")?;
             let mut tile = sector
@@ -410,7 +453,7 @@ fn scenario_with_premium(
                         } else {
                             coin_definition.clone()
                         },
-                        quantity: if ordinal == 0 || (ground_container && ordinal <= 2) {
+                        quantity: if ordinal == 0 || (ground_container && ordinal <= 2) || mail {
                             1
                         } else {
                             100
@@ -518,6 +561,13 @@ fn scenario_with_premium(
             .table()
             .handle(&ItemKey::Instance(carried.ok_or("carried")?))
             .ok_or("source handle")?;
+        if mail {
+            mail_cases::exercise(&owner, admitted, &harness.pool, carried.ok_or("letter")?).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if ground_container {
             if !nested_ground {
                 write_text_ground_view::exercise(
