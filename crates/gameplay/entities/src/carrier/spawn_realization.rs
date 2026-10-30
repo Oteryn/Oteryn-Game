@@ -673,9 +673,15 @@ impl ChannelRuntimeV1 {
                 ordinal: u8::try_from(cell).map_err(|_| CarrierError::CapacityExceeded)?,
             };
             if gone && self.spawn_schedule.pending(point).is_none() {
+                let mut timing = spawn.definition.timing(cell)?;
+                timing.respawn_delay_micros =
+                    oteryn_gameplay_foundation::scheduled_events::apply_spawn_delay(
+                        timing.respawn_delay_micros,
+                        oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
+                    );
                 let due_micros = self
                     .spawn_schedule
-                    .creature_gone(point, spawn.definition.timing(cell)?, now_micros)
+                    .creature_gone(point, timing, now_micros)
                     .map_err(|_| CarrierError::CapacityExceeded)?;
                 self.spawn_deadlines.insert((due_micros, point));
             }
