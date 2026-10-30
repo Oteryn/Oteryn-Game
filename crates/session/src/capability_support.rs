@@ -26,6 +26,7 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
 /// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
 const CLIENT_GATED_CAPABILITIES: &[u32] = &[
+    oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     quest_log::CAPABILITY_QUEST_LOG_V1,
     oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1,
     oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,

@@ -1,6 +1,7 @@
 //! Application-owned Tokio runtime and deterministic shutdown boundary.
 
 pub mod connection;
+pub mod hotkey_equip;
 
 use oteryn_foundation::CancellationToken;
 use std::fmt::{self, Display, Formatter};

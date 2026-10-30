@@ -1,0 +1,11 @@
+{
+  "id": 179,
+  "name": "HOTKEY_EQUIP_V1",
+  "owner_decision": "PKG5-I17",
+  "owner": "Game equipment owner",
+  "requires": [12, 14],
+  "command_types": [348],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: bundle Worlds with pinned native item content and the fenced equipment owner."
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0179-hotkey-equip",
+    "kind": "handlers",
+    "id": "0179-hotkey-equip-unsupported",
+    "status": "unsupported",
+    "reason": "The runtime command API and equipment decoding exist; native UI hotkey binding is unfinished in PKG5.",
+    "commands": [
+      348
+    ],
+    "not_applicable": {
+      "state": "Equipment remains in the session inventory state.",
+      "protocol": "The codec and typed command API live in protocol-oteryn, session and client-runtime.",
+      "view": "No native hotkey equipment view is wired yet.",
+      "input": "No native hotkey equipment binding is wired yet.",
+      "settings": "No equipment hotkey setting is wired yet."
+    }
+  }
+]
