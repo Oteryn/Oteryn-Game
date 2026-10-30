@@ -6,7 +6,8 @@
     "status": "unsupported",
     "reason": "PAR-P12 Cyclopedia character tabs are server-only; native client presentation is pending.",
     "commands": [
-      387
+      387,
+      388
     ],
     "not_applicable": {
       "state": "Server-only slice.",

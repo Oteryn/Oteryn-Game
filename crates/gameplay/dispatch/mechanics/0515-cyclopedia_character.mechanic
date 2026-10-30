@@ -1,5 +1,5 @@
 name=cyclopedia_character
-commands=387
+commands=387,388
 transport=cyclopedia_character
 composed=cyclopedia_character
 authority=cyclopedia_character

@@ -62,6 +62,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .map_err(|_| ())?;
                 wire::encode_badges(&badges).map_err(|_| ())
             }
+            wire::COMMAND_TYPE_CYCLOPEDIA_CHARACTER_TAB => {
+                let request = wire::decode_tab_request(payload).map_err(|_| ())?;
+                let target = match request.target {
+                    Some(bytes) => crate::domain::CharacterId::from_bytes(bytes).map_err(|_| ())?,
+                    None => fence.character_id,
+                };
+                self.root
+                    .read_cyclopedia_character_tab(
+                        self.character,
+                        fence.character_id,
+                        target,
+                        request.tab,
+                        request.page,
+                        now,
+                    )
+                    .await
+                    .map_err(|_| ())?
+                    .encode()
+                    .map_err(|_| ())
+            }
             _ => Err(()),
         }
     }
