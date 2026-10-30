@@ -60,7 +60,7 @@ pub(super) async fn run(
     music: bool,
 ) -> TestResult {
     let rules = crate::content::native_gameplay::mount_taming::rules();
-    assert_eq!(rules.len(), 44, "every qualified pair remains covered");
+    assert_eq!(rules.len(), 47, "every qualified pair remains covered");
     let mut retained = admitted(owner, actor, session)?;
     owner
         .states
@@ -96,7 +96,8 @@ pub(super) async fn run(
         }
         // Each authored failure is reached through the wire, including ACTION_ALL and
         // BREAK=false. A single retained draw selects its weighted outcome.
-        for (i, failure) in rule.failures.iter().enumerate() {
+        // A 100% rule has no reachable failure bucket, even if its donor supplies text.
+        for (i, failure) in rule.failures.iter().enumerate().filter(|_| rule.chance < 100) {
             let n = u128::try_from(rule.failures.len())?;
             let bucket = u128::from(rule.chance) * n + u128::try_from(i)?;
             let draw = u64::try_from((bucket << 64).div_ceil(100 * n))?;
@@ -140,12 +141,12 @@ pub(super) async fn run(
             attempts += 1;
         }
         let (target, entity) = spawn(owner, actor, &rule.creature_key, 1).await?;
-        let payload = payload(index, &rule.item_key, entity)?;
+        let success_payload = payload(index, &rule.item_key, entity)?;
         let before = item_quantity(h, &rule.item_key).await?;
         crate::gameplay_transport::mount_taming::test_draw::set(if music { u64::MAX } else { 0 });
         let command = retained.continuity.next_command_id;
         let (results, next) =
-            wire::exchange(owner, retained, std::slice::from_ref(&payload)).await?;
+            wire::exchange(owner, retained, std::slice::from_ref(&success_payload)).await?;
         assert_eq!(
             results,
             [UseDisposition::Committed],
@@ -188,9 +189,43 @@ pub(super) async fn run(
         // before current visibility and source resolution.
         let mut replay = retained;
         replay.continuity.next_command_id = command;
-        let (results, _) = wire::exchange(owner, replay, std::slice::from_ref(&payload)).await?;
+        let (results, _) = wire::exchange(owner, replay, std::slice::from_ref(&success_payload)).await?;
         assert_eq!(results, [UseDisposition::Committed]);
         assert_eq!(item_quantity(h, &rule.item_key).await?, before - 1);
+        assert_eq!(h.count("game_mount_taming_attempts").await?, attempts);
+
+        // An available source refuses an already-owned mount without consumption. The
+        // ninth Music Box has exhausted its source. Neither refusal writes a receipt.
+        let (owned_target, owned_entity) = spawn(owner, actor, &rule.creature_key, 1).await?;
+        let owned_before = item_quantity(h, &rule.item_key).await?;
+        let (results, next) = wire::exchange(
+            owner,
+            retained,
+            &[payload(index, &rule.item_key, owned_entity)?],
+        )
+        .await?;
+        let expected = if owned_before == 0 {
+            UseDisposition::NothingToUse
+        } else {
+            UseDisposition::RequirementNotMet
+        };
+        assert_eq!(results, [expected]);
+        retained = next;
+        assert_eq!(item_quantity(h, &rule.item_key).await?, owned_before);
+        assert!(
+            owner
+                .runtime
+                .lock()
+                .await
+                .current_live_creature_identity(owned_target)
+                .is_ok()
+        );
+        owner
+            .runtime
+            .lock()
+            .await
+            .remove_test_actor(owned_target)
+            .map_err(debug)?;
         assert_eq!(h.count("game_mount_taming_attempts").await?, attempts);
     }
     if music {
@@ -200,8 +235,11 @@ pub(super) async fn run(
             "the ninth Music Box retires its last source unit"
         );
     }
-    assert_eq!(successes, if music { 9 } else { 35 });
+    assert_eq!(successes, if music { 9 } else { 38 });
     assert_eq!(h.count("game_account_appearance_unlocks").await?, successes);
-    assert_eq!(h.count("game_account_achievements").await?, successes + 1);
+    assert_eq!(
+        h.count("game_account_achievements").await?,
+        successes + i64::from(music)
+    );
     Ok(())
 }
