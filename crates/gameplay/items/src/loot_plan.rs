@@ -531,6 +531,24 @@ fn loot_factor_percent(draw: u64) -> u32 {
 /// by `ceil(chance * bonus)` (Crystal and Canary `generateLootRoll`, `adjustedChance +=
 /// math.ceil(adjustedChance * charmChance / 100)`); the donor rounds on its 1/100,000 scale,
 /// Oteryn on the exact ppm-percent product.
+/// W22c: the extra full loot rolls of `activators` live Wealth Duplex concoctions (Crystal
+/// ff7ede59 `data/scripts/eventcallbacks/monster/ondroploot_wealth_duplex.lua:29-49`). Each adds
+/// the concoction's rate of 100 (`data/scripts/systems/concoctions.lua:22`), the sum is divided
+/// by `activators^0.7` (`config.lua.dist:304`), and the fractional roll is taken when the
+/// inclusive `0..=100` draw falls below it. The donor's shipped config shares no loot boost
+/// across a party (`config.lua.dist:303`), so the settle passes the corpse owner alone.
+#[must_use]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+pub fn wealth_duplex_extra_rolls(activators: u32, draw_0_to_100: u8) -> u32 {
+    if activators == 0 {
+        return 0;
+    }
+    let count = f64::from(activators);
+    let rolls = 100.0 * count / count.powf(0.7) / 100.0;
+    let whole = rolls.floor();
+    whole as u32 + u32::from(f64::from(draw_0_to_100) < (rolls - whole) * 100.0)
+}
+
 fn factored_success(
     draw: u64,
     probability_ppm: u32,
@@ -1359,5 +1377,24 @@ mod w22b_tests {
         }
         assert!(widened);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod w22c_tests {
+    use super::*;
+
+    #[test]
+    fn wealth_duplex_rolls_follow_the_donor_party_diminishing_rule() {
+        // No live concoction rolls nothing; the corpse owner alone always rolls once more.
+        assert_eq!(wealth_duplex_extra_rolls(0, 0), 0);
+        assert_eq!(wealth_duplex_extra_rolls(1, 0), 1);
+        assert_eq!(wealth_duplex_extra_rolls(1, 100), 1);
+        // Two activators: 200 / 2^0.7 = 123.11, a second roll below a draw of 23.11.
+        assert_eq!(wealth_duplex_extra_rolls(2, 23), 2);
+        assert_eq!(wealth_duplex_extra_rolls(2, 24), 1);
+        // Three activators: 300 / 3^0.7 = 139.04.
+        assert_eq!(wealth_duplex_extra_rolls(3, 39), 2);
+        assert_eq!(wealth_duplex_extra_rolls(3, 40), 1);
     }
 }

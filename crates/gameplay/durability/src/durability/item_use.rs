@@ -45,6 +45,7 @@ use sqlx::postgres::PgConnection;
 
 mod carried_inventory;
 mod carried_source;
+pub mod concoction;
 pub mod mining;
 pub mod mount_taming;
 
@@ -58,6 +59,7 @@ pub enum ItemUseKind {
     Food,
     Potion,
     MountTaming,
+    Concoction,
     PickRefine {
         tool: [u8; 16],
         wire_binding: [u8; 32],
@@ -71,6 +73,7 @@ impl ItemUseKind {
             Self::Food => ITEM_USE_CAUSE_FOOD,
             Self::Potion => ITEM_USE_CAUSE_POTION,
             Self::MountTaming => mount_taming::TAMING_CAUSE,
+            Self::Concoction => concoction::CONCOCTION_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
     }
@@ -134,6 +137,8 @@ pub enum ItemUseError {
     StaleState,
     /// The CommandRef or the TransactionId was committed by another request.
     ConflictingCommand,
+    /// The concoction's cooldown has not run out; nothing was written.
+    Cooldown,
     Unavailable(DurabilityError),
 }
 
@@ -158,6 +163,7 @@ impl std::fmt::Display for ItemUseError {
             Self::ConflictingCommand => {
                 formatter.write_str("item use command was committed by another request")
             }
+            Self::Cooldown => formatter.write_str("item use is on cooldown"),
             Self::Unavailable(error) => write!(formatter, "item use storage failed: {error:?}"),
         }
     }
@@ -187,9 +193,12 @@ impl ItemUseRequest {
         let flask_valid = match (&self.flask, self.kind) {
             (
                 ItemUseFlaskPlan::None,
-                ItemUseKind::Food | ItemUseKind::Potion | ItemUseKind::MountTaming,
+                ItemUseKind::Food
+                | ItemUseKind::Potion
+                | ItemUseKind::MountTaming
+                | ItemUseKind::Concoction,
             ) => true,
-            (_, ItemUseKind::Food | ItemUseKind::MountTaming) => false,
+            (_, ItemUseKind::Food | ItemUseKind::MountTaming | ItemUseKind::Concoction) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
                 ItemUseFlaskPlan::Stack {
@@ -420,7 +429,24 @@ impl DurabilityRoot {
                             Err(error) => return Ok(Err(error)),
                         }
                     }
-                    match write(&mut tx, &fence, &request, tuple).await {
+                    if request.kind == ItemUseKind::Concoction {
+                        match concoction::admit(&mut tx, &fence, &request).await {
+                            Ok(()) => {}
+                            Err(ItemUseError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error)),
+                        }
+                    }
+                    let written = match write(&mut tx, &fence, &request, tuple).await {
+                        Ok(outcome @ ItemUseOutcome::Written { .. })
+                            if request.kind == ItemUseKind::Concoction =>
+                        {
+                            concoction::start(&mut tx, &fence, &request)
+                                .await
+                                .map(|()| outcome)
+                        }
+                        result => result,
+                    };
+                    match written {
                         Ok(outcome) => {
                             tx.commit(deadline).await?;
                             Ok(Ok(outcome))

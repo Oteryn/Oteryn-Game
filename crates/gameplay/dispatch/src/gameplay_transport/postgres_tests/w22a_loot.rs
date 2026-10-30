@@ -13,6 +13,8 @@ enum Case {
     Outside,
     ChargedSubtype,
     Gut,
+    DuplexOn,
+    DuplexOff,
 }
 thread_local! { static CASE: Cell<Option<Case>> = const { Cell::new(None) }; }
 
@@ -45,6 +47,20 @@ fn w22b_gut_widens_creature_product_rolls_on_the_real_kill_path() -> TestResult 
     })
 }
 #[test]
+fn w22c_wealth_duplex_rolls_the_kill_loot_once_more() -> TestResult {
+    scenario_thread::run("w22c-duplex-on", || {
+        CASE.set(Some(Case::DuplexOn));
+        scenario()
+    })
+}
+#[test]
+fn w22c_a_kill_without_wealth_duplex_rolls_its_loot_once() -> TestResult {
+    scenario_thread::run("w22c-duplex-off", || {
+        CASE.set(Some(Case::DuplexOff));
+        scenario()
+    })
+}
+#[test]
 fn w22a_mint_into_a_container_outside_the_kill_corpse_is_refused() -> TestResult {
     scenario_thread::run("w22a-outside", || {
         CASE.set(Some(Case::Outside));
@@ -71,6 +87,9 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
         .ok_or("rat table")?;
     match case {
         Case::Large => table["entries"] = Value::Array(vec![entry(3031); 20]),
+        Case::DuplexOn | Case::DuplexOff => {
+            table["entries"] = Value::Array(vec![entry(3031); DUPLEX_BASE_ENTRIES]);
+        }
         Case::ChargedSubtype => {
             // A stone skin amulet (5 charges) whose loot names its subtype, as donor content
             // derives it from the charges (`register_monster_type.lua`).
@@ -97,13 +116,19 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
 }
 
 const GUT_PROBABILITY_PPM: u32 = 800_000;
+const DUPLEX_BASE_ENTRIES: usize = 5;
+const DUPLEX_KEY: &str = "oteryn:item.tibia.i36727";
 
 /// W22b: the loot owner holds Gut at stage 3 (12%) on the rat before the kill.
 pub(super) async fn before_kill(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
     actor: crate::foundation::ExactActorRef,
     session: crate::foundation::GameSessionId,
 ) -> TestResult {
+    if matches!(CASE.get(), Some(Case::DuplexOn)) {
+        return use_wealth_duplex(owner, h, actor, session).await;
+    }
     if !matches!(CASE.get(), Some(Case::Gut)) {
         return Ok(());
     }
@@ -128,6 +153,82 @@ pub(super) async fn before_kill(
             state
         )
     ));
+    Ok(())
+}
+
+/// W22c: a carried Wealth Duplex stack of two is used through the real USE path. The replayed
+/// command and a second use inside the cooldown burn nothing more.
+async fn use_wealth_duplex(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    h: &Harness,
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::item_view::ItemKey;
+    use oteryn_protocol_oteryn::world_object::UseDisposition;
+    let current =
+        crate::durability::fresh_admission::FreshAdmissionStore::from_root(owner.root.clone())
+            .current_session_at(session)
+            .await?
+            .0;
+    let fence = crate::gameplay_transport::item_fence_of(current).ok_or("item fence")?;
+    let revision = {
+        let runtime = owner.runtime.lock().await;
+        let index = crate::gameplay_transport::item_ref_admission::pinned_index(
+            &runtime,
+            owner.active_generation,
+        )
+        .ok_or("index")?;
+        (
+            index.revision("oteryn:item.tibia.i2854").ok_or("bag")?.to_owned(),
+            index.revision(DUPLEX_KEY).ok_or("wealth duplex")?.to_owned(),
+        )
+    };
+    let pool = &h.pool;
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    for (seed, key, revision, quantity) in [
+        (70, "oteryn:item.tibia.i2854", &revision.0, 1_i64),
+        (80, DUPLEX_KEY, &revision.1, 2),
+    ] {
+        sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,$5,1,encode($6,'hex')::uuid)")
+            .bind(id(seed).as_slice()).bind(owner.world_id.as_bytes().as_slice()).bind(key).bind(revision)
+            .bind(quantity).bind(id(seed + 1).as_slice()).execute(&mut *tx).await?;
+    }
+    sqlx::query("INSERT INTO game_item_container_slots(character_id,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
+        .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(owner.world_id.as_bytes().as_slice()).bind(id(72).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,1,encode($5,'hex')::uuid)")
+        .bind(id(80).as_slice()).bind(owner.world_id.as_bytes().as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(82).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let item = ItemKey::Instance(id(80));
+    let command = |command_id| UseCommand {
+        game_session_id: session,
+        command_id,
+        item_fence: Some(fence),
+    };
+    let used = owner.use_backpack_item(actor, command(900), item).await;
+    assert_eq!(used.disposition, UseDisposition::Committed);
+    let replayed = owner.use_backpack_item(actor, command(900), item).await;
+    assert_eq!(replayed.disposition, UseDisposition::Committed);
+    let cooling = owner.use_backpack_item(actor, command(901), item).await;
+    assert_eq!(cooling.disposition, UseDisposition::Exhausted);
+    let left: i64 = sqlx::query_scalar(
+        "SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid",
+    )
+    .bind(id(80).as_slice())
+    .fetch_one(pool)
+    .await?;
+    let burns: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM game_item_use_records WHERE cause_kind=527")
+            .fetch_one(pool)
+            .await?;
+    let effects: i64 = sqlx::query_scalar("SELECT count(*) FROM game_character_concoction_effects WHERE expires_at=started_at+interval '1 hour'")
+        .fetch_one(pool)
+        .await?;
+    assert_eq!((left, burns, effects), (1, 1, 1), "one unit, one burn, one effect");
     Ok(())
 }
 
@@ -202,6 +303,12 @@ pub(super) async fn qualify(
         .await?;
     match case {
         Case::Gut => assert_eq!(nested, 0),
+        Case::DuplexOn | Case::DuplexOff => {
+            let rolls = if matches!(case, Case::DuplexOn) { 2 } else { 1 };
+            eprintln!("W22C_DUPLEX corpse_entries={direct} rolls={rolls}");
+            assert_eq!(direct, i64::try_from(DUPLEX_BASE_ENTRIES * rolls)?);
+            assert_eq!(nested, 0);
+        }
         Case::Large => {
             assert_eq!(direct, 20);
             assert_eq!(nested, 0);

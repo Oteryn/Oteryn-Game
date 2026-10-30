@@ -285,6 +285,7 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
             | ITEM_USE_CAUSE_POTION
             | super::item_use::mining::PICK_REFINE_CAUSE
             | super::item_use::mount_taming::TAMING_CAUSE
+            | super::item_use::concoction::CONCOCTION_CAUSE
     ) || command.command_id == 0
         || command.game_session_id != value.expected_game_session_id
         || value.expected_session_generation == 0
@@ -314,7 +315,8 @@ pub fn check_item_use(value: &OneItemUseV1) -> Result<ItemUseShape, AuditError> 
         (
             ITEM_USE_CAUSE_FOOD
             | ITEM_USE_CAUSE_POTION
-            | super::item_use::mount_taming::TAMING_CAUSE,
+            | super::item_use::mount_taming::TAMING_CAUSE
+            | super::item_use::concoction::CONCOCTION_CAUSE,
             None,
             false,
         ) => ItemUseShape::Burn,

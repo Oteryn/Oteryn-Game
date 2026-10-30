@@ -167,6 +167,8 @@ struct KillQueueState {
     /// Each in-flight entry's death, principal and killed actor.
     in_flight: Vec<(CreatureDeathOccurrenceKey, Principal, ExactActorRef)>,
     reserved_loot_mints: usize,
+    /// W22c: MINTs an in-flight settle reserved on top of its take (a Wealth Duplex roll).
+    extra_loot_mints: Vec<(CreatureDeathOccurrenceKey, usize)>,
     releasing: Vec<ReleasingMark>,
     /// The last mark id or hold slot given out.
     last_id: u64,
@@ -699,6 +701,24 @@ impl KillSettlementQueue {
         }))
     }
 
+    /// W22c: reserve `extra` more loot MINTs for the in-flight `death`. `false` reserves
+    /// nothing: the death is not in flight or the scope has no room for them now.
+    pub fn reserve_extra_loot_mints(
+        &self,
+        death: CreatureDeathOccurrenceKey,
+        extra: usize,
+    ) -> bool {
+        let mut state = self.state();
+        if !state.in_flight.iter().any(|(held, _, _)| *held == death)
+            || check_inflight_loot_mint_capacity(state.reserved_loot_mints, extra).is_err()
+        {
+            return false;
+        }
+        state.reserved_loot_mints += extra;
+        state.extra_loot_mints.push((death, extra));
+        true
+    }
+
     /// The number of releases holding `principal`'s mark.
     #[cfg(test)]
     pub fn holders(&self, principal: Principal) -> Option<usize> {
@@ -779,6 +799,15 @@ impl Drop for TakenKillSettlement {
     fn drop(&mut self) {
         let mut state = self.queue.state();
         state.reserved_loot_mints = state.reserved_loot_mints.saturating_sub(self.loot_mints);
+        let death = self.death;
+        let extra: usize = state
+            .extra_loot_mints
+            .iter()
+            .filter(|(held, _)| *held == death)
+            .map(|(_, extra)| extra)
+            .sum();
+        state.extra_loot_mints.retain(|(held, _)| *held != death);
+        state.reserved_loot_mints = state.reserved_loot_mints.saturating_sub(extra);
         state.in_flight.retain(|(death, _, _)| *death != self.death);
         if let Some(entry) = self.entry.take() {
             state.queued.push_front(entry);
@@ -1683,6 +1712,58 @@ impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     }
 }
 impl DurableKillSettle<'_, '_, '_, '_> {
+    /// W22c: the corpse owner's live Wealth Duplex rolls the creature's base loot once more,
+    /// without Gut (Crystal ff7ede59 `ondroploot_wealth_duplex.lua:61-63`, `gut = false`). The
+    /// extra MINTs are reserved first; `false` waits for scope room. A roll that cannot fit even
+    /// an idle scope is left out, so the kill still settles.
+    async fn wealth_duplex(
+        &self,
+        entry: &PendingKillSettlement,
+        row: &CreatureRewardRow,
+        base: &CreatureRewardRow,
+        loot_table: &mut oteryn_gameplay_items::loot_plan::LootTableDefinition,
+        inflight_before: usize,
+    ) -> bool {
+        let entropy = u64::from_be_bytes(
+            entry.facts.death.world_id().as_bytes()[8..]
+                .try_into()
+                .unwrap_or_default(),
+        ) ^ entry.facts.death.actor_local_generation();
+        let draw =
+            u8::try_from(crate::domain::uniform_draw::uniform_draw(entropy, 0, 100)).unwrap_or(100);
+        let rolls = oteryn_gameplay_items::loot_plan::wealth_duplex_extra_rolls(1, draw);
+        let mut extended = loot_table.clone();
+        for _ in 0..rolls {
+            let mut extra = base.loot_table.entries.clone();
+            apply_gut_to_loot(&mut extra, 0);
+            extended.entries.extend(extra);
+        }
+        let seed = loot_plan_seed(entry.facts.death);
+        let count = |table| {
+            plan_creature_loot(seed, &row.loot_table_ref, table)
+                .map_or(0, |plan| plan.entries.len())
+        };
+        let (before, after) = (count(loot_table), count(&extended));
+        let extra = after.saturating_sub(before);
+        if check_inflight_loot_mint_capacity(0, after).is_err() {
+            return true;
+        }
+        if extra > 0
+            && (check_inflight_loot_mint_capacity(inflight_before, after).is_err()
+                || !self
+                    .admission
+                    .states
+                    .attack
+                    .lock()
+                    .await
+                    .kills()
+                    .reserve_extra_loot_mints(entry.facts.death, extra))
+        {
+            return false;
+        }
+        *loot_table = extended;
+        true
+    }
     /// The durable settle of one entry. Its future holds the principal's progression binding,
     /// whose policy carries the whole `CHARACTER_EXPERIENCE_TABLE_LEVELS` threshold table by
     /// value, across the reward writes, so [`KillSettle::settle`] keeps it on the heap: inline,
@@ -1870,6 +1951,29 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .await
             .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
         apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
+        if !loot_table.entries.is_empty() {
+            let Ok(active) = admission
+                .root
+                .wealth_duplex_active(admission.character, self.fence.character_id)
+                .await
+            else {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            };
+            if active
+                && let Ok(base) = admission.reward_table().row(&entry.creature)
+                && !self
+                    .wealth_duplex(&entry, &row, &base, &mut loot_table, inflight_before)
+                    .await
+            {
+                return SettleReport {
+                    verdict: SettleVerdict::Retry,
+                    no_progression: false,
+                };
+            }
+        }
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
