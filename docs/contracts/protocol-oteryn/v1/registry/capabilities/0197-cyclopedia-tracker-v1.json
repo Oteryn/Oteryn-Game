@@ -1,0 +1,13 @@
+{
+  "id": 197,
+  "name": "CYCLOPEDIA_TRACKER_V1",
+  "owner_decision": "P22 assigned capability 197",
+  "owner": "Character Cyclopedia tracker",
+  "command_types": [
+    383,
+    384
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES requires the durable Cyclopedia tracker owner."
+}
