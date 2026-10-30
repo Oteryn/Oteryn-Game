@@ -1,0 +1,10 @@
+{
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "kind": "static_content",
+  "notes": "W05d rate-event schedule, the content form of Crystal data/XML/events.xml:1-17 (zimbadev/crystalserver@201189f8): events 'Eexample 1' and 'Eexample 2' with their exp/loot/spawn/skill rates. Not admitted: bosslootrate, description, colors and details (no Oteryn consumer) and 'Double Fiendish Weekend' (events.xml:18-22, fiendishrate only; no fiendish system consumer).",
+  "owner": "Encounter",
+  "path": "content/encounters/event-schedule/",
+  "population_state": "POPULATED",
+  "repository": "Oteryn/Oteryn-Game",
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1"
+}

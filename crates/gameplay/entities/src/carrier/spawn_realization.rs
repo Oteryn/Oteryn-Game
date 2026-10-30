@@ -673,9 +673,11 @@ impl ChannelRuntimeV1 {
                 ordinal: u8::try_from(cell).map_err(|_| CarrierError::CapacityExceeded)?,
             };
             if gone && self.spawn_schedule.pending(point).is_none() {
+                // W05d: a scheduled event spawn rate shortens or lengthens the respawn delay
+                // (Crystal `spawn_monster.cpp:443-458`).
                 let mut timing = spawn.definition.timing(cell)?;
                 timing.respawn_delay_micros =
-                    oteryn_gameplay_foundation::scheduled_events::apply_spawn_delay(
+                    oteryn_gameplay_foundation::scheduled_events::scale_respawn_delay_micros(
                         timing.respawn_delay_micros,
                         oteryn_gameplay_foundation::scheduled_events::current_rates().spawn,
                     );
