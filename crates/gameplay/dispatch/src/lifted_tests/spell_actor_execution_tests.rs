@@ -128,7 +128,8 @@ fn focus_applies_to_real_monk_and_vitals_without_a_second_anchor() {
         },
     )
     .expect("focus primary effect");
-    assert_eq!(draws, [(88, 102)]);
+    // PKG8 Q2: Canary flat curve, truncated normal roll.
+    assert_eq!(draws, [(0, (1_i64 << 32) - 1)]);
     assert_eq!(state.vitals().health, 112);
     assert_eq!(state.monk_save_values(at(100)), Some((5, 7_000_000)));
     assert_eq!(plan.gained_charges, 2);
