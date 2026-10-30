@@ -273,3 +273,46 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
         assert_eq!(expected_steps(item), None, "item {item}");
     }
 }
+
+/// C07: decay timers are Item attributes, not the rune Lua combat callback.
+/// Crystal 201189f871d23597b82caf88fd611454a2ddefb8 data/items/items.xml:
+/// 105:33-44, 2118..2122:4253-4310, 2132..2135:4393-4420.
+/// These values already match production; no Global/Crystal conflict is resolved here.
+#[test]
+fn c07_production_field_decay_equals_crystal_for_shared_field_items() {
+    let document: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../content/items/definitions/spell-native-profiles.json"
+    ))
+    .unwrap();
+    let items = document["records"].as_array().unwrap();
+    for (item, duration_ms, target) in [
+        (105, 248_000, None),
+        (2118, 200_000, Some(2119)),
+        (2119, 148_000, Some(2120)),
+        (2120, 98_000, None),
+        (2122, 98_000, None),
+        (2132, 120_000, Some(2133)),
+        (2133, 120_000, None),
+        (2134, 120_000, None),
+        (2135, 120_000, None),
+    ] {
+        let external_id = item.to_string();
+        let item = items
+            .iter()
+            .find(|record| record["production_binding"]["external_id"] == external_id)
+            .unwrap();
+        let temporal = &item["semantics"]["temporal"]["value"];
+        assert_eq!(temporal["duration"]["value"], duration_ms);
+        assert_eq!(temporal["stop_duration"]["value"], false);
+        let decay = &temporal["decay_target"];
+        if let Some(target) = target {
+            assert_eq!(decay["state"], "KNOWN");
+            assert_eq!(
+                decay["value"]["key"],
+                format!("oteryn:item.tibia.i{target}")
+            );
+        } else {
+            assert_eq!(decay["state"], "NOT_APPLICABLE");
+        }
+    }
+}

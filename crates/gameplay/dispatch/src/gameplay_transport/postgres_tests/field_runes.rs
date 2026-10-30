@@ -42,7 +42,7 @@ fn field_runes_all_profiles_use_the_existing_caster() -> TestResult {
         let active = controller.active().ok_or("active generation")?;
         let native = active.native_gameplay().ok_or("native gameplay")?;
         for id in [
-            3149, 3156, 3164, 3166, 3172, 3173, 3176, 3180, 3188, 3190, 3192,
+            3148, 3149, 3156, 3164, 3166, 3172, 3173, 3176, 3180, 3188, 3190, 3192,
         ] {
             let spell = native.spell_book().rune(id).ok_or("activated field rune")?;
             assert!(
@@ -50,8 +50,6 @@ fn field_runes_all_profiles_use_the_existing_caster() -> TestResult {
                 "{id}"
             );
         }
-        let unsupported = native.spell_book().rune(3148).ok_or("Destroy Field")?;
-        assert!(!oteryn_gameplay_spell_rules::dispatch_plans::rune_use::direct_rune(unsupported));
         for (id, flags) in [
             (2128, (true, true)),
             (2130, (true, false)),
@@ -210,9 +208,22 @@ fn field_runes_postgres_protection_zone_refuses_fields_and_barriers_without_paym
     })
 }
 
+#[test]
+fn field_runes_postgres_destroy_field_removes_listed_field_and_refuses_without_payment() -> TestResult {
+    large_stack(|| run(async |admin| {
+        // Crystal 201189f8 destroy_field_rune.lua:2 includes 2135 but not Magic Wall 2128.
+        for (rune, output) in [(3164, 2135), (3180, 2128)] {
+            field_scenario(admin.clone(), rune, 1, output, true, false, false, Scenario::DestroyField).await?;
+        }
+        field_case(admin, 3148, 0, 0, true, true, false).await?;
+        Ok(())
+    }))
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Scenario {
     Ordinary,
+    DestroyField,
     Aged,
     ProtectedTarget,
     ProtectedCaster,
@@ -799,6 +810,9 @@ async fn field_scenario_inner(
             1,
         ));
     }
+    if scenario == Scenario::DestroyField {
+        inventory.push(("oteryn:item.tibia.i3148".into(), 3));
+    }
     seed_main_backpack(
         &harness,
         &inventory
@@ -881,10 +895,12 @@ async fn field_scenario_inner(
     let rune_definition = inventory_definition(rune)?;
     let machete_id = if scenario == Scenario::SecretMachete { 9594 } else { 3308 };
     let machete_definition = inventory_definition(machete_id)?;
+    let destroy_definition = inventory_definition(3148)?;
     let casting = async {
         let mut handle = None;
         let mut field_handle = None;
         let mut machete = None;
+        let mut destroy = None;
         let mut saw_map = false;
         loop {
             let bytes = read_frame(&mut client).await.map_err(|error| {
@@ -904,6 +920,7 @@ async fn field_scenario_inner(
                             .iter()
                             .find(|item| item.item_definition_ref == rune_definition)
                             .map(|item| item.handle);
+                        destroy = inventory.entries.iter().find(|item| item.item_definition_ref == destroy_definition).map(|item| item.handle);
                         machete = inventory
                             .entries
                             .iter()
@@ -1061,6 +1078,38 @@ async fn field_scenario_inner(
                 lock_after, lock_before,
                 "a replay never refreshes the cast block"
             );
+        }
+        if scenario == Scenario::DestroyField {
+            wait_field_client(&mut client, std::time::Duration::from_secs(2)).await?;
+            for (offset, (dx, floor, accepted)) in [(2, start.floor, false), (6, start.floor, false), (1, start.floor + 1, false), (1, start.floor, output == 2135)].into_iter().enumerate() {
+                let command_id = admitted.continuity.next_command_id + 1 + u64::try_from(offset)?;
+                let destroy_intent = UseIntent {
+                    target: UseTarget::Item(destroy.ok_or("Destroy Field handle")?),
+                    use_with: None,
+                    use_with_map_item: None,
+                    use_with_position: Some(SpellTargetPosition { x: start.x + dx, y: start.y, floor }),
+                };
+                let command = test_command(command_id, COMMAND_TYPE_USE_INTENT, &encode_item_use_intent(&destroy_intent).map_err(debug)?);
+                client.write_u32(u32::try_from(command.len())?).await?;
+                client.write_all(&command).await?;
+                loop {
+                    let frame = read_frame(&mut client).await?;
+                    let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+                    if envelope.message_type() == MessageType::CommandResult {
+                        let result = decode_command_result(envelope.payload()).map_err(debug)?;
+                        assert_eq!(result.command_id, command_id);
+                        assert_eq!(decode_use_result(result.payload).map_err(debug)?, if accepted { UseDisposition::Committed } else if dx == 6 { UseDisposition::TooFar } else { UseDisposition::TargetIllegal }, "Destroy Field dx={dx} floor={floor} output={output}");
+                        break;
+                    }
+                }
+                let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE definition_production_key='oteryn:item.tibia.i3148'").fetch_one(&harness.pool).await?;
+                assert_eq!(quantity, if accepted { 2 } else { 3 }, "only a successful removal consumes one charge");
+            }
+            assert_eq!(projected_field_count(&owner, actor, output).await?, if output == 2135 { 0 } else { 1 });
+            let remaining: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_ground_locations").fetch_one(&harness.pool).await?;
+            assert_eq!(remaining, if output == 2135 { 0 } else { 1 }, "removal changes durable Ground custody");
+            client.shutdown().await?;
+            return Ok::<_, Box<dyn std::error::Error>>(());
         }
         if committed && !player_field && !owner_loss {
             let projectile_probe = matches!(output, 2128 | 10181);
@@ -1338,6 +1387,12 @@ async fn field_scenario_inner(
     )
     .await??;
     eprintln!("FIELD-RUNES transport complete rune={rune} scenario={scenario:?}");
+    if scenario == Scenario::DestroyField {
+        drop(owner);
+        drop(authority);
+        drop(seal);
+        return harness.cleanup().await;
+    }
     let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_spell_item_receipts WHERE game_session_id=encode($1,'hex')::uuid")
         .bind(id(50).as_slice()).fetch_one(&harness.pool).await?;
     let quantity: i64 = sqlx::query_scalar(

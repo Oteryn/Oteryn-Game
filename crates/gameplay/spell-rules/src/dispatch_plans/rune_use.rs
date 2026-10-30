@@ -74,7 +74,7 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
             }),
         (
             Carrier::Rune {
-                item: item @ (3178 | 3197),
+                item: item @ (3148 | 3178 | 3197),
                 ..
             },
             Execution::NativeProfile(profile),
@@ -84,10 +84,11 @@ pub fn direct_rune(spell: &SpellDefinition) -> bool {
             let native = &profile.spell()["execution"]["native_behavior"];
             native["key"] == "tile_item_operation"
                 && native["parameters"]["operation"]
-                    == if *item == 3178 {
-                        "mimic_item"
-                    } else {
-                        "disintegrate"
+                    == match *item {
+                        // Crystal 201189f8 data/scripts/runes/destroy_field_rune.lua:6-24.
+                        3148 => "remove_field",
+                        3178 => "mimic_item",
+                        _ => "disintegrate",
                     }
         }
         _ => false,

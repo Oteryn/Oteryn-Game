@@ -28,6 +28,11 @@ fn exiva_settings_denied_postgres() -> TestResult {
     scenario(12)
 }
 
+#[test]
+fn exiva_settings_own_guild_postgres() -> TestResult {
+    scenario(13)
+}
+
 pub(super) async fn exercise(
     h: &Harness,
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -60,19 +65,19 @@ pub(super) async fn exercise(
     let modes = match case {
         7 => 1,
         8 => 2,
-        9 => 4,
+        9 | 13 => 4,
         10 => 8,
         11 => 16,
         _ => 0,
     };
     // Seed only relationship-owner fixtures. Privacy edits and casts use production dispatch.
-    if matches!(case, 9..=11) {
+    if matches!(case, 9..=11 | 13) {
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
             .execute(&mut *tx)
             .await?;
         match case {
-            9 => {
+            9 | 13 => {
                 sqlx::query("INSERT INTO game_guilds(guild_id,world_id,name,state,formation_deadline,revision,created_at) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,'Caster Guild',2,9999999999,1,1),(encode($2,'hex')::uuid,encode($3,'hex')::uuid,'Target Guild',2,9999999999,1,1)")
                     .bind(id(120).as_slice()).bind(id(121).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
                 sqlx::query("INSERT INTO game_guild_members(character_id,guild_id,rank_level,joined_at) VALUES(encode($1,'hex')::uuid,encode($3,'hex')::uuid,1,1),(encode($2,'hex')::uuid,encode($4,'hex')::uuid,1,1)")
@@ -91,6 +96,10 @@ pub(super) async fn exercise(
                     .bind(id(101).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
             }
             _ => unreachable!(),
+        }
+        if case == 13 {
+            sqlx::query("UPDATE game_guild_members SET guild_id=encode($1,'hex')::uuid,rank_level=3 WHERE character_id=encode($2,'hex')::uuid")
+                .bind(id(120).as_slice()).bind(id(101).as_slice()).execute(&mut *tx).await?;
         }
         tx.commit().await?;
     }
@@ -193,7 +202,14 @@ pub(super) async fn exercise(
         remove.extend(id(120));
         remove
     } else {
-        vec![0, if matches!(case, 9..=11) { modes } else { 0 }]
+        vec![
+            0,
+            if matches!(case, 9..=11 | 13) {
+                modes
+            } else {
+                0
+            },
+        ]
     };
     let (results, _) = exchange(
         owner,
