@@ -1227,3 +1227,29 @@ fn a_bundle_world_protection_zone_casts_heal_and_support_and_refuses_aggression(
     };
     assert!(cast_on("Terra Wave", &open).is_ok());
 }
+
+#[test]
+fn position_gate_admits_only_cast_at_position_before_common_cost_checks() {
+    let mut book = v1_spell_book().expect("book");
+    let mut state = wounded(druid(300), 50);
+    state.mana = 0;
+    let target = SpellTarget::Position(SpellTargetPosition {
+        x: 0,
+        y: 0,
+        floor: 0,
+    });
+    for allowed in [None, Some(false), Some(true)] {
+        std::sync::Arc::make_mut(book.spells[2].authored.as_mut().expect("authored"))
+            .header
+            .targeting
+            .cast_at_position = allowed;
+        assert_eq!(
+            run(&book, &state, &intent(3, target), at(0), &mut Vec::new()),
+            Err(if allowed == Some(true) {
+                SpellCastDisposition::NotEnoughMana
+            } else {
+                SpellCastDisposition::Rejected
+            })
+        );
+    }
+}

@@ -1706,11 +1706,14 @@ fn area_candidates(
         .map_err(|_| SpellCastDisposition::Rejected)
 }
 
+#[path = "native_combat_cast/delayed_strikes.rs"]
+pub(in crate::gameplay_transport) mod delayed_strikes;
 /// All facts originate in the actual owner, static qualified content and the same SQL Item
 /// transaction. Missing Premium/learning/Wheel/elemental/magnitude is refused before RNG.
 #[path = "native_combat_cast/prepare.rs"]
 mod preparation;
 pub use preparation::prepare_from_owners;
+pub(in crate::gameplay_transport) use preparation::prepare_strike_due;
 
 fn presentation_requests(
     room: &QualifiedNativeEntryRoom,
@@ -2264,7 +2267,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
         };
         let native_combat = matches!(&spell.execution, Execution::NativeProfile(p) if matches!(
             p.spell()["execution"]["native_behavior"]["key"].as_str(), Some("wheel_combat" | "avatar_state"
-                | "monster_ai_override" | "mass_spirit_mend" | "mana_shield_capacity")));
+                | "monster_ai_override" | "mass_spirit_mend" | "mana_shield_capacity" | "delayed_strike")));
         if !native_combat
             && !is_source_self(spell)
             && !ordinary_combat::applicable(spell)
@@ -2593,7 +2596,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),legacy.as_ref(),attack_target,pvp_modes,&mut draw).await
                     } else {
                         prepare_from_owners(&mut tx,owner.root,&authority,runtime,states,room,objects,content,&owned,
-                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),&mut draw).await
+                            owner.spells,spell,&intent,command,occurrence,training_occurrence,now,rune.as_ref(),attack_target,&mut draw).await
                     };
                     let mut prepared=match prepared_result{
                         Ok(p)=>p,Err(disposition)=>{

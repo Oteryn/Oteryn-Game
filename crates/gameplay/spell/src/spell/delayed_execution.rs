@@ -125,6 +125,17 @@ impl CastBinding {
 pub struct SavedStrike {
     pub binding: CastBinding,
     pub scheduled: Box<ScheduledStrike>,
+    pub resolved: Option<ResolvedStrike>,
+    pub cast_modifiers: super::magnitude_owner::StrikeCastModifiers,
+    /// The same occurrence must never reuse an initial hit's durable effect ordinal.
+    pub first_sub_ordinal: u16,
+}
+#[derive(Debug, Clone)]
+pub struct ResolvedStrike {
+    pub batch: OwnerCombatBatch,
+    pub presentation: std::sync::Arc<super::spell_presentations::PreparedPresentation>,
+    pub magnitude: std::sync::Arc<super::magnitude_owner::PreparedMagnitudeOwner>,
+    pub owned: super::owned_cast_facts::OwnedCastFacts,
 }
 #[derive(Debug, Clone)]
 pub struct SavedChainHit {
@@ -596,17 +607,24 @@ impl SpellTimerOwner {
         let mut pending: Vec<_> = self
             .payloads
             .iter()
-            .filter(|p| p.due <= now && matches!(p.payload, TimerPayload::NativeOwnerEffect(_)))
+            .filter(|p| {
+                p.due <= now
+                    && matches!(
+                        p.payload,
+                        TimerPayload::NativeOwnerEffect(_) | TimerPayload::Strike(_)
+                    )
+            })
             .collect();
         pending.sort_by_key(|p| p.due);
         pending
             .into_iter()
             .take(MAX_DUE_PER_CYCLE)
             .filter_map(|p| {
-                let TimerPayload::NativeOwnerEffect(saved) = &p.payload else {
-                    return None;
+                let binding = match &p.payload {
+                    TimerPayload::NativeOwnerEffect(saved) => &saved.binding,
+                    TimerPayload::Strike(saved) => &saved.binding,
+                    _ => return None,
                 };
-                let binding = &saved.binding;
                 Some(NativeAiTimerSource {
                     caster: binding.caster,
                     attacker: binding.attacker,
@@ -615,6 +633,177 @@ impl SpellTimerOwner {
                 })
             })
             .collect()
+    }
+    pub fn due_strikes(&self, now: SemanticTimeMicros) -> Vec<SavedStrike> {
+        self.payloads
+            .iter()
+            .filter_map(|p| match &p.payload {
+                TimerPayload::Strike(s) if p.due <= now => Some(s.clone()),
+                _ => None,
+            })
+            .take(MAX_DUE_PER_CYCLE)
+            .collect()
+    }
+    /// Preview the actual next normalized input, including already-fired work.
+    /// Payload storage order and spell family priority must not choose the next
+    /// numerical snapshot: an earlier callback can change those owner facts.
+    pub fn next_due_payload(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        now: SemanticTimeMicros,
+    ) -> Result<Option<TimerPayload>, Error> {
+        let fence = runtime.owner_fence().map_err(|_| Error::StaleOwner)?;
+        if self.scope()
+            != RuntimeScopeRefV1::channel(
+                runtime.binding().world_id(),
+                runtime.binding().channel_id(),
+            )
+            || self.generation() != runtime.binding().scope_generation()
+        {
+            return Err(Error::StaleOwner);
+        }
+        // Clone scheduling data only. This read never consumes the real lane or
+        // creates a deferred commit token; fire_due_impl still owns both.
+        let mut lane = self.lane.clone();
+        let clock = crate::foundation::owner_timer::VirtualOwnerClock::new(now);
+        let due = lane.drain_due(&clock, fence, |target| {
+            self.payloads
+                .iter()
+                .any(|p| p.payload.target() == Some(target) && p.payload.target_current(runtime))
+                || self.lifecycle_payloads.iter().any(|p| {
+                    p.saved.creature == target && lifecycle_target_current(runtime, &p.saved)
+                })
+        });
+        for event in self.ready.iter().chain(due.iter()) {
+            let OwnerSpellTimerKey::Cast(occurrence) = event.occurrence else {
+                return Ok(None);
+            };
+            if let Some(pending) = self.payloads.iter().find(|p| p.occurrence == occurrence)
+                && pending.payload.target_current(runtime)
+            {
+                return Ok(Some(pending.payload.clone()));
+            }
+        }
+        Ok(None)
+    }
+    /// A sealed due reader checks the actual installed lane, not a saved proposal alone.
+    pub fn contains_due_strike(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        saved: &SavedStrike,
+        now: SemanticTimeMicros,
+    ) -> bool {
+        self.scope()
+            == RuntimeScopeRefV1::channel(
+                runtime.binding().world_id(),
+                runtime.binding().channel_id(),
+            )
+            && self.generation() == runtime.binding().scope_generation()
+            && runtime.owner_fence().is_ok()
+            && self.payloads.iter().any(|p| match &p.payload {
+                TimerPayload::Strike(s) => {
+                    p.due <= now
+                        && p.occurrence.command == saved.binding.command
+                        && s.binding.caster == saved.binding.caster
+                        && s.binding.command == saved.binding.command
+                        && s.binding.parent_binding == saved.binding.parent_binding
+                        && s.binding.spell.spell() == saved.binding.spell.spell()
+                        && s.binding.cast_snapshot == saved.binding.cast_snapshot
+                        && s.scheduled == saved.scheduled
+                        && s.first_sub_ordinal == saved.first_sub_ordinal
+                        && validate_request(&ScheduleRequest {
+                            occurrence: p.occurrence,
+                            due: p.due,
+                            payload: p.payload.clone(),
+                        })
+                        .is_ok()
+                }
+                _ => false,
+            })
+    }
+    pub fn retain_strike(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        saved: &SavedStrike,
+        resolved: ResolvedStrike,
+        now: SemanticTimeMicros,
+    ) -> Result<(), Error> {
+        if !self.contains_due_strike(runtime, saved, now)
+            || resolved.batch.caster != saved.binding.caster
+            || resolved.batch.command != saved.binding.command
+            || resolved.batch.attacker != saved.binding.attacker
+            || resolved.batch.anchor.is_some()
+            || resolved.batch.deferred.is_some()
+        {
+            return Err(Error::InvalidPayload);
+        }
+        let revision = self.revision.checked_add(1).ok_or(Error::Bounds)?;
+        let entry = self
+            .payloads
+            .iter_mut()
+            .find_map(|p| match &mut p.payload {
+                TimerPayload::Strike(s) if s.binding.command == saved.binding.command => Some(s),
+                _ => None,
+            })
+            .ok_or(Error::StaleOwner)?;
+        if let Some(old) = &entry.resolved {
+            return if old.batch == resolved.batch {
+                Ok(())
+            } else {
+                Err(Error::SubstitutedBatch)
+            };
+        }
+        entry.resolved = Some(resolved);
+        self.revision = revision;
+        Ok(())
+    }
+    /// The current composition cancels an offline caster or a refused due strike.
+    pub fn cancel_strike(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        command: CommandRef,
+    ) -> Result<(), Error> {
+        if self.scope()
+            != RuntimeScopeRefV1::channel(
+                runtime.binding().world_id(),
+                runtime.binding().channel_id(),
+            )
+            || self.generation() != runtime.binding().scope_generation()
+            || runtime.owner_fence().is_err()
+        {
+            return Err(Error::StaleOwner);
+        }
+        let revision = self.revision.checked_add(1).ok_or(Error::Bounds)?;
+        let occurrences: Vec<_> = self
+            .payloads
+            .iter()
+            .filter_map(|p| {
+                (p.occurrence.command == command && matches!(p.payload, TimerPayload::Strike(_)))
+                    .then_some(p.occurrence)
+            })
+            .collect();
+        for occurrence in &occurrences {
+            self.lane.cancel(
+                SpellTimerFamily::Strike,
+                OwnerSpellTimerKey::Cast(*occurrence),
+            );
+        }
+        self.payloads
+            .retain(|p| !occurrences.contains(&p.occurrence));
+        self.ready.retain(|r| {
+            !occurrences
+                .iter()
+                .any(|o| r.occurrence == OwnerSpellTimerKey::Cast(*o))
+        });
+        if self
+            .prepared_due
+            .as_ref()
+            .is_some_and(|(o, _)| occurrences.contains(o))
+        {
+            self.prepared_due = None;
+        }
+        self.revision = revision;
+        Ok(())
     }
     pub fn due_ordinary_payloads(
         &self,
@@ -1385,6 +1574,13 @@ impl SpellTimerOwner {
                     || batch.anchor.is_some()
                     || batch.current_lease_generation == 0
                     || match &pending.payload {
+                        TimerPayload::Strike(saved) => {
+                            saved.resolved.as_ref().is_none_or(|resolved| {
+                                resolved.batch != batch
+                                    || batch.now_ms > clock.now().get() / 1000
+                                    || batch.now_ms < pending.due.get() / 1000
+                            })
+                        }
                         TimerPayload::OrdinaryCombat(saved) => {
                             saved.resolved.as_ref().is_none_or(|resolved| {
                                 resolved.batch != batch
@@ -1466,6 +1662,7 @@ fn validate_request(r: &ScheduleRequest) -> Result<(), Error> {
         TimerPayload::Strike(v) => {
             let due = v.scheduled.due_ms.checked_mul(1000).ok_or(Error::Bounds)?;
             if due != r.due.get()
+                || usize::from(v.first_sub_ordinal) >= super::combat_batch::MAX_EFFECTS
                 || v.scheduled.position != binding.cast_position
                 || binding.cast_snapshot.as_ref().map(|s| &s.identity)
                     != Some(&v.scheduled.expected_caster)
