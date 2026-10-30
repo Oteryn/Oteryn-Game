@@ -60,6 +60,7 @@ fn element(key: &str) -> Result<Element, SpellCastDisposition> {
         "death" => Element::Death,
         "ice" => Element::Ice,
         "earth" => Element::Earth,
+        "holy" => Element::Holy,
         "healing" => Element::Healing,
         _ => return reject(),
     })

@@ -177,6 +177,7 @@ impl MagnitudeOwnedAttributes {
                     (Element::Death, 0),
                     (Element::Ice, 0),
                     (Element::Earth, 0),
+                    (Element::Holy, 0),
                 ]
             });
             resolved.wheel_flat_damage.get_or_insert(0);
@@ -247,6 +248,7 @@ fn element_key(element: Element) -> &'static str {
         Element::Death => "death",
         Element::Ice => "ice",
         Element::Earth => "earth",
+        Element::Holy => "holy",
         Element::Healing => "healing",
     }
 }

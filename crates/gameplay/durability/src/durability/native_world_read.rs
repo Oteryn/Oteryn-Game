@@ -387,7 +387,9 @@ pub async fn qualified_combat_tile_in_transaction<'owner, O: NativeWorldObjectRe
     let tile = tile_in_transaction::<O::Error>(tx, authority, room, runtime, position)
         .await?
         .ok_or(NativeWorldReadError::MissingTileMetadata)?;
-    if owner.blocks_movement(position) {
+    // Source and bundle walls have qualified projectile flags in `tile`; only the
+    // entry object owner exposes movement-only dynamic blockers.
+    if matches!(&owner, WorldStaticOwnerBorrow::Entry(_)) && owner.blocks_movement(position) {
         return Err(NativeWorldReadError::MissingDynamicProjectileFlags);
     }
     Ok(QualifiedCombatTileFact {
