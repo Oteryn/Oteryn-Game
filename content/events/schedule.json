@@ -1,0 +1,18 @@
+{
+  "events": [
+    {
+      "name": "Global double-event weekend",
+      "evidence": "Global double XP/skill and double loot/rapid respawn rates are 200%; Crystal data/XML/events.xml:3-15 defines the same four percentage fields",
+      "start": "2030-01-01T00:00:00Z",
+      "end": "2030-01-01T23:59:59Z",
+      "start_unix": 1893456000,
+      "end_unix": 1893542399,
+      "rates": {
+        "experience": 200,
+        "loot": 200,
+        "spawn": 200,
+        "skill": 200
+      }
+    }
+  ]
+}

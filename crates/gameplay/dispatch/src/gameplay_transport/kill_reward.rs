@@ -1848,6 +1848,19 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .await
             .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
         apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
+        let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
+        for loot in &mut loot_table.entries {
+            if let Some(probability) = &mut loot.probability_ppm {
+                *probability = u32::try_from(
+                    oteryn_gameplay_foundation::scheduled_events::apply_gain(
+                        u64::from(*probability),
+                        event_rates.loot,
+                    )
+                    .min(1_000_000),
+                )
+                .unwrap_or(1_000_000);
+            }
+        }
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
@@ -1857,7 +1870,12 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             reward_principals: vec![RewardPrincipal {
                 gameplay_fence: fence,
             }],
-            xp_amount: row.xp_amount,
+            xp_amount: oteryn_simulation_determinism::ExactI64::new(
+                oteryn_gameplay_foundation::scheduled_events::apply_signed_gain(
+                    row.xp_amount.get(),
+                    event_rates.experience,
+                ),
+            ),
             // ARCH-PROGRESSION-SOURCE-0 §1.4: the principal's own session binding; an unbound
             // session settles corpse and loot only (`no_progression_binding`).
             progression: admission

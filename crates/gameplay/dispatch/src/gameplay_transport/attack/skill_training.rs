@@ -66,7 +66,10 @@ pub(in crate::gameplay_transport) fn train_hit(
     let Some(state) = states.get_mut(runtime, actor, session) else {
         return;
     };
-    let Ok(trained) = state.train_skill(family, now, formula, rule) else {
+    let rate = oteryn_gameplay_foundation::scheduled_events::current_rates().skill;
+    let Ok(trained) = state.train_skill(family, now, formula, |hits| {
+        oteryn_gameplay_foundation::scheduled_events::apply_gain(rule(hits), rate)
+    }) else {
         return;
     };
     if trained.checkpoint_due && !due.contains(&(actor, session)) {
