@@ -217,25 +217,38 @@ fn charm_progression_real_dispatch_unlocks_assigns_and_removes_for_the_gold_fee(
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "charm progression scenario panicked")?
         .map_err(Into::into)
 }
 
-fn scenario() -> TestResult {
+#[test]
+fn charm_expansion_real_dispatch_discounts_removal_and_lifts_slot_limit() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "charm expansion scenario panicked")?
+        .map_err(Into::into)
+}
+
+fn scenario(expansion: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "charm_progression", true, false).await?;
-        eprintln!("POSTGRES_STARTED PARITY-PROGRESSION-QUERIES-1 charm_progression_real_dispatch");
+        eprintln!("POSTGRES_STARTED P01C charm_progression_real_dispatch expansion={expansion}");
         prepare_current_session(&harness).await?;
-        // Three completed 100-point entries: 300 Charm Points.
+        // Keep the original three-entry case; expansion also funds three major charms.
         let races = crate::gameplay_transport::charm_progression::canonical_races()
             .ok_or("canonical Bestiary")?;
         let completed: Vec<&BestiaryRace> = races
             .iter()
             .filter(|race| race.final_kill_threshold() == 5000)
-            .take(3)
+            .take(if expansion { 8 } else { 3 })
             .collect();
         seed(&harness, &completed).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
@@ -289,7 +302,9 @@ fn scenario() -> TestResult {
 
         let query = reply(&owner, &mut admitted, CharmProgressionAction::Query).await?;
         assert_eq!(query.outcome, CharmProgressionOutcome::Query);
-        assert_eq!(query.charms.charm_points_available, 300);
+        let earned = if expansion { 800 } else { 300 };
+        assert_eq!(query.charms.charm_points_available, earned);
+        assert_eq!(query.charms.assignment_slot_limit, NonZeroU32::new(2));
         assert!(query.charms.charms.iter().all(|c| c.unlocked_stage == 0));
         // The wire index is the position in race-key order.
         let mut keys: Vec<&str> = races.iter().map(BestiaryRace::key).collect();
@@ -337,7 +352,7 @@ fn scenario() -> TestResult {
             unlocked.outcome,
             CharmProgressionOutcome::Unlock(CharmUnlockDisposition::Unlocked)
         );
-        assert_eq!(unlocked.charms.charm_points_available, 60);
+        assert_eq!(unlocked.charms.charm_points_available, earned - 240);
         let assigned = reply(
             &owner,
             &mut admitted,
@@ -356,6 +371,71 @@ fn scenario() -> TestResult {
                 .map(|c| c.assigned_race)
         };
         assert_eq!(state(&assigned), Some(Some(first)));
+        if expansion {
+            let others: Vec<_> = query
+                .charms
+                .charms
+                .iter()
+                .filter(|entry| entry.next_stage_cost == 240 && entry.charm != charm)
+                .map(|entry| entry.charm)
+                .take(2)
+                .collect();
+            assert_eq!(others.len(), 2);
+            for (index, other) in others.iter().enumerate() {
+                let unlocked = reply(
+                    &owner,
+                    &mut admitted,
+                    CharmProgressionAction::Unlock {
+                        charm: *other,
+                        expected_stage: 0,
+                    },
+                )
+                .await?;
+                assert_eq!(
+                    unlocked.outcome,
+                    CharmProgressionOutcome::Unlock(CharmUnlockDisposition::Unlocked)
+                );
+                let assigned = reply(
+                    &owner,
+                    &mut admitted,
+                    CharmProgressionAction::Assign {
+                        charm: *other,
+                        race: race(completed[index + 1].key())?,
+                    },
+                )
+                .await?;
+                assert_eq!(
+                    assigned.outcome,
+                    CharmProgressionOutcome::Assign(if index == 0 {
+                        CharmAssignDisposition::Assigned
+                    } else {
+                        CharmAssignDisposition::AssignmentSlotsFull
+                    })
+                );
+            }
+            sqlx::query(
+                "INSERT INTO game_character_charm_expansions(character_id) \
+             VALUES(encode($1,'hex')::uuid)",
+            )
+            .bind(id(41).as_slice())
+            .execute(&harness.pool)
+            .await?;
+            let expanded = reply(&owner, &mut admitted, CharmProgressionAction::Query).await?;
+            assert_eq!(expanded.charms.assignment_slot_limit, None);
+            let assigned = reply(
+                &owner,
+                &mut admitted,
+                CharmProgressionAction::Assign {
+                    charm: others[1],
+                    race: race(completed[2].key())?,
+                },
+            )
+            .await?;
+            assert_eq!(
+                assigned.outcome,
+                CharmProgressionOutcome::Assign(CharmAssignDisposition::Assigned)
+            );
+        }
         {
             use oteryn_gameplay_progression::charm_effects::CharmStateRead;
             let runtime = owner.runtime.lock().await;
@@ -386,7 +466,7 @@ fn scenario() -> TestResult {
             (removed.outcome, removed.fee_gold),
             (
                 CharmProgressionOutcome::Remove(CharmRemoveDisposition::Removed),
-                u64::try_from(level)? * 100
+                u64::try_from(level)? * if expansion { 75 } else { 100 }
             )
         );
         assert_eq!(state(&removed), Some(None), "the race is free again");
@@ -412,7 +492,14 @@ fn scenario() -> TestResult {
         )
         .fetch_one(&harness.pool)
         .await?;
-        assert_eq!(durable, (0, 1, level * 100));
+        assert_eq!(
+            durable,
+            (
+                if expansion { 2 } else { 0 },
+                1,
+                level * if expansion { 75 } else { 100 }
+            )
+        );
         // A second remove has nothing to free and pays nothing.
         let again = reply(
             &owner,
@@ -430,7 +517,7 @@ fn scenario() -> TestResult {
             &mut admitted,
             CharmProgressionAction::Assign {
                 charm,
-                race: race(completed[1].key())?,
+                race: race(completed[if expansion { 3 } else { 1 }].key())?,
             },
         )
         .await?;
