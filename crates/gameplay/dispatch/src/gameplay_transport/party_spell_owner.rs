@@ -468,16 +468,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     use oteryn_gameplay_spell_rules::native_actor_states::{
                         PartyBonusKind, StandardStance, plan_party_bonuses_with_guiding,
                     };
-                    if !matches!(
-                        monk_state.standard_stance(),
-                        Some(
-                            StandardStance::Harmony
-                                | StandardStance::Justice
-                                | StandardStance::Sustain
-                        )
-                    ) {
-                        continue;
-                    }
+                    if monk_state.monk.is_none() { continue; }
                     let Some(facts) = world
                         .member_facts
                         .iter()
@@ -513,6 +504,22 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             &mut tx, character, &ruleset,
                         ).await?
                     } else { false };
+                    // Canary Party::updateMantraHolder/applyGuidingPresence chooses the
+                    // highest equipped mantra, independently of the standard stance or range.
+                    // Global Conviction Perks now shares 100% (Canary's pinned source: 50%).
+                    if guiding && *monk_actor != actor && world.source.party_id.is_some() {
+                        bonuses.mantra = bonuses.mantra.max(monk_state.equipped_mantra());
+                    }
+                    if !matches!(
+                        monk_state.standard_stance(),
+                        Some(
+                            StandardStance::Harmony
+                                | StandardStance::Justice
+                                | StandardStance::Sustain
+                        )
+                    ) {
+                        continue;
+                    }
                     let plans = plan_party_bonuses_with_guiding(
                         parameters, *facts, &world.member_facts, true, serene, guiding,
                     ).map_err(|_| DurabilityError::Unavailable)?;

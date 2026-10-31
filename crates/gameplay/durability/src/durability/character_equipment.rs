@@ -404,11 +404,21 @@ pub async fn read_field_equipment_in_transaction(
     recovery: &ReconciledCharacterAuthority<'_, '_>,
     node: &NodeIncarnationProof,
 ) -> Result<EquipmentSnapshot> {
-    read.check_transaction(tx).await.map_err(|_| rejected("field target transaction"))?;
-    let record = recovery.record_for(root).map_err(|_| rejected("field equipment recovery"))?;
+    read.check_transaction(tx)
+        .await
+        .map_err(|_| rejected("field target transaction"))?;
+    let record = recovery
+        .record_for(root)
+        .map_err(|_| rejected("field equipment recovery"))?;
     let authority = assert_current_equipment_in_transaction(
-        tx, &record, node, read.fence(), None, read.content_digest(),
-    ).await?;
+        tx,
+        &record,
+        node,
+        read.fence(),
+        None,
+        read.content_digest(),
+    )
+    .await?;
     read_equipment_in_transaction(tx, &authority).await
 }
 
@@ -506,6 +516,7 @@ async fn apply_resolved_equipment_in_transaction(
     let mut item_revision = None;
     let mut swap: Option<(EquippedItem, u64)> = None;
     let mut nested_source_parent = None;
+    let mut managed_destination = None;
     let operation = match intent {
         EquipmentIntent::Hotkey { .. } => return Err(rejected("unresolved equipment hotkey")),
         EquipmentIntent::SetCombatMode(value) => {
@@ -705,37 +716,31 @@ async fn apply_resolved_equipment_in_transaction(
                 {
                     return Err(rejected("equipment source exact slot"));
                 }
-                // Other legitimate custody writers for this backpack serialize
-                // on the same held Character root before changing its entries.
-                let rows=sqlx::query("SELECT placement_ordinal::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid ORDER BY game_item_container_entries.placement_ordinal").bind(backpack_id.as_slice()).fetch_all(&mut **tx).await?;
-                let backpack_policy = content
-                    .equipment_policy(
-                        &backpack.try_get::<String, _>("definition_production_key")?,
-                        &backpack.try_get::<String, _>("definition_revision_ref")?,
-                    )
-                    .ok_or(rejected("equipment actual backpack active policy"))?;
-                let capacity = backpack_policy
-                    .container_capacity()
-                    .ok_or(rejected("equipment unknown backpack capacity"))?;
-                if backpack_policy.source_digest() != authority.content_digest {
-                    return Err(rejected("equipment backpack profile pin"));
+                if matches!(binding_intent, EquipmentIntent::Hotkey { .. }) {
+                    managed_destination =
+                        hotkey::managed_destination(tx, authority, content, backpack_id, *identity)
+                            .await?;
                 }
-                if rows.len() >= usize::from(capacity).min(20) {
-                    return Err(rejected("equipment backpack capacity"));
+                if let Some((destination, next_ordinal)) = managed_destination {
+                    parent = Some(destination);
+                    ordinal = Some(next_ordinal);
+                    envelope["managed_destination"] =
+                        json!({"parent":destination,"ordinal":next_ordinal});
+                } else {
+                    hotkey::main_vacancy(tx, authority, content, backpack_id).await?;
+                    let maximum: String = sqlx::query_scalar("SELECT COALESCE(max(placement_ordinal),0)::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+                        .bind(backpack_id.as_slice()).fetch_one(&mut **tx).await?;
+                    ordinal = Some(
+                        number(maximum)?
+                            .checked_add(1)
+                            .ok_or(rejected("equipment backpack ordinal exhausted"))?,
+                    );
                 }
-                ordinal = Some(
-                    rows.last()
-                        .map(|r| number(r.try_get("placement_ordinal")?))
-                        .transpose()?
-                        .unwrap_or(0)
-                        .checked_add(1)
-                        .ok_or(rejected("equipment backpack ordinal exhausted"))?,
-                );
             }
             item = Some(*identity);
             from = *from_slot;
             to = *to_slot;
-            parent = Some(backpack_id);
+            parent = parent.or(Some(backpack_id));
             item_revision = Some(number(row.try_get("state_revision")?)?);
             1_i16
         }
@@ -817,6 +822,10 @@ async fn apply_resolved_equipment_in_transaction(
         sqlx::query("UPDATE game_item_instances SET last_transaction_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid").bind(transaction_id.as_slice()).bind(item.as_slice()).execute(&mut **tx).await?;
         if let Some(slot) = to {
             sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,$2,encode($3,'hex')::uuid,encode($4,'hex')::uuid,encode($5,'hex')::uuid)").bind(actual.character.as_slice()).bind(i16::from(slot)).bind(item.as_slice()).bind(authority.world.as_slice()).bind(transaction_id.as_slice()).execute(&mut **tx).await?;
+        } else if let Some((destination, next_ordinal)) = managed_destination {
+            sqlx::query("INSERT INTO game_item_nested_entries(parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric,encode($5,'hex')::uuid)")
+                .bind(destination.as_slice()).bind(item.as_slice()).bind(authority.world.as_slice())
+                .bind(next_ordinal.to_string()).bind(transaction_id.as_slice()).execute(&mut **tx).await?;
         } else {
             sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid)").bind(actual.character.as_slice()).bind(parent.ok_or(rejected("equipment parent"))?.as_slice()).bind(item.as_slice()).bind(authority.world.as_slice()).bind(ordinal.ok_or(rejected("equipment ordinal"))?.to_string()).bind(transaction_id.as_slice()).execute(&mut **tx).await?;
         }
@@ -1438,7 +1447,10 @@ impl DurabilityRoot {
             fence,
             command,
             content,
-            EquipmentIntent::Hotkey { definition:selection.0, slot:selection.1 },
+            EquipmentIntent::Hotkey {
+                definition: selection.0,
+                slot: selection.1,
+            },
         )
         .await
     }

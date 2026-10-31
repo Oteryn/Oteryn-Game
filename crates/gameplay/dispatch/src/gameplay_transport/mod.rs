@@ -44,6 +44,7 @@ mod composed_admission;
 mod composed_test_owner;
 mod condition_snapshots;
 mod connection;
+mod consume_transform_use;
 mod container_view;
 mod control_loss;
 mod control_loss_reconciliation;

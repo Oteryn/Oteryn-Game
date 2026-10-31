@@ -4,8 +4,14 @@
   "constant": "exiva::CAPABILITY_EXIVA_SETTINGS_V1",
   "requires": [],
   "acceptance_requires": false,
-  "commands": [170],
+  "commands": [
+    170
+  ],
   "domains": [],
   "supersedes": [],
-  "offers": { "production": true, "item_view": true, "bundle_world": true }
+  "offers": {
+    "production": true,
+    "item_view": true,
+    "bundle_world": true
+  }
 }

@@ -754,6 +754,7 @@ fn palette_door(key: &str, item: &impl Fn(&str) -> Option<ItemDefinition>) -> Pa
     let Some(open) = key_door
         .map(|(open, _)| open)
         .or_else(|| super::door_registry::level_door_of(closed))
+        .or_else(|| super::door_registry::quest_door_of(closed))
         .or_else(|| door::open_of(closed))
     else {
         return PaletteDoor::Sealed;

@@ -5,6 +5,6 @@
   "capability": 147,
   "payload_schema": "exiva-settings-v1.md#request",
   "result_schema": "exiva-settings-v1.md#reply",
-  "max_payload_bytes": 17,
-  "max_result_payload_bytes": 1
+  "max_payload_bytes": 30,
+  "max_result_payload_bytes": 4603
 }

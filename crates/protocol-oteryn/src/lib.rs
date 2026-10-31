@@ -67,6 +67,7 @@ pub mod house;
 pub mod house_move_out;
 pub mod house_podium;
 pub mod house_transfer;
+pub mod house_wrap;
 pub mod imbuement;
 pub mod inspection;
 pub mod item_forge;

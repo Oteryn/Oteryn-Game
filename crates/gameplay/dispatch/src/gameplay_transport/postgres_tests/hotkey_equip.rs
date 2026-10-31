@@ -78,12 +78,60 @@ fn scenario_options(
         started,
         occupied,
         extra_quiver,
-        false,
+        ScenarioMode::Normal,
     )
 }
 
 pub(super) fn coalescing_scenario() -> TestResult {
-    scenario_options_impl(false, false, false, false, None, false, true)
+    scenario_options_impl(
+        false,
+        false,
+        false,
+        false,
+        None,
+        false,
+        ScenarioMode::Coalescing,
+    )
+}
+
+#[derive(Clone, Copy)]
+enum ScenarioMode {
+    Normal,
+    Coalescing,
+    Pouch,
+    ForeignPouch,
+    Managed,
+}
+
+#[test]
+fn hotkey_equip_postgres_pouch_source_replay_and_foreign_refusal() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-pouch", || {
+        scenario_options_impl(false, false, true, false, None, false, ScenarioMode::Pouch)?;
+        scenario_options_impl(
+            false,
+            false,
+            true,
+            false,
+            None,
+            false,
+            ScenarioMode::ForeignPouch,
+        )
+    })
+}
+
+#[test]
+fn hotkey_equip_postgres_managed_destination_replay() -> TestResult {
+    super::kill_reward_e2e::scenario_thread::run("hotkey-managed", || {
+        scenario_options_impl(
+            false,
+            false,
+            true,
+            false,
+            None,
+            false,
+            ScenarioMode::Managed,
+        )
+    })
 }
 
 fn scenario_options_impl(
@@ -93,8 +141,12 @@ fn scenario_options_impl(
     started: bool,
     occupied: Option<bool>,
     extra_quiver: bool,
-    coalescing: bool,
+    mode: ScenarioMode,
 ) -> TestResult {
+    let coalescing = matches!(mode, ScenarioMode::Coalescing);
+    let pouch = matches!(mode, ScenarioMode::Pouch | ScenarioMode::ForeignPouch);
+    let foreign = matches!(mode, ScenarioMode::ForeignPouch);
+    let managed = matches!(mode, ScenarioMode::Managed);
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "hotkey_equip", true, false).await?;
@@ -240,6 +292,28 @@ fn scenario_options_impl(
             }
             tx.commit().await?;
         }
+        if pouch || managed {
+            let mut tx = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *tx)
+                .await?;
+            if pouch {
+                sqlx::query("DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(71).as_slice()).execute(&mut *tx).await?;
+                sqlx::query("UPDATE game_item_instances SET definition_production_key='oteryn:item.tibia.i23721' WHERE item_instance_id=encode($1,'hex')::uuid")
+                    .bind(id(71).as_slice()).execute(&mut *tx).await?;
+                if foreign {
+                    sqlx::query("INSERT INTO game_character_roots(character_id,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,name) SELECT encode($1,'hex')::uuid,account_id,world_id,lifecycle,character_revision,profile_revision,ruleset_revision,content_revision,starter_template_revision,'Hotkey Foreign' FROM game_character_roots WHERE character_id=encode($2,'hex')::uuid")
+                        .bind(id(90).as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+                }
+                sqlx::query("INSERT INTO game_item_character_inbox_locations(item_instance_id,character_id,world_id,ordinal) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1)")
+                    .bind(id(71).as_slice()).bind(id(if foreign {90} else {41}).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+            } else {
+                sqlx::query("INSERT INTO game_character_quick_loot_settings(character_id,unassigned_container_id,committed_character_revision) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1)")
+                    .bind(id(41).as_slice()).bind(id(71).as_slice()).execute(&mut *tx).await?;
+            }
+            tx.commit().await?;
+        }
         let mut admitted = deps.admitted;
         admitted.item_fence = Some(fence);
         admitted.first_entry = FirstEntryOutcome::Positioned;
@@ -311,10 +385,14 @@ fn scenario_options_impl(
                 client.shutdown().await?;
                 return Ok(());
             }
-            if feared {
+            if feared || foreign {
                 assert_eq!(
                     send(&mut client, 1, &request, protocol::CommandStatus::Accepted).await?,
-                    ItemMoveOutcome::Rejected
+                    if foreign {
+                        ItemMoveOutcome::Stale
+                    } else {
+                        ItemMoveOutcome::Rejected
+                    }
                 );
                 assert_eq!(equipped_count(pool).await?, 0);
                 let receipts: i64 =
@@ -437,6 +515,30 @@ fn scenario_options_impl(
                 ItemMoveOutcome::Moved
             );
             assert_eq!(equipped_count(pool).await?, 0);
+            if managed || pouch {
+                let query = if managed {
+                    "SELECT count(*) FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid"
+                } else {
+                    "SELECT count(*) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid"
+                };
+                let count: i64 = sqlx::query_scalar(query)
+                    .bind(id(100).as_slice())
+                    .bind(id(if managed { 71 } else { 41 }).as_slice())
+                    .fetch_one(pool)
+                    .await?;
+                assert_eq!(count, 1);
+                assert_eq!(
+                    send(
+                        &mut client,
+                        3,
+                        &request,
+                        protocol::CommandStatus::DuplicateReplay
+                    )
+                    .await?,
+                    ItemMoveOutcome::Moved
+                );
+                assert_eq!(equipped_count(pool).await?, 0);
+            }
             assert_eq!(
                 send(&mut client, 4, &request, protocol::CommandStatus::Accepted).await?,
                 ItemMoveOutcome::Moved
@@ -488,7 +590,7 @@ fn scenario_options_impl(
                     .fetch_one(&harness.pool)
                     .await?;
             assert_eq!(receipts, 3);
-        } else if feared {
+        } else if feared || foreign {
             assert!(equipment.items.is_empty());
         } else {
             assert_eq!(equipment.items.len(), 1);
@@ -528,8 +630,17 @@ fn scenario_options_impl(
                 sqlx::query_scalar("SELECT count(*) FROM game_equipment_nested_removals")
                     .fetch_one(&harness.pool)
                     .await?;
-            assert_eq!(evidence, if occupied == Some(true) { 0 } else { 1 });
-            if occupied != Some(true) {
+            assert_eq!(
+                evidence,
+                if occupied == Some(true) || foreign {
+                    0
+                } else if managed {
+                    2
+                } else {
+                    1
+                }
+            );
+            if occupied != Some(true) && !foreign {
                 let mut tx = harness.pool.begin().await?;
                 sqlx::query("SET LOCAL ROLE oteryn_game_runtime")
                     .execute(&mut *tx)
@@ -538,6 +649,12 @@ fn scenario_options_impl(
                 tx.rollback().await?;
             }
         }
+        if foreign {
+            let unchanged: (String, i64) = sqlx::query_as("SELECT i.state_revision::text,(SELECT count(*) FROM game_item_nested_entries e WHERE e.item_instance_id=i.item_instance_id AND e.parent_item_instance_id=encode($2,'hex')::uuid) FROM game_item_instances i WHERE i.item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(100).as_slice()).bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
+            assert_eq!(unchanged, ("1".into(), 1));
+        }
+        eprintln!("PG_MARKER hotkey-real-route pouch={pouch} foreign={foreign} managed={managed}");
         if coalescing {
             eprintln!(
                 "PKG7_POSTGRES_EXECUTED: burst 3,4,5; zero cancelled receipts; replay 6; durable reload; PostgreSQL 18.6"

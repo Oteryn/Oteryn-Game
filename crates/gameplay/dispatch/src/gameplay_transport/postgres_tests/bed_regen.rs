@@ -25,7 +25,11 @@ async fn seed(h: &Harness, freed: bool) -> TestResult {
     sqlx::query(include_str!(
         "../../../../../../apps/game-server/tests/support/owned_house_fixture.sql"
     ))
-        .bind(id(42).as_slice()).bind("oteryn:content.house.bed_regen").bind(id(41).as_slice()).execute(&h.pool).await?;
+    .bind(id(42).as_slice())
+    .bind("oteryn:content.house.bed_regen")
+    .bind(id(41).as_slice())
+    .execute(&h.pool)
+    .await?;
     sqlx::query("INSERT INTO game_house_bed_sleepers VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'oteryn:content.house.bed_regen',100,200,-7,1,'male',$3,NULL,NULL)")
         .bind(id(41).as_slice()).bind(id(42).as_slice()).bind(slept).execute(&h.pool).await?;
     sqlx::query("INSERT INTO game_house_bed_sleep_receipts VALUES(encode($1,'hex')::uuid,1,jsonb_build_array(encode($2,'hex')::uuid,encode($3,'hex')::uuid,'oteryn:content.house.bed_regen',1,1,1,'transport',100,200,-7,'male',6),$4)")
@@ -110,6 +114,10 @@ fn scenario(freed: bool) -> TestResult {
         let stored: (i32,i32,Vec<i32>) = sqlx::query_as("SELECT health,mana,rest FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!((stored.0, stored.1, stored.2[0], stored.2[1]), expected);
+        eprintln!(
+            "PG_MARKER bed-sleep-real-settlement-soul freed={freed} soul={}",
+            stored.2[0]
+        );
         assert_eq!(&stored.2[2..], &[1234, 567]);
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_house_bed_sleepers")

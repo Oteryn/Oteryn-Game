@@ -120,3 +120,6 @@ pub mod quest_log;
 /// Spell command execution and feedback.
 #[path = "features/local-spell-action-bar/mod.rs"]
 pub mod spell;
+
+/// Server-owned Exiva settings wire types.
+pub use oteryn_session::exiva;
