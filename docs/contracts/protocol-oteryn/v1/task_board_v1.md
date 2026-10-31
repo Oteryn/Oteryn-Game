@@ -4,7 +4,8 @@
 
 TASKBOARD-FULL-1 replaces the fixed TASKBOARD-1 gameplay choices for P04/P05.
 Capability **72** and command **89** remain the owning route; no capability,
-command or mechanic number is added. The expanded mechanic is initially offered
+command or mechanic number is added; the existing mechanic gains offer order 560.
+The expanded mechanic is initially offered
 only in `BUNDLE_WORLD_OFFERED_CAPABILITIES`. An active native gameplay catalogue,
 the existing composed admission checks and the current Character/session-generation
 fence remain mandatory.
@@ -39,7 +40,7 @@ unknown fields, and at most **192 bytes**.
 | 12 | Claim daily reroll | 0 | empty |
 | 13 | Assign/clear preferred creature | slot 0..4 | canonical race or empty |
 | 14 | Assign/clear unwanted creature | slot 0..4 | canonical race or empty |
-| 15 | Unlock preferred/unwanted list slot | slot 0..4 | empty |
+| 15 | Unlock next preferred/unwanted list slot | 0 | empty |
 | 16 | Buy task-shop offer | offered zero-based index | empty |
 | 17 | Buy Bounty Talisman | 0 | empty |
 | 18 | Upgrade talisman | path 0..3 | empty |
@@ -61,7 +62,8 @@ The full reply is bounded by **16384 bytes**, nine kill rows (including the
 any-creature row), nine delivery rows, three bounty offers, five preference
 slots, exactly four talisman paths and 32 shop rows. Bounds never truncate a
 reply. Canonical decoding rejects duplicated scalars, unknown fields, invalid
-booleans, progress above its requirement and overlong/non-canonical race keys.
+booleans, unknown refusal codes, balances outside their owner ranges, kill/bounty
+progress above its requirement and overlong/non-canonical race keys.
 
 The full response includes the week identity, all three balances, weekly
 progress and pending rewards, bounty offers/active progress, daily-reroll
@@ -70,10 +72,52 @@ shop offer data. Item identifiers in delivery/shop rows identify donor catalogue
 entries; the server resolves them against the active canonical Item catalogue
 before any custody write.
 
+For an undelivered task, delivery `current` is the recorded count available from
+carried inventory, stash and depot, excluding Inbox. It may exceed `required`.
+Crystal `201189f` `src/server/network/protocol/protocolgame.cpp:6210–6222` sums
+three unsigned 32-bit counts; the displayed result preserves that modulo 2^32
+behavior without clamping. Once delivered, `current` is exactly `required`, not
+the remaining owned quantity. The count is part of the recorded reply snapshot;
+replay does not recount the current inventory.
+
 Each command receipt binds the session command identity to its original action.
 A replay returns the stored result snapshot and does not repeat any durable
 effect. A different payload under the same command identity is refused.
 Refused commands do not spend currency or consume items.
+
+| Refusal | Meaning |
+| --- | --- |
+| 0 | Success |
+| 1 | Invalid rule input |
+| 2 | Wrong board or bounty state |
+| 3 | Level below the selected difficulty's minimum |
+| 4 | Insufficient points, tokens, or other rule resources |
+| 5 | Free-reroll cooldown has not elapsed |
+| 6 | Progression, list, or daily-claim limit reached |
+| 7 | Permanent offer already owned |
+| 8 | Addon requires the base outfit |
+| 9 | Invalid server random draw |
+| 10 | Insufficient qualified creature or delivery catalogue |
+| 11 | Checked rule arithmetic overflow |
+| 12 | Retired legacy select/claim action |
+| 13 | Insufficient deliverable items |
+| 14 | Existing gold owner refused insufficient funds |
+| 15 | Item or decoration-kit delivery is unavailable |
+| 16 | Existing item owner refused capacity/change placement |
+| 17 | Cosmetic entitlement lacks an admitted target/grant mapping |
+
+Hunting task points use the existing nonnegative BIGINT range, through
+`i64::MAX`. Bounty points and soulseals each range from zero through `u32::MAX`,
+matching the donor's storage widths. The full wire fields remain uint64.
+PR #2764 answer 6543406906 replaces the historical one-billion track bounds;
+existing balances and definition pins are preserved. A reward exceeding a bound
+records arithmetic-overflow refusal atomically and returns that refusal on replay.
+
+The reroll balance uses uint64 on the wire and the existing nonnegative BIGINT
+durable owner, through `i64::MAX`. Ten is only the daily-claim threshold; completed
+bounties may add tokens above ten. The maximum talisman level remains 355, following the accepted
+repository profile in `docs/reference/NEWS-HIST-TALISMAN-1.md:15–27` and the PR's
+coordinator decisions. No saved level is converted.
 
 The calendar week is derived from committed World reset epochs owned by the
 server-save/reset owner. A connection or node wall clock cannot advance it.

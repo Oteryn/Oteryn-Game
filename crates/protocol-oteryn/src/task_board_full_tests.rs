@@ -113,7 +113,7 @@ fn full_task_board_request_roundtrips_every_action_and_rejects_ambiguous_fields(
         (6, 9),
         (8, 3),
         (13, 5),
-        (15, 5),
+        (15, 1),
         (16, 32),
         (18, 4),
     ] {
@@ -247,4 +247,132 @@ fn full_task_board_expanded_board_is_bounded_without_truncation() {
         .deliveries
         .push(board.weekly.deliveries[0].clone());
     assert_eq!(encode_reply(&board), Err(Error::LimitExceeded));
+}
+
+#[test]
+fn bounty_token_balance_is_not_limited_by_the_daily_claim_limit() {
+    // Owner decision #2764/6542842489: completion awards keep the existing wide
+    // resource balance; ten is only the daily-claim refusal threshold.
+    for balance in [10, 11, 255, 256, i64::MAX as u64] {
+        let mut value = reply();
+        value.bounty.rerolls = balance;
+        let bytes = encode_reply(&value).expect("wide token balance encodes");
+        assert_eq!(decode_reply(&bytes), Ok(value));
+    }
+}
+
+// Mutate one canonical field in a valid encoded fixture so decoder rejection is
+// checked independently of the public encoder's refusal to construct it.
+fn replace_encoded_field(bytes: &[u8], field: u64, replacement: &[u8]) -> Option<Vec<u8>> {
+    let mut at = 0;
+    while at < bytes.len() {
+        let start = at;
+        let tag = read_varint(bytes, &mut at).ok()?;
+        match tag & 7 {
+            0 => {
+                read_varint(bytes, &mut at).ok()?;
+            }
+            2 => {
+                read_bytes(bytes, &mut at).ok()?;
+            }
+            _ => return None,
+        }
+        if tag >> 3 == field {
+            let mut changed = bytes[..start].to_vec();
+            changed.extend_from_slice(replacement);
+            changed.extend_from_slice(&bytes[at..]);
+            return Some(changed);
+        }
+    }
+    None
+}
+
+#[test]
+fn full_task_board_reply_closes_refusals_and_owner_balance_ranges() {
+    let mut empty_balances = reply();
+    empty_balances.points = 0;
+    empty_balances.bounty_points = 0;
+    empty_balances.soulseals = 0;
+    empty_balances.bounty.rerolls = 0;
+    let bytes = encode_reply(&empty_balances)
+        .expect("zero balances are present values, not missing fields");
+    assert_eq!(decode_reply(&bytes), Ok(empty_balances));
+
+    let mut boundary = reply();
+    boundary.points = i64::MAX.unsigned_abs();
+    boundary.bounty_points = u64::from(u32::MAX);
+    boundary.soulseals = u64::from(u32::MAX);
+    boundary.bounty.rerolls = i64::MAX.unsigned_abs();
+    for refusal in 0..=17 {
+        boundary.refusal = refusal;
+        let bytes =
+            encode_reply(&boundary).expect("all closed refusals and exact owner maxima encode");
+        assert_eq!(decode_reply(&bytes), Ok(boundary.clone()));
+    }
+    let valid_bytes = encode_reply(&boundary).expect("boundary fixture");
+    for (field, value) in [
+        (1, 18),
+        (1, 255),
+        (3, i64::MAX.unsigned_abs() + 1),
+        (4, u64::from(u32::MAX) + 1),
+        (5, u64::from(u32::MAX) + 1),
+    ] {
+        let mut invalid = boundary.clone();
+        match field {
+            1 => {
+                invalid.refusal = u8::try_from(value).expect("refusal fixture fits its wire field")
+            }
+            3 => invalid.points = value,
+            4 => invalid.bounty_points = value,
+            _ => invalid.soulseals = value,
+        }
+        assert_eq!(
+            encode_reply(&invalid),
+            Err(Error::Malformed),
+            "field {field}: {value}"
+        );
+        let mut replacement = Vec::new();
+        push_varint_field(&mut replacement, field, value);
+        let malformed = replace_encoded_field(&valid_bytes, field, &replacement)
+            .expect("existing scalar field");
+        assert_eq!(
+            decode_reply(&malformed),
+            Err(Error::Malformed),
+            "decoded field {field}: {value}"
+        );
+    }
+
+    let mut invalid = boundary.clone();
+    invalid.bounty.rerolls = i64::MAX.unsigned_abs() + 1;
+    assert_eq!(encode_reply(&invalid), Err(Error::Malformed));
+    let valid_bounty = encode_bounty(&boundary.bounty).expect("valid nested bounty fixture");
+    let mut replacement = Vec::new();
+    push_varint_field(&mut replacement, 5, invalid.bounty.rerolls);
+    let malformed_bounty =
+        replace_encoded_field(&valid_bounty, 5, &replacement).expect("existing reroll field");
+    let mut nested = Vec::new();
+    push_message_field(&mut nested, 7, &malformed_bounty);
+    let malformed =
+        replace_encoded_field(&valid_bytes, 7, &nested).expect("existing bounty message");
+    assert_eq!(decode_reply(&malformed), Err(Error::Malformed));
+}
+
+#[test]
+fn full_task_board_delivery_availability_can_exceed_the_requirement() {
+    let mut value = reply();
+    let required = value.weekly.deliveries[0].required;
+    for available in [0, required - 1, required, required + 1, u32::MAX] {
+        value.weekly.deliveries[0].current = available;
+        let bytes =
+            encode_reply(&value).expect("undelivered availability is not capped by required");
+        assert_eq!(decode_reply(&bytes), Ok(value.clone()));
+    }
+    value.weekly.deliveries[0].delivered = true;
+    value.weekly.deliveries[0].current = required;
+    let bytes = encode_reply(&value).expect("completed delivery reports its required quantity");
+    assert_eq!(decode_reply(&bytes), Ok(value.clone()));
+    for invalid in [required - 1, required + 1, u32::MAX] {
+        value.weekly.deliveries[0].current = invalid;
+        assert_eq!(encode_reply(&value), Err(Error::Malformed));
+    }
 }

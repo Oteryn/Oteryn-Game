@@ -4,7 +4,7 @@ package oteryn.protocol.v1;
 // duplicate/unknown fields refused; the reply decodes only in its canonical encoding.
 // No client identity, fence, kill count or time input: the server's quest store decides.
 message TaskBoardRequestV1 {
-  uint32 action = 1; // 0 query, 1 select task, 2 claim task, 3 upgrade talisman
+  uint32 action = 1; // 0 legacy query, 1/2 retired (refused), 3 upgrade talisman
   uint32 task = 2; // 1-based task 1..5 or talisman path 1..4; 0 for a query
 }
 message TaskBoardTaskV1 {
@@ -18,7 +18,7 @@ message TaskBoardReplyV1 {
   uint64 kills = 3; // 0 when none active, else <= the active task's required
   uint64 points = 4; // task points, <= i64::MAX
   repeated TaskBoardTaskV1 tasks = 5; // <= 5, in task-number order
-  uint64 bounty_points = 6; // separate from weekly task points, <= i64::MAX
+  uint64 bounty_points = 6; // separate from weekly task points, <= u32::MAX
   // Exactly four unpacked values each, ordered damage, life leech, loot, Bestiary.
   repeated uint64 talisman_levels = 7 [packed = false];
   repeated uint64 talisman_bonuses = 8 [packed = false]; // hundredths of one percent
@@ -39,7 +39,7 @@ message TaskBoardKillV1 {
 message TaskBoardDeliveryV1 {
   uint32 item = 1; // donor uint16 identifier, resolved to canonical custody identity
   uint32 required = 2;
-  uint32 current = 3;
+  uint32 current = 3; // undelivered: recorded carried+stash+depot count modulo 2^32; delivered: required
   bool delivered = 4;
 }
 message TaskBoardWeeklyV1 {
@@ -71,7 +71,7 @@ message TaskBoardBountyV1 {
   uint32 difficulty = 2;
   uint32 selected = 3; // 0 absent, otherwise original index +1
   uint32 current = 4;
-  uint32 rerolls = 5;
+  uint64 rerolls = 5; // 0..i64::MAX; daily threshold10 is not a balance cap
   uint64 daily_reroll_at = 6;
   repeated TaskBoardBountyOfferV1 offers = 7; // <=3
   optional TaskBoardBountyOfferV1 active = 8;
@@ -92,11 +92,11 @@ message TaskBoardShopOfferV1 {
   bool bought = 7;
 }
 message TaskBoardFullReplyV1 {
-  uint32 refusal = 1;
+  uint32 refusal = 1; // closed codes 0..17
   uint64 period = 2;
-  uint64 points = 3;
-  uint64 bounty_points = 4;
-  uint64 soulseals = 5;
+  uint64 points = 3; // existing nonnegative BIGINT owner, <= i64::MAX
+  uint64 bounty_points = 4; // donor uint32 range, checked before every reward
+  uint64 soulseals = 5; // donor uint32 range, checked before every reset payout
   TaskBoardWeeklyV1 weekly = 6;
   TaskBoardBountyV1 bounty = 7;
   repeated TaskBoardTalismanPathV1 talisman = 8; // exactly4

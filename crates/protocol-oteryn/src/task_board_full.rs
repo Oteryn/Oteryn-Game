@@ -30,11 +30,11 @@ impl Request {
     fn valid(&self) -> bool {
         let selection = usize::from(self.selection);
         let selected = match self.action {
-            4 | 7 | 9 | 11 | 12 | 17 => selection == 0,
+            4 | 7 | 9 | 11 | 12 | 15 | 17 => selection == 0,
             5 | 10 | 18 => selection < 4,
             6 => selection < MAX_DELIVERY_TASKS,
             8 => selection < MAX_BOUNTY_OFFERS,
-            13..=15 => selection < MAX_LIST_SLOTS,
+            13 | 14 => selection < MAX_LIST_SLOTS,
             16 => selection < MAX_SHOP_OFFERS,
             _ => false,
         };
@@ -99,6 +99,8 @@ pub struct DeliveryTask {
     /// Donor item identifier; custody resolves it to the admitted canonical Item identity.
     pub item: u16,
     pub required: u32,
+    /// Undelivered: recorded carried + stash + depot availability, modulo 2^32.
+    /// Delivered: exactly `required`. Crystal protocolgame.cpp:6210-6222.
     pub current: u32,
     pub delivered: bool,
 }
@@ -140,7 +142,7 @@ pub struct Bounty {
     /// Zero when no task is selected; otherwise the original offer slot plus one.
     pub selected: u8,
     pub current: u32,
-    pub rerolls: u8,
+    pub rerolls: u64,
     pub daily_reroll_at: u64,
     pub offers: Vec<BountyOffer>,
     /// The selected offer remains available even after the generated list changes.
@@ -245,11 +247,7 @@ fn decode_kill(bytes: &[u8]) -> Result<KillTask, Error> {
     })
 }
 fn encode_delivery(task: &DeliveryTask) -> Result<Vec<u8>, Error> {
-    if task.item == 0
-        || task.required == 0
-        || task.current > task.required
-        || (task.delivered && task.current != task.required)
-    {
+    if task.item == 0 || task.required == 0 || (task.delivered && task.current != task.required) {
         return Err(Error::Malformed);
     }
     let mut out = Vec::new();
@@ -426,7 +424,6 @@ fn encode_bounty(board: &Bounty) -> Result<Vec<u8>, Error> {
     if board.state > 3
         || board.difficulty > 3
         || usize::from(board.selected) > MAX_BOUNTY_OFFERS
-        || board.rerolls > 10
         || board
             .active
             .as_ref()
@@ -440,7 +437,7 @@ fn encode_bounty(board: &Bounty) -> Result<Vec<u8>, Error> {
         (2, u64::from(board.difficulty)),
         (3, u64::from(board.selected)),
         (4, u64::from(board.current)),
-        (5, u64::from(board.rerolls)),
+        (5, board.rerolls),
         (6, board.daily_reroll_at),
     ] {
         push_varint_field(&mut out, field, value);
@@ -467,7 +464,7 @@ fn decode_bounty(bytes: &[u8]) -> Result<Bounty, Error> {
             16 => set_once(&mut difficulty, u8_value(bytes, &mut at)?)?,
             24 => set_once(&mut selected, u8_value(bytes, &mut at)?)?,
             32 => set_once(&mut current, u32_value(bytes, &mut at)?)?,
-            40 => set_once(&mut rerolls, u8_value(bytes, &mut at)?)?,
+            40 => set_once(&mut rerolls, read_varint(bytes, &mut at)?)?,
             48 => set_once(&mut daily_reroll_at, read_varint(bytes, &mut at)?)?,
             58 => bounded_push(
                 &mut offers,
@@ -573,6 +570,14 @@ fn decode_shop(bytes: &[u8]) -> Result<ShopOffer, Error> {
 pub fn encode_reply(reply: &Reply) -> Result<Vec<u8>, Error> {
     if reply.shop.len() > MAX_SHOP_OFFERS {
         return Err(Error::LimitExceeded);
+    }
+    if reply.refusal > 17
+        || reply.points > i64::MAX.unsigned_abs()
+        || reply.bounty_points > u64::from(u32::MAX)
+        || reply.soulseals > u64::from(u32::MAX)
+        || reply.bounty.rerolls > i64::MAX.unsigned_abs()
+    {
+        return Err(Error::Malformed);
     }
     let mut out = Vec::new();
     for (field, value) in [
