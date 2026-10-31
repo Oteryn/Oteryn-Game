@@ -805,7 +805,8 @@ mod tests {
         }
         assert_eq!(state.gold, before - 4 * 250_000);
         reveal(&mut state, 2, GemQuality::Lesser, vec![3]);
-        for yield_amount in [1, 6] {
+        // Crystal 201189f player_wheel.cpp:1311-1312: Regular yields 2..=10.
+        for yield_amount in [1, 11] {
             refused(
                 &mut state,
                 AtelierAction::Dismantle {
@@ -819,10 +820,10 @@ mod tests {
             &mut state,
             AtelierAction::Dismantle {
                 id: 1,
-                yield_amount: 5,
+                yield_amount: 10,
             },
         );
-        assert_eq!(state.fragments[&FragmentKind::Basic], 5);
+        assert_eq!(state.fragments[&FragmentKind::Basic], 10);
         assert!(!state.gems.contains_key(&1));
     }
 
