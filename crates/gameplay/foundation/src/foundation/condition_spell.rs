@@ -289,8 +289,104 @@ impl<S: Clone> ConditionStore<S> {
     }
 
     pub fn attributes_at(&self, now: u64) -> Option<ConditionValues> {
+        let base = self
+            .active_at(super::ConflictKey::Attributes, now)
+            .map(|v| v.definition.values);
+        let hex = self
+            .active_at(super::ConflictKey::IntenseHex, now)
+            .map(|v| v.definition.values);
+        let (
+            duration_ms,
+            critical_chance_percent,
+            critical_extra_percentage_points,
+            incoming_reduction_percent,
+        ) = match (base, hex) {
+            (
+                Some(ConditionValues::Attributes {
+                    duration_ms,
+                    critical_chance_percent,
+                    critical_extra_percentage_points,
+                    incoming_reduction_percent,
+                    ..
+                }),
+                _,
+            ) => (
+                duration_ms,
+                critical_chance_percent,
+                critical_extra_percentage_points,
+                incoming_reduction_percent,
+            ),
+            (_, Some(ConditionValues::IntenseHex { duration_ms, .. })) => (duration_ms, 0, 0, 0),
+            _ => return None,
+        };
+        Some(ConditionValues::Attributes {
+            duration_ms,
+            critical_chance_percent,
+            critical_extra_percentage_points,
+            damage_dealt_percent: u32::try_from(self.damage_dealt_percent_at(now, 0)?).ok()?,
+            incoming_reduction_percent,
+        })
+    }
+
+    /// Saved source changes, not a recomputation from whichever other buff exists now.
+    pub fn attribute_damage_delta_at(&self, now: u64) -> i32 {
         self.active_at(super::ConflictKey::Attributes, now)
-            .map(|v| v.definition.values)
+            .map_or(0, |value| value.buff_delta.damage_dealt)
+    }
+
+    pub fn intense_hex_delta_at(&self, now: u64) -> super::ConditionBuffDelta {
+        self.active_at(super::ConflictKey::IntenseHex, now)
+            .map_or_else(Default::default, |value| value.buff_delta)
+    }
+
+    pub fn damage_dealt_percent_at(&self, now: u64, external_delta: i32) -> Option<i32> {
+        100_i32
+            .checked_add(self.attribute_damage_delta_at(now))?
+            .checked_add(self.intense_hex_delta_at(now).damage_dealt)?
+            .checked_add(external_delta)
+    }
+
+    /// A mirrored same-key Hex is one effect; otherwise include the canonical actor's
+    /// retained change alongside this player's current retained Attributes change.
+    pub fn damage_dealt_percent_with_hex_at(
+        &self,
+        now: u64,
+        canonical: super::ConditionBuffDelta,
+    ) -> Option<i32> {
+        let external = if self
+            .active_at(super::ConflictKey::IntenseHex, now)
+            .is_some()
+        {
+            0
+        } else {
+            canonical.damage_dealt
+        };
+        self.damage_dealt_percent_at(now, external)
+    }
+
+    pub fn healing_received_percent_with_hex_at(
+        &self,
+        now: u64,
+        canonical: super::ConditionBuffDelta,
+    ) -> Option<i32> {
+        let delta = if self
+            .active_at(super::ConflictKey::IntenseHex, now)
+            .is_some()
+        {
+            self.intense_hex_delta_at(now)
+        } else {
+            canonical
+        };
+        100_i32.checked_add(delta.healing_received)
+    }
+
+    pub fn healing_received_percent_at(&self, now: u64) -> u8 {
+        // Hex's admitted1..=100% is currently the sole healing-received buff family.
+        (100 + self.intense_hex_delta_at(now).healing_received) as u8
+    }
+
+    pub fn intense_hex_damage_percent_at(&self, now: u64) -> i32 {
+        100 + self.intense_hex_delta_at(now).damage_dealt
     }
     pub fn outfit_at(&self, now: u64) -> Option<u32> {
         match self

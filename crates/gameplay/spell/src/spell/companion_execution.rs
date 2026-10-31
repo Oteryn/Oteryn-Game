@@ -194,8 +194,30 @@ pub fn prepare_haste_owner_cast_with_caster(
         draw,
         qualified_caster,
     )?;
-    let updates =
-        stage_haste(&mut paid.next, profile, &companions, caster, facts).map_err(|_| rejected)?;
+    let external_damage_delta = if state
+        .conditions
+        .active_at(
+            oteryn_gameplay_domain::domain::condition::ConflictKey::IntenseHex,
+            facts.now,
+        )
+        .is_some()
+    {
+        0
+    } else {
+        runtime
+            .soulpit_hex_delta(caster, facts.now)
+            .map_err(|_| rejected)?
+            .damage_dealt
+    };
+    let updates = stage_haste(
+        &mut paid.next,
+        profile,
+        &companions,
+        caster,
+        facts,
+        external_damage_delta,
+    )
+    .map_err(|_| rejected)?;
     crate::movement::speed::player_step_duration(
         &ground,
         tile,
@@ -601,7 +623,8 @@ mod tests {
             ("swift foot", 320, 248, 10000, 10000),
         ] {
             let mut next = player.clone();
-            let updates = stage_haste(&mut next, &profile(name), &census, actor, &facts).unwrap();
+            let updates =
+                stage_haste(&mut next, &profile(name), &census, actor, &facts, 0).unwrap();
             assert_eq!(updates.len(), 1);
             assert_eq!(updates[0].0.actor, familiar);
             assert_eq!(
@@ -668,6 +691,7 @@ pub fn stage_haste(
     companions: &[crate::foundation::CompanionSnapshot],
     caster: crate::foundation::ExactActorRef,
     facts: &ApplicationFacts<'_>,
+    external_damage_delta: i32,
 ) -> Result<
     Vec<(
         crate::foundation::CompanionSnapshot,
@@ -839,12 +863,13 @@ pub fn stage_haste(
         )
         .ok_or(HasteExecutionError::UnsupportedProfile)?;
         for definition in [&attributes, &pacified] {
-            match staged.conditions.apply(
+            match staged.conditions.apply_with_external_damage_buff(
                 definition,
                 None,
                 oteryn_gameplay_foundation::foundation::condition::ConditionSourceKind::SelfUse,
                 &[],
                 facts,
+                external_damage_delta,
             ) {
                 Ok(_)
                 | Err(oteryn_gameplay_domain::domain::condition::ConditionRefusal::KeptCurrent) => {

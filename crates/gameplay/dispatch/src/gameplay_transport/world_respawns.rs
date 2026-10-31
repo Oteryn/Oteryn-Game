@@ -69,7 +69,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         tokio::pin!(ordinary);
         let bosses = self.run_boss_spawns(shutdown);
         tokio::pin!(bosses);
+        let echoes = self.run_echo_wardens(shutdown);
+        tokio::pin!(echoes);
+        let soulpits = self.run_soulpits(shutdown);
+        tokio::pin!(soulpits);
         std::future::poll_fn(|cx| {
+            if let std::task::Poll::Ready(exit) = soulpits.as_mut().poll(cx) {
+                return std::task::Poll::Ready(exit);
+            }
+            if let std::task::Poll::Ready(exit) = echoes.as_mut().poll(cx) {
+                return std::task::Poll::Ready(exit);
+            }
             if let std::task::Poll::Ready(exit) = bosses.as_mut().poll(cx) {
                 return std::task::Poll::Ready(exit);
             }

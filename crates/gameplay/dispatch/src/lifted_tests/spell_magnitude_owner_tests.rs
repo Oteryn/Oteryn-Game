@@ -16,6 +16,9 @@ use {
     },
 };
 
+#[path = "spell_magnitude_owner_tests/soulpit_hex.rs"]
+mod soulpit_hex;
+
 struct Fixture {
     runtime: ChannelRuntimeV1,
     caster: ExactActorRef,

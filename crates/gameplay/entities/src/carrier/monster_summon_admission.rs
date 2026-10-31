@@ -128,6 +128,16 @@ impl ChannelRuntimeV1 {
             self.carrier.occupied = occupied;
             return Err(e);
         }
+        if let Err(error) = self
+            .carrier
+            .inherit_soulpit_summon(&self.continuity, parent, child)
+        {
+            self.carrier.native_summons.remove_child(child);
+            self.carrier.slots = slots;
+            self.carrier.free_head = free;
+            self.carrier.occupied = occupied;
+            return Err(error);
+        }
         Ok(child)
     }
     pub fn retire_native_summons(
