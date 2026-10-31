@@ -1,6 +1,6 @@
 //! Paid travel corrections and qualified additions to admitted captain services.
 //! `travel_routes.json` projects source-correction-check and admission-evidence in
-//! docs/reference/content-prep/travel-content-1, plus the native S10S Yalahar addition.
+//! docs/reference/content-prep/travel-content-1, plus native S10S/S10T captain additions.
 //! Unmapped custom/quest guards stay held.
 use super::NpcServiceModel;
 use crate::content::{ProjectV2DefinitionRef, ProjectV2TravelRoute};
@@ -16,6 +16,8 @@ pub struct TravelRoute {
     pub carpet: bool,
     pub held: bool,
     pub yalahar_gate: bool,
+    pub yalahar_town_gate: Option<String>,
+    pub quest_gate: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -32,50 +34,81 @@ struct Correction {
     held: bool,
     #[serde(default)]
     yalahar_gate: bool,
+    #[serde(default)]
+    yalahar_town_gate: Option<String>,
+    #[serde(default)]
+    native_addition: bool,
+    #[serde(default)]
+    quest_gate: Option<String>,
 }
 
-pub fn resolve(model: &NpcServiceModel, services: &[ProjectV2DefinitionRef]) -> Vec<TravelRoute> {
+pub fn resolve(
+    model: &NpcServiceModel,
+    npc_key: &str,
+    services: &[ProjectV2DefinitionRef],
+) -> Vec<TravelRoute> {
     static CORRECTIONS: OnceLock<Vec<Correction>> = OnceLock::new();
     let corrections = CORRECTIONS.get_or_init(|| {
         serde_json::from_str(include_str!("travel_routes.json")).unwrap_or_default()
     });
-    services
+    let native_service = format!(
+        "oteryn:service.travel.{}",
+        npc_key.trim_start_matches("oteryn:npc.")
+    );
+    corrections
         .iter()
-        .filter_map(|service| model.services().get(service).map(|entry| (service, entry)))
-        .flat_map(|(service, entry)| {
-            let prefix = format!("{}/", service.key);
-            corrections.iter().filter_map(move |correction| {
-                let key = correction.key.strip_prefix(&prefix)?;
-                let mut route = entry
-                    .routes
-                    .iter()
-                    .find(|route| route.key == key)
-                    .or_else(|| {
-                        // S10S adds the qualified native route without modifying generated
-                        // legacy membership. It shares this captain's coordinate frame.
-                        if correction.yalahar_gate {
-                            entry.routes.first()
-                        } else {
-                            None
-                        }
-                    })?
-                    .clone();
-                route.key = key.to_owned();
-                route.price = correction.price;
-                route.premium = correction.premium;
-                route.min_level = None;
-                route.destination.x = correction.x;
-                route.destination.y = correction.y;
-                route.destination.floor = correction.floor;
-                Some(TravelRoute {
-                    service: service.key.clone(),
-                    route,
-                    keyword: correction.keyword.clone(),
-                    postman: correction.postman,
-                    carpet: correction.carpet,
-                    held: correction.held,
-                    yalahar_gate: correction.yalahar_gate,
-                })
+        .filter(|correction| {
+            services
+                .iter()
+                .any(|service| correction.key.starts_with(&format!("{}/", service.key)))
+                || (correction.native_addition
+                    && correction.key.starts_with(&format!("{native_service}/")))
+        })
+        .filter_map(|correction| {
+            let (service, key) = correction.key.rsplit_once('/')?;
+            let template = services
+                .iter()
+                .find(|reference| reference.key == service)
+                .and_then(|reference| model.services().get(reference))
+                .and_then(|entry| {
+                    entry
+                        .routes
+                        .iter()
+                        .find(|route| route.key == key)
+                        .or_else(|| entry.routes.first().filter(|_| correction.native_addition))
+                });
+            if template.is_none() && !correction.native_addition {
+                return None;
+            }
+            let mut route = template.cloned().unwrap_or(ProjectV2TravelRoute {
+                key: key.to_owned(),
+                destination: crate::content::ProjectV2TravelDestination {
+                    coordinate_frame: "global-target-2026-09-27".to_owned(),
+                    x: correction.x,
+                    y: correction.y,
+                    floor: correction.floor,
+                },
+                price: correction.price,
+                premium: correction.premium,
+                min_level: None,
+            });
+            route.key = key.to_owned();
+            route.price = correction.price;
+            route.premium = correction.premium;
+            route.min_level = None;
+            route.destination.x = correction.x;
+            route.destination.y = correction.y;
+            route.destination.floor = correction.floor;
+            Some(TravelRoute {
+                service: service.to_owned(),
+                route,
+                keyword: correction.keyword.clone(),
+                postman: correction.postman,
+                carpet: correction.carpet,
+                held: correction.held,
+                yalahar_gate: correction.yalahar_gate,
+                yalahar_town_gate: correction.yalahar_town_gate.clone(),
+                quest_gate: correction.quest_gate.clone(),
             })
         })
         .collect()
@@ -95,17 +128,17 @@ mod tests {
         let evidence: serde_json::Value = serde_json::from_slice(&std::fs::read(
             root.join("admission-evidence/evidence-00000-00194.json"),
         )?)?;
-        assert_eq!(corrections.len(), 196);
+        assert_eq!(corrections.len(), 227);
         let keys = corrections
             .iter()
             .map(|row| &row.key)
             .collect::<std::collections::BTreeSet<_>>();
-        assert_eq!(keys.len(), 196);
+        assert_eq!(keys.len(), 227);
         let sources = source["rows"].as_array().ok_or("source rows")?;
         let evidence = evidence["records"].as_array().ok_or("evidence rows")?;
         let corrected = corrections
             .iter()
-            .filter(|row| row.key != "oteryn:service.travel.captain_seagull/yalahar")
+            .filter(|row| !row.native_addition)
             .collect::<Vec<_>>();
         assert_eq!(corrected.len(), 195);
         assert_eq!(sources.len(), 195);
@@ -226,7 +259,7 @@ mod tests {
             .find(|(reference, _)| reference.key == "oteryn:npc.captain_seagull")
             .map(|(_, npc)| npc)
             .ok_or("Captain Seagull")?;
-        let routes = super::resolve(&model, &seagull.services);
+        let routes = super::resolve(&model, "oteryn:npc.captain_seagull", &seagull.services);
         let route = routes
             .iter()
             .find(|route| route.keyword == "yalahar")
@@ -242,6 +275,114 @@ mod tests {
         );
         assert!(route.yalahar_gate);
         assert!(!route.held);
+        Ok(())
+    }
+
+    // Crystal 201189f8: captain_bluebear.lua:70,83,88; captain_fearless.lua:79;
+    // captain_greyhound.lua:69; captain_max.lua:77-78; captain_sinbeard.lua:101;
+    // captain_seahorse.lua:60,74; charles.lua:120-129; jack_fate.lua:81-82;
+    // karith.lua:96-200,247-325.
+    #[test]
+    fn crystal_remaining_captain_routes_resolve_through_native_overlay()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            &std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../content"),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )?;
+        let model = catalogue.service_model_for_project()?;
+        for (npc, route, price, destination) in [
+            ("captain_bluebear", "yalahar", 200, (32_816, 31_272, 6)),
+            ("captain_fearless", "yalahar", 185, (32_816, 31_272, 6)),
+            ("captain_greyhound", "yalahar", 185, (32_816, 31_272, 6)),
+            ("captain_max", "calassa", 200, (31_911, 32_710, 6)),
+            ("captain_sinbeard", "yalahar", 230, (32_816, 31_272, 6)),
+            ("captain_seahorse", "oramond", 200, (33_479, 31_985, 7)),
+            ("charles", "liberty_bay", 50, (32_285, 32_892, 6)),
+            ("jack_fate", "goroma", 0, (32_161, 32_558, 6)),
+            ("karith", "port_hope", 260, (32_527, 32_784, 6)),
+            ("captain_waverider", "peg leg", 50, (32_346, 32_625, 7)),
+            ("captain_waverider", "passage", 200, (32_131, 32_913, 7)),
+            ("captain_jack_rat", "safe", 0, (33_839, 31_222, 5)),
+        ] {
+            let key = format!("oteryn:npc.{npc}");
+            let entry = model
+                .npcs()
+                .iter()
+                .find(|(reference, _)| reference.key == key)
+                .map(|(_, npc)| npc)
+                .ok_or(key)?;
+            let found = super::resolve(&model, &format!("oteryn:npc.{npc}"), &entry.services)
+                .into_iter()
+                .find(|candidate| candidate.keyword == route)
+                .ok_or(route)?;
+            assert_eq!(found.route.price, price);
+            assert_eq!(
+                found.route.premium,
+                !matches!(npc, "captain_jack_rat" | "captain_waverider")
+            );
+            assert_eq!(
+                (
+                    found.route.destination.x,
+                    found.route.destination.y,
+                    found.route.destination.floor
+                ),
+                destination
+            );
+        }
+        Ok(())
+    }
+    #[test]
+    fn remaining_captain_routes_preserve_unlocks_and_custom_fares()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let rows: Vec<super::Correction> =
+            serde_json::from_str(include_str!("travel_routes.json"))?;
+        for (key, track) in [
+            (
+                "captain_max/calassa",
+                "oteryn:quest-progress/quest/u7_6/explorer_society/calassa_quest",
+            ),
+            (
+                "jack_fate/goroma",
+                "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_goroma",
+            ),
+            (
+                "captain_waverider/meriana",
+                "oteryn:quest-progress/quest/u7_8/the_shattered_isles/access_to_meriana",
+            ),
+            (
+                "captain_jack_rat/safe",
+                "oteryn:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
+            ),
+        ] {
+            let row = rows
+                .iter()
+                .find(|row| row.key == format!("oteryn:service.travel.{key}"))
+                .ok_or(key)?;
+            assert_eq!(row.quest_gate.as_deref(), Some(track));
+            assert!(!row.held);
+        }
+        for row in rows
+            .iter()
+            .filter(|row| row.key.starts_with("oteryn:service.travel.karith/"))
+        {
+            assert!(!row.postman);
+            assert!(row.yalahar_town_gate.is_some());
+        }
+        // These donor routes cannot be safely offered with the currently admitted owners.
+        for key in [
+            "captain_max/yalahar",
+            "captain_bluebear/targuna",
+            "captain_bluebear/carlin",
+            "captain_seahorse/venore",
+        ] {
+            assert!(
+                rows.iter()
+                    .find(|row| row.key == format!("oteryn:service.travel.{key}"))
+                    .ok_or(key)?
+                    .held
+            );
+        }
         Ok(())
     }
 }

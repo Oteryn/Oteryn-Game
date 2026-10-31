@@ -114,7 +114,7 @@ fn scenario() -> TestResult {
             base_room,
             crate::spell::cast::v1_spell_book().map_err(debug)?,
         )?;
-        // One player plus three NPCs need four carrier slots; the shared seam defaults to two.
+        // One player, the original three NPCs and ten S10T captains.
         let mut runtime = crate::foundation::ChannelRuntimeV1::from_committed_assignment(
             world,
             dependencies.admitted.channel_id,
@@ -123,7 +123,7 @@ fn scenario() -> TestResult {
             1,
             1,
             "runtime-scope-assignment:1",
-            4,
+            14,
             channel_pin,
         )
         .map_err(debug)?;
@@ -188,35 +188,50 @@ fn scenario() -> TestResult {
             runtime
                 .place_npcs(
                     &NpcPlacementTable {
-                        npcs: vec![
-                            NpcPlacements {
-                                key: "oteryn:npc.captain_bluebear".into(),
-                                placements: vec![NpcPlacement {
-                                    floor: -i8::try_from(spot.floor)?,
-                                    x: u16::try_from(spot.x + 1)?,
-                                    y: u16::try_from(spot.y)?,
-                                    direction: MovementFacing::South,
-                                }],
-                            },
-                            NpcPlacements {
-                                key: "oteryn:npc.captain_seagull".into(),
-                                placements: vec![NpcPlacement {
-                                    floor: -i8::try_from(spot.floor)?,
-                                    x: u16::try_from(spot.x + 3)?,
-                                    y: u16::try_from(spot.y)?,
-                                    direction: MovementFacing::South,
-                                }],
-                            },
-                            NpcPlacements {
-                                key: "oteryn:npc.pino".into(),
-                                placements: vec![NpcPlacement {
-                                    floor: -i8::try_from(spot.floor)?,
-                                    x: u16::try_from(spot.x + 2)?,
-                                    y: u16::try_from(spot.y)?,
-                                    direction: MovementFacing::South,
-                                }],
-                            },
-                        ],
+                        npcs: {
+                            let mut npcs = vec![
+                                NpcPlacements {
+                                    key: "oteryn:npc.captain_bluebear".into(),
+                                    placements: vec![NpcPlacement {
+                                        floor: -i8::try_from(spot.floor)?,
+                                        x: u16::try_from(spot.x + 1)?,
+                                        y: u16::try_from(spot.y)?,
+                                        direction: MovementFacing::South,
+                                    }],
+                                },
+                                NpcPlacements {
+                                    key: "oteryn:npc.captain_seagull".into(),
+                                    placements: vec![NpcPlacement {
+                                        floor: -i8::try_from(spot.floor)?,
+                                        x: u16::try_from(spot.x + 3)?,
+                                        y: u16::try_from(spot.y)?,
+                                        direction: MovementFacing::South,
+                                    }],
+                                },
+                                NpcPlacements {
+                                    key: "oteryn:npc.pino".into(),
+                                    placements: vec![NpcPlacement {
+                                        floor: -i8::try_from(spot.floor)?,
+                                        x: u16::try_from(spot.x + 2)?,
+                                        y: u16::try_from(spot.y)?,
+                                        direction: MovementFacing::South,
+                                    }],
+                                },
+                            ];
+                            for (index, key) in S10T_CAPTAINS.iter().enumerate() {
+                                npcs.push(NpcPlacements {
+                                    key: format!("oteryn:npc.{key}"),
+                                    placements: vec![NpcPlacement {
+                                        floor: -i8::try_from(spot.floor)?,
+                                        x: u16::try_from(spot.x + i32::try_from(index % 5)? - 2)?,
+                                        y: u16::try_from(spot.y + i32::try_from(index / 5)? + 1)?,
+                                        direction: MovementFacing::South,
+                                    }],
+                                });
+                            }
+                            npcs.sort_by(|a, b| a.key.cmp(&b.key));
+                            npcs
+                        },
                     },
                     |_| true,
                     true,
@@ -544,7 +559,11 @@ fn scenario() -> TestResult {
             .await;
         let walked = walked.moved_to.ok_or("post-travel walk handoff")?;
         assert_eq!(
-            (walked.actor_position.x, walked.actor_position.y, walked.actor_position.floor),
+            (
+                walked.actor_position.x,
+                walked.actor_position.y,
+                walked.actor_position.floor
+            ),
             (33270, 32440, 6)
         );
         // Exhaustion is checked before attempting a fee, unlike the donor's debit-first order.
@@ -581,7 +600,10 @@ fn scenario() -> TestResult {
         // The earlier fare consumed the original coin stack. Seed 200 carried gold.
         sqlx::raw_sql(sqlx::AssertSqlSafe(
             crate::durability::item_fee_burn::test_support::item(
-                90, "oteryn:item.tibia.i3035", "definition-r1", 2,
+                90,
+                "oteryn:item.tibia.i3035",
+                "definition-r1",
+                2,
             ),
         ))
         .execute(&mut *tx)
@@ -628,7 +650,8 @@ fn scenario() -> TestResult {
         assert_eq!(bank(&h).await?, 50);
         let mut tx = h.pool.begin().await?;
         sqlx::query("SET LOCAL session_replication_role=replica")
-            .execute(&mut *tx).await?;
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,'oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/ab_dendriel','oteryn:quest.in_service_of_yalahar_quest',1,4)")
             .bind(id(41).as_slice())
             .execute(&mut *tx)
@@ -636,8 +659,7 @@ fn scenario() -> TestResult {
         tx.commit().await?;
         owner.clock_origin -= std::time::Duration::from_secs(1);
         assert!(
-            line(&talk(&owner, &dependencies, seagull, 22, "yalahar").await?)
-                .contains("160 gold")
+            line(&talk(&owner, &dependencies, seagull, 22, "yalahar").await?).contains("160 gold")
         );
         let travelled = talk(&owner, &dependencies, seagull, 23, "yes").await?;
         assert!(travelled.inventory_changed);
@@ -657,7 +679,192 @@ fn scenario() -> TestResult {
         let carried: i64 = sqlx::query_scalar("SELECT COALESCE(SUM(quantity * CASE definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END),0)::bigint FROM game_item_instances WHERE item_instance_id IN (SELECT item_instance_id FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid)")
             .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(carried, 40);
-        eprintln!("POSTGRES_EXECUTED S10S gated Yalahar refused and paid 160 gold; arrived 32816,31272,6");
+        eprintln!(
+            "POSTGRES_EXECUTED S10S gated Yalahar refused and paid 160 gold; arrived 32816,31272,6"
+        );
+        // Every added captain uses the real NPC_TALK quote, payment and arrival owners.
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::raw_sql(sqlx::AssertSqlSafe(
+            crate::durability::item_fee_burn::test_support::item(
+                92,
+                "oteryn:item.tibia.i3035",
+                "definition-r1",
+                100,
+            ),
+        ))
+        .execute(&mut *tx)
+        .await?;
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,3,encode($5,'hex')::uuid)")
+            .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(92).as_slice()).bind(id(42).as_slice()).bind(id(93).as_slice()).execute(&mut *tx).await?;
+        // Re-close Seagull's earlier unlock so Karith's apostrophe keyword exercises refusal too.
+        sqlx::query("UPDATE game_character_quest_tracks SET value=0 WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/ab_dendriel'")
+            .bind(id(41).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        for (index, (captain, destination, fare, tile)) in S10T_PASSAGES.iter().enumerate() {
+            sqlx::query("UPDATE game_newhaven_travel_receipts SET arrived_at=clock_timestamp()-interval '4 seconds'").execute(&h.pool).await?;
+            let captain_key = format!("oteryn:npc.{captain}");
+            let npc = {
+                let mut runtime = dependencies.runtime.lock().await;
+                runtime
+                    .place_admitted_respawn(
+                        dependencies.actor,
+                        session,
+                        Some(crate::foundation::MovementLocalPosition {
+                            x: 32310,
+                            y: 32210,
+                            floor: 6,
+                        }),
+                        |_| true,
+                    )
+                    .map_err(debug)?;
+                let placed = runtime
+                    .visible_entities()
+                    .npcs
+                    .into_iter()
+                    .find(|npc| runtime.npc_key(npc.actor) == Some(captain_key.as_str()))
+                    .ok_or("S10T captain")?;
+                EntityRef {
+                    identity: placed.actor.placement_identity(),
+                    generation: placed.generation,
+                }
+            };
+            let route = crate::content::npc_catalogue::travel::resolve(
+                &model,
+                &captain_key,
+                &model
+                    .npcs()
+                    .iter()
+                    .find(|(key, _)| key.key == captain_key)
+                    .ok_or("S10T model")?
+                    .1
+                    .services,
+            )
+            .into_iter()
+            .find(|route| route.keyword == *destination)
+            .ok_or("S10T route")?;
+            let command_id = 100 + u64::try_from(index)? * 10;
+            owner.clock_origin -= std::time::Duration::from_secs(1);
+            talk(&owner, &dependencies, npc, command_id, "hi").await?;
+            let track = route.quest_gate.clone().or_else(|| route.yalahar_town_gate.as_ref()
+                .map(|town|format!("oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/{town}")));
+            if let Some(track) = track {
+                assert!(
+                    line(&talk(&owner, &dependencies, npc, command_id + 1, destination).await?)
+                        .contains("don't sail there")
+                );
+                let quest = if track.contains("explorer_society") {
+                    "oteryn:quest.the_explorer_society_quest"
+                } else if track.contains("the_shattered_isles") {
+                    "oteryn:quest.the_shattered_isles_quest"
+                } else if track.contains("apirates_tail") {
+                    "oteryn:quest.a_pirates_tail"
+                } else {
+                    "oteryn:quest.in_service_of_yalahar_quest"
+                };
+                let mut tx = h.pool.begin().await?;
+                sqlx::query("SET LOCAL session_replication_role=replica")
+                    .execute(&mut *tx)
+                    .await?;
+                sqlx::query("INSERT INTO game_character_quest_tracks(character_id,track_key,quest_key,value,committed_character_revision) VALUES(encode($1,'hex')::uuid,$2,$3,1,4) ON CONFLICT(character_id,track_key) DO UPDATE SET value=1")
+                    .bind(id(41).as_slice()).bind(track).bind(quest).execute(&mut *tx).await?;
+                tx.commit().await?;
+            }
+            owner.clock_origin -= std::time::Duration::from_secs(1);
+            let before = gold(&h).await?;
+            let receipts: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert!(
+                line(&talk(&owner, &dependencies, npc, command_id + 2, destination).await?)
+                    .contains(&format!("{fare} gold"))
+            );
+            let fence = owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|_| "S10T fence")?
+                .ok_or("S10T session")?
+                .item_fence();
+            // Retain the exact production request across an injected transaction rollback,
+            // then reconcile it and replay its durable receipt as in the original passage case.
+            sqlx::raw_sql("CREATE FUNCTION s10t_travel_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'S10T injected arrival failure'; END; $$; CREATE TRIGGER s10t_travel_fail BEFORE INSERT ON game_character_pending_arrivals FOR EACH ROW EXECUTE FUNCTION s10t_travel_fail()").execute(&h.pool).await?;
+            let failed = owner
+                .npc_talk(
+                    dependencies.actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: command_id + 3,
+                        item_fence: Some(fence),
+                    },
+                    NpcTalkIntent {
+                        npc_actor: npc,
+                        text: "yes".into(),
+                    },
+                )
+                .await;
+            assert!(failed.unknown);
+            assert_eq!(failed.disposition, NpcIntentDisposition::Rejected);
+            assert_eq!(gold(&h).await?, before);
+            let request = {
+                let holds = owner
+                    .states
+                    .newhaven_travel
+                    .holds
+                    .lock()
+                    .map_err(|_| "S10T holds")?;
+                match &holds.get(&session).ok_or("S10T retained travel")?.route {
+                    crate::gameplay_transport::newhaven_travel::Departure::Paid(request) => {
+                        (**request).clone()
+                    }
+                    _ => return Err("S10T paid request".into()),
+                }
+            };
+            sqlx::raw_sql("DROP TRIGGER s10t_travel_fail ON game_character_pending_arrivals; DROP FUNCTION s10t_travel_fail()").execute(&h.pool).await?;
+            let travelled = owner
+                .resume_npc_bank(
+                    dependencies.actor,
+                    UseCommand {
+                        game_session_id: session,
+                        command_id: command_id + 3,
+                        item_fence: Some(fence),
+                    },
+                )
+                .await
+                .ok_or("S10T reconciliation")?;
+            assert!(!travelled.unknown);
+            assert_eq!(travelled.inventory_changed, *fare > 0);
+            assert_eq!(gold(&h).await?, before - fare);
+            let position = dependencies
+                .runtime
+                .lock()
+                .await
+                .read_actor_position(dependencies.actor)
+                .map_err(debug)?
+                .position();
+            assert_eq!((position.x, position.y, position.floor), *tile);
+            let saved:(i32,i32,i16)=sqlx::query_as("SELECT tile_x,tile_y,tile_floor FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+            assert_eq!(saved, *tile);
+            let current = owner
+                .current_quest_fence(session)
+                .await
+                .map_err(|_| "S10T replay fence")?
+                .ok_or("S10T replay session")?;
+            assert_eq!(owner.revision_sequencer.acquire(current.character_id).await.commit_npc_travel(
+                &h.root, &authority, &h.node, current, request, &coordinator,
+            ).await.map_err(debug)?.map_err(debug)?,None);
+            assert_eq!(gold(&h).await?, before - fare);
+            let after: i64 =
+                sqlx::query_scalar("SELECT count(*) FROM game_newhaven_travel_receipts")
+                    .fetch_one(&h.pool)
+                    .await?;
+            assert_eq!(after, receipts + 1);
+            eprintln!(
+                "POSTGRES_EXECUTED S10T {captain} {destination} fare={fare} arrival={tile:?} replay charged once"
+            );
+        }
         drop(owner);
         drop(authority);
         drop(seal);
@@ -757,7 +964,7 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
             min_y: 0,
             max_x: 65535,
             max_y: 65535,
-            floors: vec![-7, -6],
+            floors: vec![-7, -6, -5],
         },
         palette: vec![PaletteEntry {
             key: "terrain:grass".into(),
@@ -786,6 +993,17 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
         (33270, 32441, -6),
     ];
     let mut grouped = std::collections::BTreeMap::<_, Vec<Tile>>::new();
+    let mut points = points.to_vec();
+    for (_, _, _, (x, y, floor)) in S10T_PASSAGES {
+        let point = (
+            u16::try_from(*x)?,
+            u16::try_from(*y)?,
+            -i8::try_from(*floor)?,
+        );
+        if !points.contains(&point) {
+            points.push(point);
+        }
+    }
     for (x, y, floor) in points {
         grouped
             .entry((floor, y / 32, x / 32))
@@ -843,4 +1061,39 @@ fn travel_world(world: crate::foundation::WorldId) -> TestResult<crate::map::boo
         |_| None,
     )
     .map_err(debug)
+}
+
+const S10T_CAPTAINS: &[&str] = &[
+    "captain_fearless",
+    "captain_greyhound",
+    "captain_jack_rat",
+    "captain_max",
+    "captain_seahorse",
+    "captain_sinbeard",
+    "captain_waverider",
+    "charles",
+    "jack_fate",
+    "karith",
+];
+
+type Passage = (&'static str, &'static str, i64, (i32, i32, i16));
+const S10T_PASSAGES: &[Passage] = &[
+    ("captain_bluebear", "yalahar", 200, (32816, 31272, 6)),
+    ("captain_fearless", "yalahar", 185, (32816, 31272, 6)),
+    ("captain_greyhound", "yalahar", 185, (32816, 31272, 6)),
+    ("captain_max", "calassa", 200, (31911, 32710, 6)),
+    ("captain_sinbeard", "yalahar", 230, (32816, 31272, 6)),
+    ("captain_seahorse", "oramond", 200, (33479, 31985, 7)),
+    ("charles", "liberty_bay", 50, (32285, 32892, 6)),
+    ("jack_fate", "goroma", 0, (32161, 32558, 6)),
+    ("karith", "ab'dendriel", 160, (32734, 31668, 6)),
+    ("captain_waverider", "peg leg", 50, (32346, 32625, 7)),
+    ("captain_waverider", "passage", 200, (32131, 32913, 7)),
+    ("captain_jack_rat", "safe", 0, (33839, 31222, 5)),
+];
+
+async fn gold(h: &Harness) -> TestResult<i64> {
+    let carried:i64=sqlx::query_scalar("SELECT COALESCE(SUM(quantity * CASE definition_production_key WHEN 'oteryn:item.tibia.i3031' THEN 1 WHEN 'oteryn:item.tibia.i3035' THEN 100 WHEN 'oteryn:item.tibia.i3043' THEN 10000 ELSE 0 END),0)::bigint FROM game_item_instances WHERE item_instance_id IN (SELECT item_instance_id FROM game_item_container_entries WHERE character_id=encode($1,'hex')::uuid)")
+        .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+    Ok(carried + bank(h).await?)
 }
