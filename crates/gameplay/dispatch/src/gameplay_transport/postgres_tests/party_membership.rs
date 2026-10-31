@@ -25,12 +25,15 @@ fn party_membership_real_dispatch_postgres_end_to_end() -> TestResult {
     run(false)
 }
 pub(super) fn run(partyskull: bool) -> TestResult {
-    run_case(partyskull, false)
+    run_case(partyskull, false, false)
 }
 pub(super) fn run_reference_level() -> TestResult {
-    run_case(false, true)
+    run_case(false, true, false)
 }
-fn run_case(partyskull: bool, reference_level: bool) -> TestResult {
+pub(super) fn run_chat() -> TestResult {
+    run_case(false, false, true)
+}
+fn run_case(partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -41,7 +44,7 @@ fn run_case(partyskull: bool, reference_level: bool) -> TestResult {
                 let h = Harness::create(admin, "party_membership_wire", false)
                     .await
                     .map_err(debug)?;
-                let result = scenario(&h, partyskull, reference_level)
+                let result = scenario(&h, partyskull, reference_level, chat)
                     .await
                     .map_err(|e| e.to_string());
                 h.cleanup().await.map_err(debug)?;
@@ -175,7 +178,7 @@ async fn roundtrip(
     }
     result
 }
-async fn scenario(h: &Harness, partyskull: bool, reference_level: bool) -> TestResult {
+async fn scenario(h: &Harness, partyskull: bool, reference_level: bool, chat: bool) -> TestResult {
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)
@@ -351,6 +354,11 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool) -> TestR
         assert_eq!(results[0].invitations.len(), 1);
         assert_eq!(results[1].disposition, PartyDisposition::Ok);
     }
+    let chat_line = if chat {
+        Some(super::party_chat::check(h, &owner, &mut admitted).await?)
+    } else {
+        None
+    };
     if partyskull {
         for observer in &mut admitted {
             super::party_skull::check(&owner, observer, &targets, &[4, 3, 3], &[2, 2, 2]).await?;
@@ -381,6 +389,9 @@ async fn scenario(h: &Harness, partyskull: bool, reference_level: bool) -> TestR
     assert_eq!(result[1].disposition, PartyDisposition::Ok);
     let result = roundtrip(&owner, &mut admitted[0], &[Step::Leave]).await?;
     assert_eq!(result[0].disposition, PartyDisposition::Ok);
+    if let Some(line) = &chat_line {
+        super::party_chat::check_departed(&owner, &mut admitted, line).await?;
+    }
     // Rebuild the production owner and all connection-local handles. SQL remains authority.
     // The Channel keeps each GameSession's command stream (SESSION-INGRESS-1), so the
     // sessions continue on their ended continuity while the party caches start empty.

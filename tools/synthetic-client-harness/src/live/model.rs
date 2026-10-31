@@ -259,6 +259,9 @@ pub fn render_chat_line(line: &ChatLine) -> String {
             speaker_name,
             text,
         } => format!("[{}] {speaker_name}: {text}", room_name(*room)),
+        ChatLine::Party {
+            speaker_name, text, ..
+        } => format!("[Party] {speaker_name}: {text}"),
         ChatLine::Guild(line) => super::guild_chat::render_line(line),
         ChatLine::PrivateChannel(line) => format!(
             "[#{}] {}: {}",

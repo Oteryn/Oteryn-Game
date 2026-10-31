@@ -427,17 +427,31 @@ async fn move_equipment_inner(
             let Some(durable) = durable_move(request) else {
                 return refused;
             };
-            admission
-                .root
-                .commit_equipment_move(
-                    admission.character,
-                    admission.holder,
-                    &fence,
-                    CommandRef::new(command.game_session_id, command_id),
-                    &NativeItemWeights(native),
-                    durable,
-                )
-                .await
+            if hotkey {
+                admission
+                    .root
+                    .commit_hotkey_equipment_move(
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        CommandRef::new(command.game_session_id, command_id),
+                        &NativeItemWeights(native),
+                        durable,
+                    )
+                    .await
+            } else {
+                admission
+                    .root
+                    .commit_equipment_move(
+                        admission.character,
+                        admission.holder,
+                        &fence,
+                        CommandRef::new(command.game_session_id, command_id),
+                        &NativeItemWeights(native),
+                        durable,
+                    )
+                    .await
+            }
         }
     };
     // ATTACK-2: the swing weapon read before this move is no longer the equipment's, whatever

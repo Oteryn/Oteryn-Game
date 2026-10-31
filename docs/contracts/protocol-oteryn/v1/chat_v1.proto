@@ -63,6 +63,7 @@ message ChatIntentV1 {
     ChatPrivateChannelRefV1 private_channel_leave = 11;      // requires capability 80
     ChatPrivateChannelSayV1 private_channel_say = 12;        // requires capability 80
     ChatChannelListRequestV1 channel_list = 13;              // requires capability 80
+    ChatPartySendV1 party = 14; // requires capability 240 (requires 7 + 42)
   }
 }
 
@@ -101,6 +102,7 @@ enum ChatLineKind {
   CHAT_LINE_KIND_DROPPED = 4; // no other field: lines were dropped by the egress bound (CHAT0-RL-11)
   CHAT_LINE_KIND_GUILD = 5; // capability 36: fields 4, 7, 9, 10 only
   CHAT_LINE_KIND_PRIVATE_CHANNEL = 6; // capability 80: fields 4, 7, 11 only
+  CHAT_LINE_KIND_PARTY = 7; // capability 240: fields 4, 7 only
 }
 
 // Same encoding as world_spatial ActorPositionV1; floor 0..=15.
@@ -175,3 +177,16 @@ message ChatChannelListV1 {
   uint32 own_channel = 2; // the session's own channel; absent when it has none
   repeated ChatInvitedChannelV1 invited = 3; // at most 16, distinct, never the own channel
 }
+
+// CHATCH: capability 240 CHAT_PARTY_ROOM_V1 requires CHAT_V1 and PARTY_V1.
+// Only selected peers send tag 14, receive kind 7 or Party NOT_ALLOWED. No new room bit.
+// Destination, speaker name and membership come from the server's Party owner.
+// No level, vocation, Premium or leader restriction. Every party member can speak.
+// The World relay is ephemeral, at most once; OK means sent, never delivered.
+// Fresh recipient custody rechecks membership under the Party World lock.
+// Server-only queued metadata binds PartyId and the authenticated relay timestamp.
+// joined_at must not exceed that timestamp: new/rejoining
+// members never receive a queued line predating their current membership. A line
+// accepted before leave/kick/disband may finish writing afterwards, as for Guild.
+// Existing command ingress retains results for replay without sending twice.
+message ChatPartySendV1 { string text = 1; }

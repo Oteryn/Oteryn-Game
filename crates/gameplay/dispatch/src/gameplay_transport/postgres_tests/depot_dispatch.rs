@@ -1,4 +1,6 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
+#[path = "depot_dispatch/depot_list.rs"]
+mod depot_list;
 #[path = "depot_dispatch/mail_cases.rs"]
 mod mail_cases;
 #[path = "depot_dispatch/retrieve_cases.rs"]
@@ -49,6 +51,23 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
         .spawn(|| scenario(false, false, false, false, false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "depot e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn depot_search_open_lists_depot_stash_inbox_and_distinct_tier_detail() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        eprintln!("DEPOTLIST skipped: no PostgreSQL route");
+        return Ok(());
+    }
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(false, false, false, false, false, None, Mode::List)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "depot list e2e panicked")?
         .map_err(Into::into)
 }
 
@@ -174,6 +193,7 @@ fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResul
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Mode {
     Plain,
+    List,
     Mail,
     Retrieve,
 }
@@ -205,7 +225,7 @@ fn scenario_with_premium(
     stash_premium: Option<EntitlementState>,
     mode: Mode,
 ) -> TestResult {
-    let mail = mode == Mode::Mail;
+    let mail = matches!(mode, Mode::Mail | Mode::List);
     let retrieve = mode == Mode::Retrieve;
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
@@ -227,7 +247,7 @@ fn scenario_with_premium(
                 deps.admitted.world_id,
                 "content-1",
             )?;
-        if ground_movement {
+        if ground_movement || mode == Mode::List {
             deps.room = activated_pin.qualified_room().clone();
         }
         let generation = controller.active().ok_or("active generation")?;
@@ -245,7 +265,7 @@ fn scenario_with_premium(
             index
                 .definition_ref(
                     "Item",
-                    if stash {
+                    if stash || mode == Mode::List {
                         "oteryn:item.tibia.i3028"
                     } else {
                         "oteryn:item.tibia.i3031"
@@ -456,24 +476,30 @@ fn scenario_with_premium(
         // Retrieval: 20 carried stacks fill the main backpack; two more are carried later.
         // Mail: a letter, a parcel and its label (Canary items.xml 3505, 3503, 3507).
         let mail_items = if mail {
-            ["oteryn:item.tibia.i3505", "oteryn:item.tibia.i3503", "oteryn:item.tibia.i3507"]
-                .into_iter()
-                .map(|key| -> TestResult<_> {
-                    let definition = crate::gameplay_transport::item_look::typed_definition(
-                        index,
-                        index
-                            .definition_ref("Item", key, "definition-r1")
-                            .ok_or("mail item ref")?,
-                    )
-                    .ok_or("mail item definition")?;
-                    let facts = generation_item_facts(native, &definition).map_err(debug)?;
-                    Ok((definition, facts))
-                })
-                .collect::<TestResult<Vec<_>>>()?
+            [
+                "oteryn:item.tibia.i3505",
+                "oteryn:item.tibia.i3503",
+                "oteryn:item.tibia.i3507",
+            ]
+            .into_iter()
+            .map(|key| -> TestResult<_> {
+                let definition = crate::gameplay_transport::item_look::typed_definition(
+                    index,
+                    index
+                        .definition_ref("Item", key, "definition-r1")
+                        .ok_or("mail item ref")?,
+                )
+                .ok_or("mail item definition")?;
+                let facts = generation_item_facts(native, &definition).map_err(debug)?;
+                Ok((definition, facts))
+            })
+            .collect::<TestResult<Vec<_>>>()?
         } else {
             Vec::new()
         };
-        let seeded: u32 = if retrieve {
+        let seeded: u32 = if mode == Mode::List {
+            5
+        } else if retrieve {
             22
         } else if stash || ground_container || mail {
             3
@@ -511,7 +537,10 @@ fn scenario_with_premium(
                         } else {
                             coin_definition.clone()
                         },
-                        quantity: if ordinal == 0 || (ground_container && ordinal <= 2) || mail {
+                        quantity: if ordinal == 0
+                            || (ground_container && ordinal <= 2)
+                            || mail_item.is_some()
+                        {
                             1
                         } else {
                             100
@@ -680,10 +709,34 @@ fn scenario_with_premium(
             return harness.cleanup().await;
         }
         if mail {
-            let [letter, parcel, label] = stacks[..] else {
+            let [letter, parcel, label] = stacks[..3] else {
                 return Err("mail items".into());
             };
-            mail_cases::exercise(&owner, admitted, &harness.pool, letter, parcel, label).await?;
+            if mode == Mode::List {
+                let extras = stacks
+                    .iter()
+                    .skip(3)
+                    .map(|item| {
+                        Ok((
+                            view.table()
+                                .handle(&ItemKey::Instance(*item))
+                                .ok_or("list handle")?,
+                            *item,
+                        ))
+                    })
+                    .collect::<TestResult<Vec<_>>>()?;
+                admitted = depot_list::prepare(&owner, admitted, &extras).await?;
+            }
+            mail_cases::exercise(
+                &owner,
+                admitted,
+                &harness.pool,
+                letter,
+                parcel,
+                label,
+                mode == Mode::List,
+            )
+            .await?;
             drop(owner);
             drop(authority);
             drop(seal);
@@ -829,7 +882,13 @@ fn scenario_with_premium(
                 use oteryn_protocol_oteryn::depot_search::{self as search, Request};
                 for (id, request) in [
                     (4, Request::Search { client_id: 3031 }),
-                    (5, Request::Detail { client_id: 3031 }),
+                    (
+                        5,
+                        Request::Detail {
+                            client_id: 3031,
+                            tier: 0,
+                        },
+                    ),
                     (
                         6,
                         Request::Search {
@@ -917,17 +976,19 @@ fn scenario_with_premium(
         }
         use oteryn_protocol_oteryn::depot_search::{Outcome, TierCount};
         assert_eq!(search_replies.len(), 5, "{end}");
+        // E08: Detail now identifies its tier-specific reply separately from Search.
         assert_eq!(
             search_replies.iter().map(|r| r.outcome).collect::<Vec<_>>(),
             [
                 Outcome::Found,
-                Outcome::Found,
+                Outcome::Detailed,
                 Outcome::NotFound,
                 Outcome::NotFound,
                 Outcome::NotFound
             ]
         );
-        assert_eq!(search_replies[0], search_replies[1]);
+        assert_ne!(search_replies[0], search_replies[1]);
+        assert_eq!(search_replies[0].results, search_replies[1].results);
         let found = search_replies[0].results.first().ok_or("search result")?;
         assert_eq!(
             (found.client_id, found.depot, found.stash, found.inbox),

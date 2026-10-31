@@ -1,11 +1,11 @@
 //! Depot search composition: retrieval withdraws a supply-stash balance, or moves the
 //! depot and Inbox items through the item-loop batch owner.
-use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use super::item_ref_admission::NativeItemWeights;
+use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use crate::durability::character_stash::StashRequest;
 use crate::durability::item_loop_move::DepotSearchRetrieval;
 use crate::foundation::{CommandId, CommandRef};
-use oteryn_protocol_oteryn::depot_search::{Outcome, Reply, Request};
+use oteryn_protocol_oteryn::depot_search::{Outcome, Reply, Request, SearchResult, TierCount};
 use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
 
 fn retrieval_amount(available: u32, all: bool) -> Option<u32> {
@@ -188,9 +188,7 @@ pub(super) async fn execute(
             Ok(Some(receipt))
                 if matches!(
                     receipt.outcome,
-                    StashOutcome::NoRoom
-                        | StashOutcome::NoBackpack
-                        | StashOutcome::Overweight
+                    StashOutcome::NoRoom | StashOutcome::NoBackpack | StashOutcome::Overweight
                 ) =>
             {
                 Reply {
@@ -202,15 +200,24 @@ pub(super) async fn execute(
             _ => rejected(),
         };
     }
-    let client_id = match request {
-        Request::Search { client_id }
-        | Request::Detail { client_id }
-        | Request::Retrieve { client_id, .. } => client_id,
+    let (client_id, tier, after) = match request {
+        Request::Open { after } => (None, None, after),
+        Request::Search { client_id } => (Some(client_id), None, 0),
+        Request::Detail { client_id, tier } => (Some(client_id), Some(tier), 0),
+        Request::Retrieve { .. } => return rejected(),
     };
-    let result = owner
-        .root
-        .read_depot_search(owner.character, fence.character_id, client_id)
-        .await;
+    let result = if let Request::Search { client_id } = request {
+        owner
+            .root
+            .read_depot_search(owner.character, fence.character_id, client_id)
+            .await
+            .map(|row| row.into_iter().collect())
+    } else {
+        owner
+            .root
+            .read_depot_holdings(owner.character, fence.character_id, client_id, tier, after)
+            .await
+    };
     let current = match super::FreshAdmissionStore::from_root(owner.root.clone())
         .current_session_at(admitted.game_session_id)
         .await
@@ -230,16 +237,36 @@ pub(super) async fn execute(
         return rejected();
     }
     match result {
-        Ok(Some(result)) => Reply {
-            outcome: Outcome::Found,
-            retrieved: 0,
-            results: vec![result],
-        },
-        Ok(None) => Reply {
-            outcome: Outcome::NotFound,
-            retrieved: 0,
-            results: Vec::new(),
-        },
+        Ok(mut results) => {
+            let outcome = if matches!(request, Request::Open { .. }) {
+                if results.len() > oteryn_protocol_oteryn::depot_search::MAX_RESULTS {
+                    results.truncate(oteryn_protocol_oteryn::depot_search::MAX_RESULTS);
+                    Outcome::More
+                } else {
+                    Outcome::Listed
+                }
+            } else if let Request::Detail { client_id, tier } = request {
+                if results.is_empty() {
+                    results.push(SearchResult {
+                        client_id,
+                        depot: 0,
+                        stash: 0,
+                        inbox: 0,
+                        tiers: vec![TierCount { tier, count: 0 }],
+                    });
+                }
+                Outcome::Detailed
+            } else if results.is_empty() {
+                Outcome::NotFound
+            } else {
+                Outcome::Found
+            };
+            Reply {
+                outcome,
+                retrieved: 0,
+                results,
+            }
+        }
         Err(_) => rejected(),
     }
 }

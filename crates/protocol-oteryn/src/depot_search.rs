@@ -8,9 +8,21 @@ pub const MAX_RESULTS: usize = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Request {
-    Search { client_id: u32 },
-    Detail { client_id: u32 },
-    Retrieve { client_id: u32, all: bool },
+    Search {
+        client_id: u32,
+    },
+    Detail {
+        client_id: u32,
+        tier: u8,
+    },
+    /// Open the list, or continue after the last id of a full page.
+    Open {
+        after: u32,
+    },
+    Retrieve {
+        client_id: u32,
+        all: bool,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -20,6 +32,9 @@ pub enum Outcome {
     NotFound = 3,
     NoRoom = 4,
     Rejected = 5,
+    Listed = 6,
+    More = 7,
+    Detailed = 8,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,15 +62,24 @@ pub struct Reply {
 pub fn encode_request(value: Request) -> Result<Vec<u8>, Error> {
     let (action, client_id, all) = match value {
         Request::Search { client_id } => (1, client_id, 0),
-        Request::Detail { client_id } => (2, client_id, 0),
+        Request::Detail { client_id, .. } => (2, client_id, 0),
+        Request::Open { after } => (4, after, 0),
         Request::Retrieve { client_id, all } => (3, client_id, u64::from(all)),
     };
-    if client_id == 0 {
+    if client_id == 0 && !matches!(value, Request::Open { .. }) {
         return Err(Error::Malformed);
     }
     let mut out = Vec::new();
     push_varint_field(&mut out, 1, action);
-    push_varint_field(&mut out, 2, u64::from(client_id));
+    if client_id != 0 {
+        push_varint_field(&mut out, 2, u64::from(client_id));
+    }
+    if let Request::Detail { tier, .. } = value {
+        if tier > 10 {
+            return Err(Error::Malformed);
+        }
+        push_varint_field(&mut out, 4, u64::from(tier));
+    }
     if all != 0 {
         push_varint_field(&mut out, 3, all);
     }
@@ -66,11 +90,11 @@ pub fn decode_request(bytes: &[u8]) -> Result<Request, Error> {
     if bytes.len() > 24 {
         return Err(Error::LimitExceeded);
     }
-    let mut fields = [None; 3];
+    let mut fields = [None; 4];
     let mut at = 0;
     while at < bytes.len() {
         let tag = read_varint(bytes, &mut at)?;
-        if tag & 7 != 0 || !(1..=3).contains(&(tag >> 3)) {
+        if tag & 7 != 0 || !(1..=4).contains(&(tag >> 3)) {
             return Err(Error::Malformed);
         }
         set_once(
@@ -79,9 +103,17 @@ pub fn decode_request(bytes: &[u8]) -> Result<Request, Error> {
         )?;
     }
     let id = u32::try_from(fields[1].unwrap_or(0)).map_err(|_| Error::Malformed)?;
+    let tier = u8::try_from(fields[3].unwrap_or(0)).map_err(|_| Error::Malformed)?;
+    if fields[3].is_some() && fields[0] != Some(2) {
+        return Err(Error::Malformed);
+    }
     let request = match (fields[0], fields[2]) {
         (Some(1), None) => Request::Search { client_id: id },
-        (Some(2), None) => Request::Detail { client_id: id },
+        (Some(2), None) => Request::Detail {
+            client_id: id,
+            tier,
+        },
+        (Some(4), None) => Request::Open { after: id },
         (Some(3), all @ (None | Some(0..=1))) => Request::Retrieve {
             client_id: id,
             all: all == Some(1),
@@ -96,8 +128,17 @@ pub fn encode_reply(value: &Reply) -> Result<Vec<u8>, Error> {
     if value.results.len() > MAX_RESULTS {
         return Err(Error::LimitExceeded);
     }
-    if (value.outcome == Outcome::Found && value.results.is_empty())
-        || (value.outcome != Outcome::Found && !value.results.is_empty())
+    if (matches!(
+        value.outcome,
+        Outcome::Found | Outcome::Detailed | Outcome::More
+    ) && value.results.is_empty())
+        || (!matches!(
+            value.outcome,
+            Outcome::Found | Outcome::Detailed | Outcome::Listed | Outcome::More
+        ) && !value.results.is_empty())
+        || (value.outcome == Outcome::More && value.results.len() != MAX_RESULTS)
+        || (value.outcome == Outcome::Detailed
+            && (value.results.len() != 1 || value.results[0].tiers.len() != 1))
         || (value.outcome == Outcome::Retrieved) != (value.retrieved > 0)
         || value
             .results
@@ -119,7 +160,9 @@ pub fn encode_reply(value: &Reply) -> Result<Vec<u8>, Error> {
             return Err(Error::Malformed);
         }
         let total = u64::from(result.depot) + u64::from(result.stash) + u64::from(result.inbox);
-        if total == 0 || result.tiers.iter().map(|t| u64::from(t.count)).sum::<u64>() != total {
+        if (total == 0 && value.outcome != Outcome::Detailed)
+            || result.tiers.iter().map(|t| u64::from(t.count)).sum::<u64>() != total
+        {
             return Err(Error::Malformed);
         }
         let mut row = Vec::new();
@@ -132,7 +175,7 @@ pub fn encode_reply(value: &Reply) -> Result<Vec<u8>, Error> {
             push_varint_field(&mut row, field, u64::from(count));
         }
         for tier in &result.tiers {
-            if tier.count == 0 || tier.tier > 10 {
+            if (tier.count == 0 && value.outcome != Outcome::Detailed) || tier.tier > 10 {
                 return Err(Error::Malformed);
             }
             let mut t = Vec::new();
@@ -142,14 +185,14 @@ pub fn encode_reply(value: &Reply) -> Result<Vec<u8>, Error> {
         }
         push_message_field(&mut out, 3, &row);
     }
-    if out.len() > 8192 {
+    if out.len() > crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES {
         return Err(Error::LimitExceeded);
     }
     Ok(out)
 }
 
 pub fn decode_reply(bytes: &[u8]) -> Result<Reply, Error> {
-    if bytes.len() > 8192 {
+    if bytes.len() > crate::MAX_COMMAND_RESULT_PAYLOAD_BYTES {
         return Err(Error::LimitExceeded);
     }
     let mut outcome = None;
@@ -176,6 +219,9 @@ pub fn decode_reply(bytes: &[u8]) -> Result<Reply, Error> {
         Some(3) => Outcome::NotFound,
         Some(4) => Outcome::NoRoom,
         Some(5) => Outcome::Rejected,
+        Some(6) => Outcome::Listed,
+        Some(7) => Outcome::More,
+        Some(8) => Outcome::Detailed,
         _ => return Err(Error::Malformed),
     };
     let value = Reply {
@@ -235,10 +281,20 @@ fn decode_result(bytes: &[u8]) -> Result<SearchResult, Error> {
 mod tests {
     use super::*;
     #[test]
+    fn depot_open_and_tier_detail_requests_are_supported() {
+        assert!(decode_request(&[8, 4]).is_ok());
+        assert!(decode_request(&[8, 2, 16, 1, 32, 3]).is_ok());
+    }
+    #[test]
     fn strict_round_trips() {
         for request in [
             Request::Search { client_id: 3031 },
-            Request::Detail { client_id: 3031 },
+            Request::Detail {
+                client_id: 3031,
+                tier: 0,
+            },
+            Request::Open { after: 0 },
+            Request::Open { after: 3031 },
             Request::Retrieve {
                 client_id: 3031,
                 all: true,
@@ -263,6 +319,52 @@ mod tests {
         assert_eq!(decode_reply(&encode_reply(&reply).unwrap()).unwrap(), reply);
     }
     #[test]
+    fn list_pages_empty_and_detail_are_distinct_on_the_wire() {
+        let mut reply = Reply {
+            outcome: Outcome::Listed,
+            retrieved: 0,
+            results: Vec::new(),
+        };
+        assert_eq!(decode_reply(&encode_reply(&reply).unwrap()).unwrap(), reply);
+        reply.results = (1..=MAX_RESULTS as u32)
+            .map(|client_id| SearchResult {
+                client_id,
+                depot: 100,
+                stash: 200,
+                inbox: 3,
+                tiers: vec![TierCount {
+                    tier: 0,
+                    count: 303,
+                }],
+            })
+            .collect();
+        reply.outcome = Outcome::More;
+        assert_eq!(decode_reply(&encode_reply(&reply).unwrap()).unwrap(), reply);
+        reply.results.pop();
+        assert!(encode_reply(&reply).is_err());
+        reply.results.truncate(1);
+        reply.outcome = Outcome::Found;
+        let search = encode_reply(&reply).unwrap();
+        reply.outcome = Outcome::Detailed;
+        let detail = encode_reply(&reply).unwrap();
+        assert_ne!(search, detail);
+        assert_eq!(decode_reply(&detail).unwrap(), reply);
+        reply.results[0].depot = 0;
+        reply.results[0].stash = 0;
+        reply.results[0].inbox = 0;
+        reply.results[0].tiers[0].count = 0;
+        assert_eq!(decode_reply(&encode_reply(&reply).unwrap()).unwrap(), reply);
+        assert!(
+            encode_request(Request::Detail {
+                client_id: 1,
+                tier: 11
+            })
+            .is_err()
+        );
+        assert!(decode_request(&[8, 4, 32, 0]).is_err());
+    }
+
+    #[test]
     fn rejects_invalid_and_oversize() {
         assert!(decode_request(&[0; 25]).is_err());
         assert!(encode_request(Request::Search { client_id: 0 }).is_err());
@@ -270,7 +372,8 @@ mod tests {
             vec![8, 1, 16, 1, 24, 0],
             vec![8, 1, 16, 1, 16, 2],
             vec![8, 3, 16, 1, 24, 2],
-            vec![8, 4, 16, 1],
+            // Action 4 now opens the list; action 5 remains unassigned.
+            vec![8, 5, 16, 1],
             vec![8, 1, 16, 1, 32, 0],
         ] {
             assert!(decode_request(&bytes).is_err());

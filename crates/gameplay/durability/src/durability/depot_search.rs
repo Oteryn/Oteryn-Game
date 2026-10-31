@@ -45,62 +45,161 @@ impl DurabilityRoot {
         character: CharacterId,
         client_id: u32,
     ) -> Result<Option<SearchResult>, DurabilityError> {
-        if client_id == 0 {
+        Ok(self
+            .read_depot_holdings(recovery, character, Some(client_id), None, 0)
+            .await?
+            .pop())
+    }
+
+    /// Bounded keyset page across all depot, nested container, Inbox and stash holdings.
+    /// Detail restricts both custody totals and tier counters to the requested tier.
+    pub async fn read_depot_holdings(
+        &self,
+        recovery: &super::character_authority::ReconciledCharacterAuthority<'_, '_>,
+        character: CharacterId,
+        client_id: Option<u32>,
+        tier: Option<u8>,
+        after: u32,
+    ) -> Result<Vec<SearchResult>, DurabilityError> {
+        if client_id == Some(0) || tier.is_some_and(|tier| tier > 10) {
             return Err(DurabilityError::InvalidStoredState);
         }
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
+        let key = client_id.map(|id| format!("oteryn:item.tibia.i{id}"));
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = super::db::begin_semantic_transaction(holder, deadline).await?;
             super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
-            let key = format!("oteryn:item.tibia.i{client_id}");
-            // Custody families hold whole, content-free items. The root binds the World;
-            // no Channel filtering may hide possessions after a Channel change. Aggregation
-            // returns one row and at most eleven tier counters, never item identities.
-            let row = sqlx::query(r#"
-                WITH owner AS (
+            let rows = sqlx::query(r#"
+                WITH RECURSIVE owner AS (
                     SELECT character_id, world_id FROM game_character_roots
                     WHERE character_id=encode($1,'hex')::uuid AND lifecycle=1
-                ), held AS (
-                    SELECT 'depot' kind, i.quantity, COALESCE(t.tier,0) tier
-                    FROM owner o JOIN game_item_character_depot_locations l USING(character_id,world_id)
-                    JOIN game_item_instances i USING(item_instance_id,world_id)
-                    LEFT JOIN game_item_tiers t USING(item_instance_id)
-                    WHERE i.definition_family='Item' AND i.definition_production_key=$2 AND i.lifecycle=1
+                ), roots AS (
+                    SELECT l.item_instance_id, l.world_id, 0 kind
+                    FROM owner JOIN game_item_character_depot_locations l USING(character_id,world_id)
                     UNION ALL
-                    SELECT 'inbox', i.quantity, COALESCE(t.tier,0)
-                    FROM owner o JOIN game_item_character_inbox_locations l USING(character_id,world_id)
-                    JOIN game_item_instances i USING(item_instance_id,world_id)
+                    SELECT l.item_instance_id, l.world_id, 2 kind
+                    FROM owner JOIN game_item_character_inbox_locations l USING(character_id,world_id)
+                ), tree AS (
+                    SELECT * FROM roots
+                    UNION
+                    SELECT e.item_instance_id, e.world_id, tree.kind
+                    FROM tree JOIN game_item_nested_entries e
+                      ON e.parent_item_instance_id=tree.item_instance_id AND e.world_id=tree.world_id
+                ), units AS (
+                    SELECT i.definition_production_key key, COALESCE(t.tier,0)::smallint tier, tree.kind, i.quantity::bigint quantity
+                    FROM tree JOIN game_item_instances i USING(item_instance_id,world_id)
                     LEFT JOIN game_item_tiers t USING(item_instance_id)
-                    WHERE i.definition_family='Item' AND i.definition_production_key=$2 AND i.lifecycle=1
-                ), counts AS (
-                    SELECT COALESCE(sum(quantity) FILTER(WHERE kind='depot'),0)::bigint depot,
-                           COALESCE(sum(quantity) FILTER(WHERE kind='inbox'),0)::bigint inbox FROM held
-                ), stash AS (
-                    SELECT COALESCE(sum(b.quantity),0)::bigint stash
-                    FROM owner o JOIN game_character_stash_balances b USING(character_id,world_id)
-                    WHERE b.definition_key=$2
-                ), tiers AS (
-                    SELECT COALESCE(jsonb_agg(jsonb_build_array(tier,total) ORDER BY tier),'[]') value
-                    FROM (SELECT tier, sum(quantity)::bigint total FROM (
-                        SELECT tier,quantity FROM held
-                        UNION ALL SELECT 0,stash FROM stash WHERE stash>0
-                    ) units GROUP BY tier) q
+                    WHERE i.definition_family='Item' AND i.lifecycle=1
+                    UNION ALL
+                    SELECT b.definition_key, 0::smallint, 1, b.quantity
+                    FROM owner JOIN game_character_stash_balances b USING(character_id,world_id)
+                    WHERE b.quantity>0
+                ), native AS (
+                    SELECT substring(key FROM 20)::bigint client_id, tier, kind, quantity
+                    FROM units WHERE key ~ '^oteryn:item[.]tibia[.]i[1-9][0-9]{0,9}$'
+                      AND ($2::text IS NULL OR key=$2)
+                      AND ($3::smallint IS NULL OR tier=$3)
+                ), page AS (
+                    SELECT DISTINCT client_id FROM native
+                    WHERE client_id>$4 AND client_id<=4294967295
+                    ORDER BY client_id LIMIT 65
                 )
-                SELECT depot,inbox,stash,value::text tiers FROM counts,stash,tiers
+                SELECT client_id,tier,kind,sum(quantity)::bigint quantity
+                FROM native JOIN page USING(client_id)
+                GROUP BY client_id,tier,kind ORDER BY client_id,tier,kind
             "#)
-                .bind(character.as_bytes().as_slice()).bind(&key)
-                .fetch_one(&mut *tx).await?;
-            let count = |name| -> Result<u32, DurabilityError> {
-                u32::try_from(row.try_get::<i64,_>(name)?).map_err(|_| DurabilityError::InvalidStoredState)
-            };
-            let (depot, inbox, stash) = (count("depot")?, count("inbox")?, count("stash")?);
-            let raw: Vec<(u8,u32)> = serde_json::from_str(&row.try_get::<String,_>("tiers")?)
-                .map_err(|_| DurabilityError::InvalidStoredState)?;
-            let tiers = raw.into_iter().map(|(tier,count)| TierCount {tier,count}).collect();
+                .bind(character.as_bytes().as_slice()).bind(key).bind(tier.map(i16::from))
+                .bind(i64::from(after)).fetch_all(&mut *tx).await?;
+            // 65 ids (one lookahead), eleven tiers, three custody families bound this read.
+            let mut units = Vec::with_capacity(rows.len());
+            for row in rows {
+                units.push((
+                    u32::try_from(row.try_get::<i64,_>("client_id")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    u8::try_from(row.try_get::<i16,_>("tier")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                    row.try_get::<i32,_>("kind")?,
+                    u32::try_from(row.try_get::<i64,_>("quantity")?).map_err(|_| DurabilityError::InvalidStoredState)?,
+                ));
+            }
+            let results = aggregate_holdings(units)?;
             super::db::commit_semantic_transaction(tx,deadline).await?;
-            Ok((depot!=0 || inbox!=0 || stash!=0).then_some(SearchResult {client_id,depot,stash,inbox,tiers}))
+            Ok(results)
         })).await
+    }
+}
+
+fn aggregate_holdings(
+    units: impl IntoIterator<Item = (u32, u8, i32, u32)>,
+) -> Result<Vec<SearchResult>, DurabilityError> {
+    let mut results = std::collections::BTreeMap::<u32, SearchResult>::new();
+    for (client_id, tier, kind, count) in units {
+        if client_id == 0 || tier > 10 || count == 0 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let result = results.entry(client_id).or_insert_with(|| SearchResult {
+            client_id,
+            depot: 0,
+            stash: 0,
+            inbox: 0,
+            tiers: Vec::new(),
+        });
+        let total = match kind {
+            0 => &mut result.depot,
+            1 => &mut result.stash,
+            2 => &mut result.inbox,
+            _ => return Err(DurabilityError::InvalidStoredState),
+        };
+        *total = total
+            .checked_add(count)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        if let Some(existing) = result.tiers.iter_mut().find(|entry| entry.tier == tier) {
+            existing.count = existing
+                .count
+                .checked_add(count)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+        } else {
+            result.tiers.push(TierCount { tier, count });
+        }
+    }
+    for result in results.values_mut() {
+        result.tiers.sort_by_key(|entry| entry.tier);
+    }
+    Ok(results.into_values().collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn depot_list_combines_chests_stash_inbox_stacks_and_tiers() -> Result<(), DurabilityError> {
+        let result = aggregate_holdings([
+            (3031, 0, 0, 100),
+            (3031, 0, 0, 50),
+            (3031, 0, 1, 300),
+            (3031, 0, 2, 7),
+            (3031, 2, 0, 1),
+            (100, 0, 2, 1),
+        ])?;
+        assert_eq!(
+            result.iter().map(|r| r.client_id).collect::<Vec<_>>(),
+            [100, 3031]
+        );
+        let row = &result[1];
+        assert_eq!((row.depot, row.stash, row.inbox), (151, 300, 7));
+        assert_eq!(
+            row.tiers,
+            [
+                TierCount {
+                    tier: 0,
+                    count: 457
+                },
+                TierCount { tier: 2, count: 1 }
+            ]
+        );
+        assert!(aggregate_holdings([])?.is_empty());
+        assert!(aggregate_holdings([(1, 0, 0, u32::MAX), (1, 0, 0, 1)]).is_err());
+        Ok(())
     }
 }
