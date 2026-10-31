@@ -698,20 +698,38 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         _ => &[],
     };
     // These cases test settlement, not competing content-seeded swing draws.
-    // Bank at least five real damage per staged contributor. When sharing is
-    // required, leave only five HP for the member so the leader's committed
-    // activity is recent at death even with slow, content-seeded fist draws.
+    // Bank real damage per staged contributor: five, or four for the foreign Character.
+    // When sharing is required, the leader stops at its first landed hit and lab damage
+    // then leaves one HP, so the leader's committed activity is recent at death.
+    //
+    // No staged swing can kill the rat (20 HP, armor 1, mitigation 3/25 in
+    // spell-native-profiles.json), whatever the draws. A level-1 fist hit draws at most
+    // floor(2 * 8 * (fist + 4) / 28 * factor), the factor doubled for a monk
+    // (formulas.rs:42-118; the level term is 0, formula.rs:17). Armor takes exactly 1 and
+    // the 0.12% mitigation truncates 1 more (formulas.rs:225-233, resolution.rs:240-272).
+    // A pass is at most one swing and one fist try; fist 15 needs 304 tries, so within
+    // 256 passes fist <= 14. A Balanced knight then lands <= 5 per hit, a Defensive monk
+    // <= 8 and a Balanced monk <= 13. Foreign banks 4..=8, its leader 1..=8: the rat keeps
+    // >= 4 HP, and both 4 * foreign >= leader + 1 and 4 * (leader + 1) >= foreign hold,
+    // so each damage group earns XP. Concurrent's one leader hit leaves >= 7 HP.
     for &index in staged_contributors {
         let (actor, session) = players[index];
         {
             let runtime = owner.runtime.lock().await;
-            if matches!(case, Case::ForgeForeign) {
+            let staged_mode = match case {
+                Case::ForgeForeign => Some(oteryn_protocol_oteryn::attack::FightMode::Offensive),
+                Case::Foreign if index == 0 => {
+                    Some(oteryn_protocol_oteryn::attack::FightMode::Defensive)
+                }
+                _ => None,
+            };
+            if let Some(fight_mode) = staged_mode {
                 assert!(owner.states.attack.lock().await.set_modes(
                     &runtime,
                     actor,
                     session,
                     oteryn_protocol_oteryn::attack::FightModes {
-                        fight_mode: oteryn_protocol_oteryn::attack::FightMode::Offensive,
+                        fight_mode,
                         ..oteryn_protocol_oteryn::attack::FightModes::DEFAULT
                     }
                 ));
@@ -748,7 +766,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             let contributed = if matches!(case, Case::ForgeForeign) {
                 health <= 15
             } else if index == 0 && matches!(case, Case::Concurrent | Case::Foreign) {
-                health <= 5
+                health < initial_health
+            } else if index == 2 && matches!(case, Case::Foreign) {
+                initial_health - health >= 4
             } else {
                 initial_health - health >= 5
             };
@@ -772,26 +792,42 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 .expect("clock");
         }
     }
-    if matches!(case, Case::Foreign) {
+    let foreign_staged = if matches!(case, Case::Foreign) {
         // The foreign and leader shares came from real swings. Leave one HP so the
         // member's first landed swing kills while the leader's activity is recent.
         // Lab damage has no character and does not enter reward_damage_shares.
+        let foreign = third
+            .as_ref()
+            .ok_or("third character")?
+            .current_character_lease()
+            .character_id();
         let mut runtime = owner.runtime.lock().await;
         let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
         runtime
             .commit_monster_lab_damage(creature.actor, b"party-xp-foreign-fixture", health - 1)
             .map_err(debug)?;
-    }
-    if matches!(case, Case::Foreign) {
-        // The foreign and leader shares came from real swings. Leave one HP so the
-        // member's first landed swing kills while the leader's activity is recent.
-        // Lab damage has no character and does not enter reward_damage_shares.
-        let mut runtime = owner.runtime.lock().await;
-        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
-        runtime
-            .commit_monster_lab_damage(creature.actor, b"party-xp-foreign-fixture", health - 1)
+        // The real damage the kill will settle, before the member's lethal hit.
+        let shares = runtime
+            .borrow_combat_death()
+            .reward_damage_shares(creature.actor)
             .map_err(debug)?;
-    }
+        let dealt = |character: &[u8]| {
+            shares
+                .iter()
+                .filter(|share| share.character.as_bytes()[..] == *character)
+                .map(|share| share.total)
+                .sum::<u64>()
+        };
+        let staged = (
+            dealt(&first_id.as_bytes()[..]),
+            dealt(&foreign.as_bytes()[..]),
+        );
+        assert_eq!(shares.len(), 2, "only the leader and the foreign Character");
+        assert!(staged.0 > 0 && staged.1 > 0, "staged damage {staged:?}");
+        Some(staged)
+    } else {
+        None
+    };
     if matches!(case, Case::Concurrent) {
         // The leader's real swings qualify activity. Leave one HP so the member's
         // first landed swing kills before content-seeded misses make that activity stale.
@@ -1272,7 +1308,25 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .filter(|r| r.0 == foreign.as_bytes())
             .map(|r| r.1)
             .sum::<i64>();
-        assert_eq!((first_award, second_award, award), (4, 4, 2));
+        let (leader, staged) = foreign_staged.ok_or("staged foreign damage")?;
+        // The member's lethal hit on one HP credits exactly 1 (damage_ledger.rs:731-737).
+        let total = leader + staged + 1;
+        // PARTY-XP-1, restated: the rat's base XP (experience 5) splits by real damage.
+        // The party keeps floor(5 * (leader + member) / total). A monk and a knight add
+        // 30%, and each member's equal share rounds up: ceil(pool * 130 / 200). The solo
+        // foreign Character keeps floor(5 * foreign / total). Level 1 doubles each award.
+        let pool = 5 * (leader + 1) / total;
+        let member = i64::try_from(2 * (pool * 130).div_ceil(200))?;
+        let outside = i64::try_from(2 * (5 * staged / total))?;
+        assert!(
+            member > 0 && outside > 0,
+            "leader={leader}, foreign={staged}"
+        );
+        assert_eq!(
+            (first_award, second_award, award),
+            (member, member, outside),
+            "leader={leader}, foreign={staged}"
+        );
     } else if matches!(case, Case::Exhausted) {
         assert_eq!((first_award, second_award), (8, 0));
     } else if matches!(case, Case::Pz) {
