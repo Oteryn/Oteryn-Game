@@ -125,6 +125,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             else {
                 continue;
             };
+            // The selected swing already owns the current weapon. Read its current
+            // selections as for spell casts; no reward survives a weapon change.
+            if let Some(catalogue) = &self.proficiency_catalogue
+                && let Some(key) = selected.weapon.item_key.as_deref()
+                && let Ok(sessions) = self.states.proficiencies.lock()
+                && let Some(track) = sessions.get(&entry.session).and_then(|p| p.track(key))
+                && let Some(perks) = catalogue.cast_perks(key, track, None)
+            {
+                let index = if selected.weapon.ranged.is_some() {
+                    4
+                } else {
+                    match selected.weapon.weapon {
+                        SwingWeapon::Fists => 0,
+                        SwingWeapon::Melee { skill, .. } => skill.index(),
+                    }
+                };
+                selected.skills.attack = selected.skills.attack.saturating_add(perks.skills[index]);
+                selected.skills.shielding =
+                    selected.skills.shielding.saturating_add(perks.skills[5]);
+                selected.character_facts.magic_level = selected
+                    .character_facts
+                    .magic_level
+                    .saturating_add(perks.skills[7]);
+            }
             if selected.weapon.ranged.is_none()
                 && matches!(selected.weapon.weapon, SwingWeapon::Melee { skill, .. } if (1..=3).contains(&skill.index()))
                 && states

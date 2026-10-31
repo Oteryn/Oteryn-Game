@@ -97,8 +97,8 @@ pub fn dispatch<'a>(
 /// 47dfd51f and the pinned items.xml. Harvest plans are staged: the runtime must refuse them
 /// until their yield has an audited mint owner. The sickle plan is Crystal 201189f8
 /// sickle.lua:12-15 (5463 to 5462, 5466 created on the target tile) with items.xml:14996-15027
-/// regrowth. Crystal's crowbar (register_actions.lua:884-969) only serves quest uids/actions,
-/// so no crowbar terrain target is admitted.
+/// regrowth. Crystal data-crystal/scripts/lib/register_actions.lua:448-452 delegates
+/// crowbar use to destroyItem, with no terrain-specific target, so none is admitted here.
 pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
     let mut bindings = vec![
         TerrainToolBinding {
@@ -213,10 +213,9 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             ],
         },
     ];
-    // M08B terrain pick: Crystal 201189f8 register_actions.lua:633-648 transforms the stone,
-    // loose stone and loose ice piles and lets them decay back (items.xml:1002-1004 hole 594
-    // 60 s, :1046-1048 hole 615 300 s, :1029-1031 hole 609 300 s). Fragile ice (:629, 7236)
-    // and the 21341 pile (:637, 21342) have no decay in that items.xml, so they stay unadmitted.
+    // M08B: pick holes without an items.xml duration/decayTo stay open until reset.
+    // Crystal data/items/items.xml:18875-18881 (7236 has none; 7237 -> 7200 in 900 s)
+    // and :42477-42479 (21342 has no decay). Do not apply spent fishing-hole decay here.
     bindings.extend([(593, 594, 60), (606, 615, 300), (608, 609, 300)].map(
         |(target, transformed, secs)| TerrainToolBinding {
             tool: TerrainTool::Pick,
@@ -230,6 +229,16 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
             }],
         },
     ));
+    bindings.extend([(7200, 7236), (21341, 21342)].map(|(target, transformed)| {
+        TerrainToolBinding {
+            tool: TerrainTool::Pick,
+            target,
+            required_action: None,
+            transformed,
+            yield_item: None,
+            decay: Vec::new(),
+        }
+    }));
     // Global's loose stone piles all open to their immediately following appearance. Keep this
     // family data-driven so the production USE_WITH path applies the same custody, CAS, receipt,
     // and deadline recovery as the large-hole mapping above.
@@ -368,8 +377,12 @@ mod tests {
             assert_eq!(plan.binding.decay.len(), 1);
             assert_eq!(plan.binding.decay[0].state, target);
         }
-        for undecayed in [7200, 21341] {
-            assert!(dispatch(&catalogue, "oteryn:item.tibia.i3456", undecayed, None, 0).is_none());
+        for (target, transformed) in [(7200, 7236), (21341, 21342)] {
+            let plan = dispatch(&catalogue, "oteryn:item.tibia.i3456", target, None, 0)
+                .expect("terrain pick binding");
+            assert_eq!(plan.binding.transformed, transformed);
+            assert!(plan.binding.decay.is_empty());
+            assert_eq!(plan.first_deadline_unix_ms, None);
         }
         let sickle =
             dispatch(&catalogue, "oteryn:item.tibia.i3293", 5463, None, 0).expect("sickle binding");

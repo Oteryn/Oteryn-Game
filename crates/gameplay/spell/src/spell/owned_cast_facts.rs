@@ -36,6 +36,9 @@ impl<T> CurrentProjection<T> {
 }
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct AccessProjections {
+    /// Selected rewards of the currently worn weapon, read by native cast dispatch.
+    /// Fist, club, sword, axe, distance, shielding, fishing, magic level.
+    pub proficiency_skills: [u32; 8],
     /// Current durable Platform projection. Zero is the defined no-row value.
     pub loyalty_points: u32,
     /// Independently registered combat-state owner. Missing skull evidence is
@@ -340,6 +343,9 @@ impl OwnedCastFacts {
                                     u32::from(loyalty_level(skill + 1, self.build.skills()[skill])),
                                     skill,
                                 )
+                                .and_then(|value| {
+                                    value.checked_add(self.access.proficiency_skills[skill])
+                                })
                                 .ok_or(OwnedFactsError::BuildMismatch)?,
                             u32::try_from(value.0)
                                 .map_err(|_| OwnedFactsError::UnavailableEquipment)?,
@@ -387,6 +393,7 @@ impl OwnedCastFacts {
             level: facts.level,
             magic_level: skill_adjustments
                 .adjust_magic_level(u32::from(loyalty_level(0, self.build.magic())))
+                .and_then(|value| value.checked_add(self.access.proficiency_skills[7]))
                 .ok_or(OwnedFactsError::BuildMismatch)?,
             premium: super::CasterPremium::from_current(premium.is_some_and(|p| p.value)),
             mana: vitals.mana,
@@ -398,6 +405,7 @@ impl OwnedCastFacts {
             attack_factor,
             shielding_skill: skill_adjustments
                 .adjust_shielding(u32::from(loyalty_level(6, self.build.skills()[5])))
+                .and_then(|value| value.checked_add(self.access.proficiency_skills[5]))
                 .ok_or(OwnedFactsError::BuildMismatch)?,
             melee_weapon,
             shield_defense: shield,

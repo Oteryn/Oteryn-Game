@@ -604,6 +604,20 @@ impl PlayerSpellState {
             0
         }
     }
+    pub fn equipped_mantra(&self) -> u32 {
+        self.equipped_mantra
+    }
+    pub fn ascetic_attack_bonus_at(&self, stage: u8, now: u64) -> u32 {
+        if self.monk.is_none() || stage > 3 {
+            return 0;
+        }
+        let mantra = if self.equipped_mantra > 0 {
+            self.equipped_mantra
+        } else {
+            self.virtue_party_bonuses(now).mantra
+        };
+        mantra.saturating_mul(u32::from(stage))
+    }
     pub fn sustain_healing_percent(&self) -> u32 {
         if self.stance
             == Some(oteryn_gameplay_spell_rules::native_actor_states::StandardStance::Sustain)

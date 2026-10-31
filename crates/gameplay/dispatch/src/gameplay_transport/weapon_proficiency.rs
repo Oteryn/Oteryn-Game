@@ -23,6 +23,8 @@ use oteryn_gameplay_domain::domain::weapon_proficiency::{
 };
 use sha2::{Digest, Sha256};
 
+#[path = "weapon_proficiency_cast.rs"]
+mod cast_perks;
 #[path = "weapon_proficiency_shaping.rs"]
 mod shaping;
 pub use shaping::ProductionProficiencyShaping;

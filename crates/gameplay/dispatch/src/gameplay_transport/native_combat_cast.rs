@@ -2526,6 +2526,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                 let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
                 let mut owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
                     command,runtime,actor,state,active,*access,owner.owner_now().get()).await.map_err(|_|DurabilityError::Unavailable)?;
+                owner.install_cast_proficiency(spell, &mut owned);
                 if pending.is_none(){
                     let promoted=crate::durability::character_promotion::read_durable_promotion(&mut tx,fence.character_id).await?;
                     if states.apply_current_premium(runtime,actor,session,&owned,owner.owner_now().get(),promoted)
@@ -2534,6 +2535,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                         owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,&item_fence,
                             command,runtime,actor,state,active,*access,owner.owner_now().get()).await
                             .map_err(|_|DurabilityError::Unavailable)?;
+                        owner.install_cast_proficiency(spell, &mut owned);
                     }
                     let now=owner.owner_now();
                     let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
@@ -2547,6 +2549,7 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                             let state=states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
                             owned=load_owned_cast_facts_in_transaction(&mut tx,owner.root,owner.character,owner.holder,
                                 &item_fence,command,runtime,actor,state,active,*access,now.get()).await.map_err(|_|DurabilityError::Unavailable)?;
+                            owner.install_cast_proficiency(spell, &mut owned);
                         }
                     }
                     let rune_reservation=match rune.as_ref(){
@@ -2852,8 +2855,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             // Phase 1: every fallible check borrows the attempt; nothing moves.
             let checked={
                 let state=states.get(&runtime,actor,session).ok_or(DurabilityError::Unavailable)?;
-                let current_owned=super::super::spell_access_facts::qualify_owned_cast_read(&current_read,command,&item_fence,
+                let mut current_owned=super::super::spell_access_facts::qualify_owned_cast_read(&current_read,command,&item_fence,
                     &runtime,actor,state,active,*access,owner.owner_now().get()).map_err(|_|DurabilityError::Unavailable)?;
+                owner.install_cast_proficiency(spell, &mut current_owned);
                 window.attempt().prepared.check_commit(&runtime,&states,&current_owned,receipt,committed.companion(),
                     committed.direct_companion(),fresh_reconnect.as_ref()).map_err(|_|DurabilityError::Unavailable)?
             };
