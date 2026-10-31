@@ -2,9 +2,7 @@
 //! mailbox post into the recipient's Inbox once, through the production item-move owner and
 //! the command 124 composition. Depot search (E08) then retrieves them from the Inbox.
 use super::*;
-use crate::gameplay_transport::item_move::{
-    LoopMove, LoopMoveRefusal, LoopMoveResult, LoopTarget,
-};
+use crate::gameplay_transport::item_move::{LoopMove, LoopMoveRefusal, LoopMoveResult, LoopTarget};
 use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 use oteryn_protocol_oteryn::mail::{MailIntent, MailOutcome, encode_intent};
 
@@ -36,19 +34,19 @@ pub(super) async fn exercise(
     letter: [u8; 16],
     parcel: [u8; 16],
     label: [u8; 16],
+    list: bool,
 ) -> TestResult {
-    admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        owner.offered_capabilities(),
-        &[4, 6, 18, 37, 62, 115, 153],
-    )
-    .ok_or("mail capability")?;
+    admitted.continuity.selected_capabilities =
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 18, 37, 62, 115, 153])
+            .ok_or("mail capability")?;
     let actor = admitted.runtime_actor.ok_or("actor")?;
     let fence = admitted.item_fence.ok_or("fence")?;
-    let name: String =
-        sqlx::query_scalar("SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
-            .bind(fence.character_id.as_bytes().as_slice())
-            .fetch_one(pool)
-            .await?;
+    let name: String = sqlx::query_scalar(
+        "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .fetch_one(pool)
+    .await?;
     let command = |command_id| UseCommand {
         game_session_id: admitted.game_session_id,
         command_id,
@@ -169,7 +167,15 @@ pub(super) async fn exercise(
         .await
         .map_err(debug)?
         .ok_or("backpack")?;
-    assert!(backpack.entries.iter().all(|e| e.item.item_instance_id != parcel));
+    assert!(
+        backpack
+            .entries
+            .iter()
+            .all(|e| e.item.item_instance_id != parcel)
+    );
+    if list {
+        super::depot_list::exercise(owner, admitted).await?;
+    }
     retrieve_from_inbox(owner, actor, admitted, pool, letter, parcel, label).await
 }
 
@@ -190,14 +196,19 @@ async fn retrieve_from_inbox(
 ) -> TestResult {
     use oteryn_protocol_oteryn::depot_search::{Outcome, Request};
     let inbox = async || -> TestResult<i64> {
-        Ok(sqlx::query_scalar("SELECT count(*) FROM game_item_character_inbox_locations")
-            .fetch_one(pool)
-            .await?)
+        Ok(
+            sqlx::query_scalar("SELECT count(*) FROM game_item_character_inbox_locations")
+                .fetch_one(pool)
+                .await?,
+        )
     };
     let carried = async |item: [u8; 16]| -> TestResult<bool> {
         let backpack = owner
             .root
-            .read_character_backpack(owner.character, admitted.item_fence.ok_or("fence")?.character_id)
+            .read_character_backpack(
+                owner.character,
+                admitted.item_fence.ok_or("fence")?.character_id,
+            )
             .await
             .map_err(debug)?
             .ok_or("backpack")?;
@@ -209,8 +220,13 @@ async fn retrieve_from_inbox(
         (602, 3504, parcel, 1),
         (603, 3506, letter, 0),
     ] {
-        let request = Request::Retrieve { client_id, all: true };
-        let reply = owner.depot_search_command(actor, admitted, command_id, request).await;
+        let request = Request::Retrieve {
+            client_id,
+            all: true,
+        };
+        let reply = owner
+            .depot_search_command(actor, admitted, command_id, request)
+            .await;
         assert_eq!((reply.outcome, reply.retrieved), (Outcome::Retrieved, 1));
         assert!(carried(item).await?);
         assert_eq!(inbox().await?, left);
@@ -225,7 +241,15 @@ async fn retrieve_from_inbox(
         .fetch_all(pool).await?;
     assert_eq!(kinds, [7, 6, 6]);
     let reply = owner
-        .depot_search_command(actor, admitted, 604, Request::Retrieve { client_id: 3504, all: true })
+        .depot_search_command(
+            actor,
+            admitted,
+            604,
+            Request::Retrieve {
+                client_id: 3504,
+                all: true,
+            },
+        )
         .await;
     assert_eq!(reply.outcome, Outcome::NotFound);
     Ok(())

@@ -22,6 +22,13 @@ fn search_order(inventory: &ItemUseInventory) -> Vec<&BackpackEntry> {
     ordered
 }
 
+pub(super) fn first_carried_item(
+    inventory: &ItemUseInventory,
+    definition: &super::super::item_mint::TypedDefinitionRef,
+) -> Option<[u8; 16]> {
+    choose(search_order(inventory), definition, &BTreeSet::new())
+}
+
 fn choose<'a>(
     entries: impl IntoIterator<Item = &'a BackpackEntry>,
     wanted: &super::super::item_mint::TypedDefinitionRef,
@@ -301,14 +308,31 @@ pub(super) async fn managed_destination(
     Ok(Some((target, ordinal)))
 }
 
+/// Only a hotkey may vacate a conflicting opposite hand. Manual moves retain refusal.
+/// Crystal game.cpp:3770-3791; the caller has already proved the claims conflict.
+pub(super) fn displaces_other_hand(hotkey: bool, target: u8, occupied: u8) -> bool {
+    hotkey && matches!((target, occupied), (5, 6) | (6, 5))
+}
+
 pub(super) async fn main_vacancy(
     tx: &mut Transaction<'_, Postgres>,
     authority: &EquipmentAuthority,
     content: &impl EquipmentMoveContent,
     backpack: [u8; 16],
 ) -> Result<()> {
-    let row=sqlx::query("SELECT definition_production_key,definition_revision_ref,(SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id) AS entries FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
-        .bind(backpack.as_slice()).fetch_one(&mut **tx).await?;
+    main_room(tx, authority, content, backpack, None, 1).await
+}
+
+pub(super) async fn main_room(
+    tx: &mut Transaction<'_, Postgres>,
+    authority: &EquipmentAuthority,
+    content: &impl EquipmentMoveContent,
+    backpack: [u8; 16],
+    source: Option<[u8; 16]>,
+    added: usize,
+) -> Result<()> {
+    let row=sqlx::query("SELECT definition_production_key,definition_revision_ref,(SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=i.item_instance_id) AS entries,game_item_loop_tree_size(encode($2,'hex')::uuid) AS tree,EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=encode($3,'hex')::uuid AND parent_item_instance_id=i.item_instance_id) AS direct_source,EXISTS(SELECT 1 FROM game_item_loop_owner(encode($3,'hex')::uuid) WHERE owner_character=encode($2,'hex')::uuid AND depth>0) AS tree_source FROM game_item_instances i WHERE item_instance_id=encode($1,'hex')::uuid")
+        .bind(backpack.as_slice()).bind(authority.fence.character_id.as_bytes().as_slice()).bind(source.map(|id| id.to_vec())).fetch_one(&mut **tx).await?;
     let policy = content
         .equipment_policy(
             &row.try_get::<String, _>("definition_production_key")?,
@@ -321,10 +345,31 @@ pub(super) async fn main_vacancy(
     let capacity = policy
         .container_capacity()
         .ok_or(rejected("equipment unknown backpack capacity"))?;
-    if row.try_get::<i64, _>("entries")? >= i64::from(capacity.min(20)) {
+    let entries = usize::try_from(row.try_get::<i64, _>("entries")?)
+        .map_err(|_| rejected("equipment backpack capacity"))?;
+    let tree = usize::try_from(row.try_get::<i64, _>("tree")?)
+        .map_err(|_| rejected("equipment backpack capacity"))?;
+    if !room_for(
+        entries,
+        usize::from(row.try_get::<bool, _>("direct_source")?),
+        added,
+        usize::from(capacity.min(20)),
+    ) || !room_for(
+        tree,
+        usize::from(row.try_get::<bool, _>("tree_source")?),
+        added,
+        500,
+    ) {
         return Err(rejected("equipment backpack capacity"));
     }
     Ok(())
+}
+
+fn room_for(entries: usize, removed: usize, added: usize, capacity: usize) -> bool {
+    entries
+        .checked_sub(removed)
+        .and_then(|n| n.checked_add(added))
+        .is_some_and(|n| n <= capacity)
 }
 
 #[cfg(test)]
@@ -347,6 +392,26 @@ mod tests {
                 quantity: 1,
             },
         }
+    }
+    #[test]
+    fn hotkey_swap_opposite_hands_only_and_manual_conflicts_stay_refused() {
+        for (target, occupied) in [(5, 6), (6, 5)] {
+            assert!(displaces_other_hand(true, target, occupied));
+            assert!(!displaces_other_hand(false, target, occupied));
+        }
+        for target in [1, 2, 3, 4, 5, 6, 7, 8, 10] {
+            assert!(!displaces_other_hand(true, target, target));
+            assert!(!displaces_other_hand(true, target, 10));
+        }
+    }
+    #[test]
+    fn hotkey_swap_reserves_all_displaced_items_before_any_move() {
+        assert!(room_for(19, 1, 2, 20));
+        assert!(!room_for(20, 1, 2, 20));
+        assert!(!room_for(19, 0, 2, 20));
+        assert!(room_for(20, 1, 1, 20));
+        assert!(!room_for(500, 1, 2, 500));
+        assert!(!room_for(0, 1, 2, 20));
     }
     #[test]
     fn nested_search_descends_before_sibling_and_preserves_display_order() {

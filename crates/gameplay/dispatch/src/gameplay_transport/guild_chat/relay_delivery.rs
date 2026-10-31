@@ -7,6 +7,21 @@ impl ChatRuntime {
         };
         let name = line.sender_name.as_str();
         match line.destination {
+            RelayDestination::Party { party_id } => {
+                for (session, entry) in sessions.iter_mut() {
+                    if !self.party.negotiated(*session) {
+                        continue;
+                    }
+                    entry.egress.push_party(
+                        name.to_owned(),
+                        line.text.as_str().to_owned(),
+                        crate::chat::egress::PartyChatDestination {
+                            party_id,
+                            sent_at_micros: line.sent_at_micros,
+                        },
+                    );
+                }
+            }
             RelayDestination::Guild { guild_id, rank } => {
                 for (session, entry) in sessions.iter_mut() {
                     if self.guild.negotiated(*session) {

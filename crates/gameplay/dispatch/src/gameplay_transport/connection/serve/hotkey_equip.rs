@@ -48,6 +48,16 @@ where
     ) {
         return Ok(false);
     }
+    // Ammunition hotkeys commit through the existing container move owner.
+    // Its receipt is equally final and must survive pending-action replacement.
+    if !matches!(
+        authority
+            .committed_loop_move(session.actor, use_command(session, command.command_id))
+            .await,
+        Some(crate::gameplay_transport::item_move::LoopMoveReplay::Absent)
+    ) {
+        return Ok(false);
+    }
     loop {
         if let Some((frame, _)) = session.held.front() {
             let replaced = tokio::time::Instant::now() < due

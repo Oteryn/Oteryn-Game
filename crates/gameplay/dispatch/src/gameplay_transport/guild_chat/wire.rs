@@ -10,6 +10,7 @@ pub(in super::super) async fn snapshot<A: FreshAdmissionAuthority>(
     admitted: AdmittedSession,
     rooms: ChatRoomSet,
 ) -> Option<(u32, Vec<u8>)> {
+    authority.chat_party_admit(admitted).await;
     authority
         .chat_private_channels(
             admitted.game_session_id,
@@ -49,6 +50,19 @@ pub(in super::super) async fn dispatch<A: FreshAdmissionAuthority>(
 > {
     let intent = chat::decode_chat_intent(payload).map_err(|_| ())?;
     match intent {
+        ChatIntent::Party { text } => {
+            if !admitted
+                .continuity
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1)
+            {
+                return Err(());
+            }
+            Ok(Some((
+                authority.chat_party_intent(admitted, text).await,
+                None,
+            )))
+        }
         ChatIntent::Guild { text } => {
             if !admitted
                 .continuity
