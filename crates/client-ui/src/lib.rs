@@ -33,3 +33,7 @@ pub mod spell_action_bar;
 /// Bestiary and Charms page state, protocol mapping, views, and settings.
 #[path = "features/0001-bestiary-charms/mod.rs"]
 pub mod bestiary_charms;
+
+/// Editable server-owned Exiva player permissions.
+#[path = "features/0147-exiva-settings/mod.rs"]
+pub mod exiva_settings;
