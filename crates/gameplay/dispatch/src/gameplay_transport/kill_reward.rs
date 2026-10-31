@@ -363,7 +363,12 @@ impl KillSettlementQueue {
             .queued
             .iter()
             .map(|entry| entry.facts.principal.session)
-            .chain(state.in_flight.iter().map(|(_, principal, _, _)| principal.0))
+            .chain(
+                state
+                    .in_flight
+                    .iter()
+                    .map(|(_, principal, _, _)| principal.0),
+            )
             .chain(state.releasing.iter().flat_map(|mark| {
                 mark.parked
                     .iter()
