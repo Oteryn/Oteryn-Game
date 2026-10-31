@@ -1,6 +1,7 @@
 use super::*;
 use crate::durability::DurabilityError;
 use crate::durability::character_progression::CurrentCharacterGameplayFence;
+use oteryn_gameplay_quests::quest::QuestTrackChange;
 use oteryn_gameplay_quests::quest::task_board;
 use sqlx::{Postgres, Row, Transaction};
 
@@ -169,28 +170,11 @@ pub(super) async fn record(
     Ok(())
 }
 
-/// Extend the existing quest receipt chain. Board generation does not create an
-/// alternate Character revision or experience writer.
-#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
-pub(super) async fn advance(
-    tx: &mut Transaction<'_, Postgres>,
-    fence: CurrentCharacterGameplayFence,
-    request: &TaskBoardCommand,
-    binding: &[u8],
+/// Freeze the exact track additions before any custody participant runs.
+pub(super) fn plan_changes(
     before: &TaskBoardView,
     view: &mut TaskBoardView,
-    experience: u64,
-) -> Result<CommittedQuestTransition, DurabilityError> {
-    use crate::domain::CharacterRevision;
-    use crate::durability::character_progression::ExperienceRewardOccurrence;
-    use crate::durability::quest_state::QuestXpObligation;
-    use oteryn_gameplay_quests::quest::QuestTrackChange;
-
-    let character = fence.character_id.as_bytes().as_slice();
-    let original = fence.expected_character_revision.get();
-    let committed = original
-        .checked_add(1)
-        .ok_or(DurabilityError::InvalidStoredState)?;
+) -> Result<Vec<QuestTrackChange>, DurabilityError> {
     let board_revision = before
         .tracks
         .get(BOARD_REVISION)
@@ -222,6 +206,58 @@ pub(super) async fn advance(
         }
     }
     changes.sort_by(|left, right| left.track.cmp(&right.track));
+    Ok(changes)
+}
+
+/// Share the existing quest owner's global state/track admission. In particular,
+/// Task Board must preserve space for a derived monk-shrine count on admission.
+pub(super) async fn fits_capacity(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    before: &TaskBoardView,
+    changes: &[QuestTrackChange],
+) -> Result<bool, DurabilityError> {
+    use crate::durability::quest_state::capacity;
+    let has_state: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM game_character_quest_states \
+         WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2)",
+    )
+    .bind(fence.character_id.as_bytes().as_slice())
+    .bind(task_board::QUEST)
+    .fetch_one(&mut **tx)
+    .await?;
+    if !has_state && !capacity::new_state_fits(tx, fence.character_id).await? {
+        return Ok(false);
+    }
+    let keys: Vec<_> = changes.iter().map(|change| change.track.as_str()).collect();
+    let existing = keys
+        .iter()
+        .filter(|key| before.tracks.contains_key(**key))
+        .count();
+    capacity::tracks_fit(tx, fence.character_id, &keys, existing).await
+}
+
+/// Extend the existing quest receipt chain. Board generation does not create an
+/// alternate Character revision or experience writer.
+#[allow(clippy::too_many_arguments, clippy::too_many_lines)]
+pub(super) async fn advance(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: CurrentCharacterGameplayFence,
+    request: &TaskBoardCommand,
+    binding: &[u8],
+    view: &TaskBoardView,
+    changes: Vec<QuestTrackChange>,
+    experience: u64,
+) -> Result<CommittedQuestTransition, DurabilityError> {
+    use crate::domain::CharacterRevision;
+    use crate::durability::character_progression::ExperienceRewardOccurrence;
+    use crate::durability::quest_state::QuestXpObligation;
+
+    let character = fence.character_id.as_bytes().as_slice();
+    let original = fence.expected_character_revision.get();
+    let committed = original
+        .checked_add(1)
+        .ok_or(DurabilityError::InvalidStoredState)?;
     let previous = sqlx::query("SELECT pinned_content_revision,definition_hash FROM game_character_quest_states WHERE character_id=encode($1,'hex')::uuid AND quest_key=$2 FOR UPDATE")
         .bind(character).bind(task_board::QUEST).fetch_optional(&mut **tx).await?;
     let (pin, hash): (String, Vec<u8>) = if let Some(previous) = previous {

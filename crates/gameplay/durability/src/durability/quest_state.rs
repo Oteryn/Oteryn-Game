@@ -518,6 +518,7 @@ pub(super) fn report_refused_experience(
 
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
+pub(super) mod capacity;
 mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]

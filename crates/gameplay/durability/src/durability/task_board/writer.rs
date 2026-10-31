@@ -151,6 +151,24 @@ impl DurabilityRoot {
             if let Err(error) = super::progression::plan_experience(&progression_row, &mut view, &catalogue, projected, &mut effects) {
                 return Ok(Err(error));
             }
+            state::update_tracks(&mut view);
+            let changed = view.data != before.data || view.balances != before.balances
+                || effects.experience != 0 || !effects.consume_items.is_empty()
+                || !effects.grant_items.is_empty() || effects.gold_cost != 0
+                || effects.reroll_tokens_spent != 0 || effects.reroll_tokens_granted != 0;
+            let changes = if changed {
+                let changes = state::plan_changes(&before, &mut view)?;
+                if !state::fits_capacity(&mut tx, fence, &before, &changes).await? {
+                    if !credit_kill {
+                        super::availability::refresh(&mut tx, fence, &catalogue, &mut before).await?;
+                    }
+                    let outcome = TaskBoardCommit { view: before, refusal: Some(TaskBoardRefusal::CapacityExceeded), transition: None, replayed: false };
+                    state::record(&mut tx, fence, &request, &binding, &outcome, None).await?;
+                    tx.commit(deadline).await?;
+                    return Ok(Ok(outcome));
+                }
+                Some(changes)
+            } else { None };
             // Roll back all custody writes on a refusal, while retaining the command's
             // refusal record outside the savepoint for stable retries.
             sqlx::query("SAVEPOINT task_board_effects").execute(&mut **tx).await?;
@@ -167,13 +185,8 @@ impl DurabilityRoot {
             view.reroll_tokens = view.reroll_tokens.checked_sub(u64::from(effects.reroll_tokens_spent))
                 .and_then(|value| value.checked_add(u64::from(effects.reroll_tokens_granted)))
                 .ok_or(DurabilityError::InvalidStoredState)?;
-            state::update_tracks(&mut view);
-            let changed = view.data != before.data || view.balances != before.balances
-                || effects.experience != 0 || !effects.consume_items.is_empty()
-                || !effects.grant_items.is_empty() || effects.gold_cost != 0
-                || effects.reroll_tokens_spent != 0 || effects.reroll_tokens_granted != 0;
-            let transition = if changed {
-                Some(super::state::advance(&mut tx, fence, &request, &binding, &before, &mut view, effects.experience).await?)
+            let transition = if let Some(changes) = changes {
+                Some(super::state::advance(&mut tx, fence, &request, &binding, &view, changes, effects.experience).await?)
             } else { None };
             // Client and expansion replies take one post-command item snapshot.
             // Kill settlement consumes no full reply, so its internal receipt can
