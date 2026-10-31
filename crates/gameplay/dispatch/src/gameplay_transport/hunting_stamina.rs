@@ -428,6 +428,7 @@ mod tests {
         let mut vitals = super::super::attack::player_block::PlayerBiteVitals {
             quest_sessions: None,
             charm: None,
+            conditions: None,
             states: &mut states,
             attack: &mut attack,
             formula: None,

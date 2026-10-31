@@ -19,6 +19,7 @@ use crate::gameplay_transport::actor_spell::{ChannelSpellStates, tests::FACTS};
 use crate::player_lethal::PlayerLethalVitals;
 use oteryn_gameplay_content::content::creature_attack_geometry::Facing;
 use oteryn_simulation_determinism::{DecisionOccurrenceId, GameplayDecisionRoot};
+#[derive(Clone)]
 struct CurrentWorld {
     facts: SpellCombatFacts,
     missing: bool,
@@ -2991,4 +2992,815 @@ fn dmg3_earth_death_target_sources_read_protection_and_replay() {
             before
         );
     }
+}
+
+#[test]
+fn monster_direct_current_sources_replay_real_damage_and_owned_conditions() {
+    for (name, index) in [
+        ("hunter", 1),
+        ("radiant_acolyte", 1),
+        ("abyssador", 1),
+        ("blightwalker", 3),
+    ] {
+        let (mut runtime, mut vitals, source, proposal, mut world, _, _) = setup_named(name, index);
+        world.facing = Some(Facing::West);
+        world.facts.condition_policy = Some(CurrentConditionPolicy {
+            immunities: vec![],
+            base_speed: 180,
+        });
+        let session = world.facts.attack.session;
+        let stamp = runtime.issue_owner_work().expect("current owner work");
+        let mut owner = DamageSpellOwner::default();
+        let first = owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("generic source reaches existing current owners");
+        assert_eq!(first.targets.len(), 1, "{name} source target");
+        let target = first.targets[0].1.as_ref().expect("real player commit");
+        if source.maximum == 0 {
+            assert!(
+                target.condition_only_applied,
+                "{name} condition-only source"
+            );
+            assert!(target.damage.is_none());
+        } else {
+            assert!(target.damage.is_some(), "{name} primary source damage");
+        }
+        let committed = vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("committed player")
+            .clone();
+        for definition in &source.conditions {
+            assert!(
+                committed
+                    .owned_conditions()
+                    .get(definition.condition_type().conflict_key())
+                    .is_some(),
+                "{name} source condition is installed in the actual owned store"
+            );
+        }
+        assert_eq!(
+            owner
+                .execute_current(
+                    &mut runtime,
+                    stamp,
+                    &mut vitals,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(9_000_000),
+                )
+                .expect("retained source occurrence"),
+            first,
+        );
+        assert_eq!(
+            vitals
+                .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+                .expect("unchanged player on replay"),
+            &committed,
+        );
+        runtime.retire_owner_cycle();
+        assert_eq!(
+            owner.execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(10_000_000),
+            ),
+            Err(AttackError::StaleOwner),
+        );
+    }
+}
+
+#[test]
+fn monster_direct_current_missing_policy_and_protection_do_not_mutate_player() {
+    for mode in 0..3 {
+        let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+            setup_named("abyssador", 1);
+        let session = world.facts.attack.session;
+        let before = vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("player before refusal")
+            .clone();
+        match mode {
+            0 => world.missing = true,
+            1 => world.facts.condition_policy = None,
+            _ => world.facts.attack.target_protected = true,
+        }
+        let stamp = runtime.issue_owner_work().expect("current owner work");
+        let result = DamageSpellOwner::default().execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        );
+        if mode == 2 {
+            assert!(
+                result
+                    .expect("protected target is excluded")
+                    .targets
+                    .is_empty()
+            );
+        } else {
+            assert_eq!(result, Err(AttackError::MissingCombatFacts));
+        }
+        assert_eq!(
+            vitals
+                .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+                .expect("refused player unchanged"),
+            &before,
+        );
+    }
+}
+
+#[test]
+fn monster_source_geometry_shares_target_caster_and_direction_centers() {
+    use crate::content::ProjectV2AbilityArea;
+    let (_, _, mut source, _, _, _, _) = setup();
+    let from = MovementLocalPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+    let to = MovementLocalPosition {
+        x: 104,
+        y: 101,
+        floor: 7,
+    };
+    // Geometry probes retain no authority and commit no source effects.
+    source.area = None;
+    assert_eq!(
+        source.target_tiles(from, to, None).expect("direct tile"),
+        vec![(104, 101, 7)]
+    );
+    source.area = Some(ProjectV2AbilityArea::Circle { radius_tiles: 2 });
+    source.needs_target = true;
+    source.needs_direction = false;
+    assert_eq!(
+        source.cast_center(from, to, None).expect("target center"),
+        to
+    );
+    let mut tiles = source.target_tiles(from, to, None).expect("source radius2");
+    tiles.sort_unstable();
+    assert_eq!(
+        tiles,
+        vec![
+            (103, 101, 7),
+            (104, 100, 7),
+            (104, 101, 7),
+            (104, 102, 7),
+            (105, 101, 7)
+        ]
+    );
+    source.needs_target = false;
+    assert_eq!(
+        source.cast_center(from, to, None).expect("caster center"),
+        from
+    );
+    source.needs_direction = true;
+    source.area = Some(ProjectV2AbilityArea::Beam {
+        length_tiles: 3,
+        spread_tiles: 0,
+    });
+    let mut tiles = source
+        .target_tiles(from, to, Some(Facing::East))
+        .expect("source beam");
+    tiles.sort_unstable();
+    assert_eq!(tiles, vec![(101, 100, 7), (102, 100, 7), (103, 100, 7)]);
+    assert_eq!(
+        source.target_tiles(from, to, None),
+        Err(AttackError::MissingCombatFacts)
+    );
+    assert_eq!(
+        source.target_tiles(
+            from,
+            MovementLocalPosition { floor: 8, ..to },
+            Some(Facing::East)
+        ),
+        Err(AttackError::OutOfRange)
+    );
+    assert_eq!(
+        source.cast_center(
+            MovementLocalPosition {
+                x: i32::MAX,
+                ..from
+            },
+            to,
+            Some(Facing::East)
+        ),
+        Err(AttackError::NumericOverflow)
+    );
+}
+
+#[test]
+fn monster_current_variant_uses_one_source_child_for_geometry_commit_and_replay() {
+    let packet = native_variant_packet();
+    let case = packet["cases"]
+        .as_array()
+        .expect("native variant cases")
+        .iter()
+        .find(|case| case["creature"]["key"] == "oteryn:creature.barbarian_brutetamer")
+        .expect("native barbarian variant");
+    let index = case["entry"].as_u64().expect("source entry") as usize;
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("barbarian_brutetamer", index);
+    world.facing = Some(Facing::West);
+    world.facts.condition_policy = Some(CurrentConditionPolicy {
+        immunities: vec![],
+        base_speed: 180,
+    });
+    let (selected, child) = source
+        .selected_variant(&proposal)
+        .expect("source selector")
+        .expect("variant selected");
+    let child_identity = child.variant_child.clone().expect("source child identity");
+    let from = runtime
+        .read_actor_position(proposal.issuer)
+        .expect("issuer position")
+        .position();
+    let to = runtime
+        .read_actor_position(proposal.target)
+        .expect("target position")
+        .position();
+    let tiles = child
+        .target_tiles(from, to, world.facing)
+        .expect("selected child geometry");
+    assert!(tiles.contains(&(to.x, to.y, to.floor)));
+    let stamp = runtime.issue_owner_work().expect("current owner work");
+    let mut owner = DamageSpellOwner::default();
+    let first = owner
+        .execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("current variant owner");
+    let receipt = first
+        .source_variant
+        .as_ref()
+        .expect("retained selector receipt");
+    assert_eq!((receipt.index, &receipt.child), (selected, &child_identity));
+    assert_eq!(receipt.parent, proposal.ability);
+    assert_eq!(first.targets.len(), 1);
+    assert!(
+        first.targets[0]
+            .1
+            .as_ref()
+            .expect("current player condition")
+            .condition_only_applied
+    );
+    let session = world.facts.attack.session;
+    let committed = vitals
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+        .expect("committed variant condition")
+        .clone();
+    assert_eq!(
+        owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(9_000_000),
+            )
+            .expect("variant replay"),
+        first
+    );
+    assert_eq!(
+        vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("same condition state"),
+        &committed
+    );
+}
+
+#[test]
+fn monster_current_windup_uses_due_owner_and_revalidates_policy() {
+    for mode in 0..4 {
+        let (mut runtime, mut vitals, source, proposal, mut world, _, _) = windup_setup();
+        let stamp = runtime.issue_owner_work().expect("current windup work");
+        let session = world.facts.attack.session;
+        let before = vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("owned player before windup")
+            .clone();
+        let mut owner = DamageSpellOwner::default();
+        let start = owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("current source windup");
+        assert!(start.targets.is_empty());
+        assert_eq!(
+            owner.next_windup_due_time().expect("actual timer").get(),
+            4_000_000
+        );
+        let pending = owner.pending_windups();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].1.target, proposal.target);
+        assert_eq!(pending[0].2, session);
+        assert_eq!(pending[0].3.get(), 4_000_000);
+        assert_eq!(
+            owner
+                .execute_current(
+                    &mut runtime,
+                    stamp,
+                    &mut vitals,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(3_000_000),
+                )
+                .expect("start replay"),
+            start
+        );
+        let clock = crate::foundation::owner_timer::VirtualOwnerClock::new(
+            SemanticTimeMicros::from_micros(3_999_999),
+        );
+        assert!(
+            owner
+                .run_windup_due_current(&mut runtime, stamp, &mut vitals, &mut world, &clock)
+                .expect("not due")
+                .is_empty()
+        );
+        match mode {
+            1 => world.facts.attack.target_pz = true,
+            2 => world.missing = true,
+            3 => {
+                runtime
+                    .remove_test_actor(proposal.issuer)
+                    .expect("source removed before due");
+            }
+            _ => {}
+        }
+        clock.advance(1);
+        let fired = owner
+            .run_windup_due_current(&mut runtime, stamp, &mut vitals, &mut world, &clock)
+            .expect("current due lane");
+        assert_eq!(fired.len(), 1);
+        match mode {
+            0 => assert!(
+                fired[0].1.as_ref().expect("due cast").targets[0]
+                    .1
+                    .as_ref()
+                    .expect("current condition")
+                    .condition_only_applied
+            ),
+            1 => assert!(
+                fired[0]
+                    .1
+                    .as_ref()
+                    .expect("protected target skip")
+                    .targets
+                    .is_empty()
+            ),
+            2 => assert_eq!(fired[0].1, Err(AttackError::MissingCombatFacts)),
+            _ => assert_eq!(fired[0].1, Err(AttackError::StaleIssuer)),
+        }
+        assert_eq!(owner.next_windup_due_time(), None);
+        assert!(owner.pending_windups().is_empty());
+        let committed = vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("owned player after windup")
+            .clone();
+        if mode == 0 {
+            assert_eq!(committed.revision(), before.revision() + 1);
+            assert_eq!(committed.vitals(), before.vitals());
+        } else {
+            assert_eq!(committed, before);
+        }
+        assert!(
+            owner
+                .run_windup_due_current(&mut runtime, stamp, &mut vitals, &mut world, &clock)
+                .expect("due replay empty")
+                .is_empty()
+        );
+        assert_eq!(
+            vitals
+                .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+                .expect("replayed store"),
+            &committed
+        );
+    }
+}
+
+#[test]
+fn monster_current_chain_keeps_exact_recipients_due_time_and_live_policy() {
+    use crate::creature_chain_attack::ChainOwner;
+    use crate::foundation::owner_timer::{OwnerClock, VirtualOwnerClock};
+    for mode in 0..3 {
+        let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+            setup_named("bony_sea_devil", 5);
+        let (second, session) = chain_second(&mut runtime, &mut vitals, &mut world);
+        let mut map = CurrentChainMap { missing: false };
+        let stamp = runtime.issue_owner_work().expect("current chain work");
+        let mut chain = ChainOwner::new_current(&runtime).expect("current chain owner");
+        let damage = DamageSpellOwner::default();
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+        let token = chain
+            .schedule_current(
+                &runtime,
+                stamp,
+                &source,
+                &proposal,
+                &mut world,
+                &mut map,
+                clock.now(),
+            )
+            .expect("current source chain");
+        assert_eq!(
+            chain
+                .schedule_current(
+                    &runtime,
+                    stamp,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    &mut map,
+                    clock.now(),
+                )
+                .expect("schedule replay"),
+            token
+        );
+        assert_eq!(chain.next_due_time(), Some(clock.now()));
+        let first = chain
+            .run_due_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &damage,
+                &mut world,
+                &mut map,
+                &clock,
+            )
+            .expect("first exact target");
+        assert_eq!(first.len(), 1);
+        assert!(
+            first[0].2.as_ref().expect("first hit").targets[0]
+                .1
+                .as_ref()
+                .expect("first damage")
+                .damage
+                .expect("damage receipt")
+                .applied
+                > 0
+        );
+        assert_eq!(
+            chain.next_due_time().expect("second deadline").get(),
+            50_000
+        );
+        let pending = chain.pending_sources().expect("next source metadata");
+        assert_eq!(pending.len(), 1);
+        assert_eq!(
+            (pending[0].proposal.target, pending[0].session),
+            (second, session)
+        );
+        assert_eq!(pending[0].due.get(), 50_000);
+        let before = vitals
+            .read_owned_player_state_test_snapshot(&runtime, second, session)
+            .expect("second store before due")
+            .clone();
+        clock.advance(49_999);
+        assert!(
+            chain
+                .run_due_current(
+                    &mut runtime,
+                    stamp,
+                    &mut vitals,
+                    &damage,
+                    &mut world,
+                    &mut map,
+                    &clock,
+                )
+                .expect("second not yet due")
+                .is_empty()
+        );
+        if mode == 1 {
+            map.missing = true;
+        }
+        if mode == 2 {
+            world.facts.attack.target_protected = true;
+        }
+        clock.advance(1);
+        let next = chain
+            .run_due_current(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &damage,
+                &mut world,
+                &mut map,
+                &clock,
+            )
+            .expect("due step");
+        assert_eq!(next.len(), 1);
+        match mode {
+            0 => assert!(
+                next[0].2.as_ref().expect("second hit").targets[0]
+                    .1
+                    .as_ref()
+                    .expect("second damage")
+                    .damage
+                    .expect("second receipt")
+                    .applied
+                    > 0
+            ),
+            1 => assert_eq!(next[0].2, Err(AttackError::MissingCombatFacts)),
+            _ => assert!(
+                next[0]
+                    .2
+                    .as_ref()
+                    .expect("protected skip")
+                    .targets
+                    .is_empty()
+            ),
+        }
+        assert_eq!(
+            chain.receipts(token).expect("retained step receipts").len(),
+            2
+        );
+        assert_eq!(chain.next_due_time(), None);
+        assert!(
+            chain
+                .pending_sources()
+                .expect("finished metadata")
+                .is_empty()
+        );
+        let committed = vitals
+            .read_owned_player_state_test_snapshot(&runtime, second, session)
+            .expect("second store after due")
+            .clone();
+        if mode == 0 {
+            assert_ne!(committed, before);
+        } else {
+            assert_eq!(committed, before);
+        }
+        map.missing = false;
+        world.facts.attack.target_protected = false;
+        assert!(
+            chain
+                .run_due_current(
+                    &mut runtime,
+                    stamp,
+                    &mut vitals,
+                    &damage,
+                    &mut world,
+                    &mut map,
+                    &clock,
+                )
+                .expect("no repeated step")
+                .is_empty()
+        );
+        assert_eq!(
+            vitals
+                .read_owned_player_state_test_snapshot(&runtime, second, session)
+                .expect("same retained state"),
+            &committed
+        );
+    }
+}
+
+#[test]
+fn monster_current_chain_retired_owner_cannot_consume_pending_step() {
+    use crate::creature_chain_attack::ChainOwner;
+    use crate::foundation::owner_timer::{OwnerClock, VirtualOwnerClock};
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("bony_sea_devil", 5);
+    let mut map = CurrentChainMap { missing: false };
+    let stamp = runtime.issue_owner_work().expect("current work");
+    let mut chain = ChainOwner::new_current(&runtime).expect("owner");
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+    chain
+        .schedule_current(
+            &runtime,
+            stamp,
+            &source,
+            &proposal,
+            &mut world,
+            &mut map,
+            clock.now(),
+        )
+        .expect("pending current cast");
+    runtime.retire_owner_cycle();
+    assert_eq!(
+        chain.run_due_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &DamageSpellOwner::default(),
+            &mut world,
+            &mut map,
+            &clock,
+        ),
+        Err(AttackError::StaleOwner)
+    );
+    assert_eq!(chain.next_due_time(), Some(clock.now()));
+    assert_eq!(
+        chain
+            .pending_sources()
+            .expect("pending source retained")
+            .len(),
+        1
+    );
+}
+
+#[test]
+fn monster_windup_factory_receives_exact_source_target_and_supplied_work() {
+    use crate::foundation::owner_timer::VirtualOwnerClock;
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) = windup_setup();
+    let stamp = runtime.issue_owner_work().expect("scheduled work");
+    let session = world.facts.attack.session;
+    let mut owner = DamageSpellOwner::default();
+    owner
+        .execute_current(
+            &mut runtime,
+            stamp,
+            &mut vitals,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("pending windup");
+    let due_stamp = runtime
+        .issue_owner_work()
+        .expect("prepared current due work");
+    let binding = runtime.binding();
+    let (_, wrong_stamp) = crate::foundation::crystal_timer_fixture(
+        crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+        crate::foundation::ScopeOwnershipGeneration::new(binding.scope_generation().get() + 1)
+            .expect("different generation"),
+    )
+    .expect("independent stale work");
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(4_000_000));
+    let mut called = 0;
+    assert_eq!(
+        owner.run_windup_due_current_with(
+            &mut runtime,
+            wrong_stamp,
+            &mut vitals,
+            &clock,
+            |_, _, _, _| {
+                called += 1;
+                None
+            },
+        ),
+        Err(AttackError::StaleOwner)
+    );
+    assert_eq!(called, 0);
+    assert_eq!(owner.pending_windups().len(), 1);
+    let fired = owner
+        .run_windup_due_current_with(
+            &mut runtime,
+            due_stamp,
+            &mut vitals,
+            &clock,
+            |actual_source, actual_proposal, actual_session, actual_stamp| {
+                called += 1;
+                assert_eq!(actual_source.fingerprint, source.fingerprint);
+                assert_eq!(actual_proposal, &proposal);
+                assert_eq!(actual_session, session);
+                assert_eq!(actual_stamp, due_stamp);
+                Some(Box::new(world.clone()) as Box<dyn SpellWorldReader>)
+            },
+        )
+        .expect("source-specific due reader");
+    assert_eq!(called, 1);
+    assert_eq!(fired.len(), 1);
+    assert!(
+        fired[0].1.as_ref().expect("due result").targets[0]
+            .1
+            .as_ref()
+            .expect("owned condition")
+            .condition_only_applied
+    );
+    assert!(
+        owner
+            .run_windup_due_current_with(
+                &mut runtime,
+                due_stamp,
+                &mut vitals,
+                &clock,
+                |_, _, _, _| {
+                    called += 1;
+                    None
+                },
+            )
+            .expect("spent pulse cannot ask for another reader")
+            .is_empty()
+    );
+    assert_eq!(called, 1);
+}
+
+#[test]
+fn monster_chain_factory_receives_frozen_origin_and_exact_step_under_supplied_work() {
+    use crate::creature_chain_attack::{ChainMapFacts, ChainOwner};
+    use crate::foundation::owner_timer::{OwnerClock, VirtualOwnerClock};
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("bony_sea_devil", 5);
+    chain_second(&mut runtime, &mut vitals, &mut world);
+    let mut map = CurrentChainMap { missing: false };
+    let stamp = runtime.issue_owner_work().expect("schedule work");
+    let mut chain = ChainOwner::new_current(&runtime).expect("current owner");
+    let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+    let token = chain
+        .schedule_current(
+            &runtime,
+            stamp,
+            &source,
+            &proposal,
+            &mut world,
+            &mut map,
+            clock.now(),
+        )
+        .expect("source chain");
+    let damage = DamageSpellOwner::default();
+    let mut called = 0;
+    for step in 0..2 {
+        let expected = chain
+            .pending_sources()
+            .expect("prepared metadata")
+            .remove(0);
+        let due_stamp = runtime
+            .issue_owner_work()
+            .expect("prepared current step work");
+        let result = chain
+            .run_due_current_with(
+                &mut runtime,
+                due_stamp,
+                &mut vitals,
+                &damage,
+                &clock,
+                |actual_source, actual_proposal, actual_session, actual_from, actual_stamp| {
+                    called += 1;
+                    assert_eq!(actual_source.fingerprint, expected.source.fingerprint);
+                    assert_eq!(actual_proposal, &expected.proposal);
+                    assert_eq!(actual_session, expected.session);
+                    assert_eq!(actual_from, expected.from);
+                    assert_eq!(actual_stamp, due_stamp);
+                    Some((
+                        Box::new(world.clone()) as Box<dyn SpellWorldReader>,
+                        Box::new(CurrentChainMap { missing: false }) as Box<dyn ChainMapFacts>,
+                    ))
+                },
+            )
+            .expect("source-specific current readers");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].1, step);
+        assert!(
+            result[0].2.as_ref().expect("actual step").targets[0]
+                .1
+                .as_ref()
+                .expect("actual damage")
+                .damage
+                .expect("receipt")
+                .applied
+                > 0
+        );
+        clock.advance(50_000);
+    }
+    assert_eq!(called, 2);
+    assert_eq!(chain.receipts(token).expect("step receipts").len(), 2);
+    assert!(
+        chain
+            .run_due_current_with(
+                &mut runtime,
+                stamp,
+                &mut vitals,
+                &damage,
+                &clock,
+                |_, _, _, _, _| {
+                    called += 1;
+                    None
+                },
+            )
+            .expect("spent chain pulses")
+            .is_empty()
+    );
+    assert_eq!(called, 2);
 }
