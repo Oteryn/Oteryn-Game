@@ -93,9 +93,39 @@ pub fn dispatch<'a>(
     })
 }
 
+/// A harvest the gathering craft owner commits: the terrain CAS, its decay chain and the yield
+/// in one inventory transaction (`GatheringCraft`). Crystal creates the yield on the target
+/// tile; Oteryn mints it into the carried backpack through the existing audited craft mint.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HarvestPlan {
+    pub attempt: oteryn_gameplay_items::fishing::GatheringAttempt,
+    /// Successive states and delays from the preceding durable deadline, milliseconds.
+    pub decay: Vec<(u32, i64)>,
+}
+
+/// The harvest binding of one carried tool and target state, if the catalogue has a yield for it.
+pub fn harvest_plan(tool_key: &str, target_state: u32) -> Option<HarvestPlan> {
+    let catalogue = crystal_core_bindings();
+    let plan = dispatch(&catalogue, tool_key, target_state, None, 0)?;
+    let binding = plan.binding;
+    let yield_item = u16::try_from(binding.yield_item?).ok()?;
+    Some(HarvestPlan {
+        attempt: oteryn_gameplay_items::fishing::GatheringAttempt {
+            after: Some(u16::try_from(binding.transformed).ok()?),
+            yield_item: Some(yield_item),
+            consumes_bait: false,
+        },
+        decay: binding
+            .decay
+            .iter()
+            .map(|step| Some((step.state, i64::try_from(step.after.as_millis()).ok()?)))
+            .collect::<Option<_>>()?,
+    })
+}
+
 /// Bounded mappings. Digging and jungle grass are backed by Canary register_actions.lua at
-/// 47dfd51f and the pinned items.xml. Harvest plans are staged: the runtime must refuse them
-/// until their yield has an audited mint owner. The sickle plan is Crystal 201189f8
+/// 47dfd51f and the pinned items.xml. Harvest plans are committed by the gathering craft owner,
+/// which mints their yield (`harvest_plan`). The sickle plan is Crystal 201189f8
 /// sickle.lua:12-15 (5463 to 5462, 5466 created on the target tile) with items.xml:14996-15027
 /// regrowth. Crystal data-crystal/scripts/lib/register_actions.lua:448-452 delegates
 /// crowbar use to destroyItem, with no terrain-specific target, so none is admitted here.
@@ -194,6 +224,16 @@ pub fn crystal_core_bindings() -> Vec<TerrainToolBinding> {
                     after: Duration::from_secs(240),
                 },
             ],
+        },
+        // Crystal data-global/scripts/lib/register_actions.lua:1040-1044: the scythe on burning
+        // sugar cane 5464 -> 5463 and creates 5466; items.xml:15002-15005 gives 5463 no decay.
+        TerrainToolBinding {
+            tool: TerrainTool::Scythe,
+            target: 5464,
+            required_action: None,
+            transformed: 5463,
+            yield_item: Some(5466),
+            decay: Vec::new(),
         },
         TerrainToolBinding {
             tool: TerrainTool::Sickle,
@@ -362,6 +402,31 @@ mod tests {
                 .collect::<Vec<_>>(),
             [3652, 3653]
         );
+    }
+
+    /// M08 (CLOSE-2): Crystal data-global/scripts/lib/register_actions.lua:1040-1049 (scythe on
+    /// burning sugar cane 5464 -> 5463 + 5466, on wheat 3653 -> 3651 + 3605, both
+    /// `Game.createItem(.., 1, toPosition)`), data/scripts/actions/tools/sickle.lua:4-8 and
+    /// items.xml:11551-11565 (wheat 240 s + 240 s), :15002-15027 (5463 no decay; 5462 240 s).
+    #[test]
+    fn m08_harvest_plans_carry_the_donor_yield_and_decay_chain() {
+        let wheat = harvest_plan("oteryn:item.tibia.i3453", 3653).expect("wheat harvest");
+        assert_eq!(wheat.attempt.after, Some(3651));
+        assert_eq!(wheat.attempt.yield_item, Some(3605));
+        assert!(!wheat.attempt.consumes_bait);
+        assert_eq!(wheat.decay, [(3652, 240_000), (3653, 240_000)]);
+        let burning = harvest_plan("oteryn:item.tibia.i3453", 5464).expect("burning cane");
+        assert_eq!(burning.attempt.after, Some(5463));
+        assert_eq!(burning.attempt.yield_item, Some(5466));
+        assert!(burning.decay.is_empty());
+        let sickle = harvest_plan("oteryn:item.tibia.i3293", 5463).expect("cane");
+        assert_eq!(sickle.attempt.after, Some(5462));
+        assert_eq!(sickle.attempt.yield_item, Some(5466));
+        assert_eq!(sickle.decay, [(5470, 240_000), (5465, 240_000)]);
+        // A yield-free terrain binding, the wrong tool and an unknown target are not harvests.
+        assert!(harvest_plan("oteryn:item.tibia.i3456", 593).is_none());
+        assert!(harvest_plan("oteryn:item.tibia.i3293", 3653).is_none());
+        assert!(harvest_plan("oteryn:item.tibia.i3453", 3651).is_none());
     }
 
     #[test]

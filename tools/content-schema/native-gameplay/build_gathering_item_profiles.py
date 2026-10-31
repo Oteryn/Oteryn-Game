@@ -16,7 +16,7 @@ import build_source_item_profiles as native
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/gathering-item-profiles.json'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
-IDS = {3580, 4012, 4026, 4063, 4098, 4138, 4325, 5876, 5877, 5878, 5905, 5906,
+IDS = {3580, 4012, 4026, 4063, 4098, 4138, 4325, 5466, 5876, 5877, 5878, 5905, 5906,
        5908, 5942, 5948, 5969, 5973, 5984, 5995, 6006, 6040, 7158, 7159, 7200,
        7236, 7237, 7441, 7442}
 
