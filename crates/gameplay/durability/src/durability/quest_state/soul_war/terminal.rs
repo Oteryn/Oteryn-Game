@@ -21,7 +21,7 @@ pub(crate) async fn apply_soul_war_failed_final_in_transaction(
         .fetch_optional(&mut **tx).await.map_err(DurabilityError::from)?;
     let Some(affected) = affected else { return Err(CharacterProgressionError::AuthorityRejected); };
     if affected.is_empty() || affected.len() % 16 != 0
-        || affected.chunks_exact(16).any(|member| !canonical.chunks_exact(16).any(|candidate| candidate == member))
+        || affected.as_chunks::<16>().0.iter().any(|member| !canonical.as_chunks::<16>().0.iter().any(|candidate| candidate == member))
     {
         return Err(CharacterProgressionError::AuthorityRejected);
     }
@@ -31,7 +31,7 @@ pub(crate) async fn apply_soul_war_failed_final_in_transaction(
         // ANSWER6547994219: the full roster is retained above. Expired members
         // have explicit no-op evidence in that outcome and must not consume the
         // selected pair or advance Character state a second time.
-        if !affected.chunks_exact(16).any(|member| member == fence.character_id.as_bytes()) {
+        if !affected.as_chunks::<16>().0.iter().any(|member| member == fence.character_id.as_bytes()) {
             continue;
         }
         let occurrence: [u8; 32] = Sha256::new().chain_update(b"oteryn:soul-war:failed-final:v1")
