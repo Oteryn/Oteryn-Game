@@ -367,6 +367,10 @@ impl PlayerSpellState {
             && self.premium_current == before.premium_current
             && self.premium_valid_until_micros == before.premium_valid_until_micros
             && self.owned_skills == before.owned_skills
+            && self.wheel_effects == before.wheel_effects
+            && self.wheel_gift == before.wheel_gift
+            && self.wheel_equipment == before.wheel_equipment
+            && self.wheel_proficiency_weapon == before.wheel_proficiency_weapon
             && self.virtue_party == before.virtue_party
             && self.equipped_mantra == before.equipped_mantra
             && self.equipped_armor == before.equipped_armor
@@ -529,9 +533,15 @@ impl PlayerSpellState {
             return Err(SpellCastDisposition::Rejected);
         }
         let maximum = crate::domain::premium::soul_maximum(promoted, current);
+        let wheel_disabled = !promoted
+            || !current
+            || self.facts.level <= oteryn_gameplay_progression::wheel::WHEEL_LEVEL_OFFSET;
+        let clear_wheel_windows =
+            wheel_disabled && (self.wheel_sanctuary.is_some() || self.wheel_focus_until.is_some());
         let changed = self.premium_current != current
             || self.stored_promotion != promoted
-            || self.facts.max_soul != maximum;
+            || self.facts.max_soul != maximum
+            || clear_wheel_windows;
         let revision = if changed {
             self.revision
                 .checked_add(1)
@@ -543,6 +553,12 @@ impl PlayerSpellState {
         self.premium_valid_until_micros = if current { valid_until_micros } else { None };
         self.facts.max_soul = maximum;
         self.stored_promotion = promoted;
+        // Crystal wheel:3641-3650 clears both timers when their perks are disabled.
+        // Losing eligibility must not leave a window that reappears on later renewal.
+        if clear_wheel_windows {
+            self.wheel_sanctuary = None;
+            self.wheel_focus_until = None;
+        }
         self.revision = revision;
         Ok(changed)
     }
