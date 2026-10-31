@@ -27,6 +27,8 @@ pub use oteryn_protocol_oteryn::depot::{DepotAction, DepotIntent, DepotOutcome, 
 pub use oteryn_protocol_oteryn::hotkey_equip;
 /// Quest log wire values consumed by the client feature adapter.
 pub use oteryn_protocol_oteryn::quest_log;
+/// Wheel and Atelier wire values for the selected client feature.
+pub use oteryn_protocol_oteryn::{atelier, wheel};
 mod guild_chat;
 pub use appearance_state::{AppearanceItemDictionary, AppearanceUpdate};
 use oteryn_protocol_oteryn::actor_spell::{self, SpellCastIntent};

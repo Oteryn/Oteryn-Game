@@ -215,7 +215,7 @@ async fn write<C: ItemLoopContent>(
         }
         output_weight += u64::from(weight) * u64::from(*count);
     }
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await?;
+    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
     if carried
         .checked_sub(if consumes_source { u64::from(used_weight) } else { 0 })
         .and_then(|w| w.checked_add(output_weight))

@@ -2238,7 +2238,15 @@ impl DamageSpellOwner {
                 continue;
             }
             let receipt = if source.conditions.is_empty() {
-                vitals.apply_attack_damage(runtime, target, session, amount, &occurrence, now)
+                vitals.apply_typed_attack_damage(
+                    runtime,
+                    target,
+                    session,
+                    amount,
+                    crate::player_lethal::PlayerHitKind::from_element(source.element.as_deref()),
+                    &occurrence,
+                    now,
+                )
             } else {
                 let policy = facts
                     .condition_policy
@@ -2254,11 +2262,12 @@ impl DamageSpellOwner {
                     decision_root: &root,
                     occurrence: child_id,
                 };
-                vitals.apply_composite_attack_damage(
+                vitals.apply_typed_composite_attack_damage(
                     runtime,
                     target,
                     session,
                     amount,
+                    crate::player_lethal::PlayerHitKind::from_element(source.element.as_deref()),
                     &occurrence,
                     proposal.issuer,
                     &source.conditions,

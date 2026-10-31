@@ -604,7 +604,7 @@ pub(super) async fn move_loop_item(
             admission.holder,
             &fence,
             CommandRef::new(command.game_session_id, command_id),
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
             LoopMoveRequest {
                 item,
                 count: request.count,

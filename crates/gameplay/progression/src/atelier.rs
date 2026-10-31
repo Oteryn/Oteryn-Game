@@ -1,6 +1,6 @@
 //! Gem Atelier and Fragment Workshop state transitions.
 //!
-//! Numeric policy is read from the pinned Wheel/Gem catalogue rather than duplicated here.
+//! Numeric policy uses the pinned catalogue, with explicit executable Crystal corrections.
 
 use std::collections::BTreeMap;
 
@@ -16,6 +16,15 @@ pub enum GemQuality {
 }
 
 impl GemQuality {
+    /// Crystal 201189f player_wheel.cpp:1304-1316. The historical data-only
+    /// official catalogue bounds Regular at five; the selected runtime donor permits ten.
+    pub const fn revealed_fragment_yield(self) -> (u32, u32) {
+        match self {
+            Self::Lesser | Self::Greater => (1, 5),
+            Self::Regular => (2, 10),
+        }
+    }
+
     const fn key(self) -> &'static str {
         match self {
             Self::Lesser => "lesser",
@@ -278,11 +287,7 @@ impl AtelierState {
                     return Err(AtelierRefusal::LastDomainGem);
                 }
                 let row = &catalogue["atelier"]["fragment_yields"][quality.key()];
-                let range = row["revealed"]
-                    .as_array()
-                    .ok_or(AtelierRefusal::InvalidDraw)?;
-                let low = range[0].as_u64().ok_or(AtelierRefusal::InvalidDraw)? as u32;
-                let high = range[1].as_u64().ok_or(AtelierRefusal::InvalidDraw)? as u32;
+                let (low, high) = quality.revealed_fragment_yield();
                 if !(low..=high).contains(&yield_amount) {
                     return Err(AtelierRefusal::InvalidDraw);
                 }
@@ -421,4 +426,76 @@ fn current_gem<'state>(
         return Err(AtelierRefusal::RulesetMigrationPending);
     }
     Ok(gem)
+}
+
+#[cfg(test)]
+mod crystal_yield_tests {
+    use super::*;
+
+    #[test]
+    fn crystal_revealed_fragment_bounds_are_inclusive_and_refusals_are_atomic()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let data = WheelGemData::embedded()?;
+        for (quality, low, high, kind) in [
+            (GemQuality::Lesser, 1, 5, FragmentKind::Basic),
+            (GemQuality::Regular, 2, 10, FragmentKind::Basic),
+            (GemQuality::Greater, 1, 5, FragmentKind::Supreme),
+        ] {
+            assert_eq!(quality.revealed_fragment_yield(), (low, high));
+            let state = AtelierState {
+                vocation: "knight".into(),
+                gems: [1, 2]
+                    .into_iter()
+                    .map(|id| {
+                        (
+                            id,
+                            Gem {
+                                id,
+                                quality,
+                                domain: WheelDomain::Green,
+                                mods: vec![31, 0, 5]
+                                    .into_iter()
+                                    .take(quality.mod_count())
+                                    .collect(),
+                                locked: false,
+                                vessel: false,
+                                ruleset_revision: data.revision().into(),
+                            },
+                        )
+                    })
+                    .collect(),
+                ..Default::default()
+            };
+            for yield_amount in [low, high] {
+                let mut next = state.clone();
+                next.commit(
+                    0,
+                    AtelierAction::Dismantle {
+                        id: 1,
+                        yield_amount,
+                    },
+                )
+                .map_err(|error| format!("valid Crystal yield refused: {error:?}"))?;
+                assert_eq!(next.fragments.get(&kind), Some(&yield_amount));
+                assert!(!next.gems.contains_key(&1));
+                assert!(next.gems.contains_key(&2));
+                assert_eq!(next.revision, 1);
+            }
+            for yield_amount in [low - 1, high + 1] {
+                let mut next = state.clone();
+                assert_eq!(
+                    next.commit(
+                        0,
+                        AtelierAction::Dismantle {
+                            id: 1,
+                            yield_amount
+                        }
+                    ),
+                    Err(AtelierRefusal::InvalidDraw)
+                );
+                assert_eq!(next, state);
+            }
+        }
+        Ok(())
+    }
 }

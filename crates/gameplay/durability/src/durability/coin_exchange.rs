@@ -605,7 +605,7 @@ async fn plan<C: ItemLoopContent>(
     )
     .await
     .map_err(|_| DurabilityError::InvalidStoredState)?;
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await?;
+    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
     if carried
         .checked_sub(weights.0)
         .and_then(|n| n.checked_add(weights.1))
