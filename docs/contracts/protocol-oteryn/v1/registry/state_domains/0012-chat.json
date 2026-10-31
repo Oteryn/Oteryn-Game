@@ -1,10 +1,10 @@
 {
   "id": 12,
   "name": "CHAT",
-  "owner_decision": "CHAT-0 CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1 §7 (docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md, #1375); numbers leased to CHAT-1 by the #162 control plane",
+  "owner_decision": "CHAT-0 CHAT0-LOCAL-PRIVATE-WORLD-ROOMS-V1 \u00a77 (docs/architecture/reviews/OTERYN_GAME_CHAT0_PLAYER_CHAT_DECISION_2026-09-30.md, #1375); numbers leased to CHAT-1 by the #162 control plane",
   "owner": "World communication (current ChannelRuntime for local speech)",
   "capability": 7,
-  "revision": "per GameSessionId, strictly above any revision the session has seen, across reconnect, resume and transfer (the NPC-0 pattern); every admission, reconnect, resume and transfer starts with a snapshot of the open rooms; lines are never replayed from storage; capability 36 selects snapshot type 2 instead of 1, carrying the current guild/motd view; same revision stream; capability 80 adds delta type 3, the channel list, sent after a request or a change and never from storage",
+  "revision": "per GameSessionId, strictly above any revision the session has seen, across reconnect, resume and transfer (the NPC-0 pattern); every admission, reconnect, resume and transfer starts with a snapshot of the open rooms; lines are never replayed from storage; capability 36 selects snapshot type 2 instead of 1, carrying the current guild/motd view; same revision stream; capability 80 adds delta type 3, the channel list, sent after a request or a change and never from storage; capability 258 adds delta type 5 for expiring VIP presence, using this same revision stream",
   "delta_types": [
     {
       "id": 1,
@@ -22,7 +22,13 @@
       "id": 3,
       "name": "CHAT_CHANNEL_LIST_DELTA_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#ChatChannelListV1",
-      "max_payload_bytes": 2054
+      "max_payload_bytes": 2055
+    },
+    {
+      "id": 5,
+      "name": "VIP_PRESENCE_DELTA_V1",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/vip-presence-v1.proto#VipPresenceBatchV1",
+      "max_payload_bytes": 14400
     }
   ],
   "snapshot_types": [
@@ -36,7 +42,7 @@
       "id": 2,
       "name": "GUILD_CHAT_SNAPSHOT_V1",
       "payload_schema": "docs/contracts/protocol-oteryn/v1/chat_v1.proto#GuildChatSnapshotV1",
-      "max_payload_bytes": 1049
+      "max_payload_bytes": 1050
     }
   ]
 }
