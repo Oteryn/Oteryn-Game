@@ -633,7 +633,14 @@ pub(super) async fn scenario(
                 .flat_stats(&colours)
                 .map_err(debug)?
                 .0;
-            bounds.map(|b| b + i64::from(flat))
+            // Crystal 201189f player_wheel.cpp:4194-4210 and
+            // game.cpp:7681-7685,7708-7721: own Mantra adds a separate flat
+            // contribution after Wheel flat damage. HarmonyMultiplier above
+            // already owns Serene and does not contain equipment Mantra.
+            let own_mantra = state.ascetic_attack_bonus(1);
+            assert_eq!(own_mantra, 17, "the spender fixture retains its own equipment Mantra");
+            let ascetic_flat = i64::from(own_mantra) * 3;
+            bounds.map(|b| b + i64::from(flat) + ascetic_flat)
         };
         let before = owner
             .runtime
