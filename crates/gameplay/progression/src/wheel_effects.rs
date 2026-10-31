@@ -15,6 +15,35 @@ pub struct WheelSocketSeam {
     pub gem_values_milli: BTreeMap<(String, String), i64>,
 }
 
+/// One non-negative catalogue value, represented exactly in thousandths.
+/// Wheel catalogues include fractional percentages (for example 7.5 and 37.5).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct WheelNumericValue(u64);
+
+impl WheelNumericValue {
+    /// Whole units, for integral flat stats, counts and durations.
+    pub const fn whole(self) -> u64 {
+        self.0 / 1_000
+    }
+
+    /// Thousandths of the catalogue's declared unit; percentages retain their fractions.
+    pub const fn milli(self) -> u64 {
+        self.0
+    }
+
+    fn from_catalogue(value: &Value) -> Option<Self> {
+        if let Some(value) = value.as_u64() {
+            return value.checked_mul(1_000).map(Self);
+        }
+        let scaled = value.as_f64()? * 1_000.0;
+        if !scaled.is_finite() || scaled < 0.0 || scaled >= u64::MAX as f64 || scaled.fract() != 0.0
+        {
+            return None;
+        }
+        Some(Self(scaled as u64))
+    }
+}
+
 /// Contributions consumed by the existing stat, spell and combat owners.
 /// Percent values use hundredths of a percentage point, matching the combat leech owner.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -28,7 +57,7 @@ pub struct WheelRuntimeEffects {
     pub mana_leech_hundredths_percent: u32,
     pub active_unique_perks: BTreeSet<String>,
     pub revelation_stages: BTreeMap<String, u8>,
-    pub revelation_numeric_effects: BTreeMap<String, BTreeMap<String, u64>>,
+    pub revelation_numeric_effects: BTreeMap<String, BTreeMap<String, WheelNumericValue>>,
     pub sockets: WheelSocketSeam,
 }
 
@@ -343,7 +372,7 @@ fn project_revelations(
             if effects
                 .insert(
                     effect["kind"].as_str()?.to_owned(),
-                    effect["value"].as_u64()?,
+                    WheelNumericValue::from_catalogue(&effect["value"])?,
                 )
                 .is_some()
             {
@@ -367,6 +396,125 @@ mod tests {
     use super::*;
     use crate::wheel::WheelSlots;
     use crate::wheel_gem_data::WheelGemData;
+
+    #[test]
+    fn fractional_revelations_do_not_discard_the_whole_wheel_projection() {
+        let data = WheelGemData::embedded().expect("qualified embedded catalogue");
+        for (vocation, perk, stage, kind, expected_milli) in [
+            (
+                "sorcerer",
+                "lord_of_destruction",
+                2,
+                "mastery_decay_critical_extra_damage",
+                22_500,
+            ),
+            ("druid", "blessing_of_the_grove", 2, "healing_bonus", 7_500),
+            (
+                "monk",
+                "spiritual_outburst",
+                1,
+                "full_harmony_repeat_damage",
+                37_500,
+            ),
+            (
+                "monk",
+                "spiritual_outburst",
+                3,
+                "full_harmony_repeat_damage",
+                62_500,
+            ),
+        ] {
+            let family = &data.wheel()["vocations"][vocation];
+            let revelation = family["revelations"]
+                .as_array()
+                .expect("revelations")
+                .iter()
+                .find(|entry| entry["key"] == perk)
+                .expect("perk");
+            let source_stage = revelation["stages"]
+                .as_array()
+                .expect("stages")
+                .iter()
+                .find(|entry| entry["stage"] == stage)
+                .expect("stage");
+            let points = u32::try_from(
+                source_stage["minimum_domain_points"]
+                    .as_u64()
+                    .expect("domain points"),
+            )
+            .expect("bounded domain points");
+            let domain_points =
+                BTreeMap::from([(revelation["domain"].as_str().expect("domain"), points)]);
+            let mut effects = WheelRuntimeEffects::default();
+            project_revelations(family, &domain_points, &mut effects)
+                .expect("fractional catalogue values are admitted");
+            assert_eq!(
+                effects.revelation_numeric_effects[perk][kind].milli(),
+                expected_milli
+            );
+            assert_eq!(effects.revelation_stages[perk], stage);
+            assert!(effects.revelation_numeric_effects[perk]["flat_damage_bonus"].whole() > 0);
+        }
+    }
+
+    #[test]
+    fn all_catalogue_revelation_stages_project_without_losing_flat_bonuses() {
+        let data = WheelGemData::embedded().expect("qualified embedded catalogue");
+        for family in data.wheel()["vocations"]
+            .as_object()
+            .expect("vocations")
+            .values()
+        {
+            for revelation in family["revelations"].as_array().expect("revelations") {
+                for stage in revelation["stages"].as_array().expect("stages") {
+                    let key = revelation["key"].as_str().expect("key");
+                    let domain = revelation["domain"].as_str().expect("domain");
+                    let points = u32::try_from(
+                        stage["minimum_domain_points"]
+                            .as_u64()
+                            .expect("minimum points"),
+                    )
+                    .expect("bounded points");
+                    let mut effects = WheelRuntimeEffects::default();
+                    project_revelations(family, &BTreeMap::from([(domain, points)]), &mut effects)
+                        .expect("every qualified stage projects");
+                    assert_eq!(u64::from(effects.revelation_stages[key]), stage["stage"]);
+                    assert!(
+                        effects.revelation_numeric_effects[key]["flat_damage_bonus"].whole() > 0
+                    );
+                    assert!(
+                        effects.revelation_numeric_effects[key]["flat_healing_bonus"].whole() > 0
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn numeric_effects_preserve_units_and_refuse_unrepresentable_values() {
+        use serde_json::json;
+        assert_eq!(
+            WheelNumericValue::from_catalogue(&json!(20)).map(WheelNumericValue::whole),
+            Some(20)
+        );
+        assert_eq!(
+            WheelNumericValue::from_catalogue(&json!(7.5)).map(WheelNumericValue::milli),
+            Some(7_500)
+        );
+        assert_eq!(
+            WheelNumericValue::from_catalogue(&json!(0)).map(WheelNumericValue::milli),
+            Some(0)
+        );
+        for invalid in [
+            json!(-1),
+            json!(0.0001),
+            json!(u64::MAX),
+            json!(null),
+            json!("7.5"),
+        ] {
+            assert_eq!(WheelNumericValue::from_catalogue(&invalid), None);
+        }
+    }
 
     #[test]
     fn news_9024_battle_instinct_is_recomputed_for_each_adjacent_census() {
@@ -424,7 +572,7 @@ mod tests {
                 .expect("closed catalogue");
         assert_eq!(effects.revelation_stages.get("gift_of_life"), Some(&3));
         assert_eq!(
-            effects.revelation_numeric_effects["gift_of_life"]["flat_damage_bonus"],
+            effects.revelation_numeric_effects["gift_of_life"]["flat_damage_bonus"].whole(),
             20
         );
         assert!(effects.life_leech_hundredths_percent > 0);
