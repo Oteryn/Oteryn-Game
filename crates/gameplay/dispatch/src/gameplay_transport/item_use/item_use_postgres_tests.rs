@@ -459,8 +459,44 @@ async fn scenario(
         UseDisposition::NothingToUse
     );
     assert_eq!(harness.count("game_item_use_records").await?, 3);
+    drink_from_a_vial(&owner, &harness, actor, command, index).await?;
     drop(owner);
     drop(authority);
     drop(seal);
     harness.cleanup().await
+}
+
+/// I10a: a carried vial of mana fluid (Crystal `fluids.lua`, sub-type 7) is drunk through the
+/// real use path: the container stays, its fluid is gone, and an empty vial is `NothingToUse`.
+async fn drink_from_a_vial(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    actor: ExactActorRef,
+    command: impl Fn(u64) -> UseCommand,
+    index: &crate::content::item_ref::ItemDefinitionIndex,
+) -> TestResult {
+    let vial = "oteryn:item.tibia.i2874";
+    let mut tx = harness.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,$4,1,1,encode($5,'hex')::uuid)")
+        .bind(id(130).as_slice()).bind(id(42).as_slice()).bind(vial).bind(index.revision(vial).expect("vial revision")).bind(id(131).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_container_entries(item_instance_id,world_id,character_id,parent_item_instance_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,encode($5,'hex')::uuid)")
+        .bind(id(130).as_slice()).bind(id(42).as_slice()).bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(132).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_fluid_states(item_instance_id,world_id,fluid_subtype,last_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,7,encode($3,'hex')::uuid)")
+        .bind(id(130).as_slice()).bind(id(42).as_slice()).bind(id(133).as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let drink = |command_id| owner.use_item(actor, command(command_id), ItemKey::Instance(id(130)));
+    assert_eq!(drink(8).await.disposition, UseDisposition::Committed);
+    assert_eq!(harness.count("game_item_fluid_states").await?, 0);
+    assert_eq!(harness.count("game_item_fluid_transitions").await?, 1);
+    let quantity: i64 = sqlx::query_scalar("SELECT quantity FROM game_item_instances WHERE item_instance_id = encode($1,'hex')::uuid AND lifecycle = 1")
+        .bind(id(130).as_slice()).fetch_one(&harness.pool).await?;
+    assert_eq!(quantity, 1);
+    // A replay of the drink returns its result; the empty vial has nothing to drink.
+    assert_eq!(drink(8).await.disposition, UseDisposition::Committed);
+    assert_eq!(drink(9).await.disposition, UseDisposition::NothingToUse);
+    assert_eq!(harness.count("game_item_fluid_transitions").await?, 1);
+    Ok(())
 }

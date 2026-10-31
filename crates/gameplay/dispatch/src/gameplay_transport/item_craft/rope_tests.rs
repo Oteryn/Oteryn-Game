@@ -35,6 +35,7 @@ fn inventory() -> crate::durability::item_use::ItemUseInventory {
         ruleset_revision: "ruleset-r1".into(),
         equipment: vec![],
         nested: vec![],
+        fluids: Default::default(),
         backpack: Some(CharacterBackpack {
             backpack: item(5, "oteryn:item.tibia.i2854"),
             entries: vec![BackpackEntry {

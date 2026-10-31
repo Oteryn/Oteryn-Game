@@ -15,6 +15,8 @@ pub struct ItemUseInventory {
     pub equipment: Vec<InventoryItem>,
     pub backpack: Option<CharacterBackpack>,
     pub nested: Vec<([u8; 16], BackpackEntry)>,
+    /// I10a: the fluid sub-type of each carried container that holds one (migration 0560).
+    pub fluids: std::collections::BTreeMap<[u8; 16], u8>,
 }
 
 impl ItemUseInventory {
@@ -178,8 +180,9 @@ pub(in crate::durability) async fn read_use_inventory(
          ) SELECT c.item::text, c.world::text AS custody_world, c.parent::text, \
                   c.ordinal::text, c.depth, c.slot, i.world_id::text AS item_world, \
                   i.definition_family, i.definition_production_key, i.definition_revision_ref, \
-                  i.quantity, i.lifecycle \
+                  i.quantity, i.lifecycle, f.fluid_subtype AS fluid \
              FROM carried c JOIN game_item_instances i ON i.item_instance_id = c.item \
+             LEFT JOIN game_item_fluid_states f ON f.item_instance_id = i.item_instance_id \
             ORDER BY c.slot, c.depth, c.ordinal DESC LIMIT 510",
     )
     .bind(fence.character_id.as_bytes().as_slice())
@@ -192,6 +195,7 @@ pub(in crate::durability) async fn read_use_inventory(
         equipment: Vec::new(),
         backpack: None,
         nested: Vec::new(),
+        fluids: std::collections::BTreeMap::new(),
     };
     let mut seen = std::collections::BTreeSet::new();
     let mut tree_items = 0_i64;
@@ -207,6 +211,10 @@ pub(in crate::durability) async fn read_use_inventory(
             || !(slot == 0 || (1..=8).contains(&slot) || slot == 10)
         {
             return Err(ItemUseError::StaleState);
+        }
+        if let Some(fluid) = row.try_get::<Option<i16>, _>("fluid")? {
+            let fluid = u8::try_from(fluid).map_err(|_| DurabilityError::InvalidStoredState)?;
+            inventory.fluids.insert(id, fluid);
         }
         let item = InventoryItem {
             item_instance_id: id,

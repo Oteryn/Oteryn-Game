@@ -221,6 +221,7 @@ mod tests {
             content_revision: "c".into(),
             ruleset_revision: "r".into(),
             equipment: vec![],
+            fluids: Default::default(),
             backpack: Some(CharacterBackpack {
                 backpack: InventoryItem {
                     item_instance_id: [1; 16],

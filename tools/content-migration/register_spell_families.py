@@ -253,6 +253,8 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     writable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import summer_source_qualification
     summer_source_qualification.apply_native(root, generated, spell_import.canonical_bytes)
+    import fluid_container_profiles
+    fluid_container_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import podium_item_profiles
     podium_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quest_callback_profiles
