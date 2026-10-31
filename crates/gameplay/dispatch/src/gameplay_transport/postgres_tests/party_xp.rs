@@ -47,6 +47,7 @@ pub(super) enum Case {
     ForgeRollback,
     ForgeFar,
     ForgeForeign,
+    SoulWarTerminal,
 }
 impl Case {
     fn forge(self) -> bool {
@@ -481,6 +482,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     }
     for (actor, session) in &players {
         assert!(owner.refresh_source_party_presence(*actor, *session).await);
+    }
+    if matches!(case, Case::SoulWarTerminal) {
+        return super::soul_war::terminal_expiry_case(&owner, &h.pool, &players).await;
     }
     if matches!(case, Case::Stamina) {
         return super::hunting_stamina::qualify(&mut owner, h, &players).await;
