@@ -34,11 +34,22 @@ fn exiva_settings_own_guild_postgres() -> TestResult {
 }
 
 #[test]
-fn exiva_settings_active_war_optional_pvp_postgres() -> TestResult { scenario(14) }
+fn exiva_settings_active_war_optional_pvp_postgres() -> TestResult {
+    scenario(14)
+}
 #[test]
-fn exiva_settings_active_war_open_pvp_postgres() -> TestResult { scenario(15) }
+fn exiva_settings_active_war_open_pvp_postgres() -> TestResult {
+    scenario(15)
+}
 #[test]
-fn exiva_settings_active_war_reverse_optional_pvp_postgres() -> TestResult { scenario(16) }
+fn exiva_settings_active_war_reverse_optional_pvp_postgres() -> TestResult {
+    scenario(16)
+}
+
+#[test]
+fn exiva_settings_named_client_list_postgres() -> TestResult {
+    scenario(17)
+}
 
 pub(super) async fn exercise(
     h: &Harness,
@@ -72,7 +83,7 @@ pub(super) async fn exercise(
             .ok_or("Exiva capability")?;
     let modes = match case {
         7 => 1,
-        8 => 2,
+        8 | 17 => 2,
         9 | 13 => 4,
         10 => 8,
         11 => 16,
@@ -111,21 +122,48 @@ pub(super) async fn exercise(
         }
         tx.commit().await?;
     }
-    if case >= 14 || world_type.is_some() {
+    if matches!(case, 14..=16) || world_type.is_some() {
         sqlx::query("INSERT INTO game_control_field_policy_grants VALUES(session_user,encode($1,'hex')::uuid,'policy-1')")
             .bind(id(42).as_slice()).execute(&h.pool).await?;
         sqlx::query("INSERT INTO game_spell_field_world_policies(world_id,world_policy_revision,world_type,protection_level,in_fight_ms,source_pin,control_role,decision_identity) VALUES(encode($1,'hex')::uuid,'policy-1',$2,20,60000,'99902524e052f37574194466c2949c576e4ab269',session_user,'pkg1r2-war-fixture')")
             .bind(id(42).as_slice()).bind(world_type.unwrap_or(if case == 15 {2_i16} else {1_i16})).execute(&h.pool).await?;
     }
-    if case >= 14 {
+    if matches!(case, 14..=16) {
         let mut tx = h.pool.begin().await?;
-        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("SET LOCAL session_replication_role=replica")
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("INSERT INTO game_guild_wars(war_id,world_id,declaring_guild,opposing_guild,state,frag_limit,duration_days,declared_at,started_at,ends_at) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,10,7,1,1,9223372036854775807)")
             .bind(id(122).as_slice()).bind(id(42).as_slice()).bind(id(if case == 16 {121} else {120}).as_slice()).bind(id(if case == 16 {120} else {121}).as_slice()).execute(&mut *tx).await?;
         tx.commit().await?;
     }
     let mut commands = vec![(COMMAND_TYPE_EXIVA_SETTINGS, vec![0, modes])];
-    if case == 8 {
+    if case == 17 {
+        let name: String = sqlx::query_scalar(
+            "SELECT name FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(41).as_slice())
+        .fetch_one(&h.pool)
+        .await?;
+        let (opened, _) = exchange(
+            owner,
+            &mut target,
+            &[(COMMAND_TYPE_EXIVA_SETTINGS, vec![5])],
+            false,
+            false,
+        )
+        .await?;
+        assert_eq!(opened[0].0, CommandStatus::Accepted);
+        assert!(
+            oteryn_protocol_oteryn::exiva::PlayerList::decode(&opened[0].1)
+                .ok_or("initial list")?
+                .players
+                .is_empty()
+        );
+        let mut add = vec![6];
+        add.extend(name.as_bytes());
+        commands.push((COMMAND_TYPE_EXIVA_SETTINGS, add));
+    } else if case == 8 {
         let mut add = vec![1];
         add.extend(id(41));
         commands.push((COMMAND_TYPE_EXIVA_SETTINGS, add));
@@ -134,7 +172,8 @@ pub(super) async fn exercise(
         add.extend(id(120));
         commands.push((COMMAND_TYPE_EXIVA_SETTINGS, add));
     }
-    let (results, _) = exchange(owner, &mut target, &commands, false, false).await?;
+    let start = if case == 17 { 2 } else { 1 };
+    let (results, _) = exchange_from(owner, &mut target, &commands, false, false, start).await?;
     for result in &results {
         assert_eq!(result, &(CommandStatus::Accepted, vec![1]));
     }
@@ -148,7 +187,7 @@ pub(super) async fn exercise(
         &commands[latest..],
         false,
         false,
-        u64::try_from(latest + 1)?,
+        start + u64::try_from(latest)?,
     )
     .await?;
     assert_eq!(results[0].0, CommandStatus::DuplicateReplay);
@@ -158,16 +197,31 @@ pub(super) async fn exercise(
         owner
             .exiva_settings(
                 target,
-                1,
+                start,
                 oteryn_protocol_oteryn::exiva::Request::decode(&commands[0].1)
                     .ok_or("settings request")?
             )
             .await,
-        Some(true)
+        Some(vec![1])
     );
     let revision: String = sqlx::query_scalar("SELECT revision::text FROM game_character_spell_privacy WHERE character_id=encode($1,'hex')::uuid")
         .bind(id(101).as_slice()).fetch_one(&h.pool).await?;
-    assert_eq!(revision, if matches!(case, 8 | 9) { "2" } else { "1" });
+    assert_eq!(revision, if matches!(case, 8 | 9 | 17) { "2" } else { "1" });
+    if case == 17 {
+        let (listed, _) = exchange(
+            owner,
+            &mut target,
+            &[(COMMAND_TYPE_EXIVA_SETTINGS, vec![5])],
+            false,
+            false,
+        )
+        .await?;
+        let list = oteryn_protocol_oteryn::exiva::PlayerList::decode(&listed[0].1)
+            .ok_or("persisted list")?;
+        assert_eq!(list.modes, 2);
+        assert_eq!(list.players.len(), 1);
+        assert_eq!(list.players[0].0, id(41));
+    }
     let payload = chat::encode_chat_intent(&chat::ChatIntent::Say {
         mode: chat::ChatSpeechMode::Say,
         text: "exiva \"Fixture Watcher\"".into(),
@@ -196,16 +250,22 @@ pub(super) async fn exercise(
     sqlx::query("SET LOCAL session_replication_role=replica")
         .execute(&mut *tx)
         .await?;
-    if case >= 14 {
-        sqlx::query("UPDATE game_guild_wars SET state=3,ended_reason=2 WHERE war_id=encode($1,'hex')::uuid")
-            .bind(id(122).as_slice()).execute(&mut *tx).await?;
+    if matches!(case, 14..=16) {
+        sqlx::query(
+            "UPDATE game_guild_wars SET state=3,ended_reason=2 WHERE war_id=encode($1,'hex')::uuid",
+        )
+        .bind(id(122).as_slice())
+        .execute(&mut *tx)
+        .await?;
     }
     for query in [
         "DELETE FROM game_guild_members WHERE character_id=encode($1,'hex')::uuid",
         "DELETE FROM game_party_members WHERE character_id=encode($1,'hex')::uuid",
         "DELETE FROM game_vip_entries WHERE character_id=encode($1,'hex')::uuid",
     ] {
-        if case >= 14 { continue; }
+        if matches!(case, 14..=16) {
+            continue;
+        }
         sqlx::query(query)
             .bind(id(41).as_slice())
             .execute(&mut *tx)
@@ -219,7 +279,7 @@ pub(super) async fn exercise(
             .bind(id(41).as_slice()).bind(id(101).as_slice()).execute(&mut *tx).await?;
     }
     tx.commit().await?;
-    let payload = if case == 8 {
+    let payload = if matches!(case, 8 | 17) {
         let mut remove = vec![2];
         remove.extend(id(41));
         remove
@@ -246,6 +306,20 @@ pub(super) async fn exercise(
     )
     .await?;
     assert_eq!(results[0], (CommandStatus::Accepted, vec![1]));
+    if case == 17 {
+        let (listed, _) = exchange(
+            owner,
+            &mut target,
+            &[(COMMAND_TYPE_EXIVA_SETTINGS, vec![5])],
+            false,
+            false,
+        )
+        .await?;
+        let list = oteryn_protocol_oteryn::exiva::PlayerList::decode(&listed[0].1)
+            .ok_or("removed list")?;
+        assert!(list.players.is_empty());
+        assert_eq!(list.modes, 2);
+    }
     // Privacy denial does not consume mana or start the spell cooldown. Successful
     // casts above do, so advance the owner's deterministic clock past that cooldown.
     tokio::time::sleep(Duration::from_millis(2100)).await;
