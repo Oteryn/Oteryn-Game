@@ -263,6 +263,15 @@ impl Harness {
         })
     }
 
+    /// An independent DB-only owner for cross-root concurrency scenarios.
+    #[allow(
+        dead_code,
+        reason = "shared fixture is mounted by targets without the concurrent reward case"
+    )]
+    pub(super) fn independent_root(&self) -> TestResult<DurabilityRoot> {
+        Ok(DurabilityRoot::connect_test_runtime(&self.database.url)?)
+    }
+
     pub(super) async fn cleanup(self) -> TestResult {
         self.pool.close().await;
         self.database.cleanup().await?;
