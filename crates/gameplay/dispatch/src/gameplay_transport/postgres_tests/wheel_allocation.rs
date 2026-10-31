@@ -455,7 +455,8 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
                     .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await.is_err(),
                     "the state guard refuses an unreceipted cooldown replacement");
                 tx.rollback().await?;
-                Some(remaining)
+                assert_gift_runtime_guards(&h).await?;
+                Some(assert_gift_snapshot_rollback(&h, &authority, original_fence, remaining).await?)
             } else {
                 None
             };
@@ -743,4 +744,110 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+async fn assert_gift_runtime_guards(h: &Harness) -> TestResult {
+    for (table, can_update) in [
+        ("public.game_character_wheel_gift_receipts", false),
+        ("public.game_character_wheel_gift_state", true),
+    ] {
+        for (privilege, runtime_allowed) in [
+            ("SELECT", true), ("INSERT", true), ("UPDATE", can_update),
+            ("DELETE", false), ("TRUNCATE", false), ("REFERENCES", false), ("TRIGGER", false),
+        ] {
+            for (role, allowed) in [("oteryn_game_runtime", runtime_allowed), ("oteryn_game_control", false)] {
+                let granted: bool = sqlx::query_scalar("SELECT has_table_privilege($1,$2,$3)")
+                    .bind(role).bind(table).bind(privilege).fetch_one(&h.pool).await?;
+                assert_eq!(granted, allowed, "{role} {privilege} on {table}");
+            }
+        }
+        let public_grants: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid=$1::regclass AND a.grantee=0")
+            .bind(table).fetch_one(&h.pool).await?;
+        assert_eq!(public_grants, 0, "PUBLIC has no Gift table access");
+    }
+    for (role, allowed) in [("oteryn_game_runtime", true), ("oteryn_game_control", false)] {
+        let granted: bool = sqlx::query_scalar("SELECT has_function_privilege($1,'public.game_guard_wheel_gift_state()','EXECUTE')")
+            .bind(role).fetch_one(&h.pool).await?;
+        assert_eq!(granted, allowed, "{role} Gift guard execution");
+    }
+    let (security_definer, settings): (bool, Option<Vec<String>>) = sqlx::query_as(
+        "SELECT prosecdef,proconfig FROM pg_proc WHERE oid='public.game_guard_wheel_gift_state()'::regprocedure")
+        .fetch_one(&h.pool).await?;
+    assert!(security_definer);
+    assert_eq!(settings, Some(vec!["search_path=pg_catalog, public, pg_temp".into()]));
+    let public_grants: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid='public.game_guard_wheel_gift_state()'::regprocedure AND a.grantee=0")
+        .fetch_one(&h.pool).await?;
+    assert_eq!(public_grants, 0, "PUBLIC cannot execute the security-definer guard");
+
+    // Each real runtime statement must fail at the privilege boundary, rather than
+    // incidentally hitting a constraint or the state-to-receipt foreign key.
+    for statement in [
+        "UPDATE game_character_wheel_gift_receipts SET remaining_micros=0",
+        "DELETE FROM game_character_wheel_gift_receipts",
+        "TRUNCATE game_character_wheel_gift_receipts",
+    ] {
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("SET LOCAL ROLE oteryn_game_runtime").execute(&mut *tx).await?;
+        let result = sqlx::query(statement).execute(&mut *tx).await;
+        tx.rollback().await?;
+        let error = result.err().ok_or("runtime changed immutable Gift receipts")?;
+        assert_eq!(error.as_database_error().and_then(|e| e.code()).as_deref(), Some("42501"), "{statement}");
+    }
+    Ok(())
+}
+
+async fn assert_gift_snapshot_rollback(
+    h: &Harness,
+    authority: &crate::durability::character_authority::ReconciledCharacterAuthority<'_, '_>,
+    fence: crate::durability::item_transfer::CurrentCharacterItemFence,
+    remaining: u64,
+) -> TestResult<u64> {
+    use crate::durability::character_progression::CharacterProgressionError;
+    use crate::durability::character_wheel::WheelOccurrence;
+    const STATE: &str = "SELECT revision,remaining_micros,occurrence::text FROM game_character_wheel_gift_state WHERE character_id=encode($1,'hex')::uuid";
+    const RECEIPTS: &str = "SELECT count(*) FROM game_character_wheel_gift_receipts WHERE character_id=encode($1,'hex')::uuid";
+    let character = fence.character_id.as_bytes().as_slice();
+    let revision: String = sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character).fetch_one(&h.pool).await?;
+    let second = WheelOccurrence::from_bytes(id(177)).map_err(debug)?;
+    h.root.save_character_wheel_gift(authority, &h.node, fence, second, remaining).await.map_err(debug)?;
+    let before: (i64, i64, String) = sqlx::query_as(STATE).bind(character).fetch_one(&h.pool).await?;
+    assert_eq!((before.0, before.1), (2, i64::try_from(remaining)?), "a fresh snapshot must update the existing timer row");
+    assert_eq!(sqlx::query_scalar::<_, i64>(RECEIPTS).bind(character).fetch_one(&h.pool).await?, 2);
+
+    // Only this isolated test database receives the CHECK. The real writer inserts
+    // its receipt first, so a rejected state successor must roll back that receipt.
+    // Revision two remains valid; the next physical state write is refused.
+    let third = WheelOccurrence::from_bytes(id(178)).map_err(debug)?;
+    let next_remaining = remaining.checked_sub(1).filter(|value| *value > 0).ok_or("remaining online cooldown")?;
+    sqlx::query("ALTER TABLE game_character_wheel_gift_state ADD CONSTRAINT wheel_gift_test_refuse_revision_three CHECK (revision <> 3)")
+        .execute(&h.pool).await?;
+    let refused = h.root.save_character_wheel_gift(authority, &h.node, fence, third, next_remaining).await;
+    // Remove the fixture restriction before inspecting the result, even if the
+    // writer unexpectedly accepted the operation. No production seam is changed.
+    sqlx::query("ALTER TABLE game_character_wheel_gift_state DROP CONSTRAINT wheel_gift_test_refuse_revision_three")
+        .execute(&h.pool).await?;
+    assert!(matches!(&refused, Err(CharacterProgressionError::Unavailable(crate::durability::DurabilityError::Database(_)))), "the physical state write must fail: {refused:?}");
+    let after: (i64, i64, String) = sqlx::query_as(STATE).bind(character).fetch_one(&h.pool).await?;
+    assert_eq!(after, before, "a rejected state write preserves the previous snapshot");
+    assert_eq!(sqlx::query_scalar::<_, i64>(RECEIPTS).bind(character).fetch_one(&h.pool).await?, 2);
+    let retained: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_wheel_gift_receipts WHERE character_id=encode($1,'hex')::uuid AND occurrence=encode($2,'hex')::uuid)")
+        .bind(character).bind(third.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert!(!retained, "the rejected state write cannot leave a success receipt");
+    assert_eq!(sqlx::query_scalar::<_, String>("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character).fetch_one(&h.pool).await?, revision);
+
+    // Unregistered database errors are intentionally classified at DurabilityRoot.
+    // Repeating the identical request after removing only the CHECK proves the
+    // failure was not stale authority, receipt rebinding, or the INSERT guard.
+    h.root.save_character_wheel_gift(authority, &h.node, fence, third, next_remaining).await.map_err(debug)?;
+    let after: (i64, i64, bool) = sqlx::query_as("SELECT revision,remaining_micros,occurrence=encode($2,'hex')::uuid FROM game_character_wheel_gift_state WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character).bind(third.as_bytes().as_slice()).fetch_one(&h.pool).await?;
+    assert_eq!(after, (3, i64::try_from(next_remaining)?, true));
+    assert_eq!(sqlx::query_scalar::<_, i64>(RECEIPTS).bind(character).fetch_one(&h.pool).await?, 3);
+    assert_eq!(sqlx::query_scalar::<_, String>("SELECT character_revision::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
+        .bind(character).fetch_one(&h.pool).await?, revision);
+    Ok(next_remaining)
 }
