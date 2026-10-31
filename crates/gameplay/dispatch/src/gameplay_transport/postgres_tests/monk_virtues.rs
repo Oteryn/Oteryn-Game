@@ -482,7 +482,25 @@ pub(super) async fn scenario(
                 .flat_stats(&colours)
                 .map_err(debug)?
                 .0;
-            bounds.map(|b| b + i64::from(flat))
+            // The cast mitigates at the target after the roll and before the Wheel flat
+            // (spell magnitude_owner.rs, Canary Creature::blockHit): armor above 3 draws its
+            // reduction, a positive armor up to 3 blocks one point, then the creature's
+            // mitigation percent truncates. The rat's armor 2 makes both exact.
+            let rat = native
+                .policies()
+                .policies()
+                .iter()
+                .find(|p| p.definition_key == "oteryn:creature.rat")
+                .ok_or("rat policy")?;
+            let armor = rat.armor.ok_or("rat armor")?;
+            assert!(armor <= 3, "a drawn armor reduction needs its own bounds");
+            assert!(rat.resistances.iter().all(|r| r.damage_type != "physical"));
+            let mitigation = rat.mitigation.ok_or("rat mitigation")?;
+            let percent = (mitigation.numerator as f64 / mitigation.denominator as f64).min(30.0);
+            bounds.map(|b| {
+                let value = (b - i64::from(armor > 0)).max(0);
+                (value as f64 - value as f64 * percent / 100.0).trunc() as i64 + i64::from(flat)
+            })
         };
         let before = owner
             .runtime
