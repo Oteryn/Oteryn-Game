@@ -22,15 +22,21 @@ pub enum FieldElement {
     Poison,
     Drown,
     Physical,
+    /// Crystal `agony` (`item_parse.cpp` `parseFieldConditions`: `CONDITION_AGONY`), the
+    /// agony field 43297 (Crystal 201189f8 `data/items/items.xml:75219`).
+    Agony,
 }
 impl FieldElement {
-    pub const fn condition_element(self) -> DotElement {
+    /// The damage-over-time element; `None` for `agony`, which is the §3.5 `agony` condition
+    /// rather than an element of damage over time.
+    pub const fn condition_element(self) -> Option<DotElement> {
         match self {
-            Self::Fire => DotElement::Fire,
-            Self::Energy => DotElement::Energy,
-            Self::Poison => DotElement::Poison,
-            Self::Drown => DotElement::Drown,
-            Self::Physical => DotElement::Bleeding,
+            Self::Fire => Some(DotElement::Fire),
+            Self::Energy => Some(DotElement::Energy),
+            Self::Poison => Some(DotElement::Poison),
+            Self::Drown => Some(DotElement::Drown),
+            Self::Physical => Some(DotElement::Bleeding),
+            Self::Agony => None,
         }
     }
 }
@@ -140,6 +146,10 @@ impl QualifiedFieldCondition {
             FieldConditionKind::None => Ok(None),
             FieldConditionKind::Unsupported { .. } => Err(FieldError::Unsupported),
             FieldConditionKind::Damage { element, entries } => {
+                // Crystal's agony field ramp has 260 runs (260 down to 1), above
+                // MAX_DOT_SEQUENCE_STEPS, and no condition value carries an agony sequence, so
+                // the recipe is recorded but not lowered.
+                let element = element.condition_element().ok_or(FieldError::Unsupported)?;
                 let entries = self.global_entries().unwrap_or(entries);
                 if entries.is_empty() || self.total_damage()? == 0 {
                     return Ok(None);
@@ -156,7 +166,7 @@ impl QualifiedFieldCondition {
                     };
                 }
                 Ok(Some(ConditionValues::DamageSequence {
-                    element: element.condition_element(),
+                    element,
                     steps,
                     len: u8::try_from(entries.len()).map_err(|_| FieldError::Bounds)?,
                     delayed: false,
@@ -195,7 +205,10 @@ impl QualifiedFieldCondition {
         self.validate()?;
         match &self.condition {
             FieldConditionKind::None => Ok(None),
-            FieldConditionKind::Damage { element, .. } => Ok(Some(element.condition_element())),
+            FieldConditionKind::Damage { element, .. } => element
+                .condition_element()
+                .map(Some)
+                .ok_or(FieldError::Unsupported),
             FieldConditionKind::Unsupported { .. } => Err(FieldError::Unsupported),
         }
     }

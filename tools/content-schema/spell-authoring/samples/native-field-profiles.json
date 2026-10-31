@@ -1892,8 +1892,1310 @@
         "server_item_id": 43297
       },
       "condition": {
-        "kind": "unsupported",
-        "source_element": "agony"
+        "kind": "damage",
+        "element": "agony",
+        "entries": [
+          {
+            "amount": 260,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 259,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 258,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 257,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 256,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 255,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 254,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 253,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 252,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 251,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 250,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 249,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 248,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 247,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 246,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 245,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 244,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 243,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 242,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 241,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 240,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 239,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 238,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 237,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 236,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 235,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 234,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 233,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 232,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 231,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 230,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 229,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 228,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 227,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 226,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 225,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 224,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 223,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 222,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 221,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 220,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 219,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 218,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 217,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 216,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 215,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 214,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 213,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 212,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 211,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 210,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 209,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 208,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 207,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 206,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 205,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 204,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 203,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 202,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 201,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 200,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 199,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 198,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 197,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 196,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 195,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 194,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 193,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 192,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 191,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 190,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 189,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 188,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 187,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 186,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 185,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 184,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 183,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 182,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 181,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 180,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 179,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 178,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 177,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 176,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 175,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 174,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 173,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 172,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 171,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 170,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 169,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 168,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 167,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 166,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 165,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 164,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 163,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 162,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 161,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 160,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 159,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 158,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 157,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 156,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 155,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 154,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 153,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 152,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 151,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 150,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 149,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 148,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 147,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 146,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 145,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 144,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 143,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 142,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 141,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 140,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 139,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 138,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 137,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 136,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 135,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 134,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 133,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 132,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 131,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 130,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 129,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 128,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 127,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 126,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 125,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 124,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 123,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 122,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 121,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 120,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 119,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 118,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 117,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 116,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 115,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 114,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 113,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 112,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 111,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 110,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 109,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 108,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 107,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 106,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 105,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 104,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 103,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 102,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 101,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 100,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 99,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 98,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 97,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 96,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 95,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 94,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 93,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 92,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 91,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 90,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 89,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 88,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 87,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 86,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 85,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 84,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 83,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 82,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 81,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 80,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 79,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 78,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 77,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 76,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 75,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 74,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 73,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 72,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 71,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 70,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 69,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 68,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 67,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 66,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 65,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 64,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 63,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 62,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 61,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 60,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 59,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 58,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 57,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 56,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 55,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 54,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 53,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 52,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 51,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 50,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 49,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 48,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 47,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 46,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 45,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 44,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 43,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 42,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 41,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 40,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 39,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 38,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 37,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 36,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 35,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 34,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 33,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 32,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 31,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 30,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 29,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 28,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 27,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 26,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 25,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 24,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 23,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 22,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 21,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 20,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 19,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 18,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 17,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 16,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 15,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 14,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 13,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 12,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 11,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 10,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 9,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 8,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 7,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 6,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 5,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 4,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 3,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 2,
+            "interval_ms": 5000,
+            "repetitions": 1
+          },
+          {
+            "amount": 1,
+            "interval_ms": 5000,
+            "repetitions": 1
+          }
+        ]
       }
     }
   ]

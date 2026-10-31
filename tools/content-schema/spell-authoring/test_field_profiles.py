@@ -23,7 +23,16 @@ class FieldProfiles(unittest.TestCase):
         self.assertEqual(self.field(2120),{'kind':'damage','element':'fire','entries':[]})
         self.assertEqual(self.field(2128),{'kind':'none'})
         self.assertEqual(self.field(2130),{'kind':'none'})
-        self.assertTrue(any(x['condition']['kind']=='unsupported' for x in self.profiles if x['source']['server']=='crystal'))
+        # C08: Crystal's agony field 43297 was the one unsupported element; it is admitted now.
+        self.assertFalse(any(x['condition']['kind']=='unsupported' for x in self.profiles))
+    def test_crystal_agony_field_keeps_the_source_float_ramp(self):
+        # Crystal ff7ede59 items.xml:75193 (201189f8 items.xml:75219): agony field 43297 has
+        # ticks 5000, start 260, damage 100. generateDamageList (condition.cpp:1993) divides by
+        # the integer med, 0 for the first two values: float x/0 is inf and inf < inf is false,
+        # so each value 260..1 is pushed once.
+        field=self.field(43297,'crystal')
+        self.assertEqual(field['element'],'agony')
+        self.assertEqual([(x['amount'],x['interval_ms'],x['repetitions']) for x in field['entries']],[(v,5000,1) for v in range(260,0,-1)])
     def test_xml_damage_keeps_attribute_order_and_source_interval_floor(self):
         field=ET.fromstring('<attribute key="field" value="fire"><attribute key="damage" value="3"/><attribute key="ticks" value="5000"/><attribute key="count" value="2"/><attribute key="damage" value="7"/></attribute>')
         self.assertEqual(recipe(field)['entries'],[{'amount':3,'interval_ms':1000,'repetitions':1},{'amount':7,'interval_ms':5000,'repetitions':2}])

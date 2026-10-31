@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import os
 import json
+import math
 from pathlib import Path
 import struct
 import subprocess
@@ -25,13 +26,15 @@ def ramp(amount,start):
     out=[]
     for current in range(start,0,-1):
         med=(start+1-current)*amount//start
-        if not med:
-            raise ValueError("source ramp division by zero")
+        # A start above the amount leaves med 0 (Crystal agony field: start 260, damage
+        # 100). The float quotient by 0 is +inf, and inf < inf is false, so the C++ loop
+        # pushes the value once and moves on.
+        quotient=lambda value: f32(value/f32(med)) if med else math.inf
         while True:
             total+=current
             out.append(current)
-            x1=abs(1.0-f32(f32(f32(total)+f32(current))/f32(med)))
-            x2=abs(1.0-f32(f32(total)/f32(med)))
+            x1=abs(1.0-quotient(f32(f32(total)+f32(current))))
+            x2=abs(1.0-quotient(f32(total)))
             if x1>=x2:
                 break
             if len(out)>4096:
@@ -40,7 +43,8 @@ def ramp(amount,start):
 
 def recipe(field):
     element=field.get("value","").lower()
-    if element not in {"fire","energy","poison","drown","physical"}:
+    # Crystal item_parse.cpp parseFieldConditions adds `agony` (CONDITION_AGONY).
+    if element not in {"fire","energy","poison","drown","physical","agony"}:
         return {"kind":"unsupported","source_element":element}
     ticks=0
     count=1

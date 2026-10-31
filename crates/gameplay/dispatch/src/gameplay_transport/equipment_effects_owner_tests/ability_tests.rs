@@ -108,6 +108,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // I03: the Crystal spellbooks 3059 and 8073 (Crystal 201189f8 spellbook.lua:52,
     // tools/content-migration/spellbook_item_profiles.py). Neither has a speed attribute.
     ("I03-SPELLBOOKS", 2),
+    // C08: the Crystal agony field 43297 (Crystal 201189f8 items.xml:75219,
+    // tools/content-migration/agony_field_item_profiles.py), a magic field with speed_bonus=0.
+    ("C08-AGONY-FIELD", 1),
 ];
 
 #[test]

@@ -14,7 +14,7 @@ type Spec = (&'static [u32], &'static str, &'static [(&'static str, i32)]);
 const FIRE_7_10: &[(&str, i32)] = &[("ticks", 10_000), ("count", 7), ("damage", 10)];
 const POISON_RAMP: &[(&str, i32)] = &[("ticks", 5_000), ("start", 5), ("damage", 100)];
 
-/// Every damaging `field` item in Crystal `201189f8` `items.xml` (the Oteryn-supported elements).
+/// Every damaging `field` item in Crystal `201189f8` `items.xml`.
 const CRYSTAL_FIELDS: &[Spec] = &[
     (&[105, 2121], "poison", POISON_RAMP),
     (
@@ -54,6 +54,13 @@ const CRYSTAL_FIELDS: &[Spec] = &[
         &[23368],
         "poison",
         &[("ticks", 5_000), ("damage", 100), ("start", 5)],
+    ),
+    // C08: the agony field, `items.xml:75219` (ff7ede59 `items.xml:75193`), which the
+    // `agonyfield` monster spell creates (`agony_field.lua:6`).
+    (
+        &[43297],
+        "agony",
+        &[("ticks", 5_000), ("start", 260), ("damage", 100)],
     ),
 ];
 /// Crystal magic fields with no `field` attribute: they carry no damage condition.
@@ -123,6 +130,7 @@ fn element(name: &str) -> FieldElement {
         "fire" => FieldElement::Fire,
         "energy" => FieldElement::Energy,
         "poison" => FieldElement::Poison,
+        "agony" => FieldElement::Agony,
         _ => panic!("unrecorded element {name}"),
     }
 }
@@ -204,7 +212,8 @@ fn steps(recipe: &QualifiedFieldCondition) -> Option<(DotElement, Vec<FieldDamag
 fn expected_steps(item: u32) -> Option<(DotElement, Vec<FieldDamageEntry>)> {
     let (element, entries) = crystal_expected(item)?;
     let total: u32 = entries.iter().map(|e| e.amount * e.repetitions).sum();
-    (total > 0).then(|| (element.condition_element(), entries))
+    let element = element.condition_element()?;
+    (total > 0).then_some((element, entries))
 }
 
 #[test]
@@ -314,6 +323,16 @@ fn c08_crystal_field_recipes_equal_crystal_items_xml() {
     for recipe in &crystal {
         let item = recipe.source.server_item_id;
         match (&recipe.condition, crystal_expected(item)) {
+            // C08: the agony ramp equals Crystal's, start 260 above damage 100 included; it has
+            // no damage-over-time lowering (`FieldElement::condition_element`).
+            (FieldConditionKind::Damage { element, entries }, Some(expected))
+                if *element == FieldElement::Agony =>
+            {
+                assert_eq!((*element, entries.clone()), expected, "item {item}");
+                assert_eq!(recipe.total_damage(), Ok((1..=260).sum()));
+                assert_eq!(recipe.condition_values(), Err(FieldError::Unsupported));
+                assert_eq!(recipe.element(), Err(FieldError::Unsupported));
+            }
             (FieldConditionKind::Damage { element, entries }, Some(expected)) => {
                 assert_eq!((*element, entries.clone()), expected, "item {item}");
                 assert_eq!(steps(recipe), expected_steps(item), "item {item}");
@@ -322,15 +341,12 @@ fn c08_crystal_field_recipes_equal_crystal_items_xml() {
                 assert!(CRYSTAL_NON_DAMAGING.contains(&item), "item {item}");
                 assert_eq!(steps(recipe), None);
             }
-            // Crystal's `agony` field (start 260 above damage 100) has no Oteryn element.
-            (FieldConditionKind::Unsupported { source_element }, None) => {
-                assert_eq!((item, source_element.as_str()), (43297, "agony"));
-            }
             (condition, expected) => panic!("item {item}: {condition:?} vs {expected:?}"),
         }
     }
     let covered: usize = CRYSTAL_FIELDS.iter().map(|(ids, ..)| ids.len()).sum();
-    assert_eq!(crystal.len(), covered + CRYSTAL_NON_DAMAGING.len() + 1);
+    // C08: 43297 was the one `Unsupported` profile; it is in CRYSTAL_FIELDS now.
+    assert_eq!(crystal.len(), covered + CRYSTAL_NON_DAMAGING.len());
 }
 
 /// Production retains the recorded Canary exceptions and C07-2 owner-approved
@@ -355,7 +371,17 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
         105, 1998, 1999, 2000, 2118, 2119, 2121, 2122, 2123, 2124, 2131, 2132, 2134, 2135, 10069,
         10070, 10071, 21465,
     ];
-    let recipes = production_recipes();
+    // C08: the agony field is the one Crystal recipe in production, asserted separately.
+    let (recipes, crystal): (Vec<_>, Vec<_>) = production_recipes()
+        .into_iter()
+        .partition(|r| r.source.server == "canary");
+    assert_eq!(
+        crystal
+            .iter()
+            .map(|r| r.source.server_item_id)
+            .collect::<Vec<_>>(),
+        [43297]
+    );
     let canary = profiles("canary");
     assert!(recipes.len() >= 15, "{}", recipes.len());
     let mut divergent = Vec::new();
@@ -393,9 +419,9 @@ fn c08_production_field_damage_equals_crystal_except_the_recorded_items() {
         // preserve these donor assertions without changing the pinned capture.
         let got = if matches!(item, 2131 | 2132 | 2134 | 2135) {
             match &recipe.condition {
-                FieldConditionKind::Damage { element, entries } if !entries.is_empty() => {
-                    Some((element.condition_element(), entries.clone()))
-                }
+                FieldConditionKind::Damage { element, entries } if !entries.is_empty() => element
+                    .condition_element()
+                    .map(|element| (element, entries.clone())),
                 _ => None,
             }
         } else {
@@ -454,4 +480,28 @@ fn c07_production_field_decay_equals_crystal_for_shared_field_items() {
             assert_eq!(decay["state"], "NOT_APPLICABLE");
         }
     }
+}
+
+/// C08: the agony field 43297 is admitted from Crystal as a source-pinned profile (Crystal
+/// 201189f8 `data/items/items.xml:75219`, `agony_field.lua:6`); the Canary pin has no 43297.
+#[test]
+fn c08_production_agony_field_is_the_crystal_profile() {
+    let crystal = profiles("crystal");
+    let source = crystal
+        .iter()
+        .find(|r| r.source.server_item_id == 43297)
+        .unwrap();
+    let production: Vec<_> = production_recipes()
+        .into_iter()
+        .filter(|r| r.source.server_item_id == 43297)
+        .collect();
+    assert_eq!(production, std::slice::from_ref(source));
+    assert!(production[0].validate_for("crystal", 43297).is_ok());
+    let FieldConditionKind::Damage { element, entries } = &production[0].condition else {
+        panic!("agony damage")
+    };
+    assert_eq!(
+        (*element, entries.clone()),
+        crystal_expected(43297).unwrap()
+    );
 }
