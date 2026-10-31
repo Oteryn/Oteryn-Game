@@ -35,7 +35,14 @@ pub(super) async fn dispatch_map_use<A: FreshAdmissionAuthority>(
         _ => None,
     };
     match target {
-        Some(Some(ItemKey::Instance(_))) => dispatch(authority, actor, command, intent, view).await,
+        Some(Some(ItemKey::Instance(_))) => {
+            let result = dispatch(authority, actor, command, intent.clone(), view).await?;
+            if result.disposition == UseDisposition::NothingToUse {
+                super::item_craft::dispatch(authority, actor, command, intent, view).await
+            } else {
+                Some(result)
+            }
+        }
         Some(None) => {
             let replay = dispatch(authority, actor, command, intent.clone(), view).await?;
             if replay.disposition == UseDisposition::Committed {
