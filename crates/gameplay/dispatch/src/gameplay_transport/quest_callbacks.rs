@@ -240,6 +240,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 return false;
             };
             let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
+            let optional_pvp = self
+                .special_movement_policy(&permit, pending.actor, pending.session)
+                .await;
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(pending.actor) != Ok(pending.expected) {
@@ -259,6 +262,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     pending.cause,
                     Some(fence),
                     Some(&mut slot),
+                    optional_pvp,
                 )
                 .await;
             if result != UseDisposition::Committed {
@@ -267,6 +271,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 if let Some(origin) = pending.origin {
                     self.refuse_quest_step(
+                        optional_pvp,
                         &mut runtime,
                         &mut states,
                         pending.actor,
@@ -324,6 +329,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(f) => Some(self.revision_sequencer.acquire(f.character_id).await),
                 None => None,
             };
+            let optional_pvp = self
+                .special_movement_policy(&permit, actor, command.game_session_id)
+                .await;
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             let Ok(expected) = runtime.read_actor_position(actor) else {
@@ -359,6 +367,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 QuestCause::Use(CommandRef::new(command.game_session_id, id)),
                 fence,
                 slot.as_mut(),
+                optional_pvp,
             )
             .await;
             drop(states);
@@ -439,6 +448,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(f) => Some(self.revision_sequencer.acquire(f.character_id).await),
                 None => None,
             };
+            let optional_pvp = self.special_movement_policy(permit, actor, session).await;
             let mut runtime = self.runtime.lock().await;
             let mut states = self.states.spell_states.lock().await;
             if runtime.read_actor_position(actor) != Ok(entered) {
@@ -459,6 +469,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     cause,
                     fence,
                     slot.as_mut(),
+                    optional_pvp,
                 )
                 .await;
             let unresolved =
@@ -476,6 +487,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     });
             if result != UseDisposition::Committed && !unresolved {
                 self.refuse_quest_step(
+                    optional_pvp,
                     &mut runtime,
                     &mut states,
                     actor,
@@ -514,6 +526,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
     fn refuse_quest_step(
         &self,
+        optional_pvp: Option<bool>,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
         actor: ExactActorRef,
@@ -539,6 +552,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             &closed,
         ) && let Ok(snapshot) = runtime.commit_source_step(proof)
         {
+            states.stage_special_movement_step(
+                runtime,
+                map,
+                actor,
+                session,
+                self.owner_now().get(),
+                Some(entered.position()),
+                snapshot.position(),
+                optional_pvp,
+            );
             states.stage_underwater_step(
                 runtime,
                 actor,

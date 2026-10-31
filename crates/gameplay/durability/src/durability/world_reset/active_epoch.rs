@@ -21,7 +21,7 @@ impl DurabilityRoot {
     pub async fn planned_world_reset(&self, world: WorldId) -> Result<Option<PlannedWorldReset>> {
         self.try_issue_semantic_pass()?.run(move |holder, deadline| Box::pin(async move {
             let mut tx = begin_semantic_transaction(holder, deadline).await?;
-            let row: Option<(String, i64, i64)> = sqlx::query_as("WITH c AS (SELECT clock_timestamp() AS t) SELECT a.reset_epoch::text,floor(extract(epoch FROM ((date_trunc('day',(c.t AT TIME ZONE 'Europe/Berlin')-interval '10 hours')+interval '1 day 10 hours') AT TIME ZONE 'Europe/Berlin'))*1000)::bigint,floor(extract(epoch FROM c.t)*1000)::bigint FROM c,game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid AND e.calendar='TIBIA_SERVER_SAVE_BERLIN_10' AND NOT EXISTS(SELECT 1 FROM game_world_reset_jobs j WHERE j.world_id=a.world_id AND j.phase='RETIRING')")
+            let row: Option<(String, i64, i64)> = sqlx::query_as("WITH c AS (SELECT clock_timestamp() AS t) SELECT a.reset_epoch::text,floor(extract(epoch FROM ((date_trunc('day',(c.t AT TIME ZONE 'Europe/Berlin')-interval '6 hours')+interval '1 day 6 hours') AT TIME ZONE 'Europe/Berlin'))*1000)::bigint,floor(extract(epoch FROM c.t)*1000)::bigint FROM c,game_world_reset_active a JOIN game_world_reset_epochs e USING(world_id,reset_epoch) WHERE a.world_id=encode($1,'hex')::uuid AND e.calendar='TIBIA_SERVER_SAVE_BERLIN_06' AND NOT EXISTS(SELECT 1 FROM game_world_reset_jobs j WHERE j.world_id=a.world_id AND j.phase='RETIRING')")
                 .bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             commit_semantic_transaction(tx,deadline).await?;
             row.map(|(epoch, reset_at_unix_ms, database_now_unix_ms)| {

@@ -32,6 +32,7 @@ pub(super) fn encode(
         "station": request.station.as_ref().map(|s| json!({"family": s.family, "key": s.production_key, "revision": s.revision_ref})),
         "scope_generation": fence.scope_ownership_generation.get(),
         "content_digest": content_digest,
+        "gathering": request.gathering.as_ref().map(|g| json!({"placement": g.mutation.placement,"before":g.mutation.before,"after":g.mutation.after,"expected_revision":g.mutation.expected_revision,"reset_epoch":g.scope.reset_epoch,"consume_bait":g.attempt.consumes_bait})),
         "lease_generation": fence.character_lease_generation})).map_err(|_| DurabilityError::InvalidStoredState)?;
     let payload = mint::encode_bounded(
         &OneItemTransactionV1 {
