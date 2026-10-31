@@ -30,6 +30,7 @@
 //! timed state or contents).
 
 use oteryn_gameplay_economy::npc_trade as rules;
+mod grizzly;
 use oteryn_gameplay_progression::npc_trade_achievement;
 pub use oteryn_gameplay_economy::npc_trade::{
     Entry, NpcTradeCoins, NpcTradeLine, NpcTradeLineKind,
@@ -688,6 +689,9 @@ impl DurabilityRoot {
                         return Ok(Err(NpcTradeError::AuthorityRejected));
                     }
 
+                    if !grizzly::permitted(&mut tx, fence.character_id, &request).await? {
+                        return Ok(Err(NpcTradeError::RequirementNotMet));
+                    }
                     let backpack = sqlx::query(
                         "SELECT i.item_instance_id::text, i.definition_family, \
                                 i.definition_production_key, i.definition_revision_ref \

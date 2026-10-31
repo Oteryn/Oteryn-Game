@@ -14,11 +14,20 @@ use oteryn_protocol_oteryn::world_object::{UseDisposition, WorldObjectTarget};
 const CLAIM: &str = "oteryn:reward-claim.kv.steelhelmet1";
 const CHEST: (u16, u16, i8) = (32460, 31951, -5);
 
-fn source_world(
+pub(super) fn source_world(
     chest: (u16, u16, i8),
     unique: u16,
     appearance: u16,
     offset: u16,
+) -> TestResult<crate::map::boot::BundleWorld> {
+    source_world_choices(chest, &[(chest.0 + offset, unique)], appearance)
+}
+
+/// Several source chests on one row exercise a shared claim's reward choices.
+pub(super) fn source_world_choices(
+    chest: (u16, u16, i8),
+    choices: &[(u16, u16)],
+    appearance: u16,
 ) -> TestResult<crate::map::boot::BundleWorld> {
     use oteryn_world_bundle::{bundle, sector};
     let (bytes, mut pins) = crate::map::boot::tests::bundle();
@@ -48,21 +57,23 @@ fn source_world(
         depth: 0,
         attrs: sector::Attrs::default(),
     };
-    let tiles = (chest.0 - 2..=chest.0 + offset)
+    let min_x = choices.iter().map(|(x, _)| *x).min().ok_or("source choices")?.min(chest.0 - 2);
+    let max_x = choices.iter().map(|(x, _)| *x).max().ok_or("source choices")?.max(chest.0);
+    let tiles = (min_x..=max_x)
         .map(|x| sector::Tile {
             x,
             y: chest.1,
             flags: 0,
             house: 0,
             zones: Vec::new(),
-            items: if x == chest.0 + offset {
+            items: if let Some((_, unique)) = choices.iter().find(|(placed, _)| *placed == x) {
                 vec![
                     ground(),
                     sector::Item {
                         palette: 1,
                         depth: 0,
                         attrs: sector::Attrs {
-                            unique: Some(unique),
+                            unique: Some(*unique),
                             ..Default::default()
                         },
                     },
@@ -151,21 +162,35 @@ fn quest_callbacks_binding_and_coverage_require_exact_source_witnesses() -> Test
     Ok(())
 }
 
-async fn wire_uses(
+pub(super) async fn wire_uses(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: AdmittedSession,
     commands: &[u64],
     target: &WorldObjectTarget,
 ) -> TestResult<Vec<UseDisposition>> {
+    let commands: Vec<_> = commands.iter().map(|&command| (command, target)).collect();
+    Ok(wire_use_targets(owner, admitted, &commands)
+        .await?
+        .into_iter()
+        .map(|(_, disposition)| disposition)
+        .collect())
+}
+
+pub(super) async fn wire_use_targets(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: AdmittedSession,
+    commands: &[(u64, &WorldObjectTarget)],
+) -> TestResult<Vec<(oteryn_protocol_oteryn::CommandStatus, UseDisposition)>> {
     use crate::gameplay_transport::connection::{IDLE_LIVENESS, serve_admitted};
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(target).map_err(debug)?;
     let (mut server, mut client) = tokio::io::duplex(1 << 20);
     let peer = async {
         let mut results = Vec::new();
-        for &command_id in commands {
+        for &(command_id, target) in commands {
+            let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(target)
+                .map_err(debug)?;
             let frame = oteryn_protocol_oteryn::encode_client_command(
-                1,
+                admitted.continuity.connection_generation,
                 &oteryn_protocol_oteryn::ClientCommandValue {
                     command_id,
                     command_type: 2,
@@ -186,10 +211,11 @@ async fn wire_uses(
                     let value = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
                         .map_err(debug)?;
                     assert_eq!(value.command_id, command_id);
-                    results.push(
+                    results.push((
+                        value.status,
                         oteryn_protocol_oteryn::world_object::decode_use_result(value.payload)
                             .map_err(debug)?,
-                    );
+                    ));
                     break;
                 }
             }

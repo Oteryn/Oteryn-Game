@@ -55,8 +55,8 @@ impl DurabilityRoot {
                     // obligation holds `character_root` FOR UPDATE until it commits, so with the
                     // root held FOR SHARE no quest relation of this Character can change between
                     // the reads below.
-                    sqlx::query(
-                        "SELECT 1 FROM game_character_roots \
+                    let root = sqlx::query(
+                        "SELECT character_revision::text FROM game_character_roots \
                           WHERE character_id = encode($1,'hex')::uuid FOR SHARE",
                     )
                     .bind(id)
@@ -115,7 +115,13 @@ impl DurabilityRoot {
                     {
                         return Err(DurabilityError::InvalidStoredState);
                     }
-                    let mut copy = QuestStateCopy::default();
+                    let mut copy = QuestStateCopy {
+                        character_revision: root.as_ref().map(|row| {
+                            CharacterRevision::new(numeric_u64(row, "character_revision")?)
+                                .map_err(|_| DurabilityError::InvalidStoredState)
+                        }).transpose()?,
+                        ..QuestStateCopy::default()
+                    };
                     for row in &tracks {
                         copy.tracks
                             .insert(row.try_get("track_key")?, row.try_get("value")?);

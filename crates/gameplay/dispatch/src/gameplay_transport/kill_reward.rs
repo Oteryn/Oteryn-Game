@@ -82,6 +82,7 @@ pub struct PendingKillSettlement {
         Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
     pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
     pub(super) forge: Option<ForgeDeath>,
+    pub(super) grizzly: Option<Arc<super::grizzly_kills::FrozenGrizzlyDeath>>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -94,17 +95,39 @@ impl PendingKillSettlement {
         target: ExactActorRef,
         observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
     ) -> Self {
+        Self::without_materialization(
+            facts,
+            boss.key.clone(),
+            Some(boss),
+            ground,
+            target,
+            observed_at,
+        )
+    }
+
+    /// Q11=B: an accepted native death may owe Grizzly progress even when its
+    /// canonical corpse cannot be materialized. The existing queue still owns
+    /// capacity, replay, terminal release and the exact corpse projection pin.
+    fn without_materialization(
+        facts: ProjectedCreatureDeathFacts,
+        creature: String,
+        bosstiary_only: Option<crate::domain::bosstiary::BosstiaryBoss>,
+        ground: DeathGroundContext,
+        target: ExactActorRef,
+        observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
+    ) -> Self {
         Self {
             facts,
-            creature: boss.key.clone(),
+            creature,
             row: None,
-            bosstiary_only: Some(boss),
+            bosstiary_only,
             ground,
             target,
             activity_observed_at: observed_at,
             activity_at_death: None,
             damage_shares: Vec::new(),
             forge: None,
+            grizzly: None,
             no_progression_logged: false,
         }
     }
@@ -249,7 +272,10 @@ pub enum TakeOutcome {
 
 /// The Channel's kill queue, stored behind the `attack` mutex.
 #[derive(Debug, Default, Clone)]
-pub struct KillSettlementQueue(Arc<Mutex<KillQueueState>>);
+pub struct KillSettlementQueue(
+    Arc<Mutex<KillQueueState>>,
+    pub(super) Arc<Mutex<super::grizzly_kills::GrizzlyCaptureCache>>,
+);
 
 #[derive(Debug, Clone)]
 struct FrozenProficiencyContributor {
@@ -927,17 +953,35 @@ pub fn record_creature_kill(
     let mut row = match reward {
         Ok(row) => row,
         Err(reason) => {
-            let Some(boss) = sink.rewards.boss(&creature) else {
+            // Ordinary reward admission remains closed. A recognised Grizzly death
+            // with a present native principal may carry quest-only work; no fallback
+            // invents an XP amount, loot table, corpse Item or Bestiary race.
+            let boss = sink.rewards.boss(&creature);
+            if boss.is_none()
+                && (top.present().is_none() || !super::grizzly_kills::tracks_creature(&creature))
+            {
                 refuse(reason.as_str(), &creature);
                 return;
+            }
+            let entry = if let Some(boss) = boss {
+                PendingKillSettlement::for_bosstiary(
+                    facts,
+                    boss.clone(),
+                    ground,
+                    target,
+                    observed_at,
+                )
+            } else {
+                PendingKillSettlement::without_materialization(
+                    facts,
+                    creature.clone(),
+                    None,
+                    ground,
+                    target,
+                    observed_at,
+                )
             };
-            let entry = PendingKillSettlement::for_bosstiary(
-                facts,
-                boss.clone(),
-                ground,
-                target,
-                observed_at,
-            );
+            refuse(reason.as_str(), &creature);
             accept_kill(runtime, sink.queue, entry);
             return;
         }
@@ -1183,6 +1227,7 @@ pub fn record_creature_kill(
     }
     let entry = PendingKillSettlement {
         forge,
+        grizzly: None,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
         damage_shares,
@@ -1204,8 +1249,9 @@ pub fn record_creature_kill(
 fn accept_kill(
     runtime: &mut ChannelRuntimeV1,
     queue: &KillSettlementQueue,
-    entry: PendingKillSettlement,
+    mut entry: PendingKillSettlement,
 ) -> AppendOutcome {
+    super::grizzly_kills::capture(runtime, queue, &mut entry);
     let target = entry.target;
     let creature = entry.creature.clone();
     let outcome = queue.append(entry);
@@ -1709,7 +1755,22 @@ struct DurableKillSettle<'s, 'a, 'f, 'g> {
 }
 impl KillSettle for DurableKillSettle<'_, '_, '_, '_> {
     async fn settle(&self, entry: &PendingKillSettlement, inflight_before: usize) -> SettleReport {
-        Box::pin(self.settle_durably(entry, inflight_before)).await
+        let report = super::grizzly_kills::settle(
+            self.admission,
+            entry,
+            Box::pin(self.settle_durably(entry, inflight_before)),
+        )
+        .await;
+        // Row-less Grizzly/Bosstiary work never binds a corpse Item, but its final
+        // settlement must release exactly the same native projection pin as loot.
+        if entry.row.is_none() {
+            release_settled_corpse(
+                &mut *self.admission.runtime.lock().await,
+                entry,
+                report.verdict,
+            );
+        }
+        report
     }
 }
 impl DurableKillSettle<'_, '_, '_, '_> {
@@ -1821,6 +1882,15 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     entry.creature
                 ));
             }
+            return SettleReport {
+                verdict: SettleVerdict::Final,
+                no_progression: false,
+            };
+        }
+        // Grizzly has already settled through the wrapper above. No ordinary
+        // progression, Task Board, equipment, proficiency or loot path is admitted
+        // by a missing reward row (Q11=B).
+        if entry.row.is_none() {
             return SettleReport {
                 verdict: SettleVerdict::Final,
                 no_progression: false,

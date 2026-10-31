@@ -30,6 +30,38 @@ use sqlx::{Postgres, Row, Transaction};
 
 // Storage is installed once by the standing MAIL migration 0101.
 
+/// Conservative MAIL-TEXT byte ceiling (0101) and current scalar ceiling
+/// (0267), applied to public source text before any claim reservation.
+pub(super) fn valid_authored_reward_text(text: &str) -> bool {
+    !text.is_empty() && text.len() <= 7_996 && text.chars().count() <= 4_000 && !text.contains('\0')
+}
+
+/// Initialize a fresh, source-authored reward item inside its MINT transaction.
+/// This composes the existing Text storage owner; it is not a player rewrite,
+/// claims no player authorship and creates no separate client command receipt.
+/// The claim's deferred complete-plan proof binds the exact body and revision.
+pub(super) async fn initialize_authored_reward_text(
+    tx: &mut Transaction<'_, Postgres>,
+    item: [u8; 16],
+    mint_transaction: [u8; 16],
+    text: &str,
+    occurred_at_unix_ms: i64,
+) -> std::result::Result<(), DurabilityError> {
+    if !valid_authored_reward_text(text) || occurred_at_unix_ms <= 0 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let inserted = sqlx::query("INSERT INTO game_item_text_revisions(item_instance_id,last_revision) \
+        SELECT item_instance_id,1 FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid \
+        AND minted_transaction_id=encode($2,'hex')::uuid AND lifecycle=1 AND quantity=1 \
+        AND state_revision=1 AND last_transaction_id IS NULL")
+        .bind(item.as_slice()).bind(mint_transaction.as_slice()).execute(&mut **tx).await?;
+    if inserted.rows_affected() != 1 { return Err(DurabilityError::InvalidStoredState) }
+    sqlx::query("INSERT INTO game_item_texts(item_instance_id,text,writer_character_id,written_at,text_revision) \
+        VALUES(encode($1,'hex')::uuid,$2,NULL,to_timestamp($3::double precision/1000.0),1)")
+        .bind(item.as_slice()).bind(text).bind(occurred_at_unix_ms).execute(&mut **tx).await?;
+    Ok(())
+}
+
 /// Result data only: no current World, session, reach or retirement authority.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(

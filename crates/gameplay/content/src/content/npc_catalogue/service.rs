@@ -325,6 +325,18 @@ pub fn build(
     source_tree_digest: &str,
     facts: &dyn NpcItemFacts,
 ) -> NpcServiceModel {
+    let grizzly = super::grizzly_shop::declarations(records);
+    let records: Vec<_> = records
+        .iter()
+        .copied()
+        .filter(|(reference, _)| !grizzly.iter().any(|(added, _)| added == *reference))
+        .chain(
+            grizzly
+                .iter()
+                .map(|(reference, declaration)| (reference, declaration)),
+        )
+        .collect();
+    let records = records.as_slice();
     // Pass 1: per-offer rules. Pass 2: arbitrage over the offers still admitted.
     let mut services: BTreeMap<ProjectV2DefinitionRef, NpcServiceEntry> = BTreeMap::new();
     let mut lowest_sell: BTreeMap<(&ProjectV2DefinitionRef, Option<u16>), (u64, u32)> =

@@ -22,6 +22,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
     // All have speed_bonus=0.
     ("GOLDCONV", 4),
+    // 53 exact Grizzly shop keys admitted from Crystal 201189f through
+    // tools/content-migration/grizzly_shop_profiles.py. All have speed_bonus=0.
+    ("GRIZZLY-SHOP", 53),
     // I05 admits the inactive and active dwarven-ring forms 3097/3099 (speed_bonus=0).
     ("I05", 2),
     // I10a: the podiums 35973/35974, 38707 and 42367/42368
@@ -67,6 +70,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // reward_claims quest_transition placements (tools/content-migration/quest_callback_profiles.py).
     // Both have speed_bonus=0.
     ("QUESTCHEST-1", 2),
+    // W15: Holy Icon 9388 and 96 additional chest-reward profiles from Crystal 201189f
+    // (tools/content-migration/quest_callback_profiles.py). Shop profile 7400 is counted
+    // by GRIZZLY-SHOP above. Existing text carriers 2815/5956 are already counted.
+    // All 97 additions have speed_bonus=0.
+    ("QUESTCHEST-W15", 97),
     // Item 7934 used by a world callback's item-on-target step
     // (tools/content-migration/quest_callback_profiles.py). speed_bonus=0.
     ("QUESTCB3", 1),

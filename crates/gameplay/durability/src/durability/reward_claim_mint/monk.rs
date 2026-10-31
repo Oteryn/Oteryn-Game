@@ -15,7 +15,7 @@ impl DurabilityRoot {
     ) -> Result<RewardClaimMintOutcome> {
         validate_request(&request)?;
         if request.achievement.is_some() || request.quest_transition.is_some()
-            || request.key_number.is_some() || request.quantity != 1 {
+            || request.key_number.is_some() || request.quantity != 1 || !request.contents.is_empty() || request.root_text.is_some() {
             return Err(RewardClaimMintError::InvalidInput);
         }
         let binding = intent_binding(&request, fence.character_id)?;

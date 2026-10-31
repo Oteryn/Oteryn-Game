@@ -222,6 +222,7 @@ pub struct QuestObligationRecord {
 /// each committed receipt. Predicates read it; the writer re-checks under lock.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct QuestStateCopy {
+    character_revision: Option<CharacterRevision>,
     tracks: BTreeMap<String, i64>,
     states: BTreeMap<String, QuestStateRecord>,
     obligations: Vec<QuestObligationRecord>,
@@ -229,6 +230,13 @@ pub struct QuestStateCopy {
 }
 
 impl QuestStateCopy {
+    /// Revision read with these tracks under the Character root lock. Kill owners
+    /// freeze it with a death so a later task restart cannot receive an older kill.
+    #[must_use]
+    pub fn character_revision(&self) -> Option<CharacterRevision> {
+        self.character_revision
+    }
+
     /// Global quest-door storage semantics: absent storage reads as `-1`; any
     /// durable value for the source storage action id grants the door.
     #[must_use]
@@ -298,6 +306,11 @@ impl QuestStateCopy {
             return false;
         }
         self.xp_obligations.extend(new_xp);
+        // A partial delta does not establish a coherent predecessor across a gap or
+        // out-of-order replay. Reload before using such a copy as a frozen death fact.
+        self.character_revision = self.character_revision
+            .filter(|revision| *revision == committed.original_character_revision)
+            .map(|_| committed.committed_character_revision);
         for change in &committed.changes {
             self.tracks.insert(change.track.clone(), change.after);
         }
@@ -492,6 +505,8 @@ pub(super) fn report_refused_experience(
 
 /// Insert the quest XP obligation of a committing transition: a fresh UUIDv7 occurrence (the
 /// transaction's statement time and database randomness), the amount and the quest's pin.
+pub mod grizzly;
+pub mod grizzly_boss;
 mod storage;
 #[cfg(test)]
 #[allow(clippy::expect_used)]

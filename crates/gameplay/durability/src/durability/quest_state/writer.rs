@@ -17,7 +17,8 @@ impl DurabilityRoot {
         request: QuestTransitionRequest,
         catalogue: Arc<QuestStateCatalogue>,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner(authority, node, fence, request, catalogue, None)
+        self.commit_quest_inner::<_, 0>(authority, node, fence, request, catalogue, None, None, None, None,
+            &grizzly::NoGrizzlyPremium, None)
             .await
     }
 
@@ -33,30 +34,56 @@ impl DurabilityRoot {
         permit: &super::super::spell_owner_commit::SpellLanePermit,
         context: super::super::quest_world_callback::QuestWorldContext,
     ) -> Result<QuestTransitionOutcome> {
-        self.commit_quest_inner(
+        self.commit_quest_inner::<_, 0>(
             authority,
             node,
             fence,
             request,
             catalogue,
             Some((permit, context)),
+            None,
+            None,
+            None,
+            &grizzly::NoGrizzlyPremium,
+            None,
         )
         .await
     }
 
     #[allow(clippy::too_many_arguments)]
-    async fn commit_quest_inner(
+    pub(super) async fn commit_quest_inner<G: grizzly::GrizzlyPremiumGate, const N: usize>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
         request: QuestTransitionRequest,
         catalogue: Arc<QuestStateCatalogue>,
-        mut context: Option<(
+        context: Option<(
             &super::super::spell_owner_commit::SpellLanePermit,
             super::super::quest_world_callback::QuestWorldContext,
         )>,
+        grizzly_action: Option<oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction>,
+        grizzly_boss: Option<(
+            &super::super::spell_owner_commit::SpellLanePermit,
+            grizzly_boss::GrizzlyBossEntryContext,
+        )>,
+        grizzly_party: Option<crate::foundation::PartySnapshot>,
+        grizzly_gate: &G,
+        grizzly_policy: Option<&FiniteProgressionPolicy<String, N>>,
     ) -> Result<QuestTransitionOutcome> {
+        // The specialised owner evaluates these computed rules under the locked snapshot.
+        // A generic NPC transition cannot bypass the action/cause validation.
+        let grizzly_key = request.transition_key.starts_with("oteryn:quest-transition/grizzly/");
+        if grizzly_key != grizzly_action.is_some()
+            || matches!(grizzly_action, Some(oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction::EnterBoss(_))) != grizzly_boss.is_some()
+            || matches!(grizzly_action, Some(oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction::KillCreature { .. } | oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction::BossKill { .. })) != grizzly_party.is_some()
+            || grizzly_action.as_ref().is_some_and(|action| {
+                action.transition_key() != request.transition_key
+                    || !grizzly::valid_cause(action, request.cause)
+            })
+        {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         let callback = if context.is_some() {
             Some(
                 oteryn_gameplay_quests::quest::world_callbacks::load()
@@ -102,6 +129,18 @@ impl DurabilityRoot {
             return Err(CharacterProgressionError::AuthorityRejected);
         }
         let mut binding = request_binding(fence.character_id, &request);
+        if let Some(action) = &grizzly_action {
+            grizzly::bind_action(&mut binding, action);
+        }
+        if let Some((_, context)) = &grizzly_boss {
+            grizzly_boss::bind_context(&mut binding, context)?;
+            if grizzly_action != Some(oteryn_gameplay_quests::quest::grizzly_adams::GrizzlyAction::EnterBoss(context.boss_id)) {
+                return Err(CharacterProgressionError::InvalidInput);
+            }
+        }
+        if let Some(source) = &grizzly_party {
+            grizzly::bind_party(&mut binding, source)?;
+        }
         if let Some((_, context)) = &context {
             let bytes = serde_json::to_vec(&(context, &callback))
                 .map_err(|_| CharacterProgressionError::InvalidInput)?;
@@ -115,8 +154,9 @@ impl DurabilityRoot {
             .record_for(self)
             .map_err(|_| CharacterProgressionError::AuthorityRejected)?;
         let node = node.clone();
+        let mut context = (context, grizzly_gate, grizzly_boss, grizzly_policy);
         self.try_issue_semantic_pass()?
-            .run_with_context(&mut context, move |holder, deadline, context| {
+            .run_with_context(&mut context, move |holder, deadline, (context, grizzly_gate, grizzly_boss, grizzly_policy)| {
                 Box::pin(async move {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
@@ -131,6 +171,16 @@ impl DurabilityRoot {
                         commit_semantic_transaction(tx, deadline).await?;
                         return Ok(Ok(QuestTransitionOutcome::AlreadyCommitted(committed)));
                     }
+                    if grizzly_action.is_some() {
+                        match grizzly::load_refusal(&mut tx, character, &request, &binding).await? {
+                            Ok(Some(refusal)) => {
+                                commit_semantic_transaction(tx, deadline).await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
+                            }
+                            Err(error) => return Ok(Err(error)),
+                            Ok(None) => {}
+                        }
+                    }
                     let Some(transition) = catalogue.transition(&request.transition_key) else {
                         return Ok(Err(CharacterProgressionError::InvalidInput));
                     };
@@ -140,8 +190,10 @@ impl DurabilityRoot {
                     };
                     let id = character.as_bytes().as_slice();
                     let state = sqlx::query(
-                        "SELECT character_revision::text, profile_revision, ruleset_revision, \
-                                content_revision \
+                        "SELECT character_revision::text, level, total_experience, \
+                                profile_revision, ruleset_revision, content_revision, \
+                                simulation_revision, evidence_revision, declaration_revision, \
+                                policy_revision, reward_revision \
                            FROM game_character_progression_state \
                           WHERE character_id = encode($1,'hex')::uuid FOR UPDATE",
                     )
@@ -255,6 +307,10 @@ impl DurabilityRoot {
                         .iter()
                         .map(|effect| effect.track.as_str())
                         .collect();
+                    let grizzly_keys = grizzly_action.as_ref().map(|_| {
+                        oteryn_gameplay_quests::quest::grizzly_adams::storage_keys()
+                    }).unwrap_or_default();
+                    keys.extend(grizzly_keys.iter().map(String::as_str));
                     keys.extend(final_flags.iter().map(String::as_str));
                     keys.sort_unstable(); keys.dedup();
                     let rows = sqlx::query(
@@ -278,9 +334,40 @@ impl DurabilityRoot {
                         (!final_flags.is_empty() && oteryn_gameplay_quests::quest::monk_shrines::completed_count(&stored) != 10)
                             .then_some(QuestRefusal::StageMismatch)
                     });
+                    let mut grizzly_plan = None;
+                    let refusal = if let (None, Some(action)) = (refusal, &grizzly_action) {
+                        match grizzly::evaluate(&mut tx, character, &stored, &state, action,
+                            *grizzly_gate, *grizzly_policy).await? {
+                            Ok(plan) => { grizzly_plan = Some(plan); None }
+                            Err(refusal) => Some(refusal),
+                        }
+                    } else { refusal };
+                    let refusal = if refusal.is_none() {
+                        if let Some(source) = &grizzly_party {
+                            match super::super::world_party::frozen_kill_membership(&mut tx, &fence, source).await {
+                                Ok(true) => None,
+                                Ok(false) => Some(QuestRefusal::StageMismatch),
+                                Err(super::super::spell_item_transaction::SpellItemError::Durability(error)) => return Err(error),
+                                Err(super::super::spell_item_transaction::SpellItemError::Database(error)) => return Err(error.into()),
+                                Err(_) => Some(QuestRefusal::StageMismatch),
+                            }
+                        } else { None }
+                    } else { refusal };
+                    let refusal = if refusal.is_none() {
+                        if let Some((permit, context)) = grizzly_boss.as_ref() {
+                            (!grizzly_boss::admit(&mut tx, permit, fence, context).await?)
+                                .then_some(QuestRefusal::StageMismatch)
+                        } else { None }
+                    } else { refusal };
+                    // Reading all Grizzly inputs does not reserve capacity for untouched tracks.
+                    let written_keys: Vec<&str> = grizzly_plan.as_ref().map_or_else(
+                        || keys.clone(),
+                        |plan| plan.changes.iter().map(|change| change.track.as_str()).collect(),
+                    );
+                    let new_tracks = written_keys.iter().filter(|key| !stored.contains_key(**key)).count();
                     let refusal = match refusal {
                         Some(refusal) => Some(refusal),
-                        None if rows.len() < keys.len() => {
+                        None if new_tracks > 0 => {
                             let (tracks, has_counter, has_flags): (i64, bool, bool) = sqlx::query_as(
                                 "SELECT count(*), coalesce(bool_or(track_key=$2),false), \
                                   coalesce(bool_or(left(track_key,length($3))=$3),false) \
@@ -294,11 +381,11 @@ impl DurabilityRoot {
                             .await?;
                             // A flag-only character needs one additional counter in its
                             // read projection. Reserve it before committing any new row.
-                            let has_counter = has_counter || keys.contains(&oteryn_gameplay_quests::quest::monk_shrines::COUNT_TRACK);
-                            let has_flags = has_flags || keys.iter().any(|key| key.starts_with(oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX));
+                            let has_counter = has_counter || written_keys.contains(&oteryn_gameplay_quests::quest::monk_shrines::COUNT_TRACK);
+                            let has_flags = has_flags || written_keys.iter().any(|key| key.starts_with(oteryn_gameplay_quests::quest::monk_shrines::FLAG_PREFIX));
                             let after = usize::try_from(tracks)
                                 .unwrap_or(usize::MAX)
-                                .saturating_add(keys.len() - rows.len())
+                                .saturating_add(new_tracks)
                                 .saturating_add(usize::from(has_flags && !has_counter));
                             (after > QUESTSTATE0_RL_01.min(QUESTSTATE0_RL_08_TRACKS))
                                 .then_some(QuestRefusal::CapacityExceeded)
@@ -309,7 +396,9 @@ impl DurabilityRoot {
                     // inserts and consumption of this Character's XP obligations. Count them
                     // before any write; FOR UPDATE here would require the UPDATE privilege
                     // intentionally absent from the runtime role. At RL-10 refuse whole.
-                    let xp_full = match (refusal, transition.experience) {
+                    let reward_experience = grizzly_plan.as_ref()
+                        .map_or(transition.experience, |plan| plan.experience);
+                    let xp_full = match (refusal, reward_experience) {
                         (None, Some(_)) => {
                             let pending = sqlx::query(
                                 "SELECT reward_occurrence_id::text \
@@ -329,7 +418,9 @@ impl DurabilityRoot {
                             .fetch_one(&mut *tx)
                             .await?;
                     let changes = match refusal
-                        .map_or_else(|| catalogue.evaluate(transition, &stored, now), Err)
+                        .map_or_else(|| grizzly_plan.as_ref().map_or_else(
+                            || catalogue.evaluate(transition, &stored, now),
+                            |plan| Ok(plan.changes.clone())), Err)
                         .and_then(|changes| {
                             if xp_full {
                                 Err(QuestRefusal::OutOfRange)
@@ -339,6 +430,11 @@ impl DurabilityRoot {
                         }) {
                         Ok(changes) => changes,
                         Err(refusal) => {
+                            if grizzly_action.is_some() {
+                                grizzly::record_refusal(&mut tx, character, &request, &binding, refusal).await?;
+                                commit_semantic_transaction(tx, deadline).await?;
+                                return Ok(Ok(QuestTransitionOutcome::Refused(refusal)));
+                            }
                             let Some(claim) = obligation else {
                                 // Dropping the transaction rolls back: nothing is written.
                                 if context.is_some() {
@@ -508,7 +604,7 @@ impl DurabilityRoot {
                     if written.rows_affected() != 1 {
                         return Err(DurabilityError::InvalidStoredState);
                     }
-                    let experience = match transition.experience {
+                    let experience = match reward_experience {
                         Some(amount) => Some(
                             insert_xp_obligation(
                                 &mut tx,
@@ -542,6 +638,12 @@ impl DurabilityRoot {
                     if let (Some(callback), Some((_, context))) = (&callback, &context) {
                         super::super::quest_monk_rewards::earn(&mut tx, fence, &request, callback,
                             &context.content_revision, achievement.as_ref()).await?;
+                    }
+                    if let Some(plan) = &grizzly_plan {
+                        grizzly::earn(&mut tx, character, &request, plan, &content_revision).await?;
+                    }
+                    if let Some((_, context)) = grizzly_boss.as_ref() {
+                        grizzly_boss::earn(&mut tx, fence, &request, context).await?;
                     }
                     let committed = CommittedQuestTransition {
                         character_id: character,
