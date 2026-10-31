@@ -20,7 +20,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "b4388b06ee2a93398399e1ca691b8bc08bfb9005"
+APPROVED = "c6558bc7fd91eb63d05bfe1c4dd298ea48f212ee"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -161,7 +161,8 @@ def _postgres_cache_consumer_regressions() -> None:
     assert "    needs: [candidate, durability_postgres_build]\n" in block
     for forbidden in ("rustup ", "cargo +", "cargo build", "cargo test", "actions/cache/"):
         assert forbidden not in block, forbidden
-    assert block.count("--workspace-remap \"$GITHUB_WORKSPACE\" --partition \"$PARTITION_SPEC\"") == 2
+    assert block.count('--workspace-remap "$GITHUB_WORKSPACE" --tool-config-file') == 2
+    assert block.count('--no-fail-fast "${filters[@]}"') == 2
 
 
 def _atlas_queue_canaries(original: str, core) -> None:
@@ -490,14 +491,15 @@ def main() -> int:
         mutations += 1
 
     for archive in ("pg-e2e", "pg-lib"):
-        run = (
-            f'          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/{archive}.tar.zst" '
-            '--workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast'
-        )
+        run = f'          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/{archive}.tar.zst" \\'
+        plan = f'          mapfile -t filters < "$RUNNER_TEMP/pg-plan/{archive}.filters"'
         assert original.count(run) == 1, run
-        for replacement in ("", run.replace("cargo-nextest", "echo cargo-nextest", 1), run.replace(' --partition "$PARTITION_SPEC"', "", 1)):
+        assert original.count(plan) == 1, plan
+        for replacement in ("", run.replace("cargo-nextest", "echo cargo-nextest", 1)):
             assert validate(original.replace(run, replacement, 1)) != 0, (archive, replacement)
             mutations += 1
+        assert validate(original.replace(plan, "", 1)) != 0, (archive, plan)
+        mutations += 1
     for compile_step in ("        run: rustup toolchain install 1.99.1 --profile minimal\n",):
         partitions = core.indented_yaml_mapping_block(original, "durability_postgres", 2)
         marker = "      - name: Install pinned cargo-nextest\n"
