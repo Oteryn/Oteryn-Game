@@ -39,6 +39,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M09: 28 gathering profiles from Crystal 201189f
     // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
     ("M09-GATHER", 28),
+    // E09 mail (tools/content-migration/mail_item_profiles.py): the parcel 3503, stamped
+    // parcel 3504 and stamped letter 3506 are new; the letter 3505 and label 3507 replace
+    // their content-only profiles. None of them is equipment.
+    ("MAIL-E09", 3),
     // The pick 3456, shiny stone 10310 and small diamond 3028.
     ("MINING-1", 3),
     // Monk shrine rewards 50267..=50269 and 50271..=50274 from
@@ -168,6 +172,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
+        // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
+        .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))
         .collect()
     );
     Ok(())
