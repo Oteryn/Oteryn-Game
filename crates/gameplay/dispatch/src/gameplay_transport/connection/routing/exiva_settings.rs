@@ -10,15 +10,15 @@ pub(in super::super) async fn route<A: FreshAdmissionAuthority>(
     let Some(request) = Request::decode(command.payload) else {
         return Some(Dispatch::Reply(CommandStatus::Rejected, vec![0]));
     };
-    let accepted = authority
+    let reply = authority
         .exiva_settings(*admitted, command.command_id, request)
         .await?;
     Some(Dispatch::Reply(
-        if accepted {
+        if reply != [0] {
             CommandStatus::Accepted
         } else {
             CommandStatus::Rejected
         },
-        vec![u8::from(accepted)],
+        reply,
     ))
 }

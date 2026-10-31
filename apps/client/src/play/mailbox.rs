@@ -57,6 +57,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
     pub(super) quest_shutdown: bool,

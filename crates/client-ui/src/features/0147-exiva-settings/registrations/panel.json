@@ -1,0 +1,7 @@
+{
+  "mechanic": "0147-exiva-settings",
+  "kind": "panels",
+  "id": "0147-exiva-settings-panel",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

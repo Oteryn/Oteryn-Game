@@ -765,6 +765,9 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // current depot-search line.
                 "game_depot_search_custody_owner",
                 "game_depot_search_inbox_remove",
+                // I17a/I17b (0592): read-only EXISTS proof that a managed source
+                // sits in the owner's Inbox Gold Pouch; it never writes Inbox rows.
+                "game_equipment_nested_removal_guard",
                 "game_house_disposition_delivery_proven",
                 "game_house_disposition_native_removal_proven",
                 "game_item_location_exclusive",
