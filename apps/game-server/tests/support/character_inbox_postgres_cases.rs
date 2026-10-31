@@ -760,6 +760,11 @@ fn inbox_rows_are_immutable_and_no_other_writer_touches_them() -> TestResult {
                 // neither function inserts, updates or deletes Inbox rows.
                 "game_daily_reward_bound_custody",
                 "game_daily_reward_line_guard",
+                // DEPOT-SEARCH E08: read-only custody owner, and the one narrow removal
+                // seam of a retrieved Inbox root; its BEFORE DELETE proof requires the
+                // current depot-search line.
+                "game_depot_search_custody_owner",
+                "game_depot_search_inbox_remove",
                 "game_house_disposition_delivery_proven",
                 "game_house_disposition_native_removal_proven",
                 "game_item_location_exclusive",

@@ -18,6 +18,8 @@ pub struct ChannelSessionStates {
     pub attack: Mutex<attack::ChannelAttackStates>,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
+    /// P22d: settled kills of tracked creatures awaiting a domain 98 refresh. A leaf lock.
+    pub(super) cyclopedia_tracker_refresh: super::cyclopedia_tracker::TrackerRefresh,
     pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
     /// SESSION-INGRESS-1: the ordered command stream and latest terminal result per session.
     pub command_ingress: super::session_ingress::SessionCommands,

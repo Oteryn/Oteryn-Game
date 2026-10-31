@@ -1,0 +1,41 @@
+{
+  "schema": "OTERYN_MAIL_ITEM_SOURCE_FACTS/v1",
+  "source": {
+    "repository": "opentibiabr/canary",
+    "revision": "52550d5e3c0ffe565f4bd1014f4e5575abf1059b",
+    "path": "data/items/items.xml",
+    "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+  },
+  "rows": [
+    {
+      "id": 3503,
+      "line": 10963,
+      "weight": 1800,
+      "container_capacity": 10
+    },
+    {
+      "id": 3504,
+      "line": 10969,
+      "weight": 1800,
+      "container_capacity": 10
+    },
+    {
+      "id": 3505,
+      "line": 10974,
+      "weight": 50,
+      "container_capacity": null
+    },
+    {
+      "id": 3506,
+      "line": 10980,
+      "weight": 50,
+      "container_capacity": null
+    },
+    {
+      "id": 3507,
+      "line": 10985,
+      "weight": 10,
+      "container_capacity": null
+    }
+  ]
+}

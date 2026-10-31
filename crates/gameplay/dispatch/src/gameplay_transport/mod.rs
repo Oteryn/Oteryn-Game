@@ -551,6 +551,8 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// The Channel's spell lane (ARCH-SPELL-LOCK-2 §1.2): taken before `runtime` by every
     /// key-33 caller and never while a Channel guard is held.
     pub spell_lane: crate::durability::spell_owner_commit::SpellLane,
+    /// STORE_V1: the node's Platform Store client; `None` refuses every purchase as disabled.
+    pub store: Option<store::StorePlatform>,
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the

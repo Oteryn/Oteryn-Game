@@ -1,0 +1,18 @@
+{
+  "mechanic": "0197-cyclopedia-tracker",
+  "kind": "handlers",
+  "id": "0197-cyclopedia-tracker-unsupported",
+  "status": "unsupported",
+  "reason": "The native client Cyclopedia tracker view remains pending.",
+  "commands": [
+    383,
+    384
+  ],
+  "not_applicable": {
+    "state": "Server-owned durable state.",
+    "protocol": "Unsupported until the native client handler lands.",
+    "view": "Unsupported until the native client handler lands.",
+    "input": "Unsupported until the native client handler lands.",
+    "settings": "No settings surface."
+  }
+}

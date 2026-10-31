@@ -21,12 +21,21 @@ struct Category {
     points: [u16; 3],
 }
 
-pub fn progress(category: &str, kills: u64) -> Option<BosstiaryProgress> {
+fn category(category: &str) -> Option<Category> {
     let rows: Vec<Category> = serde_json::from_str(include_str!(
         "../../../../../rulesets/progression/bosstiary/categories.json"
     ))
     .ok()?;
-    let row = rows.into_iter().find(|row| row.category == category)?;
+    rows.into_iter().find(|row| row.category == category)
+}
+
+/// The category's prowess, expertise and mastery kill thresholds.
+pub fn kill_thresholds(category: &str) -> Option<[u64; 3]> {
+    Some(self::category(category)?.kills)
+}
+
+pub fn progress(category: &str, kills: u64) -> Option<BosstiaryProgress> {
+    let row = self::category(category)?;
     let mut result = BosstiaryProgress {
         stage: 0,
         points: 0,
@@ -51,6 +60,7 @@ mod tests {
             ("archfoe", [5, 20, 60], [10, 30, 60]),
             ("nemesis", [1, 3, 5], [10, 30, 60]),
         ] {
+            assert_eq!(kill_thresholds(category), Some(thresholds));
             let mut points = 0;
             for (index, threshold) in thresholds.into_iter().enumerate() {
                 assert_eq!(
@@ -73,5 +83,6 @@ mod tests {
             }
         }
         assert_eq!(progress("unknown", 10), None);
+        assert_eq!(kill_thresholds("unknown"), None);
     }
 }

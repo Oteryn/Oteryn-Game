@@ -56,6 +56,12 @@ impl crate::durability::DurabilityRoot {
             if mailbox_placement_key == 0 || !character_item_fence_is_current(&mut tx, &node, &fence, command, fence.character_id, *world_id.as_bytes(), *channel_id.as_bytes()).await? {
                 return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable));
             }
+            // A posted root is stamped and in the recipient's Inbox, so its address and stamp
+            // cannot be derived again: the immutable receipt answers the replay first.
+            if let Some(root) = sqlx::query_scalar::<_, Vec<u8>>("SELECT uuid_send(root_item_instance_id) FROM game_mail_operations WHERE game_session_id=encode($1,'hex')::uuid AND command_id=$2::text::numeric AND sender_character_id=encode($3,'hex')::uuid")
+                .bind(fence.game_session_id.as_bytes().as_slice()).bind(command_id.to_string()).bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await? {
+                return Ok(if root.as_slice() == item.as_slice() { MailPostOutcome::AlreadyPosted } else { MailPostOutcome::Refused(MailPostRefusal::ReplayConflict) });
+            }
             let row = sqlx::query("SELECT i.definition_production_key,t.text FROM game_item_instances i LEFT JOIN game_item_texts t USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.lifecycle=1")
                 .bind(item.as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut *tx).await?;
             let Some(row) = row else { return Ok(MailPostOutcome::Refused(MailPostRefusal::NotMailable)); };
