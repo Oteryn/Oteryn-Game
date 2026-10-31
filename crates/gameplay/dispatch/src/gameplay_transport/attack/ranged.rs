@@ -808,7 +808,7 @@ pub(super) fn creature_damage(
         CommandRef,
         u16,
     ),
-) -> Option<i64> {
+) -> Option<[i64; 2]> {
     use oteryn_gameplay_combat_rules::resolution::{creature_damage_response, swing_mitigated};
     let (physical, elemental, element) = ranged.split(damage)?;
     let physical = if physical > 0 {
@@ -837,7 +837,10 @@ pub(super) fn creature_damage(
         Element::Fire => "fire",
         Element::Ice => "ice",
     };
-    physical.checked_add(creature_damage_response(policy, elemental, element)?)
+    Some([
+        physical,
+        creature_damage_response(policy, elemental, element)?,
+    ])
 }
 
 #[cfg(test)]

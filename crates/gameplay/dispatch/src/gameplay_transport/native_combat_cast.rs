@@ -175,6 +175,7 @@ pub struct PendingNativeCast {
     prepared: PreparedNativeCombatCast,
     owned: OwnedCastFacts,
     request: crate::durability::spell_items_abi::SpellItemTransactionRequest,
+    bounty_leech: Vec<crate::gameplay_transport::task_board::bounty_talisman::SpellLeech>,
 }
 
 #[derive(Debug)]
@@ -618,6 +619,7 @@ impl PreparedNativeCombatCast {
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         states: &mut ChannelSpellStates,
+        bounty_leech: &[crate::gameplay_transport::task_board::bounty_talisman::SpellLeech],
     ) -> Result<(), Error> {
         if let Some(companion) = self.direct_companion.as_mut() {
             companion
@@ -643,7 +645,7 @@ impl PreparedNativeCombatCast {
         let mut physical = runtime.stage_spell_batch(&self.batch)?;
         let mut player = stage_player_batch(runtime, states, &self.batch, Some(self.paid.clone()))
             .map_err(|_| Error::PlayerVitalsOwnerRequired)?;
-        player.stage_item_spell_leech(&physical, self.item_spell_leech)?;
+        player.stage_item_spell_leech(&physical, self.item_spell_leech, bounty_leech)?;
         // A committed-but-uninstalled attempt retains its original legality grant and death
         // identity. A new-write verdict may replace the grant after fresh qualification.
         if let Some(original) = self.installation.as_ref() {
@@ -2614,6 +2616,9 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     };
                     if invalid_draw{return Err(DurabilityError::Unavailable);}
                     states.apply_prey_spell_damage(runtime,&mut prepared.batch);
+                    let talisman=crate::durability::task_board::read_talisman_in_transaction(&mut tx,fence).await?;
+                    let bounty_leech=crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses(
+                        runtime,&mut prepared.batch,&talisman,&stream,decision).ok_or(DurabilityError::Unavailable)?;
                     if let Some(reserved)=rune_reservation.as_ref(){
                         item_tx::validate_rune_reservation_in_transaction(&mut tx,&authority,reserved).await
                             .map_err(|_|DurabilityError::Unavailable)?;
@@ -2627,14 +2632,14 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
                     }
                     ordinary_field_items::append_creations(&mut tx,&authority,owner.root,runtime,room,objects,content,&mut prepared,&mut request).await
                         .map_err(|_|DurabilityError::Unavailable)?;
-                    *pending=Some(PendingNativeCast{actor,session,intent,rune,legacy:legacy.clone(),parameter:parameter.clone(),fence,prepared,owned:owned.clone(),request});
+                    *pending=Some(PendingNativeCast{actor,session,intent,rune,legacy:legacy.clone(),parameter:parameter.clone(),fence,prepared,owned:owned.clone(),request,bounty_leech});
                 }
                 let attempt=pending.as_mut().ok_or(DurabilityError::Unavailable)?;
                 // Current actor facts never come from historical cost/training rows.
                 if attempt.prepared.before!=*states.get(runtime,actor,session).ok_or(DurabilityError::Unavailable)?{
                     return Err(DurabilityError::Unavailable);
                 }
-                attempt.prepared.stage_installation(runtime,states).map_err(|_|DurabilityError::Unavailable)?;
+                attempt.prepared.stage_installation(runtime,states,&attempt.bounty_leech).map_err(|_|DurabilityError::Unavailable)?;
                 let reconnect=crate::durability::admission_journal::spell_reconnect::prove_pending_spell_reconnect(
                     &mut tx,&authority,&attempt.fence,&item_fence).await?;
                 // Re-read only the original source footprint. A changed/unavailable current tile

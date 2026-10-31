@@ -13,6 +13,7 @@ use crate::foundation::CharacterId;
 use crate::foundation::owner_timer::SemanticTimeMicros as OwnerTime;
 use crate::gameplay_transport::actor_spell::ChannelSpellStates;
 use crate::gameplay_transport::kill_reward::KillSettlementQueue;
+use crate::gameplay_transport::task_board::bounty_talisman;
 use crate::spell::cast::{CharacterCastFacts, SwingSkills};
 use crate::spell::combat_execution::actor_atom;
 use crate::spell::formula::FormulaInputs;
@@ -75,6 +76,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(mut pvp_permit) = self.spell_lane_permit().await else {
             return;
         };
+        let sessions = self
+            .states
+            .attack
+            .lock()
+            .await
+            .entries
+            .iter()
+            .map(|entry| entry.session)
+            .collect::<std::collections::BTreeSet<_>>();
+        let mut talismans = std::collections::BTreeMap::new();
+        for session in sessions {
+            let Ok(snapshot) = self.bounty_talisman_for_session(session).await else {
+                return;
+            };
+            talismans.insert(session, snapshot);
+        }
         let now = self.owner_now();
         let mut runtime = self.runtime.lock().await;
         let digest = runtime.content_pin().server_artifact_digest();
@@ -488,6 +505,18 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     continue;
                 };
                 let race_key = snapshot.state.policy.definition_key.clone();
+                let Some(talisman) = talismans.get(&entry.session) else {
+                    continue;
+                };
+                let Some([talisman_damage, talisman_life]) = bounty_talisman::hit_bonuses(
+                    talisman,
+                    &race_key,
+                    &root,
+                    swing_occurrence(entry.actor, swing.lineage, ordinal, b"bounty-talisman"),
+                    0,
+                ) else {
+                    continue;
+                };
                 // The creature's content defence and armor (ATTACK-0 §5, `monster.cpp:242-251`);
                 // a creature without them takes no hit (fail closed).
                 let (Some(defense), Some(armor)) =
@@ -543,7 +572,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 let blocked = selected.weapon.ranged.is_none()
                     && blocks[index].1.try_block(&constants.block, swing.at);
                 let Some(magnitude) = (if selected.weapon.ranged.is_some() {
-                    ranged_magnitude
+                    ranged_magnitude.and_then(|parts| parts[0].checked_add(parts[1]))
                 } else {
                     creature_mitigated(
                         &root,
@@ -600,7 +629,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     1,
                     now.get(),
                 );
-                let landed = super::super::prey::damage(landed, prey);
+                let landed = if let Some(parts) = ranged_magnitude.filter(|_| talisman_damage > 0) {
+                    // Talisman scales primary and secondary separately, after Prey.
+                    // Perfect Shot is the flat addition to the primary component.
+                    let primary = parts[0]
+                        .saturating_add(landed.saturating_sub(magnitude))
+                        .max(0);
+                    bounty_talisman::damage(
+                        super::super::prey::damage(primary, prey),
+                        talisman_damage,
+                    )
+                    .saturating_add(bounty_talisman::damage(
+                        super::super::prey::damage(parts[1], prey),
+                        talisman_damage,
+                    ))
+                } else {
+                    bounty_talisman::damage(
+                        super::super::prey::damage(landed, prey),
+                        talisman_damage,
+                    )
+                };
                 if landed <= 0 {
                     train_swing(
                         &mut states,
@@ -695,6 +743,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     )
                 };
                 charm_combat::bonuses(&mut offence, &outcomes);
+                if !extension {
+                    // Canary on_combat_taskboard.lua:24-27 adds the proc to the ordinary
+                    // life skill. The existing owner heals from committed real damage.
+                    offence.life_leech = offence.life_leech.saturating_add(talisman_life);
+                }
                 equipped_offence::leech_hit(
                     &mut states,
                     &runtime,
