@@ -38,7 +38,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Some(state) = states.get(&runtime, actor, session) else {
                 return false;
             };
-            if state.character_facts().vocation != Vocation::None
+            if Some(state.character_facts().vocation) != Vocation::from_key(before.vocation())
                 || state.character_facts().magic_level != u32::from(before.magic().0)
                 || state.has_training_to_flush()
             {

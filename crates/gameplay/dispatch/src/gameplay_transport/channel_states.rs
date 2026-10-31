@@ -19,6 +19,9 @@ pub struct ChannelSessionStates {
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
     pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
+    /// S16c: sessions whose Dawnport trial build commit awaits live installation; their last
+    /// position capture is held like a retained NPC vocation choice. A leaf lock.
+    pub(super) dawnport_trials: std::sync::Mutex<std::collections::HashSet<GameSessionId>>,
     /// SESSION-INGRESS-1: the ordered command stream and latest terminal result per session.
     pub command_ingress: super::session_ingress::SessionCommands,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).

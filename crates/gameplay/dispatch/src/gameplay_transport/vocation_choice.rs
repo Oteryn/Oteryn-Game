@@ -66,20 +66,8 @@ use oteryn_gameplay_npc::vocation_choice::answer;
 pub use oteryn_gameplay_content::content::npc_catalogue::DAWNPORT_CHOICE_NPC;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RetainedNpcVocation {
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
-    )]
     pub fence: CurrentCharacterGameplayFence,
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
-    )]
     pub request: BuildChangeRequest,
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 native NPC retained-intent consumer reads this field; D1173 integration is pending."
-    )]
     pub formula_digest: [u8; 32],
 }
 
@@ -170,11 +158,10 @@ fn current_npc_owner(
         &owner.states.chat,
     )
 }
-#[allow(
-    dead_code,
-    reason = "D1220: A2 native NPC commit must compare current session lease and scope; D1173 integration is pending."
-)]
-fn same_authority(a: &CurrentCharacterGameplayFence, b: &CurrentCharacterGameplayFence) -> bool {
+pub(super) fn same_authority(
+    a: &CurrentCharacterGameplayFence,
+    b: &CurrentCharacterGameplayFence,
+) -> bool {
     a.character_id == b.character_id
         && a.game_session_id == b.game_session_id
         && a.connection_generation == b.connection_generation
@@ -188,10 +175,6 @@ fn same_authority(a: &CurrentCharacterGameplayFence, b: &CurrentCharacterGamepla
 #[allow(
     clippy::too_many_arguments,
     reason = "existing real writer inputs plus retained intent and per-character slot"
-)]
-#[allow(
-    dead_code,
-    reason = "D1220: A2 native NPC caller needs this actual retained-intent build writer; D1173 integration is pending."
 )]
 pub async fn commit_retained_npc_vocation(
     slot: &mut RevisionSlot,
@@ -230,7 +213,7 @@ pub async fn commit_retained_npc_vocation(
     };
     if receipt.character_id != retained.fence.character_id
         || receipt.occurrence != retained.request.occurrence
-        || receipt.cause != BuildCause::VocationChoice
+        || receipt.cause != retained.request.cause
         || receipt.original_character_revision != retained.fence.expected_character_revision
         || receipt.before != retained.request.before
         || receipt.after != retained.request.after
@@ -242,11 +225,7 @@ pub async fn commit_retained_npc_vocation(
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    #[allow(
-        dead_code,
-        reason = "D1220: A2 native NPC finish path needs this independent current fence read; D1173 integration is pending."
-    )]
-    async fn npc_vocation_fence(
+    pub(super) async fn npc_vocation_fence(
         &self,
         session: GameSessionId,
     ) -> Option<CurrentCharacterGameplayFence> {
