@@ -261,7 +261,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source_quantity_before: stone.item.quantity,
             flask,
         };
-        let content = NativeItemWeights(native);
+        let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         match self
             .root
             .commit_pick_refining(self.character, self.holder, fence, request, &content)

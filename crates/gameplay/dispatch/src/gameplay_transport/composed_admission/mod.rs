@@ -22,4 +22,5 @@ mod spells;
 mod training;
 mod vitals;
 mod wheel;
+mod wheel_gift;
 mod world_map;

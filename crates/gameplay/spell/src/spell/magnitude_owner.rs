@@ -72,6 +72,8 @@ pub struct MagnitudeOwnedAttributes {
     pub fatal_chance_permyriad: Option<ExactRatio>,
     pub armor_penetration_permyriad: Option<u32>,
     pub elemental_pierce_permyriad: Option<Vec<(Element, u32)>>,
+    /// The same fenced allocation/Atelier snapshot as owner_revisions, never an admission cache.
+    pub wheel_effects: Option<oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects>,
     pub wheel_flat_damage: Option<i32>,
     pub wheel_flat_healing: Option<i32>,
     pub source_damage_multiplier_percent: Option<u32>,
@@ -244,19 +246,35 @@ pub struct PreparedMagnitudeOwner {
     selected_item_augments:
         Vec<oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugment>,
     caster: PlayerSpellState,
+    selected_spell: Option<String>,
+    selected_focus_group: bool,
     now_ms: u64,
     plan: NativeCombatPlan,
     targets: Vec<Target>,
     shared_extensions: Option<(bool, bool)>,
     pvp_targets: Vec<(ExactActorRef, bool)>,
     delayed_damage_percent: Option<u32>,
+    /// Position snapshots are captured only for an active adjacency consumer and revalidated.
+    wheel_positions: Vec<(ExactActorRef, crate::foundation::MovementPositionSnapshot)>,
+    wheel_link_echo: i64,
+    wheel_census: Option<
+        Vec<(
+            ExactActorRef,
+            crate::foundation::MovementPositionSnapshot,
+            Option<GameSessionId>,
+        )>,
+    >,
+    wheel_masterless: Vec<(ExactActorRef, bool)>,
+    // Private numerical observations, never caller-authored bypass flags. Each result
+    // is minted only after finish_inner applied the real target's source block stage.
+    player_block_shielding: Vec<(ExactActorRef, u32)>,
+    finished_player_damage: Vec<(ExactActorRef, i64)>,
 }
 
 /// Values whose timing D.1.3 fixes at planting. Original owner observations stay
 /// separate, so delayed numerical validation still compares fresh real owners.
 #[derive(Debug, Clone)]
 pub struct StrikeCastModifiers {
-    pub flat_damage: i32,
     source_bonus: u32,
     damage_percent: u32,
     base_damage_augments:
@@ -278,7 +296,8 @@ impl StrikeCastModifiers {
             _ => 100,
         };
         Ok(Self {
-            flat_damage: needed(a.wheel_flat_damage)?,
+            // Keep the established raw/stance snapshot. Crystal's delayed Combat
+            // reads gem and Focus bonuses at the actual strike, not at planting.
             source_bonus: needed(a.source_damage_multiplier_percent)?,
             damage_percent,
             base_damage_augments: a.item_augments.iter().filter(|augment| {
@@ -335,13 +354,21 @@ fn condition_attributes(
 impl PreparedMagnitudeOwner {
     /// F's planted raw/late-modifier split. This changes only numerical inputs;
     /// `attributes` and `caster` remain intact for commit-time owner validation.
-    pub fn select_planted_strike(&mut self, snapshot: &StrikeCastModifiers) {
+    pub fn select_planted_strike(&mut self, snapshot: &StrikeCastModifiers) -> Result<(), Error> {
+        let wheel_bonus = self.selected_wheel_damage_bonus()?;
         self.selected_item_augments.retain(|augment| augment.kind != oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind::BaseDamage);
         self.selected_item_augments
             .extend(snapshot.base_damage_augments.iter().cloned());
-        self.resolved_attributes.wheel_flat_damage = Some(0);
-        self.resolved_attributes.source_damage_multiplier_percent = Some(snapshot.source_bonus);
+        // The raw formula remains planted. Wheel flat belongs to the current
+        // Combat after target block, alongside its current gem/Focus modifiers.
+        self.resolved_attributes.source_damage_multiplier_percent = Some(
+            snapshot
+                .source_bonus
+                .checked_add(wheel_bonus)
+                .ok_or(Error::InvalidMagnitude)?,
+        );
         self.delayed_damage_percent = Some(snapshot.damage_percent);
+        Ok(())
     }
     pub fn select_echo_stance(
         &mut self,
@@ -359,7 +386,9 @@ impl PreparedMagnitudeOwner {
         self.resolved_attributes.equipment_critical_extra_permyriad = Some(0);
         self.resolved_attributes.source_damage_multiplier_percent = Some(
             u32::try_from(snapshot.damage_multiplier_permyriad / 100 - 100)
-                .map_err(|_| Error::InvalidMagnitude)?,
+                .map_err(|_| Error::InvalidMagnitude)?
+                .checked_add(self.selected_wheel_damage_bonus()?)
+                .ok_or(Error::InvalidMagnitude)?,
         );
         Ok(())
     }
@@ -368,8 +397,31 @@ impl PreparedMagnitudeOwner {
     pub fn select_item_spell(&mut self, spell: &super::SpellDefinition) -> Result<(), Error> {
         use oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind as K;
         self.selected_item_augments.clear();
+        self.finished_player_damage.clear();
+        self.selected_spell = Some(spell.name.clone());
+        self.selected_focus_group = spell
+            .groups
+            .get(1)
+            .is_some_and(|group| group.key == "focus");
         self.shared_extensions = None;
         self.resolved_attributes = self.attributes.resolved_for_policy();
+        // Crystal wheel:3535-3539 stores gem spell bonuses separately from global
+        // critical skill. Projection already performed each gem's source integer cast.
+        if let Some(effects) = &self.attributes.wheel_effects {
+            let healing =
+                u32::try_from(effects.gem_value_milli("base_healing_bonus", &spell.name) / 1_000)
+                    .map_err(|_| Error::InvalidMagnitude)?;
+            self.resolved_attributes.source_healing_multiplier_percent = Some(
+                needed(self.resolved_attributes.source_healing_multiplier_percent)?
+                    .checked_add(healing)
+                    .ok_or(Error::InvalidMagnitude)?,
+            );
+        }
+        self.resolved_attributes.source_damage_multiplier_percent = Some(
+            needed(self.resolved_attributes.source_damage_multiplier_percent)?
+                .checked_add(self.selected_wheel_damage_bonus()?)
+                .ok_or(Error::InvalidMagnitude)?,
+        );
         if !matches!(spell.carrier, super::Carrier::Instant { .. }) {
             return Ok(());
         }
@@ -632,17 +684,78 @@ impl PreparedMagnitudeOwner {
         {
             return invalid();
         }
+        let mut player_block_shielding = Vec::new();
+        if element != Element::Healing {
+            for target in &targets {
+                if let TargetOwner::Player(state) = &target.owner {
+                    let bonus = state
+                        .wheel_battle_instinct(
+                            runtime,
+                            target.actor,
+                            now_ms.checked_mul(1_000).ok_or(Error::InvalidMagnitude)?,
+                        )
+                        .ok_or(Error::SnapshotChanged)?;
+                    player_block_shielding.push((target.actor, bonus.shielding));
+                }
+            }
+        }
+        let mut wheel_positions = Vec::new();
+        if a.wheel_effects
+            .as_ref()
+            .is_some_and(|effects| effects.active_unique_perks.contains("sanctuary"))
+        {
+            for current in std::iter::once(actor).chain(targets.iter().map(|target| target.actor)) {
+                if !wheel_positions.iter().any(|(old, _)| *old == current) {
+                    wheel_positions.push((
+                        current,
+                        runtime.read_actor_position(current).map_err(Error::Owner)?,
+                    ));
+                }
+            }
+        }
+        let wheel_census = if a.wheel_effects.as_ref().is_some_and(|effects| {
+            effects.active_unique_perks.contains("battle_instinct")
+                || effects.active_unique_perks.contains("positional_tactics")
+        }) {
+            Some(runtime.positioned_actor_census().map_err(Error::Owner)?)
+        } else {
+            None
+        };
+        let mut wheel_masterless = Vec::new();
+        if let Some(census) = &wheel_census {
+            for (actor, _, session) in census {
+                if session.is_none() {
+                    wheel_masterless.push((
+                        *actor,
+                        runtime
+                            .companion_snapshot(*actor)
+                            .map_err(Error::Owner)?
+                            .state
+                            .master
+                            .is_none(),
+                    ));
+                }
+            }
+        }
         Ok(Self {
             attributes: original.clone(),
             selected_item_augments: Vec::new(),
             resolved_attributes: resolved,
             caster: caster.clone(),
+            selected_spell: None,
+            selected_focus_group: false,
             now_ms,
             plan: plan.clone(),
             targets,
             shared_extensions: None,
             pvp_targets: pvp_targets.to_vec(),
             delayed_damage_percent: None,
+            wheel_positions,
+            wheel_link_echo: 0,
+            wheel_census,
+            wheel_masterless,
+            player_block_shielding,
+            finished_player_damage: Vec::new(),
         })
     }
 
@@ -675,6 +788,47 @@ impl PreparedMagnitudeOwner {
         runtime
             .player_control_facts(attributes.binding.actor, attributes.binding.session)
             .map_err(Error::Owner)?;
+        if let Some(census) = &self.wheel_census {
+            runtime
+                .validate_positioned_actor_census(census)
+                .map_err(|_| Error::SnapshotChanged)?;
+            for (actor, masterless) in &self.wheel_masterless {
+                if runtime
+                    .companion_snapshot(*actor)
+                    .map_err(|_| Error::SnapshotChanged)?
+                    .state
+                    .master
+                    .is_none()
+                    != *masterless
+                {
+                    return Err(Error::SnapshotChanged);
+                }
+            }
+        }
+        for (actor, shielding) in &self.player_block_shielding {
+            let state = if *actor == attributes.binding.actor {
+                Some(caster)
+            } else {
+                player(*actor)
+            }
+            .ok_or(Error::SnapshotChanged)?;
+            let now = self
+                .now_ms
+                .checked_mul(1_000)
+                .ok_or(Error::InvalidMagnitude)?;
+            if state
+                .wheel_battle_instinct(runtime, *actor, now)
+                .map(|bonus| bonus.shielding)
+                != Some(*shielding)
+            {
+                return Err(Error::SnapshotChanged);
+            }
+        }
+        for (actor, expected) in &self.wheel_positions {
+            if runtime.read_actor_position(*actor).map_err(Error::Owner)? != *expected {
+                return Err(Error::SnapshotChanged);
+            }
+        }
         for target in &self.targets {
             match &target.owner {
                 TargetOwner::Creature(before) => {
@@ -695,6 +849,51 @@ impl PreparedMagnitudeOwner {
                         return Err(Error::SnapshotChanged);
                     }
                 }
+            }
+        }
+        Ok(())
+    }
+
+    /// Prove that every player Damage in this batch is one exact result of this
+    /// numerical owner, under the same current caster/target/physical observations.
+    /// Generic batches cannot request that the final HP owner skip blockHit.
+    pub fn qualify_preprocessed_player_batch<'a>(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        batch: &super::combat_batch::OwnerCombatBatch,
+        player: &dyn Fn(ExactActorRef) -> Option<&'a PlayerSpellState>,
+    ) -> Result<(), Error> {
+        if batch.caster != self.attributes.binding.actor
+            || batch.command.game_session_id() != self.attributes.binding.session
+            || batch.attacker != self.attributes.binding.character
+            || batch.current_lease_generation != self.attributes.binding.lease_generation
+            || batch.now_ms != self.now_ms
+        {
+            return invalid();
+        }
+        self.validate_current_with_lookup(
+            runtime,
+            player(batch.caster).ok_or(Error::SnapshotChanged)?,
+            &self.attributes,
+            player,
+        )?;
+        let mut used = vec![false; self.finished_player_damage.len()];
+        for effect in &batch.effects {
+            if runtime.contains_live_creature(effect.target) {
+                continue;
+            }
+            if let super::combat_batch::OwnerCombatChange::Damage { magnitude, .. } = &effect.change
+            {
+                let index = self
+                    .finished_player_damage
+                    .iter()
+                    .enumerate()
+                    .find(|(index, result)| {
+                        !used[*index] && **result == (effect.target, *magnitude)
+                    })
+                    .map(|(index, _)| index)
+                    .ok_or(Error::InvalidBatch)?;
+                used[index] = true;
             }
         }
         Ok(())
@@ -756,6 +955,20 @@ impl PreparedMagnitudeOwner {
     ) -> Result<(i64, i64), Error> {
         let mut healing = 0;
         let magnitude = self.finish_inner(plan, hit, binding, draw, &mut healing)?;
+        if magnitude > 0
+            && matches!(plan, NativeCombatPlan::Combat(combat) if combat.element != Element::Healing)
+            && self.targets.iter().any(|target| {
+                target.actor == binding.actor && matches!(target.owner, TargetOwner::Player(_))
+            })
+        {
+            if self.finished_player_damage.len() >= MAX_EFFECTS {
+                return invalid();
+            }
+            self.finished_player_damage
+                .try_reserve(1)
+                .map_err(|_| Error::InvalidBatch)?;
+            self.finished_player_damage.push((binding.actor, magnitude));
+        }
         Ok((magnitude, healing))
     }
     pub fn finish(
@@ -810,8 +1023,8 @@ impl PreparedMagnitudeOwner {
             NativeCombatPlan::MassSpiritMend { .. } => (Element::Healing, false, true),
             _ => return invalid(),
         };
-        // Healing extensions require Blessing of the Grove. Active blessing is an
-        // explicitly unsupported extra, so a qualified absent blessing makes no draw.
+        // Ordinary healing does not roll extensions. Grove's critical heal is rolled
+        // after its healing bonuses below (Crystal 201189f game.cpp:7629-7645).
         let (critical, fatal) = if element == Element::Healing {
             (false, false)
         } else {
@@ -833,22 +1046,7 @@ impl PreparedMagnitudeOwner {
             }
         }
         if critical {
-            let mut bonus = needed(a.equipment_critical_extra_permyriad)?;
-            if let Some(ConditionValues::Attributes {
-                critical_extra_percentage_points,
-                ..
-            }) = condition_attributes(&self.caster, self.now_ms)?
-            {
-                bonus = bonus
-                    .checked_add(
-                        i32::try_from(critical_extra_percentage_points * 100)
-                            .map_err(|_| Error::InvalidMagnitude)?,
-                    )
-                    .ok_or(Error::InvalidMagnitude)?;
-            }
-            bonus = bonus
-                .checked_add(needed(a.base_critical_extra_permyriad)?)
-                .ok_or(Error::InvalidMagnitude)?;
+            let bonus = self.critical_extra()?;
             value = signed_truncate(value as f64 * (1.0 + f64::from(bonus) / 10000.0))?;
         }
         if fatal {
@@ -860,8 +1058,6 @@ impl PreparedMagnitudeOwner {
             .caster
             .virtue_party_bonuses(self.now_ms.saturating_mul(1_000));
         if element == Element::Healing {
-            value = percent(value, self.caster.sustain_healing_percent())?;
-            value = percent(value, 100 + party.spell_healing)?;
             value = percent(value, needed(a.healing_dealt_percent)?)?;
             value = compound(
                 value,
@@ -872,13 +1068,19 @@ impl PreparedMagnitudeOwner {
             value = value
                 .checked_add(i64::from(needed(a.wheel_flat_healing)?))
                 .ok_or(Error::InvalidMagnitude)?;
-            return Ok(value.max(0));
+            value = self.finish_wheel_healing(value.max(0), &target, draw)?;
+            // Crystal game.cpp:7837-7841 applies Wheel before named-spell Sustain/aura.
+            if self.selected_spell.is_some() {
+                value = percent(value, self.caster.sustain_healing_percent())?;
+                value = percent(value, 100 + party.spell_healing)?;
+            }
+            return Ok(value);
         }
         value = percent(value, 100 + party.spell_damage)?;
         if let Some(side) = hit.side_percent {
             value = signed_round(value as f64 * f64::from(side) / 100.0)?;
         }
-        if let TargetOwner::Player(_) = &target.owner {
+        if let TargetOwner::Player(target_state) = &target.owner {
             let black = self
                 .pvp_targets
                 .iter()
@@ -897,16 +1099,42 @@ impl PreparedMagnitudeOwner {
             } else if let Some(percent_at_cast) = self.delayed_damage_percent {
                 value = percent(value, percent_at_cast)?;
             }
+            // Crystal combat.cpp:796-801 halves PvP before target blockHit and
+            // game.cpp:7945-7946 applies Wheel multipliers/flat afterwards.
+            let pvp = oteryn_gameplay_combat_rules::pvp::pvp_damage(
+                u32::try_from(value.max(0)).map_err(|_| Error::InvalidMagnitude)?,
+                black,
+            );
+            let shielding = self
+                .player_block_shielding
+                .iter()
+                .find(|(actor, _)| *actor == target.actor)
+                .ok_or(Error::InvalidBatch)?
+                .1;
+            value = i64::from(
+                target_state
+                    .after_player_block(
+                        pvp,
+                        crate::player_lethal::PlayerHitKind::from_element(Some(element_key(
+                            element,
+                        ))),
+                        shielding,
+                        self.now_ms
+                            .checked_mul(1_000)
+                            .ok_or(Error::InvalidMagnitude)?,
+                    )
+                    .ok_or(Error::InvalidMagnitude)?,
+            );
+            if value == 0 {
+                return Ok(0);
+            }
             let bonus = needed(a.source_damage_multiplier_percent)?
                 .checked_add(hit.bonus_percent)
                 .ok_or(Error::InvalidMagnitude)?;
             value = compound(value, bonus)?
                 .checked_add(i64::from(needed(a.wheel_flat_damage)?))
                 .ok_or(Error::InvalidMagnitude)?;
-            return Ok(i64::from(oteryn_gameplay_combat_rules::pvp::pvp_damage(
-                u32::try_from(value.max(0)).map_err(|_| Error::InvalidMagnitude)?,
-                black,
-            )));
+            return self.finish_wheel_damage(value, &target);
         }
         let TargetOwner::Creature(source_target) = &target.owner else {
             return invalid();
@@ -963,7 +1191,18 @@ impl PreparedMagnitudeOwner {
             .map(|v| v.percent.numerator as f64 / v.percent.denominator as f64)
             .unwrap_or(0.0);
         let original = 100.0 - resistance;
-        let mut sensitivity = original;
+        // Crystal monster.cpp:949-964: bow Ballistic subtracts two resistance
+        // points, including Physical; it is not the generic elemental-pierce cap.
+        let ballistic = matches!(element, Element::Physical | Element::Holy)
+            && a.wheel_effects
+                .as_ref()
+                .is_some_and(|effects| effects.active_unique_perks.contains("ballistic_mastery"))
+            && self
+                .caster
+                .wheel_equipment()
+                .and_then(|hands| hands.ammunition())
+                == Some(oteryn_gameplay_content::content::ReferenceAmmoType::Arrow);
+        let mut sensitivity = original + if ballistic { 2.0 } else { 0.0 };
         if element != Element::Physical && original > 0.0 {
             let mut pierce = f64::from(
                 a.elemental_pierce_permyriad
@@ -996,7 +1235,287 @@ impl PreparedMagnitudeOwner {
         if let Some(side) = hit.side_percent {
             flat = signed_round(flat as f64 * f64::from(side) / 100.0)?;
         }
-        value.checked_add(flat).ok_or(Error::InvalidMagnitude)
+        self.finish_wheel_damage(
+            value.checked_add(flat).ok_or(Error::InvalidMagnitude)?,
+            &target,
+        )
+    }
+
+    fn critical_extra(&self) -> Result<i32, Error> {
+        let a = &self.resolved_attributes;
+        let mut bonus = needed(a.equipment_critical_extra_permyriad)?
+            .checked_add(needed(a.base_critical_extra_permyriad)?)
+            .ok_or(Error::InvalidMagnitude)?;
+        if let Some(ConditionValues::Attributes {
+            critical_extra_percentage_points,
+            ..
+        }) = condition_attributes(&self.caster, self.now_ms)?
+        {
+            bonus = bonus
+                .checked_add(
+                    i32::try_from(
+                        critical_extra_percentage_points
+                            .checked_mul(100)
+                            .ok_or(Error::InvalidMagnitude)?,
+                    )
+                    .map_err(|_| Error::InvalidMagnitude)?,
+                )
+                .ok_or(Error::InvalidMagnitude)?;
+        }
+        if let Some(effects) = &a.wheel_effects {
+            let global = effects.gem_value_milli("critical_extra_damage", "Critical Extra Damage");
+            let spell = self.selected_spell.as_deref().map_or(0, |name| {
+                effects.gem_value_milli("critical_extra_damage", name)
+            });
+            // Thousandths percent -> hundredths percent. Global fractions survive;
+            // the projection has already truncated each spell-specific int bonus.
+            let extra = global.checked_add(spell).ok_or(Error::InvalidMagnitude)? / 10;
+            bonus = bonus
+                .checked_add(i32::try_from(extra).map_err(|_| Error::InvalidMagnitude)?)
+                .ok_or(Error::InvalidMagnitude)?;
+        }
+        // Crystal player_wheel.cpp:3048-3055 contributes 1000 permyriad with bolts.
+        if a.wheel_effects
+            .as_ref()
+            .is_some_and(|effects| effects.active_unique_perks.contains("ballistic_mastery"))
+            && self
+                .caster
+                .wheel_equipment()
+                .and_then(|hands| hands.ammunition())
+                == Some(oteryn_gameplay_content::content::ReferenceAmmoType::Bolt)
+        {
+            bonus = bonus.checked_add(1000).ok_or(Error::InvalidMagnitude)?;
+        }
+        Ok(bonus)
+    }
+
+    fn target_health(target: &Target) -> Result<(u64, u64), Error> {
+        match &target.owner {
+            TargetOwner::Player(state) => Ok((
+                u64::from(state.health),
+                u64::from(state.character_facts().max_health),
+            )),
+            TargetOwner::Creature(state) => Ok((
+                u64::try_from(state.health).map_err(|_| Error::InvalidMagnitude)?,
+                u64::try_from(state.maximum_health).map_err(|_| Error::InvalidMagnitude)?,
+            )),
+        }
+    }
+
+    fn finish_wheel_damage(&self, value: i64, target: &Target) -> Result<i64, Error> {
+        let Some(effects) = &self.resolved_attributes.wheel_effects else {
+            return Ok(value);
+        };
+        // Crystal 201189f game.cpp:7681-7685,7708-7721 adds own Ascetic after
+        // normal Wheel flat damage and before Sanctuary for each damage component.
+        // player_wheel.cpp:4194-4210 reads only the six-slot getMantraTotal.
+        let ascetic = self.caster.ascetic_attack_bonus(
+            effects
+                .revelation_stages
+                .get("ascetic")
+                .copied()
+                .unwrap_or(0),
+        );
+        let value = value
+            .checked_add(i64::from(ascetic))
+            .ok_or(Error::InvalidMagnitude)?;
+        let (health, maximum) = Self::target_health(target)?;
+        let two_handed = self
+            .caster
+            .wheel_equipment()
+            .is_some_and(|hands| hands.two_handed());
+        let value = compound(
+            value,
+            effects.combat_mastery_percent(health, maximum, two_handed),
+        )?;
+        self.finish_sanctuary(value, target.actor)
+    }
+
+    fn finish_sanctuary(&self, mut value: i64, target: ExactActorRef) -> Result<i64, Error> {
+        if !self
+            .resolved_attributes
+            .wheel_effects
+            .as_ref()
+            .is_some_and(|effects| effects.active_unique_perks.contains("sanctuary"))
+        {
+            return Ok(value);
+        }
+        let factor = self.caster.wheel_sanctuary_percent(
+            self.selected_spell.as_deref(),
+            self.now_ms.saturating_mul(1000),
+        );
+        value = signed_round(value as f64 * f64::from(factor) / 100.0)?;
+        let caster = self.attributes.binding.actor;
+        if caster != target {
+            let at = self
+                .wheel_positions
+                .iter()
+                .find(|(actor, _)| *actor == caster)
+                .ok_or(Error::InvalidBatch)?
+                .1
+                .position();
+            let to = self
+                .wheel_positions
+                .iter()
+                .find(|(actor, _)| *actor == target)
+                .ok_or(Error::InvalidBatch)?
+                .1
+                .position();
+            if at.floor == to.floor && at.x.abs_diff(to.x) <= 1 && at.y.abs_diff(to.y) <= 1 {
+                value = signed_round(value as f64 * 1.10)?;
+            }
+        }
+        Ok(value)
+    }
+
+    fn finish_wheel_healing(
+        &mut self,
+        mut value: i64,
+        target: &Target,
+        draw: &mut dyn FnMut(i64, i64) -> i64,
+    ) -> Result<i64, Error> {
+        let a = &self.resolved_attributes;
+        let Some(effects) = &a.wheel_effects else {
+            return Ok(value);
+        };
+        // A named real spell/rune is required. Potion, Gift and link echoes never select it.
+        if self.selected_spell.is_some() && effects.active_unique_perks.contains("battle_healing") {
+            // Crystal game.cpp:7608-7617: shield triples the 10% bonus; historical
+            // official reference data's doubled bonus is deliberately not executable here.
+            let multiplier = if self
+                .caster
+                .wheel_equipment()
+                .is_some_and(|hands| hands.real_shield())
+            {
+                130
+            } else {
+                110
+            };
+            value = signed_round(value as f64 * f64::from(multiplier) / 100.0)?;
+        }
+        if effects.active_unique_perks.contains("healing_link")
+            && matches!(
+                self.selected_spell.as_deref(),
+                Some("Nature's Embrace" | "Heal Friend")
+            )
+        {
+            // Crystal wheel:3507-3513,3881-3888/game:7622-7626. Echo is based on
+            // the uncapped value and reenters as an unnamed heal: no Battle/Grove critical.
+            let echo = value.checked_mul(25).ok_or(Error::InvalidMagnitude)? / 100;
+            if echo > 0 {
+                let echo = echo
+                    .checked_add(i64::from(needed(a.wheel_flat_healing)?))
+                    .ok_or(Error::InvalidMagnitude)?;
+                let echo = self.finish_sanctuary(echo, a.binding.actor)?;
+                self.wheel_link_echo = self
+                    .wheel_link_echo
+                    .checked_add(echo)
+                    .ok_or(Error::InvalidMagnitude)?;
+            }
+        }
+        if effects
+            .revelation_stages
+            .get("blessing_of_the_grove")
+            .copied()
+            .unwrap_or(0)
+            > 0
+        {
+            let (health, maximum) = Self::target_health(target)?;
+            let bonus =
+                effects.grove_healing_bonus_milli(health, maximum, target.actor == a.binding.actor);
+            value = signed_truncate(value as f64 + value as f64 * bonus as f64 / 100_000.0)?;
+            if self.selected_spell.is_some() {
+                let mut chance = u32::from(needed(a.equipment_critical_chance_permyriad)?);
+                if let Some(ConditionValues::Attributes {
+                    critical_chance_percent,
+                    ..
+                }) = condition_attributes(&self.caster, self.now_ms)?
+                    && critical_chance_percent > 0
+                {
+                    chance = critical_chance_percent
+                        .checked_mul(100)
+                        .ok_or(Error::InvalidMagnitude)?;
+                }
+                chance = chance
+                    .checked_add(u32::from(needed(a.base_critical_chance_permyriad)?))
+                    .ok_or(Error::InvalidMagnitude)?;
+                // Crystal uses a 1..100 draw multiplied by 100, per healed target, no fatal roll.
+                if chance > 0 && checked_draw(draw, 1, 100)? * 100 <= i64::from(chance) {
+                    value = signed_truncate(
+                        value as f64 * (1.0 + f64::from(self.critical_extra()?) / 10000.0),
+                    )?;
+                }
+            }
+        }
+        self.finish_sanctuary(value.max(0), target.actor)
+    }
+
+    /// Crystal combat.cpp:197-208 and wheel:3510 read these for each real Combat.
+    /// Retaining the source's raw/stance snapshot must not erase fresh Wheel bonuses.
+    fn selected_wheel_damage_bonus(&self) -> Result<u32, Error> {
+        let Some(spell) = self.selected_spell.as_deref() else {
+            return Ok(0);
+        };
+        let gem = self.attributes.wheel_effects.as_ref().map_or(0, |effects| {
+            effects.gem_value_milli("base_damage_bonus", spell) / 1_000
+        });
+        u32::try_from(gem)
+            .map_err(|_| Error::InvalidMagnitude)?
+            .checked_add(
+                self.caster.wheel_focus_damage_percent(
+                    self.now_ms
+                        .checked_mul(1_000)
+                        .ok_or(Error::InvalidMagnitude)?,
+                ),
+            )
+            .ok_or(Error::InvalidMagnitude)
+    }
+
+    /// Commit-time caster successor for an actual Combat, including a delayed strike.
+    /// A marker-only scheduled cast has no Combat and does not call this method.
+    pub fn apply_wheel_cast_state(&self, next: &mut PlayerSpellState) -> Result<(), Error> {
+        if self.selected_spell.is_some() {
+            next.complete_wheel_focus_cast(
+                self.selected_focus_group,
+                self.now_ms.checked_mul(1_000).ok_or(Error::InvalidBatch)?,
+            )
+            .ok_or(Error::InvalidBatch)?;
+        }
+        Ok(())
+    }
+
+    /// Lower the link echo through the same atomic batch and replay receipt as its parent heal.
+    pub fn append_wheel_healing_echo(
+        &mut self,
+        lowered: &mut super::combat_batch::LoweredNativeCombat,
+    ) -> Result<(), Error> {
+        use super::combat_batch::{OwnerCombatChange, OwnerCombatEffect};
+        if self.wheel_link_echo == 0 {
+            return Ok(());
+        }
+        let batch = &mut lowered.batch;
+        if batch.caster != self.attributes.binding.actor
+            || batch.command.game_session_id() != self.attributes.binding.session
+        {
+            return Err(Error::InvalidBatch);
+        }
+        if usize::from(lowered.next_sub_ordinal) >= MAX_EFFECTS {
+            return Err(Error::TooManyEffects);
+        }
+        batch.effects.push(OwnerCombatEffect {
+            target: batch.caster,
+            sub_ordinal: lowered.next_sub_ordinal,
+            change: OwnerCombatChange::Heal {
+                target_atom: super::combat_execution::actor_atom(batch.caster),
+                magnitude: self.wheel_link_echo,
+            },
+        });
+        lowered.next_sub_ordinal = lowered
+            .next_sub_ordinal
+            .checked_add(1)
+            .ok_or(Error::TooManyEffects)?;
+        self.wheel_link_echo = 0;
+        Ok(())
     }
 }
 

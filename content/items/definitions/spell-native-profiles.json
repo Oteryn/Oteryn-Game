@@ -143993,6 +143993,1986 @@
       "authoring": {
         "item": {
           "family": "Item",
+          "key": "candidate:item/44602",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser guardian gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the strength of knights"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44602",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44602",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44602",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44603",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "guardian gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the strength of knights"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44603",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44603",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44603",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44604",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "greater guardian gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the strength of knights"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44604",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44604",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44604",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44605",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser marksman gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the accuracy of paladins"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44605",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44605",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44605",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44606",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "marksman gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the accuracy of paladins"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44606",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44606",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44606",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44607",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "greater marksman gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the accuracy of paladins"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44607",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44607",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44607",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44608",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser sage gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the power of sorcerers"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44608",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44608",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44608",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44609",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "sage gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the power of sorcerers"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 50
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44609",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44609",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44609",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44610",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "greater sage gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the power of sorcerers"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44610",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44610",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44610",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44611",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser mystic gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the wisdom of druids"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44611",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44611",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44611",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44612",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "mystic gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the wisdom of druids"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 50
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44612",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44612",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44612",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/44613",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "greater mystic gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the wisdom of druids"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "44613",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i44613",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i44613",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
           "key": "candidate:item/44916",
           "revision": "spell-p2-r21"
         }
@@ -144500,6 +146480,336 @@
           "key": "oteryn:item.tibia.i45644",
           "revision": "definition-r1"
         }
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/46625",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser fragment"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 5
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "46625",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i46625",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i46625",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/46626",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "greater fragment"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": ""
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 500
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "46626",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i46626",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i46626",
+        "revision_ref": "definition-r1"
       },
       "production_binding_qualification": null
     },
@@ -145351,6 +147661,501 @@
       "production_definition": {
         "family": "Item",
         "production_key": "oteryn:item.tibia.i48530",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/49371",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "lesser spiritualist gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the strength of monks."
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "49371",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i49371",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i49371",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/49372",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "spiritualist gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the strength of monks."
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 20
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "49372",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i49372",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i49372",
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/49373",
+          "revision": "spell-p2-r21"
+        },
+        "taxonomy": {
+          "primary": "Valuables"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "greater spiritualist gem"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Shines with the strength of monks."
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 120
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "stack_max": {
+              "state": "KNOWN",
+              "value": 100
+            }
+          }
+        },
+        "equipment": {
+          "state": "NOT_APPLICABLE"
+        },
+        "weapon": {
+          "state": "UNKNOWN"
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "StackCapable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "49373",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i49373",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
+        "production_key": "oteryn:item.tibia.i49373",
         "revision_ref": "definition-r1"
       },
       "production_binding_qualification": null

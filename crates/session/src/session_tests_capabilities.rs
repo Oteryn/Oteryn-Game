@@ -20,6 +20,8 @@ fn derived_gated_routes_match_previous_table() {
         (179, &[348], &[]),
         (180, &[], &[]),
         (147, &[170], &[]),
+        // Wheel and Atelier are playable through the selected capability 148.
+        (148, &[161, 308, 309, 424], &[]),
     ];
     let expected: std::collections::BTreeSet<_> = expected.iter().copied().collect();
     let derived: std::collections::BTreeSet<_> = gated_routes().collect();

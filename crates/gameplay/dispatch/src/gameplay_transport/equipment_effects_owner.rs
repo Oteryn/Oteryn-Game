@@ -31,12 +31,13 @@ fn canonical_slot(slot: u8) -> Option<(EquipmentSlot, ReferenceEquipmentSlot)> {
     })
 }
 
-/// Mantra is a flat item attribute on body/Extra slots, including Ammo.
+/// Crystal201189f player.cpp:12772-12787 sums positive item Mantra on six body slots.
+/// Ammo, hands and the container do not contribute to Ascetic's mantra total.
 fn equipped_mantra(equipment: &EquipmentSnapshot, content: &NativeGameplayState) -> Option<u32> {
     use crate::content::{ReferenceModifierParameter, ReferenceSkillModifierKind};
     let mut total = 0_i64;
     for item in &equipment.items {
-        if !matches!(item.slot, 1 | 2 | 3 | 4 | 7 | 8 | 10) {
+        if !matches!(item.slot, 1 | 2 | 3 | 4 | 7 | 8) {
             continue;
         }
         let policy = content.item_policy(
@@ -51,6 +52,7 @@ fn equipped_mantra(equipment: &EquipmentSnapshot, content: &NativeGameplayState)
                     && let ReferenceItemField::Known(ReferenceModifierParameter::SignedPoints(
                         points,
                     )) = modifier.parameter
+                    && points.0 > 0
                 {
                     total = total.checked_add(i64::from(points.0))?;
                 }
@@ -267,6 +269,108 @@ pub(in crate::gameplay_transport) fn equipped_defence(
     }))
 }
 
+/// Read hand identities before the block-defence owner discards real-shield and
+/// two-hand distinctions (Crystal player.cpp:3868-3879, player_wheel.cpp:4090-4115).
+fn equipped_wheel_hands(
+    equipment: &EquipmentSnapshot,
+    content: &NativeGameplayState,
+) -> Option<crate::spell::cast::WheelEquipment> {
+    use crate::content::ReferenceWeaponType;
+    use crate::spell::cast::{WheelEquipment, WheelHand};
+    if equipment.content_digest != content.source_digest() {
+        return None;
+    }
+    let hand = |slot| -> Option<Option<WheelHand>> {
+        let Some(item) = equipment.items.iter().find(|item| item.slot == slot) else {
+            return Some(None);
+        };
+        if item.definition.family != "Item" {
+            return None;
+        }
+        let policy = content.item_policy(
+            &item.definition.production_key,
+            &item.definition.revision_ref,
+        )?;
+        let semantics = &policy.record().semantics;
+        let quiver = crate::durability::item_loop_move::ItemLoopContent::is_quiver(
+            &super::super::item_ref_admission::NativeItemWeights(content),
+            &item.definition,
+        );
+        let weapon = match &semantics.weapon {
+            ReferenceItemField::Known(weapon) => weapon,
+            ReferenceItemField::NotApplicable => {
+                return Some(Some(WheelHand {
+                    secondary_shield: quiver,
+                    ..Default::default()
+                }));
+            }
+            _ if quiver => {
+                return Some(Some(WheelHand {
+                    secondary_shield: true,
+                    ..Default::default()
+                }));
+            }
+            _ => return None,
+        };
+        let (
+            ReferenceItemField::Known(kind),
+            ReferenceItemField::Known(defense),
+            ReferenceItemField::Known(extra_defense),
+        ) = (&weapon.weapon_type, &weapon.defense, &weapon.extra_defense)
+        else {
+            return None;
+        };
+        let two_handed = match &semantics.equipment {
+            ReferenceItemField::Known(equipment) => match &equipment.patterns {
+                ReferenceItemField::Known(patterns) => {
+                    let mut two_handed = false;
+                    for pattern in patterns {
+                        match &pattern.additional_reserved_slots {
+                            ReferenceItemField::Known(slots) => {
+                                two_handed |= slots.iter().any(|slot| {
+                                    matches!(
+                                        slot,
+                                        ReferenceEquipmentSlot::Weapon
+                                            | ReferenceEquipmentSlot::Shield
+                                    )
+                                })
+                            }
+                            ReferenceItemField::NotApplicable => {}
+                            _ => return None,
+                        }
+                    }
+                    two_handed
+                }
+                _ => return None,
+            },
+            _ => return None,
+        };
+        let ammunition = match &weapon.ammunition {
+            ReferenceItemField::Known(ammo) => Some(*ammo),
+            ReferenceItemField::NotApplicable => None,
+            _ if !matches!(kind, ReferenceWeaponType::Distance) => None,
+            _ => return None,
+        };
+        Some(Some(WheelHand {
+            defense: defense.0,
+            extra_defense: extra_defense.0,
+            real_shield: *kind == ReferenceWeaponType::Shield,
+            secondary_shield: quiver || *kind == ReferenceWeaponType::Spellbook,
+            two_handed,
+            battle_melee: matches!(
+                kind,
+                ReferenceWeaponType::Club | ReferenceWeaponType::Sword | ReferenceWeaponType::Axe
+            ),
+            ammunition,
+        }))
+    };
+    Some(WheelEquipment {
+        weapon_hand: hand(5)?,
+        shield_hand: hand(6)?,
+        ..Default::default()
+    })
+}
+
 /// PARITY-EQUIP-MODIFIERS-1 (`Player::getSkillLevel` over `abilities.skills`): the critical hit
 /// and leech skills of the items in their own slot, summed per skill and clamped to the skill
 /// range. A timed item and the ammo slot contribute nothing, as for every EQUIP-0 ability. `None`
@@ -454,9 +558,19 @@ impl super::super::ComposedFreshAdmission<'_, '_, '_> {
             self.install_proficiency_equipment(runtime, actor, session, &equipment)
                 .await?;
             let mantra = equipped_mantra(&equipment, self.active_generation?.native_gameplay()?)?;
+            let wheel_hands =
+                equipped_wheel_hands(&equipment, self.active_generation?.native_gameplay()?);
+            let (proficiency_weapon, proficiency_defense, proficiency_shield_modifier) =
+                self.equipped_proficiency_defense(session, &equipment)?;
             let mut states = self.states.spell_states.lock().await;
             let state = states.get_mut(runtime, actor, session)?;
             state.install_equipped_mantra(mantra);
+            state.install_wheel_equipment(wheel_hands);
+            state.install_wheel_proficiency(
+                proficiency_weapon.as_deref(),
+                proficiency_defense,
+                proficiency_shield_modifier,
+            );
             state.install_equipped_physical_protection(physical_protection(&effects));
             use crate::content::ReferenceResistanceKind as Kind;
             for kind in [

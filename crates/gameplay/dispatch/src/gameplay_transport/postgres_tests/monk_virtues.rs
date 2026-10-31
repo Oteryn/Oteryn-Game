@@ -49,6 +49,109 @@ async fn cast(
     Ok(())
 }
 
+/// PR #2771 ANSWER6544065111: the existing percentage owner remains active;
+/// another member's Mantra is not a substitute for the absent complete-party owner.
+async fn assert_guiding_percentage_without_shared_mantra(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    source: (ExactActorRef, GameSessionId),
+    recipient: (ExactActorRef, GameSessionId),
+) -> TestResult {
+    use crate::player_lethal::PlayerHitKind;
+    let original_mantra = {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        states
+            .get(&runtime, source.0, source.1)
+            .ok_or("Guiding source")?
+            .ascetic_attack_bonus(1)
+    };
+    let mut without_shared_mantra = None;
+    for source_mantra in [0, 17, 83] {
+        {
+            let runtime = owner.runtime.lock().await;
+            let mut states = owner.states.spell_states.lock().await;
+            let state = states
+                .get_mut(&runtime, source.0, source.1)
+                .ok_or("Guiding source")?;
+            // Explicit equipment projection fixture, installed by the same seam as
+            // admission equipment. Party membership and Guiding are read by the real
+            // native owner from the committed World and Wheel state above.
+            state.install_equipped_mantra(source_mantra);
+            assert_eq!(state.ascetic_attack_bonus(1), source_mantra);
+        }
+        owner
+            .refresh_source_party_serene(recipient.0, recipient.1)
+            .await;
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let state = states
+            .get(&runtime, recipient.0, recipient.1)
+            .ok_or("Guiding recipient")?;
+        let now = owner.owner_now().get();
+        assert_eq!(state.virtue_party_bonuses(now).damage_reduction, 4);
+        assert!(state.vitals().health > 100);
+        let mut losses = Vec::new();
+        for kind in [
+            PlayerHitKind::Fire,
+            PlayerHitKind::Energy,
+            PlayerHitKind::Earth,
+            PlayerHitKind::Ice,
+        ] {
+            let (after, _) = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                &runtime,
+                recipient.0,
+                state,
+                100,
+                kind,
+                now,
+            )
+            .map_err(debug)?;
+            let loss = state.vitals().health - after.vitals().health;
+            if source_mantra == 0 {
+                let mut without_virtue = state.clone();
+                without_virtue
+                    .install_virtue_party_bonuses(Default::default(), now)
+                    .map_err(debug)?;
+                let (plain, _) = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                    &runtime,
+                    recipient.0,
+                    &without_virtue,
+                    100,
+                    kind,
+                    now,
+                )
+                .map_err(debug)?;
+                let plain_loss = state.vitals().health - plain.vitals().health;
+                assert!(plain_loss > 0);
+                assert_eq!(
+                    loss,
+                    plain_loss * 96 / 100,
+                    "Guiding percentage for {kind:?}"
+                );
+            }
+            losses.push(loss);
+        }
+        if let Some(expected) = &without_shared_mantra {
+            assert_eq!(
+                &losses, expected,
+                "party Mantra {source_mantra} must not change absorption"
+            );
+        } else {
+            without_shared_mantra = Some(losses);
+        }
+    }
+    let runtime = owner.runtime.lock().await;
+    owner
+        .states
+        .spell_states
+        .lock()
+        .await
+        .get_mut(&runtime, source.0, source.1)
+        .ok_or("Guiding source")?
+        .install_equipped_mantra(original_mantra);
+    Ok(())
+}
+
 pub(super) async fn scenario(
     owner: &mut ComposedFreshAdmission<'_, '_, '_>,
     h: &Harness,
@@ -319,11 +422,15 @@ pub(super) async fn scenario(
                 recipient.0
             );
         }
+        if guided {
+            assert_guiding_percentage_without_shared_mantra(owner, player, players[1]).await?;
+        }
         owner.refresh_source_party_serene(players[2].0, players[2].1).await;
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
         let recipient = states.get(&runtime, players[2].0, players[2].1).ok_or("mantra recipient")?;
-        assert_eq!(recipient.ascetic_attack_bonus_at(1, owner.owner_now().get()), if guided { 17 } else { 0 }, "C11R Guiding mantra");
+        assert_eq!(recipient.virtue_party_bonuses(owner.owner_now().get()).mantra, 0, "no local shared Mantra projection");
+        assert_eq!(recipient.ascetic_attack_bonus_at(1, owner.owner_now().get()), 0, "Crystal Ascetic ignores other members Mantra");
     }
     // Eight adjacent monsters stay fixed; moving the knight across the screen boundary toggles Serene.
     let target;
@@ -386,6 +493,12 @@ pub(super) async fn scenario(
             .await,
         oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
     );
+    // The oracle reads the committed allocation, not a possibly older actor cache.
+    let expected_allocation = owner.root.read_character_wheel(
+        owner.character, fence.character_id, Arc::clone(&rules),
+    ).await.map_err(debug)?;
+    assert!(expected_allocation.current);
+    assert_eq!(expected_allocation.slots.points(), &points);
     for (index, serene) in [true, false].into_iter().enumerate() {
         if !serene {
             let mut runtime = owner.runtime.lock().await;
@@ -447,6 +560,14 @@ pub(super) async fn scenario(
             let states = owner.states.spell_states.lock().await;
             let state = states.get(&runtime, player.0, player.1).ok_or("monk")?;
             let facts = state.character_facts();
+            // Full blue includes slot 33's +1 Fist. This is only the numerical
+            // oracle; the real cast below still qualifies its own current facts.
+            let expected_wheel = oteryn_gameplay_progression::wheel_effects::derive_runtime_effects(
+                data.wheel(), &expected_allocation, "monk", facts.level, true, true,
+            ).ok_or("full blue expected Wheel projection")?;
+            let wheel_fist = expected_wheel.skill_bonus(0);
+            assert_eq!(wheel_fist, 1,
+                "the committed full blue allocation grants exactly one Fist skill");
             use crate::content::ReferenceItemField as F;
             let policy = native
                 .item_policy("oteryn:item.tibia.i50157", "definition-r1")
@@ -466,7 +587,8 @@ pub(super) async fn scenario(
                 max_mana: facts.max_mana,
                 soul: 100,
                 learned: Default::default(),
-                attack_skill: 10,
+                attack_skill: 10_u32.checked_add(wheel_fist)
+                    .ok_or("expected base plus Wheel Fist")?,
                 attack_value: u32::try_from(attack.0)?,
                 attack_factor: 1.0,
                 shielding_skill: 10,
@@ -526,7 +648,14 @@ pub(super) async fn scenario(
                 .flat_stats(&colours)
                 .map_err(debug)?
                 .0;
-            bounds.map(|b| b + i64::from(flat))
+            // Crystal 201189f player_wheel.cpp:4194-4210 and
+            // game.cpp:7681-7685,7708-7721: own Mantra adds a separate flat
+            // contribution after Wheel flat damage. HarmonyMultiplier above
+            // already owns Serene and does not contain equipment Mantra.
+            let own_mantra = state.ascetic_attack_bonus(1);
+            assert_eq!(own_mantra, 17, "the spender fixture retains its own equipment Mantra");
+            let ascetic_flat = i64::from(own_mantra) * 3;
+            bounds.map(|b| b + i64::from(flat) + ascetic_flat)
         };
         let before = owner
             .runtime

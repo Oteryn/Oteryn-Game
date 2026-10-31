@@ -3,7 +3,6 @@ use super::{
     ComposedFreshAdmission,
     actor_spell::{
         ChannelSpellStates, PlayerBatchPreflight, check_owner_batch, install_owner_batch,
-        stage_player_batch,
     },
 };
 use crate::content::QualifiedNativeEntryRoom;
@@ -310,6 +309,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         ordinal: u16,
         modes: oteryn_protocol_oteryn::pvp_expert::ExpertFightModes,
         expected_black: bool,
+        damage: crate::spell::cast::PreparedWheelAttackHit,
     ) -> bool {
         let Some(effect) = batch.effects.first() else {
             return false;
@@ -326,7 +326,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(mut physical) = runtime.stage_spell_batch(&batch) else {
             return false;
         };
-        let Ok(player) = stage_player_batch(runtime, states, &batch, None) else {
+        let Ok(player) =
+            super::actor_spell::stage_player_batch_with_attack(runtime, states, &batch, &damage)
+        else {
             return false;
         };
         if states.deaths.try_reserve(batch.effects.len()).is_err()

@@ -204,7 +204,7 @@ async fn write<C: ItemLoopContent>(
     } else {
         0
     };
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await?;
+    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
     if carried
         .checked_sub(u64::from(used_weight))
         .and_then(|w| w.checked_sub(secondary_weight))

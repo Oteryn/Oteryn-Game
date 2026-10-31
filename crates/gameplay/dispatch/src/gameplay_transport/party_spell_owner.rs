@@ -507,12 +507,10 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             &mut tx, character, &ruleset,
                         ).await?
                     } else { false };
-                    // Canary Party::updateMantraHolder/applyGuidingPresence chooses the
-                    // highest equipped mantra, independently of the standard stance or range.
-                    // Global Conviction Perks now shares 100% (Canary's pinned source: 50%).
-                    if guiding && *monk_actor != actor && world.source.party_id.is_some() {
-                        bonuses.mantra = bonuses.mantra.max(monk_state.equipped_mantra());
-                    }
+                    // PR #2771 ANSWER6544065111 leaves shared Mantra unprojected.
+                    // Crystal player_wheel.cpp:4194-4210 reads own six-slot Mantra;
+                    // whole-party per-item absorption has a separate missing owner.
+
                     if !matches!(
                         monk_state.standard_stance(),
                         Some(

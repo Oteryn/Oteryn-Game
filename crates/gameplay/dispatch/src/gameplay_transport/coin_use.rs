@@ -264,7 +264,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 CommandRef::new(session, command_id),
                 Some(request),
                 Some(source),
-                Some(&NativeItemWeights(native)),
+                Some(&NativeItemWeights(native).with_wheel(self.premium_coordinator)),
                 coins,
                 Some((CoinConverter::Magic(converter.item.item_instance_id), facts)),
             )
@@ -353,7 +353,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     reference,
                     None,
                     Some(coin_item),
-                    Some(&NativeItemWeights(native)),
+                    Some(&NativeItemWeights(native).with_wheel(self.premium_coordinator)),
                     coins,
                     Some((CoinConverter::Gold(converter), facts)),
                 )
@@ -409,7 +409,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
         }
         let permit = self.spell_lane_permit().await?;
-        let content = NativeItemWeights(native);
+        let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let coins =
             super::npc_command::bank_coin_definitions(self, &runtime).map(|(a, b, c)| [a, b, c]);
         let request = CoinExchangeRequest {
@@ -467,7 +467,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let command_id = CommandId::new(command.command_id).ok()?;
         let reference = CommandRef::new(command.game_session_id, command_id);
         let permit = self.spell_lane_permit().await?;
-        let content = NativeItemWeights(native);
+        let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         let outcome = |changed| {
             Some(Some(UseOutcome {
                 disposition: if changed {
