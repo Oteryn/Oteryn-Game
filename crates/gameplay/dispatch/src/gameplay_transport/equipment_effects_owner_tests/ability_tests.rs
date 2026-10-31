@@ -24,6 +24,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("GOLDCONV", 4),
     // I05 admits the inactive and active dwarven-ring forms 3097/3099 (speed_bonus=0).
     ("I05", 2),
+    // I10a: the podiums 35973/35974, 38707 and 42367/42368
+    // (tools/content-migration/podium_item_profiles.py). All have speed_bonus=0.
+    ("I10A-PODIUM", 5),
     // I14: seven restore potions, two foods and the two larger flasks admitted from
     // digest-pinned consumption facts. They carry no equipment/speed qualification.
     ("I14", 11),
@@ -83,6 +86,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("REWARD-BAG-2", 36),
     // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
     ("TIMEDITEMS2-1", 2),
+    // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
+    // 3477..=3480 (tools/content-migration/fluid_container_profiles.py). All have speed_bonus=0.
+    ("W18-FLUID", 20),
     // M08/M09: the eleven qualified shovel, machete, rod/bait/water and target policies
     // in tool-item-profiles.json. The source importer records speed_bonus=0.
     ("TOOLS-PKG4", 11),
