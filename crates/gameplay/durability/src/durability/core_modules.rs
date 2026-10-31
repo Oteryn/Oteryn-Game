@@ -78,6 +78,7 @@ mod house_ownership_audit;
 pub mod house_podium;
 pub mod house_scope_handoff;
 pub mod house_spell_acl;
+pub mod house_wrap;
 pub mod imbuement;
 pub mod item_craft;
 pub mod item_decay_retire;
