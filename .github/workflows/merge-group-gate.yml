@@ -830,16 +830,16 @@ jobs:
     needs: [candidate, durability_postgres_build]
     if: needs.candidate.outputs.rust == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: read
-    # Each partition runs a disjoint count slice of both archives built once by durability_postgres_build;
-    # together the six run every registered E2E target and PostgreSQL-backed library test exactly once.
+    # Each partition runs a disjoint planned share of both archives built once by durability_postgres_build;
+    # together the twelve run every registered E2E target and PostgreSQL-backed library test exactly once.
     # These jobs install no toolchain and restore no cache: they cannot compile.
     strategy:
       fail-fast: true
       matrix:
-        partition: [1, 2, 3, 4, 5, 6]
+        partition: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     services:
       postgres:
         image: postgres:18.6-bookworm@sha256:bbf83594798e144bff365a9c191c5d779f181fb3135902064ab8ff11918020fc
@@ -903,9 +903,14 @@ jobs:
           test "$(cat head-sha)" = "$EXPECTED_SHA"
           test "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" = "$EXPECTED_SHA"
 
-      # The partition is taken from the matrix position and size, so the slices always cover the
-      # whole archive whatever the matrix length; the label must agree with the position.
-      - name: Resolve partition
+      # Count slices leave a few multi-minute tests wherever their names fall, so one partition ran
+      # past the job limit while the others had finished. Every partition lists both archives and
+      # computes the same plan as the PR PostgreSQL harness: tests by estimated duration, longest
+      # first, each to the least-loaded partition. Each listed test lands in exactly one partition
+      # whatever the estimates say; a stale estimate only costs balance. The partition is the matrix
+      # position and size, so the plan covers the whole archive whatever the matrix length; the
+      # label must agree with the position.
+      - name: Plan partition
         id: partition
         env:
           LABEL: ${{ matrix.partition }}
@@ -915,22 +920,79 @@ jobs:
           set -euo pipefail
           [[ "$JOB_INDEX" =~ ^[0-9]+$ && "$JOB_TOTAL" =~ ^[1-9][0-9]*$ ]]
           test "$LABEL" = "$((JOB_INDEX + 1))"
-          echo "spec=count:$((JOB_INDEX + 1))/${JOB_TOTAL}" >> "$GITHUB_OUTPUT"
+          plan="$RUNNER_TEMP/pg-plan"
+          mkdir -p "$plan"
+          for archive in pg-e2e pg-lib; do
+            cargo-nextest nextest list --archive-file "$RUNNER_TEMP/pg-archives/$archive.tar.zst" \
+              --workspace-remap "$GITHUB_WORKSPACE" --message-format json > "$plan/$archive.json"
+          done
+          python3 - "$plan" "$JOB_INDEX" "$JOB_TOTAL" "$GITHUB_WORKSPACE/tools/ci/pg_test_durations.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          plan = pathlib.Path(sys.argv[1])
+          index, total = int(sys.argv[2]), int(sys.argv[3])
+          # Longest observed seconds on the hosted runners for every test at or above 30 s, from
+          # tools/ci/pg_test_durations.py over recent partition logs; other tests are estimated from
+          # their name (means of the shorter tests in the same logs).
+          slow = json.loads(pathlib.Path(sys.argv[4]).read_text())
+
+
+          def estimate(case):
+              return slow.get(' '.join(case), 5 if 'postgres' in case[1] else 1)
+
+
+          # Each partition runs the E2E share and then the library share, so the load carries over
+          # from one archive to the next instead of starting both plans on the same partitions.
+          priorities, load = [], [0] * total
+          for archive in ('pg-e2e', 'pg-lib'):
+              listing = json.loads((plan / f'{archive}.json').read_text())
+              cases = sorted(
+                  (suite['binary-id'], name)
+                  for suite in listing['rust-suites'].values()
+                  for name, case in suite['testcases'].items()
+                  if case['filter-match']['status'] == 'matches'
+              )
+              shares = [[] for _ in range(total)]
+              for case in sorted(cases, key=lambda case: (-estimate(case), case)):
+                  share = min(range(total), key=lambda i: (load[i], i))
+                  shares[share].append(case)
+                  load[share] += estimate(case)
+              assigned = sorted(case for share in shares for case in share)
+              if not cases or assigned != cases or len(set(cases)) != len(cases):
+                  raise SystemExit(f'{archive}: the plan does not run every listed test exactly once')
+              (plan / f'{archive}.filters').write_text(
+                  ''.join(f'--filterset=binary_id(={b}) & test(={n})\n' for b, n in sorted(shares[index]))
+              )
+              priorities += [case for case in shares[index] if ' '.join(case) in slow]
+              print(f'{archive}: {len(shares[index])} of {len(cases)} tests, estimate {load[index]}s')
+          # The long tests start first, so none of them begins near the end of the partition.
+          (plan / 'priority.toml').write_text(''.join(
+              f"[[profile.default.overrides]]\nfilter = 'binary_id(={b}) & test(={n})'\n"
+              f"priority = {min(100, slow[' '.join((b, n))] // 5)}\n"
+              for b, n in priorities
+          ))
+          PY
 
       - name: Run registered PostgreSQL E2E targets
-        env:
-          PARTITION_SPEC: ${{ steps.partition.outputs.spec }}
         run: |
           set -euo pipefail
-          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
+          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \
+            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
 
       - name: Run PostgreSQL-backed library tests
         if: ${{ !cancelled() && steps.partition.outcome == 'success' }}
-        env:
-          PARTITION_SPEC: ${{ steps.partition.outputs.spec }}
         run: |
           set -euo pipefail
-          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast
+          mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"
+          if (( ${#filters[@]} == 0 )); then exit 0; fi
+          cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \
+            --workspace-remap "$GITHUB_WORKSPACE" --tool-config-file "oteryn-pg-plan:$RUNNER_TEMP/pg-plan/priority.toml" \
+            --no-fail-fast "${filters[@]}"
 
   rust_windows:
     name: Merge Queue / Rust Windows client

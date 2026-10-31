@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "4102f456f4fed6e8cbcb5b9b53356279f7fae420
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "24b5197d8c22835f08a27423ae909f2bdf6b240e7c64026ce76174753c820e4c"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_WORLD_BUNDLE_JOB_SHA256 = "0aa50bfeaab0042f2a8fec7e7e302a7f056e77170db28bea7e0a6ed32dea1dd9"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "b4388b06ee2a93398399e1ca691b8bc08bfb9005"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "c6558bc7fd91eb63d05bfe1c4dd298ea48f212ee"
 EXPECTED_POST_MERGE_RUST_SHA256 = "3ad10ed77185ae06bf0b1a2addaf5e94d52723ffc934c0944d028ad69182fff1"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -607,10 +607,13 @@ def main() -> int:
                 "sha256sum -c SHA256SUMS",
                 'test "$(cat head-sha)" = "$EXPECTED_SHA"',
                 'test "$LABEL" = "$((JOB_INDEX + 1))"',
-                'echo "spec=count:$((JOB_INDEX + 1))/${JOB_TOTAL}" >> "$GITHUB_OUTPUT"',
-                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast',
+                'python3 - "$plan" "$JOB_INDEX" "$JOB_TOTAL" "$GITHUB_WORKSPACE/tools/ci/pg_test_durations.json" <<\'PY\'',
+                "raise SystemExit(f'{archive}: the plan does not run every listed test exactly once')",
+                'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-e2e.filters"',
+                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-e2e.tar.zst" \\',
                 "if: ${{ !cancelled() && steps.partition.outcome == 'success' }}",
-                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" --workspace-remap "$GITHUB_WORKSPACE" --partition "$PARTITION_SPEC" --no-fail-fast',
+                'mapfile -t filters < "$RUNNER_TEMP/pg-plan/pg-lib.filters"',
+                'cargo-nextest nextest run --archive-file "$RUNNER_TEMP/pg-archives/pg-lib.tar.zst" \\',
             ),
             "rust_windows": (
                 "    name: Merge Queue / Rust Windows client\n",
