@@ -205,6 +205,13 @@ pub(super) async fn items<A: FreshAdmissionAuthority>(
         if admitted
             .continuity
             .selected_capabilities
+            .contains(oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1)
+        {
+            view = view.with_browse_field();
+        }
+        if admitted
+            .continuity
+            .selected_capabilities
             .domain_selected(STATE_DOMAIN_WORLD_MAP_VIEW)
         {
             view = view.with_map_view();
@@ -331,7 +338,18 @@ pub(super) async fn sessions<A: FreshAdmissionAuthority>(
             snapshot_type: views_snapshot.snapshot_type,
             payload: views_snapshot.payload,
         });
-        container_views = Some(ContainerViewState::default());
+        let views = ContainerViewState::default();
+        container_views = Some(
+            if admitted
+                .continuity
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1)
+            {
+                views.with_browse_field()
+            } else {
+                views
+            },
+        );
     }
     // QUEST-LOG-WIRE-1: with capability 16, domain 16 with no view and the tracked quests, above
     // every revision the session has seen; the requested view closes on every reconnect and
