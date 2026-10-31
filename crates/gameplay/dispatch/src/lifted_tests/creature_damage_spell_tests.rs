@@ -26,6 +26,7 @@ struct CurrentWorld {
     blocked: bool,
     facing: Option<Facing>,
     extra: Vec<(ExactActorRef, GameSessionId, u32)>,
+    invisible: std::collections::BTreeSet<[u8; 16]>,
     levels: std::collections::BTreeMap<[u8; 16], u32>,
     party_area: Option<crate::content::ProjectV2ReferenceLevelOverride>,
     party_members: Vec<ExactActorRef>,
@@ -88,6 +89,7 @@ impl SpellWorldReader for CurrentWorld {
             facts.attack.session = s;
             facts.multiplier_ppm = *m;
         }
+        facts.attack.visible &= !self.invisible.contains(&t.placement_identity());
         if let Some(level) = self.levels.get(&t.placement_identity()) {
             facts.attack.player_level = *level;
         }
@@ -389,6 +391,7 @@ fn setup_named(
             blocked: false,
             facing: None,
             extra: vec![],
+            invisible: Default::default(),
             levels: Default::default(),
             party_area: None,
             party_members: vec![],
@@ -2995,6 +2998,170 @@ fn dmg3_earth_death_target_sources_read_protection_and_replay() {
 }
 
 #[test]
+fn monster_area_invisible_bystander_keeps_damage_conditions_protections_and_replay() {
+    // Crystal 201189f combat.cpp:1626-1658 enumerates area recipients without
+    // applying AI target-acquisition visibility to every affected tile occupant.
+    for (name, index) in [("1st_mate_ratticus", 1), ("abyssador", 1)] {
+        for protection in 0..3 {
+            let (mut runtime, mut states, source, proposal, mut world, _, _) =
+                setup_named(name, index);
+            assert!(source.area.is_some(), "actual source area");
+            world.facts.condition_policy = Some(CurrentConditionPolicy {
+                immunities: vec![],
+                base_speed: 180,
+            });
+            let (bystander, session) = chain_second(&mut runtime, &mut states, &mut world);
+            world.invisible.insert(bystander.placement_identity());
+            assert!(
+                world.facts.attack.visible,
+                "the selected target remains visible"
+            );
+            match protection {
+                1 => world.facts.attack.target_pz = true,
+                2 => world.facts.attack.target_protected = true,
+                _ => {}
+            }
+            let stamp = runtime.issue_owner_work().expect("current area work");
+            install_recipient_invisibility(&runtime, &mut states, bystander, session, stamp);
+            let before = states
+                .read_owned_player_state_test_snapshot(&runtime, bystander, session)
+                .expect("actual bystander before the cast")
+                .clone();
+            let mut owner = DamageSpellOwner::default();
+            let first = owner
+                .execute_current(
+                    &mut runtime,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(2_000_000),
+                )
+                .expect("actual scheduled area source");
+            let applied = states
+                .read_owned_player_state_test_snapshot(&runtime, bystander, session)
+                .expect("actual bystander after the cast")
+                .clone();
+            if protection == 0 {
+                assert_eq!(
+                    first.targets.len(),
+                    2,
+                    "visible target and invisible bystander"
+                );
+                let hit = first
+                    .targets
+                    .iter()
+                    .find(|(actor, _)| *actor == bystander)
+                    .expect("invisible bystander is an area recipient")
+                    .1
+                    .as_ref()
+                    .expect("actual bystander owner receipt");
+                if source.conditions.is_empty() {
+                    assert!(hit.damage.is_some_and(|damage| damage.applied > 0));
+                    assert!(applied.vitals().health < before.vitals().health);
+                } else {
+                    assert!(hit.condition_only_applied);
+                    for condition in &source.conditions {
+                        assert!(
+                            applied
+                                .owned_conditions()
+                                .get(condition.condition_type().conflict_key())
+                                .is_some()
+                        );
+                    }
+                    assert_eq!(applied.vitals(), before.vitals());
+                }
+            } else {
+                assert!(
+                    first.targets.is_empty(),
+                    "current combat protection still applies"
+                );
+                assert_eq!(applied, before);
+            }
+            assert_eq!(
+                owner
+                    .execute_current(
+                        &mut runtime,
+                        stamp,
+                        &mut states,
+                        &source,
+                        &proposal,
+                        &mut world,
+                        SemanticTimeMicros::from_micros(9_000_000),
+                    )
+                    .expect("retained area occurrence"),
+                first
+            );
+            assert_eq!(
+                states.read_owned_player_state_test_snapshot(&runtime, bystander, session),
+                Some(&applied),
+                "replay cannot apply area damage or conditions twice"
+            );
+        }
+    }
+}
+
+#[test]
+fn monster_direct_invisible_target_keeps_visibility_gate_and_replay() {
+    let (mut runtime, mut states, source, proposal, mut world, _, _) = setup_named("hunter", 1);
+    assert!(source.area.is_none());
+    assert!(source.chain.is_none());
+    world.invisible.insert(proposal.target.placement_identity());
+    let stamp = runtime.issue_owner_work().expect("current direct work");
+    install_recipient_invisibility(
+        &runtime,
+        &mut states,
+        proposal.target,
+        world.facts.attack.session,
+        stamp,
+    );
+    let before = states
+        .read_owned_player_state_test_snapshot(
+            &runtime,
+            proposal.target,
+            world.facts.attack.session,
+        )
+        .expect("actual direct target before refusal")
+        .clone();
+    let mut owner = DamageSpellOwner::default();
+    let first = owner
+        .execute_current(
+            &mut runtime,
+            stamp,
+            &mut states,
+            &source,
+            &proposal,
+            &mut world,
+            SemanticTimeMicros::from_micros(2_000_000),
+        )
+        .expect("invisible direct target is excluded");
+    assert!(first.targets.is_empty());
+    assert_eq!(
+        owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut states,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(9_000_000),
+            )
+            .expect("retained direct-target refusal"),
+        first
+    );
+    assert_eq!(
+        states.read_owned_player_state_test_snapshot(
+            &runtime,
+            proposal.target,
+            world.facts.attack.session
+        ),
+        Some(&before)
+    );
+}
+
+#[test]
 fn monster_direct_current_sources_replay_real_damage_and_owned_conditions() {
     for (name, index) in [
         ("hunter", 1),
@@ -3409,6 +3576,90 @@ fn monster_current_windup_uses_due_owner_and_revalidates_policy() {
     }
 }
 
+fn install_recipient_invisibility(
+    runtime: &ChannelRuntimeV1,
+    vitals: &mut ChannelSpellStates,
+    actor: ExactActorRef,
+    session: GameSessionId,
+    stamp: RuntimeWorkStamp,
+) {
+    let root = GameplayDecisionRoot::from_bytes(runtime.content_pin().server_artifact_digest());
+    let invisible = oteryn_gameplay_foundation::foundation::condition::ConditionDefinition::new(
+        "test.source.recipient.invisible",
+        1,
+        oteryn_gameplay_domain::domain::condition::ConditionValues::Invisible { duration_ms: 5000 },
+    )
+    .expect("qualified invisibility");
+    let facts = oteryn_gameplay_foundation::foundation::condition::ApplicationFacts {
+        now: 1_000_000,
+        base_speed: 180,
+        mana_shield_capacity: 0,
+        target_reentry_protected: false,
+        source_reentry_protected: false,
+        target_is_player: true,
+        decision_root: &root,
+        occurrence: DecisionOccurrenceId::from_bytes([92; 16]),
+    };
+    assert!(vitals.install_owned_player_self_use_test_condition(
+        runtime,
+        runtime.owner_fence().expect("current owner"),
+        stamp,
+        actor,
+        session,
+        &invisible,
+        &facts,
+    ));
+    assert_eq!(
+        vitals.native_actor_invisible(
+            runtime,
+            actor,
+            Some(session),
+            oteryn_simulation_determinism::SemanticTimeMicros::from_micros(2_000_000),
+        ),
+        Some(true)
+    );
+}
+
+#[test]
+fn monster_current_chain_still_requires_visible_initial_target() {
+    use crate::creature_chain_attack::ChainOwner;
+    let (mut runtime, mut vitals, source, proposal, mut world, _, _) =
+        setup_named("bony_sea_devil", 5);
+    let session = world.facts.attack.session;
+    let stamp = runtime.issue_owner_work().expect("current chain work");
+    install_recipient_invisibility(&runtime, &mut vitals, proposal.target, session, stamp);
+    world.invisible.insert(proposal.target.placement_identity());
+    let before = vitals
+        .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+        .expect("invisible initial player")
+        .clone();
+    let mut map = CurrentChainMap { missing: false };
+    let mut chain = ChainOwner::new_current(&runtime).expect("current chain owner");
+    let now = SemanticTimeMicros::from_micros(2_000_000);
+    assert_eq!(
+        chain.schedule_current(
+            &runtime, stamp, &source, &proposal, &mut world, &mut map, now,
+        ),
+        Err(AttackError::StaleTarget)
+    );
+    // Acquiring visibility later cannot turn the refused occurrence into a cast.
+    world.invisible.clear();
+    assert_eq!(
+        chain.schedule_current(
+            &runtime, stamp, &source, &proposal, &mut world, &mut map, now,
+        ),
+        Err(AttackError::StaleTarget)
+    );
+    assert_eq!(chain.next_due_time(), None);
+    assert!(chain.pending_sources().expect("no pending cast").is_empty());
+    assert_eq!(
+        vitals
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, session)
+            .expect("unchanged invisible initial player"),
+        &before
+    );
+}
+
 #[test]
 fn monster_current_chain_keeps_exact_recipients_due_time_and_live_policy() {
     use crate::creature_chain_attack::ChainOwner;
@@ -3419,9 +3670,13 @@ fn monster_current_chain_keeps_exact_recipients_due_time_and_live_policy() {
         let (second, session) = chain_second(&mut runtime, &mut vitals, &mut world);
         let mut map = CurrentChainMap { missing: false };
         let stamp = runtime.issue_owner_work().expect("current chain work");
+        // Crystal combat.cpp:1980-1984 does not require a visible secondary hop.
+        // Install the real owned condition, then project its independent combat fact.
+        install_recipient_invisibility(&runtime, &mut vitals, second, session, stamp);
+        world.invisible.insert(second.placement_identity());
         let mut chain = ChainOwner::new_current(&runtime).expect("current chain owner");
         let damage = DamageSpellOwner::default();
-        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(0));
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(2_000_000));
         let token = chain
             .schedule_current(
                 &runtime,
@@ -3472,7 +3727,7 @@ fn monster_current_chain_keeps_exact_recipients_due_time_and_live_policy() {
         );
         assert_eq!(
             chain.next_due_time().expect("second deadline").get(),
-            50_000
+            2_050_000
         );
         let pending = chain.pending_sources().expect("next source metadata");
         assert_eq!(pending.len(), 1);
@@ -3480,7 +3735,7 @@ fn monster_current_chain_keeps_exact_recipients_due_time_and_live_policy() {
             (pending[0].proposal.target, pending[0].session),
             (second, session)
         );
-        assert_eq!(pending[0].due.get(), 50_000);
+        assert_eq!(pending[0].due.get(), 2_050_000);
         let before = vitals
             .read_owned_player_state_test_snapshot(&runtime, second, session)
             .expect("second store before due")

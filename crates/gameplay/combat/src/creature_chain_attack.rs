@@ -471,7 +471,10 @@ impl<S: ChainSource> ChainOwner<S> {
             {
                 return Err(AttackError::MissingCombatFacts);
             }
-            if f.visible
+            // Crystal combat.cpp:1980-1984 checks combat permission and sight for
+            // secondary hops, not invisibility. Initial target acquisition still
+            // requires visibility; current protection gates apply to every hop.
+            if (actor != proposal.target || f.visible)
                 && !f.issuer_pz
                 && !f.target_pz
                 && !f.issuer_protected

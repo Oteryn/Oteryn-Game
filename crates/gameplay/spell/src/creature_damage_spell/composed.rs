@@ -663,12 +663,10 @@ impl ComposedOwner {
                     {
                         return Err(AttackError::InvalidPlan);
                     }
-                    if !a.visible
-                        || a.issuer_pz
-                        || a.target_pz
-                        || a.issuer_protected
-                        || a.target_protected
-                    {
+                    // Source callbacks operate on area occupants, without an AI
+                    // visibility check: frozen_minion_wave.lua:16-30 and
+                    // source_of_corruption_wave.lua:11-24 (Crystal 201189f).
+                    if a.issuer_pz || a.target_pz || a.issuer_protected || a.target_protected {
                         continue;
                     }
                     vitals

@@ -78,6 +78,8 @@ struct World {
     missing: bool,
     missing_npc: bool,
     npc_primary: bool,
+    visible: bool,
+    target_protected: bool,
     creature_response: Option<u32>,
     response_amounts: Vec<u32>,
 }
@@ -133,11 +135,11 @@ impl SpellWorldReader for World {
                 target: t,
                 session: s,
                 revision: 1,
-                visible: true,
+                visible: self.visible,
                 issuer_pz: false,
                 target_pz: false,
                 issuer_protected: false,
-                target_protected: false,
+                target_protected: self.target_protected,
                 armor: 0,
                 player_level: 1,
                 reference_level_party_lowest: None,
@@ -343,6 +345,8 @@ fn setup(
             missing: false,
             missing_npc: false,
             npc_primary: false,
+            visible: true,
+            target_protected: false,
             creature_response: None,
             response_amounts: Vec::new(),
         },
@@ -771,6 +775,84 @@ fn source_formula_revision_and_catalog_pin_reject_before_any_owner_hp() {
         1000
     );
     assert!(owner.memos.is_empty());
+}
+
+#[test]
+fn monster_composed_invisible_player_callback_keeps_protection_and_replay() {
+    // Crystal 201189f frozen_minion_wave.lua:16-30 applies the player-side
+    // callback to area occupants; it does not repeat AI visibility selection.
+    for protected in [false, true] {
+        let (mut runtime, mut states, source, catalog, proposal, mut world, _, _, _) =
+            setup("frozen_minion", 2, "frozen_minion", 1000);
+        assert!(source.primary_source().is_none());
+        states
+            .apply_attack_damage(
+                &mut runtime,
+                proposal.target,
+                world.session,
+                50,
+                "before-invisible-composed-callback",
+                SemanticTimeMicros::from_micros(0),
+            )
+            .expect("actual injured player");
+        world.visible = false;
+        world.target_protected = protected;
+        let before = states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+            .expect("actual player before callback")
+            .clone();
+        let stamp = runtime.issue_owner_work().expect("current composed work");
+        let mut owner = ComposedOwner::default();
+        let first = owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut states,
+                &catalog,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(1),
+            )
+            .expect("source-qualified callback");
+        let callback = first
+            .branches
+            .iter()
+            .find(|(_, target, _)| *target == proposal.target);
+        let applied = states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+            .expect("actual player after callback")
+            .clone();
+        if protected {
+            assert!(callback.is_none());
+            assert_eq!(applied, before);
+        } else {
+            assert!(matches!(
+                &callback.expect("invisible player receives source callback").2,
+                Ok(BranchReceipt::PlayerHeal(receipt)) if receipt.applied == 50
+            ));
+            assert_eq!(applied.vitals().health, before.vitals().health + 50);
+        }
+        assert_eq!(
+            owner
+                .execute_current(
+                    &mut runtime,
+                    stamp,
+                    &mut states,
+                    &catalog,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(2),
+                )
+                .expect("retained callback occurrence"),
+            first
+        );
+        assert_eq!(
+            states.read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session),
+            Some(&applied)
+        );
+    }
 }
 
 #[test]

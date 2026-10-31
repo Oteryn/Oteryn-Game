@@ -60,6 +60,8 @@ struct World<'a> {
     missing: bool,
     blocked: bool,
     content_present: bool,
+    visible: bool,
+    target_protected: bool,
 }
 impl SpellWorldReader for World<'_> {
     fn native_gameplay<'a>(&'a self, _: &ChannelRuntimeV1) -> Option<&'a NativeGameplayState> {
@@ -115,11 +117,11 @@ impl SpellWorldReader for World<'_> {
                 target: t,
                 session: s,
                 revision: 1,
-                visible: true,
+                visible: self.visible,
                 issuer_pz: false,
                 target_pz: self.blocked,
                 issuer_protected: false,
-                target_protected: false,
+                target_protected: self.target_protected,
                 defense: 0,
                 armor: 0,
                 player_level: 1,
@@ -312,6 +314,8 @@ fn fixture<'a>(
             missing: false,
             blocked: false,
             content_present: true,
+            visible: true,
+            target_protected: false,
         },
         fence,
         stamp,
@@ -389,6 +393,7 @@ fn appearance_all120_source_bodies_resolve_current_native110_creature10_items() 
 #[ignore = "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"]
 fn scheduled_appearance_real_player_store_projection_expiry_and_replay() {
     let (native, pin) = actual_content();
+    assert_invisible_area_appearance_protection_and_replay(&native, pin.clone());
     for current_owner in [false, true] {
         for (index, item) in [(4, false), (5, true)] {
             let (mut r, mut states, source, p, mut world, fence, stamp) =
@@ -527,6 +532,86 @@ fn scheduled_appearance_real_player_store_projection_expiry_and_replay() {
         }
     }
 }
+fn assert_invisible_area_appearance_protection_and_replay(
+    native: &NativeGameplayState,
+    pin: ChannelContentPin,
+) {
+    // Crystal 201189f combat.cpp:1757-1759 sends area conditions through
+    // CombatFunc's complete recipient enumeration (1626-1658).
+    for protected in [false, true] {
+        let (mut runtime, mut states, source, proposal, mut world, _, _) =
+            fixture(native, pin.clone(), "dark_apprentice", 5, false);
+        assert!(source.area.is_some());
+        world.visible = false;
+        world.target_protected = protected;
+        let before = states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+            .unwrap()
+            .clone();
+        let stamp = runtime
+            .issue_owner_work()
+            .expect("current area appearance work");
+        let mut owner = DamageSpellOwner::default();
+        let first = owner
+            .execute_current(
+                &mut runtime,
+                stamp,
+                &mut states,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(1),
+            )
+            .expect("source-qualified area appearance");
+        let target = first
+            .targets
+            .iter()
+            .find(|(actor, _)| *actor == proposal.target);
+        let applied = states
+            .read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session)
+            .unwrap()
+            .clone();
+        if protected {
+            assert!(target.is_none());
+            assert_eq!(applied, before);
+        } else {
+            assert!(
+                target
+                    .expect("invisible player receives the source area appearance")
+                    .1
+                    .as_ref()
+                    .expect("actual appearance owner receipt")
+                    .condition_only_applied
+            );
+            assert!(
+                applied
+                    .owned_conditions()
+                    .displayed_temporary_appearance_at(1)
+                    .is_some()
+            );
+            assert_eq!(applied.vitals(), before.vitals());
+        }
+        assert_eq!(
+            owner
+                .execute_current(
+                    &mut runtime,
+                    stamp,
+                    &mut states,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(1),
+                )
+                .expect("retained area appearance occurrence"),
+            first
+        );
+        assert_eq!(
+            states.read_owned_player_state_test_snapshot(&runtime, proposal.target, world.session),
+            Some(&applied)
+        );
+    }
+}
+
 #[test]
 #[ignore = "requires actual OTERYN_FULL_SPELL_TEST_MANIFEST"]
 fn scheduled_appearance_missing_artifact_tile_refusal_wrong_revision_and_stale_owner_no_mutation() {

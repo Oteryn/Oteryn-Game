@@ -1972,7 +1972,9 @@ impl DamageSpellOwner {
                     {
                         return Err(AttackError::InvalidPlan);
                     }
-                    if !a.visible
+                    // Crystal 201189f combat.cpp:1626-1658,1757-1759 applies
+                    // area conditions to occupants independently of AI visibility.
+                    if (source.area.is_none() && !a.visible)
                         || a.issuer_pz
                         || a.target_pz
                         || a.issuer_protected
@@ -2243,7 +2245,14 @@ impl DamageSpellOwner {
                 {
                     return Err(AttackError::InvalidPlan);
                 }
-                if (!a.visible && !source.dispel_invisible)
+                // Crystal 201189f combat.cpp:1626-1658,1980-1984 does not
+                // reapply target-acquisition visibility to area or chain recipients.
+                // A forced windup target alone is not a chain-recipient grant.
+                let chain_recipient = forced.is_some() && source.chain.is_some();
+                if (!a.visible
+                    && source.area.is_none()
+                    && !chain_recipient
+                    && !source.dispel_invisible)
                     || a.issuer_pz
                     || a.target_pz
                     || a.issuer_protected

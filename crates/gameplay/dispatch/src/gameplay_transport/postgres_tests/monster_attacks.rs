@@ -7,6 +7,8 @@ use crate::gameplay_transport::{ComposedFreshAdmission, last_position::Admission
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::time::Duration;
 
+#[path = "monster_attacks/invisible_area.rs"]
+mod invisible_area;
 #[path = "monster_attacks/removal.rs"]
 mod removal;
 
@@ -23,6 +25,11 @@ fn hunter_source_arrow_dispatch_damages_distant_player_and_checkpoints_vitals_po
 #[test]
 fn fire_devil_source_area_dispatch_damages_target_and_bystander_postgres() -> TestResult {
     run_case("monster_attacks_fire_devil", AttackCase::FireDevil)
+}
+
+#[test]
+fn fire_devil_source_area_dispatch_damages_invisible_bystander_and_checkpoints_vitals_postgres() -> TestResult {
+    run_case("monster_attacks_invisible_area", AttackCase::FireDevilInvisibleBystander)
 }
 
 #[test]
@@ -45,6 +52,7 @@ enum AttackCase {
     Rat,
     Hunter,
     FireDevil,
+    FireDevilInvisibleBystander,
     FireElemental,
     Firestarter,
     TheMonster,
@@ -55,7 +63,7 @@ impl AttackCase {
         match self {
             Self::Rat => "oteryn:creature.rat",
             Self::Hunter => "oteryn:creature.hunter",
-            Self::FireDevil => "oteryn:creature.fire_devil",
+            Self::FireDevil | Self::FireDevilInvisibleBystander => "oteryn:creature.fire_devil",
             Self::FireElemental => "oteryn:creature.fire_elemental",
             Self::Firestarter => "oteryn:creature.firestarter",
             Self::TheMonster => "oteryn:creature.the_monster",
@@ -235,9 +243,11 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
     owner.active_generation = Some(active);
     owner.movement_cells = deps.room.movement_cells();
     let maximum = maximum_source_damage(active, case)?;
+    let area_case = matches!(case, AttackCase::FireDevil | AttackCase::FireDevilInvisibleBystander);
+    let invisible_bystander = case == AttackCase::FireDevilInvisibleBystander;
     // Only the test player's pool is enlarged for the area case. Both source area entries
     // retain their original chances and damage while we wait for both players to be hit.
-    let initial_health = if case == AttackCase::FireDevil {
+    let initial_health = if area_case {
         maximum.checked_mul(128)
             .and_then(|n| n.checked_add(crate::gameplay_transport::actor_spell::tests::FACTS.max_health))
             .ok_or("test pool overflow")?
@@ -246,7 +256,7 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
     };
     initialize_player(&owner, deps.actor, deps.admitted.game_session_id, initial_health).await?;
     let session = deps.admitted.game_session_id;
-    let bystander = if case == AttackCase::FireDevil {
+    let bystander = if area_case {
         let second_session = GameSessionId::decode(&id(51)).map_err(debug)?;
         let second = {
             let mut runtime = deps.runtime.lock().await;
@@ -276,6 +286,11 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
     // Production scheduling owns the attack. A zero source roll is a valid swing, so allow
     // bounded source intervals until a deterministic positive roll has been observed.
     owner.clock_origin -= Duration::from_secs(10);
+    if invisible_bystander {
+        // The persisted first player is the hidden area recipient. The second stays
+        // visible and is acquired normally; no source profile or protection is changed.
+        invisible_area::install(&owner, &deps).await?;
+    }
     let mut after = before;
     let mut bystander_hit = bystander.is_none();
     for _ in 0..64 {
@@ -283,6 +298,11 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
             assert_distant(&owner, monster, deps.actor).await?;
         }
         owner.drain_monster_melee().await;
+        if invisible_bystander {
+            invisible_area::assert_current(
+                &owner, &deps, monster, bystander.ok_or("visible source area target")?,
+            ).await?;
+        }
         after = health(&owner, &deps).await?;
         if case != AttackCase::Rat {
             assert_distant(&owner, monster, deps.actor).await?;
@@ -297,7 +317,7 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
     }
     assert!(after < before, "the real source attack must damage the admitted player");
     assert!(bystander_hit, "the source area must also hit the second player");
-    if case != AttackCase::FireDevil {
+    if !area_case {
         assert!(before - after <= maximum, "one hit stays within its source range");
     }
     {
@@ -316,6 +336,13 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
         }
     }
     let sequence = owner.states.spell_states.lock().await.monster_ai_sequence;
+    let repeat_area = if invisible_bystander {
+        let (actor, session) = bystander.ok_or("visible source area target")?;
+        Some((player_health(&owner, actor, session).await?,
+            owner.states.spell_states.lock().await.monster_spells.casts.len()))
+    } else {
+        None
+    };
     owner.drain_monster_melee().await;
     assert_eq!(
         owner.states.spell_states.lock().await.monster_ai_sequence,
@@ -323,6 +350,13 @@ async fn scenario(harness: &Harness, case: AttackCase) -> TestResult {
         "a second connection drain before the shared deadline is not another swing"
     );
     assert_eq!(health(&owner, &deps).await?, after);
+    if let Some((visible_health, cast_count)) = repeat_area {
+        let visible = bystander.ok_or("visible source area target")?;
+        invisible_area::assert_current(&owner, &deps, monster, visible).await?;
+        assert_eq!(player_health(&owner, visible.0, visible.1).await?, visible_health);
+        assert_eq!(owner.states.spell_states.lock().await.monster_spells.casts.len(), cast_count,
+            "an unchanged drain does not publish another area occurrence");
+    }
 
     if case == AttackCase::Rat {
         rat_movement_retry(&mut owner, &deps, monster).await?;
@@ -413,7 +447,16 @@ fn maximum_source_damage(active: &crate::content::ActiveGeneration, case: Attack
         assert!(source.area.is_none());
         return Ok(source.maximum);
     }
-    // Crystal 201189f, data-crystal/monster/demons/fire_devil.lua:93-94.
+    // Crystal 201189f, data-crystal/monster/demons/fire_devil.lua:93-94,119.
+    let crate::content::ProjectV2AuthoringProfileData::Behavior(behavior) =
+        &record.behavior.as_ref().ok_or("source area behavior")?.data else {
+            return Err("source area behavior kind".into());
+        };
+    assert!(!behavior.targeting.sense_invisible);
+    for (index, chance) in [(1, 200_000), (2, 150_000)] {
+        let attack = behavior.attacks.get(index).ok_or("source area schedule")?;
+        assert_eq!((attack.interval_ms, attack.chance_ppm), (2_000, chance));
+    }
     assert_eq!((source.minimum, source.maximum, source.range), (60, 90, 7));
     assert_eq!(source.element.as_deref(), Some("fire"));
     assert_eq!(source.area, Some(crate::content::ProjectV2AbilityArea::Circle { radius_tiles: 4 }));
