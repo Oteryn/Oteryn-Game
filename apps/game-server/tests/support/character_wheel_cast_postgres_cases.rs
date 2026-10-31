@@ -649,8 +649,13 @@ fn current_cast_reads_grade_iv_and_socketed_mastery_in_the_same_transaction() ->
                         .vessel
                 );
                 assert_eq!(
+                    effects.gem_value_milli("revelation_mastery_points", "Gift of Life"),
+                    300_000,
+                    "the current SQL reader includes both literal Crystal mastery additions"
+                );
+                assert_eq!(
                     stages.value["gift_of_life"], 3,
-                    "850 allocated +150 mastery +1 Grade IV opens stage3"
+                    "850 allocated +300 mastery +1 Grade IV opens stage3"
                 );
                 assert_eq!(stages.value["beam_mastery"], 0);
                 assert_eq!(stages.value["Beam Mastery"], 0);

@@ -763,17 +763,22 @@ mod mitigation_tests {
         let mut state = player()?;
         state.install_wheel_equipment(Some(WheelEquipment::default()));
         state.install_equipped_mana_shield(true);
+        // Crystal 201189f game.cpp:8142-8155: equipped shielding costs two mana
+        // per absorbed damage; the separate spell capacity uses one-to-one.
+        assert_eq!(state.vitals().mana, 500);
+        assert_eq!(state.after_player_mitigation(900, 0), Some(888));
+        // The equipped shield absorbs 250: normal 888-250, life drain 900-250.
         let (normal, hit) = crate::spell::actor_conditions::stage_creature_hit(&state, 900, 0)
             .map_err(|e| format!("{e:?}"))?;
         assert_eq!(
             (normal.health, normal.vitals().mana, hit.applied),
-            (612, 0, 388)
+            (362, 0, 638)
         );
         let (drain, hit) = crate::spell::actor_conditions::stage_life_drain_hit(&state, 900, 0)
             .map_err(|e| format!("{e:?}"))?;
         assert_eq!(
             (drain.health, drain.vitals().mana, hit.applied),
-            (600, 0, 400)
+            (350, 0, 650)
         );
         let (agony, hit) = crate::spell::actor_conditions::stage_agony_hit(&state, 900, 0)
             .map_err(|e| format!("{e:?}"))?;
