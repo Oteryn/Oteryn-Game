@@ -308,6 +308,13 @@ fn apply_due_under_current_owners(
             .find(|s| s.binding.command == receipt.occurrence.command)
             .and_then(|s| s.resolved.as_ref())
         {
+            crate::gameplay_transport::task_board::bounty_talisman::apply_timer_leech(
+                runtime,
+                states,
+                &resolved.batch,
+                &receipt.batch,
+                &resolved.bounty_leech,
+            );
             states
                 .presentations
                 .as_mut()
@@ -322,6 +329,13 @@ fn apply_due_under_current_owners(
             })
             .and_then(|saved| saved.resolved.as_ref())
         {
+            crate::gameplay_transport::task_board::bounty_talisman::apply_timer_leech(
+                runtime,
+                states,
+                &resolved.batch,
+                &receipt.batch,
+                &resolved.bounty_leech,
+            );
             states
                 .presentations
                 .as_mut()
@@ -859,6 +873,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         effect.sub_ordinal = saved.sub_ordinal;
                         batch.effects = vec![effect];
                         states.apply_prey_spell_damage(runtime, &mut batch);
+                        let talisman = crate::durability::task_board::read_talisman_in_item_transaction(&mut tx, **fence).await?;
+                        let bounty_leech = crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses(
+                            runtime, &mut batch, &talisman, &stream, decision,
+                        ).ok_or(DurabilityError::Unavailable)?;
                         let presentation = states
                             .presentations
                             .as_mut()
@@ -880,6 +898,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                             .map_err(|_| DurabilityError::Unavailable)?;
                         let resolved = crate::spell::ordinary_timer::ResolvedOrdinaryCombat {
                             batch,
+                            bounty_leech,
                             presentation: std::sync::Arc::new(presentation),
                             magnitude: std::sync::Arc::new(magnitude),
                             owned: owned.clone(),

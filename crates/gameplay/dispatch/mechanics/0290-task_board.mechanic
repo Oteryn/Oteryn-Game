@@ -3,6 +3,7 @@ commands=89
 transport=task_board
 composed=task_board
 authority=task_board
+offer=560,task_board::offered,task_board_available
 [route]
 match routing::task_board::route(authority, &session.admitted, command).await {
     Some(dispatch) => dispatch,

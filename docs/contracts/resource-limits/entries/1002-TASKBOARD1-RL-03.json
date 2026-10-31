@@ -1,23 +1,23 @@
 {
   "id": "TASKBOARD1-RL-03",
-  "owner_contract": "../architecture/reviews/OTERYN_GAME_TASKBOARD1_SCOPE_DECISION_2026-10-25.md",
-  "resource": "Task Board kill tasks per board",
+  "owner_contract": "protocol-oteryn/v1/task_board_v1.md",
+  "resource": "Task Board kill rows including the any-creature row",
   "unit": "items",
-  "hard_maximum": 5,
+  "hard_maximum": 9,
   "configurable_range": {
-    "minimum": 5,
-    "maximum": 5
+    "minimum": 9,
+    "maximum": 9
   },
   "failure_category": "INVALID_INPUT",
-  "allocation_impact": "A fixed code-built board; the codec refuses a sixth task.",
+  "allocation_impact": "Strict length and collection bounds are checked before mutation; encoding never truncates a board.",
   "client_visible": true,
   "boundary_tests": [
-    "the_board_is_five_valid_kill_tasks_with_three_transitions_each",
-    "task_board_reply_strict_codec"
+    "full_task_board_expanded_board_is_bounded_without_truncation"
   ],
   "consumers": [
-    "crates/gameplay/quests/src/quest/task_board.rs",
-    "crates/protocol-oteryn/src/task_board.rs"
+    "crates/protocol-oteryn/src/task_board.rs",
+    "crates/protocol-oteryn/src/task_board_full.rs",
+    "crates/gameplay/dispatch/src/gameplay_transport/task_board.rs"
   ],
-  "notes": "TASKBOARD-1: five kill slots, as both references without expansion."
+  "notes": "Full actions 4..18 replace the TASKBOARD-1 fixed slice. Legacy actions 0..3 retain their 32-byte request and 1024-byte reply codecs. Full board bounds: 9 kill rows, 9 delivery rows, 3 bounty offers, 5 list slots and 32 shop rows."
 }

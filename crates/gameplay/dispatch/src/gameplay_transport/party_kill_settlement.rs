@@ -1,7 +1,7 @@
 //! Composes the real kill drain with one atomic multi-Character XP transaction.
 use super::{
     ComposedFreshAdmission,
-    kill_reward::PendingKillSettlement,
+    kill_reward::{PendingKillSettlement, TaskBoardKillRecipient},
     party_xp::{PartyXpPlan, plan_shared_xp_in_transaction},
 };
 use crate::combat::{CombatDeathRewardXpError, RewardProgressionBinding};
@@ -41,6 +41,135 @@ fn key(entry: &PendingKillSettlement) -> [u8; 52] {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Task credit has the donor's party/contributor eligibility independently of
+    /// whether XP has an admitted progression binding or a surviving loot owner.
+    pub(super) async fn freeze_task_board_recipients(
+        &self,
+        permit: &SpellLanePermit,
+        entry: &PendingKillSettlement,
+    ) -> Result<(), CharacterProgressionError> {
+        if entry.task_board_recipients.get().is_some() {
+            return Ok(());
+        }
+        let plan = self.discover_party_xp(permit, entry).await?;
+        let mut recipients = Vec::new();
+        for member in &plan.members {
+            let Some(fence) = self
+                .current_quest_fence(member.session)
+                .await
+                .map_err(|_| {
+                    CharacterProgressionError::Unavailable(DurabilityError::Unavailable)
+                })?
+            else {
+                continue;
+            };
+            if fence.character_id != member.character {
+                return Err(rejected());
+            }
+            if !member.shared
+                && !entry.damage_shares.iter().any(|damage| {
+                    damage.total > 0
+                        && damage.character.as_bytes() == member.character.as_bytes()
+                        && damage.session == Some(member.session)
+                        && damage.lease_generation == Some(fence.character_lease_generation)
+                })
+            {
+                continue;
+            }
+            let occurrence =
+                if member.character.as_bytes() == entry.facts.principal.character.as_bytes() {
+                    entry.facts.occurrence
+                } else {
+                    let mut runtime = self.runtime.lock().await;
+                    runtime
+                        .borrow_combat_death()
+                        .party_reward_occurrence(
+                            entry.target,
+                            crate::foundation::CharacterId::decode(member.character.as_bytes())
+                                .map_err(|_| rejected())?,
+                        )
+                        .map_err(|_| rejected())?
+                        .0
+                };
+            recipients.push(TaskBoardKillRecipient { fence, occurrence });
+        }
+        let runtime = self.runtime.lock().await;
+        let states = self.states.spell_states.lock().await;
+        let attack = self.states.attack.lock().await;
+        let mut context = (
+            self, &*runtime, &*states, &*attack, entry, &plan, recipients,
+        );
+        self.root
+            .try_issue_semantic_pass()?
+            .run_with_context(&mut context, move |holder, deadline, context| {
+                Box::pin(async move {
+                    let (owner, runtime, states, _attack, entry, previous, recipients) = context;
+                    let binding = runtime.binding();
+                    let mut tx = item_tx::begin_spell_owner_transaction(holder, deadline).await?;
+                    let scope = item_tx::assert_spell_item_scope_in_transaction(
+                        &mut tx,
+                        permit,
+                        owner.root,
+                        owner.character,
+                        owner.holder,
+                        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
+                        binding.scope_generation().get(),
+                    )
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                    let current = plan_shared_xp_in_transaction(
+                        &mut tx, owner.root, &scope, runtime, states, entry,
+                    )
+                    .await
+                    .map_err(|_| DurabilityError::Unavailable)?;
+                    let identity = |member: &super::party_xp::XpParticipant| {
+                        (
+                            member.character,
+                            member.session,
+                            member.shared,
+                            member.party_id,
+                            member.party_revision,
+                        )
+                    };
+                    if current
+                        .members
+                        .iter()
+                        .map(identity)
+                        .ne(previous.members.iter().map(identity))
+                    {
+                        return Err(DurabilityError::Unavailable);
+                    }
+                    for recipient in recipients.iter() {
+                        let Some(member) = current
+                            .members
+                            .iter()
+                            .find(|member| member.character == recipient.fence.character_id)
+                        else {
+                            return Err(DurabilityError::Unavailable);
+                        };
+                        if !runtime
+                            .bound_attacker_lease(member.actor, member.session)
+                            .is_ok_and(|lease| {
+                                lease.character_id().as_bytes()
+                                    == recipient.fence.character_id.as_bytes()
+                                    && lease.generation()
+                                        == recipient.fence.character_lease_generation
+                            })
+                        {
+                            return Err(DurabilityError::Unavailable);
+                        }
+                    }
+                    // Freeze while the World party rows and current actor proofs are still
+                    // held. A later join/leave cannot add or remove an original recipient.
+                    let _ = entry.task_board_recipients.set(recipients.clone());
+                    tx.rollback().await?;
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(Into::into)
+    }
+
     async fn discover_party_xp(
         &self,
         permit: &SpellLanePermit,

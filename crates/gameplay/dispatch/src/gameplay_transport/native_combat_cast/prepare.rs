@@ -1134,6 +1134,8 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
     book: &SpellBook,
     saved: &crate::spell::delayed_execution::SavedStrike,
     now: SemanticTimeMicros,
+    talisman: &crate::durability::task_board::BountyTalismanSnapshot,
+    decision: oteryn_simulation_determinism::DecisionOccurrenceId,
     draw: &mut (dyn FnMut(i64, i64) -> i64 + Send),
 ) -> Result<Option<crate::spell::delayed_execution::ResolvedStrike>, SpellCastDisposition> {
     use crate::spell::native::CompiledNativeSpellPlanExt;
@@ -1288,6 +1290,14 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
     states.apply_prey_spell_damage(runtime, &mut lowered.batch);
+    let bounty_leech = crate::gameplay_transport::task_board::bounty_talisman::apply_spell_bonuses(
+        runtime,
+        &mut lowered.batch,
+        talisman,
+        &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(content.source_digest()),
+        decision,
+    )
+    .ok_or(SpellCastDisposition::Rejected)?;
     let cues = delayed_strikes::strike_cues(room, runtime, Some(strike), &spatial.bindings)?;
     let presentation = states
         .presentations
@@ -1310,6 +1320,7 @@ pub(in crate::gameplay_transport) async fn prepare_strike_due(
         .map_err(|_| SpellCastDisposition::Rejected)?;
     Ok(Some(crate::spell::delayed_execution::ResolvedStrike {
         batch: lowered.batch,
+        bounty_leech,
         presentation: std::sync::Arc::new(presentation),
         magnitude: std::sync::Arc::new(magnitude),
         owned: owned.clone(),

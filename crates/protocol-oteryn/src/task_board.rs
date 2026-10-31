@@ -4,6 +4,9 @@ use crate::charm_wire::{
     set_once,
 };
 
+#[path = "task_board_full.rs"]
+pub mod full;
+
 pub const CAPABILITY_TASK_BOARD_V1: u32 = 72;
 pub const COMMAND_TYPE_TASK_BOARD: u32 = 89;
 /// `TASKBOARD1-RL-01`.
