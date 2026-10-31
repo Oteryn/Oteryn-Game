@@ -185,12 +185,19 @@ fn domain_nine_shows_the_backpack_from_read_character_backpack_without_internal_
                 item: stored(3, "sword", 1),
                 placement_ordinal: 4,
             },
+            BackpackEntry {
+                item: stored(4, "vial", 1),
+                placement_ordinal: 2,
+            },
         ],
+        // I10a: the vial holds mana fluid (Crystal `fluids.lua` sub-type 7).
+        fluids: [([4; 16], 7)].into(),
     };
     let refs = |definition: &TypedDefinitionRef| match definition.production_key.as_str() {
         "backpack" => NonZeroU32::new(2854),
         "gold" => NonZeroU32::new(3031),
         "sword" => NonZeroU32::new(3264),
+        "vial" => NonZeroU32::new(2874),
         _ => None,
     };
     let items = inventory_from_backpack(Some(&backpack), refs).expect("fixture");
@@ -212,12 +219,13 @@ fn domain_nine_shows_the_backpack_from_read_character_backpack_without_internal_
                 entry.handle.get(),
                 entry.item_definition_ref.get(),
                 entry.count.get(),
+                entry.sub_type,
             )
         })
         .collect();
-    assert_eq!(entries, [(2, 3031, 7), (3, 3264, 1)]);
+    assert_eq!(entries, [(2, 3031, 7, 0), (3, 3264, 1, 0), (4, 2874, 1, 7)]);
     // No instance id, placement key or row reaches the wire.
-    for id in 1..=3_u8 {
+    for id in 1..=4_u8 {
         assert!(!nine.payload.windows(16).any(|window| window == [id; 16]));
     }
     assert!(

@@ -773,6 +773,8 @@ fn item_use_commit_throughput_is_measured() -> TestResult {
     })
 }
 
+#[path = "item_use_postgres_cases/item_use_fluid_tests.rs"]
+mod item_use_fluid_tests;
 #[path = "item_use_postgres_cases/item_use_nested_tests.rs"]
 mod item_use_nested_tests;
 

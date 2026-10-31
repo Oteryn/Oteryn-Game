@@ -32,12 +32,45 @@ pub(super) async fn lock_use_path(
     world: &[u8; 16],
     request: &ItemUseRequest,
 ) -> Result<()> {
-    let path = use_path(connection, &request.source_item_instance_id).await?;
+    let tool = match request.kind {
+        ItemUseKind::PickRefine { tool, .. } => Some(tool),
+        _ => None,
+    };
+    let flask = match request.flask {
+        ItemUseFlaskPlan::Stack {
+            item_instance_id, ..
+        } => Some(item_instance_id),
+        _ => None,
+    };
+    lock_carried_path(
+        connection,
+        holder,
+        backpack,
+        world,
+        &request.source_item_instance_id,
+        tool,
+        flask,
+    )
+    .await
+}
+
+/// Lock `source`, its ancestry to the holder's backpack, an optional `tool` with its ancestry
+/// and an optional `extra` item, then recheck the paths, the owner and the backpack slot.
+pub(super) async fn lock_carried_path(
+    connection: &mut PgConnection,
+    holder: &[u8; 16],
+    backpack: &[u8; 16],
+    world: &[u8; 16],
+    source: &[u8; 16],
+    tool: Option<[u8; 16]>,
+    extra: Option<[u8; 16]>,
+) -> Result<()> {
+    let path = use_path(connection, source).await?;
     if !(2..=9).contains(&path.len()) || path.last() != Some(backpack) {
         return Err(ItemUseError::StaleState);
     }
     let mut items = path.clone();
-    let tool_path = if let ItemUseKind::PickRefine { tool, .. } = request.kind {
+    let tool_path = if let Some(tool) = tool {
         let tool_path = use_path(connection, &tool).await?;
         if !(2..=9).contains(&tool_path.len()) || tool_path.last() != Some(backpack) {
             return Err(ItemUseError::StaleState);
@@ -47,12 +80,7 @@ pub(super) async fn lock_use_path(
     } else {
         None
     };
-    if let ItemUseFlaskPlan::Stack {
-        item_instance_id, ..
-    } = request.flask
-    {
-        items.push(item_instance_id);
-    }
+    items.extend(extra);
     items.sort_unstable();
     items.dedup();
     // A JSON array avoids database UUID driver conversions; these are server-owned IDs.
@@ -71,7 +99,7 @@ pub(super) async fn lock_use_path(
     .fetch_all(&mut *connection)
     .await?;
     if locked.len() != items.len()
-        || use_path(connection, &request.source_item_instance_id).await? != path
+        || use_path(connection, source).await? != path
     {
         return Err(ItemUseError::StaleState);
     }
@@ -84,7 +112,7 @@ pub(super) async fn lock_use_path(
         "SELECT EXISTS (SELECT 1 FROM game_item_loop_owner(encode($1,'hex')::uuid) \
           WHERE owner_character = encode($2,'hex')::uuid AND depth BETWEEN 1 AND 8)",
     )
-    .bind(request.source_item_instance_id.as_slice())
+    .bind(source.as_slice())
     .bind(holder.as_slice())
     .fetch_one(&mut *connection)
     .await?;

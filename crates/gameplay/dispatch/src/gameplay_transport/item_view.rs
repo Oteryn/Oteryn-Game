@@ -110,7 +110,12 @@ pub fn inventory_from_backpack(
             key: ItemKey::Instance(item.item_instance_id),
             item_definition_ref: definition_ref(&item.definition)?,
             count: NonZeroU32::new(item.quantity)?,
-            sub_type: 0,
+            // I10a: a filled fluid container shows its fluid as the client sub-type.
+            sub_type: backpack
+                .fluids
+                .get(&item.item_instance_id)
+                .copied()
+                .map_or(0, u32::from),
         })
     };
     Some(InventoryItems {

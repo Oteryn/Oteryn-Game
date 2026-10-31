@@ -69,24 +69,34 @@ fn i05_crystal_charged_amulet_matches() {
     assert!(target.is_none());
 }
 
-/// Time ring 3053 -> 3090 is admitted with its 600-second active-time budget. The remaining
-/// Crystal rings are pinned below until their non-temporal equipment effects are production-ready.
+/// Time ring 3053 -> 3090 (600 s) and dwarven ring 3097 -> 3099 (3,600 s, Crystal
+/// `items.xml:7458-7489`, decayTo 0) are admitted with their active-time budgets and no decay
+/// item. Stealth, life and healing rings are pinned below until their invisibility and
+/// regeneration effects are production-ready.
 #[test]
 fn i05_time_ring_is_admitted_and_remaining_rings_are_pinned() {
     let controller = native();
     let native = native_state(&controller);
-    let definition = typed_of(native, 3053).expect("time ring admitted");
-    assert_eq!(
-        equipped_definition(native, &definition)
-            .expect("active form")
-            .production_key,
-        key(3090)
-    );
-    let (time_facts, target) = facts(native, &definition).expect("timed facts");
-    assert_eq!(time_facts.full.remaining_ms(), Some(600_000));
-    assert!(target.is_none());
+    for (base, active, seconds) in [(3053, 3090, 600), (3097, 3099, 3_600)] {
+        let definition = typed_of(native, base).expect("ring admitted");
+        assert_eq!(
+            equipped_definition(native, &definition)
+                .expect("active form")
+                .production_key,
+            key(active),
+            "{base}"
+        );
+        let (ring_facts, target) = facts(native, &definition).expect("timed facts");
+        assert_eq!(
+            ring_facts.full.remaining_ms(),
+            Some(seconds * 1_000),
+            "{base}"
+        );
+        assert_eq!(ring_facts.full.charges(), None, "{base}");
+        assert!(target.is_none(), "{base}");
+    }
 
-    for base in [3049, 3052, 3097, 3098] {
+    for base in [3049, 3052, 3098] {
         let definition = typed_of(native, base);
         assert!(
             definition

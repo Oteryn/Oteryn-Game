@@ -321,6 +321,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         // Expiry may burn the ring without a client move. Re-read committed custody so
         // its contribution cannot outlive the timed budget. An ordinary checkpoint uses
         // its initial read, also repairing a previous expiry's failed acknowledgement/read.
+        let mut retired_effects = None;
         if retired_equipment {
             let Some(equipment) =
                 super::equipment_move::read_current_equipment(self, session).await
@@ -332,7 +333,14 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             ) else {
                 return false;
             };
+            // I05: a burned dwarven ring's suppressdrunk ends with it, like the mana shield.
+            let Some(effects) = super::equipment_move::equipment_effects_owner::equipment_effects(
+                &equipment, native,
+            ) else {
+                return false;
+            };
             active_mana_shield = active;
+            retired_effects = Some(effects);
             proficiency_equipment = equipment;
         }
         let runtime = self.runtime.lock().await;
@@ -346,6 +354,11 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         let mut states = self.states.spell_states.lock().await;
         if let Some(state) = states.get_mut(&runtime, actor, session) {
             state.install_equipped_mana_shield(active_mana_shield);
+            if let Some(effects) = retired_effects {
+                super::equipment_move::equipment_effects_owner::install_suppressions(
+                    state, effects,
+                );
+            }
         }
         true
     }

@@ -17,6 +17,8 @@ pub struct ItemUseInventory {
     pub nested: Vec<([u8; 16], BackpackEntry)>,
     /// Immutable key action ids for carried instances, read in the same fenced snapshot.
     pub keys: Vec<([u8; 16], u16)>,
+    /// I10a: the fluid sub-type of each carried container that holds one (migration 0560).
+    pub fluids: std::collections::BTreeMap<[u8; 16], u8>,
 }
 
 impl ItemUseInventory {
@@ -187,9 +189,10 @@ pub(in crate::durability) async fn read_use_inventory(
          ) SELECT c.item::text, c.world::text AS custody_world, c.parent::text, \
                   c.ordinal::text, c.depth, c.slot, i.world_id::text AS item_world, \
                   i.definition_family, i.definition_production_key, i.definition_revision_ref, \
-                  i.quantity, i.lifecycle, k.key_number \
+                  i.quantity, i.lifecycle, k.key_number, f.fluid_subtype AS fluid \
              FROM carried c JOIN game_item_instances i ON i.item_instance_id = c.item \
              LEFT JOIN game_item_keys k ON k.item_instance_id = i.item_instance_id \
+             LEFT JOIN game_item_fluid_states f ON f.item_instance_id = i.item_instance_id \
             ORDER BY c.slot, c.depth, c.ordinal DESC LIMIT 510",
     )
     .bind(fence.character_id.as_bytes().as_slice())
@@ -203,6 +206,7 @@ pub(in crate::durability) async fn read_use_inventory(
         backpack: None,
         nested: Vec::new(),
         keys: Vec::new(),
+        fluids: std::collections::BTreeMap::new(),
     };
     let mut seen = std::collections::BTreeSet::new();
     let mut tree_items = 0_i64;
@@ -218,6 +222,10 @@ pub(in crate::durability) async fn read_use_inventory(
             || !(slot == 0 || (1..=8).contains(&slot) || slot == 10)
         {
             return Err(ItemUseError::StaleState);
+        }
+        if let Some(fluid) = row.try_get::<Option<i16>, _>("fluid")? {
+            let fluid = u8::try_from(fluid).map_err(|_| DurabilityError::InvalidStoredState)?;
+            inventory.fluids.insert(id, fluid);
         }
         let item = InventoryItem {
             item_instance_id: id,
@@ -253,6 +261,7 @@ pub(in crate::durability) async fn read_use_inventory(
             inventory.backpack = Some(CharacterBackpack {
                 backpack: item,
                 entries: Vec::new(),
+                fluids: Default::default(),
             });
         } else {
             let parent = uuid_text(&row.try_get::<String, _>("parent")?)?;
@@ -288,6 +297,7 @@ mod key_tests {
             backpack: None,
             nested: Vec::new(),
             keys: vec![([7; 16], 4321)],
+            fluids: Default::default(),
         };
         assert_eq!(inventory.key_action([7; 16]), Some(4321));
         assert_eq!(inventory.key_action([8; 16]), None);

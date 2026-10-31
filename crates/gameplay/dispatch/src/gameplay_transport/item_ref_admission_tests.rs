@@ -114,6 +114,7 @@ fn domain_9_reads_definitions_through_the_activated_item_index() {
             ),
             placement_ordinal: 0,
         }],
+        fluids: Default::default(),
     };
     let read = |backpack: &CharacterBackpack| {
         inventory_from_backpack(Some(backpack), |d| {

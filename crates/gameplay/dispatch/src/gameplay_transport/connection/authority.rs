@@ -406,6 +406,17 @@ pub trait FreshAdmissionAuthority {
         async { None }
     }
 
+    /// I10a: a carried fluid container used on another carried one; `None` when either is not.
+    fn use_fluid_container(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _source: ItemKey,
+        _target: ItemKey,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     /// BAGS-USE-1: field 5, resolved by the owner against the complete carried tree.
     fn use_item_by_definition(
         &self,

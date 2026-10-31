@@ -48,6 +48,7 @@ use sqlx::postgres::PgConnection;
 mod carried_inventory;
 mod carried_source;
 pub mod concoction;
+pub mod fluid;
 pub mod mining;
 pub mod mount_taming;
 pub mod proficiency_catalyst;

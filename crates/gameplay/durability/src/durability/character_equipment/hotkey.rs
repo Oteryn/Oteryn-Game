@@ -221,6 +221,7 @@ mod tests {
             content_revision: "c".into(),
             ruleset_revision: "r".into(),
             equipment: vec![],
+            fluids: Default::default(),
             backpack: Some(CharacterBackpack {
                 backpack: InventoryItem {
                     item_instance_id: [1; 16],
@@ -228,6 +229,7 @@ mod tests {
                     quantity: 1,
                 },
                 entries: vec![entry(2, 3), entry(3, 2), entry(4, 1)],
+                fluids: Default::default(),
             }),
             nested: vec![
                 ([2; 16], entry(5, 2)),
