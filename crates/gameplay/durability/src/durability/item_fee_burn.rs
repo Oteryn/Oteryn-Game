@@ -64,6 +64,10 @@ pub mod test_support;
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeBurnCause {
+    /// Crystal bloodshade_sacrifice.lua:69-89; atomic with the access Quest receipt.
+    QuestAccessPurchase {
+        occurrence: [u8; 16],
+    },
     PreyListReroll {
         slot: u8,
         occurrence: [u8; 16],

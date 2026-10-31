@@ -120,6 +120,39 @@ pub(super) async fn consume(
             return Ok(false);
         }
         lock_location(tx, permit, &input).await?;
+        if callback.key == oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE {
+            // Crystal actions_sacrifice.lua:15-18: stage one needs a real
+            // carried tear but consumes none. All other stages use the same
+            // existing atomic BURN and Quest receipt path below.
+            let access: i64 = sqlx::query_scalar(
+                "SELECT coalesce((SELECT value FROM game_character_quest_tracks \
+                 WHERE character_id=encode($1,'hex')::uuid AND track_key=$2),0)",
+            )
+            .bind(fence.character_id.as_bytes().as_slice())
+            .bind(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_TRACK)
+            .fetch_one(&mut **tx)
+            .await?;
+            let state = oteryn_gameplay_quests::quest::rotten_blood::RottenBloodState::from_stored(
+                u8::try_from(access).map_err(|_| DurabilityError::InvalidStoredState)?,
+                0,
+                0,
+                false,
+                false,
+                None,
+            )
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let Ok(change) = state.sacrifice(
+                u32::try_from(input.quantity).map_err(|_| DurabilityError::InvalidStoredState)?,
+            ) else {
+                return Ok(false);
+            };
+            if change.tears_consumed == 0 {
+                return Ok(true);
+            }
+            if change.tears_consumed != u32::from(input.count) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+        }
         inputs.push(input);
     }
     // Stable tile order and then instance order. One item cannot satisfy two altars.

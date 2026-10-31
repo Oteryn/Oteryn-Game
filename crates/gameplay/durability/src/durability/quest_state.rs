@@ -233,6 +233,10 @@ impl QuestStateCopy {
     /// durable value for the source storage action id grants the door.
     #[must_use]
     pub fn meets_door_storage(&self, action: u16) -> bool {
+        // Crystal201189f storages.lua:3069 / torkada.lua:63-85; source door outside the historical generated sample.
+        if action == oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_STORAGE {
+            return self.tracks.get(oteryn_gameplay_quests::quest::rotten_blood::ACCESS_DOOR_TRACK) == Some(&1);
+        }
         // The donor's numeric action names the same storage that quest authoring
         // normalizes to a named track. Resolve that identity before reading the copy.
         #[derive(serde::Deserialize)]
@@ -533,3 +537,8 @@ pub(super) async fn inquisition_blessing_eligible(
     Ok(sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_quest_tracks WHERE character_id=encode($1,'hex')::uuid AND quest_key='oteryn:quest.the_inquisition_quest' AND track_key='oteryn:quest-progress/quest/u8_2/the_inquisition_quest/questline' AND value=25)")
         .bind(character.as_bytes().as_slice()).fetch_one(connection).await?)
 }
+
+pub mod rotten_blood;
+pub mod rotten_blood_access;
+
+pub mod soul_war;

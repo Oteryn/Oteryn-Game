@@ -17,13 +17,19 @@ pub(super) fn check(value: &OneItemFeeBurnV1) -> Result<(), AuditError> {
         | FeeBurnCauseV1::BlessingPurchase(cause)
         | FeeBurnCauseV1::NpcTravel(cause)
         | FeeBurnCauseV1::GemSwitchDomain(cause)
-        | FeeBurnCauseV1::PreyListReroll(cause),
+        | FeeBurnCauseV1::PreyListReroll(cause)
+        | FeeBurnCauseV1::QuestAccessPurchase(cause),
     ) = value.cause.as_ref().and_then(|v| v.cause.as_ref())
         && !cause.atelier_proof.is_empty()
     {
         return Err(AuditError::InvalidInput);
     }
     match value.cause.as_ref().and_then(|value| value.cause.as_ref()) {
+        Some(FeeBurnCauseV1::QuestAccessPurchase(cause))
+            if cause.service_key=="oteryn:service.quest.rotten-blood.access"
+                && value.fee_gold_units==oteryn_gameplay_quests::quest::rotten_blood::ACCESS_PRICE => {
+            check_uuid_v7(&cause.occurrence)
+        }
         Some(FeeBurnCauseV1::PreyListReroll(cause)) if ["oteryn:prey.list_reroll.1","oteryn:prey.list_reroll.2","oteryn:prey.list_reroll.3"].contains(&cause.service_key.as_str()) && value.fee_gold_units>0 && value.fee_gold_units.is_multiple_of(200) => check_uuid_v7(&cause.occurrence),
         Some(FeeBurnCauseV1::MarketFee(cause))
             if (20..=1_000_000).contains(&value.fee_gold_units)
@@ -161,5 +167,44 @@ pub(super) fn atelier_usage(cause: &OneItemNpcPurchaseV1) -> TransactionResource
         participants: count,
         effect_work_units: 3 * count,
         events: 0,
+    }
+}
+
+#[cfg(test)]
+mod rotten_access_tests {
+    use super::*;
+
+    #[test]
+    fn rotten_access_fee_is_closed_to_exact_source_price_and_empty_extra_proof() {
+        let mut occurrence=vec![1;16];
+        occurrence[6]=0x70;
+        occurrence[8]=0x80;
+        let cause=OneItemNpcPurchaseV1 {
+            service_key:"oteryn:service.quest.rotten-blood.access".into(),
+            occurrence,atelier_proof:Vec::new(),
+        };
+        let valid=OneItemFeeBurnV1 {
+            cause:Some(OneItemFeeBurnCauseV1 { cause:Some(FeeBurnCauseV1::QuestAccessPurchase(cause.clone())) }),
+            fee_gold_units:5_000_000,..Default::default()
+        };
+        assert!(check(&valid).is_ok());
+        for price in [0,4_999_999,5_000_001] {
+            let mut value=valid.clone(); value.fee_gold_units=price;
+            assert!(check(&value).is_err());
+        }
+        for case in 0..3 {
+            let mut bad=cause.clone();
+            match case {
+                0 => bad.service_key="oteryn:service.quest.other".into(),
+                1 => bad.occurrence=vec![0;16],
+                _ => bad.atelier_proof=vec![1],
+            }
+            let mut value=valid.clone();
+            value.cause=Some(OneItemFeeBurnCauseV1 { cause:Some(FeeBurnCauseV1::QuestAccessPurchase(bad)) });
+            assert!(check(&value).is_err());
+        }
+        let wire=OneItemFeeBurnCauseV1 { cause:Some(FeeBurnCauseV1::QuestAccessPurchase(cause)) };
+        // Internal type-2 audit tag13 is appended without changing older sources.
+        assert_eq!(wire.encode_to_vec().first(),Some(&106));
     }
 }
