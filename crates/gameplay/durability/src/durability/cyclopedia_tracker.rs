@@ -1,4 +1,4 @@
-//! P22: durable Cyclopedia Bestiary/Bosstiary tracker lists (migration 0570).
+//! P22: durable Cyclopedia Bestiary/Bosstiary tracker lists (migration 0586).
 //!
 //! Crystal keeps both sets on the player (player.cpp:820-865) and saves them as blobs
 //! (iologindata_save_player.cpp:523, :1014); here each tracked creature is one row, so the

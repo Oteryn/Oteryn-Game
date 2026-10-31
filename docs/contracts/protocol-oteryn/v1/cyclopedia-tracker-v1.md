@@ -1,7 +1,7 @@
 # Cyclopedia tracker v1
 
 Capability 197 `CYCLOPEDIA_TRACKER_V1`. Command 383 owns the Bestiary tracker; command 384
-owns the Bosstiary tracker. Both lists are durable per Character (migration 0570) and survive
+owns the Bosstiary tracker. Both lists are durable per Character (migration 0586) and survive
 logout and restart. Donor: Crystal `ProtocolGame::parseCyclopediaMonsterTracker` and
 `refreshCyclopediaMonsterTracker` (`src/server/network/protocol/protocolgame.cpp:2782`,
 `:3171`), Crystal `201189f871d23597b82caf88fd611454a2ddefb8`.
