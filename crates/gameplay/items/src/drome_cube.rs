@@ -28,7 +28,11 @@ pub fn reward_index(content_digest: [u8; 32], source: [u8; 16], quantity: u32) -
 
 fn index_from_entropy(entropy: &[u8]) -> Option<u8> {
     // 240 is the largest multiple of the twenty-entry pool below 256.
-    entropy.iter().copied().find(|byte| *byte < 240).map(|byte| byte % REWARD_COUNT)
+    entropy
+        .iter()
+        .copied()
+        .find(|byte| *byte < 240)
+        .map(|byte| byte % REWARD_COUNT)
 }
 
 pub fn reward(index: u8) -> Option<Concoction> {
@@ -49,7 +53,10 @@ mod tests {
         }
         assert_eq!(counts, [12; 20]);
         for index in 0..REWARD_COUNT {
-            assert_eq!(reward(index).map(Concoction::item_id), Some(36723 + u32::from(index)));
+            assert_eq!(
+                reward(index).map(Concoction::item_id),
+                Some(36723 + u32::from(index))
+            );
         }
         assert_eq!(reward(REWARD_COUNT), None);
         assert_eq!(reward(u8::MAX), None);

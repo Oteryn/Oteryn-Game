@@ -108,12 +108,20 @@ mod tests {
             assert_eq!(kind.index(), index);
             assert_eq!(kind.item_id(), 36723 + index as u32);
             assert_eq!(Concoction::from_item_id(kind.item_id()), Some(kind));
-            assert_eq!(Concoction::from_production_key(kind.production_key()), Some(kind));
+            assert_eq!(
+                Concoction::from_production_key(kind.production_key()),
+                Some(kind)
+            );
         }
         for id in [0, 36722, 36743, 36827, u32::MAX] {
             assert_eq!(Concoction::from_item_id(id), None);
         }
-        for key in ["", "36727", crate::drome_cube::DROME_CUBE_KEY, "oteryn:item.tibia.i036727"] {
+        for key in [
+            "",
+            "36727",
+            crate::drome_cube::DROME_CUBE_KEY,
+            "oteryn:item.tibia.i036727",
+        ] {
             assert_eq!(Concoction::from_production_key(key), None);
         }
     }
