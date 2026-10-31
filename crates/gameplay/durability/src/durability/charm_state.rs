@@ -41,6 +41,8 @@ use std::collections::BTreeMap;
 use std::future::Future;
 use std::sync::Arc;
 
+pub mod echo_warden;
+
 type Result<T> = std::result::Result<T, CharmStateError>;
 const COMMAND_BINDING_VERSION: u8 = 1;
 const CATALOGUE_DIGEST_VERSION: u8 = 1;
@@ -544,9 +546,10 @@ impl DurabilityRoot {
                             .map_err(|_| DurabilityError::InvalidStoredState)?;
                         bestiary_counts.insert(key, count);
                     }
-                    let points = facts
+                    let mut points = facts
                         .completed_entry_charm_points(&mut tx, fence.character_id)
                         .await?;
+                    points.extend(echo_warden::earned_points(&mut tx, fence.character_id).await?);
                     let promoted = facts.promoted(&mut tx, fence.character_id).await?;
                     let slot_entitlement =
                         facts.slot_entitlement(&mut tx, fence.character_id).await?;
@@ -649,9 +652,10 @@ impl DurabilityRoot {
                     let current = load_charm_state(&mut tx, fence.character_id).await?;
                     let effect = match &request.command {
                         CharmCommand::UnlockNextStage { charm } => {
-                            let points = facts
+                            let mut points = facts
                                 .completed_entry_charm_points(&mut tx, fence.character_id)
                                 .await?;
+                            points.extend(echo_warden::earned_points(&mut tx, fence.character_id).await?);
                             let promoted = facts.promoted(&mut tx, fence.character_id).await?;
                             let planned = derive_balance(
                                 &request.catalogue,
@@ -1254,10 +1258,12 @@ mod tests {
         assert_eq!(
             view.assignments_for_race("oteryn:creature.rat")
                 .expect("assignment"),
-            [oteryn_gameplay_progression::charm_effects::CharmAssignment {
-                charm_key: "oteryn:charm.wound".to_owned(),
-                unlocked_stage: 2,
-            }]
+            [
+                oteryn_gameplay_progression::charm_effects::CharmAssignment {
+                    charm_key: "oteryn:charm.wound".to_owned(),
+                    unlocked_stage: 2,
+                }
+            ]
         );
     }
 

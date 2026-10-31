@@ -135,6 +135,7 @@ pub mod reward_claim_mint;
 pub mod reward_claim_mint_audit;
 pub mod runtime_scope_assignment;
 mod schema;
+pub mod soulpit;
 pub mod spell_character_lookup;
 pub mod spell_familiar_group;
 pub mod spell_field_policy;

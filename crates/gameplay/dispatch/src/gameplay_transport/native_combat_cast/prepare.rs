@@ -877,6 +877,7 @@ fn prepare_preview(
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
     let preview_requests = delayed_strikes::requests(
+        runtime,
         &preview_lowered,
         delayed_plan.as_ref(),
         delayed,
@@ -1082,6 +1083,7 @@ fn prepare_payment(
         )
         .map_err(|_| SpellCastDisposition::Rejected)?;
     let requests = delayed_strikes::requests(
+        runtime,
         &lowered,
         delayed_plan.as_ref(),
         delayed,

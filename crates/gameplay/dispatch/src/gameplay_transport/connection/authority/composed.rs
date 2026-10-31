@@ -667,6 +667,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_item_definition(actor, command, definition).await
     }
 
+    async fn use_soulpit_items(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Result<Option<UseOutcome>, ()> {
+        self.dispatch_soulpit_items(actor, command, &intent, source, target)
+            .await
+    }
+
     async fn use_craft(
         &self,
         actor: ExactActorRef,

@@ -411,6 +411,31 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     damage,
                     (swing.lineage.command_id().get(), ordinal),
                 );
+                // Soulpit Intense Hex reads the actual canonical condition slot. The raw
+                // melee/distance/wand request is reduced before armor and PvP splitting.
+                let Ok(conditions) =
+                    runtime.actor_conditions_at(entry.actor, Some(entry.session), now.get())
+                else {
+                    continue;
+                };
+                let Some(player) = states.get(&runtime, entry.actor, entry.session) else {
+                    continue;
+                };
+                let Some(retained) = player.conditions.damage_dealt_percent_with_hex_at(
+                    now.get(),
+                    conditions.intense_hex_delta_at(now.get()),
+                ) else {
+                    continue;
+                };
+                let Some(damage) = damage
+                    .checked_mul(i64::from(retained))
+                    .map(|value| value / 100)
+                else {
+                    continue;
+                };
+                if damage < 0 {
+                    continue;
+                }
                 if !runtime.contains_live_creature(target) {
                     let black = if extension {
                         self.pvp_target_legal(
