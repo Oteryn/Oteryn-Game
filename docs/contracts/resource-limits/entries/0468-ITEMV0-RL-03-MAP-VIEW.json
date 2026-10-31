@@ -19,5 +19,5 @@
     "crates/protocol-oteryn/src/item_view.rs MAX_LIVE_ITEM_HANDLES_MAP_VIEW",
     "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
   ],
-  "notes": "MAP-WIRE-1 \u00a73 Handle budget. With capabilities 14 and 18 the bound is 651 + 1,024 = 1,675. Tests: item_view::tests, gameplay_transport::item_view::tests. Registered by OTV2-20261004-map-wire-2."
+  "notes": "MAP-WIRE-1 \u00a73 Handle budget. With capabilities 14 and 18 the bound is 651 + 1,024 = 1,675. Tests: item_view::tests, gameplay_transport::item_view::tests. Registered by OTV2-20261004-map-wire-2. Capability 230 requires capabilities 14 and 18 and selects an 811-handle browse base, for 811 + 1,024 = 1,835 handles; the 1,024 map allowance and all pre-browse bounds stay unchanged. See docs/contracts/protocol-oteryn/v1/browse-field-v1.md."
 }

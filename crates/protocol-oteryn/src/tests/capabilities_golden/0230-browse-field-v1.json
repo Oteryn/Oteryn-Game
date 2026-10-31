@@ -1,0 +1,20 @@
+{
+  "id": 230,
+  "name": "BROWSE_FIELD_V1",
+  "constant": "browse_field::CAPABILITY_BROWSE_FIELD_V1",
+  "requires": [
+    14,
+    18
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    440
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}
