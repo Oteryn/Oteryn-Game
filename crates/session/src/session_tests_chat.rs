@@ -110,7 +110,7 @@ fn the_advertised_set_carries_chat_and_stays_closed() {
     // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
-        &[4, 6, 7, 13, 16, 17, 18, 21, 25, 31, 36, 37]
+        &[4, 6, 7, 11, 13, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 91, 147]
     );
 }
 

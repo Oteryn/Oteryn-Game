@@ -26,6 +26,8 @@ use crate::content::{
 use crate::durability::character_authority::SERVER_BUILD_ID;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::durability::item_transfer::BackpackEntry;
+use crate::durability::item_transfer::CurrentCharacterItemFence;
+use crate::durability::item_use::fluid::{ItemFluidChange, ItemFluidOutcome, ItemFluidRequest};
 use crate::durability::item_use::{
     ItemUseError, ItemUseFlaskPlan, ItemUseInventory, ItemUseKind, ItemUseOutcome, ItemUseRequest,
 };
@@ -112,6 +114,16 @@ impl ItemUseGate {
             return Err(UseDisposition::Exhausted);
         }
         *ready = now_ms.saturating_add(cooldown);
+        self.in_flight_since_ms = Some(now_ms);
+        Ok(())
+    }
+
+    /// PREPARE of a drink: Crystal's fluid action has no cooldown of its own, so only the one
+    /// use in flight and `ITEMUSE0-RL-01` (at admission) bound it.
+    fn start_drink(&mut self, now_ms: u64) -> Result<(), UseDisposition> {
+        if self.in_flight_since_ms.is_some() {
+            return Err(UseDisposition::Exhausted);
+        }
         self.in_flight_since_ms = Some(now_ms);
         Ok(())
     }
@@ -301,6 +313,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .find(|entry| entry.item.item_instance_id == source)
             .ok_or(UseDisposition::StaleState)?;
         let record = record(native, &entry.item.definition);
+        if let Some(record) = record
+            && let ReferenceItemField::Known(_) = &record.semantics.fluid
+        {
+            let fluid = inventory.fluids.get(&source).copied().unwrap_or(0);
+            let definition = entry.item.definition.clone();
+            return self
+                .drink(actor, &command, fence, source, definition, fluid)
+                .await;
+        }
         let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
             None if entry.item.definition.production_key
                 == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
@@ -424,6 +445,225 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         Ok(disposition)
     }
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    /// I10a: drink from a carried fluid container (Crystal 201189f8
+    /// `data/scripts/actions/items/fluids.lua:48-65`, the use on oneself). An empty one is
+    /// `NothingToUse` ("It is empty."); otherwise the container is emptied by
+    /// `commit_item_fluid` and only a known commit applies the fluid's effect.
+    async fn drink(
+        &self,
+        actor: ExactActorRef,
+        command: &UseCommand,
+        fence: CurrentCharacterItemFence,
+        source: [u8; 16],
+        definition: TypedDefinitionRef,
+        fluid: u8,
+    ) -> Result<UseDisposition, UseDisposition> {
+        if fluid == 0 {
+            return Err(UseDisposition::NothingToUse);
+        }
+        let request = ItemFluidRequest {
+            command_id: command.command_id,
+            transaction_id: crate::operator_files::uuid_v7()
+                .map_err(|_| UseDisposition::Rejected)?,
+            change: ItemFluidChange {
+                item_instance_id: source,
+                definition,
+                fluid_before: fluid,
+                fluid_after: 0,
+            },
+            other: None,
+        };
+        self.commit_fluid(actor, command, fence, request, drink_restore(fluid))
+            .await
+    }
+
+    /// I10a: use a carried fluid container on another carried one (Crystal `fluids.lua:39-48`):
+    /// a filled one pours into an empty one, an empty one fills from a filled one. `None` when
+    /// either item is not a carried fluid container, so other use-with owners may take it.
+    pub(super) async fn pour_fluid(
+        &self,
+        actor: ExactActorRef,
+        command: UseCommand,
+        source: ItemKey,
+        target: ItemKey,
+    ) -> Option<UseOutcome> {
+        let (ItemKey::Instance(source), ItemKey::Instance(target)) = (source, target) else {
+            return None;
+        };
+        let native = self.active_generation?.native_gameplay()?;
+        let disposition = match self
+            .pour_fluid_between(actor, &command, native, source, target)
+            .await
+        {
+            Some(Ok(disposition) | Err(disposition)) => disposition,
+            None => return None,
+        };
+        Some(UseOutcome {
+            disposition,
+            committed: None,
+            earned: EarnedNotice::NoneEarned,
+            gate_message_id: None,
+            refusal_detail: None,
+        })
+    }
+
+    async fn pour_fluid_between(
+        &self,
+        actor: ExactActorRef,
+        command: &UseCommand,
+        native: &NativeGameplayState,
+        source: [u8; 16],
+        target: [u8; 16],
+    ) -> Option<Result<UseDisposition, UseDisposition>> {
+        let Some(fence) = command.item_fence else {
+            return Some(Err(UseDisposition::Rejected));
+        };
+        let inventory = match self
+            .root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+        {
+            Ok(inventory) => inventory,
+            Err(_) => return Some(Err(UseDisposition::Rejected)),
+        };
+        let carried = |id: [u8; 16]| {
+            let backpack = inventory.backpack.as_ref()?;
+            let entry = backpack
+                .entries
+                .iter()
+                .chain(inventory.nested.iter().map(|(_, entry)| entry))
+                .find(|entry| entry.item.item_instance_id == id)?;
+            let record = record(native, &entry.item.definition)?;
+            matches!(record.semantics.fluid, ReferenceItemField::Known(_)).then(|| {
+                let fluid = inventory.fluids.get(&id).copied().unwrap_or(0);
+                (entry.item.definition.clone(), fluid)
+            })
+        };
+        let ((source_definition, from), (target_definition, to)) =
+            (carried(source)?, carried(target)?);
+        if source == target {
+            return Some(Err(UseDisposition::NothingToUse));
+        }
+        // Only a whole move between a filled and an empty container is modelled; pouring onto
+        // the ground (`fluids.lua:66-81`, pool 2886) is not (`PARITY_PENDING`).
+        let fluid = match (from, to) {
+            (0, 0) => return Some(Err(UseDisposition::NothingToUse)),
+            (0, fluid) | (fluid, 0) => fluid,
+            _ => return Some(Err(UseDisposition::Rejected)),
+        };
+        let change = |item, definition, before| ItemFluidChange {
+            item_instance_id: item,
+            definition,
+            fluid_before: before,
+            fluid_after: if before == 0 { fluid } else { 0 },
+        };
+        let Ok(transaction_id) = crate::operator_files::uuid_v7() else {
+            return Some(Err(UseDisposition::Rejected));
+        };
+        let request = ItemFluidRequest {
+            command_id: command.command_id,
+            transaction_id,
+            change: change(source, source_definition, from),
+            other: Some(change(target, target_definition, to)),
+        };
+        // Lock order (SPELL-LOCK-2 §1.2): the lane before any Channel guard, as every use.
+        let Some(_permit) = self.spell_lane_permit().await else {
+            return Some(Err(UseDisposition::Rejected));
+        };
+        {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            let session = command.game_session_id;
+            if states.is_dead(actor) || !states.spell_idle(&runtime, actor, session) {
+                return Some(Err(UseDisposition::Rejected));
+            }
+            let Some(gate) = states.item_uses.gate(&runtime, actor, session) else {
+                return Some(Err(UseDisposition::Rejected));
+            };
+            if let Err(disposition) = gate.admit(command.command_id, self.owner_ms()) {
+                return Some(Err(disposition));
+            }
+        }
+        Some(
+            self.commit_fluid(actor, command, fence, request, None)
+                .await,
+        )
+    }
+
+    /// PREPARE, commit and settle of one fluid command; only a known commit applies `restore`.
+    async fn commit_fluid(
+        &self,
+        actor: ExactActorRef,
+        command: &UseCommand,
+        fence: CurrentCharacterItemFence,
+        request: ItemFluidRequest,
+        restore: Option<ReferencePotionRestore>,
+    ) -> Result<UseDisposition, UseDisposition> {
+        let session = command.game_session_id;
+        let reserved: Vec<[u8; 16]> = std::iter::once(request.change.item_instance_id)
+            .chain(request.other.as_ref().map(|other| other.item_instance_id))
+            .collect();
+        {
+            let runtime = self.runtime.lock().await;
+            let mut states = self.states.spell_states.lock().await;
+            let gate = states.item_uses.gate(&runtime, actor, session);
+            let gate = gate.ok_or(UseDisposition::Rejected)?;
+            if reserved.iter().any(|id| gate.unspendable.contains(id)) {
+                return Err(UseDisposition::StaleState);
+            }
+            gate.start_drink(self.owner_ms())?;
+        }
+        let commit = self
+            .root
+            .commit_item_fluid(self.character, self.holder, fence, request);
+        let bound = Duration::from_millis(ITEMUSE0_RL_04_AMBIGUOUS_MS);
+        let (disposition, known_commit, ambiguous) = match tokio::time::timeout(bound, commit).await
+        {
+            Ok(Ok(ItemFluidOutcome::Written)) => (UseDisposition::Committed, true, false),
+            Ok(Ok(ItemFluidOutcome::AlreadyCommitted)) => (UseDisposition::Committed, false, false),
+            Ok(Err(ItemUseError::StaleState)) => (UseDisposition::StaleState, false, false),
+            Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => {
+                (UseDisposition::Rejected, false, true)
+            }
+            Ok(Err(_)) => (UseDisposition::Rejected, false, false),
+        };
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if known_commit && let Some(restore) = restore {
+            apply_effect(
+                &runtime,
+                &mut states,
+                actor,
+                session,
+                command.command_id,
+                &Effect::Potion(vec![restore]),
+                self.owner_ms(),
+            );
+        }
+        if let Some(gate) = states.item_uses.gate(&runtime, actor, session) {
+            gate.settle(
+                command.command_id,
+                disposition,
+                if ambiguous { &reserved } else { &[] },
+            );
+        }
+        Ok(disposition)
+    }
+}
+
+/// Crystal `fluids.lua:55-62`: mana fluid (7) restores `math.random(50, 150)` mana and life
+/// fluid (10) `addHealth(60)`. The drunk (3, 15, 43) and poison (4) conditions are not modelled
+/// (`PARITY_PENDING`); every other fluid is only drunk.
+fn drink_restore(fluid: u8) -> Option<ReferencePotionRestore> {
+    let (resource, min, max) = match fluid {
+        7 => (ReferenceRestoreResource::Mana, 50, 150),
+        10 => (ReferenceRestoreResource::Health, 60, 60),
+        _ => return None,
+    };
+    Some(ReferencePotionRestore { resource, min, max })
 }
 
 fn unix_ms() -> Result<i64, ()> {
@@ -581,6 +821,22 @@ mod tests {
         let entries = registry["entries"].as_array().expect("entries");
         let entry = entries.iter().find(|entry| entry["id"] == id).expect(id);
         entry["hard_maximum"].as_u64().expect("hard maximum")
+    }
+
+    #[test]
+    fn drinking_restores_only_mana_and_life_fluid() {
+        let restore = |fluid| drink_restore(fluid).map(|r| (r.resource, r.min, r.max));
+        assert_eq!(restore(7), Some((ReferenceRestoreResource::Mana, 50, 150)));
+        assert_eq!(
+            restore(10),
+            Some((ReferenceRestoreResource::Health, 60, 60))
+        );
+        assert_eq!(restore(1), None);
+        let mut gate = ItemUseGate::default();
+        assert_eq!(gate.start_drink(10), Ok(()));
+        assert_eq!(gate.start_drink(11), Err(UseDisposition::Exhausted));
+        gate.settle(1, UseDisposition::Committed, &[]);
+        assert_eq!(gate.start_drink(12), Ok(()));
     }
 
     #[test]

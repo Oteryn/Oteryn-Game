@@ -701,9 +701,11 @@ impl DurabilityRoot {
                     let backpack = match load_slot(&mut tx, character_id).await? {
                         Some(slot) => {
                             let entries = load_entries(&mut tx, slot.item_instance_id).await?;
+                            let fluids = load_fluids(&mut tx, &entries).await?;
                             Some(CharacterBackpack {
                                 backpack: slot,
                                 entries,
+                                fluids,
                             })
                         }
                         None => None,
@@ -1401,6 +1403,33 @@ pub async fn load_slot(
 
 /// Direct entries of `parent`, newest first; bounded by the registered
 /// container ceiling (a larger stored set is invalid state).
+/// I10a: the fluid sub-type of each of `entries` that holds one (`game_item_fluid_states`).
+pub async fn load_fluids(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    entries: &[BackpackEntry],
+) -> std::result::Result<std::collections::BTreeMap<[u8; 16], u8>, DurabilityError> {
+    let ids: Vec<&[u8]> = entries
+        .iter()
+        .map(|entry| entry.item.item_instance_id.as_slice())
+        .collect();
+    let rows = sqlx::query(
+        "SELECT item_instance_id::text, fluid_subtype FROM game_item_fluid_states \
+          WHERE item_instance_id = ANY(SELECT encode(x,'hex')::uuid FROM unnest($1::bytea[]) x)",
+    )
+    .bind(ids)
+    .fetch_all(&mut **tx)
+    .await?;
+    rows.iter()
+        .map(|row| {
+            Ok((
+                uuid_text(row.try_get("item_instance_id")?)?,
+                u8::try_from(row.try_get::<i16, _>("fluid_subtype")?)
+                    .map_err(|_| DurabilityError::InvalidStoredState)?,
+            ))
+        })
+        .collect()
+}
+
 pub async fn load_entries(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     parent: [u8; 16],

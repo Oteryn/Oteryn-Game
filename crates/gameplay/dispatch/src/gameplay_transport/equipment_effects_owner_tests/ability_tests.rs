@@ -22,6 +22,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // The coin converters 23722/25719/28525/28526 (tools/content-migration/coin_converter_profiles.py).
     // All have speed_bonus=0.
     ("GOLDCONV", 4),
+    // I05 admits the inactive and active dwarven-ring forms 3097/3099 (speed_bonus=0).
+    ("I05", 2),
+    // I10a: the podiums 35973/35974, 38707 and 42367/42368
+    // (tools/content-migration/podium_item_profiles.py). All have speed_bonus=0.
+    ("I10A-PODIUM", 5),
     // I14: seven restore potions, two foods and the two larger flasks admitted from
     // digest-pinned consumption facts. They carry no equipment/speed qualification.
     ("I14", 11),
@@ -81,6 +86,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("REWARD-BAG-2", 36),
     // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
     ("TIMEDITEMS2-1", 2),
+    // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
+    // 3477..=3480 (tools/content-migration/fluid_container_profiles.py). All have speed_bonus=0.
+    ("W18-FLUID", 20),
     // M08/M09: the eleven qualified shovel, machete, rod/bait/water and target policies
     // in tool-item-profiles.json. The source importer records speed_bonus=0.
     ("TOOLS-PKG4", 11),
@@ -202,6 +210,40 @@ fn equipment_effects_owner_time_ring_grants_speed_only_in_ring_slot() -> TestRes
             Some(if slot == 8 { 30 } else { 0 }),
             "slot {slot}"
         );
+    }
+    Ok(())
+}
+
+/// I05: custody keeps the inactive time ring 3053; worn, it takes the active 3090's +30 speed
+/// (Crystal `items.xml`, `transformEquipTo` 3090, `speed` 30) in the ring slot only.
+#[test]
+fn equipment_effects_owner_inactive_time_ring_takes_worn_speed_only_in_ring_slot() -> TestResult {
+    let content = native(&input()?)?;
+    for slot in 1..=10 {
+        let equipment = snapshot(&content, "oteryn:item.tibia.i3053", slot);
+        assert_eq!(
+            speed_term(&equipment, &content),
+            Some(if slot == 8 { 30 } else { 0 }),
+            "slot {slot}"
+        );
+    }
+    Ok(())
+}
+
+/// I05: the active dwarven ring 3099 (Crystal `items.xml:7477-7489`, `suppressdrunk`) suppresses
+/// drunkenness in the ring slot only.
+#[test]
+fn equipment_effects_owner_dwarven_ring_suppresses_drunk_only_in_ring_slot() -> TestResult {
+    let content = native(&input()?)?;
+    for slot in 1..=10 {
+        let equipment = snapshot(&content, "oteryn:item.tibia.i3099", slot);
+        let effects = equipment_effects(&equipment, &content).ok_or("effects")?;
+        let expected: std::collections::BTreeSet<_> = if slot == 8 {
+            [AbilitySuppression::Drunk].into_iter().collect()
+        } else {
+            Default::default()
+        };
+        assert_eq!(effects.suppressions, expected, "slot {slot}");
     }
     Ok(())
 }

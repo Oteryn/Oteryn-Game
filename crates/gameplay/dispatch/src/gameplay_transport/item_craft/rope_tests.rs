@@ -36,12 +36,14 @@ fn inventory() -> crate::durability::item_use::ItemUseInventory {
         equipment: vec![],
         nested: vec![],
         keys: vec![],
+        fluids: Default::default(),
         backpack: Some(CharacterBackpack {
             backpack: item(5, "oteryn:item.tibia.i2854"),
             entries: vec![BackpackEntry {
                 item: item(6, "oteryn:item.tibia.i3003"),
                 placement_ordinal: 1,
             }],
+            fluids: Default::default(),
         }),
     }
 }

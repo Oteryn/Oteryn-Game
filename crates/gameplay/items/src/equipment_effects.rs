@@ -63,8 +63,12 @@ pub fn derive_equipment_effects(
         }
         item.profile.abilities.sort();
         for ability in item.profile.abilities {
-            // The timed owner admits speed; other timed abilities retain EQUIP-0's exclusion.
-            if item.profile.timed && !matches!(ability, ItemAbility::Speed(_)) {
+            // The timed owner admits speed and suppression (I05: the worn dwarven ring's
+            // suppressdrunk, Crystal items.xml:7477-7489); other timed abilities retain
+            // EQUIP-0's exclusion.
+            if item.profile.timed
+                && !matches!(ability, ItemAbility::Speed(_) | ItemAbility::Suppress(_))
+            {
                 continue;
             }
             if !contributes_speed && !matches!(ability, ItemAbility::Light { .. }) {

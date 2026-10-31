@@ -111,6 +111,8 @@ pub struct BackpackEntry {
 pub struct CharacterBackpack {
     pub backpack: InventoryItem,
     pub entries: Vec<BackpackEntry>,
+    /// I10a: the fluid sub-type of each filled fluid container among the entries (0560).
+    pub fluids: std::collections::BTreeMap<[u8; 16], u8>,
 }
 
 /// Where a live TRANSFER source currently is (D3-5). A live item is on at

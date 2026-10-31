@@ -8,7 +8,7 @@ import copy
 import hashlib
 import json
 
-IDS = {3051, 3053, 3081, 3088, 3090, 3549, 6529, 6530}
+IDS = {3051, 3053, 3081, 3088, 3090, 3097, 3099, 3549, 6529, 6530}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):
@@ -38,6 +38,14 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             base = definitions['oteryn:item.tibia.i3053']['semantics']
             for group in ('equipment', 'stack', 'physical'):
                 semantics[group] = copy.deepcopy(base[group])
+        # I05: Crystal 201189f8 data/items/items.xml:7458-7489: dwarven ring 3097 ->
+        # 3099, suppressdrunk=1, duration=3600, stopduration on the base, deequip=3097,
+        # decayTo=0. TibiaWiki (Global) agrees: one hour, any vocation. The active
+        # form carries the definition's SUPPRESS_DRUNK and inherits base wearability.
+        if key == 'oteryn:item.tibia.i3099':
+            base = definitions['oteryn:item.tibia.i3097']['semantics']
+            for group in ('equipment', 'stack', 'physical'):
+                semantics[group] = copy.deepcopy(base[group])
         # ENERGY-RING-1: the active form inherits the wiki's existing wearable facts,
         # including KNIGHT/MONK/PALADIN (never Canary's older vocation list).
         # Pinned Canary 04b83b51 data/items/items.xml: 3051 -> 3088, manashield=1,
@@ -64,7 +72,8 @@ def admit(root, generated, profile_path, manifest_path, order, canonical):
             for pattern in semantics['equipment']['value']['patterns']['value']:
                 if key not in ('oteryn:item.tibia.i3051', 'oteryn:item.tibia.i3088'):
                     pattern['vocations'] = {'state': 'KNOWN', 'value': []}
-                if key in ('oteryn:item.tibia.i3053', 'oteryn:item.tibia.i3090'):
+                if key in ('oteryn:item.tibia.i3053', 'oteryn:item.tibia.i3090',
+                           'oteryn:item.tibia.i3097', 'oteryn:item.tibia.i3099'):
                     pattern['vocations']['value'] = ['DRUID', 'KNIGHT', 'MONK', 'PALADIN', 'SORCERER']
                 pattern['level'] = {'state': 'KNOWN', 'value': 0}
         document['records'].append({

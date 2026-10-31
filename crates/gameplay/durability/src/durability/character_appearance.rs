@@ -311,6 +311,44 @@ impl DurabilityRoot {
     }
 }
 
+/// W18: whether the fenced Character may wear `target` on a house podium, under the same
+/// starter-or-earned rules as its own look (Crystal 201189f8 `game.cpp:4692-4699`
+/// `canWearOutfit` / `hasMount`). Addons are not displayed and are never asked for.
+pub(super) async fn podium_cosmetic_owned<C: AppearanceContent<String>>(
+    connection: &mut sqlx::PgConnection,
+    character: CharacterId,
+    content: &C,
+    target: crate::domain::appearance::EarnedCosmetic<'_>,
+) -> Result<bool, DurabilityError> {
+    use crate::domain::appearance::{AccountUnlocks, EarnedCosmetic, EarnedCosmetics, UnlockFact};
+    // Only an outfit depends on sex; a mount is the account's (`hasMount`).
+    let sex = match target {
+        EarnedCosmetic::Outfit(_) => match character_sex::read(&mut *connection, character).await {
+            Ok(sex) => Some(sex),
+            Err(AppearanceWriteError::Unavailable(error)) => return Err(error),
+            Err(_) => return Ok(false),
+        },
+        _ => None,
+    };
+    let facts = earned_unlocks::read(connection, character, &content.earned_grant_keys())
+        .await
+        .map_err(read_storage_error)?;
+    let unlocks = EarnedCosmetics { content, facts: &facts };
+    Ok(match target {
+        EarnedCosmetic::Outfit(key) => {
+            let key = key.to_owned();
+            content.outfit_addon_count(&key).is_some()
+                && (sex.is_some_and(|sex| content.outfit_is_starter(&key, sex))
+                    || unlocks.outfit(&key) == UnlockFact::Compatible)
+        }
+        EarnedCosmetic::Mount(key) => {
+            let key = key.to_owned();
+            content.mount_exists(&key) && unlocks.mount(&key) == UnlockFact::Compatible
+        }
+        EarnedCosmetic::Addon(..) => false,
+    })
+}
+
 fn read_storage_error(error: AppearanceReadError) -> DurabilityError {
     match error {
         AppearanceReadError::InvalidStoredState => DurabilityError::InvalidStoredState,
