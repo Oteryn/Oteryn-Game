@@ -7,7 +7,7 @@
 -- item identity through every move; an item never minted with a row is empty.
 --
 -- The runtime writes a fill or an empty only through `commit_item_fluid`, which runs under the
--- holder's current item fence and records exactly one transition per CommandRef.
+-- holder's current item fence and records one transition per changed container and CommandRef.
 
 CREATE TABLE game_item_fluid_states (
     item_instance_id UUID PRIMARY KEY,
@@ -20,7 +20,7 @@ CREATE TABLE game_item_fluid_states (
 );
 
 CREATE TABLE game_item_fluid_transitions (
-    transaction_id UUID PRIMARY KEY CHECK (game_character_is_uuid_v7(transaction_id)),
+    transaction_id UUID NOT NULL CHECK (game_character_is_uuid_v7(transaction_id)),
     game_session_id UUID NOT NULL CHECK (game_character_is_uuid_v7(game_session_id)),
     command_id NUMERIC(20,0) NOT NULL CHECK (command_id BETWEEN 1 AND 18446744073709551615),
     character_id UUID NOT NULL REFERENCES game_character_roots (character_id),
@@ -29,7 +29,9 @@ CREATE TABLE game_item_fluid_transitions (
     fluid_after SMALLINT NOT NULL CHECK (fluid_after BETWEEN 0 AND 255),
     CHECK (fluid_before <> fluid_after),
     created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
-    UNIQUE (game_session_id, command_id)
+    -- One command changes one container, or two when it pours one into the other.
+    PRIMARY KEY (transaction_id, item_instance_id),
+    UNIQUE (game_session_id, command_id, item_instance_id)
 );
 
 -- A state row changes only together with the transition that names it, in the same transaction.

@@ -615,6 +615,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn use_fluid_container(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        source: item_view::ItemKey,
+        target: item_view::ItemKey,
+    ) -> Option<UseOutcome> {
+        self.pour_fluid(actor, command, source, target).await
+    }
+
     async fn use_item_by_definition(
         &self,
         actor: ExactActorRef,

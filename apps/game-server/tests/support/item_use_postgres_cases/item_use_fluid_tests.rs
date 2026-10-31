@@ -1,23 +1,31 @@
 use super::*;
-use crate::durability::item_use::fluid::{ItemFluidOutcome, ItemFluidRequest};
+use crate::durability::item_use::fluid::{ItemFluidChange, ItemFluidOutcome, ItemFluidRequest};
 
 // I10a (migration 0560): a carried vial is filled and emptied through `commit_item_fluid` under
 // the Character's item fence. Only setup bypasses guards.
 const VIAL: u8 = 140;
 const LOOSE_VIAL: u8 = 210;
+const CUP: u8 = 220;
 // Crystal 201189f8 `data/items/items.xml`: 2874 "vial", a fluid container.
 const VIAL_KEY: &str = "oteryn:item.tibia.i2874";
 // Crystal `fluids.lua`: sub-type 7 is mana fluid (`addMana(math.random(50, 150))`).
 const MANA: u8 = 7;
 
-fn fluid(command: u64, tx: u8, item: u8, before: u8, after: u8) -> ItemFluidRequest {
-    ItemFluidRequest {
-        command_id: command,
-        transaction_id: id(tx),
+fn change(item: u8, before: u8, after: u8) -> ItemFluidChange {
+    ItemFluidChange {
         item_instance_id: id(item),
         definition: definition(VIAL_KEY),
         fluid_before: before,
         fluid_after: after,
+    }
+}
+
+fn fluid(command: u64, tx: u8, item: u8, before: u8, after: u8) -> ItemFluidRequest {
+    ItemFluidRequest {
+        command_id: command,
+        transaction_id: id(tx),
+        change: change(item, before, after),
+        other: None,
     }
 }
 
@@ -68,6 +76,8 @@ async fn seed_vials(used: &Use) -> TestResult {
     script.push_str(&entry(VIAL, BACKPACK, 6));
     // A vial of the World that no backpack holds.
     script.push_str(&item(LOOSE_VIAL, VIAL_KEY, 1));
+    script.push_str(&item(CUP, VIAL_KEY, 1));
+    script.push_str(&entry(CUP, BACKPACK, 7));
     let mut tx = used.harness.pool.begin().await?;
     sqlx::query("SET LOCAL session_replication_role = replica")
         .execute(&mut *tx)
@@ -119,6 +129,40 @@ fn a_carried_vial_is_filled_and_emptied_once_per_command() -> TestResult {
             Err(ItemUseError::AuthorityRejected)
         ));
         assert_eq!(used.fluid_of(VIAL).await?, Some(i16::from(MANA)));
+        // Pouring the vial into the empty cup moves the whole fluid in one command
+        // (`fluids.lua:39-48`); a pour that is not a whole move is refused.
+        let pour = |command, tx| ItemFluidRequest {
+            other: Some(change(CUP, 0, MANA)),
+            ..fluid(command, tx, VIAL, MANA, 0)
+        };
+        assert!(matches!(
+            used.change_fluid(&ItemFluidRequest {
+                other: Some(change(CUP, 0, 1)),
+                ..fluid(36, 162, VIAL, MANA, 0)
+            })
+            .await,
+            Err(ItemUseError::InvalidInput)
+        ));
+        assert_eq!(
+            used.change_fluid(&pour(37, 164)).await.map_err(debug)?,
+            ItemFluidOutcome::Written
+        );
+        assert_eq!(used.fluid_of(VIAL).await?, None);
+        assert_eq!(used.fluid_of(CUP).await?, Some(i16::from(MANA)));
+        assert_eq!(
+            used.change_fluid(&pour(37, 164)).await.map_err(debug)?,
+            ItemFluidOutcome::AlreadyCommitted
+        );
+        // Pouring back fills the vial again.
+        assert_eq!(
+            used.change_fluid(&ItemFluidRequest {
+                other: Some(change(VIAL, 0, MANA)),
+                ..fluid(38, 166, CUP, MANA, 0)
+            })
+            .await
+            .map_err(debug)?,
+            ItemFluidOutcome::Written
+        );
         // Drinking empties it.
         assert_eq!(
             used.change_fluid(&fluid(34, 158, VIAL, MANA, 0))
@@ -127,7 +171,7 @@ fn a_carried_vial_is_filled_and_emptied_once_per_command() -> TestResult {
             ItemFluidOutcome::Written
         );
         assert_eq!(used.fluid_of(VIAL).await?, None);
-        assert_eq!(used.harness.count("game_item_fluid_transitions").await?, 2);
+        assert_eq!(used.harness.count("game_item_fluid_transitions").await?, 6);
         assert!(matches!(
             used.change_fluid(&fluid(35, 160, VIAL, 0, 0)).await,
             Err(ItemUseError::InvalidInput)
