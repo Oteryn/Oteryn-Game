@@ -204,7 +204,7 @@ BEGIN
               AND r.committed_character_revision=c.character_revision
               AND r.result->'refusal'='null'::jsonb
               AND (r.before_state-'access_stage')=predecessor
-              AND (r.result->'state'-'access_stage')=to_jsonb(NEW)-'character_id'
+              AND ((r.result->'state')-'access_stage'::text)=to_jsonb(NEW)-'character_id'
     ) THEN
         RAISE EXCEPTION 'Rotten Blood state lacks its same-transaction Character receipt' USING ERRCODE='23514';
     END IF;
@@ -217,7 +217,7 @@ BEGIN
     IF NEW.committed_character_revision IS NOT NULL AND NOT EXISTS(
         SELECT 1 FROM game_character_rotten_blood s
             WHERE s.character_id=NEW.character_id
-              AND to_jsonb(s)-'character_id'=NEW.result->'state'-'access_stage'
+              AND to_jsonb(s)-'character_id'=(NEW.result->'state')-'access_stage'::text
     ) THEN
         RAISE EXCEPTION 'Rotten Blood Character receipt lacks its state successor' USING ERRCODE='23514';
     END IF;
