@@ -782,6 +782,26 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .commit_monster_lab_damage(creature.actor, b"party-xp-foreign-fixture", health - 1)
             .map_err(debug)?;
     }
+    if matches!(case, Case::Foreign) {
+        // The foreign and leader shares came from real swings. Leave one HP so the
+        // member's first landed swing kills while the leader's activity is recent.
+        // Lab damage has no character and does not enter reward_damage_shares.
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        runtime
+            .commit_monster_lab_damage(creature.actor, b"party-xp-foreign-fixture", health - 1)
+            .map_err(debug)?;
+    }
+    if matches!(case, Case::Concurrent) {
+        // The leader's real swings qualify activity. Leave one HP so the member's
+        // first landed swing kills before content-seeded misses make that activity stale.
+        // Lab damage has no character and does not enter reward_damage_shares.
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        runtime
+            .commit_monster_lab_damage(creature.actor, b"party-xp-concurrent-fixture", health - 1)
+            .map_err(debug)?;
+    }
     if case.staged_ally() {
         // The ally's activity is recent; leave one HP so the leader's next landed swing is
         // lethal well inside the shared-experience activity window.
@@ -870,11 +890,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             continue;
         }
         let runtime = owner.runtime.lock().await;
-        if case.forge() || matches!(case, Case::Inactive) {
+        if case.forge() || matches!(case, Case::Inactive | Case::Foreign) {
+            // Foreign's final attacker must land before the leader's activity expires;
+            // Balanced content draws can take 66 three-second passes even at one HP.
             // These level-one fist attackers qualify reward settlement, not fight-mode
             // balance. Content-pinned draws can leave the 72-HP Fiendish rat alive
-            // after 256 Balanced passes. Use the same real Offensive mode for every
-            // Forge case, including the solo, range and foreign-contributor fixtures.
+            // after 256 Balanced passes. Use real Offensive mode for the foreign-share
+            // finisher and every Forge case, including solo, range and foreign contributors.
             assert!(owner.states.attack.lock().await.set_modes(
                 &runtime,
                 actor,
