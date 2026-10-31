@@ -1,0 +1,23 @@
+{
+  "id": 232,
+  "name": "TEAM_FINDER_MEMBERS_V1",
+  "constant": "team_finder_members::CAPABILITY_TEAM_FINDER_MEMBERS_V1",
+  "requires": [
+    7,
+    42,
+    200
+  ],
+  "acceptance_requires": true,
+  "commands": [
+    444,
+    445,
+    446
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

@@ -97,6 +97,7 @@ use crate::spell::cast::{CastContext, CharacterCastFacts, PlayerSpellState, cast
 /// command, no damage and no credit, and its death record goes with its entry.
 #[derive(Debug)]
 pub struct ChannelSpellStates {
+    pub(in crate::gameplay_transport) enchanting_pending: Vec<(ExactActorRef, GameSessionId)>,
     pub(super) prey: Vec<super::prey::LivePrey>,
     pub(super) hunting_stamina: Vec<super::hunting_stamina::LiveStamina>,
     pub(in crate::gameplay_transport) owner_wake: std::sync::Arc<tokio::sync::Notify>,
@@ -271,6 +272,7 @@ impl<I, T> PendingSpellMarker<I, T> {
 impl Default for ChannelSpellStates {
     fn default() -> Self {
         Self {
+            enchanting_pending: Vec::new(),
             prey: Vec::new(),
             hunting_stamina: Vec::new(),
             owner_wake: Default::default(),
@@ -407,7 +409,8 @@ impl ChannelSpellStates {
 
     /// Unknown durable outcomes retain their original prepared owner state.
     pub fn has_pending_spell_commit(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        self.has_pending_native(actor, session)
+        self.enchanting_pending.contains(&(actor, session))
+            || self.has_pending_native(actor, session)
             || self.has_pending_world_items(actor, session)
             || self.has_pending_parameters(actor, session)
             || self.has_pending_familiar(actor, session)

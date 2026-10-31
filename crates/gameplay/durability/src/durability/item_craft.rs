@@ -1,5 +1,5 @@
 //! CRAFT-1: one fenced, receipt-keyed consume/mint transaction. Basic fixed cooking and
-//! REWARD-CHEST-WIRE-1 reward bags only.
+//! REWARD-CHEST-WIRE-1 reward bags, gathering and gem enchanting.
 use super::character_authority::ReconciledCharacterAuthority;
 use super::character_equipment::assert_current_equipment_in_transaction;
 use super::db::begin_type2_transaction;
@@ -19,6 +19,8 @@ use serde_json::{Value, json};
 use sqlx::Row;
 
 pub(crate) mod audit;
+mod enchanting;
+pub use enchanting::EnchantingCraft;
 
 #[derive(Debug, Clone)]
 pub struct ItemCraftRequest {
@@ -31,6 +33,7 @@ pub struct ItemCraftRequest {
     /// Original bounded USE bytes. Replay compares these before resolving current handles.
     pub intent: Vec<u8>,
     pub gathering: Option<GatheringCraft>,
+    pub enchanting: Option<EnchantingCraft>,
 }
 
 /// Server-resolved map operand; the terrain CAS and inventory proof commit together.
@@ -56,6 +59,28 @@ impl DurabilityRoot {
         content: &C,
         probe: bool,
     ) -> Result<Option<UseDisposition>, DurabilityError> {
+        permit.check_scope(fence.runtime_scope)?;
+        self.craft_item_owned::<C, ()>(recovery, node, fence, request, native, content, probe, None).await
+    }
+
+    /// The same craft owner, with a retained live-state successor around COMMIT.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn craft_item_owned<C: ItemLoopContent, T: Send + 'static>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        request: ItemCraftRequest,
+        native: &NativeGameplayState,
+        content: &C,
+        probe: bool,
+        window: Option<&mut super::spell_owner_commit::SpellCommitWindow<'_, T>>,
+    ) -> Result<Option<UseDisposition>, DurabilityError> {
+        // An enchanting write may not bypass the live resource owner's retained successor.
+        // Probes remain available to the common replay path before resolving current handles.
+        if request.enchanting.is_some() && !probe && window.is_none() {
+            return Ok(Some(UseDisposition::Rejected));
+        }
         if request.command.game_session_id() != fence.game_session_id
             || request.intent.is_empty()
             || request.intent.len() > oteryn_protocol_oteryn::world_object::MAX_USE_INTENT_BYTES
@@ -63,12 +88,12 @@ impl DurabilityRoot {
         {
             return Ok(Some(UseDisposition::Rejected));
         }
-        permit.check_scope(fence.runtime_scope)?;
+        if let Some(window) = &window { window.permit().check_scope(fence.runtime_scope)?; }
         let record = recovery
             .record_for(self)
             .map_err(|_| DurabilityError::Unavailable)?;
         let node = node.clone();
-        let mut context = (native, content);
+        let mut context = (native, content, window);
         self.try_issue_semantic_pass()?.run_with_context(&mut context, move |holder, deadline, context| Box::pin(async move {
             let mut tx = begin_type2_transaction(holder, deadline).await?;
             super::character_authority::assert_recovery_fence(&mut tx, &record).await?;
@@ -89,7 +114,11 @@ impl DurabilityRoot {
                 return Ok(Some(UseDisposition::Rejected));
             }
             let result = write(&mut tx, fence, &request, context.0, context.1).await?;
-            if result == UseDisposition::Committed { tx.commit(deadline).await?; }
+            if result == UseDisposition::Committed {
+                if let Some(window) = context.2.as_mut() {
+                    super::pvp_live::commit_live_pvp_transaction(tx.into_inner(), deadline, window).await?;
+                } else { tx.commit(deadline).await?; }
+            }
             Ok(Some(result))
         })).await
     }
@@ -103,6 +132,9 @@ async fn write<C: ItemLoopContent>(
     native: &NativeGameplayState,
     content: &C,
 ) -> Result<UseDisposition, DurabilityError> {
+    if request.enchanting.is_some() {
+        return enchanting::write(tx, fence, request, native, content).await;
+    }
     let (world, _) = scope_of(&fence).map_err(|_| DurabilityError::InvalidStoredState)?;
     // Root serialization precedes all item locks. Basic cooking accepts main-backpack leaves.
     let source = sqlx::query("SELECT to_jsonb(i) AS before_item,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,uuid_send(e.parent_item_instance_id) AS parent,e.placement_ordinal::text AS ordinal FROM game_item_instances i JOIN game_item_container_entries e USING(item_instance_id) JOIN game_item_container_slots b ON b.character_id=e.character_id AND b.item_instance_id=e.parent_item_instance_id WHERE i.item_instance_id=encode($1,'hex')::uuid AND e.character_id=encode($2,'hex')::uuid AND i.world_id=encode($3,'hex')::uuid AND i.lifecycle=1 AND e.world_id=i.world_id AND b.world_id=i.world_id FOR UPDATE OF i")

@@ -58,6 +58,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source: id,
             tool: None,
             gathering: None,
+            enchanting: None,
             station: None,
             intent: [INTENT_TAG, id.as_slice()].concat(),
         };
