@@ -10,67 +10,28 @@ use crate::gameplay_transport::spell_premium_coordinator::{
 use oteryn_gameplay_progression::wheel_gem_data::WheelGemData;
 use std::sync::Arc;
 
-struct CharacterFixture {
-    level: i64,
-    experience: i64,
-    build: Option<Value>,
-    promotion: Option<Value>,
-}
-
-/// Supply historical eligibility facts only. The extra point itself is never seeded:
-/// it must come from the Task Board command and its guarded receipt.
-async fn eligible_fixture(harness: &Harness) -> TestResult<CharacterFixture> {
+/// The earlier scenario already chose Monk through its build owner. Preserve
+/// that accepted build and reach level 51 through an actual admitted XP award.
+/// Only the pre-existing promotion eligibility fact is historical fixture input;
+/// the additional Wheel point still has to come from the real Task Shop command.
+async fn eligible_fixture(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    harness: &Harness,
+    admitted: &AdmittedSession,
+) -> TestResult {
+    let policy = progression_case::policy(owner, harness).await?;
+    let threshold = policy.thresholds.iter().find(|row| row.level == 51)
+        .ok_or("admitted level51 threshold")?.minimum_experience.get();
+    progression_case::award_total(owner, harness, admitted, threshold, 51, 64_998).await?;
+    let fence = owner.current_quest_fence(admitted.game_session_id).await
+        .map_err(|()| "Wheel fixture fence")?.ok_or("Wheel fixture fence")?;
+    let build = owner.root.read_character_build_state(owner.character, fence.character_id)
+        .await.map_err(debug)?;
+    assert_eq!(build.vocation(), "monk", "preserve the accepted build receipt");
     let mut tx = harness.pool.begin().await?;
-    let (level, experience): (i64, i64) = sqlx::query_as(
-        "SELECT level,total_experience FROM game_character_progression_state WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice()).fetch_one(&mut *tx).await?;
-    let build = sqlx::query_scalar::<_, Value>(
-        "SELECT to_jsonb(s) FROM game_character_build_state s WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice()).fetch_optional(&mut *tx).await?;
-    let promotion = sqlx::query_scalar::<_, Value>(
-        "SELECT to_jsonb(s) FROM game_character_promotions s WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice()).fetch_optional(&mut *tx).await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("UPDATE game_character_progression_state SET level=51 WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice()).execute(&mut *tx).await?;
-    sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) SELECT character_id,'sorcerer',0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,character_revision,game_character_uuid_v7() FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid ON CONFLICT(character_id) DO UPDATE SET vocation='sorcerer'")
-        .bind(id(41).as_slice()).execute(&mut *tx).await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_character_promotions(character_id,purchase_occurrence_id) VALUES(encode($1,'hex')::uuid,game_character_uuid_v7()) ON CONFLICT(character_id) DO NOTHING")
         .bind(id(41).as_slice()).execute(&mut *tx).await?;
-    tx.commit().await?;
-    Ok(CharacterFixture {
-        level,
-        experience,
-        build,
-        promotion,
-    })
-}
-
-async fn restore_fixture(harness: &Harness, fixture: CharacterFixture) -> TestResult {
-    let mut tx = harness.pool.begin().await?;
-    sqlx::query("SET LOCAL session_replication_role=replica")
-        .execute(&mut *tx)
-        .await?;
-    sqlx::query("UPDATE game_character_progression_state SET level=$2,total_experience=$3 WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice()).bind(fixture.level).bind(fixture.experience).execute(&mut *tx).await?;
-    sqlx::query("DELETE FROM game_character_build_state WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice())
-        .execute(&mut *tx)
-        .await?;
-    if let Some(build) = fixture.build {
-        sqlx::query("INSERT INTO game_character_build_state SELECT * FROM jsonb_populate_record(NULL::game_character_build_state,$1)")
-            .bind(build).execute(&mut *tx).await?;
-    }
-    sqlx::query("DELETE FROM game_character_promotions WHERE character_id=encode($1,'hex')::uuid")
-        .bind(id(41).as_slice())
-        .execute(&mut *tx)
-        .await?;
-    if let Some(promotion) = fixture.promotion {
-        sqlx::query("INSERT INTO game_character_promotions SELECT * FROM jsonb_populate_record(NULL::game_character_promotions,$1)")
-            .bind(promotion).execute(&mut *tx).await?;
-    }
     tx.commit().await?;
     Ok(())
 }
@@ -80,7 +41,7 @@ pub(super) async fn wheel_case(
     harness: &Harness,
     admitted: &mut AdmittedSession,
 ) -> TestResult {
-    let fixture = eligible_fixture(harness).await?;
+    eligible_fixture(owner, harness, admitted).await?;
     let data = WheelGemData::embedded().map_err(debug)?;
     let ruleset =
         Arc::new(WheelRuleset::from_catalogue(data.revision(), data.wheel()).map_err(debug)?);
@@ -231,7 +192,7 @@ pub(super) async fn wheel_case(
         .await
         .map_err(debug)?;
     assert_eq!((reloaded.wheel_revision, reloaded.slots.total()), (1, 3));
-    restore_fixture(harness, fixture).await?;
+    // Accepted level/XP and the receipted Monk build remain intact for later cases.
     println!(
         "<TASK_BOARD> POSTGRES_CASE_COMPLETED: purchased_promotion_increases_fenced_wheel_budget_once"
     );

@@ -26,6 +26,14 @@ pub(super) async fn availability_snapshot_case(
         "informative ownership is not capped to the requested delivery quantity"
     );
     remove_historical_stash_counts(harness, item, &extra).await?;
+    // Foundation retains the latest terminal command. Replay after changing only
+    // custody, before a fresh Query legitimately replaces that retained outcome.
+    let replay = serve_from(owner, admitted, command, &[full_request(4, 0, "")]).await?;
+    assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
+    assert_eq!(
+        replay[0].2, original[0].2,
+        "the earlier reply keeps its availability after ownership changes"
+    );
     assert_eq!(
         full_board(owner, admitted, 4, 0, "")
             .await?
@@ -33,12 +41,6 @@ pub(super) async fn availability_snapshot_case(
             .deliveries[0]
             .current,
         required
-    );
-    let replay = serve_from(owner, admitted, command, &[full_request(4, 0, "")]).await?;
-    assert_eq!(replay[0].1, CommandStatus::DuplicateReplay);
-    assert_eq!(
-        replay[0].2, original[0].2,
-        "the earlier reply keeps its availability after ownership changes"
     );
 
     // The stash owner permits one billion per definition revision. Five valid

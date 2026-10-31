@@ -7,15 +7,20 @@ pub(super) async fn missing_participant(
     harness: &Harness,
     admitted: &mut AdmittedSession,
 ) -> TestResult {
-    let before = full_board(owner, admitted, 4, 0, "").await?;
+    full_board(owner, admitted, 4, 0, "").await?;
+    let before = value_snapshot(harness).await?;
     let receipts = quest_receipts(harness).await?;
-    sqlx::raw_sql("CREATE FUNCTION task_board_test_skip_token() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$;
+    let board_receipts = sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_receipts")
+        .fetch_one(&harness.pool)
+        .await?;
+    rollback_cases::start_fault_witness(harness).await?;
+    sqlx::raw_sql("CREATE FUNCTION task_board_test_skip_token() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM nextval('task_board_test_fault_hits'); RETURN NULL; END $$;
         CREATE TRIGGER task_board_test_skip_token BEFORE INSERT ON game_task_board_token_sources FOR EACH ROW EXECUTE FUNCTION task_board_test_skip_token();
         CREATE TRIGGER task_board_test_skip_token BEFORE INSERT ON game_character_bounty_reroll_token_entries FOR EACH ROW EXECUTE FUNCTION task_board_test_skip_token();
         CREATE TRIGGER task_board_test_skip_token BEFORE INSERT OR UPDATE ON game_character_bounty_reroll_tokens FOR EACH ROW EXECUTE FUNCTION task_board_test_skip_token();")
         .execute(&harness.pool).await?;
     let command = admitted.continuity.next_command_id;
-    let result = serve_from(owner, admitted, command, &[full_request(12, 0, "")]).await;
+    let result = serve_attempt(owner, admitted, command, &[full_request(12, 0, "")]).await;
     sqlx::raw_sql(
         "DROP TRIGGER task_board_test_skip_token ON game_task_board_token_sources;
         DROP TRIGGER task_board_test_skip_token ON game_character_bounty_reroll_token_entries;
@@ -24,18 +29,18 @@ pub(super) async fn missing_participant(
     )
     .execute(&harness.pool)
     .await?;
-    let replies = result?;
-    assert_ne!(
-        replies[0].1,
-        CommandStatus::Accepted,
-        "missing ledger participants must roll back the whole claim"
-    );
+    rollback_cases::finish_fault_witness(harness, 3).await?;
+    let (end, replies) = result?;
+    assert_unavailable(owner, end, &replies, admitted, command);
     assert_eq!(quest_receipts(harness).await?, receipts);
-    let after = full_board(owner, admitted, 4, 0, "").await?;
-    assert_eq!(after.bounty, before.bounty);
+    // An unavailable command remains outstanding. Read the durable owners directly;
+    // this isolated scenario ends here instead of fabricating a resumable stream.
+    assert_eq!(value_snapshot(harness).await?, before);
     assert_eq!(
-        (after.points, after.bounty_points, after.soulseals),
-        (before.points, before.bounty_points, before.soulseals)
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_task_board_receipts")
+            .fetch_one(&harness.pool)
+            .await?,
+        board_receipts
     );
     println!(
         "<TASK_BOARD> POSTGRES_CASE_COMPLETED: token_receipt_requires_existing_ledger_participant"
@@ -85,7 +90,7 @@ pub(super) async fn completed_fixture(
 /// Compare actual value owners, including their append-only participants. Command
 /// refusals may add their own receipt, but cannot change any of these values.
 pub(super) async fn value_snapshot(harness: &Harness) -> TestResult<serde_json::Value> {
-    Ok(sqlx::query_scalar("SELECT jsonb_build_object('progression',to_jsonb(p),'board',b.body,'tracks',(SELECT jsonb_object_agg(track_key,value) FROM game_character_quest_tracks WHERE character_id=p.character_id),'tokens',(SELECT to_jsonb(t) FROM game_character_bounty_reroll_tokens t WHERE t.character_id=p.character_id AND t.world_id=b.world_id),'token_entries',(SELECT count(*) FROM game_character_bounty_reroll_token_entries WHERE character_id=p.character_id),'token_sources',(SELECT count(*) FROM game_task_board_token_sources WHERE character_id=p.character_id),'quest_receipts',(SELECT count(*) FROM game_character_quest_receipts WHERE character_id=p.character_id),'xp_receipts',(SELECT count(*) FROM game_character_xp_receipts WHERE character_id=p.character_id),'xp_obligations',(SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=p.character_id)) FROM game_character_progression_state p JOIN game_character_task_boards b USING(character_id) WHERE p.character_id=encode($1,'hex')::uuid")
+    Ok(sqlx::query_scalar("SELECT jsonb_build_object('character_revision',(SELECT character_revision FROM game_character_roots WHERE character_id=p.character_id),'progression',to_jsonb(p),'board',b.body,'tracks',(SELECT jsonb_object_agg(track_key,value) FROM game_character_quest_tracks WHERE character_id=p.character_id),'tokens',(SELECT to_jsonb(t) FROM game_character_bounty_reroll_tokens t WHERE t.character_id=p.character_id AND t.world_id=b.world_id),'token_entries',(SELECT count(*) FROM game_character_bounty_reroll_token_entries WHERE character_id=p.character_id),'token_sources',(SELECT count(*) FROM game_task_board_token_sources WHERE character_id=p.character_id),'quest_receipts',(SELECT count(*) FROM game_character_quest_receipts WHERE character_id=p.character_id),'xp_receipts',(SELECT count(*) FROM game_character_xp_receipts WHERE character_id=p.character_id),'xp_obligations',(SELECT count(*) FROM game_character_quest_xp_obligations WHERE character_id=p.character_id)) FROM game_character_progression_state p JOIN game_character_task_boards b USING(character_id) WHERE p.character_id=encode($1,'hex')::uuid")
         .bind(id(41).as_slice()).fetch_one(&harness.pool).await?)
 }
 

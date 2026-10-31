@@ -11,8 +11,10 @@ mod cosmetic_atomicity;
 #[path = "wheel_case.rs"]
 mod wheel_case;
 
-const OUTFIT: &str = "oteryn:outfit.task_board_fixture";
-const MOUNT: &str = "oteryn:mount.task_board_fixture";
+// This private test packet still obeys ProductionKey: `fixture` is a forbidden
+// key marker, even though its explicitly synthetic authoring stays test-only.
+const OUTFIT: &str = "oteryn:outfit.task_board_proposed";
+const MOUNT: &str = "oteryn:mount.task_board_proposed";
 const PROVENANCE: &str = "task-board-shop-v1";
 
 fn source_look(packet: &Value, look: u32) -> TestResult<Value> {
@@ -109,6 +111,7 @@ pub(super) async fn cosmetics_case(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     harness: &Harness,
     admitted: &mut AdmittedSession,
+    inject_omission: bool,
 ) -> TestResult {
     // Admission seed predates the appearance fixture. Supply its historical creation sex;
     // every purchase and every earned-fact read below uses the production fences normally.
@@ -137,7 +140,10 @@ pub(super) async fn cosmetics_case(
         "an addon cannot be purchased before its base outfit"
     );
     assert_eq!(receipt_count(harness).await?, 0);
-    cosmetic_atomicity::omission_case(owner, harness, admitted).await?;
+    if inject_omission {
+        cosmetic_atomicity::omission_case(owner, harness, admitted).await?;
+        return Ok(());
+    }
 
     let base_id = admitted.continuity.next_command_id;
     let base = full_board(owner, admitted, 16, 0, "").await?;

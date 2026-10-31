@@ -31,6 +31,8 @@ use oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin;
 #[path = "task_board/scenarios.rs"]
 mod scenarios;
 use scenarios::*;
+#[path = "task_board/capacity_case.rs"]
+mod capacity_case;
 #[path = "task_board/cosmetic_cases.rs"]
 mod cosmetic_cases;
 #[path = "task_board/new_balance_case.rs"]
@@ -41,6 +43,9 @@ mod depot_case;
 mod progression_case;
 #[path = "task_board/token_case.rs"]
 mod token_case;
+#[path = "task_board/rollback_cases.rs"]
+mod rollback_cases;
+use rollback_cases::{RollbackFault, assert_unavailable};
 
 const OPEN_PLAYER: MovementLocalPosition = MovementLocalPosition {
     x: 2,
@@ -53,8 +58,9 @@ const OPEN_RAT: MovementLocalPosition = MovementLocalPosition {
     floor: -7,
 };
 const PASS: Duration = Duration::from_secs(3);
-// 5 rat XP, doubled by the level-1 Global low-level bonus.
-const RAT_XP: i64 = 2 * 5;
+// The admitted level is eight: the existing hunting XP owner applies
+// floor(5 * (1200 + (1200 - 25 * (8 - 2))) / 1200) = 9.
+const RAT_XP_AT_LEVEL_8: i64 = 9;
 
 #[test]
 fn task_board_real_dispatch_weekly_bounty_custody_reset_and_replay() -> TestResult {
@@ -69,13 +75,27 @@ fn request(action: u8, task: u8) -> Vec<u8> {
     wire::encode_task_board_request(&wire::TaskBoardRequest { action, task }).expect("request")
 }
 
-/// One connection continuing this session's command stream from `first`.
+type CommandReplies = Vec<(u64, CommandStatus, Vec<u8>)>;
+
+/// Normal exchanges must retain one terminal result for every supplied command.
 async fn serve_from(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     first: u64,
     payloads: &[Vec<u8>],
-) -> TestResult<Vec<(u64, CommandStatus, Vec<u8>)>> {
+) -> TestResult<CommandReplies> {
+    let (end, values) = serve_attempt(owner, admitted, first, payloads).await?;
+    assert_eq!(values.len(), payloads.len(), "{end:?}; {values:?}");
+    Ok(values)
+}
+
+/// The same real connection exchange also exposes its end for isolated rollback cases.
+async fn serve_attempt(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    first: u64,
+    payloads: &[Vec<u8>],
+) -> TestResult<(ConnectionEnd, CommandReplies)> {
     let mut input = Vec::new();
     for (command_id, payload) in (first..).zip(payloads) {
         let bytes = oteryn_protocol_oteryn::encode_client_command(
@@ -100,6 +120,11 @@ async fn serve_from(
     if let ConnectionEnd::AdmittedThenDisconnected(current)
     | ConnectionEnd::AdmittedThenClosed(current, _) = &end
     {
+        assert_eq!(current.game_session_id, admitted.game_session_id);
+        assert_eq!(
+            current.continuity.connection_generation,
+            admitted.continuity.connection_generation
+        );
         *admitted = *current;
     }
     let mut cursor = 0;
@@ -115,8 +140,7 @@ async fn serve_from(
             values.push((value.command_id, value.status, value.payload.to_vec()));
         }
     }
-    assert_eq!(values.len(), payloads.len(), "{end:?}; {values:?}");
-    Ok(values)
+    Ok((end, values))
 }
 
 /// One accepted board command; returns its decoded board.
@@ -148,11 +172,16 @@ async fn quest_receipts(harness: &Harness) -> TestResult<i64> {
     )
 }
 
-#[allow(clippy::too_many_lines)]
 fn scenario() -> TestResult {
-    run(async |admin| {
+    scenario_with_fault(None)
+}
+
+#[allow(clippy::too_many_lines)]
+fn scenario_with_fault(fault: Option<RollbackFault>) -> TestResult {
+    run(async move |admin| {
+        let tag = fault.map_or("task_board_e2e", RollbackFault::tag);
         let harness =
-            Harness::create_with_admission_seed(admin, "task_board_e2e", false, false).await?;
+            Harness::create_with_admission_seed(admin, tag, false, false).await?;
         prepare_current_session(&harness).await?;
         let seal = harness.recovery.seal_current().map_err(debug)?;
         let authority = harness
@@ -424,6 +453,7 @@ fn scenario() -> TestResult {
         // This Character entered the fixture at level one; accepted progression at
         // level eight is now fixture input. All task mutations below use real dispatch.
         progression_case::fixture_admitted_level(&owner, &harness, 8).await?;
+        capacity_case::global_quest_capacity(&owner, &harness, &mut admitted).await?;
         let start_id = admitted.continuity.next_command_id;
         let started = full_board(&owner, &mut admitted, 5, 0, "").await?;
         assert_eq!(started.refusal, 0);
@@ -530,7 +560,10 @@ fn scenario() -> TestResult {
             drains += 1;
             assert!(drains < 8, "the queued kill settles");
         }
-        assert_eq!(experience(&harness).await?, before_real_kill + RAT_XP);
+        assert_eq!(
+            experience(&harness).await?,
+            before_real_kill + RAT_XP_AT_LEVEL_8
+        );
         assert_eq!(
             sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_character_xp_receipts")
                 .fetch_one(&harness.pool)
@@ -598,7 +631,8 @@ fn scenario() -> TestResult {
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: real_kill_credit_and_completion_xp");
 
         progression_case::fixture_vocation(
-            &harness,
+            &owner,
+            &admitted,
             crate::durability::character_build::NO_VOCATION,
         )
         .await?;
@@ -607,7 +641,7 @@ fn scenario() -> TestResult {
             2,
             "a durable no-vocation build cannot open bounty offers"
         );
-        progression_case::fixture_vocation(&harness, "monk").await?;
+        progression_case::fixture_vocation(&owner, &admitted, "monk").await?;
         let opened = full_board(&owner, &mut admitted, 7, 0, "").await?;
         assert_eq!(opened.refusal, 0);
         assert_eq!((opened.bounty.state, opened.bounty.offers.len()), (1, 3));
@@ -675,7 +709,14 @@ fn scenario() -> TestResult {
         );
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: bounty_select_complete_claim_once");
 
-        token_case::missing_participant(&owner, &harness, &mut admitted).await?;
+        if fault == Some(RollbackFault::TokenLedger) {
+            token_case::missing_participant(&owner, &harness, &mut admitted).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
         let daily = full_board(&owner, &mut admitted, 12, 0, "").await?;
         assert_eq!((daily.refusal, daily.bounty.rerolls), (0, 2));
         assert_eq!(
@@ -711,7 +752,15 @@ fn scenario() -> TestResult {
         println!("<TASK_BOARD> POSTGRES_CASE_COMPLETED: preferred_unwanted_and_level_refusal");
 
         expansion_case(&owner, &harness, &mut admitted).await?;
-        delivery_cases(&owner, &harness, &mut admitted).await?;
+        let stash_fault = fault.filter(|case| case.is_stash());
+        delivery_cases(&owner, &harness, &mut admitted, stash_fault).await?;
+        if stash_fault.is_some() {
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
         let accrued = full_board(&owner, &mut admitted, 4, 0, "").await?;
         assert!(accrued.weekly.pending_points > 0 && accrued.weekly.pending_soulseals > 0);
         let refused_start_id = admitted.continuity.next_command_id;
@@ -741,8 +790,24 @@ fn scenario() -> TestResult {
         println!(
             "<TASK_BOARD> POSTGRES_CASE_COMPLETED: second_start_preserves_progress_and_accrued_rewards"
         );
-        item_shop_and_talisman_cases(&owner, &harness, &mut admitted).await?;
-        cosmetic_cases::cosmetics_case(&owner, &harness, &mut admitted).await?;
+        let mint_fault = fault == Some(RollbackFault::TalismanMint);
+        item_shop_and_talisman_cases(&owner, &harness, &mut admitted, mint_fault).await?;
+        if mint_fault {
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
+        let cosmetic_fault = fault == Some(RollbackFault::CosmeticGrant);
+        cosmetic_cases::cosmetics_case(&owner, &harness, &mut admitted, cosmetic_fault).await?;
+        if cosmetic_fault {
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            harness.cleanup().await?;
+            return Ok(());
+        }
         let before_reset = full_board(&owner, &mut admitted, 4, 0, "").await?;
         fixture_next_reset(&harness).await?;
         let reset = full_board(&owner, &mut admitted, 4, 0, "").await?;
