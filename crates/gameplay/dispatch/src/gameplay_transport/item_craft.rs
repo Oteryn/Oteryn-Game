@@ -48,6 +48,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
         match self
+            .use_soulpit_obelisk(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
+        match self
+            .use_soul_core(actor, command, &intent, source, target)
+            .await
+        {
+            Ok(Some(outcome)) => return Some(outcome),
+            Ok(None) => {}
+            Err(()) => return None,
+        }
+        match self
             .use_terrain_tool(actor, command, &intent, source, target)
             .await
         {

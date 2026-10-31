@@ -13,6 +13,7 @@ use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CompanionSnapshot, ExactActorRef, GameSessionId,
 };
 use oteryn_gameplay_domain::domain::condition::ConditionValues;
+use oteryn_gameplay_foundation::foundation::condition::ConditionBuffDelta;
 
 pub use oteryn_gameplay_domain::domain::magnitude_policy::MagnitudePolicy;
 
@@ -245,6 +246,8 @@ pub struct PreparedMagnitudeOwner {
         Vec<oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugment>,
     caster: PlayerSpellState,
     now_ms: u64,
+    /// The physical actor condition owner is independently re-read before HP publication.
+    canonical_hex: Vec<(ExactActorRef, ConditionBuffDelta)>,
     plan: NativeCombatPlan,
     targets: Vec<Target>,
     shared_extensions: Option<(bool, bool)>,
@@ -268,15 +271,19 @@ impl StrikeCastModifiers {
         caster: &PlayerSpellState,
         spell_name: &str,
         now_ms: u64,
+        canonical_hex: ConditionBuffDelta,
     ) -> Result<Self, Error> {
         let a = attributes.resolved_for_policy();
-        let damage_percent = match condition_attributes(caster, now_ms)? {
-            Some(ConditionValues::Attributes {
-                damage_dealt_percent,
-                ..
-            }) => damage_dealt_percent,
-            _ => 100,
-        };
+        let damage_percent = u32::try_from(
+            caster
+                .conditions
+                .damage_dealt_percent_with_hex_at(
+                    now_ms.checked_mul(1000).ok_or(Error::InvalidCondition)?,
+                    canonical_hex,
+                )
+                .ok_or(Error::InvalidCondition)?,
+        )
+        .map_err(|_| Error::InvalidMagnitude)?;
         Ok(Self {
             flat_damage: needed(a.wheel_flat_damage)?,
             source_bonus: needed(a.source_damage_multiplier_percent)?,
@@ -333,6 +340,28 @@ fn condition_attributes(
 }
 
 impl PreparedMagnitudeOwner {
+    fn damage_dealt_percent(&self) -> Result<u32, Error> {
+        if let Some(frozen) = self.delayed_damage_percent {
+            return Ok(frozen);
+        }
+        let canonical = self
+            .canonical_hex
+            .iter()
+            .find(|(actor, _)| *actor == self.attributes.binding.actor)
+            .map_or_else(ConditionBuffDelta::default, |(_, delta)| *delta);
+        u32::try_from(
+            self.caster
+                .conditions
+                .damage_dealt_percent_with_hex_at(
+                    self.now_ms
+                        .checked_mul(1000)
+                        .ok_or(Error::InvalidCondition)?,
+                    canonical,
+                )
+                .ok_or(Error::InvalidCondition)?,
+        )
+        .map_err(|_| Error::InvalidMagnitude)
+    }
     /// F's planted raw/late-modifier split. This changes only numerical inputs;
     /// `attributes` and `caster` remain intact for commit-time owner validation.
     pub fn select_planted_strike(&mut self, snapshot: &StrikeCastModifiers) {
@@ -632,12 +661,33 @@ impl PreparedMagnitudeOwner {
         {
             return invalid();
         }
+        let now_micros = now_ms.checked_mul(1000).ok_or(Error::InvalidCondition)?;
+        let mut canonical_hex = vec![(
+            actor,
+            runtime
+                .soulpit_hex_delta(actor, now_micros)
+                .map_err(Error::Owner)?,
+        )];
+        for target in &targets {
+            if !canonical_hex
+                .iter()
+                .any(|(actor, _)| *actor == target.actor)
+            {
+                canonical_hex.push((
+                    target.actor,
+                    runtime
+                        .soulpit_hex_delta(target.actor, now_micros)
+                        .map_err(Error::Owner)?,
+                ));
+            }
+        }
         Ok(Self {
             attributes: original.clone(),
             selected_item_augments: Vec::new(),
             resolved_attributes: resolved,
             caster: caster.clone(),
             now_ms,
+            canonical_hex,
             plan: plan.clone(),
             targets,
             shared_extensions: None,
@@ -671,6 +721,20 @@ impl PreparedMagnitudeOwner {
     ) -> Result<(), Error> {
         if caster != &self.caster || attributes != &self.attributes {
             return Err(Error::SnapshotChanged);
+        }
+        for (actor, expected) in &self.canonical_hex {
+            if runtime
+                .soulpit_hex_delta(
+                    *actor,
+                    self.now_ms
+                        .checked_mul(1000)
+                        .ok_or(Error::InvalidCondition)?,
+                )
+                .map_err(Error::Owner)?
+                != *expected
+            {
+                return Err(Error::SnapshotChanged);
+            }
         }
         runtime
             .player_control_facts(attributes.binding.actor, attributes.binding.session)
@@ -872,6 +936,26 @@ impl PreparedMagnitudeOwner {
             value = value
                 .checked_add(i64::from(needed(a.wheel_flat_healing)?))
                 .ok_or(Error::InvalidMagnitude)?;
+            if let TargetOwner::Player(player) = &target.owner {
+                let canonical = self
+                    .canonical_hex
+                    .iter()
+                    .find(|(actor, _)| *actor == target.actor)
+                    .map_or_else(ConditionBuffDelta::default, |(_, delta)| *delta);
+                let retained = player
+                    .conditions
+                    .healing_received_percent_with_hex_at(
+                        self.now_ms
+                            .checked_mul(1000)
+                            .ok_or(Error::InvalidCondition)?,
+                        canonical,
+                    )
+                    .ok_or(Error::InvalidCondition)?;
+                value = percent(
+                    value,
+                    u32::try_from(retained).map_err(|_| Error::InvalidMagnitude)?,
+                )?;
+            }
             return Ok(value.max(0));
         }
         value = percent(value, 100 + party.spell_damage)?;
@@ -885,18 +969,7 @@ impl PreparedMagnitudeOwner {
                 .find(|(a, _)| *a == target.actor)
                 .ok_or(Error::InvalidBatch)?
                 .1;
-            if let Some(ConditionValues::Attributes {
-                damage_dealt_percent,
-                ..
-            }) = condition_attributes(&self.caster, self.now_ms)?
-            {
-                value = percent(
-                    value,
-                    self.delayed_damage_percent.unwrap_or(damage_dealt_percent),
-                )?;
-            } else if let Some(percent_at_cast) = self.delayed_damage_percent {
-                value = percent(value, percent_at_cast)?;
-            }
+            value = percent(value, self.damage_dealt_percent()?)?;
             let bonus = needed(a.source_damage_multiplier_percent)?
                 .checked_add(hit.bonus_percent)
                 .ok_or(Error::InvalidMagnitude)?;
@@ -916,18 +989,7 @@ impl PreparedMagnitudeOwner {
             .policy
             .damage_healing(element_key(element), value)
             .map_err(Error::Owner)?;
-        if let Some(ConditionValues::Attributes {
-            damage_dealt_percent,
-            ..
-        }) = condition_attributes(&self.caster, self.now_ms)?
-        {
-            value = percent(
-                value,
-                self.delayed_damage_percent.unwrap_or(damage_dealt_percent),
-            )?;
-        } else if let Some(percent_at_cast) = self.delayed_damage_percent {
-            value = percent(value, percent_at_cast)?;
-        }
+        value = percent(value, self.damage_dealt_percent()?)?;
         let TargetOwner::Creature(creature) = &target.owner else {
             return invalid();
         };

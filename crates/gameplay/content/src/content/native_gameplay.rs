@@ -1383,7 +1383,8 @@ pub fn decode(bytes: &[u8]) -> Result<DecodedNativeGameplay<'_>, ContentError> {
         .transpose()?;
     let reward_table = Arc::new(
         super::creature_reward::CreatureRewardTable::from_pin(&creatures, loot.as_ref())
-            .with_daily_boss_equipment(items.as_ref()),
+            .with_daily_boss_equipment(items.as_ref())
+            .with_encounter_items(items.as_ref()),
     );
     let cosmetics = if is_v9 {
         let mut cosmetics = native_cosmetics::decode(sections[12])?

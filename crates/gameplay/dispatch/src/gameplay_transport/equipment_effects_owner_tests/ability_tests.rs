@@ -86,6 +86,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     ("REWARD-BAG-2", 36),
     // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
     ("TIMEDITEMS2-1", 2),
+    // W06/W07: exact Crystal 201189f items.xml/appearances.dat capture in
+    // soulpit-echo-item-profiles.json. All 845 profiles have qualified speed_bonus=0.
+    // W06 contributes the 24 basic scrolls 53751..=53774. W07 contributes the 835
+    // source catalogue minus 15 unbound IDs, plus Exalted Core 37110 (821 profiles).
+    ("W06-ECHO", 24),
+    ("W07-SOULPIT", 821),
     // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
     // 3477..=3480 (tools/content-migration/fluid_container_profiles.py). All have speed_bonus=0.
     ("W18-FLUID", 20),
@@ -109,6 +115,28 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
         profiles.records.len(),
         ORIGINAL_PROFILES + PROFILE_ADDITIONS.iter().map(|(_, n)| n).sum::<usize>()
     );
+    // This expected set comes from the independently pinned source catalogue and the
+    // explicit Item admission gaps, never from the native profiles being tested.
+    // These are known zero-speed Items, so the pre-existing unknown-speed set below
+    // remains unchanged and continues to reject any accidental loss of qualification.
+    let soulpit_echo_items: std::collections::BTreeSet<_> =
+        crate::domain::soulpit::SOUL_CORE_SOURCE_IDS
+            .iter()
+            .copied()
+            .filter(|id| *id != 47899 && !(53142..=53155).contains(id))
+            .chain(std::iter::once(37110))
+            .chain(53751..=53774)
+            .map(|id| format!("oteryn:item.tibia.i{id}"))
+            .collect();
+    assert_eq!(soulpit_echo_items.len(), 845);
+    for key in soulpit_echo_items {
+        let record = profiles
+            .records
+            .iter()
+            .find(|record| record.production_definition.production_key == key)
+            .ok_or_else(|| format!("missing source-qualified W06/W07 profile {key}"))?;
+        assert_eq!(record.attributes.speed_bonus, Some(0), "{key}");
+    }
     let content = native(&input)?;
     let mut unknown_speed = std::collections::BTreeSet::new();
     for record in profiles.records {

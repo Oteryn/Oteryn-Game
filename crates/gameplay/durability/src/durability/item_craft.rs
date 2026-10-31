@@ -19,6 +19,7 @@ use serde_json::{Value, json};
 use sqlx::Row;
 
 pub(crate) mod audit;
+pub mod soulpit;
 
 #[derive(Debug, Clone)]
 pub struct ItemCraftRequest {
