@@ -600,12 +600,23 @@ async fn reward_delivery(
     use crate::gameplay_transport::item_ref_admission::{NativeItemWeights, generation_item_facts, pinned_index};
     use crate::gameplay_transport::capabilities::SelectedCapabilities;
     use crate::gameplay_transport::connection::FreshAdmissionAuthority;
-    use oteryn_protocol_oteryn::world_object::{WorldObjectTarget, UseDisposition, CAPABILITY_WORLD_INTERACTION_V1};
+    use oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1;
+    use oteryn_protocol_oteryn::world_map::CAPABILITY_WORLD_MAP_VIEW_V1;
+    use oteryn_protocol_oteryn::world_spatial_entities::CAPABILITY_WORLD_SPATIAL_ENTITIES;
+    use oteryn_protocol_oteryn::world_object::{WorldObjectTarget, UseDisposition, CAPABILITY_WORLD_INTERACTION_V1, CAPABILITY_ITEM_USE_V1};
     // NoRoom is a negotiated world-interaction disposition. A fresh client
     // without capability 11 intentionally receives the legacy Rejected code.
+    // Selection drops capabilities whose dependencies are absent: 11 requires
+    // 15 + 18, 15 requires 4, 18 requires 4 + 6, and 4 requires 6.
     admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-        owner.offered_capabilities(), &[CAPABILITY_WORLD_INTERACTION_V1],
+        owner.offered_capabilities(), &[
+            CAPABILITY_ITEM_VIEW_MOVE_V1, CAPABILITY_WORLD_SPATIAL_ENTITIES,
+            CAPABILITY_WORLD_INTERACTION_V1, CAPABILITY_ITEM_USE_V1,
+            CAPABILITY_WORLD_MAP_VIEW_V1,
+        ],
     ).ok_or("source reward world-interaction capability not offered")?;
+    assert!(admitted.continuity.selected_capabilities.contains(CAPABILITY_WORLD_INTERACTION_V1),
+        "source USE requires the complete world-interaction capability dependency set");
     let native = owner.active_generation.and_then(|generation| generation.native_gameplay()).ok_or("native reward facts")?;
     let session = admitted.game_session_id;
     let fence = current(owner, session).await?;
@@ -676,6 +687,8 @@ async fn reward_delivery(
     }
     let payload = oteryn_protocol_oteryn::world_object::encode_use_intent(&target).map_err(debug)?;
     let result = super::quest_world_callbacks::wire(owner, admitted, 1, 2, payload.clone()).await?;
+    assert!(admitted.continuity.selected_capabilities.contains(CAPABILITY_WORLD_INTERACTION_V1),
+        "source USE must retain world-interaction capability through serve_admitted");
     assert_eq!(oteryn_protocol_oteryn::world_object::decode_use_result(&result).map_err(debug)?, UseDisposition::NoRoom);
     let fresh = super::fresh_fixture::fresh::Source::new(0)?.request()?;
     h.root.initialize_admission_equipment(owner.character, owner.holder, &fence.item_fence(),

@@ -41,10 +41,22 @@ fn scenario() -> TestResult {
         let active = controller.active().ok_or("activated content")?;
         let native = active.native_gameplay().ok_or("native content")?;
         let room = pin.qualified_room().clone();
+        // Reuse the mounted altar fixture's bundle frame: map/NPC placement
+        // floors are native -z, while every carrier actor uses legacy +z.
+        // The Thalom qualification room uses a different coordinate convention.
+        let callback=oteryn_gameplay_quests::quest::world_callbacks::load()?
+            .into_iter()
+            .find(|callback| callback.key==oteryn_gameplay_quests::quest::rotten_blood::SACRIFICE)
+            .ok_or("Rotten sacrifice source callback")?;
+        let bundle=super::quest_world_callbacks::world(&callback,
+            oteryn_gameplay_quests::quest::world_callbacks::Position { x:3,y:11,floor:-7 })?;
+        let cells=bundle.movement_cells(room.movement_cells())
+            .map_err(|error|format!("Rotten progression bundle movement cells: {error:?}"))?;
+        let frame=bundle.frame_binding_digest(world);
         let channel_pin = ChannelContentPin::from_activation(
             world, pin.activation_sequence(), pin.identity().server_artifact_digest(),
-            pin.identity().client_artifact_digest(), pin.frame_binding().digest(),
-            room.map_revision_digest(), (2, 11, -7),
+            pin.identity().client_artifact_digest(), frame,
+            bundle.map_revision_digest(), (2, 11, 7),
         );
         let deps = Dependencies::with_content_and_capacity(
             // Eleven retained native deaths, one player and one NPC share this
@@ -58,7 +70,7 @@ fn scenario() -> TestResult {
         sqlx::query("SELECT game_content_record_activation(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3::text::numeric,NULL,$4,$5,$6)")
             .bind(id(42).as_slice()).bind(id(43).as_slice()).bind(pin.activation_sequence().to_string())
             .bind(pin.identity().server_artifact_digest().as_slice())
-            .bind(pin.identity().client_artifact_digest().as_slice()).bind(pin.frame_binding().digest().as_slice())
+            .bind(pin.identity().client_artifact_digest().as_slice()).bind(frame.as_slice())
             .execute(&h.pool).await?;
         {
             let mut runtime = deps.runtime.lock().await;
@@ -70,6 +82,7 @@ fn scenario() -> TestResult {
         }
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
+        owner.movement_cells=&cells;
         owner.quest_catalogue=Some(std::sync::Arc::new(
             oteryn_gameplay_quests::quest::loader::load_embedded_quest_state("content-1")
                 .map_err(debug)?.catalogue().clone(),
@@ -320,7 +333,8 @@ async fn kill_key(
         let mut runtime = owner.runtime.lock().await;
         let pin = runtime.content_pin().clone();
         runtime.realize_native_qualification_spawn_for_source(u16::try_from(command_id)?,pin,creature_key,
-            MovementLocalPosition { x:1, y:11, floor:-7 }).map_err(debug)?;
+            MovementLocalPosition { x:1, y:11, floor:7 })
+            .map_err(|error|format!("Rotten native spawn {creature_key} command {command_id}: {error:?}"))?;
         let target = runtime.visible_entities().creatures.last().ok_or("native boss")?.actor;
         runtime.borrow_exact_actor_commit_at(at).commit_damage_for_bound_attacker(
             target, deps.actor, CommandRef::new(session, CommandId::new(command_id).map_err(debug)?), 0,
@@ -380,9 +394,11 @@ async fn kill_key(
         "physical corpse refusal must not create a native XP, Hazard or Rotten receipt");
     eprintln!("ROTTEN_BLOOD PHYSICAL_CORPSE_REFUSED creature={creature_key} reason=corpse_item_inadmissible");
 
-    settle_captured_endgame_death(owner,&h.pool,session,&source).await?;
+    settle_captured_endgame_death(owner,&h.pool,session,&source).await
+        .map_err(|error|format!("Rotten captured death settlement {creature_key} command {command_id}: {error}"))?;
     let before_replay=progression_receipts(h).await?;
-    settle_captured_endgame_death(owner,&h.pool,session,&source).await?;
+    settle_captured_endgame_death(owner,&h.pool,session,&source).await
+        .map_err(|error|format!("Rotten captured death replay {creature_key} command {command_id}: {error}"))?;
     assert_eq!(progression_receipts(h).await?,before_replay,
         "same captured native death must never grant twice through the consumer seam");
     Ok(())
@@ -419,13 +435,15 @@ pub(super) async fn place_npc(
     owner.states.chat.admit(session, "Rotten Blood Hero", owner.owner_now());
     owner.states.chat.set_npc_service(session);
     let mut runtime = owner.runtime.lock().await;
-    let spot = runtime.read_actor_position(actor).map_err(debug)?.position();
+    let spot = runtime.read_actor_position(actor)
+        .map_err(|error|format!("Rotten NPC {key} actor position: {error:?}"))?.position();
     runtime.place_npcs(&NpcPlacementTable { npcs: vec![NpcPlacements {
         key: key.into(), placements: vec![NpcPlacement {
             floor: -i8::try_from(spot.floor)?, x: u16::try_from(spot.x + 1)?,
             y: u16::try_from(spot.y)?, direction: MovementFacing::South,
         }],
-    }] }, |_| true, true).map_err(debug)?;
+    }] }, |_| true, true)
+        .map_err(|error|format!("Rotten NPC {key} placement beside carrier position {spot:?}: {error:?}"))?;
     let placed = runtime.visible_entities().npcs.first().copied().ok_or("Bloodshade placement")?;
     Ok(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
         identity: placed.actor.placement_identity(), generation: placed.generation,
