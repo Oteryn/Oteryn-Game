@@ -218,6 +218,9 @@ pub enum BuildCause {
     /// `none` to a vocation key. The owner re-levels cumulative progress under the new vocation
     /// (SKILLS-0 §3.3) and binds the formula table in the policy digest.
     VocationChoice,
+    /// S16c: a Dawnport trial tile switches to another vocation key below level 20, re-levelled
+    /// like [`Self::VocationChoice`] (Crystal 201189f8 data-global/lib/others/dawnport.lua:26-120).
+    VocationTrial,
     /// One vocation key to another; every family equal.
     Promotion,
     /// OFFLINE0: fenced terminal logout marker.
@@ -234,6 +237,7 @@ impl BuildCause {
             Self::Logout => "logout",
             Self::OfflineSettlement => "offline_settlement",
             Self::VocationChoice => "vocation_choice",
+            Self::VocationTrial => "vocation_trial",
             Self::Promotion => "promotion",
         }
     }
@@ -243,6 +247,7 @@ impl BuildCause {
             Self::Training,
             Self::RestingStamina,
             Self::VocationChoice,
+            Self::VocationTrial,
             Self::Promotion,
             Self::Logout,
             Self::OfflineSettlement,
@@ -252,6 +257,11 @@ impl BuildCause {
     }
 
     /// The direction of the 0030 cause CHECK, checked before any write.
+    /// The causes whose `after` must be exactly [`convert_vocation`] of `before`.
+    fn converts(self) -> bool {
+        matches!(self, Self::VocationChoice | Self::VocationTrial)
+    }
+
     fn admits(self, before: &DurableBuildState, after: &DurableBuildState) -> bool {
         let (from, to) = (before.families(), after.families());
         match self {
@@ -268,6 +278,9 @@ impl BuildCause {
                     && from != to
             }
             Self::VocationChoice => before.vocation == NO_VOCATION && after.vocation != NO_VOCATION,
+            Self::VocationTrial => {
+                after.vocation != NO_VOCATION && before.vocation != after.vocation
+            }
             Self::Promotion => {
                 before.vocation != NO_VOCATION
                     && after.vocation != NO_VOCATION
@@ -401,7 +414,7 @@ pub(super) async fn prepare_character_build_with_recovery(
             .pruned_stance
             .as_deref()
             .is_some_and(|stance| request.cause == BuildCause::Training || !valid_revision(stance))
-        || (request.cause == BuildCause::VocationChoice
+        || (request.cause.converts()
             && convert_vocation(formula, &request.before, &request.after.vocation)?
                 != request.after)
     {
@@ -672,9 +685,12 @@ pub(super) async fn apply_build_in_transaction(
     if row.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
     }
-    if request.cause == BuildCause::VocationChoice {
-        let level = u32::try_from(state.try_get::<i64, _>("level")?)
-            .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let level = u32::try_from(state.try_get::<i64, _>("level")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    // Crystal dawnport.lua:97-118 refills only above level 8; up to 8 the maxima do not move.
+    if request.cause == BuildCause::VocationChoice
+        || (request.cause == BuildCause::VocationTrial && level > 8)
+    {
         let (health, mana, _) = oteryn_gameplay_characters::vitals::maxima(
             request.after.vocation(), level,
             oteryn_protocol_oteryn::actor_spell::MAX_VITAL_POOL,
@@ -803,7 +819,7 @@ impl DurabilityRoot {
         {
             return Err(CharacterProgressionError::InvalidInput);
         }
-        if request.cause == BuildCause::VocationChoice
+        if request.cause.converts()
             && convert_vocation(formula, &request.before, &request.after.vocation)? != request.after
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -1072,6 +1088,24 @@ mod tests {
         assert_eq!(
             relevel(u64::MAX, 0, |_| Some(1)),
             (1000, MAX_BUILD_PROGRESS - 1000)
+        );
+    }
+
+    #[test]
+    fn s16c_vocation_trial_switches_between_vocations_and_back_but_never_to_none() {
+        let seed = DurableBuildState::default();
+        let knight = DurableBuildState::new("knight", (0, 0), [(10, 0); 7]).unwrap_or_default();
+        let sorcerer =
+            DurableBuildState::new("sorcerer", (0, 0), [(10, 0); 7]).unwrap_or_default();
+        assert!(BuildCause::VocationTrial.admits(&seed, &knight));
+        assert!(BuildCause::VocationTrial.admits(&knight, &sorcerer));
+        assert!(BuildCause::VocationTrial.admits(&sorcerer, &knight));
+        assert!(!BuildCause::VocationTrial.admits(&knight, &knight));
+        assert!(!BuildCause::VocationTrial.admits(&knight, &seed));
+        assert!(BuildCause::VocationTrial.converts());
+        assert_eq!(
+            BuildCause::parse("vocation_trial"),
+            Some(BuildCause::VocationTrial)
         );
     }
 

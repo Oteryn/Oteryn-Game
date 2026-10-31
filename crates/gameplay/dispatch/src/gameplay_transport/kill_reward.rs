@@ -18,9 +18,9 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::sync::Mutex as AsyncMutex;
 
 use crate::combat::{
-    CapturedRewardPrincipal, CombatDeathRewardBestiaryError, CombatDeathRewardLootError,
-    CombatDeathRewardXpError, CommittedCorpseLoot, CreatureDeathBestiaryInput,
-    CreatureDeathRewardAdmissionError, CreatureDeathRewardInput,
+    CapturedRewardPrincipal, CombatBestiaryOutcome, CombatDeathRewardBestiaryError,
+    CombatDeathRewardLootError, CombatDeathRewardXpError, CommittedCorpseLoot,
+    CreatureDeathBestiaryInput, CreatureDeathRewardAdmissionError, CreatureDeathRewardInput,
     CreatureDeathRewardWithBestiaryOutcome, DeathGroundContext, DurabilitySession,
     ProjectedCreatureDeathFacts, RewardPrincipal, animus_mastery_experience,
     capture_projected_death_facts, check_inflight_loot_mint_capacity, loot_plan_seed,
@@ -29,8 +29,9 @@ use crate::combat::{
 };
 use crate::content::character_progression_content::CHARACTER_EXPERIENCE_TABLE_LEVELS;
 use crate::content::creature_reward::{CreatureRewardRow, CreatureRewardTable};
-use crate::durability::bestiary_progress::BestiaryProgressError;
+use crate::durability::bestiary_progress::{BestiaryKillOutcome, BestiaryProgressError};
 use crate::durability::character_progression::CharacterProgressionError;
+use crate::durability::cyclopedia_tracker::TrackerKind;
 use crate::durability::item_mint::ItemMintError;
 use crate::foundation::runtime_actor_spell_types::CombatBatchReceipt;
 use {
@@ -1807,6 +1808,13 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                     no_progression: false,
                 };
             }
+            if matches!(result, Ok(true)) {
+                admission.states.cyclopedia_tracker_refresh.mark(
+                    self.fence.character_id,
+                    TrackerKind::Bosstiary,
+                    &boss.key,
+                );
+            }
             if let Err(error) = result {
                 operator_event(&format!(
                     "kill_reward_bosstiary_failed creature={} reason={error:?}",
@@ -1867,8 +1875,15 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let mastered = masteries.iter().any(|key| key == &entry.creature);
         let base_xp = u64::try_from(row.xp_amount.get()).unwrap_or(0);
         let animus_xp = animus_mastery_experience(base_xp, masteries.len(), mastered);
+        // W05d: the scheduled event experience rate (Crystal `player.lua:428-429`) applies to the
+        // kill's experience before the party split, so solo and party kills both carry it.
+        let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
+        let event_xp = oteryn_gameplay_foundation::scheduled_events::scale_gain(
+            animus_xp,
+            event_rates.experience,
+        );
         Arc::make_mut(&mut row).xp_amount = oteryn_simulation_determinism::ExactI64::new(
-            i64::try_from(animus_xp).unwrap_or(i64::MAX),
+            i64::try_from(event_xp).unwrap_or(i64::MAX),
         );
         entry.row = Some(Arc::clone(&row));
         // Lock order (SPELL-LOCK-2 §1.2): the lane before the revision slot; the corpse loot
@@ -1951,6 +1966,20 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .await
             .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
         apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
+        // W05d: the scheduled event loot rate scales each drop chance (Crystal
+        // `functions.lua:68-70`), capped at certainty.
+        for loot in &mut loot_table.entries {
+            if let Some(probability) = &mut loot.probability_ppm {
+                *probability = u32::try_from(
+                    oteryn_gameplay_foundation::scheduled_events::scale_gain(
+                        u64::from(*probability),
+                        event_rates.loot,
+                    )
+                    .min(1_000_000),
+                )
+                .unwrap_or(1_000_000);
+            }
+        }
         if !loot_table.entries.is_empty() {
             let Ok(active) = admission
                 .root
@@ -2039,6 +2068,20 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 .states
                 .soul_kills
                 .mark(super::soul_kill_live::soul_hook(xp));
+        }
+        // P22d: a committed Bestiary or Bosstiary kill refreshes the tracker it is on.
+        if let Ok(outcome) = &outcome {
+            let marks = &admission.states.cyclopedia_tracker_refresh;
+            if let Ok(CombatBestiaryOutcome::Recorded(BestiaryKillOutcome::Committed(kill))) =
+                &outcome.bestiary
+            {
+                marks.mark(kill.character_id, TrackerKind::Bestiary, &kill.race_key);
+            }
+            if matches!(outcome.bosstiary, Ok(true))
+                && let Some(boss) = &row.boss
+            {
+                marks.mark(self.fence.character_id, TrackerKind::Bosstiary, &boss.key);
+            }
         }
         // TASKBOARD-1 §2.4: the settled kill credits the principal's active Task Board task.
         if outcome.is_ok()

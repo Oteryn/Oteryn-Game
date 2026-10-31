@@ -23,6 +23,7 @@ mod attack_chase_search;
 pub(super) mod charm_combat;
 mod drain;
 mod equipped_offence;
+mod monk_shrines;
 pub(super) mod player_block;
 pub(in crate::gameplay_transport) mod ranged;
 mod shared_experience;

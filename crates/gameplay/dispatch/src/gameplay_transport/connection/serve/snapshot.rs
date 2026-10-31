@@ -140,6 +140,23 @@ pub(super) async fn initial<A: FreshAdmissionAuthority>(
             payload,
         });
     }
+    // P22c: both stored trackers on every join, as Crystal refreshes them at login
+    // (player.cpp:11560-11563).
+    if admitted.continuity.selected_capabilities.domain_selected(
+        oteryn_protocol_oteryn::cyclopedia_tracker::STATE_DOMAIN_CYCLOPEDIA_TRACKER,
+    ) {
+        let payload = authority
+            .cyclopedia_tracker_snapshot(*admitted)
+            .await
+            .ok_or(ServeEnd::Disconnected)?;
+        domains.push(OwnedDomain {
+            domain_id: oteryn_protocol_oteryn::cyclopedia_tracker::STATE_DOMAIN_CYCLOPEDIA_TRACKER,
+            revision: 1,
+            snapshot_type:
+                oteryn_protocol_oteryn::cyclopedia_tracker::SNAPSHOT_TYPE_CYCLOPEDIA_TRACKER_V1,
+            payload,
+        });
+    }
     Ok(InitialSnapshot {
         overlay_served,
         overlay_revision,

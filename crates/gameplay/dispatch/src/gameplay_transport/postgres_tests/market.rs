@@ -7,6 +7,106 @@ use crate::gameplay_transport::connection::{FirstEntryOutcome, FreshAdmissionAut
 use crate::map::boot::{BootPins, boot, tests as bundle_fixture};
 use crate::map::facts::ItemDefinition;
 use oteryn_protocol_oteryn::market::*;
+// Only decode projection rows; production replies have a fixed code prefix.
+fn projected_rows(bytes: &[u8]) -> TestResult<Vec<([u8; 16], u64)>> {
+    fn varint(bytes: &[u8], at: &mut usize) -> TestResult<u64> {
+        let mut value = 0;
+        for shift in (0..64).step_by(7) {
+            let byte = *bytes.get(*at).ok_or("reply varint")?;
+            *at += 1;
+            value |= u64::from(byte & 127) << shift;
+            if byte < 128 {
+                return Ok(value);
+            }
+        }
+        Err("reply varint overflow".into())
+    }
+    let mut at = 0;
+    let mut rows = Vec::new();
+    while at < bytes.len() {
+        let tag = varint(bytes, &mut at)?;
+        match tag & 7 {
+            0 => {
+                varint(bytes, &mut at)?;
+            }
+            2 => {
+                let length = usize::try_from(varint(bytes, &mut at)?)?;
+                let field = bytes.get(at..at + length).ok_or("reply field")?;
+                at += length;
+                if tag >> 3 == 3 {
+                    let mut cursor = 0;
+                    assert_eq!(varint(field, &mut cursor)?, 10);
+                    assert_eq!(varint(field, &mut cursor)?, 16);
+                    let offer = field
+                        .get(cursor..cursor + 16)
+                        .ok_or("row offer")?
+                        .try_into()?;
+                    cursor += 16;
+                    assert_eq!(varint(field, &mut cursor)?, 16);
+                    varint(field, &mut cursor)?; // definition
+                    assert_eq!(varint(field, &mut cursor)?, 24);
+                    rows.push((offer, varint(field, &mut cursor)?));
+                }
+            }
+            _ => return Err("reply wire type".into()),
+        }
+    }
+    Ok(rows)
+}
+
+async fn routed_market(
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut crate::gameplay_transport::connection::AdmittedSession,
+    requests: impl IntoIterator<Item = (u64, MarketRequest)>,
+) -> TestResult<Vec<Vec<u8>>> {
+    let mut input = Vec::new();
+    for (command_id, request) in requests {
+        let payload = encode_request(request).map_err(debug)?;
+        let frame = oteryn_protocol_oteryn::encode_client_command(
+            1,
+            &oteryn_protocol_oteryn::ClientCommandValue {
+                command_id,
+                command_type: COMMAND_TYPE_MARKET,
+                payload: &payload,
+            },
+        )
+        .map_err(debug)?;
+        input.extend(u32::try_from(frame.len())?.to_be_bytes());
+        input.extend(frame);
+    }
+    use crate::gameplay_transport::connection::{ConnectionEnd, IDLE_LIVENESS, serve_admitted};
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    client.write_all(&input).await?;
+    client.shutdown().await?;
+    let end = serve_admitted(&mut server, *admitted, owner, IDLE_LIVENESS).await;
+    let ConnectionEnd::AdmittedThenDisconnected(next) = end else {
+        return Err(format!("market connection ended: {end:?}").into());
+    };
+    *admitted = next;
+    drop(server);
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
+    let mut cursor = output.as_slice();
+    let mut replies = Vec::new();
+    while !cursor.is_empty() {
+        let length =
+            u32::from_be_bytes(cursor.get(..4).ok_or("frame length")?.try_into()?) as usize;
+        let frame = cursor.get(4..4 + length).ok_or("frame")?;
+        cursor = &cursor[4 + length..];
+        let env = oteryn_protocol_oteryn::decode_wire_envelope(frame).map_err(debug)?;
+        if env.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
+            let result =
+                oteryn_protocol_oteryn::decode_command_result(env.payload()).map_err(debug)?;
+            assert_eq!(
+                result.status,
+                oteryn_protocol_oteryn::CommandStatus::Accepted
+            );
+            replies.push(result.payload.to_vec());
+        }
+    }
+    Ok(replies)
+}
 
 #[test]
 fn market_postgres_settlement_replay_and_conservation() -> TestResult {
@@ -15,12 +115,31 @@ fn market_postgres_settlement_replay_and_conservation() -> TestResult {
     }
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|e| e.to_string()))?
+        .spawn(|| scenario(false).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "market scenario panicked")??;
     Ok(())
 }
-fn scenario() -> TestResult {
+#[test]
+fn market_postgres_placement_projection_bounds_and_thirty_day_expiry() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    eprintln!("FIXE6W5 START market bounds and 30-day expiry");
+    let started = std::time::Instant::now();
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| scenario(true).map_err(|e| e.to_string()))?
+        .join()
+        .map_err(|_| "market bounds scenario panicked")??;
+    eprintln!(
+        "FIXE6W5 FINISH market bounds and 30-day expiry {:?}",
+        started.elapsed()
+    );
+    Ok(())
+}
+
+fn scenario(bounds: bool) -> TestResult {
     run(async |admin| {
         let harness =
             Harness::create_with_admission_seed(admin, "market_settlement", true, false).await?;
@@ -292,6 +411,96 @@ fn scenario() -> TestResult {
             anonymous: false,
             page: 0,
         };
+        if bounds {
+            // Crystal config.lua.dist:490,494: 30 days and 100 placements total.
+            let replies = routed_market(
+                &owner,
+                &mut admitted,
+                (1..=101).map(|number| {
+                    (
+                        number,
+                        MarketRequest {
+                            action: 5,
+                            definition: reference,
+                            amount: 1,
+                            price: 1,
+                            ..empty
+                        },
+                    )
+                }),
+            )
+            .await?;
+            assert_eq!(replies.len(), 101);
+            for (index, reply) in replies.iter().enumerate() {
+                assert_eq!(reply.get(1), Some(&if index < 100 { 1 } else { 5 }));
+            }
+            let lifetimes: Vec<i64> = sqlx::query_scalar("SELECT expires_at_us-created_at_us FROM game_market_offers ORDER BY offer_id LIMIT 101")
+                .fetch_all(&harness.pool).await?;
+            assert_eq!(lifetimes, vec![2_592_000_000_000; 100]);
+            // Retained books can exceed today's placement cap. Fixture terms retain
+            // the production 30-day lifetime; all reads use the composed command.
+            let mut retained = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *retained)
+                .await?;
+            sqlx::query("INSERT INTO game_market_offers(offer_id,world_id,definition_key,definition_revision,side,account_id,character_id,piece_price,amount,remaining,created_at_us,expires_at_us,state,escrow_gold,held_credit_gold) SELECT game_market_identity(encode($1,'hex')::uuid,'bounds-'||n),encode($2,'hex')::uuid,$3,$4,s,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,1,1,t,t+2592000000000,1,CASE WHEN s=1 THEN 1 ELSE 0 END,0 FROM generate_series(1,1902) n CROSS JOIN LATERAL (SELECT CASE WHEN n<=901 THEN 1 ELSE 2 END::smallint s) side CROSS JOIN (SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint t) clock")
+                .bind(id(191).as_slice()).bind(id(42).as_slice()).bind(&key).bind(&revision).bind(id(40).as_slice()).bind(id(41).as_slice()).execute(&mut *retained).await?;
+            retained.commit().await?;
+            // Crystal iomarket.hpp:33-34: independent per-side projection limits.
+            for (action, expected, last_page) in [(2, 700, 64), (3, 1000, 62)] {
+                let mut counts = [0_usize; 2];
+                let mut seen = std::collections::BTreeSet::new();
+                let replies = routed_market(
+                    &owner,
+                    &mut admitted,
+                    (0..=last_page).map(|page| {
+                        (
+                            (if action == 2 { 102 } else { 167 }) + u64::from(page),
+                            MarketRequest {
+                                action,
+                                definition: if action == 2 { reference } else { 0 },
+                                page,
+                                ..empty
+                            },
+                        )
+                    }),
+                )
+                .await?;
+                assert_eq!(replies.len(), usize::try_from(last_page)? + 1);
+                for reply in replies {
+                    assert_eq!(reply.get(1), Some(&1));
+                    for (offer, side) in projected_rows(&reply)? {
+                        assert!(seen.insert(offer), "duplicate projected offer");
+                        counts[usize::try_from(side)? - 1] += 1;
+                    }
+                }
+                assert_eq!(counts, [expected, expected]);
+            }
+            // Crystal iomarket.cpp:254-258 expires created <= now - duration.
+            // A retained buy at 30 days is released, a 29-day offer stays open.
+            let mut retained = harness.pool.begin().await?;
+            sqlx::query("SET LOCAL session_replication_role=replica")
+                .execute(&mut *retained)
+                .await?;
+            sqlx::query("INSERT INTO game_market_offers(offer_id,world_id,definition_key,definition_revision,side,account_id,character_id,piece_price,amount,remaining,created_at_us,expires_at_us,state,escrow_gold,held_credit_gold) SELECT game_market_identity(encode($1,'hex')::uuid,'expiry-'||age),encode($2,'hex')::uuid,$3,$4,1,encode($5,'hex')::uuid,encode($6,'hex')::uuid,1,1,1,t-age*86400000000,t+(30-age)*86400000000,1,1,0 FROM generate_series(29,30) age CROSS JOIN (SELECT floor(extract(epoch FROM clock_timestamp())*1000000)::bigint t) clock")
+                .bind(id(192).as_slice()).bind(id(42).as_slice()).bind(&key).bind(&revision).bind(id(40).as_slice()).bind(id(41).as_slice()).execute(&mut *retained).await?;
+            retained.commit().await?;
+            let replies = routed_market(
+                &owner,
+                &mut admitted,
+                [(230, MarketRequest { action: 3, ..empty })],
+            )
+            .await?;
+            assert_eq!(replies.len(), 1);
+            assert_eq!(replies[0].get(1), Some(&1));
+            let states: Vec<i16> = sqlx::query_scalar("SELECT state FROM game_market_offers WHERE offer_id IN (game_market_identity(encode($1,'hex')::uuid,'expiry-29'),game_market_identity(encode($1,'hex')::uuid,'expiry-30')) ORDER BY created_at_us")
+                .bind(id(192).as_slice()).fetch_all(&harness.pool).await?;
+            assert_eq!(states, [4, 1]);
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         harness
             .root
             .advance_market(&authority, &harness.node, deps.admitted.world_id)

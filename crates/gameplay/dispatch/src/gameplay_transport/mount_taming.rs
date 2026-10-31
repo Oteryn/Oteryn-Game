@@ -241,17 +241,17 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             kind: "mount_taming".into(),
             event_id: transaction_id.to_vec(),
         };
-        let achievements = [
-            &rule.achievement_key,
-            "oteryn:achievement/natural_born_cowboy",
-        ]
-        .into_iter()
-        .map(|key| AchievementGrantRequest {
-            achievement_key: key.into(),
-            catalogue: self.achievements.lookup(key),
-            source: event.clone(),
-        })
-        .collect();
+        let achievements = rule
+            .achievement_key
+            .iter()
+            .map(String::as_str)
+            .chain(std::iter::once("oteryn:achievement/natural_born_cowboy"))
+            .map(|key| AchievementGrantRequest {
+                achievement_key: key.into(),
+                catalogue: self.achievements.lookup(key),
+                source: event.clone(),
+            })
+            .collect();
         let request = MountTamingRequest {
             item: ItemUseRequest {
                 kind: ItemUseKind::MountTaming,

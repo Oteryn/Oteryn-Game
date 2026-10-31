@@ -1,7 +1,9 @@
-//! Depot search composition; mutations fail closed until their atomic owner lands.
+//! Depot search composition: retrieval withdraws a supply-stash balance, or moves the
+//! depot and Inbox items through the item-loop batch owner.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
 use super::item_ref_admission::NativeItemWeights;
 use crate::durability::character_stash::StashRequest;
+use crate::durability::item_loop_move::DepotSearchRetrieval;
 use crate::foundation::{CommandId, CommandRef};
 use oteryn_protocol_oteryn::depot_search::{Outcome, Reply, Request};
 use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
@@ -112,15 +114,34 @@ pub(super) async fn execute(
             .await
         {
             Ok(Some(row)) => row,
-            // Without a stash balance the item can still sit in depot or Inbox custody,
-            // whose retrieval stays rejected; only an item held nowhere is not found.
+            // Without a stash balance, retrieval moves the depot and Inbox items, nested
+            // entries included, as one batch of conserved item-loop moves.
             Ok(None) => {
-                return match owner
+                let retrieval = owner
                     .root
-                    .read_depot_search(owner.character, fence.character_id, client_id)
-                    .await
-                {
-                    Ok(None) => Reply {
+                    .commit_depot_search_retrieval(
+                        &_permit,
+                        owner.character,
+                        owner.holder,
+                        fence,
+                        CommandRef::new(admitted.game_session_id, command_id),
+                        &NativeItemWeights(native),
+                        client_id,
+                        all,
+                    )
+                    .await;
+                return match retrieval {
+                    Ok(Ok(DepotSearchRetrieval::Retrieved(0))) => Reply {
+                        outcome: Outcome::NoRoom,
+                        retrieved: 0,
+                        results: Vec::new(),
+                    },
+                    Ok(Ok(DepotSearchRetrieval::Retrieved(retrieved))) => Reply {
+                        outcome: Outcome::Retrieved,
+                        retrieved,
+                        results: Vec::new(),
+                    },
+                    Ok(Ok(DepotSearchRetrieval::NotFound)) => Reply {
                         outcome: Outcome::NotFound,
                         retrieved: 0,
                         results: Vec::new(),

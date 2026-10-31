@@ -25,6 +25,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // I14: seven restore potions, two foods and the two larger flasks admitted from
     // digest-pinned consumption facts. They carry no equipment/speed qualification.
     ("I14", 11),
+    // I14G: 3250, 7642, 23374, 23375 and 23535 are non-equipment consumables.
+    // Crystal 201189f8 items.xml:8201,20873,46095,46100,46862 and Canary
+    // 99902524 items.xml:8170,20782,45877,45882,46644 carry no speed attribute.
+    ("I14G", 5),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
     // The wooden chairs 2358..=2361 (tools/content-migration/item_transform_profiles.py).
@@ -33,8 +37,21 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 23 training/exercise weapon profiles (tools/content-migration/loop_training_profiles.py):
     // 28552..=28557, 35279..=35290, 44065..=44067, 50294/50295. All have speed_bonus=0.
     ("LOOP-TRAIN-1", 23),
+    // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
+    // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
+    ("M06-KEYS", 5),
+    // M09: 28 gathering profiles from Crystal 201189f
+    // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
+    ("M09-GATHER", 28),
+    // E09 mail (tools/content-migration/mail_item_profiles.py): the parcel 3503, stamped
+    // parcel 3504 and stamped letter 3506 are new; the letter 3505 and label 3507 replace
+    // their content-only profiles. None of them is equipment.
+    ("MAIL-E09", 3),
     // The pick 3456, shiny stone 10310 and small diamond 3028.
     ("MINING-1", 3),
+    // Monk shrine rewards 50267..=50269 and 50271..=50274 from
+    // tools/content-migration/monk_reward_profiles.py. All have speed_bonus=0.
+    ("MONKQUEST", 7),
     // The Gold Pouch 23721 and eight quivers (tools/content-migration/quick_loot_item_profiles.py).
     // All have speed_bonus=0.
     ("QUICKLOOT-1", 9),
@@ -67,6 +84,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M08/M09: the eleven qualified shovel, machete, rod/bait/water and target policies
     // in tool-item-profiles.json. The source importer records speed_bonus=0.
     ("TOOLS-PKG4", 11),
+    // M08B: the pick and its stone, loose stone and loose ice piles 593/594, 606/615 and
+    // 608/609 in tool-item-profiles.json (Canary 99902524). None of them is equipment.
+    ("TOOLS-M08B", 6),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),
@@ -139,6 +159,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             [236, 237, 239, 268, 283, 284, 3578, 3606, 7643, 7876, 23373]
                 .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
+        // I14G preserves absent speed for the five additional non-equipment consumables.
+        .chain([3250, 7642, 23374, 23375, 23535].map(|id| format!("oteryn:item.tibia.i{id}")))
         // READ-WRITE-1: the 19 readable profiles carry no speed attribute and are not equipment.
         .chain(
             [
@@ -159,6 +181,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             ]
             .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
+        // MAIL-E09: the parcels and the stamped letter carry no speed attribute.
+        .chain([3503, 3504, 3506].map(|id| format!("oteryn:item.tibia.i{id}")))
         .collect()
     );
     Ok(())

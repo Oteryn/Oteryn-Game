@@ -17,6 +17,8 @@ fn server_save_countdown_reads_the_next_berlin_save_and_stops_while_retiring() -
 
 fn scenario() -> TestResult {
     run(async |admin| {
+        eprintln!("FIXE6W5 START server save countdown");
+        let started = std::time::Instant::now();
         let harness =
             Harness::create_with_admission_seed(admin, "server_save_countdown", true, false)
                 .await?;
@@ -24,7 +26,7 @@ fn scenario() -> TestResult {
         // An uninitialized World has no planned reset to announce.
         assert_eq!(harness.root.planned_world_reset(world).await?, None);
         // Control's activation fixture: epoch 0 on the Tibia server-save calendar.
-        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '10 hours','YYYY-MM'))")
+        sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),to_char((clock_timestamp() AT TIME ZONE 'Europe/Berlin')-interval '6 hours','YYYY-MM'))")
             .bind(world.as_bytes().as_slice()).bind([7_u8; 32].as_slice()).execute(&harness.pool).await?;
         sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
             .bind(world.as_bytes().as_slice())
@@ -40,7 +42,22 @@ fn scenario() -> TestResult {
         assert!(ahead > 0 && ahead <= 25 * 3_600_000, "{planned:?}");
         let berlin: String = sqlx::query_scalar("SELECT to_char(to_timestamp($1::double precision/1000) AT TIME ZONE 'Europe/Berlin','HH24:MI:SS.MS')")
             .bind(planned.reset_at_unix_ms).fetch_one(&harness.pool).await?;
-        assert_eq!(berlin, "10:00:00.000");
+        assert_eq!(berlin, "06:00:00.000");
+        let dst_instants: Vec<String> = sqlx::query_scalar("SELECT to_char(((date_trunc('day', local_day::timestamp) + interval '6 hours') AT TIME ZONE 'Europe/Berlin') AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI') FROM unnest(ARRAY[DATE '2026-01-15', DATE '2026-07-15']) local_day ORDER BY local_day")
+            .fetch_all(&harness.pool)
+            .await?;
+        assert_eq!(dst_instants, ["2026-01-15 05:00", "2026-07-15 04:00"]);
+        // Crystal global_server_save.lua:22-34,42-51: each minute 5/4/3/2/1.
+        for minutes in 1..=5 {
+            let due = crate::durability::world_reset::PlannedWorldReset {
+                database_now_unix_ms: planned.reset_at_unix_ms - i64::from(minutes) * 60_000,
+                ..planned
+            };
+            assert_eq!(
+                due.warning_due(planned.reset_at_unix_ms - 600_000),
+                Some(minutes)
+            );
+        }
         // The read is pure: nothing in Control's reset state moved.
         let jobs: i64 = sqlx::query_scalar("SELECT count(*) FROM game_world_reset_jobs")
             .fetch_one(&harness.pool)
@@ -50,6 +67,10 @@ fn scenario() -> TestResult {
         sqlx::query("INSERT INTO game_world_reset_jobs(world_id,reset_epoch,target_digest,retirement_binding,target_map_revision,target_server_digest,target_client_digest,target_frame_digest,target_house_tiles,calendar_revision,phase) VALUES(encode($1,'hex')::uuid,0,$2,sha256(convert_to('oteryn:world-reset-retirement:v1','UTF8') || $2),'map-2',$2,$2,$2,'[]',1,'RETIRING')")
             .bind(world.as_bytes().as_slice()).bind([7_u8; 32].as_slice()).execute(&harness.pool).await?;
         assert_eq!(harness.root.planned_world_reset(world).await?, None);
+        eprintln!(
+            "FIXE6W5 FINISH server save countdown {:?}",
+            started.elapsed()
+        );
         Ok(())
     })
 }

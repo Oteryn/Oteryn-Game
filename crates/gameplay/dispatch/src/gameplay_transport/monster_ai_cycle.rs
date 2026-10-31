@@ -315,6 +315,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let dispatch = melee_owner.think(
                 &mut runtime,
                 &mut super::attack::player_block::PlayerBiteVitals {
+                    quest_sessions: Some(&self.states.quest_sessions),
                     charm: Some(super::attack::player_block::IncomingCharm {
                         catalogue: self.imported_charms,
                         root: decision_root,

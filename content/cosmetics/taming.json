@@ -806,6 +806,60 @@
     "source": "canary:data-otservbr-global/scripts/actions/mounts/mounts.lua:50"
   },
   {
+    "item_key": "oteryn:item.tibia.i39548",
+    "creature_key": "oteryn:creature.giant_beaver",
+    "mount_key": "oteryn:content.mount.giant_beaver_mount",
+    "grant_key": "oteryn:taming.giant_beaver",
+    "chance": 40,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The giant beaver ran away."
+      },
+      {
+        "action": 3,
+        "text": "The giant beaver is ignoring you."
+      }
+    ],
+    "success_text": "You tamed the giant beaver.",
+    "achievement_key": "oteryn:achievement/beaver_away",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:19"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i43901",
+    "creature_key": "oteryn:creature.foxmouse",
+    "mount_key": "oteryn:content.mount.foxmouse_mount",
+    "grant_key": "oteryn:taming.foxmouse",
+    "chance": 100,
+    "break_item": false,
+    "failures": [
+      {
+        "action": 1,
+        "text": "The foxmouse ran away."
+      }
+    ],
+    "success_text": "You have tamed the foxmouse.",
+    "achievement_key": "oteryn:achievement/like_fox_and_mouse",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:73"
+  },
+  {
+    "item_key": "oteryn:item.tibia.i52638",
+    "creature_key": "oteryn:creature.battlefrazzle",
+    "mount_key": "oteryn:content.mount.battlefrazzle",
+    "grant_key": "oteryn:taming.battlefrazzle",
+    "chance": 40,
+    "break_item": true,
+    "failures": [
+      {
+        "action": 2,
+        "text": "The tamed frazzlemaw devours the rare fish but otherwise takes no notice of your advancement."
+      }
+    ],
+    "success_text": "The tamed frazzlemaw hungers for fish and this one is a particular rare treat. You command this one now, take good care of it!",
+    "source": "crystal:data-global/scripts/actions/mounts/mounts.lua:8"
+  },
+  {
     "item_key": "oteryn:item.tibia.i5907",
     "creature_key": "oteryn:creature.bear",
     "mount_key": "oteryn:content.mount.war_bear",

@@ -1,0 +1,14 @@
+{
+  "id": 200,
+  "name": "TEAM_FINDER_LEADER_V1",
+  "constant": "team_finder::CAPABILITY_TEAM_FINDER_LEADER_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    390,
+    391
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": { "production": false, "item_view": false, "bundle_world": true }
+}

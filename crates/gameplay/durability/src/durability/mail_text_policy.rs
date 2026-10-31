@@ -292,17 +292,24 @@ mod tests {
             .active()
             .and_then(|active| active.native_gameplay())
             .ok_or("production gameplay activation missing")?;
-        // Scroll is the existing materializable rewrite. Do not widen mint
-        // permission for the content-only books, letters, labels or blackboards.
+        // Scroll is the existing materializable rewrite; MAIL E09 admits the letter and the
+        // parcel label (Canary items.xml 3505, 3507) at their accepted limits. Do not widen
+        // mint permission for the content-only books, the stamped letter or blackboards.
         let requested = TypedDefinitionRef {
             family: "Item".into(),
             production_key: "oteryn:item.tibia.i2815".into(),
             revision_ref: "definition-r1".into(),
         };
         native.mail_text_policy(&requested)?;
+        for id in [3505, 3507] {
+            native.mail_text_policy(&TypedDefinitionRef {
+                production_key: format!("oteryn:item.tibia.i{id}"),
+                ..requested.clone()
+            })?;
+        }
         for id in [
-            173, 177, 2598, 2605, 2813, 2814, 2816, 2817, 2818, 2819, 2824, 2834, 2837, 2839, 3505,
-            3506, 3507, 6386, 6533, 6538, 7879, 8747, 27932, 27933, 27934,
+            173, 177, 2598, 2605, 2813, 2814, 2816, 2817, 2818, 2819, 2824, 2834, 2837, 2839, 3506,
+            6386, 6533, 6538, 7879, 8747, 27932, 27933, 27934,
         ] {
             let other = TypedDefinitionRef {
                 production_key: format!("oteryn:item.tibia.i{id}"),

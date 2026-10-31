@@ -16,7 +16,7 @@ fn callback(name: &str) -> TestResult<Callback> {
         .find(|c| c.key.ends_with(name))
         .ok_or_else(|| "callback".into())
 }
-fn local(p: Position) -> MovementLocalPosition {
+pub(super) fn local(p: Position) -> MovementLocalPosition {
     MovementLocalPosition {
         x: i32::from(p.x),
         y: i32::from(p.y),
@@ -33,7 +33,7 @@ async fn offering(
     input_item(owner, fence, offering, n, false).await
 }
 
-async fn input_item(
+pub(super) async fn input_item(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     fence: crate::durability::item_transfer::CurrentCharacterItemFence,
     offering: &oteryn_gameplay_quests::quest::world_callbacks::Offering,
@@ -268,6 +268,27 @@ fn world(callback: &Callback, trigger: Position) -> TestResult<crate::map::boot:
                 ..Default::default()
             },
         });
+    if callback.key == "oteryn:quest-callback/monk-guidance" {
+        for shrine in oteryn_gameplay_quests::quest::world_callbacks::load()?
+            .into_iter()
+            .filter(|c| c.quest == callback.quest && c.key != callback.key)
+        {
+            let p = shrine.selector.position.ok_or("shrine position")?;
+            for x in p.x - 2..=p.x + 1 {
+                for y in p.y - 1..=p.y + 1 {
+                    cells.entry((p.floor, x, y)).or_default();
+                }
+            }
+            cells
+                .entry((p.floor, p.x, p.y))
+                .or_default()
+                .push(sector::Item {
+                    palette: 1,
+                    depth: 0,
+                    attrs: Default::default(),
+                });
+        }
+    }
     for passage in &callback.passages {
         let appearance_key = format!("oteryn:terrain.tibia.i{}", passage.appearance);
         let index = if let Some(i) = data
@@ -355,7 +376,7 @@ fn world(callback: &Callback, trigger: Position) -> TestResult<crate::map::boot:
                 items,
             });
     }
-    let sectors = sectors
+    let mut sectors = sectors
         .into_iter()
         .map(|((floor, sx, sy), mut tiles)| {
             tiles.sort_by_key(|t| (t.y, t.x));
@@ -367,6 +388,7 @@ fn world(callback: &Callback, trigger: Position) -> TestResult<crate::map::boot:
             }
         })
         .collect::<Vec<_>>();
+    sectors.sort_by_key(bundle::order);
     let bytes = oteryn_world_bundle::writer::write(&data.manifest, &sectors, &Default::default())?;
     pins.digest = bundle::read(&bytes)?.digest;
     let base = crate::map::load(&bytes, &pins).map_err(debug)?;
@@ -388,7 +410,7 @@ fn world(callback: &Callback, trigger: Position) -> TestResult<crate::map::boot:
     .map_err(debug)
 }
 
-async fn wire(
+pub(super) async fn wire(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
     admitted: &mut AdmittedSession,
     id: u64,
@@ -456,4 +478,4 @@ mod actions;
 mod assertions;
 #[path = "quest_world_callbacks/scenario.rs"]
 mod scenario;
-use scenario::scenario;
+pub(super) use scenario::scenario;

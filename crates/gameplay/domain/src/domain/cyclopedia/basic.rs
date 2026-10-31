@@ -27,10 +27,11 @@ pub struct Point {
 }
 impl Point {
     pub fn in_window(self, at: Self) -> bool {
-        // protocol-oteryn world_map: 18x14, left 8/top 6, same-floor POIs only.
+        // Crystal 201189f `data/scripts/discovery_system.lua:16-19,471-476`:
+        // VIEW_X=7, VIEW_Y=5; exclude the symmetric +1 box on the same floor.
         self.floor == at.floor
-            && (-8..=9).contains(&(i64::from(self.x) - i64::from(at.x)))
-            && (-6..=7).contains(&(i64::from(self.y) - i64::from(at.y)))
+            && (-8..=8).contains(&(i64::from(self.x) - i64::from(at.x)))
+            && (-6..=6).contains(&(i64::from(self.y) - i64::from(at.y)))
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -210,6 +211,38 @@ mod tests {
     #![allow(clippy::panic)]
     use super::*;
     #[test]
+    fn poi_view_edges_are_symmetric_and_floor_changes_hide_points() {
+        let player = Point {
+            x: 100,
+            y: 100,
+            floor: -7,
+        };
+        for x in 92..=108 {
+            assert!(Point { x, ..player }.in_window(player), "x={x}");
+        }
+        for y in 94..=106 {
+            assert!(Point { y, ..player }.in_window(player), "y={y}");
+        }
+        assert!(!Point { x: 91, ..player }.in_window(player));
+        assert!(!Point { x: 109, ..player }.in_window(player));
+        assert!(!Point { y: 93, ..player }.in_window(player));
+        assert!(!Point { y: 107, ..player }.in_window(player));
+        assert!(
+            !Point {
+                floor: -6,
+                ..player
+            }
+            .in_window(player)
+        );
+        assert!(
+            !Point {
+                floor: -8,
+                ..player
+            }
+            .in_window(player)
+        );
+    }
+    #[test]
     fn catalogue_revision_compatibility_and_area_percentage_are_explicit() {
         let Some(area) = BasicArea::embedded() else {
             panic!("authored area")
@@ -339,7 +372,7 @@ mod tests {
             panic!("authored area")
         };
         // The admitted shape of a 32x2 strip entered at (1, 0): the view window removes
-        // x <= 10, leaving x 11..=31 on two rows, which holds at most six spaced points.
+        // x <= 9, leaving x 10..=31 on two rows, which holds at most six spaced points.
         let start = Point {
             x: 1,
             y: 0,

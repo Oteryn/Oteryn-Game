@@ -42,6 +42,7 @@ mod contract_registries;
 mod count_bounds_tests;
 pub mod creature_push;
 pub mod cyclopedia;
+pub mod cyclopedia_tracker;
 pub mod daily_boost;
 pub mod daily_reward;
 pub mod damage_element;
@@ -93,6 +94,7 @@ pub mod stash;
 pub mod store;
 pub mod target_move;
 pub mod task_board;
+pub mod team_finder;
 #[cfg(test)]
 #[path = "tests/lib_tests.rs"]
 mod tests;

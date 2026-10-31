@@ -118,13 +118,13 @@ where
     if notice_revision.is_some() && outcome.earned == EarnedNotice::Unknown {
         return Err(ServeEnd::Disconnected);
     }
-    if let (EarnedNotice::Earned(earned), Some(from)) = (outcome.earned, notice_revision) {
+    if let (EarnedNotice::Earned(earned), Some(from)) = (&outcome.earned, notice_revision) {
         let (Some(delta_sequence), Some(to)) =
             (session.sequence.checked_add(1), from.checked_add(1))
         else {
             return Err(ServeEnd::Disconnected);
         };
-        let Ok(payload) = encode_achievement_earned(&earned) else {
+        let Ok(payload) = encode_achievement_earned(earned) else {
             return Err(ServeEnd::Disconnected);
         };
         let Ok(delta) = encode_state_delta(
@@ -144,6 +144,19 @@ where
         if write_frame(stream, &delta).await.is_err() {
             return Err(ServeEnd::Disconnected);
         }
+    }
+    // Crystal src/creatures/players/achievement/player_achievement.cpp:27-42: newly earned
+    // achievements use the ordinary advance/status-text path. `NoneEarned` includes an
+    // already-owned achievement, so it never repeats the message.
+    if let Some(text) = crate::gameplay_transport::achievement_notification(&outcome.earned) {
+        tutorial_notices_transport::emit_notice(
+            stream,
+            &mut session.admitted,
+            &mut session.sequence,
+            &oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(text),
+        )
+        .await
+        .ok_or(ServeEnd::Disconnected)?;
     }
     Ok(())
 }

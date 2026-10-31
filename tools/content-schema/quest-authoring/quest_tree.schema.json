@@ -302,33 +302,47 @@
             }
           }
         },
-        "native_lowering": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "state",
-            "canonical_progress_refs",
-            "canonical_interaction_refs",
-            "reason"
-          ],
-          "properties": {
-            "state": {
-              "const": "WAITING_IMPLEMENTATION"
-            },
-            "canonical_progress_refs": {
-              "type": "array",
-              "maxItems": 0
-            },
-            "canonical_interaction_refs": {
-              "type": "array",
-              "maxItems": 0
-            },
-            "reason": {
-              "type": "string",
-              "minLength": 1
+          "native_lowering": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "canonical_progress_refs",
+              "canonical_interaction_refs",
+              "reason"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "WAITING_IMPLEMENTATION",
+                  "READY"
+                ]
+              },
+              "canonical_progress_refs": {
+                "type": "array",
+                "maxItems": 14,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^oteryn:quest-progress/(quest/(u15_00/the_way_of_the_monk/(main_shrines/(guidance|tranquility|respect|legacy|empathy|harmony|power|knowledge|serenity|eternity)|questline)|u14_15/the_way_of_the_monk/(shrines_count|quest_line))|monk-pilgrimage/final-report)$"
+                }
+              },
+              "canonical_interaction_refs": {
+                "type": "array",
+                "maxItems": 13,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^oteryn:(quest-callback/monk-(guidance|tranquility|respect|legacy|empathy|harmony|power|knowledge|serenity|eternity)|quest-transition/monk-pilgrimage/(invitation|start|finish))$"
+                }
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
             }
           }
-        },
+,
         "completeness": {"const": "NOT_ASSESSED"},
         "reported_source_readiness": {
           "oneOf": [
@@ -386,6 +400,44 @@
         }
       },
       "allOf": [
+{
+  "if": {
+    "required": [
+      "native_lowering"
+    ],
+    "properties": {
+      "native_lowering": {
+        "properties": {
+          "state": {
+            "const": "READY"
+          }
+        }
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "identity": {
+        "properties": {
+          "key": {
+            "const": "oteryn:quest.the_way_of_the_monk_quest"
+          }
+        }
+      },
+      "native_lowering": {
+        "properties": {
+          "canonical_progress_refs": {
+            "minItems": 14
+          },
+          "canonical_interaction_refs": {
+            "minItems": 13
+          }
+        }
+      }
+    }
+  }
+},
+
 {
   "if": {
     "properties": {

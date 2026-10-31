@@ -1,0 +1,67 @@
+{
+  "evidence": {
+    "canary_revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
+    "limitations": "TibiaWiki revision bodies were not re-fetched; exact Canary and local pinned Crystal code supply behaviour evidence. Native source tiles qualify all ten shrine coordinates.",
+    "native_validation": [
+      "monk_shrines_real_use_persists_once_and_checks_each_level",
+      "monk_shrine_full_backpack_keeps_entitlement_until_retry",
+      "monk_shrine_bonus_full_damage_breakdown",
+      "monk_shrine_selectors_match_the_real_world_source_tiles"
+    ],
+    "path": "data-otservbr-global/scripts/quests/the_way_of_the_monk/shrines.lua",
+    "report": "MONKQUEST3-RESULT.md (task evidence outside repository)",
+    "sha256": "b5ecb4fefeaf409c59d55667362ba393d5bab53d9fb64a73a41fc0cebc5a7391",
+    "wiki_revisions": [
+      1169052,
+      1203780
+    ]
+  },
+  "key": "oteryn:quest.the_way_of_the_monk_quest",
+  "new_native_lowering": {
+    "canonical_interaction_refs": [
+      "oteryn:quest-callback/monk-empathy",
+      "oteryn:quest-callback/monk-eternity",
+      "oteryn:quest-callback/monk-guidance",
+      "oteryn:quest-callback/monk-harmony",
+      "oteryn:quest-callback/monk-knowledge",
+      "oteryn:quest-callback/monk-legacy",
+      "oteryn:quest-callback/monk-power",
+      "oteryn:quest-callback/monk-respect",
+      "oteryn:quest-callback/monk-serenity",
+      "oteryn:quest-callback/monk-tranquility",
+      "oteryn:quest-transition/monk-pilgrimage/finish",
+      "oteryn:quest-transition/monk-pilgrimage/invitation",
+      "oteryn:quest-transition/monk-pilgrimage/start"
+    ],
+    "canonical_progress_refs": [
+      "oteryn:quest-progress/monk-pilgrimage/final-report",
+      "oteryn:quest-progress/quest/u14_15/the_way_of_the_monk/quest_line",
+      "oteryn:quest-progress/quest/u14_15/the_way_of_the_monk/shrines_count",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/empathy",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/eternity",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/guidance",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/harmony",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/knowledge",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/legacy",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/power",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/respect",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/serenity",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/main_shrines/tranquility",
+      "oteryn:quest-progress/quest/u15_00/the_way_of_the_monk/questline"
+    ],
+    "reason": "MONKQUEST3: native NPC invitation/start/report, ten ordered level-gated world callbacks, journal, transactional XP/spell/title/achievement rewards, durable equipment entitlements through RewardClaim MINT and final Wheel points. The frozen SOURCE facts and data-only recipe admission are unchanged.",
+    "state": "READY"
+  },
+  "old_native_lowering": {
+    "canonical_interaction_refs": [],
+    "canonical_progress_refs": [],
+    "reason": "QuestState tracks, bounds, transitions and requested-by bindings have not been lowered",
+    "state": "WAITING_IMPLEMENTATION"
+  },
+  "owner_consent": {
+    "date": "2026-10-30",
+    "scope": "Complete the whole quest in this worktree, preserve MONKQUEST/MONKQUEST2, and leave WAITING_IMPLEMENTATION only after A+B+C are complete and tested. No commit or publication.",
+    "text": "everything lands as ONE PR; the whole quest must be playable"
+  },
+  "task": "MONKQUEST3"
+}

@@ -72,6 +72,8 @@ pub async fn serve_gameplay(
             owners.world_id,
             owners.channel_id,
         ),
+        // No accepted Store contract names the Platform producer yet: purchases are disabled.
+        store: None,
     };
     if let Some(book) = owners.npc_talk {
         authority.states.chat.install_npc_talk(book);

@@ -200,6 +200,7 @@ class QuestTreeTests(unittest.TestCase):
         stripped = copy.deepcopy(old)
         for r in stripped:
             r['definition'].pop('oteryn_recipe', None)
+        stripped = tool.source_projection(root, stripped)
         self.assertEqual(rows, stripped)
         self.assertEqual(sum('oteryn_recipe' in r['definition'] for r in old), 242)
         self.assertEqual(len(committed) - len(old), 68)

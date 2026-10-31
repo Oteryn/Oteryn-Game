@@ -40,6 +40,7 @@ mod control_loss;
 mod control_loss_reconciliation;
 mod corpse_decay;
 mod creature_field;
+mod dawnport_trial;
 /// DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165) on PostgreSQL 18.6: a trained actor
 /// whose death lowers its build is rebased onto the receipt's post-loss build at respawn, so its
 /// next training save commits on the lowered durable build instead of returning `Unknown`.
@@ -551,6 +552,8 @@ pub struct ComposedFreshAdmission<'a, 'f, 's> {
     /// The Channel's spell lane (ARCH-SPELL-LOCK-2 §1.2): taken before `runtime` by every
     /// key-33 caller and never while a Channel guard is held.
     pub spell_lane: crate::durability::spell_owner_commit::SpellLane,
+    /// STORE_V1: the node's Platform Store client; `None` refuses every purchase as disabled.
+    pub store: Option<store::StorePlatform>,
 }
 
 /// The progression binding one admitted session holds (ARCH-PROGRESSION-SOURCE-0 §1.4): the
@@ -1136,6 +1139,21 @@ fn achievement_earned(
             watermark: achievement_watermark(catalogue, &facts)?,
         },
     )
+}
+
+/// Crystal `src/creatures/players/achievement/player_achievement.cpp:27-42` sends this
+/// advance text only for newly unlocked achievements (line 38 has no name quotes).
+fn achievement_notification_text(name: &str) -> String {
+    format!("Congratulations! You earned the achievement {name}.")
+}
+
+fn achievement_notification(notice: &connection::EarnedNotice) -> Option<String> {
+    match notice {
+        connection::EarnedNotice::Earned(earned) => {
+            Some(achievement_notification_text(&earned.name))
+        }
+        connection::EarnedNotice::NoneEarned | connection::EarnedNotice::Unknown => None,
+    }
 }
 
 /// ACH-NOTIFY-2: the notice of a `USE`'s grant. A `Granted` grant whose notice cannot be derived

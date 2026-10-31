@@ -1,0 +1,310 @@
+{
+  "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
+  "catalog_revision": "store-catalogue-r1",
+  "source": {
+    "repository": "opentibiabr/canary",
+    "commit": "52550d5e",
+    "path": "data/modules/scripts/gamestore/catalog/consumables_exercise_weapons.lua"
+  },
+  "offers": [
+    {
+      "key": "store:durable-exercise-axe",
+      "category": "consumables.exercise-weapons",
+      "title": "Durable Exercise Axe",
+      "price": 90,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35280",
+        "revision": "definition-r1",
+        "charges": 1800
+      },
+      "source_line": 10
+    },
+    {
+      "key": "store:durable-exercise-bow",
+      "category": "consumables.exercise-weapons",
+      "title": "Durable Exercise Bow",
+      "price": 90,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35282",
+        "revision": "definition-r1",
+        "charges": 1800
+      },
+      "source_line": 19
+    },
+    {
+      "key": "store:durable-exercise-club",
+      "category": "consumables.exercise-weapons",
+      "title": "Durable Exercise Club",
+      "price": 90,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35281",
+        "revision": "definition-r1",
+        "charges": 1800
+      },
+      "source_line": 28
+    },
+    {
+      "key": "store:durable-exercise-rod",
+      "category": "consumables.exercise-weapons",
+      "title": "Durable Exercise Rod",
+      "price": 90,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35283",
+        "revision": "definition-r1",
+        "charges": 1800
+      },
+      "source_line": 37
+    },
+    {
+      "key": "store:durable-exercise-shield",
+      "category": "consumables.exercise-weapons",
+      "title": "Durable Exercise Shield",
+      "price": 90,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i44066",
+        "revision": "definition-r1",
+        "charges": 1800
+      },
+      "source_line": 64
+    },
+    {
+      "key": "store:durable-exercise-sword",
+      "category": "consumables.exercise-weapons",
+      "title": "Durable Exercise Sword",
+      "price": 90,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35279",
+        "revision": "definition-r1",
+        "charges": 1800
+      },
+      "source_line": 46
+    },
+    {
+      "key": "store:durable-exercise-wand",
+      "category": "consumables.exercise-weapons",
+      "title": "Durable Exercise Wand",
+      "price": 90,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35284",
+        "revision": "definition-r1",
+        "charges": 1800
+      },
+      "source_line": 55
+    },
+    {
+      "key": "store:durable-exercise-wraps",
+      "category": "consumables.exercise-weapons",
+      "title": "Durable Exercise Wraps",
+      "price": 90,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i50294",
+        "revision": "definition-r1",
+        "charges": 1800
+      },
+      "source_line": 73
+    },
+    {
+      "key": "store:exercise-axe",
+      "category": "consumables.exercise-weapons",
+      "title": "Exercise Axe",
+      "price": 25,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i28553",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 82
+    },
+    {
+      "key": "store:exercise-bow",
+      "category": "consumables.exercise-weapons",
+      "title": "Exercise Bow",
+      "price": 25,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i28555",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 91
+    },
+    {
+      "key": "store:exercise-club",
+      "category": "consumables.exercise-weapons",
+      "title": "Exercise Club",
+      "price": 25,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i28554",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 100
+    },
+    {
+      "key": "store:exercise-rod",
+      "category": "consumables.exercise-weapons",
+      "title": "Exercise Rod",
+      "price": 25,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i28556",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 109
+    },
+    {
+      "key": "store:exercise-shield",
+      "category": "consumables.exercise-weapons",
+      "title": "Exercise Shield",
+      "price": 25,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i44065",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 136
+    },
+    {
+      "key": "store:exercise-sword",
+      "category": "consumables.exercise-weapons",
+      "title": "Exercise Sword",
+      "price": 25,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i28552",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 118
+    },
+    {
+      "key": "store:exercise-wand",
+      "category": "consumables.exercise-weapons",
+      "title": "Exercise Wand",
+      "price": 25,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i28557",
+        "revision": "definition-r1",
+        "charges": 500
+      },
+      "source_line": 127
+    },
+    {
+      "key": "store:lasting-exercise-axe",
+      "category": "consumables.exercise-weapons",
+      "title": "Lasting Exercise Axe",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35286",
+        "revision": "definition-r1",
+        "charges": 14400
+      },
+      "source_line": 154
+    },
+    {
+      "key": "store:lasting-exercise-bow",
+      "category": "consumables.exercise-weapons",
+      "title": "Lasting Exercise Bow",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35288",
+        "revision": "definition-r1",
+        "charges": 14400
+      },
+      "source_line": 163
+    },
+    {
+      "key": "store:lasting-exercise-club",
+      "category": "consumables.exercise-weapons",
+      "title": "Lasting Exercise Club",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35287",
+        "revision": "definition-r1",
+        "charges": 14400
+      },
+      "source_line": 172
+    },
+    {
+      "key": "store:lasting-exercise-rod",
+      "category": "consumables.exercise-weapons",
+      "title": "Lasting Exercise Rod",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35289",
+        "revision": "definition-r1",
+        "charges": 14400
+      },
+      "source_line": 181
+    },
+    {
+      "key": "store:lasting-exercise-shield",
+      "category": "consumables.exercise-weapons",
+      "title": "Lasting Exercise Shield",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i44067",
+        "revision": "definition-r1",
+        "charges": 14400
+      },
+      "source_line": 208
+    },
+    {
+      "key": "store:lasting-exercise-sword",
+      "category": "consumables.exercise-weapons",
+      "title": "Lasting Exercise Sword",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35285",
+        "revision": "definition-r1",
+        "charges": 14400
+      },
+      "source_line": 190
+    },
+    {
+      "key": "store:lasting-exercise-wand",
+      "category": "consumables.exercise-weapons",
+      "title": "Lasting Exercise Wand",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i35290",
+        "revision": "definition-r1",
+        "charges": 14400
+      },
+      "source_line": 199
+    },
+    {
+      "key": "store:lasting-exercise-wraps",
+      "category": "consumables.exercise-weapons",
+      "title": "Lasting Exercise Wraps",
+      "price": 720,
+      "currency": "TIBIA_COIN",
+      "item": {
+        "key": "oteryn:item.tibia.i50295",
+        "revision": "definition-r1",
+        "charges": 14400
+      },
+      "source_line": 217
+    }
+  ]
+}

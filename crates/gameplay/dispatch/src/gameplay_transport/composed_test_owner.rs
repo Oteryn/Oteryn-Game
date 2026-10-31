@@ -66,6 +66,7 @@ impl<'a, 'f, 's> ComposedTestOwner<'a, 'f, 's> {
                 self.world_id,
                 self.channel_id,
             ),
+            store: None,
         }
     }
 }

@@ -472,14 +472,13 @@ mod creature_field_initial_tests {
         for (item, entry, interval_ms, runs) in [
             (2118, 20, 9_000, vec![(10, 7)]),
             (2119, 20, 9_000, vec![(10, 7)]),
+            (2131, 20, 9_000, vec![(10, 7)]),
             (2132, 20, 9_000, vec![(10, 7)]),
             (2122, 30, 11_000, vec![(25, 1)]),
-            (
-                105,
-                5,
-                4_000,
-                vec![(5, 5), (4, 5), (3, 7), (2, 10), (1, 19)],
-            ),
+            (2135, 30, 11_000, vec![(25, 1)]),
+            (105, 4, 4_000, vec![(4, 4), (3, 5), (2, 7), (1, 10)]),
+            (2121, 4, 4_000, vec![(4, 4), (3, 5), (2, 7), (1, 10)]),
+            (2134, 4, 4_000, vec![(4, 4), (3, 5), (2, 7), (1, 10)]),
             // Owner Global PKG1R4: 2123 separate entry 19 + 7x9 at 9 s.
             (2123, 19, 9_000, vec![(9, 7)]),
             // Owner Global PKG1R4: 2124 6x9 at 9 s, first on step-in;
@@ -494,10 +493,10 @@ mod creature_field_initial_tests {
             // 2000 embers at 0% resistance: 17:36:18..17:37:03, six
             // ticks of 9, first on step-in, so five remain; look 17:36:17.
             (2000, 9, 9_000, vec![(9, 5)]),
-            // PKG1R4: preserve main for unmeasured 10069..10071.
-            (10069, 10, 10_000, vec![(10, 6)]),
-            (10070, 10, 10_000, vec![(10, 6)]),
-            (10071, 10, 10_000, vec![(10, 6)]),
+            // PKG1R7: both donors give Zaoan fire the same record as 2119.
+            (10069, 20, 9_000, vec![(10, 7)]),
+            (10070, 20, 9_000, vec![(10, 7)]),
+            (10071, 20, 9_000, vec![(10, 7)]),
         ] {
             let record = document["profiles"]
                 .as_array()

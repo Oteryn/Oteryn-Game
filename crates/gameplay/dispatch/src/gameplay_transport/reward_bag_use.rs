@@ -57,6 +57,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command: CommandRef::new(command.game_session_id, command_id),
             source: id,
             tool: None,
+            gathering: None,
             station: None,
             intent: [INTENT_TAG, id.as_slice()].concat(),
         };
