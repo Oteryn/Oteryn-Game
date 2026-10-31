@@ -142,3 +142,36 @@ fn guild_room_maximum_bounds_key_overlap_freshness_and_clock_rollback() {
         Err(RelayError::Stale)
     );
 }
+
+#[test]
+fn party_chat_relay_roundtrip_replay_forgery_and_invalid_party_fail_closed() {
+    let ring = ring(&[(1, 0)]);
+    let line = RelayLine {
+        destination: RelayDestination::Party {
+            party_id: *recipient(9).as_bytes(),
+        },
+        ..room_line(3, NOW)
+    };
+    let sealed = seal_with_nonce(&ring, CHANNEL, &line, NONCE).expect("fixture");
+    let mut receiver = ReplayWindow::starting_at(NOW);
+    assert_eq!(
+        receiver
+            .receive(&ring, CHANNEL, &sealed, NOW)
+            .expect("receive"),
+        line
+    );
+    assert_eq!(
+        receiver.receive(&ring, CHANNEL, &sealed, NOW),
+        Err(RelayError::Replayed)
+    );
+    assert!(open(&ring, "oteryn_chat_foreign_world", &sealed, NOW).is_err());
+    let bytes = line.encode().expect("fixture");
+    for end in 0..bytes.len() {
+        assert!(RelayLine::decode(&bytes[..end]).is_err());
+    }
+    let invalid = RelayLine {
+        destination: RelayDestination::Party { party_id: [0; 16] },
+        ..line
+    };
+    assert!(invalid.encode().is_err());
+}

@@ -102,3 +102,30 @@ fn guild_chat_client_keeps_login_motd_and_send_rank_and_not_allowed_status() -> 
         Ok(())
     })?
 }
+
+#[test]
+fn party_chat_client_requires_party_capability_for_send_receive_and_refusal()
+-> Result<(), Box<dyn std::error::Error>> {
+    for incomplete in [&[240][..], &[7, 240][..], &[42, 240][..]] {
+        assert!(super::guild_chat::check_selection(incomplete).is_err());
+    }
+    assert!(super::guild_chat::check_selection(&[7, 42, 240]).is_ok());
+    let intent = ChatIntent::Party {
+        text: "hello".into(),
+    };
+    assert!(super::guild_chat::check_intent(&intent, &[7]).is_err());
+    assert!(super::guild_chat::check_intent(&intent, &[7, 42, 240]).is_ok());
+    assert!(super::guild_chat::check_result(ChatDisposition::NotAllowed, &[7, 42, 240]).is_ok());
+    let line = ChatLine::Party {
+        speaker_name: "Leader".into(),
+        text: "hi".into(),
+    };
+    let bytes = chat::encode_chat_line(&line).map_err(|error| format!("{error:?}"))?;
+    assert!(super::guild_chat::decode_line(&bytes, &[7]).is_err());
+    assert_eq!(
+        super::guild_chat::decode_line(&bytes, &[7, 42, 240])
+            .map_err(|error| format!("{error:?}"))?,
+        line
+    );
+    Ok(())
+}

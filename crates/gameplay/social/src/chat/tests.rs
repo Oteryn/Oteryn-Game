@@ -427,3 +427,40 @@ fn rooms_need_level_20_or_premium_except_help_and_private_needs_level_3() {
     assert!(!gate(2, false).allows_private());
     assert!(gate(3, false).allows_private());
 }
+
+#[test]
+fn party_chat_egress_keeps_internal_destination_with_line_across_overflow() {
+    use super::egress::PartyChatDestination;
+    let mut egress = ChatEgress::new();
+    for n in 1..=EGRESS_MAX_LINES + 1 {
+        egress.push_party(
+            "Sender".into(),
+            format!("line {n}"),
+            PartyChatDestination {
+                party_id: [1; 16],
+                sent_at_micros: n as u64,
+            },
+        );
+    }
+    assert_eq!(egress.len(), EGRESS_MAX_LINES);
+    assert_eq!(egress.party_destination(), None); // The dropped marker has no authority.
+    assert_eq!(egress.pop(), Some(ChatLine::Dropped));
+    for n in 2..=EGRESS_MAX_LINES + 1 {
+        assert_eq!(
+            egress.party_destination(),
+            Some(PartyChatDestination {
+                party_id: [1; 16],
+                sent_at_micros: n as u64
+            })
+        );
+        assert_eq!(
+            egress.pop(),
+            Some(ChatLine::Party {
+                speaker_name: "Sender".into(),
+                text: format!("line {n}")
+            })
+        );
+    }
+    assert!(egress.is_empty());
+    assert_eq!(egress.party_destination(), None);
+}

@@ -18,8 +18,8 @@ a successful move. An unknown durable outcome disconnects for reconciliation.
 
 Capability 179 admits direct backpack sources and a worn-item toggle into the
 main backpack. Capability 180 extends carried selection below. Both routes share
-the existing equip timers and feared gate. Managed destinations, automatic hand
-conflicts and ammunition-to-quiver routing remain follow-up work.
+the existing equip timers and feared gate. Automatic hand conflicts and
+ammunition-to-quiver routing follow the rules below.
 
 During the shared ordinary-slot delay, a later consecutive valid ordinary equip
 press replaces the pending press. Each superseded command receives the existing
@@ -60,8 +60,34 @@ source does not free a main-backpack vacancy. A refusal rolls back the entire
 transaction. Replay binds the original definition and slot before resolving
 custody again. Existing direct moves preserve their historical binding bytes.
 
-Managed destinations, hand conflict displacement and ammunition-to-quiver are
-follow-up work. This extension makes no parity claim for those rules.
+## Automatic hand displacement and ammunition (I17c)
+
+Both capabilities use the same hotkey rules. Equipping a two-handed weapon
+displaces the conflicting opposite hand and exchanges the target hand's occupant
+into the main backpack in one equipment transaction. Equipping a shield against
+a two-handed weapon displaces that weapon; a one-handed weapon exchanges it in
+the target slot. Manual item moves retain their existing conflict refusal.
+The donor's quiver exception remains: a quiver is not an opposite-hand
+displacement target.
+
+Displaced items use the main backpack, as required by the owner's I17b
+destination decision. All required vacancies are reserved before any move;
+insufficient room refuses with `NoRoom` and changes no custody or item revision.
+Migration 0662 binds the additional hand's exact equipped predecessor and
+backpack successor to the existing equipment receipt and audit envelope.
+
+Ammunition enters the worn right-slot quiver through the existing fenced
+container move writer. Missing quiver returns `SlotMismatch`; insufficient
+quiver room returns `NoRoom`. The command keeps the shared ordinary equip
+delay, fear gate and container refresh. Replays consult equipment and container
+receipts before selecting a source, and burst replacement preserves either
+kind of committed receipt.
+
+Evidence: Crystal `201189f871d23597b82caf88fd611454a2ddefb8`
+`src/game/game.cpp:3761-3794` (`OTS_HYPOTHESIS_ONLY`), Canary
+`47dfd51f45280a59a1d3e50ba7edd573d7234446` `src/game/game.cpp:4210-4269`,
+and the owner's Global observation that a halberd hotkey removes both spear
+and shield. The owner's atomic-refusal requirement applies to the whole move.
 
 Canary `52550d5e3c0ffe565f4bd1014f4e5575abf1059b` follows the same
 backpack-then-pouch search (`src/game/game.cpp:4203-4207`) and depth-first

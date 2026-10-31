@@ -40,6 +40,14 @@ pub(super) fn check_intent(intent: &ChatIntent, selected: &[u32]) -> Result<(), 
             capability: CAPABILITY_CHAT_GUILD_ROOM_V1,
         });
     }
+    if matches!(intent, ChatIntent::Party { .. })
+        && !selected
+            .contains(&oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1)
+    {
+        return Err(SessionError::CapabilityNotSelected {
+            capability: oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1,
+        });
+    }
     Ok(())
 }
 
@@ -48,6 +56,14 @@ pub(super) fn decode_line(payload: &[u8], selected: &[u32]) -> Result<ChatLine, 
     if matches!(line, ChatLine::Guild(_)) && !selected.contains(&CAPABILITY_CHAT_GUILD_ROOM_V1) {
         return Err(SessionError::CapabilityNotSelected {
             capability: CAPABILITY_CHAT_GUILD_ROOM_V1,
+        });
+    }
+    if matches!(line, ChatLine::Party { .. })
+        && !selected
+            .contains(&oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1)
+    {
+        return Err(SessionError::CapabilityNotSelected {
+            capability: oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1,
         });
     }
     Ok(line)
@@ -61,6 +77,16 @@ impl ChatLog {
 }
 
 pub(super) fn check_selection(selected: &[u32]) -> Result<(), SessionError> {
+    if selected.contains(&oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1) {
+        for capability in [
+            CAPABILITY_CHAT_V1,
+            oteryn_protocol_oteryn::party::CAPABILITY_PARTY_V1,
+        ] {
+            if !selected.contains(&capability) {
+                return Err(SessionError::CapabilityNotSelected { capability });
+            }
+        }
+    }
     if selected.contains(&CAPABILITY_CHAT_GUILD_ROOM_V1) && !selected.contains(&CAPABILITY_CHAT_V1)
     {
         return Err(SessionError::CapabilityNotSelected {
@@ -76,6 +102,8 @@ pub(super) fn check_result(
 ) -> Result<(), SessionError> {
     if disposition == ChatDisposition::NotAllowed
         && !selected.contains(&CAPABILITY_CHAT_GUILD_ROOM_V1)
+        && !selected
+            .contains(&oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1)
     {
         return Err(SessionError::CapabilityNotSelected {
             capability: CAPABILITY_CHAT_GUILD_ROOM_V1,

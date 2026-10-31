@@ -1,0 +1,15 @@
+{
+  "mechanic": "0240-chat-party-room",
+  "kind": "handlers",
+  "id": "0240-chat-party-room-unsupported",
+  "status": "unsupported",
+  "reason": "CHATCH is server-first; oteryn-session and synthetic client support the wire, native UI is pending.",
+  "commands": [],
+  "not_applicable": {
+    "state": "Native client migration is pending.",
+    "protocol": "Native client migration is pending.",
+    "view": "Native client migration is pending.",
+    "input": "Native client migration is pending.",
+    "settings": "Native client migration is pending."
+  }
+}

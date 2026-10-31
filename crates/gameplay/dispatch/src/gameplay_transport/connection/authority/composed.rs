@@ -237,6 +237,24 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.guild_chat_admit(admitted).await
     }
 
+    async fn chat_party_admit(&self, admitted: AdmittedSession) {
+        if admitted
+            .continuity
+            .selected_capabilities
+            .contains(oteryn_protocol_oteryn::chat::party_room::CAPABILITY_CHAT_PARTY_ROOM_V1)
+        {
+            self.states.chat.party.bind(admitted);
+        }
+    }
+
+    async fn chat_party_intent(
+        &self,
+        admitted: AdmittedSession,
+        text: String,
+    ) -> oteryn_protocol_oteryn::chat::ChatIntentResult {
+        self.party_chat_send(admitted, text).await
+    }
+
     async fn chat_guild_intent(
         &self,
         admitted: AdmittedSession,

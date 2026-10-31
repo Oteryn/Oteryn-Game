@@ -1102,3 +1102,34 @@ impl super::DurabilityRoot {
             .map_err(SpellItemError::from)
     }
 }
+
+/// Called only after current recovery/session/node fencing, in the chat custody transaction.
+/// Shares the Party writer's World lock, so leave/kick/disband cannot race acceptance.
+pub(super) async fn read_chat_membership_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    fence: &super::item_transfer::CurrentCharacterItemFence,
+    sent_at_micros: Option<u64>,
+) -> std::result::Result<Option<[u8; 16]>, super::DurabilityError> {
+    let world = *fence.runtime_scope.world_id().as_bytes();
+    sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))")
+        .bind(world.iter().map(|b| format!("{b:02x}")).collect::<String>())
+        .execute(&mut **tx)
+        .await?;
+    let lifecycle: Option<i16> = sqlx::query_scalar("SELECT lifecycle FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
+        .bind(fence.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    if lifecycle != Some(1) {
+        return Err(super::DurabilityError::Unavailable);
+    }
+    let party = observe_world_party(tx, world, *fence.character_id.as_bytes())
+        .await
+        .map_err(|_| super::DurabilityError::Unavailable)?
+        .party_id;
+    if let Some(at) = sent_at_micros {
+        let already_member: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_party_members WHERE character_id=encode($1,'hex')::uuid AND floor(extract(epoch FROM joined_at)*1000000)::numeric <= $2::text::numeric)")
+            .bind(fence.character_id.as_bytes().as_slice()).bind(at.to_string()).fetch_one(&mut **tx).await?;
+        if !already_member {
+            return Ok(None);
+        }
+    }
+    Ok(party)
+}
