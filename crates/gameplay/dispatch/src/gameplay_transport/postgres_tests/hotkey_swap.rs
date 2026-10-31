@@ -6,7 +6,7 @@ use super::hotkey_equip::{ScenarioMode, swap_scenario};
 fn hotkey_swap_postgres_two_hander_displaces_both_hands() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-two-hands", || {
         swap_scenario(ScenarioMode::Hands {
-            incoming: "oteryn:item.tibia.i3269",
+            incoming: "oteryn:item.tibia.i50273",
             both: true,
             full: false,
         })
@@ -36,7 +36,7 @@ fn hotkey_swap_postgres_one_hander_displaces_two_hander() -> TestResult {
 fn hotkey_swap_postgres_full_backpack_refuses_both_hands_atomically() -> TestResult {
     super::kill_reward_e2e::scenario_thread::run("hotkey-hands-full", || {
         swap_scenario(ScenarioMode::Hands {
-            incoming: "oteryn:item.tibia.i3269",
+            incoming: "oteryn:item.tibia.i50273",
             both: true,
             full: true,
         })

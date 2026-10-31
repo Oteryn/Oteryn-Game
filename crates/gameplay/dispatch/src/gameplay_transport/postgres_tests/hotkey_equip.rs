@@ -161,6 +161,7 @@ fn scenario_options_impl(
     let foreign = matches!(mode, ScenarioMode::ForeignPouch);
     let managed = matches!(mode, ScenarioMode::Managed);
     run(async |admin| {
+        let started_at = std::time::Instant::now();
         let harness =
             Harness::create_with_admission_seed(admin, "hotkey_equip", true, false).await?;
         prepare_current_session(&harness).await?;
@@ -252,12 +253,17 @@ fn scenario_options_impl(
             sqlx::query("SET LOCAL session_replication_role=replica")
                 .execute(&mut *tx)
                 .await?;
+            if matches!(mode, ScenarioMode::Hands { .. }) {
+                // The pinned gameplay profile qualifies this two-hander for level-50 monks.
+                sqlx::query("INSERT INTO game_character_build_state(character_id,vocation,magic_level,mana_spent,fist_level,fist_tries,club_level,club_tries,sword_level,sword_tries,axe_level,axe_tries,distance_level,distance_tries,shielding_level,shielding_tries,fishing_level,fishing_tries,committed_character_revision,last_build_occurrence_id) VALUES(encode($1,'hex')::uuid,'monk',0,0,10,0,10,0,10,0,10,0,10,0,10,0,10,0,2,encode($2,'hex')::uuid)")
+                    .bind(id(41).as_slice()).bind(id(112).as_slice()).execute(&mut *tx).await?;
+            }
             let worn: Vec<(u8, &str, i16)> = match mode {
                 ScenarioMode::Hands { both: true, .. } => vec![
                     (110, "oteryn:item.tibia.i3277", 5),
                     (111, "oteryn:item.tibia.i3412", 6),
                 ],
-                ScenarioMode::Hands { .. } => vec![(110, "oteryn:item.tibia.i3269", 5)],
+                ScenarioMode::Hands { .. } => vec![(110, "oteryn:item.tibia.i50273", 5)],
                 ScenarioMode::Ammo { absent: false, .. } => {
                     vec![(110, "oteryn:item.tibia.i35562", 6)]
                 }
@@ -722,7 +728,7 @@ fn scenario_options_impl(
                 }
                 _ => return Err("swap mode".into()),
             }
-            eprintln!("HOTKEYC_POSTGRES_EXECUTED");
+            eprintln!("HOTKEYC_POSTGRES_EXECUTED elapsed={:?}", started_at.elapsed());
             return Ok(());
         }
         if extra_quiver {
@@ -821,7 +827,7 @@ fn scenario_options_impl(
                 .bind(id(100).as_slice()).bind(id(71).as_slice()).fetch_one(&harness.pool).await?;
             assert_eq!(unchanged, ("1".into(), 1));
         }
-        eprintln!("PG_MARKER hotkey-real-route pouch={pouch} foreign={foreign} managed={managed}");
+        eprintln!("PG_MARKER hotkey-real-route pouch={pouch} foreign={foreign} managed={managed} elapsed={:?}", started_at.elapsed());
         if coalescing {
             eprintln!(
                 "PKG7_POSTGRES_EXECUTED: burst 3,4,5; zero cancelled receipts; replay 6; durable reload; PostgreSQL 18.6"
@@ -895,7 +901,7 @@ where
             return Poll::Ready(if result.is_some() {
                 Ok(end)
             } else {
-                Err("connection ended before hotkey exercise".into())
+                Err(format!("connection ended before hotkey exercise: {end:?}").into())
             });
         }
         Poll::Pending
