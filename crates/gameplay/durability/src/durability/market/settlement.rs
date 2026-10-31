@@ -152,15 +152,36 @@ impl DurabilityRoot {
             } else if request.action == 4 {
                 sqlx::query("SELECT o.offer_id::text,o.world_id::text,o.definition_key,o.definition_revision,o.side,o.account_id::text,o.character_id::text,o.piece_price::text,o.amount,o.remaining,o.anonymous,o.created_at_us,o.expires_at_us,o.state,o.ended_as,o.escrow_gold::text,o.held_credit_gold::text,o.matching_pending,h.amount AS history_amount FROM game_market_history h JOIN game_market_offers o USING(offer_id) WHERE h.character_id=encode($1,'hex')::uuid AND o.world_id=encode($2,'hex')::uuid ORDER BY h.occurred_at_us DESC,h.transaction_id DESC LIMIT least(32,600-$3) OFFSET $3")
                     .bind(fence.character_id.as_bytes().as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(i64::from(request.page)*32).fetch_all(&mut *tx).await?
+            } else if visible_offset(request.action, request.page).is_none() {
+                Vec::new()
+            } else if request.action == 2 {
+                sqlx::query("WITH visible AS (SELECT o.*,row_number() OVER(PARTITION BY side ORDER BY CASE WHEN side=2 THEN piece_price END ASC,CASE WHEN side=1 THEN piece_price END DESC,created_at_us,offer_id) AS side_row FROM game_market_offers o WHERE world_id=encode($1,'hex')::uuid AND definition_key=$2 AND state=1 AND expires_at_us>floor(extract(epoch FROM clock_timestamp())*1000000)::bigint) SELECT o.offer_id::text,o.world_id::text,o.definition_key,o.definition_revision,o.side,o.account_id::text,o.character_id::text,o.piece_price::text,o.amount,o.remaining,o.anonymous,o.created_at_us,o.expires_at_us,o.state,o.ended_as,o.escrow_gold::text,o.held_credit_gold::text,o.matching_pending,NULL::integer AS history_amount FROM visible o WHERE side_row<=$3 ORDER BY side,CASE WHEN side=2 THEN piece_price END ASC,CASE WHEN side=1 THEN piece_price END DESC,created_at_us,offer_id LIMIT 32 OFFSET $4")
+                    .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(definition_key).bind(i64::from(MAX_VISIBLE_OFFERS_PER_ITEM_SIDE)).bind(visible_offset(request.action,request.page).ok_or_else(invalid)?).fetch_all(&mut *tx).await?
+            } else if request.action == 3 {
+                sqlx::query("WITH visible AS (SELECT o.*,row_number() OVER(PARTITION BY side ORDER BY created_at_us DESC,offer_id DESC) AS side_row FROM game_market_offers o WHERE world_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid AND state=1) SELECT o.offer_id::text,o.world_id::text,o.definition_key,o.definition_revision,o.side,o.account_id::text,o.character_id::text,o.piece_price::text,o.amount,o.remaining,o.anonymous,o.created_at_us,o.expires_at_us,o.state,o.ended_as,o.escrow_gold::text,o.held_credit_gold::text,o.matching_pending,NULL::integer AS history_amount FROM visible o WHERE side_row<=$3 ORDER BY side,created_at_us DESC,offer_id DESC LIMIT 32 OFFSET $4")
+                    .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(i64::from(MAX_VISIBLE_OWN_OFFERS_PER_SIDE)).bind(visible_offset(request.action,request.page).ok_or_else(invalid)?).fetch_all(&mut *tx).await?
             } else {
-                sqlx::query("SELECT o.offer_id::text,o.world_id::text,o.definition_key,o.definition_revision,o.side,o.account_id::text,o.character_id::text,o.piece_price::text,o.amount,o.remaining,o.anonymous,o.created_at_us,o.expires_at_us,o.state,o.ended_as,o.escrow_gold::text,o.held_credit_gold::text,o.matching_pending,NULL::integer AS history_amount FROM game_market_offers o WHERE world_id=encode($1,'hex')::uuid AND CASE $2 WHEN 1 THEN false WHEN 2 THEN definition_key=$3 AND state=1 AND expires_at_us>floor(extract(epoch FROM clock_timestamp())*1000000)::bigint WHEN 3 THEN character_id=encode($4,'hex')::uuid AND state=1 ELSE false END ORDER BY CASE WHEN $2=2 THEN side END,CASE WHEN $2=2 AND side=2 THEN piece_price END ASC,CASE WHEN $2=2 AND side=1 THEN piece_price END DESC,created_at_us,offer_id LIMIT 32 OFFSET $5")
-                    .bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(i32::from(request.action)).bind(definition_key).bind(fence.character_id.as_bytes().as_slice()).bind(i64::from(request.page)*32).fetch_all(&mut *tx).await?
+                Vec::new()
             };
             let offers=rows.iter().map(|row| Ok((decode(row)?,row.try_get::<Option<i32>,_>("history_amount")?.map(|n|u32::try_from(n).map_err(|_|invalid())).transpose()?))).collect::<Result<Vec<_>>>()?;
             commit_semantic_transaction(tx,deadline).await?;
             Ok(offers)
         })).await
     }
+}
+
+/// Crystal bounds the item book at 700 offers per side and My Offers at
+/// 1,000 per side (`src/io/iomarket.hpp:33-34`). These are projection bounds:
+/// placement continues to use Global's 100-total rule.
+fn visible_offset(action: u8, page: u32) -> Option<i64> {
+    let per_side = match action {
+        2 => MAX_VISIBLE_OFFERS_PER_ITEM_SIDE,
+        3 => MAX_VISIBLE_OWN_OFFERS_PER_SIDE,
+        1 | 4 => return Some(i64::from(page) * 32),
+        _ => return None,
+    };
+    let offset = page.checked_mul(32)?;
+    (offset < per_side * 2).then_some(i64::from(offset))
 }
 
 async fn advance_jobs(
@@ -252,5 +273,14 @@ mod tests {
         ]
         .concat();
         assert_eq!(wire, expected);
+    }
+
+    #[test]
+    fn market_projection_bounds_do_not_reduce_placement_capacity() {
+        assert_eq!(MAX_OPEN_OFFERS, 100);
+        assert_eq!(visible_offset(2, 43), Some(1_376));
+        assert_eq!(visible_offset(2, 44), None);
+        assert_eq!(visible_offset(3, 62), Some(1_984));
+        assert_eq!(visible_offset(3, 63), None);
     }
 }

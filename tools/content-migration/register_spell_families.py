@@ -259,10 +259,14 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     timed_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import craft_runtime_profiles
     craft_runtime_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import key_door_item_profiles
+    key_door_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import tool_item_profiles
     tool_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import forge_creature_profiles
     forge_creature_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import gathering_item_profiles
+    gathering_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import mining_item_profiles
     mining_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import imbuement_item_profiles

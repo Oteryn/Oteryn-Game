@@ -12,6 +12,8 @@ mod routing;
 mod serve;
 use crate::combat_pickup::GroundPickupError;
 use routing::Dispatch;
+#[cfg(test)]
+pub(in crate::gameplay_transport) use serve::regression_routed_step;
 use serve::serve_admitted_actor;
 #[path = "newhaven_travel_transport.rs"]
 mod newhaven_travel_transport;

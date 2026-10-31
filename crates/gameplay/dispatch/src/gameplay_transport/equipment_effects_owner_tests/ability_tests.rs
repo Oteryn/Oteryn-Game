@@ -37,6 +37,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 23 training/exercise weapon profiles (tools/content-migration/loop_training_profiles.py):
     // 28552..=28557, 35279..=35290, 44065..=44067, 50294/50295. All have speed_bonus=0.
     ("LOOP-TRAIN-1", 23),
+    // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
+    // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
+    ("M06-KEYS", 5),
+    // M09: 28 gathering profiles from Crystal 201189f
+    // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
+    ("M09-GATHER", 28),
     // The pick 3456, shiny stone 10310 and small diamond 3028.
     ("MINING-1", 3),
     // Monk shrine rewards 50267..=50269 and 50271..=50274 from

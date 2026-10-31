@@ -7,8 +7,9 @@
 use oteryn_gameplay_economy::market as rules;
 pub use oteryn_gameplay_economy::market::{
     EndReason, EndState, HARD_CREDIT_CEILING, LIFETIME_US, MAX_OPEN_OFFERS, MAX_TOTAL,
-    MAX_TOUCHED_ITEMS, OfferState, PlanError, Side, has_nonproduction_marker, offer_total,
-    placement_fee, valid_key_bytes,
+    MAX_TOUCHED_ITEMS, MAX_VISIBLE_OFFERS_PER_ITEM_SIDE, MAX_VISIBLE_OWN_OFFERS_PER_SIDE,
+    OfferState, PlanError, Side, has_nonproduction_marker, offer_total, placement_fee,
+    valid_key_bytes,
 };
 
 use super::DurabilityError;
