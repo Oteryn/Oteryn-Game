@@ -21,6 +21,9 @@ pub struct ChannelSessionStates {
     /// P22d: settled kills of tracked creatures awaiting a domain 98 refresh. A leaf lock.
     pub(super) cyclopedia_tracker_refresh: super::cyclopedia_tracker::TrackerRefresh,
     pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
+    /// S16c: sessions whose Dawnport trial build commit awaits live installation; their last
+    /// position capture is held like a retained NPC vocation choice. A leaf lock.
+    pub(super) dawnport_trials: std::sync::Mutex<std::collections::HashSet<GameSessionId>>,
     /// SESSION-INGRESS-1: the ordered command stream and latest terminal result per session.
     pub command_ingress: super::session_ingress::SessionCommands,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).

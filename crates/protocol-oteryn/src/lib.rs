@@ -94,6 +94,7 @@ pub mod stash;
 pub mod store;
 pub mod target_move;
 pub mod task_board;
+pub mod team_finder;
 #[cfg(test)]
 #[path = "tests/lib_tests.rs"]
 mod tests;

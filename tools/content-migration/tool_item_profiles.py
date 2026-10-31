@@ -3,7 +3,7 @@ import hashlib
 import json
 
 PATH = 'tools/content-schema/native-gameplay/tool-item-profiles.json'
-IDS = {867, 868, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
+IDS = {593, 594, 606, 608, 609, 615, 867, 868, 3308, 3457, 3483, 3492, 3695, 3696, 3701, 3702, 4597}
 
 
 def admit(root, generated, profile_path, manifest_path, order, canonical):

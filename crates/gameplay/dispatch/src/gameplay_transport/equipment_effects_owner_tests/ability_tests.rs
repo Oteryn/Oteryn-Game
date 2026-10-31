@@ -84,6 +84,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M08/M09: the eleven qualified shovel, machete, rod/bait/water and target policies
     // in tool-item-profiles.json. The source importer records speed_bonus=0.
     ("TOOLS-PKG4", 11),
+    // M08B: the pick and its stone, loose stone and loose ice piles 593/594, 606/615 and
+    // 608/609 in tool-item-profiles.json (Canary 99902524). None of them is equipment.
+    ("TOOLS-M08B", 6),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),

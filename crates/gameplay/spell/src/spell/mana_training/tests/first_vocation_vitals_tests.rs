@@ -195,3 +195,73 @@ fn first_vocation_vitals_refill_at_levels_8_9_20_50_for_two_choices() {
         }
     }
 }
+
+#[test]
+fn s16c_vocation_trial_refills_only_above_level_8_and_refuses_level_20_or_same_vocation() {
+    let formula = formula();
+    let none = DurableBuildState::default();
+    let knight =
+        crate::durability::character_build::convert_vocation(&formula, &none, "knight").unwrap();
+    let sorcerer =
+        crate::durability::character_build::convert_vocation(&formula, &knight, "sorcerer")
+            .unwrap();
+    for (level, refill) in [(1, false), (8, false), (9, true), (19, true), (20, false)] {
+        let mut state = PlayerSpellState::new(
+            CharacterCastFacts {
+                vocation: Vocation::Knight,
+                level,
+                magic_level: u32::from(knight.magic().0),
+                max_health: 300,
+                max_mana: 100,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .unwrap();
+        state.load_owned_build(&knight).unwrap();
+        state.enable_owned_training(&knight, &formula).unwrap();
+        state.restore_saved_vitals(250, 30);
+        let facts = CharacterCastFacts {
+            vocation: Vocation::Sorcerer,
+            magic_level: u32::from(sorcerer.magic().0),
+            max_health: 200,
+            max_mana: 400,
+            ..state.facts
+        };
+        let now = SemanticTimeMicros::from_micros(0);
+        assert_eq!(
+            state.after_vocation_trial(&knight, &knight, state.facts, &formula, now),
+            None,
+            "same vocation at level {level}"
+        );
+        let next = state.after_vocation_trial(&knight, &sorcerer, facts, &formula, now);
+        if level >= 20 {
+            assert_eq!(next, None);
+            continue;
+        }
+        let next = next.unwrap();
+        assert_eq!(next.facts.vocation, Vocation::Sorcerer);
+        assert_eq!(next.training.as_ref().unwrap().durable(), &sorcerer);
+        assert_eq!(
+            (next.health, next.mana),
+            if refill { (200, 400) } else { (200, 30) },
+            "level {level}"
+        );
+        // Stepping back on the knight tile converts again from the installed sorcerer.
+        let back =
+            crate::durability::character_build::convert_vocation(&formula, &sorcerer, "knight")
+                .unwrap();
+        let knight_facts = CharacterCastFacts {
+            vocation: Vocation::Knight,
+            magic_level: u32::from(back.magic().0),
+            max_health: 300,
+            max_mana: 100,
+            ..next.facts
+        };
+        let back_state = next
+            .after_vocation_trial(&sorcerer, &back, knight_facts, &formula, now)
+            .unwrap();
+        assert_eq!(back_state.facts.vocation, Vocation::Knight);
+    }
+}

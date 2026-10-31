@@ -162,8 +162,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let snapshot = self
                             .citizen_step(actor, session, direction, origin, snapshot)
                             .await;
-                        self.step_quest_callback(&permit, actor, session, origin, snapshot)
-                            .await
+                        let snapshot = self
+                            .step_quest_callback(&permit, actor, session, origin, snapshot)
+                            .await;
+                        self.dawnport_trial_step(actor, session, snapshot).await;
+                        snapshot
                     }
                     None => snapshot,
                 };

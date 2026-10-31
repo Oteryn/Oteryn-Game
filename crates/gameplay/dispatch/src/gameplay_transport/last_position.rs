@@ -617,6 +617,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .npc_conversations
             .dawnport_choice(session)
             .is_some_and(|choice| choice.retained.is_some())
+            || self
+                .states
+                .dawnport_trials
+                .lock()
+                .map_or(true, |held| held.contains(&session))
         {
             return Captured::Held;
         }
