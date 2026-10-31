@@ -286,8 +286,7 @@ mod tests {
     use crate::spell::delayed_execution::SpellTimerOwner;
     use {
         crate::foundation::{
-            ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId, RuntimeScopeRefV1,
-            WorldId,
+            ChannelId, CommandId, GameSessionId, MovementLocalPosition, NodeId, WorldId,
         },
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin,
     };

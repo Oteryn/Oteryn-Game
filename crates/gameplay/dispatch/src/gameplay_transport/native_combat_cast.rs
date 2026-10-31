@@ -2923,7 +2923,8 @@ mod tests {
             kind: ParkedMarkerKind::Native,
             actor: ExactActorRef::transport_fixture(
                 lane.world_id(),
-                lane.channel_id().expect("W02: pinned Channel fixture"),
+                // W02: this existing spell marker fixture remains a Channel.
+                lane.channel_id().unwrap(),
             ),
             session: GameSessionId::decode(&identity(22)).unwrap(),
         }

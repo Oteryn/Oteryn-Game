@@ -387,6 +387,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+impl LiveStamina {
+    pub(super) fn activity_matches(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.actor == actor && self.session == session
+    }
+    pub(super) fn activity_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
+        self.activity_matches(actor, session)
+            && (self.pending_gain.is_some() || self.pending_debit.is_some())
+    }
+    pub(super) fn rebind_activity(&mut self, actor: ExactActorRef, session: GameSessionId) {
+        self.actor = actor;
+        self.session = session;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -555,19 +569,5 @@ mod tests {
         assert_eq!(state.pending_gain, Some((gain, 100, 101)));
         assert!(state.pending_debit.is_none());
         assert!(states.stamina_to_flush(actor, session));
-    }
-}
-
-impl LiveStamina {
-    pub(super) fn activity_matches(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        self.actor == actor && self.session == session
-    }
-    pub(super) fn activity_pending(&self, actor: ExactActorRef, session: GameSessionId) -> bool {
-        self.activity_matches(actor, session)
-            && (self.pending_gain.is_some() || self.pending_debit.is_some())
-    }
-    pub(super) fn rebind_activity(&mut self, actor: ExactActorRef, session: GameSessionId) {
-        self.actor = actor;
-        self.session = session;
     }
 }

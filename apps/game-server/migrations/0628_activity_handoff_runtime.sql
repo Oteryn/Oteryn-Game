@@ -3,6 +3,45 @@
 -- no assignment, control grant, registration or Runtime-readiness publication rights.
 -- All rows below are retained receipts; rollback is fix-forward, never history deletion.
 
+-- The control writer uses INSERT ... ON CONFLICT DO UPDATE for successor
+-- assignments as well as first allocations. PostgreSQL runs BEFORE INSERT
+-- before choosing that conflict arm. The 0247 availability check must therefore
+-- distinguish an existing exact assignment from a genuinely new identity;
+-- otherwise a live activity cannot be revoked or replaced for recovery.
+-- The shared instance lock, House exclusion, assignment generation/history
+-- guards and independently granted control operation remain authoritative.
+CREATE OR REPLACE FUNCTION game_activity_scope_assignment_admission() RETURNS trigger
+LANGUAGE plpgsql SET search_path = pg_catalog, public, pg_temp AS $$
+DECLARE v_instance UUID;
+BEGIN
+    IF NEW.scope_kind = 3 THEN
+        v_instance := NEW.activity_instance_id;
+        PERFORM game_house_scope_instance_lock(NEW.world_id, v_instance);
+        IF TG_OP = 'INSERT'
+           AND NOT EXISTS (
+               SELECT 1 FROM game_runtime_scope_assignments a
+               WHERE a.scope_key = NEW.scope_key AND a.scope_kind = 3
+                 AND a.world_id = NEW.world_id AND a.activity_instance_id = v_instance)
+           AND NOT game_activity_scope_available(NEW.world_id, v_instance) THEN
+            RAISE EXCEPTION 'activity instance identity is already in use' USING ERRCODE = '23514';
+        END IF;
+    ELSIF NEW.scope_kind = 2 THEN
+        v_instance := game_house_scope_instance_id(NEW.world_id, NEW.house_key);
+        PERFORM game_house_scope_instance_lock(NEW.world_id, v_instance);
+        IF EXISTS (SELECT 1 FROM game_runtime_scope_assignments a
+                   WHERE a.world_id = NEW.world_id AND a.scope_kind = 3
+                     AND a.activity_instance_id = v_instance) THEN
+            RAISE EXCEPTION 'house instance identity belongs to an activity' USING ERRCODE = '23514';
+        END IF;
+    END IF;
+    RETURN NEW;
+END; $$;
+-- Preserve the schema pin installed by 0247, including non-public installs.
+DO $$ BEGIN
+    EXECUTE format('ALTER FUNCTION game_activity_scope_assignment_admission() SET search_path = %I, pg_temp', current_schema());
+END $$;
+REVOKE ALL ON FUNCTION game_activity_scope_assignment_admission() FROM PUBLIC;
+
 CREATE TABLE game_activity_runtime_entries (
     handoff_id UUID PRIMARY KEY REFERENCES game_activity_handoff_groups(handoff_id),
     initiating_character_id UUID NOT NULL REFERENCES game_character_roots(character_id),

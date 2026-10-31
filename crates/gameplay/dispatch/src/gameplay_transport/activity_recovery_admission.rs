@@ -35,6 +35,7 @@ tokio::task_local! {
 pub(super) struct NativeActivityRecovery {
     prior: AdmittedSession,
     next: AdmittedSession,
+    controller: ControllerBinding,
     inherited_loss: Option<ControlLossMark>,
     stream: Mutex<Option<super::session_ingress::ActivityStreamReservation>>,
     phase: AtomicU8,
@@ -55,12 +56,7 @@ impl Drop for RecoverySocketGuard {
 
 impl NativeActivityRecovery {
     fn key(&self) -> Vec<u8> {
-        self.next
-            .controller
-            .expect("server-issued recovery controller")
-            .transport
-            .to_bytes()
-            .to_vec()
+        self.controller.transport.to_bytes().to_vec()
     }
     fn release_stream(&self) -> Result<(), ()> {
         self.stream.lock().map_err(|_| ())?.take();
@@ -324,6 +320,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let pending = Arc::new(NativeActivityRecovery {
             prior: retained,
             next,
+            // Validate the required proposed controller before retaining this
+            // attempt or submitting its first possible durable mutation.
+            controller: next.controller.ok_or(Rejected)?,
             inherited_loss: control.control_loss,
             stream: Mutex::new(Some(stream)),
             phase: AtomicU8::new(SERVING_ATTEMPT),

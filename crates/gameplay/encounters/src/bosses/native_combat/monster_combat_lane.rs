@@ -2029,11 +2029,8 @@ mod bone_map_admission_actual_tests {
     use super::*;
     use crate::content::*;
     use crate::world_runtime::{ReferenceContentGeneration, ScopeContentGenerationFence};
+    use oteryn_gameplay_entities::MovementLocalPosition;
     use std::collections::BTreeMap;
-    use {
-        oteryn_gameplay_entities::MovementLocalPosition,
-        oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1,
-    };
     #[test]
     #[ignore = "Retained actual native eleven-document source capture; isolated PROJECT positions, not donor map admission"]
     fn actual_source_map_association_admits_native_shared_hp_and_phase() {

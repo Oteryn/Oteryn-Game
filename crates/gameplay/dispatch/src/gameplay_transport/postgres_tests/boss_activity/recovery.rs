@@ -1,6 +1,7 @@
 //! Real native handoff recovery: registered S2 credentials, actual stream
 //! ownership, retained protection, and return-before-release on cancellation.
 use super::{BOSS, Harness, TestResult, debug, fixture};
+use crate::durability::character_progression::CharacterProgressionError;
 use crate::durability::fresh_admission::FreshAdmissionStore;
 use crate::foundation::{
     AuthenticatedTransportRefV1, ControlLossHistoryV1, GameSessionId, GameSessionState,
@@ -229,8 +230,56 @@ pub(super) async fn assert_cancelled_recovery(
         std::time::Duration::from_secs(30),
         crate::gameplay_transport::first(recovering, barrier.entered.notified()),
     )
-    .await?;
+    .await
+    .map_err(|error| format!("activity recovery durable-commit barrier: {error}"))?;
     assert!(outcome.is_none(), "reached committed cancellation barrier");
+    eprintln!("ACTIVITY_RECOVERY_CANCELLED after_durable_commit");
+    // The committed recovery advanced the real connection generation. Reading
+    // retained combat locks must work in that exact Instance before release;
+    // each negative changes only one authority field of this current fence.
+    let current = owner
+        .current_quest_fence(admitted.game_session_id)
+        .await
+        .map_err(|_| "current recovered Instance gameplay fence")?
+        .ok_or("live recovered Instance gameplay fence")?;
+    let old = admitted.item_fence.ok_or("pre-recovery Instance fence")?;
+    assert_eq!(current.runtime_scope, old.runtime_scope);
+    assert!(matches!(
+        current.runtime_scope,
+        RuntimeScopeRefV1::Instance { .. }
+    ));
+    let _stored = h
+        .root
+        .read_pvp_state(owner.character, &h.node, current)
+        .await
+        .map_err(|error| format!("current Instance combat-lock read: {error:?}"))?;
+    let mut borrowed_channel = current;
+    borrowed_channel.runtime_scope = source
+        .item_fence
+        .ok_or("origin Channel fence")?
+        .runtime_scope;
+    assert!(matches!(
+        borrowed_channel.runtime_scope,
+        RuntimeScopeRefV1::Channel { .. }
+    ));
+    assert!(matches!(
+        h.root
+            .read_pvp_state(owner.character, &h.node, borrowed_channel)
+            .await,
+        Err(CharacterProgressionError::AuthorityRejected)
+    ));
+    let mut stale_connection = current;
+    stale_connection.connection_generation = old.connection_generation;
+    assert_ne!(
+        stale_connection.connection_generation,
+        current.connection_generation
+    );
+    assert!(matches!(
+        h.root
+            .read_pvp_state(owner.character, &h.node, stale_connection)
+            .await,
+        Err(CharacterProgressionError::AuthorityRejected)
+    ));
     let mut pending = owner.abandoned_activity_recoveries();
     assert_eq!(pending.len(), 1);
     let (_, pending) = pending.pop().ok_or("retained cancellation")?;
@@ -238,7 +287,8 @@ pub(super) async fn assert_cancelled_recovery(
         std::time::Duration::from_secs(30),
         owner.reconcile_abandoned_activity_recovery(pending),
     )
-    .await?;
+    .await
+    .map_err(|error| format!("activity recovery abandoned return/release: {error}"))?;
     assert!(owner.abandoned_activity_recoveries().is_empty());
     assert_terminal_return(h, owner, admitted, 8).await?;
     eprintln!("BOSS_ACTIVITY_CANCELLED_RECOVERY_RELEASE POSTGRES_CASE_COMPLETED");
@@ -288,7 +338,14 @@ async fn assert_terminal_return(
     source: AdmittedSession,
     reason: i16,
 ) -> TestResult {
-    let row:(Vec<u8>,i16,Option<String>,Option<Vec<u8>>,Option<String>)=sqlx::query_as(
+    type ActivityReturnRow = (
+        Vec<u8>,
+        i16,
+        Option<String>,
+        Option<Vec<u8>>,
+        Option<String>,
+    );
+    let row: ActivityReturnRow = sqlx::query_as(
         "SELECT uuid_send(destination_game_session_id),reason,command_id::text,release_transport_ref,release_loss_epoch::text FROM game_activity_runtime_returns WHERE source_game_session_id=encode($1,'hex')::uuid")
         .bind(source.game_session_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(row.1, reason);

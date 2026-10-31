@@ -1009,6 +1009,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     }
 }
 
+impl LastPositions {
+    pub(super) fn transfer_activity(
+        &self,
+        destination: &Self,
+        old: GameSessionId,
+        new: GameSessionId,
+        actor: ExactActorRef,
+    ) -> Result<(), ()> {
+        let mut source = self.tracks.lock().map_err(|_| ())?;
+        let mut target = destination.tracks.lock().map_err(|_| ())?;
+        if target.contains_key(&new) {
+            return if source.contains_key(&old) {
+                Err(())
+            } else {
+                Ok(())
+            };
+        }
+        target.try_reserve(1).map_err(|_| ())?;
+        if let Some(mut track) = source.remove(&old) {
+            track.actor = actor;
+            // The durable handoff wrote its own placement. First periodic pass must
+            // compare the new actual scope; the source's cell is never assumed current.
+            track.written = None;
+            track.checked = Instant::now();
+            target.insert(new, track);
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![allow(clippy::expect_used)]
@@ -1425,35 +1455,5 @@ mod tests {
         let (mut runtime, player, session) = admitted();
         initialize_first_entry_at(&mut runtime, player, session, input, |_| true).expect("step 4");
         assert_eq!(position(&runtime, player), at(3, 4));
-    }
-}
-
-impl LastPositions {
-    pub(super) fn transfer_activity(
-        &self,
-        destination: &Self,
-        old: GameSessionId,
-        new: GameSessionId,
-        actor: ExactActorRef,
-    ) -> Result<(), ()> {
-        let mut source = self.tracks.lock().map_err(|_| ())?;
-        let mut target = destination.tracks.lock().map_err(|_| ())?;
-        if target.contains_key(&new) {
-            return if source.contains_key(&old) {
-                Err(())
-            } else {
-                Ok(())
-            };
-        }
-        target.try_reserve(1).map_err(|_| ())?;
-        if let Some(mut track) = source.remove(&old) {
-            track.actor = actor;
-            // The durable handoff wrote its own placement. First periodic pass must
-            // compare the new actual scope; the source's cell is never assumed current.
-            track.written = None;
-            track.checked = Instant::now();
-            target.insert(new, track);
-        }
-        Ok(())
     }
 }

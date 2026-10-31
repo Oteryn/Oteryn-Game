@@ -3,6 +3,25 @@ use super::super::character_last_position::{
 };
 use super::*;
 
+/// Immutable return facts used to reconcile retries and retained death obligations.
+struct PreviousReturn {
+    request_binding: Vec<u8>,
+    command_id: Option<String>,
+    reason: i16,
+    death_occurrence: Option<Vec<u8>>,
+}
+
+impl PreviousReturn {
+    fn decode(row: &sqlx::postgres::PgRow) -> Result<Self> {
+        Ok(Self {
+            request_binding: row.try_get(0)?,
+            command_id: row.try_get(1)?,
+            reason: row.try_get(2)?,
+            death_occurrence: row.try_get(3)?,
+        })
+    }
+}
+
 fn binding(r: &ActivityReturnRequest) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash_field(&mut hash, b"native-activity-return-v1");
@@ -75,14 +94,19 @@ pub(super) async fn return_in_transaction(
     .bind(r.source.character_id.as_bytes().as_slice())
     .fetch_optional(&mut **tx)
     .await?;
-    let previous: Option<(Vec<u8>, Option<String>, i16, Option<Vec<u8>>)> = sqlx::query_as("SELECT request_binding,command_id::text,reason,uuid_send(death_occurrence_id) FROM game_activity_runtime_returns WHERE handoff_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid")
+    let previous = sqlx::query("SELECT request_binding,command_id::text,reason,uuid_send(death_occurrence_id) FROM game_activity_runtime_returns WHERE handoff_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid")
         .bind(r.handoff_id.as_slice()).bind(r.source.character_id.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
+    let previous = previous.as_ref().map(PreviousReturn::decode).transpose()?;
     // Recovery must retain a death obligation. Replays use the immutable
     // return reason even after the destination consumed its pending respawn.
     let mut effective = r.clone();
     if recovering {
         let death = match previous.as_ref() {
-            Some((_, _, 5, Some(occurrence))) => Some(bytes16(occurrence.clone())?),
+            Some(PreviousReturn {
+                reason: 5,
+                death_occurrence: Some(occurrence),
+                ..
+            }) => Some(bytes16(occurrence.clone())?),
             Some(_) => None,
             None => super::departed_death::pending_death_occurrence(tx, r.source).await?,
         };
@@ -93,7 +117,12 @@ pub(super) async fn return_in_transaction(
     }
     let r = &effective;
     let request_binding = binding(r);
-    if let Some((old_binding, command, _, _)) = previous {
+    if let Some(PreviousReturn {
+        request_binding: old_binding,
+        command_id: command,
+        ..
+    }) = previous
+    {
         if old_binding != request_binding || command.map(parse_u64).transpose()? != r.command_id {
             return Ok(ActivityReturnOutcome::Refused(
                 ActivityRefusal::ReplayConflict,
@@ -283,13 +312,15 @@ pub(super) async fn return_in_transaction(
     super::entry::issue_successor(
         tx,
         root,
-        r.source,
-        r.destination_game_session_id,
-        r.return_id,
-        destination_scope,
-        r.destination_generation,
-        None,
-        r.destination_transport,
+        super::entry::SuccessorSession {
+            source: r.source,
+            destination: r.destination_game_session_id,
+            decision: r.return_id,
+            scope: destination_scope,
+            scope_generation: r.destination_generation,
+            origin: None,
+            transport: r.destination_transport,
+        },
         now,
     )
     .await?;

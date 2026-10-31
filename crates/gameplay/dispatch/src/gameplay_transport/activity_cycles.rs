@@ -7,14 +7,14 @@ use std::pin::{Pin, pin};
 use std::sync::Arc;
 use std::task::Poll;
 
+type ActivityCycleFuture<'a> = Pin<Box<dyn Future<Output = ()> + 'a>>;
+type ActivityCycleJob<'a> = (ScopeKey, Arc<CancellationToken>, ActivityCycleFuture<'a>);
+type ActivityRecoveryJob<'a> = (Vec<u8>, ActivityCycleFuture<'a>);
+
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn run_activity_owner_cycles(&self, shutdown: &CancellationToken) {
-        let mut jobs: Vec<(
-            ScopeKey,
-            Arc<CancellationToken>,
-            Pin<Box<dyn Future<Output = ()> + '_>>,
-        )> = Vec::new();
-        let mut recoveries: Vec<(Vec<u8>, Pin<Box<dyn Future<Output = ()> + '_>>)> = Vec::new();
+        let mut jobs: Vec<ActivityCycleJob<'_>> = Vec::new();
+        let mut recoveries: Vec<ActivityRecoveryJob<'_>> = Vec::new();
         loop {
             let owners = self.activity_runtimes.activity_owners().unwrap_or_default();
             for (key, stop, _) in &jobs {

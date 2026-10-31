@@ -299,13 +299,15 @@ pub(super) async fn enter_in_transaction(
         issue_successor(
             tx,
             root,
-            p.source,
-            p.destination_game_session_id,
-            r.handoff_id,
-            r.destination_scope,
-            r.destination_generation,
-            Some(*channel_id.as_bytes()),
-            p.destination_transport,
+            SuccessorSession {
+                source: p.source,
+                destination: p.destination_game_session_id,
+                decision: r.handoff_id,
+                scope: r.destination_scope,
+                scope_generation: r.destination_generation,
+                origin: Some(*channel_id.as_bytes()),
+                transport: p.destination_transport,
+            },
             now,
         )
         .await?;
@@ -362,20 +364,34 @@ async fn insert_participant(
     Ok(())
 }
 
+/// Inputs for one successor; issuance revalidates its source inside the transaction.
+pub(super) struct SuccessorSession {
+    pub(super) source: CurrentCharacterItemFence,
+    pub(super) destination: GameSessionId,
+    pub(super) decision: [u8; 16],
+    pub(super) scope: RuntimeScopeRefV1,
+    pub(super) scope_generation: ScopeOwnershipGeneration,
+    pub(super) origin: Option<[u8; 16]>,
+    pub(super) transport: Option<crate::foundation::AuthenticatedTransportRefV1>,
+}
+
 /// The existing session issuance and guard publishers remain the only writers.
-/// The source is locked and terminal before the same transport is rebound.
+/// The source is locked and terminal before its successor transport is installed.
 pub(super) async fn issue_successor(
     tx: &mut Transaction<'_, Postgres>,
     root: &DurabilityRoot,
-    source: CurrentCharacterItemFence,
-    destination: GameSessionId,
-    decision: [u8; 16],
-    scope: RuntimeScopeRefV1,
-    scope_generation: ScopeOwnershipGeneration,
-    origin: Option<[u8; 16]>,
-    transport: Option<crate::foundation::AuthenticatedTransportRefV1>,
+    successor: SuccessorSession,
     now: i64,
 ) -> Result<()> {
+    let SuccessorSession {
+        source,
+        destination,
+        decision,
+        scope,
+        scope_generation,
+        origin,
+        transport,
+    } = successor;
     let character = foundation_character(source)?;
     let membership =
         super::super::fresh_admission::unused_session_revision(tx, character, destination).await?;

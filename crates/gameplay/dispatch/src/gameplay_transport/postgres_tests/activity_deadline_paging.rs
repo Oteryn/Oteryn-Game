@@ -23,7 +23,9 @@ use crate::foundation::{
 };
 use crate::gameplay_transport::item_fence_of;
 
-const BOSS: &str = "fixture:activity_deadline_paging";
+// Isolated fixture data still passes the existing cooldown owner's ProductionKey
+// validation, which rejects fixture/test markers. This does not activate content.
+const BOSS: &str = "oteryn:boss.activity_deadline_paging";
 
 #[test]
 fn activity_deadline_paging_postgres_blocked_and_foreign_first_page() -> TestResult {
@@ -65,7 +67,7 @@ fn scenario() -> TestResult {
 }
 
 async fn case(h: &Harness) -> TestResult {
-    let (_evidence, mut template) = prepare_activity_fixture(h).await?;
+    let (evidence, mut template) = prepare_activity_fixture(h).await?;
     template.activity_key = BOSS.into();
     template.time_limit_ms = 1_000; // Explicit isolated fixture policy.
     let world = template.destination_scope.world_id();
@@ -95,7 +97,9 @@ async fn case(h: &Harness) -> TestResult {
         let mut request = template.clone();
         request.handoff_id = id(200 + member);
         if member != 0 {
-            let session = admit_member(h, member).await?;
+            let session = admit_member(h, &evidence.evidence, member)
+                .await
+                .map_err(|error| format!("pager source admission {member}: {error}"))?;
             request.participants[0].source =
                 item_fence_of(store.current_session_at(session).await?.0)
                     .ok_or("real pager source fence")?;
@@ -121,7 +125,8 @@ async fn case(h: &Harness) -> TestResult {
         }
         let outcome = owner
             .enter_boss_room(&authority, &h.node, request.clone())
-            .await?;
+            .await
+            .map_err(|error| format!("pager room entry {member}: {error}"))?;
         assert!(
             matches!(outcome, ActivityEnterOutcome::Entered(_)),
             "real pager room {member}: {outcome:?}"
@@ -293,7 +298,11 @@ async fn case(h: &Harness) -> TestResult {
     Ok(())
 }
 
-async fn admit_member(h: &Harness, member: u8) -> TestResult<GameSessionId> {
+async fn admit_member(
+    h: &Harness,
+    evidence: &crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+    member: u8,
+) -> TestResult<GameSessionId> {
     let character = id(100 + member);
     let account = id(120 + member);
     // Only initial Character/progression input is fixture data, as in Harness.
@@ -309,6 +318,13 @@ async fn admit_member(h: &Harness, member: u8) -> TestResult<GameSessionId> {
         .bind(character.as_slice()).execute(&h.pool).await?;
     let (account,character_text):(String,String)=sqlx::query_as("SELECT account_id::text,character_id::text FROM game_character_roots WHERE character_id=encode($1,'hex')::uuid")
         .bind(character.as_slice()).fetch_one(&h.pool).await?;
+    // A published Account guard does not supply the producer-owned security
+    // floor required by the existing scope-transfer writer. Refresh each new
+    // account through the same authenticated source used for the first member.
+    evidence
+        .refresh_account(&h.root, &h.node, &account)
+        .await
+        .map_err(debug)?;
     let now: i64 =
         sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&h.pool)

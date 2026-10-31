@@ -590,54 +590,56 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return refuse(ActivityRefusal::NotDue);
         }
-        let mut attempts = self.activity_runtimes.returns.lock().map_err(|_| ())?;
-        attempts.try_reserve(1).map_err(|_| ())?;
-        let mut kill_marks = seal_activity_kills(attack.kills(), &[member])?;
-        let held = if death {
-            spells.prepare_activity_death_states(&mut destination_spells, &[member])
-        } else {
-            spells.prepare_activity_states(&mut destination_spells, &[member])
+        let pending = {
+            let mut attempts = self.activity_runtimes.returns.lock().map_err(|_| ())?;
+            attempts.try_reserve(1).map_err(|_| ())?;
+            let mut kill_marks = seal_activity_kills(attack.kills(), &[member])?;
+            let held = if death {
+                spells.prepare_activity_death_states(&mut destination_spells, &[member])
+            } else {
+                spells.prepare_activity_states(&mut destination_spells, &[member])
+            };
+            let mut held = match held {
+                Ok(held) => held,
+                Err(()) => {
+                    finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
+                    return refuse(ActivityRefusal::AuthorityRejected);
+                }
+            };
+            let prepared = if placement.boss_room {
+                from.prepare_activity_boss_return(&mut to, &[member])
+            } else {
+                from.prepare_activity_transfer(&mut to, &[member])
+            };
+            let physical = match prepared {
+                Ok(reserved) => reserved,
+                Err(_) => {
+                    spells.abort_activity_states(&mut held);
+                    finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
+                    return refuse(ActivityRefusal::NoCapacity);
+                }
+            };
+            let pending = Arc::new(tokio::sync::Mutex::new(NativeActivityReturnAttempt {
+                source: source.clone(),
+                destination: destination.clone(),
+                admitted,
+                placement,
+                request,
+                physical,
+                spells: held,
+                kill_marks,
+                receipt: None,
+                moved: None,
+                states_installed: false,
+                ancillary_installed: false,
+                death_completed: false,
+                outcome: None,
+            }));
+            // From extraction to retention there is no await, so cancellation cannot
+            // destroy the sole living actor state or free a possibly committed slot.
+            attempts.insert(key, Arc::clone(&pending));
+            pending
         };
-        let mut held = match held {
-            Ok(held) => held,
-            Err(()) => {
-                finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
-                return refuse(ActivityRefusal::AuthorityRejected);
-            }
-        };
-        let prepared = if placement.boss_room {
-            from.prepare_activity_boss_return(&mut to, &[member])
-        } else {
-            from.prepare_activity_transfer(&mut to, &[member])
-        };
-        let physical = match prepared {
-            Ok(reserved) => reserved,
-            Err(_) => {
-                spells.abort_activity_states(&mut held);
-                finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
-                return refuse(ActivityRefusal::NoCapacity);
-            }
-        };
-        let pending = Arc::new(tokio::sync::Mutex::new(NativeActivityReturnAttempt {
-            source: source.clone(),
-            destination: destination.clone(),
-            admitted,
-            placement,
-            request,
-            physical,
-            spells: held,
-            kill_marks,
-            receipt: None,
-            moved: None,
-            states_installed: false,
-            ancillary_installed: false,
-            death_completed: false,
-            outcome: None,
-        }));
-        // From extraction to retention there is no await, so cancellation cannot
-        // destroy the sole living actor state or free a possibly committed slot.
-        attempts.insert(key, Arc::clone(&pending));
-        drop(attempts);
         drop(attack);
         drop(destination_spells);
         drop(spells);
@@ -819,23 +821,21 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         drop(_second_lane);
         drop(_first_lane);
         drop(_slot);
-        if let ActivityReturnReason::Death { occurrence } = attempt.request.reason {
-            if !attempt.death_completed {
-                let occurrence =
-                    crate::durability::character_death::PlayerDeathOccurrence::from_bytes(
-                        occurrence,
-                    )
+        if let ActivityReturnReason::Death { occurrence } = attempt.request.reason
+            && !attempt.death_completed
+        {
+            let occurrence =
+                crate::durability::character_death::PlayerDeathOccurrence::from_bytes(occurrence)
                     .map_err(|_| ())?;
-                if !destination_view
-                    .complete_activity_death_return(next, occurrence)
-                    .await
-                {
-                    return Err(());
-                }
-                // No await separates the successful child completion and this
-                // retained mark, so cancellation cannot cause a second refill.
-                attempt.death_completed = true;
+            if !destination_view
+                .complete_activity_death_return(next, occurrence)
+                .await
+            {
+                return Err(());
             }
+            // No await separates the successful child completion and this
+            // retained mark, so cancellation cannot cause a second refill.
+            attempt.death_completed = true;
         }
         if next.controller.is_none() {
             self.activity_runtimes.remember_offline_return(old, next)?;

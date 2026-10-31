@@ -616,47 +616,49 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         // Acquire the leaf registry guard before extracting owned state; no
         // fallible registry acquisition or await remains before retention.
         let attack = source.states.attack.lock().await;
-        let mut attempts = self.activity_runtimes.attempts.lock().map_err(|_| ())?;
-        attempts.try_reserve(1).map_err(|_| ())?;
-        let mut kill_marks = seal_activity_kills(attack.kills(), &members)?;
-        let mut held = match spells.prepare_activity_states(&mut destination_spells, &members) {
-            Ok(value) => value,
-            Err(()) => {
-                finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
-                return refuse(ActivityRefusal::AuthorityRejected);
-            }
+        let pending = {
+            let mut attempts = self.activity_runtimes.attempts.lock().map_err(|_| ())?;
+            attempts.try_reserve(1).map_err(|_| ())?;
+            let mut kill_marks = seal_activity_kills(attack.kills(), &members)?;
+            let mut held = match spells.prepare_activity_states(&mut destination_spells, &members) {
+                Ok(value) => value,
+                Err(()) => {
+                    finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
+                    return refuse(ActivityRefusal::AuthorityRejected);
+                }
+            };
+            let prepared = if boss_room {
+                from.prepare_activity_group_entry(&mut to, &members)
+            } else {
+                from.prepare_activity_transfer(&mut to, &members)
+            };
+            let physical = match prepared {
+                Ok(value) => value,
+                Err(_) => {
+                    spells.abort_activity_states(&mut held);
+                    finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
+                    return refuse(ActivityRefusal::NoCapacity);
+                }
+            };
+            let pending = Arc::new(tokio::sync::Mutex::new(NativeActivityAttempt {
+                source: source.clone(),
+                destination: destination.clone(),
+                request,
+                boss_room,
+                sources,
+                physical,
+                spells: held,
+                kill_marks,
+                receipt: None,
+                moved: None,
+                states_installed: false,
+                outcome: None,
+            }));
+            // No await occurs between extraction and retention. A cancelled durable
+            // future only releases the attempt mutex; its unique tokens remain owned.
+            attempts.insert(key, Arc::clone(&pending));
+            pending
         };
-        let prepared = if boss_room {
-            from.prepare_activity_group_entry(&mut to, &members)
-        } else {
-            from.prepare_activity_transfer(&mut to, &members)
-        };
-        let physical = match prepared {
-            Ok(value) => value,
-            Err(_) => {
-                spells.abort_activity_states(&mut held);
-                finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
-                return refuse(ActivityRefusal::NoCapacity);
-            }
-        };
-        let pending = Arc::new(tokio::sync::Mutex::new(NativeActivityAttempt {
-            source: source.clone(),
-            destination: destination.clone(),
-            request,
-            boss_room,
-            sources,
-            physical,
-            spells: held,
-            kill_marks,
-            receipt: None,
-            moved: None,
-            states_installed: false,
-            outcome: None,
-        }));
-        // No await occurs between extraction and retention. A cancelled durable
-        // future only releases the attempt mutex; its unique tokens remain owned.
-        attempts.insert(key, Arc::clone(&pending));
-        drop(attempts);
         drop(attack);
         drop(destination_spells);
         drop(spells);

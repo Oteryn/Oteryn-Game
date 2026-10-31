@@ -327,12 +327,15 @@ pub(super) async fn transfer_claims_in_transaction(
     transfer_scope_claims_in_transaction(
         tx,
         root,
-        account,
-        character,
-        sessions,
-        lease,
+        ScopeClaimTransfer {
+            account,
+            character,
+            source: sessions.0,
+            destination: sessions.1,
+            lease,
+            decision: "house-transfer",
+        },
         now,
-        "house-transfer",
     )
     .await
 }
@@ -352,30 +355,43 @@ pub(super) async fn transfer_activity_claims_in_transaction(
     transfer_scope_claims_in_transaction(
         tx,
         root,
-        account,
-        character,
-        sessions,
-        lease,
+        ScopeClaimTransfer {
+            account,
+            character,
+            source: sessions.0,
+            destination: sessions.1,
+            lease,
+            decision: "activity-transfer",
+        },
         now,
-        "activity-transfer",
     )
     .await
+}
+
+/// One existing publisher's Account/Character claim transition between sessions.
+struct ScopeClaimTransfer<'a> {
+    account: &'a str,
+    character: CharacterId,
+    source: crate::foundation::GameSessionId,
+    destination: crate::foundation::GameSessionId,
+    lease: u64,
+    decision: &'static str,
 }
 
 async fn transfer_scope_claims_in_transaction(
     tx: &mut Transaction<'_, Postgres>,
     root: &DurabilityRoot,
-    account: &str,
-    character: CharacterId,
-    sessions: (
-        crate::foundation::GameSessionId,
-        crate::foundation::GameSessionId,
-    ),
-    lease: u64,
+    transfer: ScopeClaimTransfer<'_>,
     now: i64,
-    decision: &str,
 ) -> Result<()> {
-    let (source, destination) = sessions;
+    let ScopeClaimTransfer {
+        account,
+        character,
+        source,
+        destination,
+        lease,
+        decision,
+    } = transfer;
     let store = AdmissionGuardStore::from_root(root.clone());
     let mut current = Vec::with_capacity(2);
     let mut changes = Vec::with_capacity(2);

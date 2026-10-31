@@ -1,5 +1,4 @@
 //! The committed native destination is recoverable before any scope-barrier byte.
-#![allow(clippy::expect_used)]
 use super::*;
 use crate::durability::item_transfer::CurrentCharacterItemFence;
 use crate::foundation::{
@@ -23,14 +22,18 @@ fn id(tag: u8) -> [u8; 16] {
     bytes
 }
 
-fn native_switch() -> ActivityConnectionSwitch {
-    let world = WorldId::decode(&id(1)).expect("world");
-    let channel = ChannelId::decode(&id(2)).expect("channel");
-    let node = NodeId::decode(&id(4)).expect("node");
+fn debug(error: impl std::fmt::Debug) -> String {
+    format!("{error:?}")
+}
+
+fn native_switch() -> Result<ActivityConnectionSwitch, String> {
+    let world = WorldId::decode(&id(1)).map_err(debug)?;
+    let channel = ChannelId::decode(&id(2)).map_err(debug)?;
+    let node = NodeId::decode(&id(4)).map_err(debug)?;
     let source_scope = RuntimeScopeRefV1::channel(world, channel);
-    let destination_scope = RuntimeScopeRefV1::instance(world, id(3)).expect("Instance");
-    let source_session = GameSessionId::decode(&id(6)).expect("source session");
-    let destination_session = GameSessionId::decode(&id(7)).expect("destination session");
+    let destination_scope = RuntimeScopeRefV1::instance(world, id(3)).map_err(debug)?;
+    let source_session = GameSessionId::decode(&id(6)).map_err(debug)?;
+    let destination_session = GameSessionId::decode(&id(7)).map_err(debug)?;
     let (_controller, activated) =
         crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None);
     let pin = activated.into_channel_pin();
@@ -44,7 +47,7 @@ fn native_switch() -> ActivityConnectionSwitch {
         1,
         pin.clone(),
     )
-    .expect("source owner");
+    .map_err(debug)?;
     let mut destination_runtime = ChannelRuntimeV1::from_committed_scope_assignment(
         destination_scope,
         node,
@@ -55,29 +58,29 @@ fn native_switch() -> ActivityConnectionSwitch {
         1,
         pin,
     )
-    .expect("independent Instance owner");
+    .map_err(debug)?;
     let source_reservation = source_runtime
         .reserve_fresh_session(source_session)
-        .expect("source reservation");
+        .map_err(debug)?;
     let source_actor = source_runtime
         .commit_fresh_session(source_reservation)
-        .expect("source actor");
+        .map_err(debug)?;
     let destination_reservation = destination_runtime
         .reserve_fresh_session(destination_session)
-        .expect("destination reservation");
+        .map_err(debug)?;
     let destination_actor = destination_runtime
         .commit_fresh_session(destination_reservation)
-        .expect("destination actor");
+        .map_err(debug)?;
     let fence = CurrentCharacterItemFence {
-        character_id: crate::domain::CharacterId::from_bytes(id(5)).expect("character"),
+        character_id: crate::domain::CharacterId::from_bytes(id(5)).map_err(debug)?,
         game_session_id: source_session,
-        connection_generation: ConnectionGeneration::new(1).expect("connection generation"),
+        connection_generation: ConnectionGeneration::new(1).map_err(debug)?,
         character_lease_generation: 2,
         runtime_scope: source_scope,
-        scope_ownership_generation: ScopeOwnershipGeneration::new(1).expect("scope generation"),
+        scope_ownership_generation: ScopeOwnershipGeneration::new(1).map_err(debug)?,
     };
     let selected = SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, &[117])
-        .expect("boss selection");
+        .ok_or("boss selection")?;
     let source = AdmittedSession {
         game_session_id: source_session,
         world_id: world,
@@ -85,7 +88,7 @@ fn native_switch() -> ActivityConnectionSwitch {
         runtime_actor: Some(source_actor),
         first_entry: FirstEntryOutcome::Positioned,
         controller: Some(ControllerBinding {
-            transport: AuthenticatedTransportRefV1::decode(&id(8)).expect("source transport"),
+            transport: AuthenticatedTransportRefV1::decode(&id(8)).map_err(debug)?,
             account_id: id(5),
         }),
         item_fence: Some(fence),
@@ -98,8 +101,7 @@ fn native_switch() -> ActivityConnectionSwitch {
         game_session_id: destination_session,
         runtime_actor: Some(destination_actor),
         controller: Some(ControllerBinding {
-            transport: AuthenticatedTransportRefV1::decode(&id(9))
-                .expect("fresh destination transport"),
+            transport: AuthenticatedTransportRefV1::decode(&id(9)).map_err(debug)?,
             account_id: id(5),
         }),
         item_fence: Some(CurrentCharacterItemFence {
@@ -123,22 +125,21 @@ fn native_switch() -> ActivityConnectionSwitch {
         lease_generation: 3,
         selection: selected.as_slice().to_vec(),
     })
-    .expect("committed scope projection");
-    ActivityConnectionSwitch {
+    .map_err(debug)?;
+    Ok(ActivityConnectionSwitch {
         source,
         destination,
         payload,
-    }
+    })
 }
 
 #[test]
-fn committed_destination_is_visible_before_barrier_without_resurrecting_old_control() {
+fn committed_destination_is_visible_before_barrier_without_resurrecting_old_control()
+-> Result<(), String> {
     let registry = ActivityRuntimeRegistry::default();
-    let switch = native_switch();
-    registry.remember(switch.source).expect("source connection");
-    registry
-        .stage_switch(switch.clone())
-        .expect("committed native publication");
+    let switch = native_switch()?;
+    registry.remember(switch.source).map_err(debug)?;
+    registry.stage_switch(switch.clone()).map_err(debug)?;
     // No finish_switch has occurred: the peer may have received zero bytes.
     assert_eq!(
         registry.connection(switch.destination.game_session_id),
@@ -153,12 +154,12 @@ fn committed_destination_is_visible_before_barrier_without_resurrecting_old_cont
     assert!(
         registry
             .pending_switch(switch.source)
-            .expect("pending barrier")
+            .map_err(debug)?
             .is_some()
     );
     registry
         .finish_switch(switch.source, switch.destination)
-        .expect("wire barrier completed");
+        .map_err(debug)?;
     assert!(registry.connection(switch.source.game_session_id).is_none());
 
     let mut recovered = switch.destination;
@@ -166,16 +167,12 @@ fn committed_destination_is_visible_before_barrier_without_resurrecting_old_cont
     recovered
         .item_fence
         .as_mut()
-        .expect("fence")
-        .connection_generation = ConnectionGeneration::new(2).expect("recovered generation");
-    recovered.controller.as_mut().expect("controller").transport =
-        AuthenticatedTransportRefV1::decode(&id(11)).expect("recovered transport");
-    registry
-        .remember(recovered)
-        .expect("later verified controller");
-    registry
-        .stage_switch(switch.clone())
-        .expect("historical publication retry");
+        .ok_or("fence")?
+        .connection_generation = ConnectionGeneration::new(2).map_err(debug)?;
+    recovered.controller.as_mut().ok_or("controller")?.transport =
+        AuthenticatedTransportRefV1::decode(&id(11)).map_err(debug)?;
+    registry.remember(recovered).map_err(debug)?;
+    registry.stage_switch(switch.clone()).map_err(debug)?;
     assert_eq!(
         registry.connection(recovered.game_session_id),
         Some(recovered),
@@ -184,19 +181,18 @@ fn committed_destination_is_visible_before_barrier_without_resurrecting_old_cont
     assert!(
         registry
             .pending_switch(switch.source)
-            .expect("completed barrier")
+            .map_err(debug)?
             .is_none()
     );
 
     registry.forget_terminal_connection(
         recovered.game_session_id,
-        recovered.runtime_actor.expect("actor"),
+        recovered.runtime_actor.ok_or("actor")?,
     );
-    registry
-        .stage_switch(switch)
-        .expect("historical retry after terminal release");
+    registry.stage_switch(switch).map_err(debug)?;
     assert!(
         registry.connection(recovered.game_session_id).is_none(),
         "a committed historical receipt cannot resurrect terminal control"
     );
+    Ok(())
 }

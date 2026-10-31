@@ -176,22 +176,24 @@ mod tests {
         }
     }
     #[test]
-    fn scope_namespace_survives_round_trip_and_never_becomes_a_channel() {
+    fn scope_namespace_survives_round_trip_and_never_becomes_a_channel() -> Result<(), Error> {
         let instance = snapshot();
         let mut channel = instance.clone();
         channel.scope = ActivityScope::Channel {
             world: id(4),
             channel: id(5),
         };
-        let instance_bytes = encode_activity_scope(&instance).expect("instance");
-        let channel_bytes = encode_activity_scope(&channel).expect("channel");
+        let instance_bytes = encode_activity_scope(&instance)?;
+        let channel_bytes = encode_activity_scope(&channel)?;
         assert_ne!(instance_bytes, channel_bytes);
         assert_eq!(decode_activity_scope(&instance_bytes), Ok(instance));
         assert_eq!(decode_activity_scope(&channel_bytes), Ok(channel));
+        Ok(())
     }
     #[test]
-    fn duplicate_fields_unknown_tags_truncation_and_widened_selection_are_rejected() {
-        let encoded = encode_activity_scope(&snapshot()).expect("valid");
+    fn duplicate_fields_unknown_tags_truncation_and_widened_selection_are_rejected()
+    -> Result<(), Error> {
+        let encoded = encode_activity_scope(&snapshot())?;
         for end in 0..encoded.len() {
             assert!(decode_activity_scope(&encoded[..end]).is_err());
         }
@@ -208,5 +210,6 @@ mod tests {
         assert!(encode_activity_scope(&value).is_err());
         value.selection = vec![1];
         assert!(encode_activity_scope(&value).is_err());
+        Ok(())
     }
 }

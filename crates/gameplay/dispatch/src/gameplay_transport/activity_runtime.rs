@@ -84,6 +84,19 @@ pub struct ActivityRuntimeAssets<'a> {
     pub rooms: super::SeamRooms<'a>,
 }
 
+/// The proposed runtime could not be registered under the current allocation,
+/// node, content and capability proofs. No runtime was published on this error.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ActivityRuntimeRegistrationError;
+
+impl std::fmt::Display for ActivityRuntimeRegistrationError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("activity runtime registration was refused")
+    }
+}
+
+impl std::error::Error for ActivityRuntimeRegistrationError {}
+
 #[derive(Clone)]
 pub(super) struct RegisteredRuntime<'a> {
     pub(super) scope: RuntimeScopeRefV1,
@@ -286,22 +299,31 @@ impl<'a> ActivityRuntimeRegistry<'a> {
             // House custody retains its separate existing carrier/transport path.
             return Ok(());
         }
+        if matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            && !admitted
+                .continuity
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1)
+        {
+            // A Channel connection without the activity capability cannot join a
+            // handoff. Its existing command owner retains its own typed refusals.
+            return Ok(());
+        }
         if fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
         {
             return Err(());
         }
         let mut sessions = self.connections.lock().map_err(|_| ())?;
-        if let Some(old) = sessions.get(&admitted.game_session_id) {
-            if old.continuity.connection_generation > admitted.continuity.connection_generation
+        if let Some(old) = sessions.get(&admitted.game_session_id)
+            && (old.continuity.connection_generation > admitted.continuity.connection_generation
                 || (old.continuity.connection_generation
                     == admitted.continuity.connection_generation
                     && old
                         .controller
-                        .is_some_and(|old| old.transport != controller.transport))
-            {
-                return Err(());
-            }
+                        .is_some_and(|old| old.transport != controller.transport)))
+        {
+            return Err(());
         }
         sessions.try_reserve(1).map_err(|_| ())?;
         sessions.insert(admitted.game_session_id, admitted);
@@ -656,7 +678,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         runtime: ChannelRuntimeV1,
         door: crate::world_runtime::LocalObjectRuntime,
         assets: ActivityRuntimeAssets<'a>,
-    ) -> Result<(), ()> {
+    ) -> Result<(), ActivityRuntimeRegistrationError> {
         if template.key.is_empty()
             || template.key.len() > 512
             || template.revision.is_empty()
@@ -666,26 +688,31 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             || assignment.state != AssignmentState::Assigned
             || assignment.holder != Some(self.holder.fact())
         {
-            return Err(());
+            return Err(ActivityRuntimeRegistrationError);
         }
         self.root
             .require_current_node_registration(self.holder)
             .await
-            .map_err(|_| ())?;
+            .map_err(|_| ActivityRuntimeRegistrationError)?;
         if self
             .root
             .read_runtime_scope_assignment(assignment.scope)
             .await
-            .map_err(|_| ())?
+            .map_err(|_| ActivityRuntimeRegistrationError)?
             .as_ref()
             != Some(assignment)
         {
-            return Err(());
+            return Err(ActivityRuntimeRegistrationError);
         }
         let binding = runtime.binding();
         let pin = runtime.content_pin();
-        let active = self.active_generation.ok_or(())?;
-        let room = assets.rooms.gate_native_combat_cast().ok_or(())?;
+        let active = self
+            .active_generation
+            .ok_or(ActivityRuntimeRegistrationError)?;
+        let room = assets
+            .rooms
+            .gate_native_combat_cast()
+            .ok_or(ActivityRuntimeRegistrationError)?;
         if binding.runtime_scope() != assignment.scope
             || binding.scope_generation().get() != assignment.ownership_generation
             || binding.source_revision() != assignment.source_revision
@@ -699,14 +726,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             || assets.movement_cells.scope().world_id != self.world_id
             || runtime.owner_fence().is_err()
         {
-            return Err(());
+            return Err(ActivityRuntimeRegistrationError);
         }
         let guards = crate::durability::admission_authority_guards::AdmissionGuardStore::from_root(
             self.root.clone(),
         );
         let guard=guards.load(&[crate::foundation::admission_authority_publication::AdmissionAuthorityGuardKeyV1::Runtime(assignment.scope)])
-            .await.map_err(|_| ())?.into_iter().next().flatten().ok_or(())?;
-        let crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1::Runtime {world_policy_revision,..}=guard.state else {return Err(());};
+            .await.map_err(|_| ActivityRuntimeRegistrationError)?.into_iter().next().flatten().ok_or(ActivityRuntimeRegistrationError)?;
+        let crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1::Runtime {world_policy_revision,..}=guard.state else {return Err(ActivityRuntimeRegistrationError);};
         let required_capabilities = self
             .required_capabilities
             .for_activity_runtime(
@@ -714,25 +741,27 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 assignment.ownership_generation,
                 &world_policy_revision,
             )
-            .map_err(|_| ())?;
+            .map_err(|_| ActivityRuntimeRegistrationError)?;
         let states = ChannelSessionStates {
             gameplay_idle_policy: self.states.gameplay_idle_policy,
             // One node shutdown gate covers commands in every scoped owner.
             input_gate: Arc::clone(&self.states.input_gate),
             ..Default::default()
         };
-        self.activity_runtimes.insert(RegisteredRuntime {
-            scope: assignment.scope,
-            generation: assignment.ownership_generation,
-            assignment_source_revision: assignment.source_revision,
-            template: Some(template),
-            runtime: Arc::new(tokio::sync::Mutex::new(runtime)).into(),
-            door: Arc::new(tokio::sync::Mutex::new(door)).into(),
-            states: Arc::new(states),
-            lane: crate::durability::spell_owner_commit::SpellLane::for_scope(assignment.scope),
-            assets,
-            required_capabilities,
-        })
+        self.activity_runtimes
+            .insert(RegisteredRuntime {
+                scope: assignment.scope,
+                generation: assignment.ownership_generation,
+                assignment_source_revision: assignment.source_revision,
+                template: Some(template),
+                runtime: Arc::new(tokio::sync::Mutex::new(runtime)).into(),
+                door: Arc::new(tokio::sync::Mutex::new(door)).into(),
+                states: Arc::new(states),
+                lane: crate::durability::spell_owner_commit::SpellLane::for_scope(assignment.scope),
+                assets,
+                required_capabilities,
+            })
+            .map_err(|_| ActivityRuntimeRegistrationError)
     }
 
     pub(super) fn runtime_view(&self, owner: &RegisteredRuntime<'a>) -> Self {
@@ -769,8 +798,17 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             return Ok(None);
         } // Existing House owner.
         let runtime = self.runtime.lock().await;
+        // Legacy Channel commands still reach their existing fence validator.
+        // This never routes an Instance or a selected activity connection around
+        // its exact generation check; the actual Channel and owner stay current.
+        let ordinary_channel = matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            && !admitted
+                .continuity
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::boss_encounter::CAPABILITY_BOSS_ENCOUNTER_V1);
         if runtime.binding().runtime_scope() == fence.runtime_scope
-            && runtime.binding().scope_generation() == fence.scope_ownership_generation
+            && (runtime.binding().scope_generation() == fence.scope_ownership_generation
+                || ordinary_channel)
         {
             runtime.owner_fence().map_err(|_| ())?;
             return Ok(None);
@@ -824,16 +862,17 @@ fn move_session_entry<T>(
 mod refusal_retention_tests {
     use super::*;
 
-    fn session(tag: u8) -> GameSessionId {
+    fn session(tag: u8) -> Result<GameSessionId, String> {
         let mut bytes = [tag; 16];
         bytes[6] = 0x70;
         bytes[8] = 0x80;
-        GameSessionId::decode(&bytes).unwrap_or_else(|error| panic!("fixture session: {error:?}"))
+        GameSessionId::decode(&bytes).map_err(|error| format!("fixture session: {error:?}"))
     }
 
     #[test]
-    fn later_command_preserves_replay_current_future_and_server_occurrences() {
-        let current = session(1);
+    fn later_command_preserves_replay_current_future_and_server_occurrences() -> Result<(), String>
+    {
+        let current = session(1)?;
         let policy = ActivityRefusalPrune::BeforeCommand {
             session: current,
             connection_generation: 2,
@@ -855,18 +894,20 @@ mod refusal_retention_tests {
             "autonomous occurrences have no command high-water"
         );
         assert!(
-            !policy.includes(session(2), 2, Some(6)),
+            !policy.includes(session(2)?, 2, Some(6)),
             "another participant keeps its own cache"
         );
+        Ok(())
     }
 
     #[test]
-    fn proven_terminal_session_can_forget_its_own_server_refusals() {
-        let current = session(1);
+    fn proven_terminal_session_can_forget_its_own_server_refusals() -> Result<(), String> {
+        let current = session(1)?;
         let policy = ActivityRefusalPrune::Terminal(current);
         assert!(policy.includes(current, 1, Some(7)));
         assert!(policy.includes(current, 2, None));
-        assert!(!policy.includes(session(2), 2, None));
+        assert!(!policy.includes(session(2)?, 2, None));
+        Ok(())
     }
 }
 

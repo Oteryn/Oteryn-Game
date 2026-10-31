@@ -48,11 +48,10 @@ pub async fn serve_gameplay(
         proficiency_catalogue: weapon_proficiency::ProductionProficiencyCatalogue::embedded(),
         clock_origin: std::time::Instant::now(),
         activity_runtimes: Default::default(),
-        states: (std::sync::Arc::new(channel_states::ChannelSessionStates {
+        states: std::sync::Arc::new(channel_states::ChannelSessionStates {
             gameplay_idle_policy: owners.gameplay_idle_policy,
             ..Default::default()
-        }))
-        .into(),
+        }),
         revision_sequencer:
             crate::durability::character_revision_sequencer::CharacterRevisionSequencer::new()
                 .into(),

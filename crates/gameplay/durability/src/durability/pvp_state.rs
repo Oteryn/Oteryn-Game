@@ -250,17 +250,18 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// §8.1 admission: the Character's stored state under the session fence, `None` when no row
-    /// exists (nothing to restore).
+    /// §8.1 admission: the Character's stored state under the exact current Channel or
+    /// Instance session fence, `None` when no row exists (nothing to restore).
     pub async fn read_pvp_state(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<Option<StoredPvpState>> {
-        if fence.character_lease_generation == 0
-            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
-        {
+        // An activity carries the Character's existing combat locks across its handoff.
+        // The shared session fence below proves the exact Instance, retained admission,
+        // current assignment and node before this Character-owned read can restore them.
+        if fence.character_lease_generation == 0 {
             return Err(CharacterProgressionError::InvalidInput);
         }
         let recovery = authority

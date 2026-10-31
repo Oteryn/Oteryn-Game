@@ -536,20 +536,36 @@ mod tests;
 #[cfg(test)]
 mod activity_binding_tests {
     use super::*;
+
+    fn debug(error: impl std::fmt::Debug) -> String {
+        format!("{error:?}")
+    }
+
+    fn uuid_v7(seed: u8) -> [u8; 16] {
+        let mut bytes = [seed; 16];
+        // Runtime wire identifiers require the UUIDv7 version and RFC variant.
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        bytes
+    }
+
     #[test]
-    fn activity_requirements_keep_selection_and_bind_exact_scope_generation_and_policy() {
-        let world = crate::foundation::WorldId::decode(&[42; 16]).unwrap();
-        let channel = crate::foundation::ChannelId::decode(&[43; 16]).unwrap();
+    fn activity_requirements_keep_selection_and_bind_exact_scope_generation_and_policy()
+    -> Result<(), String> {
+        let world = crate::foundation::WorldId::decode(&uuid_v7(42)).map_err(debug)?;
+        let channel = crate::foundation::ChannelId::decode(&uuid_v7(43)).map_err(debug)?;
         let origin = RuntimeScopeRefV1::channel(world, channel);
         let offered = offered_for_scope(false, None);
         let bound =
             BoundRequiredCapabilities::for_channel_boot(&[], origin, 1, "policy-1", offered)
-                .unwrap();
+                .map_err(debug)?;
         let scope = RuntimeScopeRefV1::Instance {
             world_id: world,
-            instance_id: [44; 16],
+            instance_id: uuid_v7(44),
         };
-        let activity = bound.for_activity_runtime(scope, 7, "policy-1").unwrap();
+        let activity = bound
+            .for_activity_runtime(scope, 7, "policy-1")
+            .map_err(debug)?;
         assert_eq!(activity.effective(), bound.effective());
         assert!(activity.matches_current(scope, 7, "policy-1"));
         assert!(!activity.matches_current(origin, 7, "policy-1"));
@@ -562,12 +578,14 @@ mod activity_binding_tests {
         assert!(bound.for_activity_runtime(origin, 7, "policy-1").is_err());
         let mut supported: Vec<_> = offered.iter().map(|node| node.id).collect();
         supported.sort_unstable();
-        let selected = SelectedCapabilities::select(offered, &supported).unwrap();
+        let selected =
+            SelectedCapabilities::select(offered, &supported).ok_or("offered selection")?;
         let authenticated = activity
             .authenticate_resume_support(&supported, selected)
-            .unwrap();
+            .map_err(debug)?;
         assert_eq!(authenticated.selected(), selected);
         assert!(authenticated.revalidate(scope, 7, "policy-1").is_ok());
         assert!(authenticated.revalidate(origin, 7, "policy-1").is_err());
+        Ok(())
     }
 }

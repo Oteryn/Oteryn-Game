@@ -155,14 +155,14 @@ pub fn decode_boss_activity_reply(body: &[u8]) -> Result<BossActivityReply, Erro
 mod activity_tests {
     use super::*;
     #[test]
-    fn content_unavailable_and_no_capacity_are_distinct_typed_outcomes() {
+    fn content_unavailable_and_no_capacity_are_distinct_typed_outcomes() -> Result<(), Error> {
         for reason in [
             BossActivityRefusal::ContentUnavailable,
             BossActivityRefusal::NoCapacity,
         ] {
             let value = BossActivityReply::Refused(reason);
             assert_eq!(
-                decode_boss_activity_reply(&encode_boss_activity_reply(&value).expect("reply")),
+                decode_boss_activity_reply(&encode_boss_activity_reply(&value)?),
                 Ok(value)
             );
         }
@@ -174,12 +174,15 @@ mod activity_tests {
                 BossActivityRefusal::NoCapacity
             ))
         );
+        Ok(())
     }
     #[test]
-    fn a_client_cannot_add_authoritative_positions_or_generations_to_a_lever_key() {
-        let mut key = encode_boss_key("oteryn:content.monster.boss").expect("key");
+    fn a_client_cannot_add_authoritative_positions_or_generations_to_a_lever_key()
+    -> Result<(), Error> {
+        let mut key = encode_boss_key("oteryn:content.monster.boss")?;
         push_varint_field(&mut key, 2, 400);
         assert!(decode_boss_key(&key).is_err());
         assert!(decode_boss_activity_reply(&[8, 2, 32, 3, 24, 1]).is_err());
+        Ok(())
     }
 }

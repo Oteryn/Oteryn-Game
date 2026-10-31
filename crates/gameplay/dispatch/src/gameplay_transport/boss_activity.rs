@@ -62,14 +62,13 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         )
         .await
         .ok()?;
-        if kind == wire::COMMAND_TYPE_BOSS_LEVER {
-            if let Some(retained) = self
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER
+            && let Some(retained) = self
                 .retry_native_activity(admitted, id, &intent.boss_key)
                 .await
                 .ok()?
-            {
-                return self.boss_activity_result(retained);
-            }
+        {
+            return self.boss_activity_result(retained);
         }
         {
             let runtime = self.runtime.lock().await;

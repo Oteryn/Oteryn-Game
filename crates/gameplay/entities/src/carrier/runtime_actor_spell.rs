@@ -288,21 +288,24 @@ fn state_mut(slot: &mut Slot) -> Result<&mut ActorCombatState, Error> {
     }
 }
 
-struct Binding(Vec<u8>);
+struct Binding {
+    bytes: Vec<u8>,
+    scope: RuntimeScopeRefV1,
+}
 impl Binding {
     fn bytes(&mut self, bytes: &[u8]) -> Result<(), Error> {
         if self
-            .0
+            .bytes
             .len()
             .checked_add(bytes.len())
             .is_none_or(|n| n > MAX_BINDING_BYTES)
         {
             return Err(Error::BindingTooLarge);
         }
-        self.0
+        self.bytes
             .try_reserve(bytes.len())
             .map_err(|_| Error::AllocationFailed)?;
-        self.0.extend_from_slice(bytes);
+        self.bytes.extend_from_slice(bytes);
         Ok(())
     }
     fn number(&mut self, value: u64) -> Result<(), Error> {
@@ -314,15 +317,28 @@ impl Binding {
     }
     fn actor(&mut self, actor: ExactActorRef) -> Result<(), Error> {
         let a = actor.0;
-        let RuntimeScopeRefV1::Channel {
-            world_id,
-            channel_id,
-        } = a.runtime_scope
-        else {
+        if a.runtime_scope != self.scope {
             return Err(Error::Owner(CarrierError::WrongScope));
-        };
-        self.bytes(world_id.as_bytes())?;
-        self.bytes(channel_id.as_bytes())?;
+        }
+        match a.runtime_scope {
+            RuntimeScopeRefV1::Channel {
+                world_id,
+                channel_id,
+            } => {
+                // Preserve the accepted candidate-v1 Channel bytes exactly.
+                self.bytes(world_id.as_bytes())?;
+                self.bytes(channel_id.as_bytes())?;
+            }
+            RuntimeScopeRefV1::Instance {
+                world_id,
+                instance_id,
+            } => {
+                // This actor tag belongs to the separate Instance candidate domain.
+                self.bytes(&[2])?;
+                self.bytes(world_id.as_bytes())?;
+                self.bytes(&instance_id)?;
+            }
+        }
         self.number(ExactActorRef(a).scope_generation().get())?;
         self.number(u64::from(a.actor_local_id.0))?;
         self.number(a.actor_local_generation.0)
@@ -330,8 +346,18 @@ impl Binding {
 }
 
 fn canonical_binding(batch: &OwnerCombatBatch) -> Result<Vec<u8>, Error> {
-    let mut out = Binding(Vec::new());
-    out.atom(b"oteryn:physical-spell-batch:candidate-v1")?;
+    let scope = batch.caster.runtime_scope();
+    let mut out = Binding {
+        bytes: Vec::new(),
+        scope,
+    };
+    // Even identical world/local UUID bytes cannot alias a Channel candidate.
+    // The outer domain and every actor retain the actual Instance namespace.
+    let domain: &[u8] = match scope {
+        RuntimeScopeRefV1::Channel { .. } => b"oteryn:physical-spell-batch:candidate-v1",
+        RuntimeScopeRefV1::Instance { .. } => b"oteryn:physical-spell-batch:candidate-instance-v1",
+    };
+    out.atom(domain)?;
     out.actor(batch.caster)?;
     out.bytes(batch.attacker.as_bytes())?;
     out.number(batch.current_lease_generation)?;
@@ -469,7 +495,7 @@ fn canonical_binding(batch: &OwnerCombatBatch) -> Result<Vec<u8>, Error> {
             }
         }
     }
-    Ok(out.0)
+    Ok(out.bytes)
 }
 
 fn validate_batch(batch: &OwnerCombatBatch) -> Result<(), Error> {
