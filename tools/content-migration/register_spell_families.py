@@ -281,6 +281,8 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     readable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import writable_item_profiles
     writable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import mail_item_profiles
+    mail_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import summer_source_qualification
     summer_source_qualification.apply_native(root, generated, spell_import.canonical_bytes)
     import monk_reward_profiles

@@ -1,0 +1,7 @@
+name=store
+commands=183,185
+transport=store
+composed=store
+authority=store
+[route]
+routing::store::route(authority, &session.admitted, command).await

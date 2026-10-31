@@ -343,6 +343,7 @@ where
     A: FreshAdmissionAuthority,
 {
     player_trade::refresh(stream, authority, session).await?;
+    cyclopedia_tracker::refresh(stream, authority, session).await?;
     // VIS-3: entities that moved, entered or left without this actor's step.
     let Some(view) = session.visibility.as_mut() else {
         return Ok(());

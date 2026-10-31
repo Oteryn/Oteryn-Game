@@ -1,4 +1,8 @@
 //! Real admitted connection -> depot/stash dispatch -> fenced item owner -> PostgreSQL.
+#[path = "depot_dispatch/mail_cases.rs"]
+mod mail_cases;
+#[path = "depot_dispatch/retrieve_cases.rs"]
+mod retrieve_cases;
 #[path = "depot_dispatch/stash_cases.rs"]
 mod stash_cases;
 #[path = "depot_dispatch/write_text_depot_session.rs"]
@@ -49,6 +53,32 @@ fn depot_session_dispatch_opens_deposits_browses_withdraws_and_replays() -> Test
 }
 
 #[test]
+fn depot_search_dispatch_retrieves_all_depot_items_until_no_room_once() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(false, false, false, false, false, None, Mode::Retrieve)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "depot search retrieval e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
+fn mail_dispatch_posts_a_carried_letter_into_a_mailbox_once() -> TestResult {
+    std::thread::Builder::new()
+        .stack_size(256 << 20)
+        .spawn(|| {
+            scenario_with_premium(false, false, false, false, false, None, Mode::Mail)
+                .map_err(|e| e.to_string())
+        })?
+        .join()
+        .map_err(|_| "mail e2e panicked")?
+        .map_err(Into::into)
+}
+
+#[test]
 fn stash_session_dispatch_free_stows_withdraws_checks_capacity_and_replays() -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
@@ -70,6 +100,7 @@ fn stash_session_dispatch_conserves_and_replays() -> TestResult {
                 false,
                 false,
                 Some(EntitlementState::Active),
+                Mode::Plain,
             )
             .map_err(|e| e.to_string())
         })?
@@ -90,6 +121,7 @@ fn stash_session_dispatch_expired_premium_stows_withdraws_and_replays() -> TestR
                 false,
                 false,
                 Some(EntitlementState::Expired),
+                Mode::Plain,
             )
             .map_err(|e| e.to_string())
         })?
@@ -138,6 +170,14 @@ fn write_text_ground_real_dispatch_movement_closes_external_views() -> TestResul
         .map_err(Into::into)
 }
 
+/// The extra flow a scenario runs after seeding.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    Plain,
+    Mail,
+    Retrieve,
+}
+
 fn scenario(
     stash: bool,
     ground_container: bool,
@@ -152,6 +192,7 @@ fn scenario(
         depot_session,
         ground_movement,
         None,
+        Mode::Plain,
     )
 }
 
@@ -162,7 +203,10 @@ fn scenario_with_premium(
     depot_session: bool,
     ground_movement: bool,
     stash_premium: Option<EntitlementState>,
+    mode: Mode,
 ) -> TestResult {
+    let mail = mode == Mode::Mail;
+    let retrieve = mode == Mode::Retrieve;
     run(async |admin| {
         let harness = Harness::create_with_admission_seed(admin, "depot_dispatch", true, false)
             .await
@@ -243,6 +287,30 @@ fn scenario_with_premium(
             .find(|t| t.x == 6)
             .ok_or("locker tile")?;
         locker.items.get_mut(1).ok_or("locker item")?.attrs.depot = Some(0);
+        if mail {
+            // An authored mailbox (Canary items.xml 3501) beside the start and one out of reach.
+            let mut entry = bundle.manifest.palette.get(3).ok_or("item palette")?.clone();
+            entry.key = "oteryn:item.tibia.i3501".into();
+            entry.id = index
+                .definition_ref("Item", &entry.key, "definition-r1")
+                .ok_or("mailbox ref")?
+                .get()
+                - 1;
+            bundle.manifest.palette.push(entry);
+            let palette = u32::try_from(bundle.manifest.palette.len() - 1)?;
+            let sector = bundle.sectors.first_mut().ok_or("sector")?;
+            let mut tile = sector
+                .tiles
+                .iter()
+                .find(|tile| tile.x == 7)
+                .ok_or("start")?
+                .clone();
+            tile.items.get_mut(1).ok_or("start item")?.palette = palette;
+            for x in [8, 10] {
+                tile.x = x;
+                sector.tiles.push(tile.clone());
+            }
+        }
         if ground_movement {
             let sector = bundle.sectors.first_mut().ok_or("sector")?;
             let mut tile = sector
@@ -384,7 +452,38 @@ fn scenario_with_premium(
         // under test starts below at the real dispatch, with a map handle issued by domain 17.
         let mut carried = None;
         let mut stacks = Vec::new();
-        for ordinal in 0..=if stash || ground_container { 3 } else { 1 } {
+        let mut ground = Vec::new();
+        // Retrieval: 20 carried stacks fill the main backpack; two more are carried later.
+        // Mail: a letter, a parcel and its label (Canary items.xml 3505, 3503, 3507).
+        let mail_items = if mail {
+            ["oteryn:item.tibia.i3505", "oteryn:item.tibia.i3503", "oteryn:item.tibia.i3507"]
+                .into_iter()
+                .map(|key| -> TestResult<_> {
+                    let definition = crate::gameplay_transport::item_look::typed_definition(
+                        index,
+                        index
+                            .definition_ref("Item", key, "definition-r1")
+                            .ok_or("mail item ref")?,
+                    )
+                    .ok_or("mail item definition")?;
+                    let facts = generation_item_facts(native, &definition).map_err(debug)?;
+                    Ok((definition, facts))
+                })
+                .collect::<TestResult<Vec<_>>>()?
+        } else {
+            Vec::new()
+        };
+        let seeded: u32 = if retrieve {
+            22
+        } else if stash || ground_container || mail {
+            3
+        } else {
+            1
+        };
+        for ordinal in 0..=seeded {
+            let mail_item = ordinal
+                .checked_sub(1)
+                .and_then(|n| mail_items.get(usize::try_from(n).ok()?));
             let mut seed = harness
                 .root
                 .freeze_item_mint(
@@ -405,12 +504,14 @@ fn scenario_with_premium(
                             "fixture:purpose.map-target".into(),
                             0,
                         ),
-                        item: if ordinal == 0 || (ground_container && ordinal <= 2) {
+                        item: if let Some((definition, _)) = mail_item {
+                            definition.clone()
+                        } else if ordinal == 0 || (ground_container && ordinal <= 2) {
                             backpack_definition.clone()
                         } else {
                             coin_definition.clone()
                         },
-                        quantity: if ordinal == 0 || (ground_container && ordinal <= 2) {
+                        quantity: if ordinal == 0 || (ground_container && ordinal <= 2) || mail {
                             1
                         } else {
                             100
@@ -442,6 +543,10 @@ fn scenario_with_premium(
                 ItemMintOutcome::Committed(item) => item.item_instance_id,
                 other => return Err(debug(other)),
             };
+            if retrieve && ordinal > 20 {
+                ground.push(backpack);
+                continue;
+            }
             let mut transfer = harness
                 .root
                 .freeze_item_transfer(
@@ -457,7 +562,9 @@ fn scenario_with_premium(
                         } else {
                             ItemTransferDestination::MainBackpack
                         },
-                        item: if ordinal == 0 || (ground_container && ordinal <= 2) {
+                        item: if let Some((_, facts)) = mail_item {
+                            facts.clone()
+                        } else if ordinal == 0 || (ground_container && ordinal <= 2) {
                             backpack_facts.clone()
                         } else {
                             coin_facts.clone()
@@ -518,6 +625,70 @@ fn scenario_with_premium(
             .table()
             .handle(&ItemKey::Instance(carried.ok_or("carried")?))
             .ok_or("source handle")?;
+        if retrieve {
+            let handles = stacks
+                .iter()
+                .map(|item| {
+                    view.table()
+                        .handle(&ItemKey::Instance(*item))
+                        .map(|handle| (handle, *item))
+                        .ok_or("stack handle")
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            retrieve_cases::deposit(&owner, admitted, &handles).await?;
+            // Two more stacks reach the main backpack through the TRANSFER owner: one slot stays.
+            for (n, item) in (200..).zip(&ground) {
+                let permit = owner.spell_lane_permit().await.ok_or("lane")?;
+                let mut transfer = harness
+                    .root
+                    .freeze_item_transfer(
+                        &authority,
+                        &harness.node,
+                        fence,
+                        ItemTransferRequest {
+                            weight_generation_digest: native.source_digest(),
+                            command: command_ref(n)?,
+                            source_item_instance_id: *item,
+                            destination: ItemTransferDestination::MainBackpack,
+                            item: coin_facts.clone(),
+                            backpack: Some(backpack_facts.clone()),
+                            content_revision: "content-1".into(),
+                            ruleset_revision: "ruleset-1".into(),
+                            sim_revision: "sim-1".into(),
+                        },
+                        &NativeItemWeights(native),
+                    )
+                    .await
+                    .map_err(debug)?;
+                harness
+                    .root
+                    .commit_item_transfer(
+                        &permit,
+                        &authority,
+                        &harness.node,
+                        fence,
+                        &mut transfer,
+                        &NativeItemWeights(native),
+                    )
+                    .await
+                    .map_err(debug)?;
+            }
+            retrieve_cases::exercise(&owner, admitted, &harness.pool, &handles).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
+        if mail {
+            let [letter, parcel, label] = stacks[..] else {
+                return Err("mail items".into());
+            };
+            mail_cases::exercise(&owner, admitted, &harness.pool, letter, parcel, label).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return harness.cleanup().await;
+        }
         if ground_container {
             if !nested_ground {
                 write_text_ground_view::exercise(
@@ -651,10 +822,10 @@ fn scenario_with_premium(
                     ..browse
                 },
             ),
-            (9, withdraw),
-            (10, withdraw),
+            (7, withdraw),
+            (8, withdraw),
         ] {
-            if command_id == 9 {
+            if command_id == 7 {
                 use oteryn_protocol_oteryn::depot_search::{self as search, Request};
                 for (id, request) in [
                     (4, Request::Search { client_id: 3031 }),
@@ -663,20 +834,6 @@ fn scenario_with_premium(
                         6,
                         Request::Search {
                             client_id: u32::MAX,
-                        },
-                    ),
-                    (
-                        7,
-                        Request::Retrieve {
-                            client_id: 3031,
-                            all: false,
-                        },
-                    ),
-                    (
-                        8,
-                        Request::Retrieve {
-                            client_id: 3031,
-                            all: true,
                         },
                     ),
                 ] {
@@ -707,6 +864,26 @@ fn scenario_with_premium(
             input.extend(u32::try_from(frame.len())?.to_be_bytes());
             input.extend(frame);
         }
+        // After the withdrawal the coins are carried: retrieval finds nothing in custody.
+        for (id, all) in [(9, false), (10, true)] {
+            use oteryn_protocol_oteryn::depot_search as search;
+            let payload = search::encode_request(search::Request::Retrieve {
+                client_id: 3031,
+                all,
+            })
+            .map_err(debug)?;
+            let frame = oteryn_protocol_oteryn::encode_client_command(
+                1,
+                &oteryn_protocol_oteryn::ClientCommandValue {
+                    command_id: id,
+                    command_type: search::COMMAND_TYPE_DEPOT_SEARCH,
+                    payload: &payload,
+                },
+            )
+            .map_err(debug)?;
+            input.extend(u32::try_from(frame.len())?.to_be_bytes());
+            input.extend(frame);
+        }
         let (end, output) =
             super::weather_wire::fixture_access::serve_input(&owner, admitted, &input).await?;
         let mut replies = Vec::new();
@@ -721,7 +898,7 @@ fn scenario_with_premium(
             if envelope.message_type() == oteryn_protocol_oteryn::MessageType::CommandResult {
                 let result = oteryn_protocol_oteryn::decode_command_result(envelope.payload())
                     .map_err(debug)?;
-                if (4..=8).contains(&result.command_id) {
+                if matches!(result.command_id, 4..=6 | 9 | 10) {
                     assert_eq!(
                         result.status,
                         oteryn_protocol_oteryn::CommandStatus::Accepted
@@ -746,8 +923,8 @@ fn scenario_with_premium(
                 Outcome::Found,
                 Outcome::Found,
                 Outcome::NotFound,
-                Outcome::Rejected,
-                Outcome::Rejected
+                Outcome::NotFound,
+                Outcome::NotFound
             ]
         );
         assert_eq!(search_replies[0], search_replies[1]);
