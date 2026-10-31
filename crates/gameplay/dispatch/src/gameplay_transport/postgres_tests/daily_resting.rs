@@ -86,10 +86,15 @@ fn scenario() -> TestResult {
                     Some(inside)
                 );
                 let mut states = owner.states.spell_states.lock().await;
-                states
-                    .get_mut(&runtime, actor, session)
-                    .ok_or("actor")?
-                    .restore_saved_vitals(100, 10);
+                let state = states.get_mut(&runtime, actor, session).ok_or("actor")?;
+                state.restore_saved_vitals(100, 10);
+                // Start below the unpromoted soul cap so the cadence can credit a point.
+                state
+                    .restore_bed_rest([5, 0, 0, 0], owner.owner_now().get())
+                    .ok_or("resting soul seed")?;
+                state
+                    .apply_owner_premium_transition(true, Some(u64::MAX))
+                    .map_err(debug)?;
             }
             // Initialization keeps microseconds; condition ticks truncate to milliseconds.
             // Advance a full second from the last observation, rounding up so even the
@@ -108,8 +113,17 @@ fn scenario() -> TestResult {
                 .get(&runtime, actor, session)
                 .ok_or("actor")?
                 .vitals();
-            // Free accounts retain the day-2/day-3 rates, even with a persisted streak of 7.
-            assert_eq!((vitals.health, vitals.mana), (130, 50));
+            // The production cadence consumes both the ordinary resting pools and the
+            // streak-seven soul clock while the Premium actor remains on the qualified tile.
+            assert_eq!(
+                (vitals.health, vitals.mana),
+                if inside { (160, 90) } else { (130, 50) }
+            );
+            assert_eq!(vitals.soul, if inside { 6 } else { 5 });
+            eprintln!(
+                "PG_MARKER daily-resting-real-tick-soul inside={inside} soul={}",
+                vitals.soul
+            );
         }
         drop(authority);
         drop(seal);
