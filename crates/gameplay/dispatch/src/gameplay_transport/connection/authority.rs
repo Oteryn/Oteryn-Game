@@ -836,6 +836,21 @@ pub trait FreshAdmissionAuthority {
         std::future::ready(oteryn_protocol_oteryn::chat::guild_room::GuildRoomState::Unavailable)
     }
 
+    fn chat_party_admit(&self, _admitted: AdmittedSession) -> impl Future<Output = ()> {
+        std::future::ready(())
+    }
+
+    fn chat_party_intent(
+        &self,
+        _admitted: AdmittedSession,
+        _text: String,
+    ) -> impl Future<Output = ChatIntentResult> {
+        std::future::ready(ChatIntentResult {
+            disposition: oteryn_protocol_oteryn::chat::ChatDisposition::Rejected,
+            wait_seconds: 0,
+        })
+    }
+
     fn chat_guild_intent(
         &self,
         _admitted: AdmittedSession,

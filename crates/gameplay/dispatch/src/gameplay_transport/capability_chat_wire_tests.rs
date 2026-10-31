@@ -3,8 +3,8 @@ use super::super::super::chat_intent::{ChatRuntime, chat_in_channel};
 use super::*;
 use crate::foundation::CommandStatus;
 use oteryn_protocol_oteryn::chat::{
-    ChatDisposition, ChatIntent, ChatLine, ChatRoomSet, ChatSpeechMode,
-    decode_chat_intent_result, decode_chat_line, encode_chat_intent,
+    ChatDisposition, ChatIntent, ChatLine, ChatRoomSet, ChatSpeechMode, decode_chat_intent_result,
+    decode_chat_line, encode_chat_intent,
 };
 use oteryn_protocol_oteryn::{decode_command_result, decode_state_delta};
 use oteryn_simulation_determinism::SemanticTimeMicros;
@@ -173,8 +173,7 @@ fn lines(frames: &[Vec<u8>]) -> Result<Vec<ChatLine>, Box<dyn Error>> {
 }
 
 #[test]
-fn a_say_reaches_the_session_in_range_and_not_the_one_out_of_range()
--> Result<(), Box<dyn Error>> {
+fn a_say_reaches_the_session_in_range_and_not_the_one_out_of_range() -> Result<(), Box<dyn Error>> {
     // In a debug build the 112-entry selected capability set makes these three lingering
     // sessions deeper than the default test thread stack (CAPCAP-2).
     std::thread::Builder::new()
@@ -185,7 +184,8 @@ fn a_say_reaches_the_session_in_range_and_not_the_one_out_of_range()
                 let mut others = Vec::new();
                 for tag in [0x72, 0x73] {
                     let session = GameSessionId::decode(&[
-                        0x01, 0x90, 0x00, 0x00, 0x00, tag, 0x70, 0x00, 0x80, 0x00, 0, 0, 0, 0, 0, tag,
+                        0x01, 0x90, 0x00, 0x00, 0x00, tag, 0x70, 0x00, 0x80, 0x00, 0, 0, 0, 0, 0,
+                        tag,
                     ])?;
                     let reservation = runtime
                         .reserve_fresh_session(session)
@@ -247,7 +247,8 @@ fn a_say_reaches_the_session_in_range_and_not_the_one_out_of_range()
                         let result = decode_command_result(envelope.payload())?;
                         assert_eq!(result.status, CommandStatus::Accepted);
                         results.push(
-                            decode_chat_intent_result(result.payload).map_err(|e| format!("{e:?}"))?,
+                            decode_chat_intent_result(result.payload)
+                                .map_err(|e| format!("{e:?}"))?,
                         );
                     }
                 }
@@ -288,8 +289,8 @@ fn an_opened_room_follows_its_result_as_one_rooms_delta() -> Result<(), Box<dyn 
             names: vec![(session, "Aela")],
         };
         // A configured relay that never connects: opening a room needs no listener.
-        let ring = RelayKeyRing::new(vec![RelayKey::new(1, 0, [1; 32])])
-            .map_err(|e| format!("{e:?}"))?;
+        let ring =
+            RelayKeyRing::new(vec![RelayKey::new(1, 0, [1; 32])]).map_err(|e| format!("{e:?}"))?;
         let options =
             sqlx::postgres::PgConnectOptions::from_str("postgresql://nobody@127.0.0.1:1/none")?;
         let world = [0x01, 0x90, 0, 0, 0, 1, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 1];
@@ -313,9 +314,7 @@ fn an_opened_room_follows_its_result_as_one_rooms_delta() -> Result<(), Box<dyn 
                 MessageType::StateDelta => {
                     let delta = decode_state_delta(envelope.payload())?;
                     if delta.domain_id == 12 && delta.delta_type == DELTA_TYPE_CHAT_ROOMS_V1 {
-                        rooms.push(
-                            decode_chat_rooms(delta.payload).map_err(|e| format!("{e:?}"))?,
-                        );
+                        rooms.push(decode_chat_rooms(delta.payload).map_err(|e| format!("{e:?}"))?);
                     }
                 }
                 MessageType::CommandResult => {
@@ -369,4 +368,124 @@ async fn join3<A: Future, B: Future, C: Future>(
     })
     .await;
     (x.expect("first"), y.expect("second"), z.expect("third"))
+}
+
+#[test]
+fn party_chat_wire_requires_the_extension_and_keeps_old_party_peers_unchanged()
+-> Result<(), Box<dyn Error>> {
+    std::thread::Builder::new()
+        .stack_size(64 << 20)
+        .spawn(|| {
+            run(async {
+                let (runtime, actor, session) = runtime_with_capacity(0x71, 1);
+                let authority = ChatAuthority {
+                    runtime: RefCell::new(runtime),
+                    chat: ChatRuntime::default(),
+                    names: vec![(session, "Aela")],
+                };
+                let payload = encode_chat_intent(&ChatIntent::Party {
+                    text: "hello".into(),
+                })
+                .map_err(|e| format!("{e:?}"))?;
+                let mut admitted = admitted(actor, session)?;
+                for supported in [&[6, 7][..], &[6, 7, 42][..]] {
+                    admitted.continuity.selected_capabilities =
+                        SelectedCapabilities::select(BUNDLE_WORLD_OFFERED_CAPABILITIES, supported)
+                            .ok_or("selection")?;
+                    assert!(
+                        crate::gameplay_transport::guild_chat::wire::dispatch(
+                            &authority, admitted, actor, 1, &payload
+                        )
+                        .await
+                        .is_err()
+                    );
+                }
+                admitted.continuity.selected_capabilities = SelectedCapabilities::select(
+                    BUNDLE_WORLD_OFFERED_CAPABILITIES,
+                    &[6, 7, 42, 240],
+                )
+                .ok_or("selection")?;
+                let result = crate::gameplay_transport::guild_chat::wire::dispatch(
+                    &authority, admitted, actor, 1, &payload,
+                )
+                .await
+                .map_err(|_| "decode")?
+                .ok_or("completion")?;
+                // This test authority has no installed Party owner and must fail closed.
+                assert_eq!(result.0.disposition, ChatDisposition::Rejected);
+                Ok(())
+            })
+            .map_err(|error| error.to_string())
+        })?
+        .join()
+        .map_err(|_| "party chat dispatch thread panicked")??;
+    Ok(())
+}
+
+#[test]
+fn party_chat_egress_custody_refuses_nonmembers_and_reserves_members_once()
+-> Result<(), Box<dyn Error>> {
+    let (_runtime, actor, session) = runtime_with_capacity(0x71, 1);
+    let mut admitted = admitted(actor, session)?;
+    admitted.item_fence = Some(
+        crate::durability::item_transfer::CurrentCharacterItemFence {
+            character_id: crate::domain::CharacterId::from_bytes(*session.as_bytes())
+                .map_err(|e| format!("{e:?}"))?,
+            game_session_id: session,
+            connection_generation: crate::foundation::ConnectionGeneration::new(
+                admitted.continuity.connection_generation,
+            )?,
+            character_lease_generation: 1,
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                admitted.world_id,
+                admitted.channel_id,
+            ),
+            scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(1)?,
+        },
+    );
+    let chat = ChatRuntime::default();
+    chat.admit(session, "Aela", NOW);
+    chat.party.bind(admitted);
+    let party_id = *session.as_bytes();
+    let mut relay = crate::gameplay_transport::chat_intent::guild_test_support::line(
+        crate::domain::guild::GuildId::from_bytes(party_id).map_err(|e| format!("{e:?}"))?,
+        "hello party",
+    );
+    relay.destination = crate::chat::relay::RelayDestination::Party { party_id };
+    chat.deliver(&relay);
+    let candidate = chat.peek_line(session).ok_or("queued")?;
+    let destination = chat.party_destination(session).ok_or("destination")?;
+    assert!(
+        chat.accept_party_line(&admitted, &candidate, destination, false)
+            .is_none()
+    );
+    assert!(chat.peek_line(session).is_none());
+    chat.deliver(&relay);
+    let candidate = chat.peek_line(session).ok_or("queued")?;
+    let destination = chat.party_destination(session).ok_or("destination")?;
+    let another_party = crate::chat::egress::PartyChatDestination {
+        party_id: [9; 16],
+        ..destination
+    };
+    assert!(
+        chat.accept_party_line(&admitted, &candidate, another_party, true)
+            .is_none()
+    );
+    assert_eq!(chat.peek_line(session), Some(candidate.clone()));
+    assert_eq!(
+        chat.accept_party_line(&admitted, &candidate, destination, true),
+        Some(candidate.clone())
+    );
+    assert!(
+        chat.accept_party_line(&admitted, &candidate, destination, true)
+            .is_none()
+    );
+    chat.delivered(session);
+    chat.refresh(session);
+    chat.deliver(&relay);
+    assert!(
+        chat.peek_line(session).is_none(),
+        "replacement must negotiate again"
+    );
+    Ok(())
 }
