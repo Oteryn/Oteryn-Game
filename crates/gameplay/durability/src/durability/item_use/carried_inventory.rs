@@ -244,6 +244,7 @@ pub(in crate::durability) async fn read_use_inventory(
             inventory.backpack = Some(CharacterBackpack {
                 backpack: item,
                 entries: Vec::new(),
+                fluids: Default::default(),
             });
         } else {
             let parent = uuid_text(&row.try_get::<String, _>("parent")?)?;

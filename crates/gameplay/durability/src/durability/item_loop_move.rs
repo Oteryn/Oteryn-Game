@@ -145,6 +145,8 @@ pub struct LoopContainer {
     pub container: InventoryItem,
     pub parent: Option<[u8; 16]>,
     pub entries: Vec<BackpackEntry>,
+    /// I10a: the fluid sub-type of each filled fluid container among the entries (0560).
+    pub fluids: std::collections::BTreeMap<[u8; 16], u8>,
 }
 
 /// One live loop drop or map-MINT Ground item with its persisted append ordinal, for the overlay.
@@ -1634,6 +1636,7 @@ impl DurabilityRoot {
                         } else {
                             load_nested_entries(&mut tx, container).await?
                         };
+                        let fluids = super::item_transfer::load_fluids(&mut tx, &entries).await?;
                         Ok(Some(LoopContainer {
                             container: InventoryItem {
                                 item_instance_id: container,
@@ -1646,6 +1649,7 @@ impl DurabilityRoot {
                                 optional_uuid(row.try_get("parent")?)?
                             },
                             entries,
+                            fluids,
                         }))
                     }
                     .await;
@@ -1754,6 +1758,7 @@ impl DurabilityRoot {
                             Err(LoopError::Database(error)) => return Err(error.into()),
                             Err(LoopError::Refused(_)) => return Err(DurabilityError::InvalidStoredState),
                         };
+                        let fluids = super::item_transfer::load_fluids(&mut tx, &entries).await?;
                         Some(LoopContainer {
                             container: InventoryItem {
                                 item_instance_id: container,
@@ -1762,6 +1767,7 @@ impl DurabilityRoot {
                             },
                             parent: path.get(1).copied(),
                             entries,
+                            fluids,
                         })
                     }
                 };

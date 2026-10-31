@@ -229,6 +229,7 @@ mod tests {
                     quantity: 1,
                 },
                 entries: vec![entry(2, 3), entry(3, 2), entry(4, 1)],
+                fluids: Default::default(),
             }),
             nested: vec![
                 ([2; 16], entry(5, 2)),

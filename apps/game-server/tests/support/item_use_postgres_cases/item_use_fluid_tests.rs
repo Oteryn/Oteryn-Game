@@ -60,6 +60,25 @@ impl Use {
         self.change_fluid_under(fence, request).await
     }
 
+    /// The fluids the Character's backpack read shows (domain 9's sub-types).
+    async fn shown_fluids(&self) -> TestResult<std::collections::BTreeMap<[u8; 16], u8>> {
+        let seal = self.harness.recovery.seal_current().map_err(debug)?;
+        let authority = self
+            .harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let backpack = self
+            .harness
+            .root
+            .read_character_backpack(&authority, item_fence().map_err(debug)?.character_id)
+            .await
+            .map_err(debug)?
+            .ok_or("no backpack")?;
+        Ok(backpack.fluids)
+    }
+
     async fn fluid_of(&self, seed: u8) -> TestResult<Option<i16>> {
         Ok(sqlx::query_scalar(
             "SELECT fluid_subtype FROM game_item_fluid_states \
@@ -101,6 +120,7 @@ fn a_carried_vial_is_filled_and_emptied_once_per_command() -> TestResult {
             ItemFluidOutcome::Written
         );
         assert_eq!(used.fluid_of(VIAL).await?, Some(i16::from(MANA)));
+        assert_eq!(used.shown_fluids().await?, [(id(VIAL), MANA)].into());
         // The same command replays without writing; a changed request for it conflicts.
         assert_eq!(
             used.change_fluid(&fill).await.map_err(debug)?,
