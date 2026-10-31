@@ -58,6 +58,7 @@ pub enum ActivityTemplateRefusal {
     SourceHookUnavailable,
     CreatureClosureUnavailable,
     SourceProfileChanged,
+    InstanceCorpseMintUnavailable,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -385,6 +386,13 @@ impl ContentActivationController {
         if candidate.native_profile_sha256.as_deref() != Some(fingerprint.as_str()) {
             return Err(R::SourceProfileChanged);
         }
+        qualify_instance_death_descendant(&record.profile.data)?;
+        // The existing native death dispatcher captures its descendants from an
+        // admitted reward row. Missing rows cannot be promoted by a room template.
+        native
+            .reward_table()
+            .row(creature)
+            .map_err(|_| R::CreatureClosureUnavailable)?;
         let Some(crate::content::project::ProjectV2AuthoringProfile {
             data: ProjectV2AuthoringProfileData::Behavior(behavior),
             ..
@@ -470,6 +478,27 @@ struct SourceFrame {
     origin_y: i32,
     floor_transform: String,
 }
+/// Crystal creature.cpp:711-721,777-782 still creates the physical corpse for
+/// reward bosses. A private reward entitlement does not implement that descendant.
+/// ANSWER 6545304220 keeps its Instance MINT cause/reservation/audit/receipt bridge
+/// as a separate DUR-03 extension, so no template may silently discard it.
+fn qualify_instance_death_descendant(
+    data: &ProjectV2AuthoringProfileData,
+) -> Result<(), ActivityTemplateRefusal> {
+    use ActivityTemplateRefusal as R;
+    let ProjectV2AuthoringProfileData::Creature(creature) = data else {
+        return Err(R::CreatureClosureUnavailable);
+    };
+    let details = creature
+        .details
+        .as_ref()
+        .ok_or(R::CreatureClosureUnavailable)?;
+    if details.corpse_item.is_some() {
+        return Err(R::InstanceCorpseMintUnavailable);
+    }
+    Ok(())
+}
+
 fn hex_digest(text: &str) -> bool {
     text.len() == 64
         && text
@@ -480,12 +509,64 @@ fn hex_digest(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn debug(error: impl std::fmt::Debug) -> String {
+        format!("{error:?}")
+    }
+
+    fn test_world() -> Result<oteryn_protocol_oteryn::WorldId, String> {
+        let mut bytes = [42; 16];
+        // Runtime wire identifiers require the UUIDv7 version and RFC variant.
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        oteryn_protocol_oteryn::WorldId::decode(&bytes).map_err(debug)
+    }
+
     #[test]
-    fn current_qualified_source_map_cannot_activate_any_captured_crystal_room() {
-        let world = oteryn_protocol_oteryn::WorldId::decode(&[42; 16]).unwrap();
+    fn physical_corpse_requirement_blocks_both_ordinary_and_reward_boss_templates()
+    -> Result<(), String> {
+        let world = test_world()?;
+        for reward_boss in [false, true] {
+            let (controller, _pin) = if reward_boss {
+                crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
+                    world, None,
+                )
+            } else {
+                crate::content::native_gameplay::test_support::activated_with_loot_tables(
+                    world, None,
+                )
+            };
+            let native = controller
+                .active()
+                .and_then(|generation| generation.native_gameplay())
+                .ok_or("active source gameplay")?;
+            let record = native
+                .creature_profiles()
+                .records
+                .iter()
+                .find(|record| record.profile.target.key == "oteryn:creature.rat")
+                .ok_or("source creature record")?;
+            let ProjectV2AuthoringProfileData::Creature(creature) = &record.profile.data else {
+                return Err("creature authoring profile".into());
+            };
+            let details = creature.details.as_ref().ok_or("source creature details")?;
+            assert_eq!(details.system_eligibility.reward_boss, reward_boss);
+            assert!(details.corpse_item.is_some());
+            assert_eq!(
+                qualify_instance_death_descendant(&record.profile.data),
+                Err(ActivityTemplateRefusal::InstanceCorpseMintUnavailable)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn current_qualified_source_map_cannot_activate_any_captured_crystal_room() -> Result<(), String>
+    {
+        let world = test_world()?;
         let (controller, pin) =
             crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
-        let candidates = captured_boss_levers().unwrap();
+        let candidates = captured_boss_levers().map_err(debug)?;
         let (templates, diagnostics) = controller.qualify_initial_activity_template(
             pin.qualified_room(),
             "rev-1",
@@ -505,7 +586,7 @@ mod tests {
                 diagnostics
                     .iter()
                     .find(|diagnostic| diagnostic.path == candidate.path)
-                    .unwrap()
+                    .ok_or("candidate qualification diagnostic")?
                     .reason,
                 ActivityTemplateRefusal::OutsideQualifiedMap,
                 "{}",
@@ -515,25 +596,30 @@ mod tests {
         let mut forged = candidates
             .iter()
             .find(|candidate| candidate.complete_literal_layout)
-            .unwrap()
+            .ok_or("complete captured room")?
             .clone();
         forged.boss_position = Some([5854, 5298, 5]);
         assert!(matches!(
             controller.qualify_activity_template(pin.qualified_room(), "rev-1", &forged),
             Err(ActivityTemplateRefusal::InvalidSourceCapture)
         ));
+        Ok(())
     }
 
     #[test]
-    fn bounded_activity_map_never_exposes_an_origin_cell_outside_the_authored_zone() {
-        let world = oteryn_protocol_oteryn::WorldId::decode(&[42; 16]).unwrap();
+    fn bounded_activity_map_never_exposes_an_origin_cell_outside_the_authored_zone()
+    -> Result<(), String> {
+        let world = test_world()?;
         let (_, pin) =
             crate::content::native_gameplay::test_support::activated_loop_monster(world, false);
-        let source = pin.qualified_room().source_world().unwrap();
+        let source = pin
+            .qualified_room()
+            .source_world()
+            .ok_or("qualified source world")?;
         let at = LogicalCell { x: 0, y: 0, z: -5 };
         let view = source
             .activity_region([at.x, at.y, at.x, at.y, at.z, at.z])
-            .unwrap();
+            .ok_or("authored activity region")?;
         assert_eq!(view.scope(), source.scope());
         assert_eq!(
             view.lookup(view.scope(), at),
@@ -553,15 +639,17 @@ mod tests {
                 .activity_region([i32::MIN, 0, 0, 0, -5, -5])
                 .is_none()
         );
+        Ok(())
     }
 
     #[test]
-    fn captured_first_complete_crystal_room_is_preserved_without_spacing_or_callback_loss() {
-        let candidates = captured_boss_levers().unwrap();
+    fn captured_first_complete_crystal_room_is_preserved_without_spacing_or_callback_loss()
+    -> Result<(), String> {
+        let candidates = captured_boss_levers().map_err(debug)?;
         let first = candidates
             .iter()
             .find(|candidate| candidate.complete_literal_layout)
-            .unwrap();
+            .ok_or("complete captured room")?;
         assert_eq!(
             first.path,
             "data-global/scripts/actions/bosses_levers/faceless_bane.lua"
@@ -573,5 +661,6 @@ mod tests {
             first.required_callbacks,
             vec!["dreamCourtsDeath", "facelessHealth", "facelessThink"]
         );
+        Ok(())
     }
 }

@@ -82,7 +82,8 @@ pub fn activated_reward_boss_fixture(
 
 #[cfg(test)]
 #[test]
-fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability() {
+fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability()
+-> Result<(), String> {
     use crate::content::creature_reward::NoSettlementReason;
     let world = test_source(1).unwrap().world_id;
     let (source, _) = activated_with_loot_tables(world, None);
@@ -94,13 +95,43 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         .filter(|policy| policy.reward_boss == Some(true))
         .collect::<Vec<_>>();
     assert!(!bosses.is_empty());
-    // This current source-qualification expectation must change only when the
-    // admitted content actually supplies a valid reward-boss corpse, not to make
-    // the reward runtime fixture pass by widening production admission.
-    assert!(bosses.iter().all(|policy| matches!(
-        source.reward_table().row(&policy.definition_key),
-        Err(NoSettlementReason::CorpseItemInadmissible)
-    )));
+    // The pinned source has 52 reward bosses without a corpse definition and
+    // 335 whose corpse is not materializable. Keep each exact admission reason:
+    // a missing corpse is different from an authored but inadmissible corpse.
+    // Change these source-qualification expectations only with admitted content.
+    let mut missing = 0;
+    let mut inadmissible = 0;
+    for policy in &bosses {
+        let record = source
+            .creature_profiles()
+            .records
+            .iter()
+            .find(|record| record.profile.target.key == policy.definition_key)
+            .ok_or("source reward-boss profile")?;
+        let ProjectV2AuthoringProfileData::Creature(profile) = &record.profile.data else {
+            return Err("source reward-boss Creature profile".into());
+        };
+        let expected = if profile
+            .details
+            .as_ref()
+            .and_then(|details| details.corpse_item.as_ref())
+            .is_none()
+        {
+            missing += 1;
+            NoSettlementReason::CorpseItemMissing
+        } else {
+            inadmissible += 1;
+            NoSettlementReason::CorpseItemInadmissible
+        };
+        assert_eq!(
+            source.reward_table().row(&policy.definition_key).err(),
+            Some(expected),
+            "{}",
+            policy.definition_key
+        );
+    }
+    assert_eq!((missing, inadmissible), (52, 335));
+    assert_eq!(bosses.len(), 387);
     let before = source.reward_table().row("oteryn:creature.rat").unwrap();
     let before_policy = source
         .policies()
@@ -129,6 +160,7 @@ fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability(
         source.source_digest(),
         "the authored test classification is included in its real generated pin"
     );
+    Ok(())
 }
 
 pub fn activated_with_custom_loot_tables(
