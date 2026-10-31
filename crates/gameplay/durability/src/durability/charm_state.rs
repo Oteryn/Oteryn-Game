@@ -5,7 +5,7 @@
 //! XP award (recovery fence, FND-04 session/lease/scope, current scope assignment and node
 //! incarnation, the root row-locked at the expected CharacterRevision), validated against the
 //! balance derived in that transaction, and advancing the CharacterRevision exactly once. A remove
-//! pays `level * 100` gold (Canary `sendBuyCharmRune` action 2) through
+//! pays `level * 100` gold, or 75% of that with Charm Expansion, through
 //! [`burn_fee_in_transaction`] in the same transaction. Charm Points and Minor Charm Echoes are never stored (2a).
 //!
 //! Bestiary progress (CHARM-2), promotion and the slot entitlement are read through
@@ -47,9 +47,10 @@ const CATALOGUE_DIGEST_VERSION: u8 = 1;
 const KIND_UNLOCK: i16 = 1;
 const KIND_ASSIGN: i16 = 2;
 const KIND_REMOVE: i16 = 3;
-/// Canary `iobestiary.cpp` `sendBuyCharmRune` action 2: `fee = level * 100`. The Charm
-/// Expansion discount is not modelled: every Character's entitlement is `Free`.
+/// Crystal `iobestiary.cpp` `sendBuyCharmRune` action 2 starts at `level * 100`; Global's
+/// Charm Expansion discount is 25%, so its integral result is `level * 75`.
 const REMOVE_FEE_GOLD_PER_LEVEL: u64 = 100;
+const EXPANDED_REMOVE_FEE_GOLD_PER_LEVEL: u64 = 75;
 const CATEGORY_MAJOR: i16 = 1;
 const CATEGORY_MINOR: i16 = 2;
 const MAX_VIEW_RACES: usize = oteryn_protocol_oteryn::bestiary::MAX_BESTIARY_VIEW_ENTRIES;
@@ -122,7 +123,7 @@ pub struct BestiaryCharmEntry {
 /// read in the Charm command's transaction. Every counter writer advances the CharacterRevision
 /// under the same root lock, so the counters read here are current. A counter of a race missing
 /// from `entries` earns nothing and admits no assignment. Promotion is read from the durable
-/// purchase under the caller's fence. Slot entitlement remains `Free`.
+/// purchase under the caller's fence. Charm Expansion is the permanent Character entitlement.
 #[derive(Debug, Clone)]
 pub struct BestiaryCharmFacts {
     entries: Arc<BTreeMap<String, BestiaryCharmEntry>>,
@@ -213,11 +214,31 @@ impl CharmFacts for BestiaryCharmFacts {
 
     async fn slot_entitlement(
         &self,
-        _connection: &mut PgConnection,
-        _character: CharacterId,
+        connection: &mut PgConnection,
+        character: CharacterId,
     ) -> std::result::Result<CharmSlotEntitlement, DurabilityError> {
-        Ok(CharmSlotEntitlement::Free)
+        let expanded: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM game_character_charm_expansions \
+              WHERE character_id = encode($1,'hex')::uuid)",
+        )
+        .bind(character.as_bytes().as_slice())
+        .fetch_one(connection)
+        .await?;
+        Ok(if expanded {
+            CharmSlotEntitlement::CharmExpansion
+        } else {
+            CharmSlotEntitlement::Free
+        })
     }
+}
+
+fn removal_fee_gold(level: u64, entitlement: CharmSlotEntitlement) -> Option<u64> {
+    let per_level = if entitlement == CharmSlotEntitlement::CharmExpansion {
+        EXPANDED_REMOVE_FEE_GOLD_PER_LEVEL
+    } else {
+        REMOVE_FEE_GOLD_PER_LEVEL
+    };
+    level.checked_mul(per_level)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -685,8 +706,10 @@ impl DurabilityRoot {
                             };
                             let level = u64::try_from(state.try_get::<i64, _>("level")?)
                                 .map_err(|_| DurabilityError::InvalidStoredState)?;
-                            let fee_gold_units = level
-                                .checked_mul(REMOVE_FEE_GOLD_PER_LEVEL)
+                            let entitlement = facts
+                                .slot_entitlement(&mut tx, fence.character_id)
+                                .await?;
+                            let fee_gold_units = removal_fee_gold(level, entitlement)
                                 .ok_or(DurabilityError::InvalidStoredState)?;
                             (
                                 category,
@@ -1198,6 +1221,15 @@ mod tests {
         ChannelId, ConnectionGeneration, GameSessionId, ScopeOwnershipGeneration, WorldId,
     };
     use oteryn_gameplay_progression::charm_effects::CharmStateRead;
+
+    #[test]
+    fn charm_expansion_discounts_removal_price_by_twenty_five_percent() {
+        assert_eq!(removal_fee_gold(140, CharmSlotEntitlement::Free), Some(14_000));
+        assert_eq!(
+            removal_fee_gold(140, CharmSlotEntitlement::CharmExpansion),
+            Some(10_500)
+        );
+    }
 
     #[test]
     fn combat_view_returns_only_assignments_for_the_requested_race() {
