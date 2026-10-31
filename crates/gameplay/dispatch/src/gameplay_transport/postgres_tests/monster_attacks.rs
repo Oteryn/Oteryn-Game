@@ -7,6 +7,9 @@ use crate::gameplay_transport::{ComposedFreshAdmission, last_position::Admission
 use oteryn_gameplay_entities::content_adapters::NativeGameplayRuntimeExt;
 use std::time::Duration;
 
+#[path = "monster_attacks/removal.rs"]
+mod removal;
+
 #[test]
 fn rat_source_melee_dispatch_damages_player_once_and_checkpoints_vitals_postgres() -> TestResult {
     run_case("monster_attacks_rat", AttackCase::Rat)
@@ -32,6 +35,11 @@ fn firestarter_zero_range_source_field_dispatch_commits_distant_ground_postgres(
     run_case("monster_attacks_zero_range_field", AttackCase::Firestarter)
 }
 
+#[test]
+fn the_monster_source_removal_dispatch_retires_owned_wall_once_postgres() -> TestResult {
+    run_case("monster_attacks_wall_removal", AttackCase::TheMonster)
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum AttackCase {
     Rat,
@@ -39,6 +47,7 @@ enum AttackCase {
     FireDevil,
     FireElemental,
     Firestarter,
+    TheMonster,
 }
 
 impl AttackCase {
@@ -49,6 +58,7 @@ impl AttackCase {
             Self::FireDevil => "oteryn:creature.fire_devil",
             Self::FireElemental => "oteryn:creature.fire_elemental",
             Self::Firestarter => "oteryn:creature.firestarter",
+            Self::TheMonster => "oteryn:creature.the_monster",
         }
     }
 }
@@ -71,7 +81,9 @@ fn run_case(tag: &'static str, case: AttackCase) -> TestResult {
                     false,
                 )
                 .await?;
-                let result = if matches!(case, AttackCase::FireElemental | AttackCase::Firestarter) {
+                let result = if case == AttackCase::TheMonster {
+                    removal::scenario(&harness).await
+                } else if matches!(case, AttackCase::FireElemental | AttackCase::Firestarter) {
                     field_scenario(&harness, case).await
                 } else {
                     scenario(&harness, case).await
@@ -470,7 +482,7 @@ fn dependencies(
     )?;
     runtime
         .begin_activation_spawn_sources(vec![(
-            vec![((if case == AttackCase::Rat { 2 } else { -1 }, 12, -7), 60_000, case.creature_key().into(), maximum_health, false)],
+            vec![((if matches!(case, AttackCase::Rat | AttackCase::TheMonster) { 2 } else { -1 }, 12, -7), 60_000, case.creature_key().into(), maximum_health, false)],
             5_000,
         )])
         .map_err(debug)?;
