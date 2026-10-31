@@ -156,7 +156,7 @@ pub(super) async fn move_map_item(
             admission.character,
             admission.holder,
             &fence,
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
             &mint,
             &destination,
         )
@@ -287,7 +287,7 @@ pub(super) async fn move_map_item(
             admission.holder,
             &fence,
             candidate.request().command,
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
             LoopMoveRequest {
                 item: minted.item_instance_id,
                 count: None,

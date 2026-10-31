@@ -57,8 +57,18 @@ pub(super) fn cooldown(
     } else {
         0
     };
+    // Crystal spells.cpp:776,785-786: gems reduce only the named individual
+    // timer; the existing half-base floor applies after all individual reductions.
+    let gem_reduction =
+        u64::try_from(owned.current_wheel_effects(now.get()).map_or(0, |effects| {
+            effects.gem_value_milli("cooldown_reduction", &spell.name)
+        }))
+        .ok()
+        .and_then(|millis| millis.checked_mul(1_000))
+        .ok_or(SpellCastDisposition::Rejected)?;
     let reduction = item_reduction
         .checked_add(wheel_reduction)
+        .and_then(|value| value.checked_add(gem_reduction))
         .ok_or(SpellCastDisposition::Rejected)?;
     if reduction > 0 {
         let current = next
@@ -77,6 +87,29 @@ pub(super) fn cooldown(
         );
         anchor.cooldown_deadlines = next.cooldowns.canonical_deadlines();
     }
+    // Crystal201189f spells.cpp:805-820: Focus is a secondary-group reduction;
+    // unlike individual cooldowns it has no half-base floor.
+    if let Some(group) = spell.groups.get(1).filter(|group| group.key == "focus")
+        && owned
+            .current_wheel_effects(now.get())
+            .is_some_and(|effects| effects.active_unique_perks.contains("focus_mastery"))
+        && let Some(current) = next.cooldowns.group_ready_at(&group.key)
+    {
+        let duration = current
+            .get()
+            .saturating_sub(now.get())
+            .saturating_sub(2_000_000);
+        if duration == 0 {
+            next.cooldowns.groups.remove(&group.key);
+        } else {
+            next.cooldowns.groups.insert(
+                group.key.clone(),
+                now.checked_add(duration)
+                    .map_err(|_| SpellCastDisposition::Rejected)?,
+            );
+        }
+        anchor.cooldown_deadlines = next.cooldowns.canonical_deadlines();
+    }
     Ok(())
 }
 
@@ -84,11 +117,20 @@ pub(super) fn leech(
     owned: &OwnedCastFacts,
     spell: &SpellDefinition,
     before: &PlayerSpellState,
+    now: SemanticTimeMicros,
 ) -> (u32, u32) {
     // Equipment leeches on ordinary damage spells
     // even when this spell has no spell-specific leech augment.
     let base = before.equipped_offence();
     let mut rates = (u32::from(base.life_leech), u32::from(base.mana_leech));
+    if let Some(effects) = owned.current_wheel_effects(now.get()) {
+        rates.0 = rates
+            .0
+            .saturating_add(effects.life_leech_hundredths_percent);
+        rates.1 = rates
+            .1
+            .saturating_add(effects.mana_leech_hundredths_percent);
+    }
     for a in selected(owned, spell) {
         match a.kind {
             K::LifeLeech => rates.0 = rates.0.saturating_add(a.value),
@@ -249,6 +291,236 @@ mod tests {
                     );
                 }
             }
+        }
+    }
+    #[test]
+    fn focus_mastery_reduces_only_secondary_group_without_individual_floor() {
+        let (_, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(89);
+        let binding = CastFactsBinding {
+            actor,
+            session,
+            character: [7; 16],
+            character_revision: 4,
+            lease_generation: 1,
+            connection_generation: 1,
+            player_revision: 1,
+            content_digest: [9; 32],
+            equipment_revision: 2,
+        };
+        let equipment = crate::durability::character_equipment::EquipmentSnapshot {
+            character: binding.character,
+            content_digest: binding.content_digest,
+            character_revision: 4,
+            revision: 2,
+            combat_mode: None,
+            items: vec![],
+        };
+        let mut effects =
+            oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+        effects.active_unique_perks.insert("focus_mastery".into());
+        let mut owned = OwnedCastFacts::from_owner_reads(
+            binding.clone(),
+            crate::durability::character_build::DurableBuildState::new(
+                "sorcerer",
+                (0, 0),
+                [(10, 0); 7],
+            )
+            .unwrap(),
+            200,
+            equipment,
+            AccessProjections {
+                premium: Some(CurrentProjection {
+                    binding: binding.clone(),
+                    authority_revision: 1,
+                    valid_until_micros: 10_000_000,
+                    value: true,
+                }),
+                wheel_promoted: true,
+                wheel_effects: Some(CurrentProjection {
+                    binding: binding.clone(),
+                    authority_revision: 4,
+                    valid_until_micros: 10_000_000,
+                    value: effects,
+                }),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let mut spell = crate::spell::cast::v1_spell_book()
+            .unwrap()
+            .spells
+            .remove(0);
+        spell.name = "Hell's Core".into();
+        spell.groups = vec![
+            crate::spell::CooldownGroup {
+                key: "attack".into(),
+                cooldown_micros: 2_000_000,
+            },
+            crate::spell::CooldownGroup {
+                key: "focus".into(),
+                cooldown_micros: 3_000_000,
+            },
+        ];
+        let now = SemanticTimeMicros::from_micros(1);
+        for (duration, promoted, expected) in [
+            (3_000_000, true, Some(1_000_001)),
+            (1_000_000, true, None),
+            (3_000_000, false, Some(3_000_001)),
+        ] {
+            spell.groups[1].cooldown_micros = duration;
+            owned.access.wheel_promoted = promoted;
+            let mut next = PlayerSpellState::new(
+                crate::spell::cast::CharacterCastFacts {
+                    vocation: crate::spell::Vocation::Sorcerer,
+                    level: 200,
+                    magic_level: 0,
+                    max_health: 2000,
+                    max_mana: 2000,
+                    max_soul: 100,
+                },
+                0,
+                0,
+            )
+            .unwrap();
+            next.cooldowns.rearm(&spell, now).unwrap();
+            let original = next.cooldowns.spell_ready_at(&spell.key);
+            let mut anchor = crate::spell::combat_batch::SpellAnchor {
+                expected_revision: 1,
+                next_revision: 2,
+                paid_mana: 0,
+                paid_soul: 0,
+                cooldown_deadlines: next.cooldowns.canonical_deadlines(),
+            };
+            cooldown(&owned, &spell, &mut next, &mut anchor, now).unwrap();
+            assert_eq!(
+                next.cooldowns
+                    .group_ready_at("focus")
+                    .map(|time| time.get()),
+                expected
+            );
+            assert_eq!(
+                next.cooldowns
+                    .group_ready_at("attack")
+                    .map(|time| time.get()),
+                Some(2_000_001)
+            );
+            assert_eq!(next.cooldowns.spell_ready_at(&spell.key), original);
+            assert_eq!(
+                anchor.cooldown_deadlines,
+                next.cooldowns.canonical_deadlines()
+            );
+        }
+    }
+
+    #[test]
+    fn active_gem_cooldown_and_spell_leech_use_same_current_build_and_expiry() {
+        let (_, actor, session) =
+            crate::gameplay_transport::actor_spell::tests::runtime_with_player(89);
+        let binding = CastFactsBinding {
+            actor,
+            session,
+            character: [7; 16],
+            character_revision: 4,
+            lease_generation: 1,
+            connection_generation: 1,
+            player_revision: 1,
+            content_digest: [9; 32],
+            equipment_revision: 2,
+        };
+        let equipment = crate::durability::character_equipment::EquipmentSnapshot {
+            character: binding.character,
+            content_digest: binding.content_digest,
+            character_revision: 4,
+            revision: 2,
+            combat_mode: None,
+            items: vec![],
+        };
+        let mut spell = crate::spell::cast::v1_spell_book()
+            .unwrap()
+            .spells
+            .remove(0);
+        spell.name = "Executioner's Throw".into();
+        spell.cooldown_micros = 10_000_000;
+        let mut effects =
+            oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+        effects
+            .sockets
+            .gem_values_milli
+            .insert(("cooldown_reduction".into(), spell.name.clone()), 8_000);
+        effects.life_leech_hundredths_percent = 350;
+        effects.mana_leech_hundredths_percent = 200;
+        let mut owned = OwnedCastFacts::from_owner_reads(
+            binding.clone(),
+            crate::durability::character_build::DurableBuildState::new(
+                "elite_knight",
+                (0, 0),
+                [(10, 0); 7],
+            )
+            .unwrap(),
+            500,
+            equipment,
+            AccessProjections {
+                premium: Some(CurrentProjection {
+                    binding: binding.clone(),
+                    authority_revision: 1,
+                    valid_until_micros: 10_000_000,
+                    value: true,
+                }),
+                wheel_promoted: true,
+                wheel_effects: Some(CurrentProjection {
+                    binding: binding.clone(),
+                    authority_revision: 4,
+                    valid_until_micros: 10_000_000,
+                    value: effects,
+                }),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        for (at, promoted, expected, rates) in [
+            (1, true, 5_000_000, (350, 200)),
+            (1, false, 10_000_000, (0, 0)),
+            (10_000_000, true, 10_000_000, (0, 0)),
+        ] {
+            owned.access.wheel_promoted = promoted;
+            let now = SemanticTimeMicros::from_micros(at);
+            let mut next = PlayerSpellState::new(
+                crate::spell::cast::CharacterCastFacts {
+                    vocation: crate::spell::Vocation::Knight,
+                    level: 500,
+                    magic_level: 0,
+                    max_health: 2000,
+                    max_mana: 1000,
+                    max_soul: 100,
+                },
+                0,
+                0,
+            )
+            .unwrap();
+            next.cooldowns.rearm(&spell, now).unwrap();
+            let groups = next.cooldowns.groups.clone();
+            let mut anchor = crate::spell::combat_batch::SpellAnchor {
+                expected_revision: 1,
+                next_revision: 2,
+                paid_mana: 0,
+                paid_soul: 0,
+                cooldown_deadlines: next.cooldowns.canonical_deadlines(),
+            };
+            cooldown(&owned, &spell, &mut next, &mut anchor, now).unwrap();
+            assert_eq!(
+                next.cooldowns.spell_ready_at(&spell.key).unwrap().get(),
+                at + expected
+            );
+            assert_eq!(
+                next.cooldowns.groups, groups,
+                "gem reduces the individual timer only"
+            );
+            assert_eq!(leech(&owned, &spell, &next, now), rates);
+            assert_eq!(
+                anchor.cooldown_deadlines,
+                next.cooldowns.canonical_deadlines()
+            );
         }
     }
 }

@@ -188,6 +188,9 @@ pub(super) async fn observe_item_target(
 /// D1211: resolve every locked carried definition from this exact admitted native generation.
 pub(super) struct NativeItemWeights<'a>(pub(super) &'a NativeGameplayState);
 
+#[path = "item_ref_admission/wheel_capacity.rs"]
+mod wheel_capacity;
+
 impl ItemWeightLookup for NativeItemWeights<'_> {
     fn generation_digest(&self) -> [u8; 32] {
         self.0.source_digest()
@@ -291,7 +294,9 @@ pub(super) async fn take_corpse_entry(
     let request = ItemTransferRequest {
         command: crate::foundation::CommandRef::new(command.game_session_id, command_id),
         source_item_instance_id: entry_id,
-        weight_generation_digest: NativeItemWeights(native).generation_digest(),
+        weight_generation_digest: NativeItemWeights(native)
+            .with_wheel(admission.premium_coordinator)
+            .generation_digest(),
         destination: ItemTransferDestination::MainBackpack,
         item,
         backpack,
@@ -306,7 +311,7 @@ pub(super) async fn take_corpse_entry(
             admission.holder,
             fence,
             request,
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
         )
         .await?;
     Ok(admission
@@ -317,7 +322,7 @@ pub(super) async fn take_corpse_entry(
             admission.holder,
             fence,
             &mut candidate,
-            &NativeItemWeights(native),
+            &NativeItemWeights(native).with_wheel(admission.premium_coordinator),
         )
         .await?)
 }

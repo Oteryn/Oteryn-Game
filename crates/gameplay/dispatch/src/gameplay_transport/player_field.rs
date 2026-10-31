@@ -42,6 +42,7 @@ pub(in crate::gameplay_transport) struct PendingPlayerField {
     now_us: u64,
     initial: bool,
     qualified: bool,
+    wheel_shielding: u32,
 }
 
 pub(in crate::gameplay_transport) fn park(
@@ -207,15 +208,23 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             if refused {
                 continue;
             }
+            let hit_kind = match tick.kind {
+                TickKind::Damage { element, .. } => {
+                    crate::player_lethal::PlayerHitKind::from_dot(element)
+                }
+                _ => crate::player_lethal::PlayerHitKind::Mitigated,
+            };
             // PAR-M10: environment drown has no source actor; it is dealt like a creature hit.
             if !agony
                 && crate::gameplay_transport::paced_movement::underwater_drown::is_environment_drown(
                     &tick.provenance,
                 )
             {
-                next = crate::spell::actor_conditions::stage_creature_hit(&next, amount, now_us)
-                    .map_err(|_| DurabilityError::Unavailable)?
-                    .0;
+                next = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                    runtime, actor, &next, amount, hit_kind, now_us,
+                )
+                .map_err(|_| DurabilityError::Unavailable)?
+                .0;
                 if next.vitals().health == 0 {
                     break;
                 }
@@ -251,7 +260,9 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 next = if agony {
                     crate::spell::actor_conditions::stage_agony_hit(&next, amount, now_us)
                 } else {
-                    crate::spell::actor_conditions::stage_creature_hit(&next, amount, now_us)
+                    crate::spell::actor_conditions::stage_typed_hit_in_world(
+                        runtime, actor, &next, amount, hit_kind, now_us,
+                    )
                 }
                 .map_err(|_| DurabilityError::Unavailable)?
                 .0;
@@ -360,8 +371,8 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                     if initial && magnitude == 0 {
                         next.conditions = before.conditions.clone();
                     }
-                    next = crate::spell::actor_conditions::stage_creature_hit(
-                        &next, magnitude, now_us,
+                    next = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                        runtime, actor, &next, magnitude, hit_kind, now_us,
                     )
                     .map_err(|_| DurabilityError::Unavailable)?
                     .0;
@@ -430,8 +441,8 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                         if initial && magnitude == 0 {
                             next.conditions = before.conditions.clone();
                         }
-                        next = crate::spell::actor_conditions::stage_creature_hit(
-                            &next, magnitude, now_us,
+                        next = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                            runtime, actor, &next, magnitude, hit_kind, now_us,
                         )
                         .map_err(|_| DurabilityError::Unavailable)?
                         .0;
@@ -458,9 +469,11 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 if initial && amount == 0 {
                     next.conditions = before.conditions.clone();
                 }
-                next = crate::spell::actor_conditions::stage_creature_hit(&next, amount, now_us)
-                    .map_err(|_| DurabilityError::Unavailable)?
-                    .0;
+                next = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                    runtime, actor, &next, amount, hit_kind, now_us,
+                )
+                .map_err(|_| DurabilityError::Unavailable)?
+                .0;
                 if next.vitals().health == 0 {
                     break;
                 }
@@ -475,9 +488,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
                 next.conditions = before.conditions.clone();
             }
             let mana_before = next.vitals().mana;
-            let (successor, hit) =
-                crate::spell::actor_conditions::stage_creature_hit(&next, magnitude, now_us)
-                    .map_err(|_| DurabilityError::Unavailable)?;
+            let (successor, hit) = crate::spell::actor_conditions::stage_typed_hit_in_world(
+                runtime, actor, &next, magnitude, hit_kind, now_us,
+            )
+            .map_err(|_| DurabilityError::Unavailable)?;
             next = successor;
             let damage = hit
                 .applied
@@ -573,6 +587,10 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
         crate::durability::pvp_live::record_field_cycle_in_transaction(tx, read, cycle, binding)
             .await
             .map_err(|_| DurabilityError::Unavailable)?;
+        let wheel_shielding = before
+            .wheel_battle_instinct(runtime, actor, now_us)
+            .ok_or(DurabilityError::Unavailable)?
+            .shielding;
         Ok(PendingPlayerField {
             actor,
             session,
@@ -592,6 +610,7 @@ impl crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_> {
             now_us,
             initial,
             qualified,
+            wheel_shielding,
         })
     }
 
@@ -727,7 +746,11 @@ impl PendingPlayerField {
         runtime: &ChannelRuntimeV1,
         states: &ChannelSpellStates,
     ) -> bool {
-        states.get(runtime, self.actor, self.session) == Some(&self.before)
+        self.before
+            .wheel_battle_instinct(runtime, self.actor, self.now_us)
+            .map(|bonus| bonus.shielding)
+            == Some(self.wheel_shielding)
+            && states.get(runtime, self.actor, self.session) == Some(&self.before)
             && runtime
                 .player_control_facts(self.actor, self.session)
                 .is_ok_and(|facts| facts.control_loss.is_none())

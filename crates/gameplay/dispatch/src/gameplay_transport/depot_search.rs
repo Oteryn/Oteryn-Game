@@ -125,7 +125,7 @@ pub(super) async fn execute(
                         owner.holder,
                         fence,
                         CommandRef::new(admitted.game_session_id, command_id),
-                        &NativeItemWeights(native),
+                        &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
                         client_id,
                         all,
                     )
@@ -175,7 +175,7 @@ pub(super) async fn execute(
                     access_refusal: None,
                 },
                 native,
-                &NativeItemWeights(native),
+                &NativeItemWeights(native).with_wheel(owner.premium_coordinator),
                 false,
             )
             .await;

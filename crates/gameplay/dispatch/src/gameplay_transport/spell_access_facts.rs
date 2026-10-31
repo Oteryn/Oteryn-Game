@@ -92,6 +92,7 @@ impl<A: CurrentSpellAccessOwner> CurrentSpellAccessOwner for WheelCastAccess<'_,
     ) -> Result<AccessProjections, AccessFactsError> {
         let mut projections = self.other.read_current(binding, now)?;
         projections.wheel = None;
+        projections.wheel_effects = None;
         projections.wheel_promoted = false;
         let read = self.read.raw();
         if read.command != self.raw.command
@@ -118,9 +119,58 @@ impl<A: CurrentSpellAccessOwner> CurrentSpellAccessOwner for WheelCastAccess<'_,
                 self.read.promoted(),
             );
             projections.wheel_promoted = self.read.promoted();
+            if let Some(wheel) = &mut projections.wheel {
+                let Some(effects) = project_wheel_effects(
+                    self.read.allocation(),
+                    self.read.atelier(),
+                    read.build.vocation(),
+                    read.level,
+                    self.read.promoted(),
+                ) else {
+                    projections.wheel = None;
+                    return Ok(projections);
+                };
+                // Gem mastery and every Grade IV modifier affect revelation gates too.
+                for (key, stage) in &effects.revelation_stages {
+                    wheel.value.insert(key.clone(), *stage);
+                }
+                oteryn_gameplay_progression::spell_wheel::refresh_wheel_aliases(&mut wheel.value);
+                projections.wheel_effects = Some(CurrentProjection {
+                    binding: wheel.binding.clone(),
+                    authority_revision: wheel.authority_revision,
+                    valid_until_micros: wheel.valid_until_micros,
+                    value: effects,
+                });
+            }
         }
         Ok(projections)
     }
+}
+
+fn project_wheel_effects(
+    allocation: &crate::durability::character_wheel::WheelAllocation,
+    atelier: Option<&oteryn_gameplay_progression::atelier::AtelierState>,
+    vocation: &str,
+    level: u32,
+    promoted: bool,
+) -> Option<oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects> {
+    let data = crate::wheel_gem_data::WheelGemData::embedded().ok()?;
+    let mut effects = oteryn_gameplay_progression::wheel_effects::derive_runtime_effects(
+        data.wheel(),
+        allocation,
+        vocation,
+        level,
+        promoted,
+        true,
+    )?;
+    if allocation.current
+        && level > oteryn_gameplay_progression::wheel::WHEEL_LEVEL_OFFSET
+        && promoted
+        && let Some(atelier) = atelier
+    {
+        effects.contribute_gems(atelier, &data, allocation)?;
+    }
+    Some(effects)
 }
 
 fn wheel_raw_matches_binding(
@@ -427,6 +477,13 @@ fn qualify_current_cast_facts(
                 .as_ref()
                 .is_some_and(|premium| premium.current(&binding, now_micros) && premium.value)
     });
+    projections.wheel_effects = projections.wheel_effects.filter(|effects| {
+        projections.wheel.as_ref().is_some_and(|wheel| {
+            effects.current(&binding, now_micros)
+                && effects.authority_revision == wheel.authority_revision
+                && effects.valid_until_micros == wheel.valid_until_micros
+        })
+    });
     projections.magnitude = super::spell_magnitude_facts::project(
         raw,
         &binding,
@@ -436,6 +493,19 @@ fn qualify_current_cast_facts(
         projections.wheel_promoted,
         now_micros,
     )?;
+    if let (Some(magnitude), Some(effects)) =
+        (&mut projections.magnitude, &projections.wheel_effects)
+    {
+        magnitude.wheel_flat_damage = effects
+            .value
+            .flat_damage_bonus()
+            .and_then(|value| i32::try_from(value).ok());
+        magnitude.wheel_flat_healing = effects
+            .value
+            .flat_healing_bonus()
+            .and_then(|value| i32::try_from(value).ok());
+        magnitude.wheel_effects = Some(effects.value.clone());
+    }
     let facts = OwnedCastFacts::from_owner_reads(binding, build, level, equipment, projections)?;
     // No await follows this final independent owner recheck; the caller keeps the same lock/tx.
     runtime
