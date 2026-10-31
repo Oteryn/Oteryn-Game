@@ -363,8 +363,18 @@ fn i03_crystal_spellbook_has_vocation_filtered_spell_list() -> Result<(), &'stat
             admitted.push(id);
         }
     }
-    // Only 6120 is admitted; the basic spellbook 3059 and the other source ids are not.
-    assert_eq!(admitted, vec![6120]);
+    // CLOSE-2 I03: every spellbook whose canonical Item definition is materializable is
+    // admitted (3059, 8073; 6120 through the quest callback). The other 16 source ids are
+    // not materializable in canonical content, so no inventory can hold them.
+    assert_eq!(admitted, vec![3059, 6120, 8073]);
+    for id in admitted {
+        assert!(crate::gameplay_transport::item_look::is_spellbook(
+            &format!("oteryn:item.tibia.i{id}")
+        ));
+    }
+    assert!(!crate::gameplay_transport::item_look::is_spellbook(
+        "oteryn:item.tibia.i3058"
+    ));
     let text = crate::gameplay_transport::item_look::spellbook_text(
         state.spell_book(),
         crate::spell::Vocation::Knight,

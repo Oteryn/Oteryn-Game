@@ -105,6 +105,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // PKG1 Amber: the amber kusarigama 50239 (tools/content-migration/monk_reward_profiles.py,
     // Crystal ff7ede59 items.xml), a monk weapon with speed_bonus=0.
     ("PKG1-AMBER", 1),
+    // I03: the Crystal spellbooks 3059 and 8073 (Crystal 201189f8 spellbook.lua:52,
+    // tools/content-migration/spellbook_item_profiles.py). Neither has a speed attribute.
+    ("I03-SPELLBOOKS", 2),
 ];
 
 #[test]

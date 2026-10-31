@@ -442,7 +442,7 @@ async fn observe_look_item(
         ItemLookOutcome::Text(text) => ItemLookResult::Text(text),
         ItemLookOutcome::Unavailable => return Err(unavailable),
     };
-    if definition.production_key == "oteryn:item.tibia.i6120" {
+    if is_spellbook(&definition.production_key) {
         // The runtime and spell-state locks preserve the Channel owner's established order. The
         // state lookup rechecks the exact actor/session binding, so reconnect cannot expose a
         // previous incarnation's vocation-filtered list.
@@ -453,6 +453,20 @@ async fn observe_look_item(
             .ok_or(unavailable);
     }
     Ok(ordinary)
+}
+
+/// Crystal 201189f8 `data/scripts/actions/items/spellbook.lua:52`: every item id bound to the
+/// spell list. Only the ids the native provider admits can reach this look.
+const CRYSTAL_SPELLBOOK_IDS: [u32; 19] = [
+    3059, 6120, 8072, 8073, 8074, 8075, 8076, 8090, 11691, 14769, 16107, 20088, 21400, 22755,
+    25699, 29431, 20089, 20090, 34153,
+];
+
+pub(super) fn is_spellbook(production_key: &str) -> bool {
+    production_key
+        .strip_prefix("oteryn:item.tibia.i")
+        .and_then(|id| id.parse::<u32>().ok())
+        .is_some_and(|id| CRYSTAL_SPELLBOOK_IDS.contains(&id))
 }
 
 /// Crystal `spellbook.lua`: instant spells for the current vocation, grouped by required level,
