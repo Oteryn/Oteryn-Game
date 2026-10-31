@@ -456,6 +456,8 @@ fn operation_tags_are_unique_sorted_and_match_golden_and_wire_fixtures() {
 
 #[test]
 fn fee_cause_tags_are_unique_sorted_and_match_golden_and_wire_fixtures() {
+    // P05 bounty talisman purchase adds only cause tag 13 (exactly 5000 gold).
+    // Keep the golden inventory exact; every admitted tag still needs its wire fixture.
     assert_tag_block(
         include_str!("../../item_fee_burn_audit.rs"),
         "FeeBurnCauseV1",
