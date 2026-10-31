@@ -1167,6 +1167,7 @@ def build(
     out[str(SUMMARY.relative_to(ROOT))] = canonical(summary)
     # Startup scripts restore action ids which world.otbm no longer stores.
     import quest_door_bindings
+
     quest_door_bindings.overlay_outputs(out)
     return out
 
