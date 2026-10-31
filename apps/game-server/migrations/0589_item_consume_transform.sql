@@ -93,7 +93,7 @@ BEGIN
        AND s.lifecycle=(CASE WHEN s.quantity=0 THEN 2 ELSE 1 END) AND s.last_transaction_id=r.transaction_id)))
     OR (r.secondary_item_instance_id<>r.source_item_instance_id AND EXISTS(SELECT 1 FROM game_item_container_entries WHERE item_instance_id=r.secondary_item_instance_id AND (SELECT quantity FROM game_item_instances WHERE item_instance_id=r.secondary_item_instance_id)=0))
     OR (SELECT count(*) FROM game_item_instances WHERE minted_transaction_id=r.transaction_id)<>jsonb_array_length(r.outputs)
-    OR (SELECT count(*) FROM game_item_instances WHERE last_transaction_id=r.transaction_id)<>CASE WHEN r.secondary_item_instance_id=r.source_item_instance_id THEN 1 ELSE 2 END
+    OR (SELECT count(*) FROM game_item_instances WHERE last_transaction_id=r.transaction_id)<>(CASE WHEN r.secondary_item_instance_id=r.source_item_instance_id THEN 1 ELSE 2 END)
     OR (SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=r.parent_item_instance_id)>20
     OR (SELECT count(*) FROM game_item_audit_outbox WHERE transaction_id=r.transaction_id)<>1
     OR NOT EXISTS(SELECT 1 FROM game_item_audit_outbox WHERE event_id=r.event_id AND transaction_id=r.transaction_id AND item_instance_id=r.source_item_instance_id
