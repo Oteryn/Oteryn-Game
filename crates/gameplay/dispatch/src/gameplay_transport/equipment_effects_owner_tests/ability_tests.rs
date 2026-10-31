@@ -87,7 +87,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Task Board: 436 delivery definitions plus talisman 51978; five were already native.
     // Crystal 201189f XML/appearance and accepted canonical facts are qualified by
     // tools/content-migration/task_board_item_profiles.py; no existing cohort is removed.
-    ("TASKBOARD-P04", 432),
+    // The package adds 432 keys, but six are already counted by cohorts merged after the
+    // draft base ae4188a9c: 3318, 3333, 3342, 7383 and 7402 by GEMX-I19 and 37110 by
+    // W07-SOULPIT. The merged file holds each once, so this cohort counts 426 new keys.
+    ("TASKBOARD-P04", 426),
     // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
     ("TIMEDITEMS2-1", 2),
     // W06/W07: exact Crystal 201189f items.xml/appearances.dat capture in
