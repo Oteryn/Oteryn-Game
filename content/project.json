@@ -21,7 +21,8 @@
     "Proficiency",
     "RewardClaim",
     "StarterKit",
-    "Quest"
+    "Quest",
+    "item_conversion"
   ],
   "next_population_families": [
     "Achievement",
@@ -29,6 +30,9 @@
     "Area",
     "House",
     "WorldObject"
+  ],
+  "populated_rulesets": [
+    "Imbuements"
   ],
   "project_revision": "tree-npc-reviewed-definitions-r1",
   "runtime_source": "legacy_until_separately_qualified",
