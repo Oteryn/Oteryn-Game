@@ -282,3 +282,7 @@ mod source_time_profile_bundle_tests;
 #[cfg(test)]
 #[path = "../../../../apps/game-server/tests/support/authority_cases/character_promotion_fixture.rs"]
 mod character_promotion_fixture;
+
+#[cfg(test)]
+#[path = "lifted_tests/creature_encounter_refusals_tests.rs"]
+mod creature_encounter_refusals_tests;
