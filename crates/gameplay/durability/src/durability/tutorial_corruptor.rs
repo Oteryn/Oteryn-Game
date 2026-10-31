@@ -23,13 +23,12 @@ impl DurabilityRoot {
         death: CreatureDeathOccurrenceKey,
         defined: Vec<u32>,
     ) -> Result<Vec<u32>, CharacterProgressionError> {
+        let channel_id = death
+            .channel_id()
+            .ok_or(CharacterProgressionError::InvalidInput)?;
         if defined.len() > 3
             || death.world_id() != fence.runtime_scope.world_id()
-            || fence.runtime_scope
-                != crate::foundation::RuntimeScopeRefV1::channel(
-                    death.world_id(),
-                    death.channel_id(),
-                )
+            || fence.runtime_scope != death.runtime_scope()
             || death.scope_ownership_generation() != fence.scope_ownership_generation
         {
             return Err(CharacterProgressionError::InvalidInput);
@@ -44,7 +43,7 @@ impl DurabilityRoot {
             lock_admission_relations(&mut tx).await?;
             if let Err(error)=assert_gameplay_fence(&mut tx,&fence,&node).await? {return Ok(Err(error));}
             let previous:Option<Vec<i32>>=sqlx::query_scalar("SELECT item_ids FROM game_tutorial_corruptor_claims WHERE character_id=encode($1,'hex')::uuid AND world_id=encode($2,'hex')::uuid AND channel_id=encode($3,'hex')::uuid AND scope_generation=$4::text::numeric(20,0) AND actor_id=$5 AND actor_generation=$6::text::numeric(20,0)")
-                .bind(fence.character_id.as_bytes().as_slice()).bind(death.world_id().as_bytes().as_slice()).bind(death.channel_id().as_bytes().as_slice())
+                .bind(fence.character_id.as_bytes().as_slice()).bind(death.world_id().as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
                 .bind(death.scope_ownership_generation().get().to_string()).bind(i64::from(death.actor_local_id())).bind(death.actor_local_generation().to_string())
                 .fetch_optional(&mut *tx).await?;
             if let Some(previous)=previous {
@@ -58,7 +57,7 @@ impl DurabilityRoot {
             if !defined.is_empty() && defined!=corruptor_items(build.vocation()) {return Ok(Err(CharacterProgressionError::InvalidInput));}
             let ids=defined.iter().map(|id|i32::try_from(*id)).collect::<Result<Vec<_>,_>>().map_err(|_|super::DurabilityError::InvalidStoredState)?;
             sqlx::query("INSERT INTO game_tutorial_corruptor_claims(character_id,world_id,channel_id,scope_generation,actor_id,actor_generation,item_ids) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6::text::numeric(20,0),$7)")
-                .bind(fence.character_id.as_bytes().as_slice()).bind(death.world_id().as_bytes().as_slice()).bind(death.channel_id().as_bytes().as_slice())
+                .bind(fence.character_id.as_bytes().as_slice()).bind(death.world_id().as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
                 .bind(death.scope_ownership_generation().get().to_string()).bind(i64::from(death.actor_local_id())).bind(death.actor_local_generation().to_string()).bind(ids).execute(&mut *tx).await?;
             tutorial_progress_in_transaction(&mut tx,fence.character_id,Some((stored.version,next.progress))).await?;
             commit_semantic_transaction(tx,deadline).await?;

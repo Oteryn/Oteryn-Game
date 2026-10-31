@@ -346,6 +346,35 @@ pub mod fresh {
             identity: Option<(&str, &str)>,
             now: i64,
         ) -> TestResult<FreshAdmissionCommitRequestV1> {
+            self.request_for_nonce(session, transport, identity, None, now)
+        }
+        /// Pager qualification needs independent real admissions in one database.
+        /// Reuse this fixture's signed grant, verifier and claim-transition owner;
+        /// never clone a committed session or its membership rows.
+        pub(crate) fn activity_room_request(
+            &self,
+            session: GameSessionId,
+            transport: AuthenticatedTransportRefV1,
+            character: &str,
+            nonce: [u8; 32],
+            now: i64,
+        ) -> TestResult<FreshAdmissionCommitRequestV1> {
+            self.request_for_nonce(
+                session,
+                transport,
+                Some((&self.current.account_id, character)),
+                Some(nonce),
+                now,
+            )
+        }
+        fn request_for_nonce(
+            &self,
+            session: GameSessionId,
+            transport: AuthenticatedTransportRefV1,
+            identity: Option<(&str, &str)>,
+            nonce: Option<[u8; 32]>,
+            now: i64,
+        ) -> TestResult<FreshAdmissionCommitRequestV1> {
             let header = r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#;
             let mut payload: serde_json::Value = serde_json::from_str(&fresh_payload())?;
             if let Some((account, character)) = identity {
@@ -355,6 +384,11 @@ pub mod fresh {
                     .encode([8; 32])
                     .into();
                 payload["attempt_ref"] = "00000000-0000-7000-8000-000000000002".into();
+            }
+            if let Some(nonce) = nonce {
+                payload["jti"] = base64::engine::general_purpose::URL_SAFE_NO_PAD
+                    .encode(nonce)
+                    .into();
             }
             payload["scope_ownership_generation"] =
                 self.current.scope_ownership_generation.to_string().into();

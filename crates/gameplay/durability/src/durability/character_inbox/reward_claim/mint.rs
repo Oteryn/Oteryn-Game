@@ -410,6 +410,7 @@ async fn mint_inbox(
         destination: None,
         before_semantically_absent: true,
         source: Some(OneItemRewardClaimCauseV1 {
+            boss_reward: None,
             typed_cause: context.typed_cause().into(),
             content_revision: frozen.request.content_revision.clone(),
             ruleset_revision: frozen.request.ruleset_revision.clone(),

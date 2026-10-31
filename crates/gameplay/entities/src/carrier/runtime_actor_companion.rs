@@ -315,9 +315,8 @@ impl ChannelRuntimeV1 {
             oteryn_gameplay_domain::domain::carrier_values::CarrierError::CapacityArithmeticOverflow,
         )?;
         let actor = ExactActorRef(
-            oteryn_gameplay_foundation::foundation::ActorRef::from_owner_parts(
-                self.binding.world_id,
-                self.binding.channel_id,
+            oteryn_gameplay_foundation::foundation::ActorRef::from_scoped_owner_parts(
+                self.binding.runtime_scope,
                 self.binding.scope_generation,
                 ActorLocalId(local),
                 ActorLocalGeneration(generation),
@@ -765,8 +764,7 @@ impl ChannelRuntimeV1 {
         else {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::NotCreature);
         };
-        if actor.runtime_scope()
-            != RuntimeScopeRefV1::channel(self.binding.world_id, self.binding.channel_id)
+        if actor.runtime_scope() != self.binding.runtime_scope
             || actor.scope_generation() != self.binding.scope_generation
         {
             return Err(oteryn_gameplay_domain::domain::carrier_values::CarrierError::WrongScope);
@@ -821,9 +819,8 @@ impl ChannelRuntimeV1 {
                     oteryn_gameplay_domain::domain::carrier_values::CarrierError::CapacityArithmeticOverflow
                 })?;
                 let actor = ExactActorRef(
-                    oteryn_gameplay_foundation::foundation::ActorRef::from_owner_parts(
-                        self.binding.world_id,
-                        self.binding.channel_id,
+                    oteryn_gameplay_foundation::foundation::ActorRef::from_scoped_owner_parts(
+                        self.binding.runtime_scope,
                         self.binding.scope_generation,
                         ActorLocalId(local),
                         ActorLocalGeneration(*generation),
@@ -859,9 +856,8 @@ impl ChannelRuntimeV1 {
                 && state.policy.is_familiar
                 && *health == 0
             {
-                let actor = ExactActorRef(oteryn_gameplay_foundation::foundation::ActorRef::from_owner_parts(
-                    self.binding.world_id,
-                    self.binding.channel_id,
+                let actor = ExactActorRef(oteryn_gameplay_foundation::foundation::ActorRef::from_scoped_owner_parts(
+                self.binding.runtime_scope,
                     self.binding.scope_generation,
                     ActorLocalId(
                         u32::try_from(index + 1)

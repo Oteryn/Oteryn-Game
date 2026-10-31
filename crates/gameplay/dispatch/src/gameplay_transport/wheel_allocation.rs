@@ -1,6 +1,6 @@
 //! WHEEL-LIVE-1 client allocation boundary.
 use super::{ComposedFreshAdmission, connection::AdmittedSession};
-use crate::foundation::RuntimeScopeRefV1;
+
 use oteryn_protocol_oteryn::wheel as wire;
 
 #[derive(Debug)]
@@ -41,9 +41,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 || item_fence.connection_generation.get()
                     != admitted.continuity.connection_generation
                 || admitted.world_id != binding.world_id()
-                || admitted.channel_id != binding.channel_id()
-                || item_fence.runtime_scope
-                    != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+                || Some(admitted.channel_id) != binding.channel_id()
+                || item_fence.runtime_scope != binding.runtime_scope()
                 || item_fence.scope_ownership_generation != binding.scope_generation()
                 || runtime.owner_fence().is_err()
                 || !admitted.runtime_actor.is_some_and(|actor| {

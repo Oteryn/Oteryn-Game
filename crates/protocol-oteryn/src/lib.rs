@@ -13,6 +13,7 @@
 // Keep sorted by module name; insert in order, never append.
 pub mod account_achievements;
 pub mod achievement_notices;
+pub mod activity_scope;
 pub mod actor_condition_snapshot_candidate;
 pub mod actor_spell;
 pub mod actor_spell_item_v2;
@@ -25,7 +26,9 @@ pub mod atelier;
 pub mod attack;
 pub mod bed;
 pub mod bestiary;
+pub mod boss_difficulty;
 pub mod boss_encounter;
+pub mod boss_rewards;
 pub mod capability_tables;
 pub mod channel_list;
 pub mod character_info;

@@ -179,7 +179,9 @@ where
             Some(end) => (end, true),
             // A shutdown drain is not evidence of lost playable control.
             None => (
-                ConnectionEnd::AdmittedThenDisconnected(admitted),
+                ConnectionEnd::AdmittedThenDisconnected(
+                    authority.current_activity_connection(admitted),
+                ),
                 drain.and_then(|d| d.reset()).is_some(),
             ),
         },
@@ -230,6 +232,29 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
     lost: LostControl,
     shutdown: &CancellationToken,
 ) {
+    // Cancellation may fall between durable handoff and barrier publication.
+    // Resolve retained owner work before losing control of an exact successor.
+    let settle = async {
+        let mut backoff = RECONCILE_BACKOFF;
+        loop {
+            match authority.settle_activity_connection(lost.session).await {
+                Ok(session) => break session,
+                Err(()) => {
+                    tokio::time::sleep(backoff).await;
+                    backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                }
+            }
+        }
+    };
+    let Some(session) = first(settle, shutdown.cancelled()).await else {
+        return;
+    };
+    let lost = LostControl { session, ..lost };
+    let scoped = match authority.resolve_native_scope(lost.session).await {
+        Ok(value) => value,
+        Err(()) => return,
+    };
+    let authority = scoped.as_ref().unwrap_or(authority);
     let lifecycle = async {
         let mut wait = lost.wait;
         let mut backoff = RECONCILE_BACKOFF;

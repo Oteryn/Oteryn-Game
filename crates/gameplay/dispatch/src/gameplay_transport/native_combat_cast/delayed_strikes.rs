@@ -63,7 +63,14 @@ pub(super) fn facts(
             character: atom(&owned.binding().character),
             session_generation: owned.binding().connection_generation,
             world: atom(runtime.binding().world_id().as_bytes()),
-            channel: atom(runtime.binding().channel_id().as_bytes()),
+            channel: match runtime.binding().runtime_scope() {
+                crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                    atom(channel_id.as_bytes())
+                }
+                crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => {
+                    atom(&instance_id)
+                }
+            },
         },
         position: f.caster_position,
         inputs: f.inputs,

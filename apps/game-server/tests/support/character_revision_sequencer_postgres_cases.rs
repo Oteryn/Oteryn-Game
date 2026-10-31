@@ -770,8 +770,11 @@ fn death(tag: u8) -> TestResult<CharacterDeathRequest<2>> {
         policy: xp.policy,
         held_blessings: Vec::new(),
         death_cell: DeathCell {
-            world_id: crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
-            channel_id: crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+            // W02 retains this Channel death fixture and every existing loss expectation.
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                crate::foundation::WorldId::decode(&id(42)).map_err(debug)?,
+                crate::foundation::ChannelId::decode(&id(43)).map_err(debug)?,
+            ),
             spatial_position: vec![1, 2, 3, 7],
             map_revision: "map-1".into(),
         },

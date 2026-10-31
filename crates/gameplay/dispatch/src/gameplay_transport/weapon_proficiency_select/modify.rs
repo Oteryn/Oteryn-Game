@@ -6,13 +6,13 @@
 //! backpack entries, then nested containers breadth first; an orb is never equipped) and the
 //! writer burns it in the receipt's transaction (1C §5).
 use super::*;
-use crate::durability::item_use::proficiency_orb::LUNAR_ASCENSION_ORB;
-use crate::durability::item_use::{ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::durability::character_proficiency_modification::{
     ProficiencyModificationBoundRevisions, ProficiencyModificationCommand,
     ProficiencyModificationContext, ProficiencyModificationOutcome, ProficiencyShapingSource,
     proficiency_shaping_key,
 };
+use crate::durability::item_use::proficiency_orb::LUNAR_ASCENSION_ORB;
+use crate::durability::item_use::{ItemUseFlaskPlan, ItemUseKind, ItemUseRequest};
 use crate::gameplay_transport::weapon_proficiency::{
     ProductionProficiencyCatalogue, ProductionProficiencyShaping, ProficiencyAttackEffects,
 };
@@ -21,13 +21,14 @@ use oteryn_gameplay_domain::domain::weapon_proficiency::{
     ProficiencyModificationCommandKind, ProficiencyModificationResult,
 };
 use oteryn_protocol_oteryn::weapon_proficiency::{
-    ModificationOperation, ModificationReply, ModificationRequest, ModificationResult,
-    ModifiedSlot,
+    ModificationOperation, ModificationReply, ModificationRequest, ModificationResult, ModifiedSlot,
 };
 
 const fn kind(operation: ModificationOperation) -> ProficiencyModificationCommandKind {
     match operation {
-        ModificationOperation::Modify { level } => ProficiencyModificationCommandKind::Modify { level },
+        ModificationOperation::Modify { level } => {
+            ProficiencyModificationCommandKind::Modify { level }
+        }
         ModificationOperation::RankUp => ProficiencyModificationCommandKind::RankUp,
         ModificationOperation::OrbRank => ProficiencyModificationCommandKind::OrbRank,
         ModificationOperation::ReshapeOffer => ProficiencyModificationCommandKind::ReshapeOffer,
@@ -120,7 +121,12 @@ const fn refused(result: ModificationResult) -> Option<ModificationReply> {
 }
 
 /// A UUIDv7-shaped identity of one modification, bound to its CommandRef and actor (1B §6.1).
-fn derived(label: &[u8], actor: ExactActorRef, session: GameSessionId, command_id: u64) -> [u8; 16] {
+fn derived(
+    label: &[u8],
+    actor: ExactActorRef,
+    session: GameSessionId,
+    command_id: u64,
+) -> [u8; 16] {
     let digest = Sha256::new()
         .chain_update(label)
         .chain_update(actor.placement_identity())
@@ -305,11 +311,7 @@ pub(in crate::gameplay_transport) async fn execute(
         let mut runtime = owner.runtime.lock().await;
         if runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()
-            || fence.runtime_scope
-                != crate::foundation::RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            || fence.runtime_scope != runtime.binding().runtime_scope()
             || fence.scope_ownership_generation != runtime.binding().scope_generation()
         {
             return None;

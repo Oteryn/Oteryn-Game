@@ -35,10 +35,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     context;
                 let mut tx = begin_spell_owner_transaction(holder, deadline).await?;
                 let binding = runtime.binding();
-                let scope = crate::foundation::RuntimeScopeRefV1::channel(
-                    binding.world_id(),
-                    binding.channel_id(),
-                );
+                let scope = binding.runtime_scope();
                 let authority = assert_spell_item_scope_in_transaction(
                     &mut tx,
                     permit,

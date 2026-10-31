@@ -1,8 +1,7 @@
 //! Conditions consume the sole native actor-slot store. No transport condition collection.
 //! Runtime lock precedes the existing ChannelSpellStates HP lock at every composition call.
 use crate::foundation::{
-    ActorConditionPlan, ConditionOwnerError, ConditionSource, RuntimeScopeRefV1, RuntimeWorkStamp,
-    ScopeRuntimeFence,
+    ActorConditionPlan, ConditionOwnerError, ConditionSource, RuntimeWorkStamp, ScopeRuntimeFence,
 };
 use crate::foundation::{ChannelRuntimeV1, ExactActorRef, GameSessionId};
 
@@ -52,10 +51,8 @@ pub fn current_owner(
     stamp: RuntimeWorkStamp,
 ) -> bool {
     let binding = runtime.binding();
-    fence.is_current_for_scope(
-        RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-        binding.scope_generation(),
-    ) && fence.accepts_stamp(stamp)
+    fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+        && fence.accepts_stamp(stamp)
 }
 /// Immutable source-qualified value projection, not actor or content authority.
 #[derive(Debug, Clone, PartialEq, Eq)]

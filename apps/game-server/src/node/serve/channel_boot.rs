@@ -12,6 +12,8 @@ pub(super) struct ChannelBoot<'a> {
 }
 
 pub(super) struct PreparedChannel {
+    pub(super) activity_templates:
+        Vec<crate::content::bosses::activity_template::QualifiedActivityRoomTemplate>,
     pub(super) active_content: ContentActivationController,
     pub(super) qualified_room: crate::content::QualifiedNativeEntryRoom,
     pub(super) movement_cells: crate::content::NativeEntryMovementCells,
@@ -52,6 +54,28 @@ pub(super) async fn prepare_channel(
     let (active_content, content) =
         activate_content(root, material.world, material.channel, reset_epoch).await?;
     let qualified_room = content.qualified_room().clone();
+    let candidates = crate::content::bosses::activity_template::captured_boss_levers()
+        .map_err(|_| BootError::ContentActivation("Crystal boss source capture"))?;
+    let (activity_templates, activity_diagnostics) = active_content
+        .qualify_initial_activity_template(
+            &qualified_room,
+            &config.readiness.content_revision,
+            &candidates,
+        );
+    for diagnostic in activity_diagnostics {
+        event(&format!(
+            "event=activity_template state=unavailable source={} reason={:?}",
+            diagnostic.path, diagnostic.reason
+        ));
+    }
+    for template in &activity_templates {
+        event(&format!(
+            "event=activity_template state=qualified key={} revision={} source={}",
+            template.template_key(),
+            template.template_revision(),
+            template.source_path()
+        ));
+    }
     let (channel_pin, movement_cells, door_content, spawn_source) = content.into_channel_parts();
     // Spell cast §3 (SPELL-D1): the V1 spell book is loaded with the Content activation, before
     // the Channel runtime; a book that does not load refuses readiness.
@@ -270,6 +294,7 @@ pub(super) async fn prepare_channel(
         config.scope.preproduction_actor_capacity
     ));
     Ok(Some(PreparedChannel {
+        activity_templates,
         active_content,
         qualified_room,
         movement_cells,

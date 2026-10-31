@@ -1,11 +1,11 @@
 //! Conditions consume the sole native actor-slot store.
 use super::*;
+#[cfg(test)]
+use crate::foundation::ConditionOwnerError;
 use crate::foundation::{
     ActorConditionTransition, ApplicationFacts, AttributeModifiers, ConditionDefinition,
     ConditionSource, ConditionType, RuntimeWorkStamp, ScopeRuntimeFence, StatusKind,
 };
-#[cfg(test)]
-use crate::foundation::{ConditionOwnerError, RuntimeScopeRefV1};
 use crate::monster_combat_lane::native_conditions::*;
 
 impl ChannelSpellStates {
@@ -675,11 +675,9 @@ mod native_composite_tests {
             )
             .unwrap();
         let b = r.binding();
-        let (fence, stamp) = crate::foundation::crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-            b.scope_generation(),
-        )
-        .unwrap();
+        let (fence, stamp) =
+            crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+                .unwrap();
         (r, states, a, g, caster, fence, stamp)
     }
     fn facts(root: &GameplayDecisionRoot) -> ApplicationFacts<'_> {

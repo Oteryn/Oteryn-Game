@@ -89,6 +89,20 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         actor: ExactActorRef,
     ) -> GraceExpiryResult {
+        // The caller already proved TERMINAL. Complete refusal-cache cleanup
+        // before removing the actor, so cancellation still leaves the existing
+        // release owner able to retry; never drop an unknown physical token.
+        if self
+            .prune_refused_activity_attempts(
+                crate::gameplay_transport::activity_runtime::ActivityRefusalPrune::Terminal(
+                    session,
+                ),
+            )
+            .await
+            .is_err()
+        {
+            return GraceExpiryResult::Unknown;
+        }
         let removed = self
             .runtime
             .lock()
@@ -96,6 +110,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .remove_terminal_session(session, actor);
         match removed {
             Ok(()) => {
+                self.activity_runtimes
+                    .forget_terminal_connection(session, actor);
                 self.states.training.forget(session).await;
                 self.states.forget_session(session);
                 GraceExpiryResult::Released

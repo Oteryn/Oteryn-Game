@@ -37,15 +37,11 @@ fn number(s: String) -> Result<u64> {
 async fn owner(
     tx: &mut Transaction<'_, Postgres>,
     authority: &SpellItemAuthority,
-) -> Result<([u8; 16], [u8; 16])> {
+) -> Result<([u8; 16], Option<[u8; 16]>)> {
     check_transaction(tx, authority).await?;
-    let RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = authority.runtime_scope()
-    else {
-        return Err(reject("party channel authority"));
-    };
+    let scope = authority.runtime_scope();
+    let world_id = scope.world_id();
+    let channel_id = scope.channel_id();
     // One strongly ordered World owner across every Channel. The independently current acting
     // Channel/session fence is already held; no actor-supplied World or prepared evidence grants it.
     sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))")
@@ -58,7 +54,10 @@ async fn owner(
         )
         .execute(&mut **tx)
         .await?;
-    Ok((*world_id.as_bytes(), *channel_id.as_bytes()))
+    Ok((
+        *world_id.as_bytes(),
+        channel_id.map(|channel| *channel.as_bytes()),
+    ))
 }
 /// Strong read under the actual World owner. Explicit SQL absence means solo; a missing
 /// Character/World/source authority is an error. Cache absence never supplies this observation.
@@ -146,8 +145,7 @@ pub async fn read_world_party_views_for_scope_in_transaction(
     runtime: &crate::foundation::ChannelRuntimeV1,
 ) -> Result<Vec<PartySnapshot>> {
     super::spell_item_transaction::check_scope_transaction(tx, scope).await?;
-    if scope.world_bytes() != *runtime.binding().world_id().as_bytes()
-        || scope.channel_bytes() != *runtime.binding().channel_id().as_bytes()
+    if scope.runtime_scope() != runtime.binding().runtime_scope()
         || scope.generation() != runtime.binding().scope_generation().get()
     {
         return Err(reject("party refresh scope binding"));
@@ -557,8 +555,13 @@ async fn apply_world_party_command_inner(
                     {
                         disposition = "NOT_INVITED"
                     } else if party_aggression_conflict(
-                        tx, character, uuid(r.try_get("leader_character_id")?)?, Some(requested),
-                    ).await? {
+                        tx,
+                        character,
+                        uuid(r.try_get("leader_character_id")?)?,
+                        Some(requested),
+                    )
+                    .await?
+                    {
                         disposition = "AGGRESSION_CONFLICT"
                     } else {
                         let (presence, presence_channel) =
@@ -685,8 +688,8 @@ async fn apply_world_party_command_inner(
                     .iter()
                     .find(|member| member.character == character)
                     .is_some_and(|member| match member.presence {
-                        PartyPresence::Channel => hidden,
-                        PartyPresence::Hidden => !hidden,
+                        PartyPresence::Channel => hidden || channel.is_none(),
+                        PartyPresence::Hidden => !hidden && channel.is_some(),
                         PartyPresence::Offline => true,
                     });
                 // The effective default is PARTY. Any actual authorization change, including
@@ -748,7 +751,8 @@ pub(super) async fn remove_terminal_member_in_transaction(
     let character = uuid(row.try_get("character_id")?)?;
     sqlx::query("SELECT pg_advisory_xact_lock(45,hashtext($1))")
         .bind(world.iter().map(|b| format!("{b:02x}")).collect::<String>())
-        .execute(&mut **tx).await?;
+        .execute(&mut **tx)
+        .await?;
     let party: Option<String> = sqlx::query_scalar("SELECT party_id::text FROM game_party_members WHERE character_id=encode($1,'hex')::uuid FOR UPDATE")
         .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
     if let Some(party) = party {
@@ -837,12 +841,12 @@ pub async fn initialize_party_social_baseline_in_transaction(
 async fn initial_member_presence(
     tx: &mut Transaction<'_, Postgres>,
     character: [u8; 16],
-    channel: [u8; 16],
+    channel: Option<[u8; 16]>,
 ) -> Result<(i16, Option<Vec<u8>>)> {
     let setting: Option<i16> = sqlx::query_scalar("SELECT channel_visibility FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
         .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
     match setting {
-        None | Some(1) => Ok((1, Some(channel.to_vec()))),
+        None | Some(1) => Ok(channel.map_or((2, None), |channel| (1, Some(channel.to_vec())))),
         Some(2) => Ok((2, None)),
         _ => Err(reject("stored party channel visibility")),
     }
@@ -851,18 +855,24 @@ async fn initial_member_presence(
 async fn refresh_current_member_presence(
     tx: &mut Transaction<'_, Postgres>,
     world: [u8; 16],
-    channel: [u8; 16],
+    channel: Option<[u8; 16]>,
     character: [u8; 16],
 ) -> Result<()> {
     let setting:Option<i16>=sqlx::query_scalar("SELECT channel_visibility FROM game_character_social_settings WHERE character_id=encode($1,'hex')::uuid FOR SHARE")
         .bind(character.as_slice()).fetch_optional(&mut **tx).await?;
     let state = match setting {
-        None | Some(1) => 1_i16,
+        None | Some(1) => {
+            if channel.is_some() {
+                1_i16
+            } else {
+                2_i16
+            }
+        }
         Some(2) => 2,
         _ => return Err(reject("current party presence consent unavailable")),
     };
     let target = if state == 1 {
-        Some(channel.to_vec())
+        channel.map(|channel| channel.to_vec())
     } else {
         None
     };
@@ -950,10 +960,7 @@ impl super::DurabilityRoot {
             .record_for(self)
             .map_err(|_| reject("party refresh recovery authority"))?;
         let node = node.clone();
-        let scope = RuntimeScopeRefV1::channel(
-            runtime.binding().world_id(),
-            runtime.binding().channel_id(),
-        );
+        let scope = runtime.binding().runtime_scope();
         let generation = runtime.binding().scope_generation().get();
         let mut context = (self, runtime, permit);
         self.try_issue_semantic_pass()?
@@ -997,10 +1004,7 @@ impl super::DurabilityRoot {
             .record_for(self)
             .map_err(|_| reject("party presence recovery authority"))?;
         let node = node.clone();
-        let scope = RuntimeScopeRefV1::channel(
-            runtime.binding().world_id(),
-            runtime.binding().channel_id(),
-        );
+        let scope = runtime.binding().runtime_scope();
         let generation = runtime.binding().scope_generation().get();
         let mut context = (self, runtime, permit);
         self.try_issue_semantic_pass()?

@@ -114,7 +114,12 @@ fn resume_scenario(history_read_fails: bool, conditions: bool, delayed_reads: bo
         false,
     ))?;
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        rt.block_on(resume_case(&h, history_read_fails, conditions, delayed_reads))
+        rt.block_on(resume_case(
+            &h,
+            history_read_fails,
+            conditions,
+            delayed_reads,
+        ))
     }));
     let cleanup = rt.block_on(h.cleanup());
     match result {
@@ -131,14 +136,17 @@ async fn wait_for_resume_barrier(
     signal: &tokio::sync::Notify,
 ) -> TestResult {
     let mut notified = std::pin::pin!(signal.notified());
-    tokio::time::timeout(std::time::Duration::from_secs(10), std::future::poll_fn(|cx| {
-        use std::future::Future;
-        use std::task::Poll;
-        if let Poll::Ready(early) = resume.as_mut().poll(cx) {
-            return Poll::Ready(Err(format!("resume ended before barrier: {early:?}")));
-        }
-        notified.as_mut().poll(cx).map(Ok)
-    }))
+    tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        std::future::poll_fn(|cx| {
+            use std::future::Future;
+            use std::task::Poll;
+            if let Poll::Ready(early) = resume.as_mut().poll(cx) {
+                return Poll::Ready(Err(format!("resume ended before barrier: {early:?}")));
+            }
+            notified.as_mut().poll(cx).map(Ok)
+        }),
+    )
     .await
     .map_err(|_| "resume did not reach barrier before deadline")??;
     Ok(())
@@ -203,10 +211,12 @@ async fn resume_case(
         delay: delayed_reads,
         ..Default::default()
     });
-    let mut resume = std::pin::pin!(crate::gameplay_transport::resume::PREPARE_TEST_BARRIER.scope(
-        barrier.clone(),
-        resume_same_session(&owner, admitted.game_session_id, &token, 10)
-    ));
+    let mut resume = std::pin::pin!(
+        crate::gameplay_transport::resume::PREPARE_TEST_BARRIER.scope(
+            barrier.clone(),
+            resume_same_session(&owner, admitted.game_session_id, &token, 10)
+        )
+    );
     if delayed_reads {
         wait_for_resume_barrier(resume.as_mut(), &barrier.entered).await?;
         // Keep a real root pass pending across the entire former 500 ms barrier.
@@ -818,7 +828,7 @@ async fn drive(
 // Initial authority fixture: the composition owns these two guards before the
 // transfer. The runtime readiness still comes from the native assignment API.
 // Negative cases above never derive their current facts from the transfer record.
-async fn prepare_owned_session(h: &Harness) -> TestResult {
+pub(super) async fn prepare_owned_session(h: &Harness) -> TestResult {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::foundation::admission_authority_publication::*;
     let now: i64 =
@@ -872,8 +882,8 @@ async fn prepare_owned_session(h: &Harness) -> TestResult {
     Ok(())
 }
 
-struct RecoverySource {
-    evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
+pub(super) struct RecoverySource {
+    pub(super) evidence: crate::gameplay_transport::fresh_evidence::FreshEvidenceSource,
     task: tokio::task::JoinHandle<()>,
 }
 impl Drop for RecoverySource {
@@ -882,7 +892,7 @@ impl Drop for RecoverySource {
     }
 }
 impl RecoverySource {
-    async fn start(h: &Harness) -> TestResult<Self> {
+    pub(super) async fn start(h: &Harness) -> TestResult<Self> {
         use crate::durability::native_admission_source::{
             DescriptorRegistration, FreshStoreProvenance,
         };
@@ -1014,7 +1024,7 @@ impl RecoverySource {
             task,
         })
     }
-    fn token(nonce: u8) -> TestResult<String> {
+    pub(super) fn token(nonce: u8) -> TestResult<String> {
         use base64::Engine;
         use ed25519_dalek::Signer;
         let now = std::time::SystemTime::now()

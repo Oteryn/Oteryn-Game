@@ -19,14 +19,14 @@ use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 use tokio::time::Instant;
 
-struct ClockOwner<'a, 'f, 's> {
-    owner: &'a ComposedFreshAdmission<'a, 'f, 's>,
+struct ClockOwner<'owner, 'a, 'f, 's> {
+    owner: &'owner ComposedFreshAdmission<'a, 'f, 's>,
     now: Cell<Instant>,
     replies: RefCell<Vec<LogoutReply>>,
     relocate_on_logout: Cell<bool>,
 }
 
-impl FreshAdmissionAuthority for ClockOwner<'_, '_, '_> {
+impl FreshAdmissionAuthority for ClockOwner<'_, '_, '_, '_> {
     async fn admit(
         &self,
         _: FreshAdmissionAttempt<'_>,
@@ -217,7 +217,9 @@ fn case(protected: bool, stale: bool) -> TestResult {
         let mut owner = deps.owner(&h, &character);
         owner.active_generation = Some(active);
         owner.movement_cells = &cells;
-        owner.states.gameplay_idle_policy = GameplayIdlePolicy {
+        std::sync::Arc::get_mut(&mut owner.states)
+            .expect("W02: isolated fixture state")
+            .gameplay_idle_policy = GameplayIdlePolicy {
             warning_after_ms: 15,
             removal_after_ms: 16,
         };

@@ -7,9 +7,7 @@ use crate::creature_damage_spell::*;
 use crate::foundation::ScopeOwnershipGeneration;
 use crate::foundation::owner_timer::SemanticTimeMicros;
 use crate::foundation::owner_timer::{OwnerClock, VirtualOwnerClock};
-use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, RuntimeScopeRefV1, RuntimeWorkStamp, ScopeRuntimeFence,
-};
+use crate::foundation::{ChannelRuntimeV1, ExactActorRef, RuntimeWorkStamp, ScopeRuntimeFence};
 use crate::foundation::{GameSessionId, MovementLocalPosition};
 use crate::gameplay_transport::actor_spell::{
     ChannelSpellStates,
@@ -49,11 +47,8 @@ fn draft(r: &ChannelRuntimeV1) -> ProjectV2Draft {
 }
 fn fence(r: &ChannelRuntimeV1) -> (ScopeRuntimeFence, RuntimeWorkStamp) {
     let b = r.binding();
-    crate::foundation::crystal_timer_fixture(
-        RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
-        b.scope_generation(),
-    )
-    .expect("qualified fixture")
+    crate::foundation::crystal_timer_fixture(b.runtime_scope(), b.scope_generation())
+        .expect("qualified fixture")
 }
 fn proposal(a: ExactActorRef, s: &SourceCallbackCast, sequence: u64) -> ProfileAbilityProposal {
     let atom = format!("actor:{}", hex(&a.placement_identity()));
@@ -471,7 +466,7 @@ fn every_source_callback_missing_facts_provenance_scope_dead_parent_refuses() {
         assert!(SourceCallbackCast::qualify(&d, &cr, case.index, source.content).is_err());
         let b = r.binding();
         let (other_f, other_stamp) = crate::foundation::crystal_timer_fixture(
-            RuntimeScopeRefV1::channel(b.world_id(), b.channel_id()),
+            b.runtime_scope(),
             ScopeOwnershipGeneration::new(2).expect("qualified fixture"),
         )
         .expect("qualified fixture");

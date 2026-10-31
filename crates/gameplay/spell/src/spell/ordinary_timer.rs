@@ -441,10 +441,7 @@ mod tests {
                 .is_err()
         );
         let mut owner = SpellTimerOwner::new(
-            RuntimeScopeRefV1::channel(
-                runtime.binding().world_id(),
-                runtime.binding().channel_id(),
-            ),
+            runtime.binding().runtime_scope(),
             runtime.binding().scope_generation(),
         )
         .unwrap();

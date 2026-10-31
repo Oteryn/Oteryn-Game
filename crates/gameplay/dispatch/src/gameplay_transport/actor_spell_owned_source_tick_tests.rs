@@ -524,8 +524,13 @@ fn environment_tick_on_qualified_pz_tile_respects_elements_and_records_lethal_da
         panic!("qualified entry content");
     };
     let (bytes, pins) = teleport_bundle();
-    let Ok(map) = crate::map::boot::boot(&bytes, &floor_pins(pins), world, channel, floor_items)
-    else {
+    let Ok(map) = crate::map::boot::boot(
+        &bytes,
+        &floor_pins(pins),
+        world,
+        channel.expect("W02: pinned Channel fixture"),
+        floor_items,
+    ) else {
         panic!("qualified bundle");
     };
     let Ok(cells) = map.movement_cells(room.movement_cells()) else {
@@ -555,7 +560,7 @@ fn environment_tick_on_qualified_pz_tile_respects_elements_and_records_lethal_da
         );
         let Ok(mut runtime) = ChannelRuntimeV1::from_committed_assignment(
             world,
-            channel,
+            channel.expect("W02: pinned Channel fixture"),
             node,
             1,
             1,

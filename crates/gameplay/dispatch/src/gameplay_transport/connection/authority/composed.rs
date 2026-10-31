@@ -5,6 +5,47 @@ use crate::gameplay_transport::item_view::ItemKey;
 use crate::gameplay_transport::*;
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn resolve_native_scope(&self, admitted: AdmittedSession) -> Result<Option<Self>, ()> {
+        self.resolve_runtime_view(admitted).await
+    }
+    async fn boss_activity_command(
+        &self,
+        admitted: AdmittedSession,
+        id: u64,
+        kind: u32,
+        payload: &[u8],
+    ) -> Option<(crate::foundation::CommandStatus, Vec<u8>)> {
+        self.boss_activity_wire(admitted, id, kind, payload).await
+    }
+    async fn settle_activity_connection(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<AdmittedSession, ()> {
+        let admitted = self.settle_native_activity_connection(admitted).await?;
+        self.settle_native_return_connection(admitted).await
+    }
+    fn current_activity_connection(&self, admitted: AdmittedSession) -> AdmittedSession {
+        self.activity_runtimes.current_connection(admitted)
+    }
+    fn remember_activity_connection(&self, admitted: AdmittedSession) -> bool {
+        self.activity_runtimes.remember(admitted).is_ok()
+    }
+    async fn pending_activity_switch(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<crate::gameplay_transport::activity_runtime::ActivityConnectionSwitch>, ()>
+    {
+        self.activity_runtimes.pending_switch(admitted)
+    }
+    fn finish_activity_switch(
+        &self,
+        source: AdmittedSession,
+        destination: AdmittedSession,
+    ) -> bool {
+        self.activity_runtimes
+            .finish_switch(source, destination)
+            .is_ok()
+    }
     async fn sleep_in_bed(
         &self,
         actor: ExactActorRef,
@@ -25,7 +66,34 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.use_bundle_key(actor, command, key, &door).await
     }
     mechanic_composed_methods!();
+    async fn activity_transfer_input(&self, admitted: AdmittedSession) -> bool {
+        self.note_activity_input(admitted).await
+    }
+    async fn activity_scope_snapshot(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<Option<Vec<u8>>, ()> {
+        self.project_activity_scope(admitted).await
+    }
+
     async fn house_transfer_input(&self, admitted: AdmittedSession) -> bool {
+        if let (Some(actor), Some(fence), Some(controller)) = (
+            admitted.runtime_actor,
+            admitted.item_fence,
+            admitted.controller,
+        ) && matches!(fence.runtime_scope, RuntimeScopeRefV1::Instance { .. })
+            && actor.runtime_scope() == fence.runtime_scope
+        {
+            let Ok((current, _)) = FreshAdmissionStore::from_root(self.root.clone())
+                .current_session_at(admitted.game_session_id)
+                .await
+            else {
+                return false;
+            };
+            return item_fence_of(current) == Some(fence)
+                && current.session_state() == GameSessionState::Active
+                && current.current_transport() == Some(controller.transport);
+        }
         if !admitted
             .continuity
             .selected_capabilities
@@ -844,7 +912,16 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         wait: Duration,
         reset: Option<&crate::durability::world_reset::RetiringWorldReset>,
     ) -> ControlLossResult {
-        self.lose_control_for_cause(admitted, wait, reset).await
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return ControlLossResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return ControlLossResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.lose_control_for_cause(admitted, wait, reset).await
     }
 
     async fn enter_input(&self, session: GameSessionId) -> Option<input_gate::InputPermit<'_>> {
@@ -871,11 +948,29 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     /// The abandoned-session release follows the same fence, commit and settle steps as grace
     /// expiry (CHARM-DESC-FENCE-LEASE §3 item 1), under one transition token minted for it.
     async fn release_abandoned(&self, admitted: AdmittedSession) -> GraceExpiryResult {
-        self.release_abandoned_session(admitted).await
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.release_abandoned_session(admitted).await
     }
 
     async fn reconcile_terminal(&self, admitted: AdmittedSession) -> GraceExpiryResult {
-        self.reconcile_terminal_session(admitted).await
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.reconcile_terminal_session(admitted).await
     }
 
     async fn offline_training(
@@ -922,9 +1017,28 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
     async fn logout(&self, admitted: AdmittedSession) -> logout::LogoutReply {
         self.logout_session(admitted).await
     }
+    async fn logout_command(
+        &self,
+        admitted: AdmittedSession,
+        command_id: u64,
+    ) -> logout::LogoutReply {
+        self.logout_activity_command(admitted, command_id).await
+    }
+    async fn logout_idle(&self, admitted: AdmittedSession) -> logout::LogoutReply {
+        self.logout_activity_idle(admitted).await
+    }
 
     async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
-        self.expire_session_control_loss(admitted).await
+        let admitted = match self.settle_activity_connection(admitted).await {
+            Ok(admitted) => admitted,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let scoped = match self.resolve_runtime_view(admitted).await {
+            Ok(scoped) => scoped,
+            Err(()) => return GraceExpiryResult::Unknown,
+        };
+        let owner = scoped.as_ref().unwrap_or(self);
+        owner.expire_session_control_loss(admitted).await
     }
 
     async fn admit(

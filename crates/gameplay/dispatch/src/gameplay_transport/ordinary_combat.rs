@@ -2340,8 +2340,7 @@ pub(in crate::gameplay_transport) async fn prepare_due(
         || authority.character_id_bytes() != b.character
         || authority.compatible_content_digest() != content.source_digest()
         || b.content_digest != runtime.content_pin().server_artifact_digest()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id())
+        || authority.runtime_scope() != binding.runtime_scope()
         || authority.scope_generation() != binding.scope_generation().get()
         || !spell.aggressive
         || spell.chain.is_none()

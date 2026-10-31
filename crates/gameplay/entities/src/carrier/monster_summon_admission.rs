@@ -10,13 +10,8 @@ impl ChannelRuntimeV1 {
         at: MovementLocalPosition,
     ) -> Result<ExactActorRef, CarrierError> {
         let b = self.binding();
-        if !current.is_current_for_scope(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(CarrierError::WrongScope);
         }
@@ -136,13 +131,8 @@ impl ChannelRuntimeV1 {
         stamp: oteryn_gameplay_foundation::foundation::RuntimeWorkStamp,
     ) -> Result<usize, CarrierError> {
         let b = self.binding();
-        if !current.is_current_for_scope(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(CarrierError::WrongScope);
         }
@@ -195,13 +185,8 @@ impl ChannelRuntimeV1 {
         actor: ExactActorRef,
     ) -> Result<(), CarrierError> {
         let b = self.binding();
-        if !current.is_current_for_scope(
-            oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                b.world_id(),
-                b.channel_id(),
-            ),
-            b.scope_generation(),
-        ) || !current.accepts_stamp(stamp)
+        if !current.is_current_for_scope(b.runtime_scope(), b.scope_generation())
+            || !current.accepts_stamp(stamp)
         {
             return Err(CarrierError::WrongScope);
         }

@@ -16,6 +16,56 @@ pub struct DepotObservation {
 /// The owning fresh-admission authority. Production composes the real owners;
 /// nothing on the transport side can mark a connection admitted.
 pub trait FreshAdmissionAuthority {
+    /// Select the complete native owner for a committed activity successor.
+    /// Transport fixtures and the existing House custody path keep their owner.
+    fn resolve_native_scope(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<Option<Self>, ()>>
+    where
+        Self: Sized,
+    {
+        async { Ok(None) }
+    }
+    fn boss_activity_command(
+        &self,
+        _admitted: AdmittedSession,
+        _id: u64,
+        _kind: u32,
+        _payload: &[u8],
+    ) -> impl Future<Output = Option<(crate::foundation::CommandStatus, Vec<u8>)>> {
+        async { Some((crate::foundation::CommandStatus::Rejected, Vec::new())) }
+    }
+    fn settle_activity_connection(
+        &self,
+        admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<AdmittedSession, ()>> {
+        async move { Ok(admitted) }
+    }
+    fn current_activity_connection(&self, admitted: AdmittedSession) -> AdmittedSession {
+        admitted
+    }
+    fn remember_activity_connection(&self, _admitted: AdmittedSession) -> bool {
+        true
+    }
+    fn pending_activity_switch(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<
+        Output = Result<
+            Option<crate::gameplay_transport::activity_runtime::ActivityConnectionSwitch>,
+            (),
+        >,
+    > {
+        async { Ok(None) }
+    }
+    fn finish_activity_switch(
+        &self,
+        _source: AdmittedSession,
+        _destination: AdmittedSession,
+    ) -> bool {
+        true
+    }
     mechanic_authority_methods!();
     /// KEYDOOR-1: use a resolved carried/map key on a non-movable map door.
     fn use_key_on_door(
@@ -27,6 +77,16 @@ pub trait FreshAdmissionAuthority {
     ) -> impl Future<Output = Option<UseOutcome>> {
         async { None }
     }
+    fn activity_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
+        async { true }
+    }
+    fn activity_scope_snapshot(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = Result<Option<Vec<u8>>, ()>> {
+        async { Ok(None) }
+    }
+
     fn house_transfer_input(&self, _admitted: AdmittedSession) -> impl Future<Output = bool> {
         async { true }
     }
@@ -1127,6 +1187,21 @@ pub trait FreshAdmissionAuthority {
     /// no session refuse it as `BUSY`, with no effect.
     fn logout(&self, _admitted: AdmittedSession) -> impl Future<Output = LogoutReply> {
         async { LogoutReply::Result(LogoutResult::Busy) }
+    }
+
+    /// The real admitted LOGOUT_INTENT identity, retained through a scope return.
+    /// Existing non-activity authorities keep their original logout behavior.
+    fn logout_command(
+        &self,
+        admitted: AdmittedSession,
+        _command_id: u64,
+    ) -> impl Future<Output = LogoutReply> {
+        self.logout(admitted)
+    }
+
+    /// Called only by the existing elapsed idle timer under its input permit.
+    fn logout_idle(&self, admitted: AdmittedSession) -> impl Future<Output = LogoutReply> {
+        self.logout(admitted)
     }
 
     /// Once the original grace deadline of the recorded loss passes without resumed

@@ -102,7 +102,8 @@ where
                 .held
                 .iter()
                 .any(|(frame, _)| is_logout_command(frame, session.generation));
-            let mut logout = std::pin::pin!(authority.logout(session.admitted));
+            let mut logout =
+                std::pin::pin!(authority.logout_command(session.admitted, command.command_id));
             let reply = loop {
                 let reading = !outcome.lost_while_logging_out
                     && session.held.len() < MAX_FRAMES_HELD_BEHIND_A_BUFFERED_STEP;

@@ -2155,6 +2155,7 @@ dependencies = [
  "oteryn-gameplay-domain",
  "oteryn-gameplay-durability",
  "oteryn-gameplay-economy",
+ "oteryn-gameplay-encounter-rules",
  "oteryn-gameplay-encounters",
  "oteryn-gameplay-entities",
  "oteryn-gameplay-foundation",

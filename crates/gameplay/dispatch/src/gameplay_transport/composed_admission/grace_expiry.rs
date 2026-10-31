@@ -25,12 +25,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         held: &mut Option<FenceHold>,
     ) -> GraceExpiryResult {
-        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+        let Some(actor) = admitted.runtime_actor else {
+            return GraceExpiryResult::NotApplicable;
+        };
+        let Some(account) = self.activity_runtimes.account_for(admitted) else {
             return GraceExpiryResult::NotApplicable;
         };
         let session = admitted.game_session_id;
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let account_id = canonical_uuid(&controller.account_id);
+        let account_id = canonical_uuid(&account);
         // The deadline is fixed, so waiting converges; store failures back off
         // exponentially, and the bounds only guard an owner that never recovers.
         let mut backoff = RECONCILE_BACKOFF;
@@ -42,6 +45,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // One hold across the attempts of an epoch, so a retry is counted once.
         let mut settled_death = None;
         for _ in 0..EXPIRY_ATTEMPTS {
+            // Timeout/defeat may return an offline actor while its original
+            // grace timer sleeps. Retry through the shared registry, retaining
+            // the original deadline and never releasing the terminal source.
+            let current = self.activity_runtimes.current_connection(admitted);
+            if current.game_session_id != admitted.game_session_id
+                || current.item_fence != admitted.item_fence
+            {
+                if let Some(hold) = held.as_mut() {
+                    self.states.fence_holders.release(hold);
+                }
+                *held = None;
+                return GraceExpiryResult::Unknown;
+            }
             let mark = match self
                 .runtime
                 .lock()
@@ -103,6 +119,37 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 tokio::time::sleep(next_backoff()).await;
                 continue;
             }
+            if matches!(actor.runtime_scope(), RuntimeScopeRefV1::Instance { .. }) {
+                // Original deadline, combat hold and death settlement above
+                // remain the existing owner. Return before fencing the actor:
+                // a frozen release cannot also reserve a native transfer.
+                if hold.held {
+                    return GraceExpiryResult::Unknown;
+                }
+                match self
+                    .return_due_activity(
+                        admitted,
+                        crate::durability::activity_handoff::ActivityReturnReason::Logout,
+                    )
+                    .await
+                {
+                    Ok(super::super::native_activity::NativeActivityOutcome::Committed(commit)) => {
+                        if self.publish_activity_commit(&commit).is_err() {
+                            return GraceExpiryResult::Unknown;
+                        }
+                        self.states.fence_holders.release(hold);
+                        *held = None;
+                        // The outer lifecycle resolves the real fresh origin
+                        // owner. It retains the original expired loss deadline.
+                        return GraceExpiryResult::Unknown;
+                    }
+                    Ok(super::super::native_activity::NativeActivityOutcome::Refused(_))
+                    | Err(()) => {
+                        tokio::time::sleep(next_backoff()).await;
+                        continue;
+                    }
+                }
+            }
             match self.fence_transition(actor, hold, false).await {
                 FenceStep::Fenced => {}
                 FenceStep::Wait => {
@@ -151,9 +198,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         UnendedSettle::Terminal => {
                             self.settle_kill_release(kills, ReleaseEnd::Committed).await;
-                            let result = self
-                                .retire_reconciled(controller.account_id, session, actor)
-                                .await;
+                            let result = self.retire_reconciled(account, session, actor).await;
                             self.forget_kill_release(kills).await;
                             return result;
                         }
@@ -174,9 +219,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         }
                         UnendedSettle::Terminal => {
                             self.settle_kill_release(kills, ReleaseEnd::Committed).await;
-                            let result = self
-                                .retire_reconciled(controller.account_id, session, actor)
-                                .await;
+                            let result = self.retire_reconciled(account, session, actor).await;
                             self.forget_kill_release(kills).await;
                             return result;
                         }
@@ -189,7 +232,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
                     self.settle_kill_release(kills, ReleaseEnd::Committed).await;
                     // PREM-1b: the session is over; its Premium pulls stop.
-                    self.release_premium(controller.account_id, session);
+                    self.release_premium(account, session);
                     let result = self.retire(session, actor).await;
                     self.forget_kill_release(kills).await;
                     return result;

@@ -178,6 +178,45 @@ pub struct QualifiedNativeSpellWorld {
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 impl QualifiedNativeSpellWorld {
+    /// A bounded view of this already qualified source. It cannot add a tile,
+    /// alter the source frame or expose another encounter's mutable placement.
+    pub(in crate::content) fn activity_region(&self, bounds: [i32; 6]) -> Option<Self> {
+        let [x0, y0, x1, y1, z0, z1] = bounds;
+        let low = LogicalCell {
+            x: x0,
+            y: y0,
+            z: z0,
+        };
+        let high = LogicalCell {
+            x: x1,
+            y: y1,
+            z: z1,
+        };
+        if x0 > x1
+            || y0 > y1
+            || z0 > z1
+            || !self.contains_capture_cell(low)
+            || !self.contains_capture_cell(high)
+        {
+            return None;
+        }
+        let inside = |cell: LogicalCell| {
+            x0 <= cell.x
+                && cell.x <= x1
+                && y0 <= cell.y
+                && cell.y <= y1
+                && z0 <= cell.z
+                && cell.z <= z1
+        };
+        let mut view = self.clone();
+        view.bounds = bounds;
+        view.cells.retain(|cell, _| inside(*cell));
+        view.immutable_tiles.retain(|cell, _| inside(*cell));
+        view.pending_placements
+            .retain(|placement| inside(placement.cell()));
+        Some(view)
+    }
+
     /// The retained town's temple in this qualified map's native frame. Unknown tiles and
     /// other floors never supply the protection-zone fact required for Wheel removal.
     pub fn permits_wheel_removal(&self, cell: LogicalCell, radius: u32) -> bool {

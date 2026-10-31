@@ -953,7 +953,9 @@ fn reading_map_forged_stale_hidden_and_not_visible_are_refused() {
         let mut overlay = crate::map::overlay::ChannelOverlay::new(
             std::sync::Arc::clone(map.base()),
             map.overlay().world_id(),
-            map.overlay().channel_id(),
+            map.overlay()
+                .channel_id()
+                .expect("W02: pinned Channel fixture"),
         );
         overlay
             .hide(

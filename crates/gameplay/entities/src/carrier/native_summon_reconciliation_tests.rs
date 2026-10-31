@@ -36,10 +36,7 @@ fn parent(r: &mut ChannelRuntimeV1) -> ExactActorRef {
 }
 fn child(r: &mut ChannelRuntimeV1, p: ExactActorRef) -> ExactActorRef {
     let b = r.binding();
-    let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-        b.world_id(),
-        b.channel_id(),
-    );
+    let scope = b.runtime_scope();
     let mut f =
         oteryn_gameplay_foundation::foundation::scoped_fence_fixture(scope, b.scope_generation());
     let n = f

@@ -195,8 +195,11 @@ pub(super) async fn qualify_summer_settlement(
         .map_err(debug)?
         .generation();
     let fence = crate::durability::item_decay_retire::CorpseDecayFence {
-        world_id: owner.world_id,
-        channel_id: owner.channel_id,
+        // W02 keeps this pinned Channel fixture in its exact tagged scope.
+        runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+            owner.world_id,
+            owner.channel_id,
+        ),
         scope_ownership_generation: generation,
     };
     let early = h
@@ -371,8 +374,8 @@ fn summer_corpse_process_restart() -> TestResult {
                 &authority,
                 &node,
                 crate::durability::item_decay_retire::CorpseDecayFence {
-                    world_id: world,
-                    channel_id: channel,
+                    // W02 keeps this pinned Channel fixture in its exact tagged scope.
+                    runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world, channel),
                     scope_ownership_generation: crate::foundation::ScopeOwnershipGeneration::new(
                         u64::try_from(generation)?,
                     )

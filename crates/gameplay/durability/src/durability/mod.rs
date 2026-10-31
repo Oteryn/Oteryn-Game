@@ -5,6 +5,7 @@ include!("core_modules.rs");
 // Keep sorted by module name; insert in order, never append.
 pub mod bed_regen;
 pub mod bed_sleep;
+pub mod boss_difficulty;
 pub mod boss_encounter;
 pub mod character_hazard;
 pub mod character_home_town;

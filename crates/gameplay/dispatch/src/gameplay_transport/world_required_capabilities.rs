@@ -217,6 +217,35 @@ impl BoundRequiredCapabilities {
         self.scope == scope && self.generation == generation && self.world_policy_revision == policy
     }
 
+    /// Bind the already validated dependency closure to the independently
+    /// assigned Instance. The caller has read its current runtime guard; this
+    /// immutable value grants no readiness, admission or recovery authority.
+    pub(super) fn for_activity_runtime(
+        &self,
+        scope: RuntimeScopeRefV1,
+        generation: u64,
+        policy: &str,
+    ) -> Result<Arc<Self>, BootCapabilityError> {
+        if !matches!(scope,RuntimeScopeRefV1::Instance{instance_id,..} if instance_id != [0;16])
+            || generation == 0
+            || scope.world_id() != self.scope.world_id()
+            || policy != self.world_policy_revision
+        {
+            return Err(BootCapabilityError::InvalidScopeBinding);
+        }
+        Ok(Arc::new(Self {
+            required: RequiredCapabilities {
+                effective: self.required.effective.clone(),
+                registered: self.required.registered,
+                offered: self.required.offered,
+            },
+            scope,
+            generation,
+            world_policy_revision: policy.into(),
+            native_profile: self.native_profile.clone(),
+        }))
+    }
+
     pub fn for_channel_boot(
         declared: &[u32],
         scope: RuntimeScopeRefV1,
@@ -503,3 +532,42 @@ impl<'a> RequiredCapabilities<'a> {
 #[cfg(test)]
 #[path = "world_required_capabilities_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod activity_binding_tests {
+    use super::*;
+    #[test]
+    fn activity_requirements_keep_selection_and_bind_exact_scope_generation_and_policy() {
+        let world = crate::foundation::WorldId::decode(&[42; 16]).unwrap();
+        let channel = crate::foundation::ChannelId::decode(&[43; 16]).unwrap();
+        let origin = RuntimeScopeRefV1::channel(world, channel);
+        let offered = offered_for_scope(false, None);
+        let bound =
+            BoundRequiredCapabilities::for_channel_boot(&[], origin, 1, "policy-1", offered)
+                .unwrap();
+        let scope = RuntimeScopeRefV1::Instance {
+            world_id: world,
+            instance_id: [44; 16],
+        };
+        let activity = bound.for_activity_runtime(scope, 7, "policy-1").unwrap();
+        assert_eq!(activity.effective(), bound.effective());
+        assert!(activity.matches_current(scope, 7, "policy-1"));
+        assert!(!activity.matches_current(origin, 7, "policy-1"));
+        assert!(!activity.matches_current(scope, 8, "policy-1"));
+        assert!(
+            bound
+                .for_activity_runtime(scope, 7, "changed-policy")
+                .is_err()
+        );
+        assert!(bound.for_activity_runtime(origin, 7, "policy-1").is_err());
+        let mut supported: Vec<_> = offered.iter().map(|node| node.id).collect();
+        supported.sort_unstable();
+        let selected = SelectedCapabilities::select(offered, &supported).unwrap();
+        let authenticated = activity
+            .authenticate_resume_support(&supported, selected)
+            .unwrap();
+        assert_eq!(authenticated.selected(), selected);
+        assert!(authenticated.revalidate(scope, 7, "policy-1").is_ok());
+        assert!(authenticated.revalidate(origin, 7, "policy-1").is_err());
+    }
+}

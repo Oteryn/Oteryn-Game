@@ -179,8 +179,7 @@ fn replayed(
         && receipt.lines.len() == 1
         && receipt.lines.first().is_some_and(|line| {
             line.after().item_key() == item_key
-                && line.after().selections().get(usize::from(request.level))
-                    == Some(&request.perk)
+                && line.after().selections().get(usize::from(request.level)) == Some(&request.perk)
         });
     if same {
         SelectPerkResult::Accepted
@@ -259,11 +258,7 @@ pub(super) async fn execute(
         let mut runtime = owner.runtime.lock().await;
         if runtime.player_control_facts(actor, session).is_err()
             || runtime.owner_fence().is_err()
-            || fence.runtime_scope
-                != crate::foundation::RuntimeScopeRefV1::channel(
-                    runtime.binding().world_id(),
-                    runtime.binding().channel_id(),
-                )
+            || fence.runtime_scope != runtime.binding().runtime_scope()
             || fence.scope_ownership_generation != runtime.binding().scope_generation()
         {
             return None;
@@ -423,13 +418,16 @@ mod tests {
         CommittedProficiencyChange {
             character_id: crate::domain::CharacterId::from_bytes(uuid_v7(1)).expect("id"),
             occurrence_id: [2; 16],
-            original_character_revision: crate::domain::CharacterRevision::new(1).expect("revision"),
+            original_character_revision: crate::domain::CharacterRevision::new(1)
+                .expect("revision"),
             committed_character_revision: crate::domain::CharacterRevision::new(2)
                 .expect("revision"),
             cause,
             command_binding: Vec::new(),
             policy_digest: [0; 32],
-            lines: vec![ProficiencyLineCandidate::new(cause, before, state(1_000, after)).expect("line")],
+            lines: vec![
+                ProficiencyLineCandidate::new(cause, before, state(1_000, after)).expect("line"),
+            ],
         }
     }
 

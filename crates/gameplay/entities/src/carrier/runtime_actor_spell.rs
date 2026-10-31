@@ -67,6 +67,19 @@ pub struct ActorCombatState {
 }
 
 impl ActorCombatState {
+    /// Session/actor references and replay watermarks belong to the source scope;
+    /// gameplay conditions/vitals remain with their existing physical owners.
+    pub(super) fn reset_for_scope_handoff(&mut self) {
+        self.reentry = None;
+        self.pending_owner = None;
+        self.pending_source = None;
+        self.party = super::runtime_actor_party::PartyActorState::default();
+        self.hazard = None;
+        self.records.clear();
+        self.high_water = None;
+        self.deferred_high_water = 0;
+    }
+
     pub fn creature(maximum_health: i64) -> Self {
         Self {
             maximum_health,
@@ -985,10 +998,7 @@ impl ChannelRuntimeV1 {
             authority.phase_ordinal() != 0
                 && authority.matches(
                     batch,
-                    oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                        self.binding.world_id,
-                        self.binding.channel_id,
-                    ),
+                    self.binding.runtime_scope,
                     self.binding.scope_generation,
                 )
         })
@@ -1055,10 +1065,7 @@ impl ChannelRuntimeV1 {
         let deferred = if let Some(authority) = &batch.deferred {
             if !authority.matches(
                 batch,
-                oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
-                    self.binding.world_id,
-                    self.binding.channel_id,
-                ),
+                self.binding.runtime_scope,
                 self.binding.scope_generation,
             ) || authority.admission_sequence() <= caster_state.deferred_high_water
             {

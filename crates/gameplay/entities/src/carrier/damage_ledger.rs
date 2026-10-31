@@ -299,20 +299,28 @@ impl CommittedLethalReceipt {
 /// current wall-clock millisecond, so two calls never collide). Called at
 /// most once per (death, character): `reward_occurrence_inner` memoizes the
 /// first result and every later call returns that same value.
-fn mint_reward_occurrence_bytes(
-    actor: ActorRef,
-    channel_id: ChannelId,
-    character: [u8; 16],
-) -> [u8; 16] {
+fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16] {
     use sha2::{Digest, Sha256};
     let millis = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|elapsed| u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX))
         .unwrap_or(0);
+    // Preserve every byte of the existing Channel seed; Instance uses a distinct
+    // domain and its exact identity, even if those bytes equal a ChannelId.
+    let (domain, scope_id): (&[u8], [u8; 16]) = match actor.runtime_scope {
+        RuntimeScopeRefV1::Channel { channel_id, .. } => (
+            b"oteryn:combat-death-xp-occurrence:v1",
+            *channel_id.as_bytes(),
+        ),
+        RuntimeScopeRefV1::Instance { instance_id, .. } => (
+            b"oteryn:combat-death-xp-occurrence:instance:v1",
+            instance_id,
+        ),
+    };
     let digest = Sha256::new()
-        .chain_update(b"oteryn:combat-death-xp-occurrence:v1")
+        .chain_update(domain)
         .chain_update(ExactActorRef(actor).world_id().as_bytes())
-        .chain_update(channel_id.as_bytes())
+        .chain_update(scope_id)
         .chain_update(ExactActorRef(actor).scope_generation().get().to_be_bytes())
         .chain_update(actor.actor_local_id.0.to_be_bytes())
         .chain_update(actor.actor_local_generation.0.to_be_bytes())
@@ -951,8 +959,8 @@ impl ChannelActorCarrier {
         }
         self.validate_summon_actor(continuity, actor)?;
         self.validate_lethal_receipt(continuity, &receipt)?;
-        // The installed encounter hook still consumes a Channel-only durable
-        // key. Refuse that composition before cascading or retaining anything.
+        // Capture the sealed, tagged scope identity before cascading or retaining
+        // anything. The encounter hook receives the same committed death key.
         let captured_sealed_key = self
             .encounter_hooks
             .as_ref()
@@ -1136,7 +1144,7 @@ impl ChannelActorCarrier {
         {
             return Err(CarrierError::CapacityExceeded);
         }
-        let occurrence = mint_reward_occurrence_bytes(actor_ref, self.channel_id()?, character);
+        let occurrence = mint_reward_occurrence_bytes(actor_ref, character);
         self.death_reward_occurrences.push(DeathRewardOccurrence {
             actor: actor_ref,
             character,

@@ -163,9 +163,25 @@ impl LastPositionFlush {
         let mut training_settled = std::collections::HashSet::new();
         for _ in 0..FLUSH_ATTEMPTS {
             // OPS-SAVE-1: the monk values of the live actors go with the positions.
-            let failed = authority.write_due_last_positions(true).await
+            // Input is already quiesced through the shared node gate. Keep a
+            // participant from moving between two owner snapshots in this pass;
+            // all checkpoints below remain the existing exact-scope writers.
+            let transition = authority.activity_runtimes.transitions.lock().await;
+            let mut failed = authority.write_due_last_positions(true).await
                 + authority.flush_monk_states(&mut monks_settled).await
                 + authority.flush_spell_training(&mut training_settled).await;
+            match authority.activity_runtimes.activity_owners() {
+                Ok(owners) => {
+                    for owner in owners {
+                        let view = authority.runtime_view(&owner);
+                        failed += view.write_due_last_positions(true).await
+                            + view.flush_monk_states(&mut monks_settled).await
+                            + view.flush_spell_training(&mut training_settled).await;
+                    }
+                }
+                Err(()) => failed += 1,
+            }
+            drop(transition);
             if failed == 0 {
                 self.done.cancel();
                 return;
@@ -1409,5 +1425,35 @@ mod tests {
         let (mut runtime, player, session) = admitted();
         initialize_first_entry_at(&mut runtime, player, session, input, |_| true).expect("step 4");
         assert_eq!(position(&runtime, player), at(3, 4));
+    }
+}
+
+impl LastPositions {
+    pub(super) fn transfer_activity(
+        &self,
+        destination: &Self,
+        old: GameSessionId,
+        new: GameSessionId,
+        actor: ExactActorRef,
+    ) -> Result<(), ()> {
+        let mut source = self.tracks.lock().map_err(|_| ())?;
+        let mut target = destination.tracks.lock().map_err(|_| ())?;
+        if target.contains_key(&new) {
+            return if source.contains_key(&old) {
+                Err(())
+            } else {
+                Ok(())
+            };
+        }
+        target.try_reserve(1).map_err(|_| ())?;
+        if let Some(mut track) = source.remove(&old) {
+            track.actor = actor;
+            // The durable handoff wrote its own placement. First periodic pass must
+            // compare the new actual scope; the source's cell is never assumed current.
+            track.written = None;
+            track.checked = Instant::now();
+            target.insert(new, track);
+        }
+        Ok(())
     }
 }

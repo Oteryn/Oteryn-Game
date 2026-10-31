@@ -44,6 +44,11 @@ use {
 use super::attack::ChannelAttackStates;
 use super::{ComposedFreshAdmission, operator_event};
 
+#[path = "boss_reward_contribution.rs"]
+mod boss_reward_contribution;
+#[path = "boss_reward_settlement.rs"]
+mod boss_reward_settlement;
+
 #[cfg(test)]
 #[allow(
     clippy::expect_used,
@@ -82,6 +87,8 @@ pub struct PendingKillSettlement {
         Option<Vec<oteryn_gameplay_social_rules::shared_experience::SharedExperienceActivity>>,
     pub damage_shares: Vec<crate::foundation::RewardDamageShare>,
     pub(super) forge: Option<ForgeDeath>,
+    /// W03: complete contribution census and original loot pin captured on the lethal turn.
+    pub(super) boss_reward: Option<boss_reward_contribution::FrozenBossDeath>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
 }
@@ -105,6 +112,7 @@ impl PendingKillSettlement {
             activity_at_death: None,
             damage_shares: Vec::new(),
             forge: None,
+            boss_reward: None,
             no_progression_logged: false,
         }
     }
@@ -159,6 +167,7 @@ struct ReleasingMark {
 
 #[derive(Debug, Default)]
 struct KillQueueState {
+    boss_contributions: boss_reward_contribution::BossContributions,
     // Equipment-owner projections, independent of a held attack target or swing-cache epoch.
     proficiency_weapons: Vec<(ExactActorRef, GameSessionId, u64, Option<String>)>,
     proficiency_deaths: Vec<FrozenProficiencyDeath>,
@@ -268,6 +277,17 @@ struct FrozenProficiencyDeath {
 }
 
 impl KillSettlementQueue {
+    /// The owner may retire only after queued deaths, executing settlements and
+    /// retained actor-end release holds have all completed. Historical death
+    /// memos do not represent pending work.
+    pub(super) fn activity_retirement_drained(&self) -> bool {
+        let state = self.state();
+        state.queued.is_empty()
+            && state.in_flight.is_empty()
+            && state.releasing.is_empty()
+            && state.reserved_loot_mints == 0
+    }
+
     /// Actor-end saves drain deaths to which this session contributed, including another
     /// principal's queue. An in-flight settle must finish before the contributor can save.
     pub(super) fn proficiency_principals(&self, session: GameSessionId) -> Vec<GameSessionId> {
@@ -283,6 +303,12 @@ impl KillSettlementQueue {
             )
             .filter(|entry| {
                 entry.facts.principal.session == session
+                    || entry.boss_reward.as_ref().is_some_and(|reward| {
+                        reward
+                            .participants
+                            .iter()
+                            .any(|participant| participant.session == session)
+                    })
                     || entry
                         .damage_shares
                         .iter()
@@ -292,6 +318,7 @@ impl KillSettlementQueue {
             .collect();
         for (_, principal, target) in &state.in_flight {
             if principal.0 == session
+                || state.boss_contributions.involves(*target, session)
                 || state.proficiency_deaths.iter().any(|death| {
                     death.target == *target
                         && death
@@ -308,6 +335,7 @@ impl KillSettlementQueue {
 
     pub(super) fn prune_proficiency(&self, runtime: &ChannelRuntimeV1) {
         let mut state = self.state();
+        state.boss_contributions.prune(runtime);
         state.proficiency_weapons.retain(|(actor, session, _, _)| {
             runtime.player_control_facts(*actor, *session).is_ok()
         });
@@ -864,6 +892,11 @@ pub fn record_creature_kill(
     observed_at: Option<oteryn_simulation_determinism::SemanticTimeMicros>,
 ) {
     let snapshot = runtime.companion_snapshot_including_dead(target);
+    let personal_rewards = snapshot.as_ref().is_ok_and(|view| {
+        view.state.master.is_none()
+            && !view.state.policy.is_familiar
+            && view.state.policy.reward_boss == Some(true)
+    });
     let forge_kind = snapshot
         .as_ref()
         .ok()
@@ -942,6 +975,7 @@ pub fn record_creature_kill(
             return;
         }
     };
+    let personal_reward_row = personal_rewards.then(|| Arc::clone(&row));
     if let Some(choice) = daily_boost {
         let boosted_creature = creature == choice.creature;
         let boosted_boss = creature == choice.boss;
@@ -1181,7 +1215,23 @@ pub fn record_creature_kill(
         // A proficiency-only entry reserves no loot MINT capacity.
         Arc::make_mut(&mut row).loot_table.entries.clear();
     }
+    let boss_reward = if let Some(reward) = personal_reward_row {
+        let Some(frozen) = sink
+            .queue
+            .freeze_boss_death(runtime, target, &damage_shares, reward)
+        else {
+            refuse("boss_contribution_unavailable", &creature);
+            return;
+        };
+        // A reward boss has exactly one loot route: the private chests. XP/Bosstiary and
+        // the empty physical corpse keep their existing independent owner paths.
+        Arc::make_mut(&mut row).loot_table.entries.clear();
+        Some(frozen)
+    } else {
+        None
+    };
     let entry = PendingKillSettlement {
+        boss_reward,
         forge,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
@@ -1251,6 +1301,7 @@ pub fn record_batch_kills(
     receipt: &CombatBatchReceipt,
     now_ms: u64,
 ) {
+    sink.queue.boss_spell_contribution(runtime, receipt);
     let observed_at = runtime.committed_spell_batch_time(receipt).ok().flatten();
     let now_ms = observed_at.map_or(now_ms, |at| at.get() / 1_000);
     let session = receipt.command.game_session_id();
@@ -1823,6 +1874,14 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             }
             return SettleReport {
                 verdict: SettleVerdict::Final,
+                no_progression: false,
+            };
+        }
+        // W03 entitlement creation is independent of the top-damage principal's
+        // current presence and must precede the proficiency-only early return.
+        if !self.settle_personal_boss_rewards(entry).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
                 no_progression: false,
             };
         }

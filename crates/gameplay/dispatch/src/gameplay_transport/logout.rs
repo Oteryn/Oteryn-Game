@@ -82,45 +82,66 @@ impl ComposedFreshAdmission<'_, '_, '_> {
     /// them is settled by the release's own saves, as for a closed client whose deadline just
     /// ended.
     pub(super) async fn logout_session(&self, admitted: AdmittedSession) -> LogoutReply {
-        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+        let (actor, controller) = match self.logout_preflight(admitted).await {
+            Ok(proven) => proven,
+            Err(reply) => return reply,
+        };
+        // Every activity participant must return through its durable owner
+        // before the ordinary terminal release. No caller may orphan a room.
+        if matches!(
+            actor.runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
             return LogoutReply::Result(LogoutResult::Busy);
+        }
+        self.release_logout(admitted, actor, controller).await
+    }
+
+    pub(super) async fn logout_preflight(
+        &self,
+        admitted: AdmittedSession,
+    ) -> Result<(ExactActorRef, ControllerBinding), LogoutReply> {
+        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+            return Err(LogoutReply::Result(LogoutResult::Busy));
         };
         let session = admitted.game_session_id;
         let Some(zones) = self.logout_zones(actor).await else {
-            return LogoutReply::Result(LogoutResult::Busy);
+            return Err(LogoutReply::Result(LogoutResult::Busy));
         };
         if zones.no_logout {
-            return LogoutReply::NoLogout;
+            return Err(LogoutReply::NoLogout);
         }
         if self.states.newhaven_travel.held(session) {
-            return LogoutReply::Result(LogoutResult::Busy);
+            return Err(LogoutReply::Result(LogoutResult::Busy));
         }
         if !self
             .reconcile_spells_before_control_loss(actor, session)
             .await
         {
-            return LogoutReply::Result(LogoutResult::Busy);
+            return Err(LogoutReply::Result(LogoutResult::Busy));
         }
         if !self.refresh_pvp_locks(actor, session).await {
             // An unreadable fence or PvP row proves no fight deadline. Close through the
             // ordinary unknown/control-loss path without authorizing a terminal release.
-            return LogoutReply::Unknown;
+            return Err(LogoutReply::Unknown);
         }
         // Reconciliation can finish a retained spell relocation. Use its current cell
         // for both zone checks instead of carrying a pre-reconciliation PZ exception.
         let Some(zones) = self.logout_zones(actor).await else {
-            return LogoutReply::Result(LogoutResult::Busy);
+            return Err(LogoutReply::Result(LogoutResult::Busy));
         };
         if zones.no_logout {
-            return LogoutReply::NoLogout;
+            return Err(LogoutReply::NoLogout);
         }
         if let Some(retry_after_ms) = self
             .logout_in_fight(actor, session, zones.protection_zone)
             .await
         {
-            return LogoutReply::Result(LogoutResult::InFight { retry_after_ms });
+            return Err(LogoutReply::Result(LogoutResult::InFight {
+                retry_after_ms,
+            }));
         }
-        self.release_logout(admitted, actor, controller).await
+        Ok((actor, controller))
     }
 
     async fn logout_zones(&self, actor: ExactActorRef) -> Option<LogoutZones> {

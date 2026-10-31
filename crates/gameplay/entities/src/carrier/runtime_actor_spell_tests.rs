@@ -582,7 +582,7 @@ fn committed_timer_phase_survives_control_loss_but_new_or_substituted_input_does
     let binding = f.runtime.binding();
     let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
         binding.world_id(),
-        binding.channel_id(),
+        binding.channel_id().expect("Channel fixture"),
     );
     due.deferred = Some(
         DeferredCommitAuthority::from_due(
@@ -1206,7 +1206,7 @@ fn master_assignment_payment_requires_real_player_preflight_and_cannot_be_deferr
     let mut due = original.clone();
     let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
         f.runtime.binding().world_id(),
-        f.runtime.binding().channel_id(),
+        f.runtime.binding().channel_id().expect("Channel fixture"),
     );
     let stamp = f.runtime.issue_owner_work().unwrap();
     due.deferred = Some(
@@ -1364,7 +1364,7 @@ fn due_authority_binds_submillisecond_time_and_presence() {
     let binding = f.runtime.binding();
     let scope = oteryn_gameplay_foundation::foundation::RuntimeScopeRefV1::channel(
         binding.world_id(),
-        binding.channel_id(),
+        binding.channel_id().expect("Channel fixture"),
     );
     let token = DeferredCommitAuthority::from_due(
         f.runtime.owner_fence().expect("current fence"),

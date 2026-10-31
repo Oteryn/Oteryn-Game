@@ -1022,7 +1022,8 @@ mod death_ml_loss_composed {
                 return Err("trained build replayed".into());
             };
             // The owner's revision writer starts after the setup writes, as after an admission.
-            owner.revision_sequencer = CharacterRevisionSequencer::new();
+            // W02 shares the sequencer across native scope views; this fixture still resets it.
+            owner.revision_sequencer = CharacterRevisionSequencer::new().into();
             // The fence a checkpoint prepared before the session's lease moved retains.
             let stale = CurrentCharacterGameplayFence {
                 character_lease_generation: 1,
@@ -1134,7 +1135,8 @@ mod death_ml_loss_composed {
                     .await
                     .map_err(debug)?;
                 assert!(matches!(committed, BuildCommitOutcome::Committed(_)));
-                owner.revision_sequencer = CharacterRevisionSequencer::new();
+                // W02 shares the sequencer across native scope views; this fixture still resets it.
+                owner.revision_sequencer = CharacterRevisionSequencer::new().into();
                 // Every forced replay is fenced out and leaves the checkpoint retained.
                 for _ in 0..2 {
                     assert_eq!(

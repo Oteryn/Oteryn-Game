@@ -103,7 +103,7 @@ impl DirectBinding {
             && self
                 .actor
                 .channel_id()
-                .is_some_and(|channel| *channel.as_bytes() == a.channel)
+                .is_some_and(|channel| Some(*channel.as_bytes()) == a.channel)
             && self.actor.scope_generation().get() == a.ownership_generation
             && self.character == a.character
             && self.session == *a.command.game_session_id().as_bytes()

@@ -324,6 +324,57 @@ pub(super) async fn transfer_claims_in_transaction(
     lease: u64,
     now: i64,
 ) -> Result<()> {
+    transfer_scope_claims_in_transaction(
+        tx,
+        root,
+        account,
+        character,
+        sessions,
+        lease,
+        now,
+        "house-transfer",
+    )
+    .await
+}
+
+pub(super) async fn transfer_activity_claims_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    account: &str,
+    character: CharacterId,
+    sessions: (
+        crate::foundation::GameSessionId,
+        crate::foundation::GameSessionId,
+    ),
+    lease: u64,
+    now: i64,
+) -> Result<()> {
+    transfer_scope_claims_in_transaction(
+        tx,
+        root,
+        account,
+        character,
+        sessions,
+        lease,
+        now,
+        "activity-transfer",
+    )
+    .await
+}
+
+async fn transfer_scope_claims_in_transaction(
+    tx: &mut Transaction<'_, Postgres>,
+    root: &DurabilityRoot,
+    account: &str,
+    character: CharacterId,
+    sessions: (
+        crate::foundation::GameSessionId,
+        crate::foundation::GameSessionId,
+    ),
+    lease: u64,
+    now: i64,
+    decision: &str,
+) -> Result<()> {
     let (source, destination) = sessions;
     let store = AdmissionGuardStore::from_root(root.clone());
     let mut current = Vec::with_capacity(2);
@@ -342,7 +393,7 @@ pub(super) async fn transfer_claims_in_transaction(
         let (precondition, revision) = successor_precondition(Some(&old))?;
         next.precondition = precondition;
         next.publication_revision = revision;
-        next.source = composition_source(old.source.purpose, Some(&old), "house-transfer", now)?;
+        next.source = composition_source(old.source.purpose, Some(&old), decision, now)?;
         match &mut next.state {
             AdmissionAuthorityGuardStateV1::Account { security, presence }
                 if *presence == Some((character, source)) =>

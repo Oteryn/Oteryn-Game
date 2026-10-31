@@ -67,9 +67,8 @@ impl SmellyCheeseCarrierExt for ChannelRuntimeV1 {
                     count += 1;
                     target = player.map(|session| {
                         (
-                            ExactActorRef(ActorRef::from_owner_parts(
-                                self.binding().world_id(),
-                                self.binding().channel_id(),
+                            ExactActorRef(ActorRef::from_scoped_owner_parts(
+                                self.binding().runtime_scope(),
                                 self.binding().scope_generation(),
                                 ActorLocalId((index + 1) as u32),
                                 ActorLocalGeneration(generation),

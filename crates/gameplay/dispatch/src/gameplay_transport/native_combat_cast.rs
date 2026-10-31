@@ -26,7 +26,7 @@ use crate::durability::spell_item_transaction::{
 use crate::durability::spell_owner_commit::{SpellLanePermit, SpellWriterPass, UnresolvedLane};
 use crate::foundation::{
     ChannelRuntimeV1, CharacterId, CommandRef, ExactActorRef, GameSessionId, MovementFacing,
-    MovementLocalPosition, MovementPositionSnapshot, RuntimeScopeRefV1,
+    MovementLocalPosition, MovementPositionSnapshot,
 };
 use crate::spell::cast::{PlayerSpellState, prepare_native_owner_cast_with_caster};
 use crate::spell::chain::TilePosition;
@@ -547,7 +547,7 @@ impl PreparedNativeCombatCast {
                     self.batch.command,
                     character,
                     self.batch.current_lease_generation,
-                    RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id()),
+                    actual.runtime_scope(),
                     actual.scope_generation().get(),
                 )
             }) {
@@ -1101,8 +1101,7 @@ async fn prepare_source_self_from_owners(
         || authority.command() != command
         || authority.character_id_bytes() != b.character
         || authority.compatible_content_digest() != content.source_digest()
-        || authority.runtime_scope()
-            != RuntimeScopeRefV1::channel(actual.world_id(), actual.channel_id())
+        || authority.runtime_scope() != actual.runtime_scope()
         || authority.scope_generation() != actual.scope_generation().get()
         || b.content_digest != runtime.content_pin().server_artifact_digest()
     {
@@ -2918,7 +2917,10 @@ mod tests {
     fn marker(lane: &SpellLane) -> ParkedMarker {
         ParkedMarker {
             kind: ParkedMarkerKind::Native,
-            actor: ExactActorRef::transport_fixture(lane.world_id(), lane.channel_id()),
+            actor: ExactActorRef::transport_fixture(
+                lane.world_id(),
+                lane.channel_id().expect("W02: pinned Channel fixture"),
+            ),
             session: GameSessionId::decode(&identity(22)).unwrap(),
         }
     }
