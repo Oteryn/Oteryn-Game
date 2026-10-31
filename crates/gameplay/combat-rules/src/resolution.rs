@@ -248,6 +248,18 @@ pub fn creature_damage_response(
     damage: i64,
     element: &str,
 ) -> Option<i64> {
+    creature_damage_response_with_reduction(policy, damage, element, 0)
+}
+
+/// Crystal 201189f monster.cpp:949-964 subtracts Ballistic's two percentage
+/// points from element resistance before rounding, while explicit immunity still wins.
+#[must_use]
+pub fn creature_damage_response_with_reduction(
+    policy: &CompiledCreaturePolicy,
+    damage: i64,
+    element: &str,
+    resistance_reduction: u32,
+) -> Option<i64> {
     if policy.damage_immunities.iter().any(|key| key == element) {
         return Some(0);
     }
@@ -264,7 +276,8 @@ pub fn creature_damage_response(
     };
     let damage = damage as f64;
     let mitigated = (damage - damage * mitigation / 100.0).trunc();
-    let landed = (mitigated * (100.0 - resistance) / 100.0).round();
+    let landed =
+        (mitigated * (100.0 - resistance + f64::from(resistance_reduction)) / 100.0).round();
     if !landed.is_finite() || landed > f64::from(i32::MAX) || landed < f64::from(i32::MIN) {
         return None;
     }
@@ -511,6 +524,37 @@ mod tests {
             "a 0 denominator fails closed"
         );
         assert_eq!(response(Some((0, 1)), Some((1, 0)), 15), None);
+    }
+
+    #[test]
+    fn ballistic_subtracts_resistance_points_before_rounding_and_preserves_immunity() {
+        let mut target = policy(None, Some((50, 1)));
+        assert_eq!(creature_damage_response(&target, 100, PHYSICAL), Some(50));
+        assert_eq!(
+            creature_damage_response_with_reduction(&target, 100, PHYSICAL, 2),
+            Some(52),
+            "two points of resistance are not two percent of remaining damage"
+        );
+        assert_eq!(
+            creature_damage_response_with_reduction(&target, 0, PHYSICAL, 2),
+            Some(0)
+        );
+        target = policy(None, Some((100, 1)));
+        assert_eq!(
+            creature_damage_response_with_reduction(&target, 100, PHYSICAL, 2),
+            Some(2)
+        );
+        target.damage_immunities.push(PHYSICAL.into());
+        assert_eq!(
+            creature_damage_response_with_reduction(&target, 100, PHYSICAL, 2),
+            Some(0)
+        );
+        target = policy(Some((10, 1)), Some((25, 1)));
+        assert_eq!(
+            creature_damage_response_with_reduction(&target, 15, PHYSICAL, 2),
+            Some(10),
+            "source mitigation truncates first, then the reduced response rounds"
+        );
     }
 
     #[test]

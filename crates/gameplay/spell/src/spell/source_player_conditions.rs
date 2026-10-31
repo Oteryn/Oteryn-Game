@@ -388,12 +388,21 @@ impl PlayerSpellState {
 
     /// Sole canonical Player store: consume only this admitted field's application
     /// tick. Existing overdue combat/regeneration ticks retain their counters.
+    /// The movement owner supplies the incoming-hit stage at its independently
+    /// qualified destination, before committing either movement or the successor.
     pub fn stage_creature_field_contact(
         &self,
         source: String,
         definition: &native::ConditionDefinition,
         facts: &native::ApplicationFacts<'_>,
         element: values::DotElement,
+        mut stage_hit: impl FnMut(
+            &Self,
+            u32,
+            values::DotElement,
+            u64,
+        )
+            -> Option<(Self, crate::ability::creature_bite::FlooredDamage)>,
     ) -> Option<(Self, u32)> {
         if self.health == 0
             || !facts.target_is_player
@@ -429,6 +438,7 @@ impl PlayerSpellState {
         let mut damage = 0u32;
         for tick in ticks {
             let native::TickKind::Damage {
+                element: hit_element,
                 amount,
                 refused: false,
                 ..
@@ -441,8 +451,7 @@ impl PlayerSpellState {
             {
                 return None;
             }
-            let (successor, hit) =
-                super::actor_conditions::stage_creature_hit(&next, amount, facts.now).ok()?;
+            let (successor, hit) = stage_hit(&next, amount, hit_element, facts.now)?;
             damage = damage.checked_add(hit.applied)?;
             next = successor;
             if next.health == 0 {
@@ -548,6 +557,10 @@ mod creature_field_initial_tests {
                     &definition,
                     &facts,
                     element,
+                    |state, amount, hit_element, now| {
+                        assert_eq!(hit_element, element);
+                        super::super::actor_conditions::stage_creature_hit(state, amount, now).ok()
+                    },
                 )
                 .unwrap();
             assert_eq!(damage, entry, "entry {item}");
@@ -778,6 +791,21 @@ mod creature_field_initial_tests {
                 &fresh,
                 &facts,
                 values::DotElement::Fire,
+                |state, amount, element, now| {
+                    assert_eq!(element, values::DotElement::Fire);
+                    // This pure fixture has no Battle Instinct or world actors.
+                    // Keep the issued element in the ordinary block/final owners.
+                    let amount = state.after_player_block(
+                        amount,
+                        crate::player_lethal::PlayerHitKind::from_dot(element),
+                        0,
+                        now,
+                    )?;
+                    super::super::actor_conditions::stage_preprocessed_player_hit(
+                        state, amount, now,
+                    )
+                    .ok()
+                },
             )
             .expect("qualified fixture");
         assert_eq!(damage, 20);
