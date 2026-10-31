@@ -242,6 +242,8 @@ pub fn prepare_ordinary_owner_cast_with_caster(
     draw: &mut dyn FnMut(i64, i64) -> i64,
 ) -> Result<PaidOrdinaryCast, SpellCastDisposition> {
     admit_condition_gates(state, spell, now)?;
+    // OwnedCastFacts qualifies effective magic, including loyalty and equipped proficiency
+    // bonuses that the condition-only PlayerSpellState projection does not contain.
     if state.pending_stance.is_some()
         || state.training_checkpoint.is_some()
         || !book.spells.contains(spell)
@@ -253,7 +255,6 @@ pub fn prepare_ordinary_owner_cast_with_caster(
         )
         || caster.vocation != state.facts.vocation
         || caster.level != state.facts.level
-        || caster.magic_level != state.owned_effective_magic_level(now.get())?
         || caster.mana != state.mana
         || caster.max_mana != state.facts.max_mana
         || caster.soul != state.soul

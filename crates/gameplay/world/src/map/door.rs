@@ -542,6 +542,12 @@ mod key_tests {
             (1642, Some(0), 1, true, false),
             (1642, Some(1001), 1, false, false),
             (1642, Some(1001), 1, true, true),
+            (5745, Some(10089), 1, false, false),
+            (5745, Some(10089), 1, true, true),
+            (51285, Some(10089), 1, false, false),
+            (51285, Some(10089), 1, true, true),
+            (51287, Some(10089), 1, false, false),
+            (51287, Some(10089), 1, true, true),
         ] {
             let key = format!("oteryn:item.tibia.i{appearance}");
             let (bytes, _) = bundle_with_items(&key, "oteryn:item.tibia.i1000");
