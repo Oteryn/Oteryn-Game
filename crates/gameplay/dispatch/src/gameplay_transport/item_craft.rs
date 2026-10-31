@@ -15,6 +15,7 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+pub(super) mod enchanting;
 mod rope;
 mod terrain;
 
@@ -47,6 +48,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        if let Some(result) = self
+            .use_enchanting(actor, command, &intent, source, target)
+            .await
+        {
+            return result;
+        }
         match self
             .use_terrain_tool(actor, command, &intent, source, target)
             .await
@@ -78,6 +85,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source: [0; 16],
             tool: None,
             gathering: None,
+            enchanting: None,
             station: None,
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).ok()?,
         };

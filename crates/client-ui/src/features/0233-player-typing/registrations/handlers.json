@@ -1,0 +1,17 @@
+{
+  "mechanic": "0233-player-typing",
+  "kind": "handlers",
+  "id": "0233-player-typing-unsupported",
+  "status": "unsupported",
+  "reason": "S19 provides the negotiated server command and spectator broadcast; the native chat-input binding and typing indicator view are pending.",
+  "commands": [
+    447
+  ],
+  "not_applicable": {
+    "state": "Unsupported until the native typing indicator feature.",
+    "protocol": "Unsupported until the native typing indicator feature.",
+    "view": "Unsupported until the native typing indicator feature.",
+    "input": "Unsupported until the native typing indicator feature.",
+    "settings": "Unsupported until the native typing indicator feature."
+  }
+}
