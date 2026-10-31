@@ -24,3 +24,81 @@ message TaskBoardReplyV1 {
   repeated uint64 talisman_bonuses = 8 [packed = false]; // hundredths of one percent
   repeated uint64 talisman_next_costs = 9 [packed = false]; // 0 at maximum level
 }
+
+ // Full request actions 4..18: all fields explicitly present, canonical field order.
+message TaskBoardFullRequestV1 {
+  uint32 action = 1;
+  uint32 selection = 2;
+  string race = 3; // empty except preferred/unwanted assignment; <=128 bytes
+}
+message TaskBoardKillV1 {
+  string race = 1; // empty only for any-creature
+  uint32 required = 2;
+  uint32 current = 3;
+}
+message TaskBoardDeliveryV1 {
+  uint32 item = 1; // donor uint16 identifier, resolved to canonical custody identity
+  uint32 required = 2;
+  uint32 current = 3;
+  bool delivered = 4;
+}
+message TaskBoardWeeklyV1 {
+  bool started = 1;
+  uint32 difficulty = 2;
+  bool expanded = 3;
+  uint32 multiplier = 4;
+  uint64 kill_experience = 5;
+  uint64 delivery_experience = 6;
+  uint64 pending_points = 7;
+  uint64 pending_soulseals = 8;
+  repeated TaskBoardKillV1 kills = 9; // <=9
+  repeated TaskBoardDeliveryV1 deliveries = 10; // <=9
+}
+message TaskBoardBountyOfferV1 {
+  string race = 1;
+  uint32 required = 2;
+  uint64 experience = 3;
+  uint32 points = 4;
+  uint32 grade = 5;
+}
+message TaskBoardListSlotV1 {
+  bool unlocked = 1;
+  string preferred = 2;
+  string unwanted = 3;
+}
+message TaskBoardBountyV1 {
+  uint32 state = 1;
+  uint32 difficulty = 2;
+  uint32 selected = 3; // 0 absent, otherwise original index +1
+  uint32 current = 4;
+  uint32 rerolls = 5;
+  uint64 daily_reroll_at = 6;
+  repeated TaskBoardBountyOfferV1 offers = 7; // <=3
+  optional TaskBoardBountyOfferV1 active = 8;
+  repeated TaskBoardListSlotV1 lists = 9; // <=5
+}
+message TaskBoardTalismanPathV1 {
+  uint32 level = 1;
+  uint32 bonus = 2; // hundredths of a percent
+  uint32 next_cost = 3;
+}
+message TaskBoardShopOfferV1 {
+  uint32 index = 1;
+  uint32 kind = 2;
+  uint32 price = 3;
+  uint32 primary = 4;
+  uint32 secondary = 5;
+  uint32 addon = 6;
+  bool bought = 7;
+}
+message TaskBoardFullReplyV1 {
+  uint32 refusal = 1;
+  uint64 period = 2;
+  uint64 points = 3;
+  uint64 bounty_points = 4;
+  uint64 soulseals = 5;
+  TaskBoardWeeklyV1 weekly = 6;
+  TaskBoardBountyV1 bounty = 7;
+  repeated TaskBoardTalismanPathV1 talisman = 8; // exactly4
+  repeated TaskBoardShopOfferV1 shop = 9; // <=32
+}
