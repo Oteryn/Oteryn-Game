@@ -466,11 +466,24 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
                 let runtime = deps.runtime.lock().await;
                 let mut states = restarted.states.spell_states.lock().await;
                 let state = states.get_mut(&runtime, deps.actor, session).ok_or("reloaded Gift actor")?;
-                let (_, reloaded) = state.wheel_gift_save(now, true).ok_or("loaded Gift remainder")?;
+                let (generation, reloaded) = state.wheel_gift_save(now, true)
+                    .ok_or("loaded Gift remainder")?;
                 assert!(reloaded > 0 && reloaded <= remaining);
-                state.health = (state.character_facts().max_health / 10).max(1);
-                let (_, hit) = crate::spell::actor_conditions::stage_creature_hit(state, state.health, now).map_err(debug)?;
+                let effects = state.wheel_effects_at(now)
+                    .ok_or("reloaded Gift requires current promotion and Premium")?;
+                assert_eq!(effects.revelation_stages.get("gift_of_life"), Some(&3),
+                    "the reloaded cooldown, not lost eligibility, must prevent a second Gift");
+                let facts = state.character_facts();
+                state.health = (facts.max_health / 10).max(1);
+                // Native admission qualifies baseline mitigation. Use the same lethal
+                // input as the ready-Gift case above, within Gift III's rescue range.
+                let damage = state.health.checked_add(facts.max_health / 10)
+                    .ok_or("reloaded Gift lethal damage")?;
+                let (next, hit) = crate::spell::actor_conditions::stage_creature_hit(state, damage, now)
+                    .map_err(debug)?;
                 assert_eq!(hit.health_after, 0, "relogin cannot refresh the Gift cooldown");
+                assert_eq!(next.wheel_gift_save(now, true), Some((generation, reloaded)),
+                    "a cooldown refusal preserves the loaded generation and remaining time");
             }
             let (final_vessels, final_revision) = match transition {
                 WheelExtensionCase::Socket | WheelExtensionCase::Gift => {
