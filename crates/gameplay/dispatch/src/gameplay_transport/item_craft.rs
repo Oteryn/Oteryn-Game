@@ -111,7 +111,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return disposition(UseDisposition::StaleState);
         };
         request.source = source;
-        let (station, map_target) = {
+        let (station, map_target, in_sewers) = {
             let mut runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
@@ -157,6 +157,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let MapDefinition::Item(reference) = entry.facts.definition else {
                 return disposition(UseDisposition::NothingToUse);
             };
+            // Crystal mechanical_fishing.lua:90-97,203: the sewers box is tested on the target tile.
+            let in_sewers =
+                oteryn_gameplay_items::fishing::in_yalahar_sewers(pos.x, pos.y, pos.floor);
             let map_target = (
                 key,
                 facts.object_revision(match key {
@@ -171,10 +174,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             (
                 super::item_look::typed_definition(index, reference)?,
                 map_target,
+                in_sewers,
             )
         };
         request.station = Some(station);
         let mut catch_roll = 1;
+        let mut nail_catch = false;
         let mut fishing_skill = 10;
         // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
         // consumes a worm only after the skill-scaled catch succeeds.
@@ -194,23 +199,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .flat_map(|b| &b.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry));
             let water_key = &request.station.as_ref()?.production_key;
+            let find_bait = |key: &str| {
+                entries
+                    .clone()
+                    .find(|entry| entry.item.definition.production_key == key)
+                    .map(|entry| entry.item.item_instance_id)
+            };
+            // Crystal mechanical_fishing.lua:203-248: a nail in the Yalahar sewers selects the
+            // mechanical-fish catch; otherwise the ordinary worm rules apply.
+            nail_catch = in_sewers
+                && find_bait(oteryn_gameplay_items::fishing::NAIL).is_some()
+                && entries.clone().any(|entry| {
+                    entry.item.item_instance_id == source
+                        && oteryn_gameplay_items::fishing::accepts_nail_rod(
+                            &entry.item.definition.production_key,
+                            water_key,
+                        )
+                });
             let rod = entries
                 .clone()
                 .find(|entry| {
                     entry.item.item_instance_id == source
-                        && oteryn_gameplay_items::fishing::accepts_fishing_rod(
-                            &entry.item.definition.production_key,
-                            water_key,
-                        )
+                        && (nail_catch
+                            || oteryn_gameplay_items::fishing::accepts_fishing_rod(
+                                &entry.item.definition.production_key,
+                                water_key,
+                            ))
                 })?
                 .item
                 .item_instance_id;
-            let worm = entries
-                .clone()
-                .find(|entry| {
-                    entry.item.definition.production_key == oteryn_gameplay_items::fishing::WORM
-                })
-                .map(|entry| entry.item.item_instance_id);
+            let worm = find_bait(if nail_catch {
+                oteryn_gameplay_items::fishing::NAIL
+            } else {
+                oteryn_gameplay_items::fishing::WORM
+            });
             let now = u64::try_from(self.clock_origin.elapsed().as_micros()).unwrap_or(u64::MAX);
             let skill = {
                 let runtime = self.runtime.lock().await;
@@ -278,20 +300,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .and_then(|s| item_id(&s.production_key));
         if let (Some(tool), Some(target_id)) = (tool, target_id)
             && let Some(tool_id) = item_id(&tool.item.definition.production_key)
-            && oteryn_gameplay_items::fishing::gathering_rule(tool_id, target_id).is_some()
+            && (nail_catch
+                || oteryn_gameplay_items::fishing::gathering_rule(tool_id, target_id).is_some())
         {
-            let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
-                tool_id,
-                target_id,
-                fishing_skill,
-                catch_roll,
-                gathering_roll(
-                    native.source_digest(),
-                    command.game_session_id,
-                    command.command_id,
-                    &request.intent,
-                )?,
-            )?;
+            let attempt = if nail_catch {
+                oteryn_gameplay_items::fishing::nail_attempt(target_id, fishing_skill, catch_roll)?
+            } else {
+                oteryn_gameplay_items::fishing::gathering_attempt(
+                    tool_id,
+                    target_id,
+                    fishing_skill,
+                    catch_roll,
+                    gathering_roll(
+                        native.source_digest(),
+                        command.game_session_id,
+                        command.command_id,
+                        &request.intent,
+                    )?,
+                )?
+            };
             let (MapEntryKey::Base(key), revision, invalid) = map_target else {
                 return None;
             };
@@ -324,6 +351,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     // the open 7236 made by a pick has no duration/decayTo.
                     decay: if attempt.after == Some(7237) {
                         vec![(7200, 900_000)]
+                    } else if let Some(fishable) = attempt
+                        .after
+                        .and_then(oteryn_gameplay_items::fishing::nail_spent_water_decays_to)
+                    {
+                        // Crystal items.xml:13998-14004: spent nail water decays after 1200 s.
+                        vec![(
+                            u32::from(fishable),
+                            oteryn_gameplay_items::fishing::NAIL_WATER_DECAY_MS,
+                        )]
                     } else {
                         Vec::new()
                     },

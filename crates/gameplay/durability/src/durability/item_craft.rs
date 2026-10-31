@@ -154,7 +154,7 @@ async fn write<C: ItemLoopContent>(
             .bind(tool_id.as_slice()).bind(fence.character_id.as_bytes().as_slice()).bind(world.as_bytes().as_slice()).fetch_optional(&mut ***tx).await?;
         if tool.as_ref().map(|(key, revision)| (key.as_str(), revision.as_str())) != Some((gathering.mutation.tool_key.as_str(), gathering.mutation.tool_revision.as_str()))
             || tool_id != gathering.mutation.tool || gathering.scope.content_generation != native.source_digest()
-            || (consumes_source && definition.production_key != oteryn_gameplay_items::fishing::WORM) {
+            || (consumes_source && !oteryn_gameplay_items::fishing::is_gathering_bait(&definition.production_key, &gathering.attempt)) {
             return Ok(UseDisposition::StaleState);
         }
         let outputs = gathering.attempt.yield_item.map(|id| {
