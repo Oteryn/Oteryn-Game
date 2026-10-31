@@ -2,12 +2,14 @@
 use super::ComposedFreshAdmission;
 use super::connection::UseCommand;
 use super::equipment_move::{self, read_current_equipment};
-use super::item_move::{EquipmentMove, EquipmentMoveReplay, EquipmentMoveResult};
+use super::item_move::{EquipmentMove, EquipmentMoveReplay, EquipmentMoveResult, LoopMoveReplay};
+use super::item_ref_admission::NativeItemWeights;
 use super::item_ref_admission::pinned_index;
 use super::item_view::ItemKey;
 use crate::durability::equipment_policy_abi::EquipmentPolicyLookup;
+use crate::durability::item_loop_move::{ItemLoopContent, LoopDestination, LoopMoveRequest};
 use crate::durability::item_mint::TypedDefinitionRef;
-use crate::foundation::ExactActorRef;
+use crate::foundation::{CommandId, CommandRef, ExactActorRef};
 use oteryn_protocol_oteryn::hotkey_equip::Request;
 use oteryn_protocol_oteryn::item_view::{EquipmentSlot, ItemMoveOutcome, wire_slot};
 
@@ -104,6 +106,21 @@ pub(super) async fn ordinary_delay(
     }
     let index = pinned_index(&runtime, owner.active_generation)?;
     let (key, revision) = index.definition_at(request.definition)?;
+    if NativeItemWeights(native).is_ammunition(&TypedDefinitionRef {
+        family: "Item".into(),
+        production_key: key.into(),
+        revision_ref: revision.into(),
+    }) {
+        return Some(
+            owner
+                .states
+                .world_gate
+                .lock()
+                .ok()?
+                .equip_delay(actor, 6, owner.clock_origin.elapsed())
+                .unwrap_or_default(),
+        );
+    }
     let policy = native.equipment_policy(key, revision)?;
     let (slot, _) = policy
         .claims()
@@ -137,10 +154,15 @@ pub(super) async fn execute(
         EquipmentMoveReplay::Conflicting => return Some(ItemMoveOutcome::Rejected),
         EquipmentMoveReplay::Absent => {}
     }
+    match super::loop_move::committed_loop_move(owner, command).await? {
+        LoopMoveReplay::Moved => return Some(ItemMoveOutcome::Moved),
+        LoopMoveReplay::Conflicting => return Some(ItemMoveOutcome::Rejected),
+        LoopMoveReplay::Absent => {}
+    }
     let Some(fence) = command.item_fence else {
         return Some(ItemMoveOutcome::Rejected);
     };
-    let (definition, slot) = {
+    let (definition, slot, ammunition) = {
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
         let native = equipment_move::native_for_move(
@@ -164,28 +186,37 @@ pub(super) async fn execute(
         let Some((key, revision)) = index.definition_at(request.definition) else {
             return Some(ItemMoveOutcome::Stale);
         };
-        let Some(policy) = native.equipment_policy(key, revision) else {
-            return Some(ItemMoveOutcome::SlotMismatch);
-        };
-        let Some((slot, _)) = policy
-            .claims()
-            .iter()
-            .find(|(slot, claim)| *slot != 10 && claim.is_ok())
-        else {
-            return Some(ItemMoveOutcome::SlotMismatch);
-        };
         let definition = TypedDefinitionRef {
             family: "Item".into(),
             production_key: key.into(),
             revision_ref: revision.into(),
         };
-        (definition, *slot)
+        let ammunition = NativeItemWeights(native).is_ammunition(&definition);
+        let slot = if ammunition {
+            6
+        } else {
+            let Some(policy) = native.equipment_policy(key, revision) else {
+                return Some(ItemMoveOutcome::SlotMismatch);
+            };
+            let Some((slot, _)) = policy
+                .claims()
+                .iter()
+                .find(|(slot, claim)| *slot != 10 && claim.is_ok())
+            else {
+                return Some(ItemMoveOutcome::SlotMismatch);
+            };
+            *slot
+        };
+        (definition, slot, ammunition)
     };
     let Some(slot_wire) = wire_slot(slot) else {
         return Some(ItemMoveOutcome::SlotMismatch);
     };
     if !action_ready(owner, actor, command, slot).await? {
         return Some(ItemMoveOutcome::Rejected);
+    }
+    if ammunition {
+        return equip_ammunition(owner, actor, command, &definition, carried).await;
     }
     if carried {
         let outcome =
@@ -237,6 +268,107 @@ pub(super) async fn execute(
         slot,
         equipment_move::move_hotkey_equipment(owner, actor, command, request).await,
     )
+}
+
+/// Crystal game.cpp:3761-3765: ammunition enters the worn right-hand quiver.
+/// Reuse the container move owner, including its capacity, stack and session fences.
+async fn equip_ammunition(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    actor: ExactActorRef,
+    command: UseCommand,
+    definition: &TypedDefinitionRef,
+    carried: bool,
+) -> Option<ItemMoveOutcome> {
+    let permit = owner.spell_lane_permit().await?;
+    let fence = command.item_fence?;
+    let native = {
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        if !condition_allows_equip(
+            &runtime,
+            actor,
+            command.game_session_id,
+            owner.owner_now().get(),
+        ) {
+            return Some(ItemMoveOutcome::Rejected);
+        }
+        equipment_move::native_for_move(
+            &runtime,
+            owner.active_generation,
+            states.is_dead(actor),
+            states.has_pending_spell_commit(actor, command.game_session_id),
+        )?
+    };
+    let inventory = owner
+        .root
+        .read_item_use_inventory(owner.character, owner.holder, fence)
+        .await
+        .ok()?;
+    let equipment = read_current_equipment(owner, command.game_session_id).await?;
+    let content = NativeItemWeights(native);
+    let Some(quiver) = equipment
+        .items
+        .iter()
+        .find(|item| item.slot == 6 && content.is_quiver(&item.definition))
+    else {
+        return Some(ItemMoveOutcome::SlotMismatch);
+    };
+    let direct = inventory.backpack.as_ref().and_then(|bag| {
+        bag.entries
+            .iter()
+            .find(|entry| entry.item.definition == *definition)
+    });
+    let source = if carried {
+        crate::durability::character_equipment::select_carried_hotkey_item(&inventory, definition)
+    } else {
+        direct.map(|entry| entry.item.item_instance_id)
+    };
+    let Some(source) = source else {
+        return Some(if inventory.backpack.is_none() {
+            ItemMoveOutcome::NoBackpack
+        } else {
+            ItemMoveOutcome::Stale
+        });
+    };
+    if !owner
+        .states
+        .player_trades
+        .physical(command.game_session_id, Some(source))
+    {
+        return Some(ItemMoveOutcome::Rejected);
+    }
+    let committed = owner
+        .root
+        .commit_item_loop_move(
+            &permit,
+            owner.character,
+            owner.holder,
+            &fence,
+            CommandRef::new(
+                command.game_session_id,
+                CommandId::new(command.command_id).ok()?,
+            ),
+            &content,
+            LoopMoveRequest {
+                item: source,
+                count: None,
+                pickup_cell: None,
+                destination: LoopDestination::Container(quiver.item_instance_id),
+            },
+        )
+        .await;
+    // ATTACK-2: a quiver's new contents must invalidate the pending swing observation.
+    owner
+        .states
+        .attack
+        .lock()
+        .await
+        .forget_weapon(actor, command.game_session_id);
+    match committed {
+        Ok(Ok(_)) => finish(owner, actor, 6, EquipmentMoveResult::Committed),
+        Ok(Err(refusal)) => Some(super::item_move::loop_outcome(refusal)),
+        Err(_) => None,
+    }
 }
 
 fn finish(

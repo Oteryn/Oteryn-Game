@@ -51,9 +51,16 @@ pub use oteryn_gameplay_social_rules::relay::{RelayError, channel_name};
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum RelayDestination {
     /// A private message, keyed by the recipient CharacterId (server side only).
-    Private { recipient: CharacterId },
+    Private {
+        recipient: CharacterId,
+    },
     /// A World room: each node delivers to its sessions that opened it.
-    Room { room: ChatRoom },
+    Room {
+        room: ChatRoom,
+    },
+    Party {
+        party_id: [u8; 16],
+    },
     Guild {
         guild_id: crate::domain::guild::GuildId,
         rank: crate::domain::guild::GuildRank,
@@ -65,6 +72,7 @@ impl fmt::Debug for RelayDestination {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Private { .. } => f.debug_struct("Private").finish_non_exhaustive(),
+            Self::Party { .. } => f.debug_struct("Party").finish_non_exhaustive(),
             Self::Guild { .. } => f.debug_struct("Guild").finish_non_exhaustive(),
             Self::Room { room } => f.debug_struct("Room").field("room", room).finish(),
         }

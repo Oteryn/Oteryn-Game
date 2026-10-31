@@ -12,6 +12,7 @@ use std::sync::{
 
 mod admission;
 mod dequeue;
+mod party;
 mod send;
 pub(super) mod wire;
 
@@ -76,6 +77,13 @@ fn qualified_fence(
     {
         return None;
     }
+    qualified_chat_fence(admitted, runtime)
+}
+
+fn qualified_chat_fence(
+    admitted: &AdmittedSession,
+    runtime: &ChannelRuntimeV1,
+) -> Option<CurrentCharacterItemFence> {
     let fence = admitted.item_fence?;
     let binding = runtime.binding();
     let actor = admitted.runtime_actor?;
