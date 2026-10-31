@@ -22,5 +22,65 @@
         "skillrate": 100
       }
     }
+  ],
+  "seasonal": [
+    {
+      "event": "autumn_vintage",
+      "source": "https://www.tibia.com/news/?subtopic=newsarchive&id=8916; https://www.tibiawiki.com.br/index.php?title=Annual_Autumn_Vintage&oldid=443757; windows begin and end at server save",
+      "windows": [
+        {
+          "start": {
+            "month": 10,
+            "day": 1
+          },
+          "end_exclusive": {
+            "month": 10,
+            "day": 8
+          }
+        },
+        {
+          "start": {
+            "month": 10,
+            "day": 17
+          },
+          "end_exclusive": {
+            "month": 10,
+            "day": 24
+          }
+        }
+      ]
+    },
+    {
+      "event": "piece_of_cake",
+      "source": "zimbadev/crystalserver@201189f871d23597b82caf88fd611454a2ddefb8:data-global/scripts/lib/a_piece_of_cake_config.lua:121-124,547-553; PR2781 answer6547596453 binds the Oteryn server-save boundary",
+      "windows": [
+        {
+          "start": {
+            "month": 2,
+            "day": 21
+          },
+          "end_exclusive": {
+            "month": 2,
+            "day": 27
+          }
+        }
+      ]
+    },
+    {
+      "event": "halloween",
+      "source": "https://www.tibia.com/news/?subtopic=eventcalendar; October 31-November 3; PR2781 answer6547596453 accepts official dates at Oteryn server save over Crystal's unbound 16:00 raid",
+      "windows": [
+        {
+          "start": {
+            "month": 10,
+            "day": 31
+          },
+          "end_exclusive": {
+            "month": 11,
+            "day": 3
+          }
+        }
+      ]
+    }
   ]
 }
