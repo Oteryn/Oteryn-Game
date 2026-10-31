@@ -396,6 +396,22 @@ fn roll_entries(
     Ok(())
 }
 
+/// W13: order a boosted boss's table so the entries its bonus rerolls lead, and return their
+/// count (the `boosted_entries` of [`LootSelectionAlgorithm::DailyBoosted`]). The bonus rolls
+/// take equipment only and never a unique entry (Crystal 201189f8
+/// `data/libs/functions/monster.lua:219-221`, `equipmentOnly` returns `not unique and
+/// isEquipment(itemType)`; rolls from `data/scripts/systems/reward_chest.lua:86-103`). The sort
+/// is stable, so replay ordinals stay deterministic.
+pub fn partition_daily_boss_bonus_entries(
+    entries: &mut [LootTableEntry],
+    is_equipment: impl Fn(&str) -> bool,
+) -> usize {
+    let bonus =
+        |entry: &LootTableEntry| !entry.details.unique && is_equipment(&entry.item.production_key);
+    entries.sort_by_key(|entry| !bonus(entry));
+    entries.iter().take_while(|entry| bonus(entry)).count()
+}
+
 // All rolls share the existing per-death draw, Item and plan-byte ceilings.
 // Distinct draw kinds domain-separate the extra rolls without widening those bounds.
 fn plan_daily_boosted(
@@ -427,14 +443,10 @@ fn plan_daily_boosted(
     for roll in 1..=extra_rolls {
         let extra = plan_roll(death_key, table_ref, &ordinary, roll)?;
         let mut remapped = vec![None; extra.entries.len()];
+        // W13: each extra roll is its own donor `generateLootRoll` call, whose unique set starts
+        // empty (Crystal 201189f8 `data/libs/functions/monstertype.lua:10`, `:25`, `:124`;
+        // Canary 47dfd51f `:10`, `:25`, `:74`): uniqueness holds inside one roll, not across.
         for (index, mut entry) in extra.entries.into_iter().enumerate() {
-            if plan
-                .entries
-                .iter()
-                .any(|old| old.unique && old.item == entry.item)
-            {
-                continue;
-            }
             if let Some(parent) = entry.parent {
                 let Some(parent) = remapped[parent] else {
                     continue;
@@ -1036,6 +1048,96 @@ mod daily_boost_tests {
             plan_creature_loot(death, &reference, &table),
             Err(LootPlanError::TooManyTableEntries)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn boosted_boss_bonus_rerolls_equipment_but_never_a_unique_entry() -> Result<(), LootPlanError>
+    {
+        let entry = |key: &str, unique: bool| {
+            let details = oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                unique,
+                ..Default::default()
+            };
+            LootTableEntry {
+                item: LootDefinitionRef::new("Item", key, "definition-r1"),
+                min_count: 1,
+                max_count: 1,
+                probability_ppm: Some(1_000_000),
+                details,
+            }
+        };
+        let mut entries = vec![
+            entry("oteryn:item.gold", false),
+            entry("oteryn:item.unique_amulet", true),
+            entry("oteryn:item.ring", false),
+        ];
+        let equipment = |key: &str| key != "oteryn:item.gold";
+        let boosted = partition_daily_boss_bonus_entries(&mut entries, equipment);
+        assert_eq!(boosted, 1);
+        assert_eq!(
+            entries
+                .iter()
+                .map(|e| e.item.production_key.as_str())
+                .collect::<Vec<_>>(),
+            [
+                "oteryn:item.ring",
+                "oteryn:item.gold",
+                "oteryn:item.unique_amulet"
+            ]
+        );
+        let table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls: 3,
+                boosted_entries: boosted,
+            },
+            entries,
+        };
+        let plan = plan_creature_loot(
+            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+            &LootDefinitionRef::new("Loot", "oteryn:loot.boss", "definition-r1"),
+            &table,
+        )?;
+        let count = |key: &str| {
+            plan.entries
+                .iter()
+                .filter(|e| e.item.production_key == key)
+                .count()
+        };
+        assert_eq!(count("oteryn:item.ring"), 4);
+        assert_eq!(count("oteryn:item.gold"), 1);
+        assert_eq!(count("oteryn:item.unique_amulet"), 1);
+        Ok(())
+    }
+
+    #[test]
+    fn a_boosted_creature_extra_roll_keeps_uniqueness_inside_its_own_roll()
+    -> Result<(), LootPlanError> {
+        // Crystal and Canary `generateLootRoll` start each call with an empty unique set, so the
+        // boosted creature's extra call may drop a unique item its base call already dropped.
+        let unique = LootTableEntry {
+            item: LootDefinitionRef::new("Item", "oteryn:item.unique", "definition-r1"),
+            min_count: 1,
+            max_count: 1,
+            probability_ppm: Some(1_000_000),
+            details: oteryn_gameplay_domain::domain::loot_data::LootEntryDetails {
+                unique: true,
+                ..Default::default()
+            },
+        };
+        let table = LootTableDefinition {
+            algorithm: LootSelectionAlgorithm::DailyBoosted {
+                extra_rolls: 1,
+                boosted_entries: 2,
+            },
+            entries: vec![unique.clone(), unique],
+        };
+        let plan = plan_creature_loot(
+            LootPlanDeathKey::new([1; 16], [2; 16], 1, 1, 1),
+            &LootDefinitionRef::new("Loot", "oteryn:loot.rat", "definition-r1"),
+            &table,
+        )?;
+        assert_eq!(plan.entries.len(), 2);
         Ok(())
     }
 

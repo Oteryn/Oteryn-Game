@@ -986,21 +986,13 @@ pub fn record_creature_kill(
                     1
                 };
                 let boosted_entries = if boosted_boss {
-                    // Boss bonus rerolls equipment only, never gold, creature products or
-                    // other consumables. Stable partition keeps replay ordinals deterministic.
-                    row.loot_table.entries.sort_by_key(|entry| {
-                        !sink
-                            .rewards
-                            .is_daily_boss_equipment(&entry.item.production_key)
-                    });
-                    row.loot_table
-                        .entries
-                        .iter()
-                        .take_while(|entry| {
-                            sink.rewards
-                                .is_daily_boss_equipment(&entry.item.production_key)
-                        })
-                        .count()
+                    // Boss bonus rerolls equipment only, never gold, creature products, other
+                    // consumables or a unique entry (W13). Stable partition keeps replay
+                    // ordinals deterministic.
+                    oteryn_gameplay_items::loot_plan::partition_daily_boss_bonus_entries(
+                        &mut row.loot_table.entries,
+                        |key| sink.rewards.is_daily_boss_equipment(key),
+                    )
                 } else {
                     row.loot_table.entries.len()
                 };

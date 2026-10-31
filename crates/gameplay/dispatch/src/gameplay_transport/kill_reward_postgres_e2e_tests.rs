@@ -1664,6 +1664,22 @@ fn boss_spawn1_at_reset_death_and_replay_through_real_dispatch_postgres() -> Tes
 }
 
 #[test]
+fn w13_boosted_boss_kill_rerolls_equipment_but_not_its_unique_drop_postgres() -> TestResult {
+    scenario_thread::run("w13-boosted-boss-unique", || {
+        super::w22a_loot::boosted_boss_unique_case();
+        scenario_with_creature_charmed(
+            None,
+            false,
+            None,
+            false,
+            false,
+            false,
+            (None, None, Some("boss")),
+        )
+    })
+}
+
+#[test]
 fn daily_boost_real_kill_xp_loot_and_unselected_race_postgres() -> TestResult {
     scenario_thread::run("daily-boost-rewards", || {
         for target in ["creature", "boss", "other"] {

@@ -15,6 +15,7 @@ enum Case {
     Gut,
     DuplexOn,
     DuplexOff,
+    BoostedBossUnique,
 }
 thread_local! { static CASE: Cell<Option<Case>> = const { Cell::new(None) }; }
 
@@ -68,6 +69,12 @@ fn w22a_mint_into_a_container_outside_the_kill_corpse_is_refused() -> TestResult
     })
 }
 
+/// W13: the next scenario kills a boosted boss whose table holds a unique amulet, a ring and
+/// gold, each at 100%.
+pub(super) fn boosted_boss_unique_case() {
+    CASE.set(Some(Case::BoostedBossUnique));
+}
+
 pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
     let Some(case) = CASE.get() else {
         return Ok(None);
@@ -96,6 +103,11 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
             let mut amulet = entry(3081);
             amulet["subtype"] = json!(5);
             table["entries"] = json!([amulet]);
+        }
+        Case::BoostedBossUnique => {
+            let mut amulet = entry(3081);
+            amulet["unique"] = json!(true);
+            table["entries"] = json!([entry(3031), amulet, entry(3051)]);
         }
         Case::Gut => {
             // Twenty minotaur leathers, a client "Creature Products" item, at 80% each.
@@ -308,6 +320,20 @@ pub(super) async fn qualify(
             eprintln!("W22C_DUPLEX corpse_entries={direct} rolls={rolls}");
             assert_eq!(direct, i64::try_from(DUPLEX_BASE_ENTRIES * rolls)?);
             assert_eq!(nested, 0);
+        }
+        Case::BoostedBossUnique => {
+            // Crystal 201189f8 `data/libs/functions/monster.lua:219-221`: the boss bonus rolls
+            // take equipment only and never a unique entry, so gold and the unique amulet drop
+            // once from the base roll and the ring once per roll (1 + 2 or 3 bonus rolls).
+            assert_eq!(nested, 0);
+            let rows: Vec<(String, i64)> = sqlx::query_as("SELECT i.definition_production_key, count(*) FROM game_item_corpse_container_entries e JOIN game_item_instances i USING(item_instance_id) GROUP BY 1 ORDER BY 1")
+                .fetch_all(&h.pool).await?;
+            eprintln!("W13_BOOSTED_BOSS corpse={rows:?}");
+            let count = |key: &str| rows.iter().find(|(k, _)| k == key).map_or(0, |(_, n)| *n);
+            assert_eq!(count("oteryn:item.tibia.i3031"), 1);
+            assert_eq!(count("oteryn:item.tibia.i3081"), 1);
+            assert!(matches!(count("oteryn:item.tibia.i3051"), 3 | 4));
+            assert_eq!(direct, 2 + count("oteryn:item.tibia.i3051"));
         }
         Case::Large => {
             assert_eq!(direct, 20);
