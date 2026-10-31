@@ -595,6 +595,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         if let Some(outcome) = self.use_reward_bag(actor, command, item).await {
             return outcome;
         }
+        if let Some(outcome) = self.use_lottery_ticket(actor, command, item).await {
+            return outcome;
+        }
         if let Some(outcome) = self.use_converter_item(actor, command, item).await {
             return outcome;
         }
@@ -602,6 +605,18 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return outcome;
         }
         Some(self.use_item(actor, command, item).await)
+    }
+
+    async fn use_consume_transform(
+        &self,
+        actor: ExactActorRef,
+        command: connection::UseCommand,
+        intent: oteryn_protocol_oteryn::world_object::UseIntent,
+        source: Option<item_view::ItemKey>,
+        target: Option<item_view::ItemKey>,
+    ) -> Option<UseOutcome> {
+        self.use_consume_transform(actor, command, intent, source, target)
+            .await
     }
 
     async fn use_coin_converter(
