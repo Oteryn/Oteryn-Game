@@ -3,6 +3,9 @@
 //! cooldowns) and `FULL` in the owner lane and starts the cooldown; then the one-item DUR-03
 //! transaction commits, and only a known commit applies the effect.
 
+#[path = "drome_cube_use.rs"]
+pub(super) mod drome_cube;
+
 use std::num::NonZeroU32;
 use std::time::Duration;
 
@@ -64,6 +67,8 @@ struct ItemUseGate {
     unspendable: Vec<[u8; 16]>,
     /// The last decided CommandId and its result: a replay of it returns that result.
     last: Option<(u64, UseDisposition)>,
+    /// W09: retain a Cube PREPARE across cancellation/unknown COMMIT, never re-plan it.
+    cube_pending: Option<Box<drome_cube::PendingCubeUse>>,
 }
 
 impl ItemUseGate {
@@ -104,6 +109,7 @@ impl ItemUseGate {
                 return Ok(());
             }
             ItemUseKind::PickRefine { .. }
+            | ItemUseKind::DromeCube { .. }
             | ItemUseKind::MountTaming
             | ItemUseKind::ProficiencyCatalyst
             | ItemUseKind::ProficiencyOrb => {

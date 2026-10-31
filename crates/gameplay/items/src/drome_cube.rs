@@ -12,13 +12,12 @@ pub const REWARD_COUNT: u8 = 20;
 /// because the backpack is full cannot let changing the command reroll the same unit.
 /// Rejection sampling avoids modulo bias; entropy exhaustion fails closed rather than falling
 /// back to a preferred reward. The durable receipt, not this function, answers a replay.
-pub fn reward_index(content_digest: [u8; 32], source: [u8; 16], quantity: u32) -> Option<u8> {
+pub fn reward_index(source: [u8; 16], quantity: u32) -> Option<u8> {
     if quantity == 0 {
         return None;
     }
     let digest: [u8; 32] = Sha256::new()
         .chain_update(b"oteryn.drome-cube.reward.v1")
-        .chain_update(content_digest)
         .chain_update(source)
         .chain_update(u64::from(quantity).to_be_bytes())
         .finalize()
@@ -71,13 +70,13 @@ mod tests {
 
     #[test]
     fn a_source_unit_has_one_stable_draw_and_zero_quantity_is_refused() {
-        let first = reward_index([1; 32], [2; 16], 10);
+        let first = reward_index([2; 16], 10);
         assert!(first.is_some_and(|index| index < REWARD_COUNT));
-        assert_eq!(first, reward_index([1; 32], [2; 16], 10));
-        assert_eq!(reward_index([1; 32], [2; 16], 0), None);
+        assert_eq!(first, reward_index([2; 16], 10));
+        assert_eq!(reward_index([2; 16], 0), None);
         // CommandId, connection generation and wall clock are deliberately not draw inputs.
         let units: std::collections::BTreeSet<_> = (1..=100)
-            .filter_map(|quantity| reward_index([1; 32], [2; 16], quantity))
+            .filter_map(|quantity| reward_index([2; 16], quantity))
             .collect();
         assert!(units.len() > 1);
     }
