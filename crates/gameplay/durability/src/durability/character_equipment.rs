@@ -85,6 +85,14 @@ pub struct EquipmentSnapshot {
     pub items: Vec<EquippedItem>,
 }
 
+/// The equipment owner's established depth-first order, shared by ammunition hotkeys.
+pub fn select_carried_hotkey_item(
+    inventory: &super::item_use::ItemUseInventory,
+    definition: &super::item_mint::TypedDefinitionRef,
+) -> Option<[u8; 16]> {
+    hotkey::first_carried_item(inventory, definition)
+}
+
 impl DurabilityRoot {
     /// Exact direct entries of equipped quivers, Extra before Shield, in display order.
     pub async fn read_quiver_ammunition<C: super::item_loop_move::ItemLoopContent>(
@@ -135,6 +143,11 @@ pub enum EquipmentIntent {
         #[serde(serialize_with = "serialize_equipment_definition")]
         definition: super::item_mint::TypedDefinitionRef,
         slot: u8,
+    },
+    HotkeyMove {
+        item: [u8; 16],
+        from_slot: Option<u8>,
+        to_slot: Option<u8>,
     },
     SetCombatMode(CombatMode),
 }
@@ -515,10 +528,13 @@ async fn apply_resolved_equipment_in_transaction(
     let mut ordinal = None;
     let mut item_revision = None;
     let mut swap: Option<(EquippedItem, u64)> = None;
+    let mut hand_displacement: Option<(EquippedItem, u64)> = None;
     let mut nested_source_parent = None;
     let mut managed_destination = None;
     let operation = match intent {
-        EquipmentIntent::Hotkey { .. } => return Err(rejected("unresolved equipment hotkey")),
+        EquipmentIntent::Hotkey { .. } | EquipmentIntent::HotkeyMove { .. } => {
+            return Err(rejected("unresolved equipment hotkey"));
+        }
         EquipmentIntent::SetCombatMode(value) => {
             mode = Some(*value);
             2_i16
@@ -619,7 +635,35 @@ async fn apply_resolved_equipment_in_transaction(
                             .iter()
                             .any(|value| proposed.groups.contains(value))
                     {
-                        return Err(rejected("equipment occupancy conflict"));
+                        if hotkey::displaces_other_hand(
+                            matches!(
+                                binding_intent,
+                                EquipmentIntent::Hotkey { .. } | EquipmentIntent::HotkeyMove { .. }
+                            ),
+                            *slot,
+                            old.slot,
+                        ) && !content.is_quiver_item(
+                            &old.definition.production_key,
+                            &old.definition.revision_ref,
+                        ) {
+                            if oldpolicy.container_capacity().is_some()
+                                || !content.is_plain_item(
+                                    &old.definition.production_key,
+                                    &old.definition.revision_ref,
+                                )
+                            {
+                                return Err(rejected("equipment swap container semantics"));
+                            }
+                            if content.is_timed_item(
+                                &old.definition.production_key,
+                                &old.definition.revision_ref,
+                            ) {
+                                return Err(rejected("equipment swap timed not hosted"));
+                            }
+                            hand_displacement = Some((old.clone(), 0));
+                        } else {
+                            return Err(rejected("equipment occupancy conflict"));
+                        }
                     }
                 }
                 // This transaction already holds the Character, source item and
@@ -636,6 +680,24 @@ async fn apply_resolved_equipment_in_transaction(
                 } else {
                     return Err(rejected("equipment source is not direct backpack entry"));
                 });
+                if hand_displacement.is_some() {
+                    let added = 1 + usize::from(actual.items.iter().any(|old| old.slot == *slot));
+                    hotkey::main_room(tx, authority, content, backpack_id, Some(*identity), added)
+                        .await?;
+                    let maximum: String = sqlx::query_scalar("SELECT COALESCE(max(placement_ordinal),0)::text FROM game_item_container_entries WHERE parent_item_instance_id=encode($1,'hex')::uuid")
+                        .bind(backpack_id.as_slice()).fetch_one(&mut **tx).await?;
+                    let replacement = number(maximum)?
+                        .max(ordinal.ok_or(rejected("equipment ordinal"))?)
+                        .checked_add(
+                            u64::try_from(added)
+                                .map_err(|_| rejected("equipment backpack ordinal exhausted"))?,
+                        )
+                        .ok_or(rejected("equipment backpack ordinal exhausted"))?;
+                    if let Some((old, target)) = &mut hand_displacement {
+                        *target = replacement;
+                        envelope["hand_displacement"] = json!({"item":old.item_instance_id,"from_slot":old.slot,"state_revision":old.state_revision,"quantity":old.quantity,"parent":backpack_id,"ordinal":replacement});
+                    }
+                }
                 if let Some(old) = actual.items.iter().find(|old| old.slot == *slot) {
                     if nested_source_parent.is_some() {
                         hotkey::main_vacancy(tx, authority, content, backpack_id).await?;
@@ -748,7 +810,10 @@ async fn apply_resolved_equipment_in_transaction(
     if let Some(source_parent) = nested_source_parent {
         envelope["nested_source"] = json!({"parent":source_parent,"ordinal":ordinal});
     }
-    if matches!(binding_intent, EquipmentIntent::Hotkey { .. }) {
+    if matches!(
+        binding_intent,
+        EquipmentIntent::Hotkey { .. } | EquipmentIntent::HotkeyMove { .. }
+    ) {
         envelope["resolved"] = json!(intent);
     }
     // All four resolved location lines and both item successors are now immutable
@@ -802,6 +867,19 @@ async fn apply_resolved_equipment_in_transaction(
         .bind(nested_source_parent.map(|id| id.to_vec()))
         .execute(&mut **tx)
         .await?;
+    if let Some((old, replacement)) = &hand_displacement {
+        // Capture the exact still-equipped predecessor before either hand is changed.
+        sqlx::query("INSERT INTO game_equipment_hand_displacements(transaction_id,item_instance_id,from_slot,state_revision_before,backpack_ordinal,quantity_before) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4::text::numeric,$5::text::numeric,$6)")
+            .bind(transaction_id.as_slice()).bind(old.item_instance_id.as_slice()).bind(i16::from(old.slot))
+            .bind(old.state_revision.to_string()).bind(replacement.to_string()).bind(i64::from(old.quantity)).execute(&mut **tx).await?;
+        sqlx::query("DELETE FROM game_character_equipment_slots WHERE character_id=encode($1,'hex')::uuid AND item_instance_id=encode($2,'hex')::uuid")
+            .bind(actual.character.as_slice()).bind(old.item_instance_id.as_slice()).execute(&mut **tx).await?;
+        sqlx::query("UPDATE game_item_instances SET last_transaction_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid")
+            .bind(transaction_id.as_slice()).bind(old.item_instance_id.as_slice()).execute(&mut **tx).await?;
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5::text::numeric,encode($6,'hex')::uuid)")
+            .bind(actual.character.as_slice()).bind(parent.ok_or(rejected("equipment parent"))?.as_slice()).bind(old.item_instance_id.as_slice())
+            .bind(authority.world.as_slice()).bind(replacement.to_string()).bind(transaction_id.as_slice()).execute(&mut **tx).await?;
+    }
     if let Some(item) = item {
         if to.is_some() && nested_source_parent.is_some() {
             sqlx::query("DELETE FROM game_item_nested_entries WHERE item_instance_id=encode($1,'hex')::uuid")
@@ -1455,6 +1533,34 @@ impl DurabilityRoot {
         .await
     }
 
+    /// Legacy hotkey capability keeps exact direct-source selection and shares hand swapping.
+    pub async fn commit_hotkey_equipment_move<C: EquipmentMoveContent>(
+        &self,
+        recovery: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: &CurrentCharacterItemFence,
+        command: CommandRef,
+        content: &C,
+        request: EquipmentMove,
+    ) -> std::result::Result<
+        std::result::Result<EquipmentReceipt, EquipmentMoveRefusal>,
+        DurabilityError,
+    > {
+        self.commit_equipment_intent(
+            recovery,
+            node,
+            fence,
+            command,
+            content,
+            EquipmentIntent::HotkeyMove {
+                item: request.item,
+                from_slot: request.from_slot,
+                to_slot: request.to_slot,
+            },
+        )
+        .await
+    }
+
     async fn commit_equipment_intent<C: EquipmentMoveContent>(
         &self,
         recovery: &ReconciledCharacterAuthority<'_, '_>,
@@ -1507,6 +1613,15 @@ impl DurabilityRoot {
                                 )
                                 .await?
                             }
+                            EquipmentIntent::HotkeyMove {
+                                item,
+                                from_slot,
+                                to_slot,
+                            } => EquipmentIntent::Move {
+                                item: *item,
+                                from_slot: *from_slot,
+                                to_slot: *to_slot,
+                            },
                             _ => intent.clone(),
                         };
                         let EquipmentIntent::Move {
