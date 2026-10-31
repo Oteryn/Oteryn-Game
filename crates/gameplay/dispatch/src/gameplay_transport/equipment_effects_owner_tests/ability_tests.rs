@@ -84,6 +84,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 39180, 39183, 39186, 39546, 50149, 50159, 50188, 50240, 50254.
     // 34097 has speed_bonus=15 and 34098 has speed_bonus=20; the other 34 have speed_bonus=0.
     ("REWARD-BAG-2", 36),
+    // Task Board: 436 delivery definitions plus talisman 51978; five were already native.
+    // Crystal 201189f XML/appearance and accepted canonical facts are qualified by
+    // tools/content-migration/task_board_item_profiles.py; no existing cohort is removed.
+    ("TASKBOARD-P04", 432),
     // TIMEDITEMS2-1 admits the inactive and active time-ring forms.
     ("TIMEDITEMS2-1", 2),
     // W18: the 20 fluid containers 2873..=2877, 2879..=2885, 2893, 2901..=2903 and
