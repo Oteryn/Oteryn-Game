@@ -80,6 +80,7 @@ pub mod party;
 pub mod party_skull;
 pub mod player_report;
 pub mod player_trade;
+pub mod player_typing;
 pub mod presentation;
 pub mod prey;
 pub mod pvp_expert;
@@ -97,6 +98,7 @@ pub mod store;
 pub mod target_move;
 pub mod task_board;
 pub mod team_finder;
+pub mod team_finder_members;
 #[cfg(test)]
 #[path = "tests/lib_tests.rs"]
 mod tests;
