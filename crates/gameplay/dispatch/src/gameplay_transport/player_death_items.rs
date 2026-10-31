@@ -15,12 +15,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         permit: &SpellLanePermit,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<(), CharacterProgressionError> {
-        if let Some(pending) = self
+        if let Some(occurrence) = self
             .root
-            .pending_respawn(self.character, self.holder, fence)
+            .pending_player_death_item_occurrence(self.character, self.holder, fence)
             .await?
         {
-            self.resume_player_death_items(permit, fence, pending.occurrence)
+            self.resume_player_death_items(permit, fence, occurrence)
                 .await?;
         }
         Ok(())

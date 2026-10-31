@@ -249,20 +249,31 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             assert_eq!(selection.amulet, Some(id(75)));
         }
     }
-    let pending = h
-        .root
-        .pending_respawn(&authority, &h.node, post_loss)
-        .await
-        .map_err(debug)?
-        .ok_or("pending Instance respawn")?;
-    assert_eq!(pending.respawn_position, request.respawn_position);
-    assert!(
+    assert_eq!(
+        h.root
+            .pending_player_death_item_occurrence(&authority, &h.node, post_loss)
+            .await
+            .map_err(debug)?,
+        Some(request.occurrence)
+    );
+    let pending_position: Vec<u8> = sqlx::query_scalar(
+        "SELECT respawn_position FROM game_character_pending_respawns WHERE character_id=encode($1,'hex')::uuid AND death_occurrence_id=encode($2,'hex')::uuid",
+    )
+    .bind(current.character_id.as_bytes().as_slice())
+    .bind(request.occurrence.as_bytes().as_slice())
+    .fetch_one(&h.pool)
+    .await?;
+    assert_eq!(pending_position, request.respawn_position);
+    assert!(matches!(
+        h.root.pending_respawn(&authority, &h.node, post_loss).await,
+        Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
+    ));
+    assert!(matches!(
         h.root
             .consume_pending_respawn(&authority, &h.node, post_loss, Some(request.occurrence))
-            .await
-            .is_err(),
-        "an Instance cannot consume its own pending home-temple respawn"
-    );
+            .await,
+        Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput)
+    ));
     assert!(
         activity
             .read_death_return_placement(

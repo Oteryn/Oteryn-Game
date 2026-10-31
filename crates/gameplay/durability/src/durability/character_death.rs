@@ -389,7 +389,7 @@ impl DurabilityRoot {
             .await?
     }
 
-    /// Read the Character's pending respawn (DEATH-0 §3.4) under the same
+    /// Read the Character's pending Channel respawn (DEATH-0 §3.4) under the same
     /// fences as [`Self::consume_pending_respawn`], deleting nothing, so an
     /// admission places the actor at its recorded position before the
     /// obligation is consumed.
@@ -399,8 +399,26 @@ impl DurabilityRoot {
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
     ) -> Result<Option<ConsumedRespawn>> {
+        if !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. }) {
+            return Err(CharacterProgressionError::InvalidInput);
+        }
         self.pending_respawn_under_fence(authority, node, fence, None, false, None)
             .await
+    }
+
+    /// Read only the occurrence needed to resume receipt-selected death item work.
+    /// An exact current Channel or admitted Instance may read under the full
+    /// recovery and gameplay fences. This neither exposes a respawn position nor
+    /// consumes or places the pending respawn; those remain Channel operations.
+    pub async fn pending_player_death_item_occurrence(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+    ) -> Result<Option<PlayerDeathOccurrence>> {
+        self.pending_respawn_under_fence(authority, node, fence, None, false, None)
+            .await
+            .map(|pending| pending.map(|pending| pending.occurrence))
     }
 
     async fn pending_respawn_under_fence(

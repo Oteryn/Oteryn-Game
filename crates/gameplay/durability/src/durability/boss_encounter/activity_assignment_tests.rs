@@ -833,6 +833,14 @@ async fn qualify_channel_position_consumers(
         h.root.pending_respawn(authority, &h.node, instance).await,
         Err(CharacterProgressionError::InvalidInput)
     ));
+    // Item recovery may read only an occurrence in its exact admitted scope.
+    // Allocation/readiness cannot let this borrowed Instance read a Channel death.
+    assert!(matches!(
+        h.root
+            .pending_player_death_item_occurrence(authority, &h.node, instance)
+            .await,
+        Err(CharacterProgressionError::AuthorityRejected)
+    ));
     assert!(matches!(
         h.root
             .consume_pending_respawn(authority, &h.node, instance, Some(occurrence))
@@ -988,6 +996,14 @@ async fn qualify_live_respawn_retention(
     assert!(matches!(
         h.root.pending_respawn(authority, &h.node, instance).await,
         Err(CharacterProgressionError::InvalidInput)
+    ));
+    // Item recovery may read only an occurrence in its exact admitted scope.
+    // Allocation/readiness cannot let this borrowed Instance read a Channel death.
+    assert!(matches!(
+        h.root
+            .pending_player_death_item_occurrence(authority, &h.node, instance)
+            .await,
+        Err(CharacterProgressionError::AuthorityRejected)
     ));
     for selected in [None, Some(occurrence)] {
         assert!(matches!(
