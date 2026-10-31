@@ -1,6 +1,8 @@
 //! L3 rules: item stacking, capacity, transfer and placement, loot rolls, pickup/reach, corpses, examine text.
 
+pub mod concoctions;
 pub mod depot;
+pub mod drome_cube;
 pub mod equipment_effects;
 pub mod fishing;
 pub mod forge;
