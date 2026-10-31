@@ -17,6 +17,7 @@ pub mod item_forge3332_promotion;
 pub mod item_hit_magic_promotion;
 pub mod item_identity;
 pub mod item_mantra_bond_modifier_promotion;
+pub mod item_market_crystal_parity;
 pub mod item_market_true_promotion;
 pub mod item_movable_promotion;
 pub mod item_name15_promotion;

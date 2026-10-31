@@ -13236,7 +13236,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "6fb60d9a38a3029876c1f15ce900861058ca8bd01ca68f060f6e3805255840f0",
+        "canonical_definition_sha256": "91ef45351864e6077d2c85999c74caccda79ed87b074f45a34811650d6c53b73",
         "canonical_name": "avenger",
         "canonical_path": "content/items/definitions/items-30000-30499.json",
         "wiki_observations": [
@@ -19183,7 +19183,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "5cd7371f48ecd116996f8eaac24e28e7f20c065e727f2638b140fe3e4382446e",
+        "canonical_definition_sha256": "5b6381d6805802673cc0892c7e11dc21bc30c49f73498334fd47ece51e0439b8",
         "canonical_name": "devileye",
         "canonical_path": "content/items/definitions/items-31500-31999.json",
         "wiki_observations": [
@@ -19282,7 +19282,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "8b03fff23b171fefd07182e17d26e5a27b8d4052ecbc41c6889ab6e27a61e126",
+        "canonical_definition_sha256": "7e16a2f79c7986027f5d58b117b796098e8bb0c14f3c6eb08e2b9d23c799bf82",
         "canonical_name": "ironworker",
         "canonical_path": "content/items/definitions/items-31500-31999.json",
         "wiki_observations": [
@@ -21227,7 +21227,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "3d2f7863cbe16c56e777c9ef16cb59fab39de05c7a71d80fc7ef5ca52a3c1ba7",
+        "canonical_definition_sha256": "9fd13f39761d610f3da431f76855888275abd750ac4a60d05f8601b9ac692c40",
         "canonical_name": "stomper",
         "canonical_path": "content/items/definitions/items-31500-31999.json",
         "wiki_observations": [
@@ -21432,7 +21432,7 @@
       },
       "evidence_status": "COMMUNITY_SINGLE_SOURCE",
       "identity_evidence": {
-        "canonical_definition_sha256": "7f3bd42848a61a4e465e0ae8a6f8518952ddf0170f062bf08b374970df42c2c7",
+        "canonical_definition_sha256": "41fa5ca3706bb43b083c637a93e64b82cbcd72b23df19bcf70dd12af65ee4f0e",
         "canonical_name": "epiphany",
         "canonical_path": "content/items/definitions/items-31500-31999.json",
         "wiki_observations": [

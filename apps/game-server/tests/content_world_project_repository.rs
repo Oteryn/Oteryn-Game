@@ -17,8 +17,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        424,
-        "a1322d2db427abda1034a35e77d2785c934c44112e418e75ebfb40ec2f6a877e",
+        427,
+        "1f2c1c8bff0d0c363cf7d91658ad4c6cb8f783a785f58af244da0953bdc936e2",
     ),
     (
         "definitions/declarations.json",
@@ -27,8 +27,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        27_270_799,
-        "7bc0cbf41590fa5d5da47102735e5444f0e1b49ea976e3c2a89189c81da0758c",
+        27_304_151,
+        "7695dd95988a972d80f7fd2567e1f1c008a634ed932bf3687ab93266547c717e",
     ),
     (
         "editor/author.json",
@@ -37,8 +37,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1959,
-        "308c915e6253366e9665fff01863f0dc7ce2eee9c07993eb9e40e6ca1e7024c8",
+        1960,
+        "522c10da25a9e420332911b9999f4f9a3aae059cb167620ec0b19a1878eee701",
     ),
     (
         "presentations/bindings.json",
@@ -47,13 +47,13 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        410,
-        "e66276d196d4ef62f89344b75b055688476160bd33c8784a8a0e27cf583be8ff",
+        411,
+        "f556c3c303e7f670d10d60d18e32f1327576b04bd6c73465becaf0daea780552",
     ),
     (
         "provenance/imports.json",
-        6_772_059,
-        "f77768854859918be07eda199f6b9ce3a641de69ab80976d83a2271cdeab72b9",
+        6_772_686,
+        "a364d2cd16ca7936ec153542875f6e207ce1bc622158c0a0c0d04e796b581b4d",
     ),
     (
         "provenance/sources.json",
@@ -140,7 +140,7 @@ const WORLD_CATALOGUE_SHARDS: [(&str, &str); 4] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "83d31d649df8311845177a275a7c528dc9cbcc6c3d9c4b7b04187b9b2a403d45";
+const TREE_SHA256: &str = "04dce6d7d0a6fbc8b9f13bfd8d4ff8fd32afce97760f7292bd8b84746c5347a7";
 /// A12 (ITEM-ID-1b): the protected Item family less the 4,590 D149 records, on Tibia keys,
 /// plus the 404 donor epoch-2 records and the 62 appearance-only records (ITEM-ADD-1, Snowball 53855, r25 40450).
 const ITEMS: usize = 34_043;
@@ -392,9 +392,9 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     .expect("capture tracked canonical package");
     assert_eq!(
         project.project_revision(),
-        "par-m10-drown-protection-20261028-r1"
+        "e06-market-crystal-parity-20261031-r1"
     );
-    assert_eq!(project.imports().len(), 33);
+    assert_eq!(project.imports().len(), 34);
     let legacy_imports: Vec<_> = project
         .imports()
         .iter()
@@ -404,6 +404,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
                 && b.batch_id != "g4-item-fx-audio295-raw-evidence-r1"
                 && b.batch_id != "official-creature-balance-8918-8935-9024-9039"
                 && b.batch_id != "item-drown-protection-5460-13995"
+                && b.batch_id != "item-market-crystal-parity-201189f"
         })
         .collect();
     assert_eq!(legacy_imports.len(), 25);
@@ -2085,14 +2086,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     // which keeps other atoms).
     // Eight successor defaults add eight false leaves; all already have Wave 1 atoms.
     // D3-7 adds one explicit `stackable: false` leaf on the corpse, which had no atom here.
+    // E06 Crystal market parity adds 134 leaves (135 rows; i3321 only flips false to true) on 72
+    // Items that had no atom here.
     assert_eq!(
         wave1_items,
         // Portal25051 + ten exact Tentacle Item identities add eleven explicit false stackability facts.
-        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518 + 11 + 1
+        164 + 995 + 27 + 1_788 + 1 + 11 + 987 + 4 + 2518 + 11 + 1 + 72
     );
     assert_eq!(
         wave1_fields,
-        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8 + 11 + 1
+        290 + 1_269 + 49 + 1 + 2_345 + 1 + 11 + 1_487 + 7 + 4_889 + 8 + 11 + 1 + 134
     );
     // The declared timer has its own census: it is not one of the older v1/Wave 1 atoms.
     let (charge_fields, duration_fields) = linked
