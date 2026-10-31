@@ -1,18 +1,14 @@
-//! Staged codecs for reserved commands 178–180. These confer no runtime authority.
-#![cfg_attr(not(test), allow(dead_code))]
-use super::{
-    Error, MAX_QUERY_BYTES, push_message_field, push_varint_field, read_bytes, read_varint,
-    valid_key,
-};
+//! Boss key codec for prerequisite checks; staged receipts confer no runtime authority.
+use super::{Error, MAX_QUERY_BYTES, push_message_field, read_bytes, read_varint, valid_key};
 
 /// The client identifies only admitted content and the lever use occurrence. Party membership,
 /// positions, levels, cooldowns and room coordinates are deliberately server-resolved.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct BossLeverRequest {
+pub struct BossLeverRequest {
     pub boss_key: String,
 }
 
-pub(super) fn decode_boss_key(payload: &[u8]) -> Result<BossLeverRequest, Error> {
+pub fn decode_boss_key(payload: &[u8]) -> Result<BossLeverRequest, Error> {
     if payload.len() > MAX_QUERY_BYTES {
         return Err(Error::LimitExceeded);
     }
@@ -29,7 +25,7 @@ pub(super) fn decode_boss_key(payload: &[u8]) -> Result<BossLeverRequest, Error>
     })
 }
 
-pub(super) fn encode_boss_key(key: &str) -> Result<Vec<u8>, Error> {
+pub fn encode_boss_key(key: &str) -> Result<Vec<u8>, Error> {
     if !valid_key(key) {
         return Err(Error::Malformed);
     }
@@ -39,6 +35,7 @@ pub(super) fn encode_boss_key(key: &str) -> Result<Vec<u8>, Error> {
 }
 
 /// Opaque fresh-instance receipt. It is presentation data, never an admission credential.
+#[cfg(test)]
 pub(super) fn encode_instance_receipt(
     instance: &[u8; 16],
     deadline_unix_ms: u64,
@@ -48,6 +45,6 @@ pub(super) fn encode_instance_receipt(
     }
     let mut out = Vec::new();
     push_message_field(&mut out, 1, instance);
-    push_varint_field(&mut out, 2, deadline_unix_ms);
+    super::push_varint_field(&mut out, 2, deadline_unix_ms);
     Ok(out)
 }

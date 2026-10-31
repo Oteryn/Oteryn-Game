@@ -76,9 +76,11 @@ pub fn encode_reward_chest(
     Ok(out)
 }
 
-// Reserved wire proposals; no production activity owner exists yet.
+// Existing boss-key wire is used by Quest prerequisite checks. Native activity admission
+// remains unavailable until the shared W02 owner is composed.
 #[path = "boss_encounter_staged.rs"]
 mod staged;
+pub use staged::{BossLeverRequest, decode_boss_key, encode_boss_key};
 
 /// An empty cursor starts a list; subsequent cursors are the last key of a full page.
 /// Unknown/repeated fields, invalid keys and oversized requests fail closed.

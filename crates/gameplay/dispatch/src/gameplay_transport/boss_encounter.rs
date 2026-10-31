@@ -15,7 +15,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return GuildReply::Rejected;
         };
         if id == 0
-            || !matches!(kind, wire::COMMAND_TYPE_BOSS_COOLDOWNS | wire::COMMAND_TYPE_BOSS_REWARD_OPEN)
+            || !matches!(
+                kind,
+                wire::COMMAND_TYPE_BOSS_COOLDOWNS
+                    | wire::COMMAND_TYPE_BOSS_REWARD_OPEN
+                    | wire::COMMAND_TYPE_BOSS_LEVER
+            )
             || !admitted
                 .continuity
                 .selected_capabilities
@@ -23,6 +28,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             || (kind == wire::COMMAND_TYPE_BOSS_COOLDOWNS
                 && wire::decode_cooldown_query(payload).is_err())
             || (kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN && !payload.is_empty())
+            || (kind == wire::COMMAND_TYPE_BOSS_LEVER && wire::decode_boss_key(payload).is_err())
             || fence.game_session_id != admitted.game_session_id
             || fence.connection_generation.get() != admitted.continuity.connection_generation
         {
@@ -46,6 +52,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return GuildReply::Rejected;
             }
+        }
+        if kind == wire::COMMAND_TYPE_BOSS_LEVER {
+            return self.endgame_boss_lever_wire(admitted, payload).await;
         }
         let result = if kind == wire::COMMAND_TYPE_BOSS_REWARD_OPEN {
             self.root

@@ -2,6 +2,7 @@
 pub mod bone_overlord;
 pub mod boreth;
 pub mod crystal_deaths;
+pub mod endgame_entry;
 pub mod gaz_haragoth;
 pub mod hazard_primal;
 pub mod herald_of_fire;
