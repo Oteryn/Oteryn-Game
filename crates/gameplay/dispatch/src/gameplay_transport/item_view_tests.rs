@@ -129,6 +129,91 @@ fn a_map_view_that_does_not_encode_leaves_the_table_unchanged() {
 }
 
 #[test]
+fn browse_refresh_with_conflicting_tile_reads_preserves_every_previous_handle()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::gameplay_transport::container_view::{
+        ContainerObservation, ContainerPlan, ContainerViewState,
+    };
+    use oteryn_protocol_oteryn::browse_field::BrowseFieldIntent;
+    use oteryn_protocol_oteryn::container_tree::ContainerViewOutcome;
+    use oteryn_protocol_oteryn::item_view::WorldTilePosition;
+
+    let first = WorldTilePosition {
+        x: 300,
+        y: 300,
+        floor: -7,
+    };
+    let second = WorldTilePosition { x: 301, ..first };
+    let field = |position: WorldTilePosition| ItemKey::BrowseField {
+        x: position.x,
+        y: position.y,
+        floor: position.floor,
+    };
+    let observed = |position, values: &[u16]| ContainerObservation::BrowseField {
+        position,
+        entries: values.iter().map(|id| item(instance(*id))).collect(),
+        lease: None,
+    };
+    let mut view = SessionItemView::resume(ItemViewContinuity::default()).with_browse_field();
+    let mut state = ContainerViewState::default().with_browse_field();
+    for (position, contents) in [(first, 1), (second, 2)] {
+        let ContainerPlan::Observe(pending) =
+            state.plan_browse(BrowseFieldIntent::Open { position })
+        else {
+            return Err("open must observe the tile".into());
+        };
+        let (outcome, delta) = state
+            .apply(&mut view, pending, Some(observed(position, &[contents])))
+            .map_err(|error| format!("{error:?}"))?;
+        assert_eq!(outcome, ContainerViewOutcome::Opened);
+        assert!(delta.is_some());
+    }
+    let before = view.continuity();
+    let previous: Vec<_> = [field(first), field(second), instance(1), instance(2)]
+        .into_iter()
+        .map(|key| (key, view.table().handle(&key)))
+        .collect();
+    // The first tile was read before another player's pickup and drop; the second after it.
+    // A duplicate is refused, while a removed old item and a newly observed item test rollback.
+    let delta = state
+        .refresh(
+            &mut view,
+            &[
+                (field(first), Some(observed(first, &[1, 3]))),
+                (field(second), Some(observed(second, &[1]))),
+            ],
+        )
+        .map_err(|error| format!("{error:?}"))?;
+    assert!(delta.is_none());
+    assert_eq!(view.continuity(), before);
+    for (key, previous) in previous {
+        let handle = previous.ok_or("previous handle")?;
+        assert_eq!(view.table().handle(&key), Some(handle));
+        assert_eq!(view.resolve(handle), Some(key));
+    }
+    assert!(view.table().handle(&instance(3)).is_none());
+    assert_eq!(view.table().live(), 4);
+    assert_eq!(state.open_views(), 2);
+    Ok(())
+}
+
+#[test]
+fn browse_tree_revision_exhaustion_rolls_back_new_handles() {
+    let continuity = ItemViewContinuity {
+        views_revision: u64::MAX,
+        ..ItemViewContinuity::default()
+    };
+    let mut view = SessionItemView::resume(continuity).with_browse_field();
+    assert_eq!(
+        view.tree_delta(&[instance(1)], |_| Ok(Vec::new())),
+        Err(ItemViewError::Exhausted)
+    );
+    assert_eq!(view.continuity(), continuity);
+    assert_eq!(view.table().live(), 0);
+    assert!(view.table().handle(&instance(1)).is_none());
+}
+
+#[test]
 fn handles_are_monotonic_never_reused_and_stale_once_out_of_every_view() {
     let mut table = ItemHandleTable::default();
     table

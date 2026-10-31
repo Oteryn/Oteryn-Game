@@ -22,20 +22,25 @@
 //! Nothing here writes: moving an item in the tree is the item loop (`durability::item_loop_move`,
 //! BAGS-1).
 
-#![cfg_attr(not(test), allow(dead_code))]
-
 use super::item_view::{
     ItemHandleTable, ItemKey, ItemViewDelta, ItemViewError, SessionItemView, ViewItem,
 };
+use oteryn_protocol_oteryn::browse_field::{
+    BROWSE_FIELD_CAPACITY, BrowseFieldIntent, BrowseFieldPage,
+};
 use oteryn_protocol_oteryn::container_tree::{
     ContainerView, ContainerViewIntent, ContainerViewOutcome, ContainerViews, MAX_CONTAINER_VIEWS,
-    encode_container_views,
+    encode_container_views_for,
 };
 use oteryn_protocol_oteryn::item_view::ItemEntry;
+use oteryn_protocol_oteryn::item_view::WorldTilePosition;
 use std::collections::BTreeMap;
 use std::iter;
 use tokio::time::{Duration, Instant};
 
+pub(super) mod browse_cache;
+pub(super) mod browse_projection;
+pub(super) mod browse_rules;
 pub(super) mod refresh;
 
 /// `BAGS0-RL-04`: view commands per [`VIEW_COMMAND_WINDOW`].
@@ -58,6 +63,13 @@ pub enum ContainerObservation {
         capacity: u8,
         entries: Vec<ViewItem>,
     },
+    /// The complete eligible tile stack, before page and handle limits are applied.
+    BrowseField {
+        position: WorldTilePosition,
+        entries: Vec<ViewItem>,
+        /// Keeps the Channel's weak tile cache alive only while a viewer holds it.
+        lease: Option<browse_cache::BrowseLease>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -66,12 +78,49 @@ struct OpenView {
     parent: Option<ItemKey>,
     capacity: u8,
     entries: Vec<ViewItem>,
+    browse: Option<BrowseFieldPage>,
+    browse_lease: Option<browse_cache::BrowseLease>,
+}
+
+impl OpenView {
+    fn keep_browse_order(&mut self, previous: &Self) {
+        if self.browse.is_none() || previous.browse.is_none() || self.browse_lease.is_some() {
+            return;
+        }
+        // Tile notifications retain surviving order and append newly added items.
+        let mut remaining: BTreeMap<_, _> = self.entries.iter().map(|e| (e.key, *e)).collect();
+        let mut ordered = Vec::with_capacity(self.entries.len());
+        for entry in &previous.entries {
+            if let Some(current) = remaining.remove(&entry.key) {
+                ordered.push(current);
+            }
+        }
+        for entry in self.entries.iter().rev() {
+            if remaining.remove(&entry.key).is_some() {
+                ordered.push(*entry);
+            }
+        }
+        self.entries = ordered;
+    }
+
+    fn page_entries(&self) -> &[ViewItem] {
+        match self.browse {
+            Some(page) => {
+                let start = usize::from(page.index);
+                let end = (start + usize::from(BROWSE_FIELD_CAPACITY)).min(self.entries.len());
+                &self.entries[start..end]
+            }
+            None => &self.entries,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Slot {
     New,
     View(u8),
+    Browse,
+    Seek(u8, u16),
 }
 
 /// An open or up that waits for the Channel owner's observation of `key`.
@@ -136,13 +185,20 @@ impl Default for ViewCommandWindow {
 #[derive(Debug, Default)]
 pub struct ContainerViewState {
     views: BTreeMap<u8, OpenView>,
+    browse_field: bool,
 }
 
 impl ContainerViewState {
+    pub fn with_browse_field(mut self) -> Self {
+        self.browse_field = true;
+        self
+    }
+
     pub(super) fn container_for_view(&self, id: u8) -> Option<ItemKey> {
         self.views.get(&id).map(|view| view.container)
     }
 
+    #[cfg(test)]
     pub fn open_views(&self) -> usize {
         self.views.len()
     }
@@ -167,27 +223,82 @@ impl ContainerViewState {
                 .iter()
                 .find(|(key, _)| *key == view.container)
                 .and_then(|(_, observation)| observation.as_ref());
-            if let Some(ContainerObservation::Container {
-                parent,
-                capacity,
-                entries,
-            }) = observation
+            if let Some(mut refreshed) =
+                observation.and_then(|o| self.observed_view(view.container, o))
             {
-                next.insert(
-                    *id,
-                    OpenView {
-                        container: view.container,
-                        parent: *parent,
-                        capacity: *capacity,
-                        entries: entries.clone(),
-                    },
-                );
+                refreshed.keep_browse_order(view);
+                if let (Some(previous), Some(page)) = (view.browse, refreshed.browse.as_mut()) {
+                    page.index = browse_rules::refresh_index(previous.index, page.total);
+                }
+                next.insert(*id, refreshed);
             }
         }
         if next == self.views {
             return Ok(None);
         }
         self.commit(item_view, next)
+    }
+
+    fn observed_view(
+        &self,
+        container: ItemKey,
+        observation: &ContainerObservation,
+    ) -> Option<OpenView> {
+        match observation {
+            ContainerObservation::Container {
+                parent,
+                capacity,
+                entries,
+            } => Some(OpenView {
+                container,
+                parent: parent
+                    .filter(|p| self.browse_field || !matches!(p, ItemKey::BrowseField { .. })),
+                capacity: *capacity,
+                entries: entries.clone(),
+                browse: None,
+                browse_lease: None,
+            }),
+            ContainerObservation::BrowseField {
+                position,
+                entries,
+                lease,
+            } if self.browse_field => Some(OpenView {
+                container,
+                parent: None,
+                capacity: BROWSE_FIELD_CAPACITY,
+                entries: entries.clone(),
+                browse: Some(BrowseFieldPage {
+                    position: *position,
+                    index: 0,
+                    total: u16::try_from(entries.len()).ok()?,
+                }),
+                browse_lease: lease.clone(),
+            }),
+            _ => None,
+        }
+    }
+
+    pub fn plan_browse(&self, intent: BrowseFieldIntent) -> ContainerPlan {
+        if !self.browse_field {
+            return ContainerPlan::Decided(ContainerViewOutcome::Stale, None);
+        }
+        let (key, slot) = match intent {
+            BrowseFieldIntent::Open { position } => (
+                ItemKey::BrowseField {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                },
+                Slot::Browse,
+            ),
+            BrowseFieldIntent::Seek { view_id, index } => {
+                let Some(view) = self.views.get(&view_id).filter(|v| v.browse.is_some()) else {
+                    return ContainerPlan::Decided(ContainerViewOutcome::Stale, None);
+                };
+                (view.container, Slot::Seek(view_id, index))
+            }
+        };
+        ContainerPlan::Observe(PendingOpen { key, slot })
     }
 
     /// The first step of one command 21: a close is decided here; an open or up names the
@@ -243,16 +354,16 @@ impl ContainerViewState {
     }
 
     /// The second step of an open, up or container `USE`, on the Channel owner's observation
-    /// (`None` when it cannot be observed: `STALE`). A container shows in one view only: opening
-    /// one already shown elsewhere moves it. Views that would not encode leave everything
-    /// unchanged and are `STALE`.
+    /// (`None` when it cannot be observed: `STALE`). An ordinary container shows in one view
+    /// only. Browse fields can share their tile across IDs, each retaining its own page.
+    /// Views that would not encode leave everything unchanged and are `STALE`.
     pub fn apply(
         &mut self,
         item_view: &mut SessionItemView,
         pending: PendingOpen,
         observation: Option<ContainerObservation>,
     ) -> Result<(ContainerViewOutcome, Option<ItemViewDelta>), ItemViewError> {
-        let (parent, capacity, entries) = match observation {
+        match &observation {
             None | Some(ContainerObservation::Gone) => {
                 return Ok((ContainerViewOutcome::Stale, None));
             }
@@ -260,18 +371,82 @@ impl ContainerViewState {
                 return Ok((ContainerViewOutcome::NotAContainer, None));
             }
             Some(ContainerObservation::TooFar) => return Ok((ContainerViewOutcome::TooFar, None)),
-            Some(ContainerObservation::Container {
-                parent,
-                capacity,
-                entries,
-            }) => (parent, capacity, entries),
+            Some(
+                ContainerObservation::Container { .. } | ContainerObservation::BrowseField { .. },
+            ) => {}
         };
+        let Some(mut opened) = observation
+            .as_ref()
+            .and_then(|o| self.observed_view(pending.key, o))
+        else {
+            return Ok((ContainerViewOutcome::Stale, None));
+        };
+        if let Some(previous) = self
+            .views
+            .values()
+            .find(|view| view.container == pending.key && view.browse.is_some())
+        {
+            // Production observations carry the shared cache order. Unleased observations
+            // use the existing alias as that same ordering authority.
+            opened.keep_browse_order(previous);
+        }
         let mut next = self.views.clone();
-        let shown = next
-            .iter()
-            .find(|(_, view)| view.container == pending.key)
-            .map(|(id, _)| *id);
+        if opened.browse.is_some() {
+            // Crystal addContainer changes only the requested ID. Other IDs retain their
+            // pages, but all must publish the same current tile contents and total.
+            for alias in next
+                .values_mut()
+                .filter(|view| view.container == pending.key && view.browse.is_some())
+            {
+                let mut refreshed = opened.clone();
+                if let (Some(previous), Some(page)) = (alias.browse, refreshed.browse.as_mut()) {
+                    page.index = browse_rules::refresh_index(previous.index, page.total);
+                }
+                *alias = refreshed;
+            }
+        }
+        let shown = if opened.browse.is_none() {
+            next.iter()
+                .find(|(_, view)| view.container == pending.key)
+                .map(|(id, _)| *id)
+        } else {
+            None
+        };
         let id = match (pending.slot, shown) {
+            (Slot::Browse, _) => {
+                let Some(page) = opened.browse else {
+                    return Ok((ContainerViewOutcome::Stale, None));
+                };
+                let (Ok(x), Ok(y)) = (
+                    u16::try_from(page.position.x),
+                    u16::try_from(page.position.y),
+                ) else {
+                    return Ok((ContainerViewOutcome::Stale, None));
+                };
+                let id = browse_rules::dummy_view_id(x, y);
+                if let Some(occupant) = next.remove(&id) {
+                    // Crystal game.cpp:5077-5078 / player.cpp:11773-11782 closes every
+                    // visible alias of the occupant. Approved snapshot adaptation
+                    // (PR #2765, ANSWER6543254285): retire those bindings as well,
+                    // without retaining the donor's hidden aliases and later reopen effects.
+                    next.retain(|_, view| view.container != occupant.container);
+                    return Ok(match self.commit(item_view, next)? {
+                        Some(delta) => (ContainerViewOutcome::Closed, Some(delta)),
+                        None => (ContainerViewOutcome::Stale, None),
+                    });
+                }
+                id
+            }
+            (Slot::Seek(id, index), _) => {
+                let Some(page) = opened.browse.as_mut() else {
+                    return Ok((ContainerViewOutcome::Stale, None));
+                };
+                if !browse_rules::valid_seek(index, page.total) {
+                    return Ok((ContainerViewOutcome::Stale, None));
+                }
+                page.index = index;
+                id
+            }
             (Slot::View(id), _) | (Slot::New, Some(id)) => id,
             (Slot::New, None) => {
                 match (0..MAX_CONTAINER_VIEWS as u8).find(|id| !next.contains_key(id)) {
@@ -283,15 +458,7 @@ impl ContainerViewState {
         if let Some(other) = shown.filter(|other| *other != id) {
             next.remove(&other);
         }
-        next.insert(
-            id,
-            OpenView {
-                container: pending.key,
-                parent,
-                capacity,
-                entries,
-            },
-        );
+        next.insert(id, opened);
         Ok(match self.commit(item_view, next)? {
             Some(delta) => (ContainerViewOutcome::Opened, Some(delta)),
             None => (ContainerViewOutcome::Stale, None),
@@ -307,14 +474,22 @@ impl ContainerViewState {
     ) -> Result<Option<ItemViewDelta>, ItemViewError> {
         let keys: Vec<ItemKey> = next
             .values()
-            .flat_map(|view| iter::once(view.container).chain(view.entries.iter().map(|e| e.key)))
+            .flat_map(|view| {
+                iter::once(view.container)
+                    .chain(
+                        view.parent
+                            .filter(|p| matches!(p, ItemKey::BrowseField { .. })),
+                    )
+                    .chain(view.page_entries().iter().map(|e| e.key))
+            })
             .collect();
         let encode = |table: &ItemHandleTable| {
             let views = next
                 .iter()
                 .map(|(id, view)| encode_view(table, *id, view))
                 .collect::<Result<_, _>>()?;
-            encode_container_views(&ContainerViews { views }).map_err(|_| ItemViewError::Encode)
+            encode_container_views_for(&ContainerViews { views }, self.browse_field)
+                .map_err(|_| ItemViewError::Encode)
         };
         match item_view.tree_delta(&keys, encode) {
             Ok(delta) => {
@@ -337,8 +512,9 @@ fn encode_view(
         container_handle: table.handle(&view.container).ok_or(ItemViewError::Encode)?,
         parent_handle: view.parent.and_then(|parent| table.handle(&parent)),
         capacity: view.capacity,
+        browse: view.browse,
         entries: view
-            .entries
+            .page_entries()
             .iter()
             .map(|item| {
                 Ok(ItemEntry {
@@ -355,3 +531,7 @@ fn encode_view(
 #[cfg(test)]
 #[path = "container_view_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "container_view/browse_tests.rs"]
+mod browse_tests;

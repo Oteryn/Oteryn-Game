@@ -614,7 +614,7 @@ pub fn resolve_map_handle<F: MapFacts>(
                 item_instance_id,
             })
             .ok_or(stale),
-        ItemKey::Entity(_) => Err(stale),
+        ItemKey::Entity(_) | ItemKey::BrowseField { .. } => Err(stale),
     }
 }
 

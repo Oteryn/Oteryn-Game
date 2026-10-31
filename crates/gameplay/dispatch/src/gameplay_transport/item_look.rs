@@ -320,6 +320,7 @@ pub(super) async fn observe_item(
         None
     };
     let (definition, count, mut distance) = match key {
+        ItemKey::BrowseField { .. } => return Err(unavailable),
         ItemKey::Entity(_) => {
             let corpse = corpse.as_ref().ok_or(unavailable)?;
             (

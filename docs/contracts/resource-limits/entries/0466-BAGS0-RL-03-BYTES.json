@@ -19,5 +19,5 @@
     "crates/protocol-oteryn/src/container_tree.rs MAX_CONTAINER_VIEWS_BYTES",
     "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json state domain 14"
   ],
-  "notes": "BAGS-0 \u00a710 CONTAINER_VIEWS snapshot bytes; test: container_tree::tests::views_hold_16_views_of_20_entries_and_refuse_more. Registered by OTV2-20261003-bags-wire-1."
+  "notes": "BAGS-0 \u00a710 CONTAINER_VIEWS snapshot bytes; test: container_tree::tests::views_hold_16_views_of_20_entries_and_refuse_more. Registered by OTV2-20261003-bags-wire-1. This baseline remains 10,384 bytes without capability 230; the selected BROWSE_FIELD_V1 extension permits 15,488 bytes under docs/contracts/protocol-oteryn/v1/browse-field-v1.md, while ordinary views retain their twenty-entry bound."
 }
