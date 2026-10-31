@@ -53,9 +53,10 @@ pub(super) async fn exercise(
             .await?
             .is_none()
     );
+    // I18c now exposes the proven tile as a virtual parent; legacy codecs still hide it.
     assert!(
         matches!(owner.observe_container(actor, Some(fence), key).await,
-        Some(ContainerObservation::Container { parent: None, entries, .. }) if entries.is_empty())
+        Some(ContainerObservation::Container { parent: Some(ItemKey::BrowseField { x: 7, y: 0, floor: -7 }), entries, .. }) if entries.is_empty())
     );
     // Each stale placement component independently fails closed in the native read.
     let persisted = owner

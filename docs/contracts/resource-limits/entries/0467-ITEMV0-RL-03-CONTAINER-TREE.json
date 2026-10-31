@@ -19,5 +19,5 @@
     "crates/protocol-oteryn/src/container_tree.rs MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE",
     "apps/game-server/src/gameplay_transport/item_view.rs ItemHandleTable"
   ],
-  "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; sessions without capability 14 keep that base bound). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests. Registered by OTV2-20261003-bags-wire-1."
+  "notes": "BAGS-0 \u00a75 and \u00a710 (ITEMV0-RL-03 re-measured; sessions without capability 14 keep that base bound). Tests: container_tree::tests::live_handle_bound_adds_16_views_of_21_items, container_view::tests. Registered by OTV2-20261003-bags-wire-1. Capability 230 selects the browse-field base allowance of 811 handles (315 + 16 x 31) instead of 651; the separate map allowance still applies, as specified in docs/contracts/protocol-oteryn/v1/browse-field-v1.md. Sessions without capability 230 retain the existing baseline."
 }

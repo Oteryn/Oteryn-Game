@@ -344,6 +344,34 @@ where
 {
     player_trade::refresh(stream, authority, session).await?;
     cyclopedia_tracker::refresh(stream, authority, session).await?;
+    // Crystal's tile notifications refresh every observer, including an idle one.
+    // Use the same bounded connection refresh already used after local item commits.
+    if session
+        .selected_capabilities
+        .contains(oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1)
+        && let (Some(views), Some(view)) =
+            (session.container_views.as_mut(), session.item_view.as_mut())
+    {
+        let refreshed = crate::gameplay_transport::container_view::refresh::refresh(
+            authority,
+            session.actor,
+            session.admitted.item_fence,
+            views,
+            view,
+        )
+        .await
+        .map_err(|_| ServeEnd::Disconnected)?;
+        session.admitted.continuity.item_view = view.continuity();
+        if let Some(delta) = refreshed {
+            let (sequence, frame) = item_view_delta(session.generation, session.sequence, &delta)
+                .ok_or(ServeEnd::Disconnected)?;
+            session.sequence = sequence;
+            session.admitted.continuity.server_sequence = sequence;
+            write_frame(stream, &frame)
+                .await
+                .map_err(|_| ServeEnd::Disconnected)?;
+        }
+    }
     // VIS-3: entities that moved, entered or left without this actor's step.
     let Some(view) = session.visibility.as_mut() else {
         return Ok(());
