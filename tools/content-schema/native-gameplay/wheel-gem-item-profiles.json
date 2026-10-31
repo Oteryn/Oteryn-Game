@@ -137,7 +137,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -281,7 +299,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -425,7 +461,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -569,7 +623,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -713,7 +785,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -857,7 +947,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -1001,7 +1109,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -1145,7 +1271,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -1289,7 +1433,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -1433,7 +1595,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -1577,7 +1757,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -1721,7 +1919,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -1865,7 +2081,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -2009,7 +2243,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -2153,7 +2405,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -2297,7 +2567,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"
@@ -2441,7 +2729,25 @@
           "state": "UNKNOWN"
         },
         "trade_restrictions": {
-          "state": "UNKNOWN"
+          "state": "KNOWN",
+          "value": {
+            "tradeable": {
+              "state": "UNKNOWN"
+            },
+            "marketable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "vocations": {
+              "state": "UNKNOWN"
+            },
+            "account_binding_policy": {
+              "state": "UNKNOWN"
+            },
+            "character_binding_policy": {
+              "state": "UNKNOWN"
+            }
+          }
         },
         "fluid": {
           "state": "UNKNOWN"

@@ -50,6 +50,7 @@ class WheelGemProfilesTests(unittest.TestCase):
             self.assertEqual(record['semantics']['physical']['value']['weight']['value'], wheel.WEIGHTS[item])
             self.assertEqual(record['semantics']['stack'], wheel.STACK)
             self.assertEqual(record['admission'], wheel.ADMISSION)
+            self.assertEqual(record['semantics']['trade_restrictions'], wheel.MARKETABILITY)
         self.assertEqual(json.loads(generated[MANIFEST])['item_profiles']['sha256'],
                          hashlib.sha256(generated[PROFILES]).hexdigest())
         before_retry = copy.deepcopy(generated)
@@ -58,7 +59,8 @@ class WheelGemProfilesTests(unittest.TestCase):
         self.assertEqual(generated, before_retry)
 
     def test_wrong_source_identity_stack_weight_and_admission_refuse_before_outputs(self):
-        for mutation in ('source', 'identity', 'stack', 'weight', 'admission'):
+        for mutation in ('source', 'identity', 'stack', 'weight', 'admission',
+                         'market_unknown', 'market_false', 'tradeable'):
             with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 packet = self.packet()
@@ -73,8 +75,14 @@ class WheelGemProfilesTests(unittest.TestCase):
                     greater = next(row for row in packet['records']
                                    if row['production_definition']['production_key'] == 'oteryn:item.tibia.i46626')
                     greater['semantics']['physical']['value']['weight']['value'] = 10
-                else:
+                elif mutation == 'admission':
                     first['admission']['legal_destinations'].append('Other')
+                elif mutation == 'market_unknown':
+                    first['semantics']['trade_restrictions'] = {'state': 'UNKNOWN'}
+                elif mutation == 'market_false':
+                    first['semantics']['trade_restrictions']['value']['marketable']['value'] = False
+                else:
+                    first['semantics']['trade_restrictions']['value']['tradeable'] = wheel.KNOWN(True)
                 target = root / wheel.PATH
                 target.parent.mkdir(parents=True)
                 target.write_bytes(encoded(packet))
@@ -83,6 +91,35 @@ class WheelGemProfilesTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     wheel.admit(root, generated, PROFILES, MANIFEST, order, encoded)
                 self.assertEqual(generated, before)
+
+    def test_marketability_requires_explicit_primary_market_metadata(self):
+        for item, category in ((44608, 15), (46625, 9)):
+            flags = {'flags.market': True, 'market.category': category,
+                     'market.trade_as_object_id': item, 'market.show_as_object_id': item}
+            trade = wheel.source_marketability(item, flags)
+            self.assertEqual(trade['state'], 'KNOWN')
+            self.assertEqual(trade['value']['marketable'], {'state': 'KNOWN', 'value': True})
+            self.assertEqual({key: value for key, value in trade['value'].items()
+                              if key != 'marketable'}, {
+                'tradeable': {'state': 'UNKNOWN'}, 'vocations': {'state': 'UNKNOWN'},
+                'account_binding_policy': {'state': 'UNKNOWN'},
+                'character_binding_policy': {'state': 'UNKNOWN'},
+            })
+            # Neither an absent flag nor another item's market alias proves this
+            # exact definition. No broad trade/binding facts may be manufactured.
+            for key in flags:
+                for replacement in (None, False if key == 'flags.market' else 0):
+                    with self.subTest(item=item, key=key, replacement=replacement):
+                        wrong = dict(flags)
+                        if replacement is None:
+                            del wrong[key]
+                        else:
+                            wrong[key] = replacement
+                        with self.assertRaisesRegex(ValueError, 'WHEEL_GEM_MARKET_SOURCE'):
+                            wheel.source_marketability(item, wrong)
+            trade['value']['tradeable'] = wheel.KNOWN(True)
+            self.assertEqual(wheel.source_marketability(item, flags)['value']['tradeable'],
+                             {'state': 'UNKNOWN'})
 
     def test_source_capture_rejects_substituted_bytes_before_parsing(self):
         with tempfile.TemporaryDirectory() as temporary:

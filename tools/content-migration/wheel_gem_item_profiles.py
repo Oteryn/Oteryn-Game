@@ -8,6 +8,7 @@ src/items/item.cpp:3332-3352), matching the native carried-weight owner.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 import sys
@@ -47,10 +48,39 @@ WEIGHTS = {
 }
 IDS = tuple(sorted(WEIGHTS))
 KEYS = frozenset(f'oteryn:item.tibia.i{item}' for item in IDS)
+# Exact primary appearance metadata: category 15 for the fifteen gems, 9 for
+# both fragments. Crystal items.cpp:215-216,228 reads category/wareId from
+# has_market. The existing Item schema qualifies marketability independently
+# of general tradeability; no vocation or binding policy is inferred here.
+MARKET_CATEGORIES = {
+    44602: 15, 44603: 15, 44604: 15,
+    44605: 15, 44606: 15, 44607: 15,
+    44608: 15, 44609: 15, 44610: 15,
+    44611: 15, 44612: 15, 44613: 15,
+    46625: 9, 46626: 9,
+    49371: 15, 49372: 15, 49373: 15,
+}
 KNOWN = lambda value: {'state': 'KNOWN', 'value': value}
 STACK = KNOWN({'stackable': KNOWN(True), 'stack_max': KNOWN(100)})
 ADMISSION = {'materializable': True, 'stack_class': 'StackCapable',
              'legal_destinations': ['CharacterInventory', 'Ground']}
+MARKETABILITY = KNOWN({
+    'tradeable': {'state': 'UNKNOWN'},
+    'marketable': KNOWN(True),
+    'vocations': {'state': 'UNKNOWN'},
+    'account_binding_policy': {'state': 'UNKNOWN'},
+    'character_binding_policy': {'state': 'UNKNOWN'},
+})
+
+
+def source_marketability(item: int, flags: dict) -> dict:
+    category = MARKET_CATEGORIES.get(item)
+    if (category is None or flags.get('flags.market') is not True
+            or flags.get('market.category') != category
+            or flags.get('market.trade_as_object_id') != item
+            or flags.get('market.show_as_object_id') != item):
+        raise ValueError(f'WHEEL_GEM_MARKET_SOURCE:{item}')
+    return copy.deepcopy(MARKETABILITY)
 
 
 def read_sources(crystal: Path) -> dict[str, bytes]:
@@ -91,6 +121,7 @@ def validate(overlay: dict) -> list[dict]:
                 or record.get('admission') != ADMISSION
                 or semantics.get('stack') != STACK
                 or semantics.get('physical') != physical
+                or semantics.get('trade_restrictions') != MARKETABILITY
                 or semantics.get('equipment') != {'state': 'NOT_APPLICABLE'}
                 or record.get('attributes', {}).get('speed_bonus') != 0):
             raise ValueError(f'WHEEL_GEM_PROFILE_POLICY:{key}')
@@ -122,7 +153,14 @@ def capture(crystal: Path) -> dict:
                 or not flags.get('flags.take') or flags.get('flags.unmove', False)
                 or int(attrs['weight']) != WEIGHTS[item]):
             raise ValueError(f'WHEEL_GEM_PHYSICAL_SOURCE:{item}')
-        records.append(source.profile(item, node, appearance, physical[item], bindings, None))
+        record = source.profile(item, node, appearance, physical[item], bindings, None)
+        # The generic physical profile leaves this independent field UNKNOWN.
+        # Promote only affirmative, exactly bound primary Market evidence; never
+        # overwrite a future conflicting or independently qualified trade group.
+        if record['semantics']['trade_restrictions'] != {'state': 'UNKNOWN'}:
+            raise ValueError(f'WHEEL_GEM_MARKET_BASE:{item}')
+        record['semantics']['trade_restrictions'] = source_marketability(item, flags)
+        records.append(record)
     bound = bind_profiles({'schema': 'OTERYN_NATIVE_ITEM_PROFILES/v1', 'records': records},
                           bindings, set(IDS))
     overlay = {
