@@ -272,6 +272,34 @@ impl RevisionSlot {
         .await
     }
 
+    /// A retained, owner-qualified death keeps its original talisman decision
+    /// while a Character revision mismatch reloads only the sequencing cursor.
+    pub async fn commit_bestiary_with_talisman(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: BestiaryKillRequest,
+        captured: Option<super::bestiary_progress::CapturedBountyTalismanKill>,
+    ) -> Result<BestiaryKillOutcome, BestiaryProgressError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_bestiary_kill_with_talisman(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    captured.clone(),
+                )
+            },
+        )
+        .await
+    }
+
     /// One Charm command (with any fee burn it runs in its transaction) at the cursor, or the
     /// exact replay of a retained receipt at its `original` revision. A mismatch fails closed.
     #[allow(
@@ -405,6 +433,66 @@ impl RevisionSlot {
                     node,
                     fence,
                     request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                )
+            },
+        )
+        .await
+    }
+
+    /// Generated Task Board state and its quest receipts share this revision slot.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn commit_task_board(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        request: super::task_board::TaskBoardCommand,
+        catalogue: std::sync::Arc<super::task_board::TaskBoardCatalogue>,
+        permit: Option<&super::spell_owner_commit::SpellLanePermit>,
+    ) -> Result<super::task_board::TaskBoardCommit, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.commit_task_board(
+                    authority,
+                    node,
+                    fence,
+                    request.clone(),
+                    std::sync::Arc::clone(&catalogue),
+                    permit,
+                )
+            },
+        )
+        .await
+    }
+
+    /// Trusted future Store delivery calls the existing entitlement/revision owner.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn grant_task_board_expansion(
+        &mut self,
+        root: &DurabilityRoot,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterGameplayFence,
+        command: crate::foundation::CommandRef,
+        delivery_reference: &str,
+        catalogue: std::sync::Arc<super::task_board::TaskBoardCatalogue>,
+    ) -> Result<super::task_board::TaskBoardCommit, CharacterProgressionError> {
+        self.sequenced(
+            root_revision(root, authority),
+            fence,
+            Expect::Cursor(OnMismatch::RetryOnce),
+            |fence| {
+                root.grant_task_board_expansion(
+                    authority,
+                    node,
+                    fence,
+                    command,
+                    delivery_reference,
                     std::sync::Arc::clone(&catalogue),
                 )
             },
@@ -757,6 +845,14 @@ impl SequencedOutcome for ProficiencyCommitOutcome {
             }
             Self::Refused(_) => None,
         }
+    }
+}
+
+impl SequencedOutcome for super::task_board::TaskBoardCommit {
+    fn committed_revision(&self) -> Option<CharacterRevision> {
+        self.transition
+            .as_ref()
+            .map(|receipt| receipt.committed_character_revision)
     }
 }
 

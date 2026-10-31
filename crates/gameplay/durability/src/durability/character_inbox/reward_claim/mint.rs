@@ -284,40 +284,17 @@ impl DurabilityRoot {
         })
     }
 
-    /// Perform the actual fresh mint, Inbox placement and registered audit, then
-    /// let the source record its claim and item bindings in the same transaction.
-    /// The MAIL runner commits all of them together or rolls all value back.
-    pub async fn commit_reward_claim_inbox_mint<T, C, F>(
+    /// Charge the existing persistent retry budget before an owner composes the
+    /// frozen mint into its own already fenced value transaction.
+    pub(crate) async fn charge_reward_claim_inbox_mint(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
-        node: &NodeIncarnationProof,
-        fence: CurrentCharacterItemFence,
         candidate: &mut RewardClaimInboxMintCandidate,
-        owner: &mut C,
-        operation: F,
-    ) -> Result<RewardClaimInboxOutcome<T>, RewardClaimInboxError>
-    where
-        T: Send + 'static,
-        C: Send,
-        F: for<'a, 'connection> FnOnce(
-                &'a mut RewardClaimInboxTransaction<'connection>,
-                &'a mut C,
-            ) -> Pin<
-                Box<dyn Future<Output = Result<T, RewardClaimInboxError>> + Send + 'a>,
-            > + Send
-            + 'static,
-    {
-        if let Some(positions) = self
-            .reconcile_reward_claim_inbox(authority, candidate.plan())
-            .await?
-        {
-            return Ok(RewardClaimInboxOutcome::AlreadyCommitted(positions));
-        }
+    ) -> Result<(), RewardClaimInboxError> {
         let recovery = authority
             .record_for(self)
             .map_err(|_| RewardClaimInboxError::AuthorityRejected)?;
-        let frozen = candidate.frozen.clone();
-        let charge = frozen.clone();
+        let charge = candidate.frozen.clone();
         let used = self
             .try_issue_semantic_pass()?
             .run(move |holder, deadline| {
@@ -349,6 +326,41 @@ impl DurabilityRoot {
             })
             .await??;
         candidate.work_units_used = used;
+        Ok(())
+    }
+
+    /// Perform the actual fresh mint, Inbox placement and registered audit, then
+    /// let the source record its claim and item bindings in the same transaction.
+    /// The MAIL runner commits all of them together or rolls all value back.
+    pub async fn commit_reward_claim_inbox_mint<T, C, F>(
+        &self,
+        authority: &ReconciledCharacterAuthority<'_, '_>,
+        node: &NodeIncarnationProof,
+        fence: CurrentCharacterItemFence,
+        candidate: &mut RewardClaimInboxMintCandidate,
+        owner: &mut C,
+        operation: F,
+    ) -> Result<RewardClaimInboxOutcome<T>, RewardClaimInboxError>
+    where
+        T: Send + 'static,
+        C: Send,
+        F: for<'a, 'connection> FnOnce(
+                &'a mut RewardClaimInboxTransaction<'connection>,
+                &'a mut C,
+            ) -> Pin<
+                Box<dyn Future<Output = Result<T, RewardClaimInboxError>> + Send + 'a>,
+            > + Send
+            + 'static,
+    {
+        if let Some(positions) = self
+            .reconcile_reward_claim_inbox(authority, candidate.plan())
+            .await?
+        {
+            return Ok(RewardClaimInboxOutcome::AlreadyCommitted(positions));
+        }
+        self.charge_reward_claim_inbox_mint(authority, candidate)
+            .await?;
+        let frozen = candidate.frozen.clone();
         self.with_reward_claim_inbox_transaction(
             authority,
             node,
@@ -374,7 +386,54 @@ async fn mint_inbox(
     if context.plan != frozen.plan {
         return Err(RewardClaimInboxError::ConflictingDelivery);
     }
-    let plan = context.plan.clone();
+    let positions = mint_frozen_in_transaction(
+        &mut context.transaction,
+        frozen,
+        context.connection_generation,
+        context.character_lease_generation,
+    )
+    .await?;
+    context.positions = positions.into_iter().map(Some).collect();
+    Ok(())
+}
+
+impl RewardClaimInboxMintCandidate {
+    /// Existing mint/Inbox/audit owner participates in a composed, already fenced
+    /// transaction. Preparation and retry-budget charging are separate durable passes.
+    pub(crate) async fn mint_in_transaction(
+        &self,
+        tx: &mut Type2Transaction<'_>,
+        fence: CurrentCharacterItemFence,
+    ) -> Result<Vec<RewardClaimInboxPosition>, RewardClaimInboxError> {
+        if self.work_units_used == 0
+            || self.work_units_used > RL08_RETRY_WORK_UNITS_MAX
+            || self.frozen.plan.character_id != fence.character_id
+            || self.frozen.plan.command.game_session_id() != fence.game_session_id
+            || self.frozen.plan.world_id != fence.runtime_scope.world_id()
+        {
+            return Err(RewardClaimInboxError::AuthorityRejected);
+        }
+        mint_frozen_in_transaction(
+            tx,
+            &self.frozen,
+            fence.connection_generation.get(),
+            fence.character_lease_generation,
+        )
+        .await
+    }
+
+    pub(crate) fn outputs(&self) -> &[RewardClaimInboxMintOutput] {
+        &self.frozen.request.outputs
+    }
+}
+
+async fn mint_frozen_in_transaction(
+    tx: &mut Type2Transaction<'_>,
+    frozen: &FrozenInboxMint,
+    connection_generation: u64,
+    character_lease_generation: u64,
+) -> Result<Vec<RewardClaimInboxPosition>, RewardClaimInboxError> {
+    let plan = &frozen.plan;
     let binding = plan.binding();
     // This narrow function reads the immutable reservation; it accepts no new
     // item definition, quantity or source facts from the commit caller.
@@ -386,12 +445,14 @@ async fn mint_inbox(
     .bind(plan.command.command_id().get().to_string())
     .bind(plan.transaction_id.as_slice())
     .bind(binding.as_slice())
-    .execute(&mut **context.transaction())
+    .execute(&mut ***tx)
     .await
     .map_err(mint_sql_error)?;
     let mut outputs = Vec::with_capacity(plan.item_instance_ids.len());
+    let mut positions = Vec::with_capacity(plan.item_instance_ids.len());
     for (item, source) in plan.item_instance_ids.iter().zip(&frozen.request.outputs) {
-        let position = context.deliver(*item).await?;
+        let position = deliver_fresh_in_transaction(tx, plan, &binding, *item).await?;
+        positions.push(position);
         outputs.push(RewardClaimInboxMintOutputV1 {
             after: Some(OneItemStateV1 {
                 item_instance_id: item.to_vec(),
@@ -410,7 +471,7 @@ async fn mint_inbox(
         destination: None,
         before_semantically_absent: true,
         source: Some(OneItemRewardClaimCauseV1 {
-            typed_cause: context.typed_cause().into(),
+            typed_cause: REWARD_CLAIM_MINT_TYPED_CAUSE.into(),
             content_revision: frozen.request.content_revision.clone(),
             ruleset_revision: frozen.request.ruleset_revision.clone(),
             sim_revision: frozen.request.sim_revision.clone(),
@@ -423,15 +484,15 @@ async fn mint_inbox(
         inbox: Some(RewardClaimInboxMintV1 {
             character_id: plan.character_id.as_bytes().to_vec(),
             world_id: plan.world_id.as_bytes().to_vec(),
-            expected_session_generation: context.connection_generation,
+            expected_session_generation: connection_generation,
             source_binding: frozen.source_binding.to_vec(),
             outputs,
             plan_binding: binding.to_vec(),
             mint_intent_sha256: frozen.mint_intent_sha256.to_vec(),
-            expected_character_lease_generation: context.character_lease_generation,
+            expected_character_lease_generation: character_lease_generation,
         }),
     };
-    let tuple = context.selected_type2_tuple();
+    let tuple = tx.tuple();
     let envelope = audit::encode_reward_claim_mint_event(
         RewardClaimMintEventIdentity {
             event_id: frozen.event_id,
@@ -453,10 +514,10 @@ async fn mint_inbox(
     .bind(plan.command.command_id().get().to_string())
     .bind(plan.transaction_id.as_slice())
     .bind(binding.as_slice())
-    .bind(context.connection_generation.to_string())
-    .bind(context.character_lease_generation.to_string())
+    .bind(connection_generation.to_string())
+    .bind(character_lease_generation.to_string())
     .bind(envelope_hash.as_slice())
-    .execute(&mut **context.transaction())
+    .execute(&mut ***tx)
     .await
     .map_err(mint_sql_error)?;
     sqlx::query(
@@ -474,9 +535,9 @@ async fn mint_inbox(
     .bind(frozen.occurred_at)
     .bind(common::AUDIT_RETENTION_P90D_MS)
     .bind(envelope)
-    .execute(&mut **context.transaction())
+    .execute(&mut ***tx)
     .await?;
-    Ok(())
+    Ok(positions)
 }
 
 #[cfg(test)]

@@ -121,14 +121,20 @@ pub async fn read_party_guiding_presence_in_transaction(
     }
     let row = sqlx::query("SELECT b.vocation, p.level FROM game_character_build_state b JOIN game_character_progression_state p USING(character_id) WHERE b.character_id=encode($1,'hex')::uuid")
         .bind(character.as_bytes().as_slice()).fetch_optional(&mut **tx).await?;
-    let Some(row) = row else { return Ok(false); };
+    let Some(row) = row else {
+        return Ok(false);
+    };
     let vocation: String = row.try_get("vocation")?;
-    let level = u32::try_from(row.try_get::<i64, _>("level")?).map_err(|_| DurabilityError::InvalidStoredState)?;
+    let level = u32::try_from(row.try_get::<i64, _>("level")?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
     let promoted = super::character_promotion::read_durable_promotion(tx, character).await?;
     let stored = read_wheel_state(tx, character, false).await?;
     let allocation = allocation_from_stored(tx, stored, ruleset).await?;
-    Ok(WheelStages::derive(ruleset, &allocation, &vocation, level, promoted)
-        .conviction_count("guiding_presence") > 0)
+    Ok(
+        WheelStages::derive(ruleset, &allocation, &vocation, level, promoted)
+            .conviction_count("guiding_presence")
+            > 0,
+    )
 }
 
 /// The idempotency identity of one allocation change (UUIDv7), issued once by the caller.
@@ -389,7 +395,11 @@ impl DurabilityRoot {
                         .bind(fence.character_id.as_bytes().as_slice())
                         .bind(oteryn_gameplay_quests::quest::monk_shrines::FINAL_TRACK)
                         .fetch_one(&mut *tx).await?;
+                    let task_points = super::task_board::read_promotion_points_in_transaction(
+                        &mut tx, fence.character_id,
+                    ).await?;
                     let available = available_points(level).checked_add(gem_points)
+                        .and_then(|points| points.checked_add(task_points))
                         .and_then(|points| points.checked_add(if pilgrimage_complete { pilgrimage_points } else { 0 }))
                         .ok_or(DurabilityError::InvalidStoredState)?;
                     if let Err(refusal) = ruleset.validate(
