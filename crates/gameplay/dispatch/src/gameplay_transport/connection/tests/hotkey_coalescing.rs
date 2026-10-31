@@ -11,6 +11,7 @@ struct EquipAuthority {
     due: Cell<tokio::time::Instant>,
     equipped: RefCell<Vec<EquipObservation>>,
     committed_first: bool,
+    committed_ammo: bool,
 }
 
 impl FreshAdmissionAuthority for EquipAuthority {
@@ -61,7 +62,7 @@ impl FreshAdmissionAuthority for EquipAuthority {
         command: UseCommand,
         request: Request,
     ) -> Option<ItemMoveOutcome> {
-        if self.committed_first && command.command_id == 1 {
+        if (self.committed_first || self.committed_ammo) && command.command_id == 1 {
             return Some(ItemMoveOutcome::Moved);
         }
         tokio::time::sleep_until(self.due.get()).await;
@@ -82,6 +83,18 @@ impl FreshAdmissionAuthority for EquipAuthority {
             EquipmentMoveReplay::Moved
         } else {
             EquipmentMoveReplay::Absent
+        })
+    }
+
+    async fn committed_loop_move(
+        &self,
+        _: ExactActorRef,
+        command: UseCommand,
+    ) -> Option<LoopMoveReplay> {
+        Some(if self.committed_ammo && command.command_id == 1 {
+            LoopMoveReplay::Moved
+        } else {
+            LoopMoveReplay::Absent
         })
     }
 }
@@ -107,6 +120,7 @@ fn hotkey_equip_coalesces_burst_to_latest_command_with_ordered_results()
                     due: Cell::new(start + Duration::from_millis(200)),
                     equipped: RefCell::new(Vec::new()),
                     committed_first: false,
+                    committed_ammo: false,
                 };
                 let offered = [4, 12, 14, 179].map(|id| OfferedCapability { id, requires: &[] });
                 let admitted = AdmittedSession {
@@ -247,10 +261,40 @@ fn hotkey_equip_coalescing_keeps_committed_replay_and_rejects_sequence_or_genera
     Ok(())
 }
 
+#[test]
+fn hotkey_swap_coalescing_keeps_committed_ammunition_replay() -> Result<(), Box<dyn Error>> {
+    equip_case_receipt(
+        vec![equip_frame(1, 1), equip_frame(2, 2)],
+        true,
+        false,
+        true,
+        |equipped, results| {
+            assert_eq!(
+                equipped.iter().map(|(id, _, _)| *id).collect::<Vec<_>>(),
+                [2]
+            );
+            assert_eq!(
+                results,
+                [(1, ItemMoveOutcome::Moved), (2, ItemMoveOutcome::Moved)]
+            );
+        },
+    )
+}
+
 fn equip_case(
     inputs: Vec<Vec<u8>>,
     delayed: bool,
     committed_first: bool,
+    check: fn(&[EquipObservation], &[EquipResult]),
+) -> Result<(), Box<dyn Error>> {
+    equip_case_receipt(inputs, delayed, committed_first, false, check)
+}
+
+fn equip_case_receipt(
+    inputs: Vec<Vec<u8>>,
+    delayed: bool,
+    committed_first: bool,
+    committed_ammo: bool,
     check: fn(&[EquipObservation], &[EquipResult]),
 ) -> Result<(), Box<dyn Error>> {
     std::thread::Builder::new()
@@ -265,6 +309,7 @@ fn equip_case(
                     ),
                     equipped: RefCell::new(Vec::new()),
                     committed_first,
+                    committed_ammo,
                 };
                 let offered = [4, 12, 14, 179].map(|id| OfferedCapability { id, requires: &[] });
                 let admitted = AdmittedSession {
