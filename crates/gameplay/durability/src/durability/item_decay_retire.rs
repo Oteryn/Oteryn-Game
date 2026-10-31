@@ -57,14 +57,18 @@ use super::item_mint_audit::{
     OneItemTypedDefinitionRevisionV1, RL08_RETRY_WORK_UNITS_MAX, SelectedType2Tuple, check_uuid_v7,
 };
 use super::item_transfer_audit::{ITEM_LIFECYCLE_RETIRED, OneItemCorpseSourceV1};
-use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
+use super::runtime_scope_assignment::{
+    NodeIncarnationProof, assignment_scope_key, prove_current_incarnation,
+};
 use super::spell_owner_commit::SpellLanePermit;
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
-use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
+use crate::foundation::{ChannelId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
+mod activity_retirement;
+pub use activity_retirement::ActivityGroundRetirement;
 mod world_reset_cause;
 use world_reset_cause::RetireCause;
 
@@ -92,8 +96,7 @@ pub const fn corpse_decay_at_unix_ms(materialized_at_unix_ms: i64) -> Option<i64
 /// corpse's own (a restart or handoff resumes decay).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CorpseDecayFence {
-    pub world_id: WorldId,
-    pub channel_id: ChannelId,
+    pub runtime_scope: RuntimeScopeRefV1,
     pub scope_ownership_generation: ScopeOwnershipGeneration,
 }
 
@@ -164,6 +167,7 @@ pub struct DecayRetireCandidate {
     deadline_unix_ms: i64,
     envelope: Vec<u8>,
     work_units_used: u8,
+    activity_node: Option<NodeIncarnationProof>,
 }
 
 impl DecayRetireCandidate {
@@ -316,7 +320,7 @@ struct Reservation {
 /// The authoritative before-state admitting one step now.
 struct Admitted {
     world_id: [u8; 16],
-    channel_id: [u8; 16],
+    runtime_scope: RuntimeScopeRefV1,
     definition: OneItemTypedDefinitionRevisionV1,
     quantity_before: u32,
     key_number: u32,
@@ -325,6 +329,32 @@ struct Admitted {
     corpse_ground: OneItemGroundV1,
     deadline_unix_ms: i64,
     database_now_unix_ms: i64,
+}
+
+fn scope_kind(scope: RuntimeScopeRefV1) -> i16 {
+    match scope {
+        RuntimeScopeRefV1::Channel { .. } => 1,
+        RuntimeScopeRefV1::Instance { .. } => 2,
+    }
+}
+
+fn decode_ground_scope(
+    row: &sqlx::postgres::PgRow,
+) -> std::result::Result<RuntimeScopeRefV1, DurabilityError> {
+    let world_id = WorldId::decode(&uuid_text(row.try_get("world_id")?)?)
+        .map_err(|_| DurabilityError::InvalidStoredState)?;
+    let channel = row.try_get::<Option<String>, _>("channel_id")?;
+    let instance = row.try_get::<Option<String>, _>("instance_id")?;
+    match (row.try_get::<i16, _>("scope_kind")?, channel, instance) {
+        (1, Some(channel), None) => Ok(RuntimeScopeRefV1::channel(
+            world_id,
+            ChannelId::decode(&uuid_text(&channel)?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )),
+        (2, None, Some(instance)) => RuntimeScopeRefV1::instance(world_id, uuid_text(&instance)?)
+            .map_err(|_| DurabilityError::InvalidStoredState),
+        _ => Err(DurabilityError::InvalidStoredState),
+    }
 }
 
 mod retirement_workflow;
@@ -366,18 +396,19 @@ pub(crate) async fn fence_is_live(
     let assignment = sqlx::query(
         "SELECT 1 FROM game_runtime_scope_assignments \
          WHERE scope_key = $1 AND world_id = encode($2,'hex')::uuid \
-           AND channel_id = encode($3,'hex')::uuid AND state = 1 \
-           AND ownership_generation = $4::text::numeric(20,0) \
-           AND holder_node_id = encode($5,'hex')::uuid \
-           AND holder_registration_revision = $6::text::numeric(20,0) \
+           AND state = 1 \
+           AND ownership_generation = $3::text::numeric(20,0) \
+           AND holder_node_id = encode($4,'hex')::uuid \
+           AND holder_registration_revision = $5::text::numeric(20,0) \
+           AND ($6=1 OR game_runtime_scope_assignment_history_valid()) \
          FOR SHARE",
     )
-    .bind(scope_key(fence.world_id, fence.channel_id).as_slice())
-    .bind(fence.world_id.as_bytes().as_slice())
-    .bind(fence.channel_id.as_bytes().as_slice())
+    .bind(assignment_scope_key(fence.runtime_scope).as_slice())
+    .bind(fence.runtime_scope.world_id().as_bytes().as_slice())
     .bind(fence.scope_ownership_generation.get().to_string())
     .bind(fact.node_id().as_bytes().as_slice())
     .bind(fact.registration_revision().to_string())
+    .bind(scope_kind(fence.runtime_scope))
     .fetch_optional(&mut **tx)
     .await?;
     Ok(assignment.is_some() && prove_current_incarnation(tx, node).await?)
@@ -396,8 +427,17 @@ async fn admit(
     fence: &CorpseDecayFence,
     step: DecayRetireStep,
 ) -> Pass<Admitted> {
-    if let RetireCause::WorldReset(reset) = step.cause {
-        return world_reset_cause::admit(root, node, tx, fence, step, reset).await;
+    match step.cause {
+        RetireCause::WorldReset(reset) => {
+            return world_reset_cause::admit(root, node, tx, fence, step, reset).await;
+        }
+        RetireCause::ActivityRetirement(binding) => {
+            if !activity_retirement::binding_current(tx, node, fence, binding).await? {
+                return Ok(Err(DecayRetireError::AuthorityRejected));
+            }
+            return world_reset_cause::admit_ground(tx, fence, step).await;
+        }
+        RetireCause::CorpseDecay => {}
     }
     let item = sqlx::query(
         "SELECT world_id::text, definition_family, definition_production_key, \
@@ -416,7 +456,7 @@ async fn admit(
         })));
     };
     let corpse = sqlx::query(
-        "SELECT game_corpse_retirement_deadline(r.item_instance_id) AS deadline, game_corpse_terminal_stage_ready(r.item_instance_id) AS terminal_stage_ready, g.world_id::text, g.channel_id::text, \
+        "SELECT game_corpse_retirement_deadline(r.item_instance_id) AS deadline, game_corpse_terminal_stage_ready(r.item_instance_id) AS terminal_stage_ready, g.world_id::text, g.channel_id::text, g.scope_kind, g.instance_id::text, \
                 g.runtime_scope_ownership_generation::text, g.spatial_position, g.corpse_ref, \
                 g.map_revision, g.content_revision, g.native_room_placement_context, \
                 floor(extract(epoch FROM clock_timestamp())*1000)::bigint AS database_now \
@@ -436,8 +476,8 @@ async fn admit(
         )));
     };
     let world_id = uuid_text(corpse.try_get("world_id")?)?;
-    let channel_id = uuid_text(corpse.try_get("channel_id")?)?;
-    if world_id != *fence.world_id.as_bytes() || channel_id != *fence.channel_id.as_bytes() {
+    let runtime_scope = decode_ground_scope(&corpse)?;
+    if runtime_scope != fence.runtime_scope {
         return Ok(Err(DecayRetireError::AuthorityRejected));
     }
     if uuid_text(item.try_get("world_id")?)? != world_id {
@@ -491,7 +531,7 @@ async fn admit(
         .map_err(|_| DurabilityError::InvalidStoredState)?;
     Ok(Ok(Admitted {
         world_id,
-        channel_id,
+        runtime_scope,
         definition: OneItemTypedDefinitionRevisionV1 {
             family: item.try_get("definition_family")?,
             production_key: item.try_get("definition_production_key")?,
@@ -503,7 +543,10 @@ async fn admit(
         placement_ordinal,
         corpse_ground: OneItemGroundV1 {
             world_id: world_id.to_vec(),
-            channel_id: channel_id.to_vec(),
+            channel_id: runtime_scope
+                .channel_id()
+                .map_or_else(Vec::new, |id| id.as_bytes().to_vec()),
+            instance_id: runtime_scope.instance_id().map(|id| id.to_vec()),
             spatial_position: corpse.try_get("spatial_position")?,
             corpse_ref: corpse.try_get("corpse_ref")?,
             map_revision: corpse.try_get("map_revision")?,
@@ -531,7 +574,7 @@ async fn apply_retire(
 ) -> std::result::Result<CommittedDecayRetire, DurabilityError> {
     let item = step.item_instance_id.as_slice();
     // SPELL-LOCK-2 §1.2: the DELETE fires the key-33 owner lock of the corpse's Ground Channel.
-    permit.check_stored_channel(&admitted.world_id, &admitted.channel_id)?;
+    permit.check_scope(admitted.runtime_scope)?;
     let removed = match admitted.placement_ordinal {
         None => {
             sqlx::query(
@@ -543,25 +586,25 @@ async fn apply_retire(
             .await?
         }
         Some(ordinal) => {
-            let death_container = matches!(step.cause, RetireCause::WorldReset(_))
-                && super::world_reset::ground_step::is_death_container(
-                    tx,
-                    step.corpse_item_instance_id,
-                )
-                .await?;
+            let death_container = matches!(
+                step.cause,
+                RetireCause::WorldReset(_) | RetireCause::ActivityRetirement(_)
+            ) && super::world_reset::ground_step::is_death_container(
+                tx,
+                step.corpse_item_instance_id,
+            )
+            .await?;
             let query = if death_container {
                 "DELETE FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)"
             } else {
                 "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id=encode($1,'hex')::uuid AND parent_item_instance_id=encode($2,'hex')::uuid AND placement_ordinal=$3::text::numeric(20,0)"
             };
-            sqlx::query(
-                query,
-            )
-            .bind(item)
-            .bind(step.corpse_item_instance_id.as_slice())
-            .bind(ordinal.to_string())
-            .execute(&mut **tx)
-            .await?
+            sqlx::query(query)
+                .bind(item)
+                .bind(step.corpse_item_instance_id.as_slice())
+                .bind(ordinal.to_string())
+                .execute(&mut **tx)
+                .await?
         }
     };
     if removed.rows_affected() != 1 {
@@ -586,16 +629,16 @@ async fn apply_retire(
         "INSERT INTO game_item_decay_retire_receipts(item_instance_id, corpse_item_instance_id, \
            world_id, channel_id, fence_scope_ownership_generation, transaction_id, event_id, \
            quantity_before, placement_ordinal, deadline, occurred_at, envelope_sha256, \
-           committed_at, cause_kind, reset_epoch, retirement_binding, target_digest, ground_root_item_instance_id) \
+           committed_at, cause_kind, reset_epoch, retirement_binding, target_digest, ground_root_item_instance_id, scope_kind, instance_id, activity_handoff_id, activity_ownership_generation) \
          VALUES (encode($1,'hex')::uuid, CASE WHEN $13='CORPSE_DECAY' THEN encode($2,'hex')::uuid END, encode($3,'hex')::uuid, \
            encode($4,'hex')::uuid, $5::text::numeric(20,0), encode($6,'hex')::uuid, \
            encode($7,'hex')::uuid, $8, $9::text::numeric(20,0), CASE WHEN $13='CORPSE_DECAY' THEN $10 ELSE NULL END, $11, $12, \
-           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $13, $14::text::numeric, $15, $16, CASE WHEN $13='WORLD_RESET' THEN encode($2,'hex')::uuid END)",
+           floor(extract(epoch FROM statement_timestamp())*1000)::bigint, $13, $14::text::numeric, $15, $16, CASE WHEN $13<>'CORPSE_DECAY' THEN encode($2,'hex')::uuid END, $17, encode($18,'hex')::uuid, encode($19,'hex')::uuid, $20::text::numeric)",
     )
     .bind(item)
     .bind(step.corpse_item_instance_id.as_slice())
     .bind(admitted.world_id.as_slice())
-    .bind(admitted.channel_id.as_slice())
+    .bind(admitted.runtime_scope.channel_id().map(|id| id.as_bytes().to_vec()))
     .bind(reservation.fence_generation.to_string())
     .bind(reservation.transaction_id.as_slice())
     .bind(reservation.event_id.as_slice())
@@ -612,6 +655,10 @@ async fn apply_retire(
     .bind(reservation.cause.epoch())
     .bind(reservation.cause.binding())
     .bind(reservation.cause.target())
+    .bind(scope_kind(admitted.runtime_scope))
+    .bind(admitted.runtime_scope.instance_id().map(|id| id.to_vec()))
+    .bind(reservation.cause.handoff_id().map(|id| id.to_vec()))
+    .bind(reservation.cause.activity_generation().map(|generation| generation.to_string()))
     .execute(&mut **tx)
     .await?;
     sqlx::query(
@@ -649,7 +696,7 @@ async fn load_receipt(
     item_instance_id: [u8; 16],
 ) -> std::result::Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
     Ok(sqlx::query(
-        "SELECT item_instance_id::text, COALESCE(corpse_item_instance_id,ground_root_item_instance_id)::text AS corpse_item_instance_id, world_id::text, cause_kind, reset_epoch::text, retirement_binding, target_digest, \
+        "SELECT item_instance_id::text, COALESCE(corpse_item_instance_id,ground_root_item_instance_id)::text AS corpse_item_instance_id, world_id::text, channel_id::text, scope_kind, instance_id::text, activity_handoff_id::text, activity_ownership_generation::text, cause_kind, reset_epoch::text, retirement_binding, target_digest, \
                 fence_scope_ownership_generation::text, transaction_id::text, \
                 event_id::text, COALESCE(deadline,0) AS deadline, occurred_at, envelope_sha256 \
            FROM game_item_decay_retire_receipts \
@@ -683,7 +730,7 @@ async fn load_reservation(
     generation: &str,
 ) -> std::result::Result<Option<sqlx::postgres::PgRow>, DurabilityError> {
     Ok(sqlx::query(
-        "SELECT COALESCE(corpse_item_instance_id,ground_root_item_instance_id)::text AS corpse_item_instance_id, world_id::text, cause_kind, reset_epoch::text, retirement_binding, target_digest, fence_scope_ownership_generation::text, \
+        "SELECT COALESCE(corpse_item_instance_id,ground_root_item_instance_id)::text AS corpse_item_instance_id, world_id::text, channel_id::text, scope_kind, instance_id::text, activity_handoff_id::text, activity_ownership_generation::text, cause_kind, reset_epoch::text, retirement_binding, target_digest, fence_scope_ownership_generation::text, \
                 transaction_id::text, event_id::text, occurred_at, COALESCE(deadline,0) AS deadline, quantity_before, \
                 placement_ordinal::text, envelope, fence_holder_node_id::text, \
                 fence_holder_registration_revision::text, work_units_used \
@@ -774,7 +821,10 @@ mod tests {
     fn admitted(ordinal: Option<u64>) -> Admitted {
         Admitted {
             world_id: id(1),
-            channel_id: id(2),
+            runtime_scope: RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(1)).unwrap(),
+                ChannelId::decode(&id(2)).unwrap(),
+            ),
             definition: OneItemTypedDefinitionRevisionV1 {
                 family: "ItemType".into(),
                 production_key: "fixture:corpse-loot".into(),
@@ -786,6 +836,7 @@ mod tests {
             corpse_ground: OneItemGroundV1 {
                 world_id: id(1).to_vec(),
                 channel_id: id(2).to_vec(),
+                instance_id: None,
                 spatial_position: vec![9, 9, 0],
                 corpse_ref: id(3).to_vec(),
                 map_revision: "map-1".into(),
@@ -800,8 +851,10 @@ mod tests {
 
     fn fence() -> CorpseDecayFence {
         CorpseDecayFence {
-            world_id: WorldId::decode(&id(1)).unwrap(),
-            channel_id: ChannelId::decode(&id(2)).unwrap(),
+            runtime_scope: RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(1)).unwrap(),
+                ChannelId::decode(&id(2)).unwrap(),
+            ),
             scope_ownership_generation: ScopeOwnershipGeneration::new(2).unwrap(),
         }
     }

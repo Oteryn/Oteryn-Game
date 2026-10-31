@@ -126,18 +126,19 @@ impl ItemMintCause {
     /// §4.2): the full typed tuple, with no caller-supplied death bytes. The
     /// death key has no constructor outside the carrier's committed lethal
     /// occurrence, so every cause built here descends from a real death.
-    // Stage D1 is test-only; runtime activation is a later, separate stage.
-    #[allow(dead_code)]
+    /// Ordinary Ground custody remains Channel-only. Personal Instance boss
+    /// rewards use the scoped reward-claim mint owner instead.
     pub fn from_creature_death(
         death: CreatureDeathOccurrenceKey,
         loot_table: TypedDefinitionRef,
         purpose_key: String,
         draw_ordinal: u32,
-    ) -> Self {
-        Self {
+    ) -> Result<Self> {
+        let channel_id = death.channel_id().ok_or(ItemMintError::AuthorityRejected)?;
+        Ok(Self {
             death: CreatureDeathKey {
                 world_id: death.world_id(),
-                channel_id: death.channel_id(),
+                channel_id,
                 scope_ownership_generation: death.scope_ownership_generation(),
                 actor_local_id: death.actor_local_id(),
                 actor_local_generation: death.actor_local_generation(),
@@ -145,7 +146,7 @@ impl ItemMintCause {
             loot_table,
             purpose_key,
             draw_ordinal,
-        }
+        })
     }
 
     /// Test-only: production causes descend from a committed Combat death.
@@ -324,7 +325,7 @@ pub enum ItemMintOutcome {
 pub struct GroundItemInstance {
     pub item_instance_id: [u8; 16],
     pub world_id: WorldId,
-    pub channel_id: ChannelId,
+    pub runtime_scope: crate::foundation::RuntimeScopeRefV1,
     pub definition: TypedDefinitionRef,
     pub quantity: u32,
     pub runtime_scope_ownership_generation: u64,
@@ -1298,7 +1299,7 @@ impl DurabilityRoot {
                     let mut tx = begin_semantic_transaction(holder, deadline).await?;
                     assert_recovery_fence(&mut tx, &recovery).await?;
                     let row = sqlx::query(
-                        "SELECT i.item_instance_id::text, i.world_id::text, g.channel_id::text, \
+                        "SELECT i.item_instance_id::text, i.world_id::text, g.channel_id::text, g.scope_kind, g.instance_id::text, \
                                 i.definition_family, i.definition_production_key, \
                                 i.definition_revision_ref, i.quantity, \
                                 i.minted_transaction_id::text, \
@@ -1457,6 +1458,7 @@ fn mint_message(
             key_number: 0,
         }),
         destination: corpse_entry.is_none().then(|| OneItemGroundV1 {
+            instance_id: None,
             world_id: world.clone(),
             channel_id: channel.clone(),
             spatial_position: request.ground.spatial_position.clone(),
@@ -1992,7 +1994,7 @@ fn decode_instance(
     Ok(GroundItemInstance {
         item_instance_id: uuid_text(row.try_get("item_instance_id")?)?,
         world_id: WorldId::decode(&uuid_text(row.try_get("world_id")?)?).map_err(invalid)?,
-        channel_id: ChannelId::decode(&uuid_text(row.try_get("channel_id")?)?).map_err(invalid)?,
+        runtime_scope: decode_ground_scope(row)?,
         definition: TypedDefinitionRef {
             family: row.try_get("definition_family")?,
             production_key: row.try_get("definition_production_key")?,
@@ -2013,6 +2015,75 @@ fn decode_instance(
         },
         minted_transaction_id: uuid_text(row.try_get("minted_transaction_id")?)?,
     })
+}
+
+/// Existing Ground custody's exact namespace. Channel columns and key-33 bytes
+/// retain their original representation; an Instance never borrows its origin.
+pub(crate) fn ground_scope_columns(
+    scope: crate::foundation::RuntimeScopeRefV1,
+) -> (i16, Option<[u8; 16]>, Option<[u8; 16]>) {
+    match scope {
+        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            (1, Some(*channel_id.as_bytes()), None)
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => {
+            (2, None, Some(instance_id))
+        }
+    }
+}
+
+pub(crate) fn decode_ground_scope(
+    row: &sqlx::postgres::PgRow,
+) -> std::result::Result<crate::foundation::RuntimeScopeRefV1, DurabilityError> {
+    use crate::foundation::RuntimeScopeRefV1;
+    let invalid = || DurabilityError::InvalidStoredState;
+    let world = WorldId::decode(&uuid_text(row.try_get("world_id")?)?).map_err(|_| invalid())?;
+    let channel: Option<String> = row.try_get("channel_id")?;
+    let instance: Option<String> = row.try_get("instance_id")?;
+    match (row.try_get::<i16, _>("scope_kind")?, channel, instance) {
+        (1, Some(channel), None) => Ok(RuntimeScopeRefV1::channel(
+            world,
+            ChannelId::decode(&uuid_text(&channel)?).map_err(|_| invalid())?,
+        )),
+        (2, None, Some(instance)) => {
+            let instance_id = uuid_text(&instance)?;
+            super::item_mint_audit::check_uuid_v7(&instance_id).map_err(|_| invalid())?;
+            Ok(RuntimeScopeRefV1::Instance {
+                world_id: world,
+                instance_id,
+            })
+        }
+        _ => Err(invalid()),
+    }
+}
+
+pub(crate) async fn lock_ground_scope(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    scope: crate::foundation::RuntimeScopeRefV1,
+) -> std::result::Result<(), DurabilityError> {
+    let mut key = Vec::with_capacity(33);
+    match scope {
+        crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } => {
+            key.extend_from_slice(world_id.as_bytes());
+            key.extend_from_slice(channel_id.as_bytes());
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance {
+            world_id,
+            instance_id,
+        } => {
+            key.push(super::runtime_scope_assignment::assignment_scope_key(scope)[0]);
+            key.extend_from_slice(world_id.as_bytes());
+            key.extend_from_slice(&instance_id);
+        }
+    }
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex'),33))")
+        .bind(key)
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
 }
 
 pub(super) fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {

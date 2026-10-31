@@ -47,7 +47,7 @@ fn root(n: u8) -> GroundItemInstance {
     GroundItemInstance {
         item_instance_id: uuid(n),
         world_id: world(1),
-        channel_id: channel(2),
+        runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world(1), channel(2)),
         definition: TypedDefinitionRef {
             family: "Item".into(),
             production_key: "stack".into(),
@@ -373,7 +373,10 @@ mod postgres {
         Ok(GroundItemInstance {
             item_instance_id: id(number),
             world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
-            channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                WorldId::decode(&id(WORLD)).map_err(debug)?,
+                ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            ),
             definition: definition(),
             quantity: 100,
             runtime_scope_ownership_generation: 1,

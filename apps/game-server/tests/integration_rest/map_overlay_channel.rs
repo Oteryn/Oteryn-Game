@@ -240,7 +240,7 @@ fn ground_item(
     Ok(GroundItemInstance {
         item_instance_id: uuid(seed),
         world_id: world()?,
-        channel_id,
+        runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(world()?, channel_id),
         definition: TypedDefinitionRef {
             family: "Item".into(),
             production_key: "item:coin".into(),

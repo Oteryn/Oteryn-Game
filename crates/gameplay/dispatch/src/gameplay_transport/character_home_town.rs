@@ -31,15 +31,67 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         &self,
         session: GameSessionId,
     ) -> Option<MovementLocalPosition> {
-        let Some(map) = self.bundle_map() else {
-            return Some(self.runtime.lock().await.respawn_position());
+        let scope = self.runtime.lock().await.binding().runtime_scope();
+        if matches!(scope, crate::foundation::RuntimeScopeRefV1::Instance { .. }) {
+            return self.activity_home_temple(session).await;
+        }
+        self.home_temple_in_world(session, self).await
+    }
+
+    /// The current Instance supplies authority to read citizenship; the retained
+    /// origin Channel supplies the authored temple catalogue and physical pin.
+    async fn activity_home_temple(&self, session: GameSessionId) -> Option<MovementLocalPosition> {
+        let fence = self.current_quest_fence(session).await.ok()??;
+        let placement =
+            crate::durability::activity_handoff::ActivityHandoffOwner::new(self.root.clone())
+                .read_return_placement(self.character, self.holder, fence.item_fence())
+                .await
+                .ok()??;
+        let origin = self.activity_runtimes.get(
+            placement.destination_scope,
+            placement.destination_generation.get(),
+        )?;
+        let origin_view = self.runtime_view(&origin);
+        let pin = placement.exit_position;
+        {
+            let runtime = origin.runtime.lock().await;
+            runtime.owner_fence().ok()?;
+            if runtime.binding().runtime_scope() != placement.destination_scope
+                || runtime.binding().scope_generation() != placement.destination_generation
+                || runtime.content_pin().frame_binding_digest() != pin.coordinate_frame_digest
+                || runtime.map_revision_digest() != pin.map_revision_digest
+                || runtime.content_pin().server_artifact_digest() != pin.server_artifact_digest
+            {
+                return None;
+            }
+        }
+        let temple = self.home_temple_in_world(session, &origin_view).await?;
+        let doors = origin.door.lock().await;
+        super::respawn_cell_admissible(
+            origin_view.movement_cells.index(),
+            origin_view.movement_cells.scope(),
+            placement.destination_scope.world_id(),
+            pin.server_artifact_digest,
+            doors.blocking_cells(),
+            temple,
+        )
+        .then_some(temple)
+    }
+
+    async fn home_temple_in_world(
+        &self,
+        session: GameSessionId,
+        world: &Self,
+    ) -> Option<MovementLocalPosition> {
+        let Some(map) = world.bundle_map() else {
+            return Some(world.runtime.lock().await.respawn_position());
         };
         let table = &map.overlay.base().subareas;
         // Synthetic fixture Worlds without a hometown catalogue keep their fixture start.
         if table == &Default::default() {
-            return Some(self.runtime.lock().await.respawn_position());
+            return Some(world.runtime.lock().await.respawn_position());
         }
-        let town = self.home_town(session, None).await?;
+        let town = self.home_town_in_world(session, None, world).await?;
         // TUTORIAL-1 retains its accepted islet exception. Read the durable step now;
         // the death transaction resets that same step when it records the islet cell.
         if self.tutorial_enabled().await {
@@ -84,21 +136,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         citizenship: Option<(ExactActorRef, u32)>,
     ) -> Option<u32> {
-        let map = self.bundle_map()?;
+        self.home_town_in_world(session, citizenship, self).await
+    }
+
+    async fn home_town_in_world(
+        &self,
+        session: GameSessionId,
+        citizenship: Option<(ExactActorRef, u32)>,
+        world: &Self,
+    ) -> Option<u32> {
+        let map = world.bundle_map()?;
         let table = &map.overlay.base().subareas;
         let default = table.default_town?;
         if citizenship.is_some_and(|(_, id)| table.town(id).is_none()) {
             return None;
         }
         let mut fence = self.current_quest_fence(session).await.ok()??;
-        if fence.runtime_scope
-            != crate::foundation::RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
+        // An activity may read its existing World citizenship, but cannot claim
+        // a World citizen tile through a private copy of a map region.
+        if citizenship.is_some()
+            && matches!(
+                fence.runtime_scope,
+                crate::foundation::RuntimeScopeRefV1::Instance { .. }
+            )
         {
             return None;
         }
         {
             let runtime = self.runtime.lock().await;
-            if runtime.binding().scope_generation() != fence.scope_ownership_generation
+            if runtime.binding().runtime_scope() != fence.runtime_scope
+                || runtime.binding().scope_generation() != fence.scope_ownership_generation
                 || runtime.owner_fence().is_err()
             {
                 return None;

@@ -17,6 +17,36 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         death: actor_spell::PlayerDeath,
     ) -> Option<(u64, actor_spell::ActorVitals)> {
+        if matches!(
+            actor.runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+            let (settled, _) = self.settle_death(actor, session, death, false).await;
+            if settled != SessionDeath::Durable {
+                return None;
+            }
+            let admitted = self.activity_runtimes.connection(session)?;
+            if admitted.runtime_actor != Some(actor) {
+                return None;
+            }
+            match self
+                .return_due_activity(
+                    admitted,
+                    crate::durability::activity_handoff::ActivityReturnReason::Death {
+                        occurrence: *death.occurrence.as_bytes(),
+                    },
+                )
+                .await
+            {
+                Ok(super::super::native_activity::NativeActivityOutcome::Committed(commit)) => {
+                    self.publish_activity_commit(&commit).ok()?;
+                }
+                Ok(super::super::native_activity::NativeActivityOutcome::Refused(_)) | Err(()) => {}
+            }
+            // The old actor/session never publishes a respawn result. The genuine
+            // Channel successor crosses the activity barrier with full snapshots.
+            return None;
+        }
         // DEATH-ML-LOSS-1 (CP D1433, #2193 Codex P1 4304911165): the committed death's
         // post-loss build, carried from the settle to the respawn step that rebases the live
         // actor onto it, so the next training save submits the lowered durable build.
@@ -150,12 +180,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         occurrence: crate::durability::character_death::PlayerDeathOccurrence,
     ) -> bool {
+        self.place_and_consume_settled_respawn_for(actor, session, occurrence, None)
+            .await
+    }
+
+    async fn place_and_consume_settled_respawn_for(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+        expected: Option<crate::durability::item_transfer::CurrentCharacterItemFence>,
+    ) -> bool {
         let Some(respawn) = self.home_temple(session).await else {
             return false;
         };
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return false;
         };
+        if !matches!(
+            fence.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) || expected.is_some_and(|expected| expected != fence.item_fence())
+        {
+            return false;
+        }
         let mut slot = self.revision_sequencer.acquire(fence.character_id).await;
         let Ok(expected_character_revision) = slot.cursor(self.root, self.character).await else {
             return false;
@@ -232,6 +280,89 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 false
             }
         }
+    }
+
+    /// Called only by the retained native Death return attempt, after actual
+    /// actor/state transfer and before any connection barrier. The attempt records
+    /// true synchronously, so no retry mistakes an arbitrary living actor for this death.
+    pub(in crate::gameplay_transport) async fn complete_activity_death_return(
+        &self,
+        admitted: super::super::connection::AdmittedSession,
+        occurrence: crate::durability::character_death::PlayerDeathOccurrence,
+    ) -> bool {
+        let (Some(actor), Some(expected)) = (admitted.runtime_actor, admitted.item_fence) else {
+            return false;
+        };
+        if !matches!(
+            expected.runtime_scope,
+            crate::foundation::RuntimeScopeRefV1::Channel { .. }
+        ) || actor.runtime_scope() != expected.runtime_scope
+            || actor.scope_generation() != expected.scope_ownership_generation
+        {
+            return false;
+        }
+        let Ok(Some(committed)) = self
+            .root
+            .reconcile_character_death(self.character, occurrence)
+            .await
+        else {
+            return false;
+        };
+        if committed.character_id != expected.character_id
+            || committed.death_cell.runtime_scope.world_id() != expected.runtime_scope.world_id()
+            || !matches!(
+                committed.death_cell.runtime_scope,
+                crate::foundation::RuntimeScopeRefV1::Instance { .. }
+            )
+        {
+            return false;
+        }
+        {
+            let runtime = self.runtime.lock().await;
+            let states = self.states.spell_states.lock().await;
+            if states
+                .player_death(&runtime, actor, admitted.game_session_id)
+                .is_none_or(|death| death.occurrence != occurrence)
+            {
+                return false;
+            }
+        }
+        if !self
+            .place_and_consume_settled_respawn_for(
+                actor,
+                admitted.game_session_id,
+                occurrence,
+                Some(expected),
+            )
+            .await
+        {
+            return false;
+        }
+        let runtime = self.runtime.lock().await;
+        let mut states = self.states.spell_states.lock().await;
+        if states
+            .player_death(&runtime, actor, admitted.game_session_id)
+            .is_none_or(|death| death.occurrence != occurrence)
+        {
+            return false;
+        }
+        if let Some(build) = committed.build_loss {
+            let Some(state) = states.get_mut(&runtime, actor, admitted.game_session_id) else {
+                return false;
+            };
+            state.rebase_after_death(&build.after);
+        }
+        // No await follows the atomic native respawn. The caller immediately
+        // retains completion while still holding the unique return-attempt mutex.
+        states
+            .respawn(
+                &runtime,
+                actor,
+                admitted.game_session_id,
+                occurrence,
+                self.owner_now(),
+            )
+            .is_some()
     }
 
     /// DEATH-2 for a closed client: an actor that died after its connection ended has no cadence

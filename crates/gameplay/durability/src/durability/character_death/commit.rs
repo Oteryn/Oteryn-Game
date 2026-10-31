@@ -72,12 +72,8 @@ impl DurabilityRoot {
                         None => false,
                     };
 
-                    // The player died in the Channel that owns the session.
-                    if fence.runtime_scope
-                        != RuntimeScopeRefV1::channel(
-                            request.death_cell.world_id,
-                            request.death_cell.channel_id,
-                        )
+                    // The exact native scope that owns the session issued this death.
+                    if fence.runtime_scope != request.death_cell.runtime_scope
                     {
                         return Ok(Err(CharacterProgressionError::AuthorityRejected));
                     }
@@ -290,6 +286,11 @@ impl DurabilityRoot {
                         Some(items) => items::binding(&binding, items),
                         None => binding,
                     };
+                    let death_world = request.death_cell.runtime_scope.world_id();
+                    let (death_kind, death_channel, death_instance) = match request.death_cell.runtime_scope {
+                        RuntimeScopeRefV1::Channel { channel_id, .. } => (1_i16, Some(channel_id.as_bytes().to_vec()), None),
+                        RuntimeScopeRefV1::Instance { instance_id, .. } => (2_i16, None, Some(instance_id.to_vec())),
+                    };
                     let receipt = sqlx::query(
                         "INSERT INTO game_character_death_receipts(\
                            death_occurrence_id, command_binding, policy_digest, character_id, \
@@ -302,12 +303,12 @@ impl DurabilityRoot {
                            ruleset_revision, content_revision, simulation_revision, \
                            evidence_revision, declaration_revision, policy_revision, \
                            reward_revision, committed_at, \
-                           vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after) \
+                           vocation, magic_level_before, mana_spent_before, fist_level_before, fist_tries_before, club_level_before, club_tries_before, sword_level_before, sword_tries_before, axe_level_before, axe_tries_before, distance_level_before, distance_tries_before, shielding_level_before, shielding_tries_before, fishing_level_before, fishing_tries_before, magic_level_after, mana_spent_after, fist_level_after, fist_tries_after, club_level_after, club_tries_after, sword_level_after, sword_tries_after, axe_level_after, axe_tries_after, distance_level_after, distance_tries_after, shielding_level_after, shielding_tries_after, fishing_level_after, fishing_tries_after, death_scope_kind, death_instance_id, death_scope_generation) \
                          VALUES (encode($1,'hex')::uuid, $2, $3, encode($4,'hex')::uuid, \
                            $5::text::numeric(20,0), $6::text::numeric(20,0), $7, $8, $9, $10, \
                            $11, $12, $13, $62::text::uuid, $63::text[]::uuid[], $64, encode($14,'hex')::uuid, \
                            encode($15,'hex')::uuid, $16, $17, $18, $19, $20, $21, $22, $23, \
-                           $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61)",
+                           $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53, $54, $55, $56, $57, $58, $59, $60, $61, $65, encode($66,'hex')::uuid, $67::text::numeric)",
                     )
                     .bind(request.occurrence.0.as_slice())
                     .bind(&binding)
@@ -322,8 +323,8 @@ impl DurabilityRoot {
                     .bind(staged.death_experience_lost.get())
                     .bind(&held)
                     .bind(&blessings_after)
-                    .bind(request.death_cell.world_id.as_bytes().as_slice())
-                    .bind(request.death_cell.channel_id.as_bytes().as_slice())
+                    .bind(death_world.as_bytes().as_slice())
+                    .bind(death_channel)
                     .bind(&request.death_cell.spatial_position)
                     .bind(&request.death_cell.map_revision)
                     .bind(&request.respawn_position)
@@ -340,7 +341,10 @@ impl DurabilityRoot {
                     let receipt = bind_death_build(receipt, build_loss.as_ref())
                         .bind(items.as_ref().and_then(|i| i.amulet.map(items::uuid)))
                         .bind(items.as_ref().map(|i| i.lost.iter().copied().map(items::uuid).collect::<Vec<_>>()).unwrap_or_default())
-                        .bind(items.as_ref().map(|i| i.root.to_vec()));
+                        .bind(items.as_ref().map(|i| i.root.to_vec()))
+                        .bind(death_kind)
+                        .bind(death_instance)
+                        .bind(fence.scope_ownership_generation.get().to_string());
                     receipt
                         .execute(&mut *tx)
                         .await?;
@@ -348,7 +352,7 @@ impl DurabilityRoot {
                         super::super::pvp_death_consequences::apply_pvp_death_in_transaction(
                             &mut tx,
                             fence.character_id,
-                            request.death_cell.world_id,
+                            request.death_cell.runtime_scope.world_id(),
                             request.occurrence.as_bytes(),
                             contributors,
                         )
@@ -359,7 +363,7 @@ impl DurabilityRoot {
                     super::super::guild_war::attribute_guild_war_frag_in_transaction(
                         &mut tx,
                         fence.character_id,
-                        request.death_cell.world_id,
+                        request.death_cell.runtime_scope.world_id(),
                         request.occurrence.as_bytes(),
                         contributors,
                     )

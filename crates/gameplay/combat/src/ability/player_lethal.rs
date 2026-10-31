@@ -3,15 +3,14 @@
 //! bounded occurrence ordering ledger. A receipt is provenance, never current authority.
 use crate::foundation::{
     ChannelId, ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementLocalPosition,
-    ScopeOwnershipGeneration, WorldId,
+    RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PlayerLethalReceipt {
     actor: ExactActorRef,
     session: GameSessionId,
-    world: WorldId,
-    channel: ChannelId,
+    scope: RuntimeScopeRefV1,
     generation: ScopeOwnershipGeneration,
     occurrence: [u8; 16],
     revision: u64,
@@ -32,8 +31,7 @@ impl PlayerLethalReceipt {
         Self {
             actor,
             session,
-            world: binding.world_id(),
-            channel: binding.channel_id(),
+            scope: binding.runtime_scope(),
             generation: binding.scope_generation(),
             occurrence,
             revision,
@@ -47,10 +45,13 @@ impl PlayerLethalReceipt {
         self.session
     }
     pub const fn world(self) -> WorldId {
-        self.world
+        self.scope.world_id()
     }
-    pub const fn channel(self) -> ChannelId {
-        self.channel
+    pub const fn channel(self) -> Option<ChannelId> {
+        self.scope.channel_id()
+    }
+    pub const fn runtime_scope(self) -> RuntimeScopeRefV1 {
+        self.scope
     }
     pub const fn generation(self) -> ScopeOwnershipGeneration {
         self.generation
@@ -67,8 +68,7 @@ impl PlayerLethalReceipt {
     /// Independently current carrier facts; never reconstruct current authority from receipt.
     pub fn current(self, runtime: &ChannelRuntimeV1) -> bool {
         let binding = runtime.binding();
-        binding.world_id() == self.world
-            && binding.channel_id() == self.channel
+        binding.runtime_scope() == self.scope
             && binding.scope_generation() == self.generation
             && runtime
                 .player_control_facts(self.actor, self.session)
@@ -235,10 +235,8 @@ pub trait PlayerLethalVitals {
         stamp: crate::foundation::RuntimeWorkStamp,
     ) -> Option<PlayerDamageReceipt> {
         let binding = runtime.binding();
-        if !fence.is_current_for_scope(
-            crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
-            binding.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        if !fence.is_current_for_scope(binding.runtime_scope(), binding.scope_generation())
+            || !fence.accepts_stamp(stamp)
         {
             return None;
         }

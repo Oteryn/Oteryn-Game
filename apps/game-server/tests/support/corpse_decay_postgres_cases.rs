@@ -32,8 +32,11 @@ use crate::item_transfer_postgres_cases::{
 
 fn decay_fence(generation: u64) -> TestResult<CorpseDecayFence> {
     Ok(CorpseDecayFence {
-        world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
-        channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        // W02 keeps the existing Channel fixture exact; loss/decay expectations are unchanged.
+        runtime_scope: oteryn_gameplay_durability::foundation::RuntimeScopeRefV1::channel(
+            WorldId::decode(&id(WORLD)).map_err(debug)?,
+            ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+        ),
         scope_ownership_generation: ScopeOwnershipGeneration::new(generation).map_err(debug)?,
     })
 }

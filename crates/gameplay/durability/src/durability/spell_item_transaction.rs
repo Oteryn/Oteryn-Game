@@ -7,7 +7,7 @@
 )]
 
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
-use super::item_transfer::{CurrentCharacterItemFence, character_item_fence_is_current, scope_of};
+use super::item_transfer::CurrentCharacterItemFence;
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::spell_items_abi::*;
 use super::spell_owner_commit::SpellLanePermit;
@@ -56,7 +56,7 @@ pub async fn read_source_item_description_in_transaction(
     check_transaction(tx, authority).await?;
     let row = sqlx::query("SELECT d.description FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id,world_id) LEFT JOIN game_spell_item_source_descriptions d USING(item_instance_id) WHERE i.item_instance_id=encode($1,'hex')::uuid AND i.world_id=encode($2,'hex')::uuid AND i.state_revision=$3::text::numeric(20,0) AND i.lifecycle=1 AND i.quantity>0 AND g.channel_id=encode($4,'hex')::uuid AND g.runtime_scope_ownership_generation=$5::text::numeric(20,0) FOR SHARE OF i")
         .bind(item.as_slice()).bind(authority.world.as_slice())
-        .bind(state_revision.to_string()).bind(authority.channel.as_slice())
+        .bind(state_revision.to_string()).bind(authority.channel_bytes()?.as_slice())
         .bind(authority.ownership_generation.to_string())
         .fetch_optional(&mut **tx).await?
         .ok_or(SpellItemError::Rejected("source description requires current exact Item custody"))?;
@@ -123,6 +123,11 @@ impl DurabilityRoot {
                             &mut tx, permit, &record, &node, scope, generation,
                         )
                         .await?;
+                        if authority.channel_bytes().is_none() {
+                            // The current physical Item schedule namespace is Channel-owned.
+                            // Never run an Instance's due pass against its origin Channel.
+                            return Ok(0);
+                        }
                         let restarted =
                             super::field_removal::retire_restarted_fields(&mut tx, &authority, 500)
                                 .await?;
@@ -649,7 +654,7 @@ pub(super) async fn record_prepared_companion_acquisition_in_transaction(
         .as_ref()
         .ok_or(SpellItemError::Rejected("missing sealed companion intent"))?;
     let binding = prepared.binding.clone();
-    if binding.world!=authority.world || binding.channel!=authority.channel || binding.ownership_generation!=authority.ownership_generation
+    if binding.world!=authority.world || Some(binding.channel)!=authority.channel || binding.ownership_generation!=authority.ownership_generation
         || binding.character!=authority.character || binding.session!=*authority.command.game_session_id().as_bytes()
         || !prepared.master_scope_matches
         || !request.operations.iter().any(|op|matches!(op,SpellItemOperation::ConsumeCorpse(c) if c.item_instance_id==binding.corpse && c.state_revision==binding.corpse_revision)) {return Err(SpellItemError::Rejected("companion source/current owner binding"));}
@@ -693,7 +698,7 @@ pub async fn reconcile_committed_companion_acquisition_in_transaction(
         creature_revision: row.try_get("creature_revision")?,
     };
     if binding.world != authority.world
-        || binding.channel != authority.channel
+        || Some(binding.channel) != authority.channel
         || binding.ownership_generation != authority.ownership_generation
         || binding.character != authority.character
         || binding.session != *authority.command.game_session_id().as_bytes()
@@ -713,7 +718,7 @@ pub struct SpellItemAuthority {
     due_read_only: bool,
     physical_transaction: String,
     world: [u8; 16],
-    channel: [u8; 16],
+    channel: Option<[u8; 16]>,
     character: [u8; 16],
     ownership_generation: u64,
     command: CommandRef,
@@ -812,12 +817,12 @@ async fn verify_paid_due_source(
     evidence: &impl CommittedSpellDueEvidence,
 ) -> Result<()> {
     check_transaction(tx, authority).await?;
-    let paid:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_spell_item_receipts r WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric(20,0) AND r.character_id=encode($3,'hex')::uuid AND r.world_id=encode($4,'hex')::uuid AND r.channel_id=encode($5,'hex')::uuid AND r.ownership_generation=$6::text::numeric(20,0) AND r.caster_lease_generation=$7::text::numeric(20,0) AND r.caster_placement_digest=$8 AND r.catalog_digest=$9 AND r.spell_family='Spell' AND r.spell_production_key=$10 AND r.spell_revision=$11 AND r.binding=sha256(r.intent) AND r.cost_binding=sha256(r.cost) AND game_spell_cost_binding_valid(r.cost) AND r.created_xact_id<>pg_current_xact_id() AND pg_xact_status(r.created_xact_id)='committed')")
+    let paid:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_spell_item_receipts r WHERE r.game_session_id=encode($1,'hex')::uuid AND r.command_id=$2::text::numeric(20,0) AND r.character_id=encode($3,'hex')::uuid AND r.world_id=encode($4,'hex')::uuid AND r.channel_id IS NOT DISTINCT FROM encode($5,'hex')::uuid AND r.runtime_scope_kind=$12 AND r.instance_id IS NOT DISTINCT FROM encode($13,'hex')::uuid AND r.ownership_generation=$6::text::numeric(20,0) AND r.caster_lease_generation=$7::text::numeric(20,0) AND r.caster_placement_digest=$8 AND r.catalog_digest=$9 AND r.spell_family='Spell' AND r.spell_production_key=$10 AND r.spell_revision=$11 AND r.binding=sha256(r.intent) AND r.cost_binding=sha256(r.cost) AND game_spell_cost_binding_valid(r.cost) AND r.created_xact_id<>pg_current_xact_id() AND pg_xact_status(r.created_xact_id)='committed')")
         .bind(authority.command.game_session_id().as_bytes().as_slice()).bind(authority.command.command_id().get().to_string())
-        .bind(authority.character.as_slice()).bind(authority.world.as_slice()).bind(authority.channel.as_slice())
+        .bind(authority.character.as_slice()).bind(authority.world.as_slice()).bind(authority.channel.as_ref().map(|value| value.as_slice()))
         .bind(authority.ownership_generation.to_string()).bind(authority.character_lease_generation.to_string())
         .bind(evidence.caster_placement_identity().as_slice()).bind(authority.compatible_content_digest.as_slice())
-        .bind(&evidence.spell().production_key).bind(&evidence.spell().revision_ref).fetch_one(&mut **tx).await?;
+        .bind(&evidence.spell().production_key).bind(&evidence.spell().revision_ref).bind(authority.scope_kind()).bind(authority.instance_bytes().as_ref().map(|value| value.as_slice())).fetch_one(&mut **tx).await?;
     if !paid {
         return Err(SpellItemError::Rejected(
             "due callback original committed source absent",
@@ -828,16 +833,25 @@ async fn verify_paid_due_source(
 
 pub struct SpellItemScopeAuthority {
     physical_transaction: String,
+    runtime_scope: crate::foundation::RuntimeScopeRefV1,
     world: [u8; 16],
-    channel: [u8; 16],
+    channel: Option<[u8; 16]>,
     ownership_generation: u64,
 }
 impl SpellItemScopeAuthority {
     pub fn world_bytes(&self) -> [u8; 16] {
         self.world
     }
-    pub fn channel_bytes(&self) -> [u8; 16] {
+    pub fn channel_bytes(&self) -> Option<[u8; 16]> {
         self.channel
+    }
+    pub fn runtime_scope(&self) -> crate::foundation::RuntimeScopeRefV1 {
+        self.runtime_scope
+    }
+    fn ground_channel(&self) -> Result<[u8; 16]> {
+        self.channel.ok_or(SpellItemError::Rejected(
+            "Instance Ground custody is unavailable",
+        ))
     }
     pub fn generation(&self) -> u64 {
         self.ownership_generation
@@ -1001,40 +1015,53 @@ pub async fn assert_spell_item_scope_with_recovery(
     scope: crate::foundation::RuntimeScopeRefV1,
     generation: u64,
 ) -> Result<SpellItemScopeAuthority> {
-    let crate::foundation::RuntimeScopeRefV1::Channel {
-        world_id,
-        channel_id,
-    } = scope
-    else {
-        return Err(SpellItemError::Rejected("timer requires Channel scope"));
-    };
-    permit.check_channel(world_id, channel_id)?;
+    permit.check_scope(scope)?;
     assert_recovery_fence(tx, record).await?;
     super::db::lock_admission_relations(tx).await?;
-    let fact = node.fact();
-    let current:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_runtime_scope_assignments s JOIN game_durability_admission_runtime_guards g USING(scope_key) WHERE s.world_id=encode($1,'hex')::uuid AND s.channel_id=encode($2,'hex')::uuid AND s.state=1 AND s.ownership_generation=$3::text::numeric(20,0) AND s.holder_node_id=encode($4,'hex')::uuid AND s.holder_registration_revision=$5::text::numeric(20,0) AND g.ready AND g.ownership_generation=s.ownership_generation)")
-        .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice()).bind(generation.to_string()).bind(fact.node_id().as_bytes().as_slice()).bind(fact.registration_revision().to_string()).fetch_one(&mut **tx).await?;
-    if !current || !super::runtime_scope_assignment::prove_current_incarnation(tx, node).await? {
+    let ownership = crate::foundation::ScopeOwnershipGeneration::new(generation)
+        .map_err(|_| SpellItemError::Rejected("scope generation"))?;
+    if !super::character_progression::assert_runtime_scope_fence(tx, scope, ownership, node).await?
+    {
         return Err(SpellItemError::Rejected(
-            "current timer scope/node authority",
+            "current timer scope/node/history authority",
         ));
     }
-    sqlx::query(
-        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'), 33))",
-    )
-    .bind(world_id.as_bytes().as_slice())
-    .bind(channel_id.as_bytes().as_slice())
-    .execute(&mut **tx)
-    .await?;
+    lock_runtime_items(tx, scope).await?;
     let physical_transaction = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
         .fetch_one(&mut **tx)
         .await?;
     Ok(SpellItemScopeAuthority {
         physical_transaction,
-        world: *world_id.as_bytes(),
-        channel: *channel_id.as_bytes(),
+        runtime_scope: scope,
+        world: *scope.world_id().as_bytes(),
+        channel: scope.channel_id().map(|channel| *channel.as_bytes()),
         ownership_generation: generation,
     })
+}
+
+/// Same physical-owner lock for all callers. Channel keys retain their original encoding;
+/// activity keys include their separate assignment namespace and exact Instance identity.
+pub(super) async fn lock_runtime_items(
+    tx: &mut Transaction<'_, Postgres>,
+    scope: crate::foundation::RuntimeScopeRefV1,
+) -> Result<()> {
+    match scope {
+        crate::foundation::RuntimeScopeRefV1::Channel {
+            world_id,
+            channel_id,
+        } => {
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'), 33))")
+                .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+                .execute(&mut **tx).await?;
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance { .. } => {
+            sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex'), 33))")
+                .bind(super::runtime_scope_assignment::assignment_scope_key(scope).as_slice())
+                .execute(&mut **tx)
+                .await?;
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -1075,7 +1102,7 @@ async fn expire_due_spell_items_bounded(
         ));
     }
     let rows=sqlx::query("SELECT i.item_instance_id::text,i.state_revision::text,g.stack_ordinal,l.transaction_id::text AS source_transaction_id,l.ordinal AS source_ordinal,l.expires_at_unix_ms,game_character_uuid_v7()::text AS transaction_id,game_character_uuid_v7()::text AS event_id FROM game_item_instances i JOIN game_item_ground_locations g USING(item_instance_id) JOIN game_spell_item_lines l USING(item_instance_id) WHERE i.lifecycle=1 AND l.operation_kind=1 AND l.expires_at_unix_ms<=floor(extract(epoch FROM statement_timestamp())*1000)::bigint AND g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid ORDER BY l.expires_at_unix_ms,i.item_instance_id LIMIT $3 FOR UPDATE OF i")
-        .bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(i64::try_from(limit).map_err(|_|SpellItemError::Rejected("field expiry batch bound"))?).fetch_all(&mut **tx).await?;
+        .bind(authority.world.as_slice()).bind(authority.ground_channel()?.as_slice()).bind(i64::try_from(limit).map_err(|_|SpellItemError::Rejected("field expiry batch bound"))?).fetch_all(&mut **tx).await?;
     let mut output = Vec::new();
     for row in rows {
         let item = uuid(&row.try_get::<String, _>("item_instance_id")?)?;
@@ -1084,7 +1111,7 @@ async fn expire_due_spell_items_bounded(
         let source = uuid(&row.try_get::<String, _>("source_transaction_id")?)?;
         let revision = integer(row.try_get("state_revision")?)?;
         sqlx::query("INSERT INTO game_spell_item_expiry_receipts(item_instance_id,transaction_id,event_id,source_transaction_id,source_ordinal,state_revision_before,source_stack_ordinal,world_id,channel_id,ownership_generation,expires_at_unix_ms,occurred_at_unix_ms) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,$5,$6::text::numeric(20,0),$7,encode($8,'hex')::uuid,encode($9,'hex')::uuid,$10::text::numeric(20,0),$11,floor(extract(epoch FROM statement_timestamp())*1000)::bigint)")
-            .bind(item.as_slice()).bind(transaction.as_slice()).bind(event.as_slice()).bind(source.as_slice()).bind(row.try_get::<i32,_>("source_ordinal")?).bind(revision.to_string()).bind(row.try_get::<i64,_>("stack_ordinal")?).bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(authority.ownership_generation.to_string()).bind(row.try_get::<i64,_>("expires_at_unix_ms")?).execute(&mut **tx).await?;
+            .bind(item.as_slice()).bind(transaction.as_slice()).bind(event.as_slice()).bind(source.as_slice()).bind(row.try_get::<i32,_>("source_ordinal")?).bind(revision.to_string()).bind(row.try_get::<i64,_>("stack_ordinal")?).bind(authority.world.as_slice()).bind(authority.ground_channel()?.as_slice()).bind(authority.ownership_generation.to_string()).bind(row.try_get::<i64,_>("expires_at_unix_ms")?).execute(&mut **tx).await?;
         let update=sqlx::query("UPDATE game_item_instances SET lifecycle=2,quantity=0,last_transaction_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid AND lifecycle=1 AND state_revision=$3::text::numeric(20,0)").bind(transaction.as_slice()).bind(item.as_slice()).bind(revision.to_string()).execute(&mut **tx).await?;
         if update.rows_affected() != 1 {
             return Err(SpellItemError::Rejected("expiry item compare-and-retire"));
@@ -1104,6 +1131,24 @@ async fn expire_due_spell_items_bounded(
 }
 
 impl SpellItemAuthority {
+    fn channel_bytes(&self) -> Result<[u8; 16]> {
+        self.channel.ok_or(SpellItemError::Rejected(
+            "Instance ground custody is unavailable",
+        ))
+    }
+    fn instance_bytes(&self) -> Option<[u8; 16]> {
+        match self.runtime_scope {
+            crate::foundation::RuntimeScopeRefV1::Channel { .. } => None,
+            crate::foundation::RuntimeScopeRefV1::Instance { instance_id, .. } => Some(instance_id),
+        }
+    }
+    fn scope_kind(&self) -> i16 {
+        if self.instance_bytes().is_some() {
+            2
+        } else {
+            1
+        }
+    }
     pub fn connection_generation(&self) -> crate::foundation::ConnectionGeneration {
         self.connection_generation
     }
@@ -1173,42 +1218,35 @@ pub(super) async fn assert_spell_item_authority_with_recovery(
             "missing compatible Content binding",
         ));
     }
-    let (world, channel) =
-        scope_of(fence).map_err(|_| SpellItemError::Rejected("Channel scope"))?;
-    permit.check_channel(world, channel)?;
+    let world = fence.runtime_scope.world_id();
+    let channel = match fence.runtime_scope {
+        crate::foundation::RuntimeScopeRefV1::Channel { channel_id, .. } => {
+            Some(*channel_id.as_bytes())
+        }
+        crate::foundation::RuntimeScopeRefV1::Instance { .. } => None,
+    };
+    permit.check_scope(fence.runtime_scope)?;
     assert_recovery_fence(tx, record).await?;
     super::db::lock_admission_relations(tx).await?;
-    if !character_item_fence_is_current(
-        tx,
-        node,
-        fence,
-        command,
-        fence.character_id,
-        *world.as_bytes(),
-        *channel.as_bytes(),
-    )
-    .await?
+    if command.game_session_id() != fence.game_session_id
+        || super::character_progression::assert_item_only_fence(tx, fence, node)
+            .await?
+            .is_err()
     {
         return Err(SpellItemError::Rejected("current Character item fence"));
     }
     let physical_transaction: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
         .fetch_one(&mut **tx)
         .await?;
-    // Serialize all dynamic item snapshots/mutations in this Channel in a
-    // stable owner lock order. The lock lasts to the compositor's commit.
-    sqlx::query(
-        "SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex') || encode($2,'hex'), 33))",
-    )
-    .bind(world.as_bytes().as_slice())
-    .bind(channel.as_bytes().as_slice())
-    .execute(&mut **tx)
-    .await?;
+    // Channel ground triggers keep their original lock. Instance locks retain the tagged
+    // assignment key and cannot collide with a Channel having the same UUID bytes.
+    lock_runtime_items(tx, fence.runtime_scope).await?;
     Ok(SpellItemAuthority {
         root: root.clone(),
         due_read_only: false,
         physical_transaction,
         world: *world.as_bytes(),
-        channel: *channel.as_bytes(),
+        channel,
         character: *fence.character_id.as_bytes(),
         ownership_generation: fence.scope_ownership_generation.get(),
         command,
@@ -1270,7 +1308,7 @@ pub fn decoded_placement(row: &sqlx::postgres::PgRow) -> Result<GroundPlacement>
 
 // The Channel owner lock serializes Ground custody; retain row locks on
 // mutable ItemInstances without requiring UPDATE on immutable locations.
-const TILE_ROWS: &str = "SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.minted_transaction_id::text,g.stack_ordinal::text,g.runtime_scope_ownership_generation::text AS ground_scope_generation,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,COALESCE(fc.blocks_movement,l.blocks_movement,nm.blocks_movement) AS blocks_movement,COALESCE(fc.blocks_projectile,l.blocks_projectile,nm.blocks_projectile) AS blocks_projectile,COALESCE(fc.immovable_block_solid,l.immovable_block_solid,nm.immovable_block_solid) AS immovable_block_solid,l.expires_at_unix_ms,l.definition_production_key AS origin_item_key,r.cause_kind AS origin_cause_kind,r.world_id::text AS creature_origin_world,r.channel_id::text AS creature_origin_channel,r.creature_placement AS creature_origin_placement,r.creature_actor_generation::text AS creature_origin_generation,r.creature_definition_key AS creature_origin_key,r.creature_definition_revision AS creature_origin_revision,r.spell_production_key AS creature_origin_ability,r.spell_revision AS creature_origin_ability_revision,r.creature_occurrence AS creature_origin_occurrence,r.creature_map_digest AS creature_origin_map,r.creature_frame_digest AS creature_origin_frame,r.creature_source_body_digest AS creature_origin_body,r.creature_cast_digest AS creature_origin_cast,r.character_id::text AS origin_character,r.game_session_id::text AS origin_session,r.command_id::text AS origin_command,r.occurred_at_unix_ms AS origin_created_unix_ms,r.ownership_generation::text AS origin_generation,r.caster_lease_generation::text AS origin_lease,r.caster_placement_digest AS origin_placement,r.catalog_digest AS origin_catalog,l.content_generation_digest AS origin_content, EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION') AS corpse FROM game_item_ground_locations g JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id LEFT JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.operation_kind=1 AND l.transaction_id=i.minted_transaction_id LEFT JOIN game_spell_item_receipts r ON r.transaction_id=l.transaction_id LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND fc.content_digest=l.content_generation_digest LEFT JOIN game_native_map_item_receipts nm ON nm.item_instance_id=i.item_instance_id AND nm.transaction_id=i.minted_transaction_id AND nm.reset_epoch=coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=g.world_id),0) AND (nm.definition_family,nm.definition_key,nm.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND nm.quantity=i.quantity AND i.state_revision=1 AND i.last_transaction_id IS NULL AND (nm.world_id,nm.channel_id,nm.spatial_position,nm.map_revision,nm.content_revision,nm.placement_context)=(g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) AND (nm.scope_generation=g.runtime_scope_ownership_generation OR EXISTS(SELECT 1 FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=nm.transaction_id AND ad.ownership_generation=g.runtime_scope_ownership_generation)) AND nm.content_revision='sha256:'||encode(nm.content_digest,'hex') AND nm.map_revision='sha256:'||encode(nm.map_digest,'hex') AND nm.placement_context=nm.frame_digest AND (nm.owner_kind IS NULL OR nm.owner_kind IN('container','door')) AND EXISTS(SELECT 1 FROM game_native_map_item_audit na WHERE na.transaction_id=nm.transaction_id AND na.item_instance_id=nm.item_instance_id AND na.event_id=nm.event_id AND na.envelope=nm.source_intent AND na.envelope_digest=nm.binding AND na.created_xact_id=nm.created_xact_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND i.lifecycle=1 ORDER BY g.stack_ordinal DESC NULLS FIRST LIMIT 501 FOR UPDATE OF i";
+const TILE_ROWS: &str = "SELECT i.item_instance_id::text,i.definition_family,i.definition_production_key,i.definition_revision_ref,i.quantity,i.state_revision::text,i.minted_transaction_id::text,g.stack_ordinal::text,g.runtime_scope_ownership_generation::text AS ground_scope_generation,g.spatial_position,g.corpse_ref,g.map_revision,g.content_revision,g.native_room_placement_context,COALESCE(fc.blocks_movement,l.blocks_movement,nm.blocks_movement) AS blocks_movement,COALESCE(fc.blocks_projectile,l.blocks_projectile,nm.blocks_projectile) AS blocks_projectile,COALESCE(fc.immovable_block_solid,l.immovable_block_solid,nm.immovable_block_solid) AS immovable_block_solid,l.expires_at_unix_ms,l.definition_production_key AS origin_item_key,r.cause_kind AS origin_cause_kind,r.world_id::text AS creature_origin_world,r.channel_id::text AS creature_origin_channel,r.creature_placement AS creature_origin_placement,r.creature_actor_generation::text AS creature_origin_generation,r.creature_definition_key AS creature_origin_key,r.creature_definition_revision AS creature_origin_revision,r.spell_production_key AS creature_origin_ability,r.spell_revision AS creature_origin_ability_revision,r.creature_occurrence AS creature_origin_occurrence,r.creature_map_digest AS creature_origin_map,r.creature_frame_digest AS creature_origin_frame,r.creature_source_body_digest AS creature_origin_body,r.creature_cast_digest AS creature_origin_cast,r.character_id::text AS origin_character,r.game_session_id::text AS origin_session,r.command_id::text AS origin_command,r.occurred_at_unix_ms AS origin_created_unix_ms,r.ownership_generation::text AS origin_generation,r.caster_lease_generation::text AS origin_lease,r.caster_placement_digest AS origin_placement,r.catalog_digest AS origin_catalog,l.content_generation_digest AS origin_content, EXISTS (SELECT 1 FROM game_item_mint_receipts m WHERE m.item_instance_id=i.item_instance_id AND m.loot_purpose_key='CORPSE_MATERIALIZATION') AS corpse FROM game_item_ground_locations g JOIN game_item_instances i ON i.item_instance_id=g.item_instance_id LEFT JOIN game_spell_item_lines l ON l.item_instance_id=i.item_instance_id AND l.operation_kind=1 AND l.transaction_id=i.minted_transaction_id LEFT JOIN game_spell_item_receipts r ON r.transaction_id=l.transaction_id LEFT JOIN game_spell_field_temporal_schedules fc ON fc.item_instance_id=i.item_instance_id AND fc.source_transaction_id=i.minted_transaction_id AND (fc.definition_family,fc.definition_production_key,fc.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND fc.content_digest=l.content_generation_digest LEFT JOIN game_native_map_item_receipts nm ON nm.item_instance_id=i.item_instance_id AND nm.transaction_id=i.minted_transaction_id AND nm.reset_epoch=coalesce((SELECT reset_epoch FROM game_world_reset_active WHERE world_id=g.world_id),0) AND (nm.definition_family,nm.definition_key,nm.definition_revision)=(i.definition_family,i.definition_production_key,i.definition_revision_ref) AND nm.quantity=i.quantity AND i.state_revision=1 AND i.last_transaction_id IS NULL AND (nm.world_id,nm.channel_id,nm.spatial_position,nm.map_revision,nm.content_revision,nm.placement_context)=(g.world_id,g.channel_id,g.spatial_position,g.map_revision,g.content_revision,g.native_room_placement_context) AND (nm.scope_generation=g.runtime_scope_ownership_generation OR EXISTS(SELECT 1 FROM game_native_map_scope_adoptions ad WHERE ad.source_transaction_id=nm.transaction_id AND ad.ownership_generation=g.runtime_scope_ownership_generation)) AND nm.content_revision='sha256:'||encode(nm.content_digest,'hex') AND nm.map_revision='sha256:'||encode(nm.map_digest,'hex') AND nm.placement_context=nm.frame_digest AND (nm.owner_kind IS NULL OR nm.owner_kind IN('container','door')) AND EXISTS(SELECT 1 FROM game_native_map_item_audit na WHERE na.transaction_id=nm.transaction_id AND na.item_instance_id=nm.item_instance_id AND na.event_id=nm.event_id AND na.envelope=nm.source_intent AND na.envelope_digest=nm.binding AND na.created_xact_id=nm.created_xact_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND g.spatial_position=$3 AND g.map_revision=$4 AND g.content_revision=$5 AND g.native_room_placement_context=$6 AND i.lifecycle=1 ORDER BY g.stack_ordinal DESC NULLS FIRST LIMIT 501 FOR UPDATE OF i";
 
 async fn locked_tile_rows(
     tx: &mut Transaction<'_, Postgres>,
@@ -1280,6 +1318,7 @@ async fn locked_tile_rows(
     check_transaction(tx, authority).await?;
     let scope = SpellItemScopeAuthority {
         physical_transaction: authority.physical_transaction.clone(),
+        runtime_scope: authority.runtime_scope,
         world: authority.world,
         channel: authority.channel,
         ownership_generation: authority.ownership_generation,
@@ -1300,8 +1339,10 @@ pub async fn locked_tile_rows_for_scope(
             "tile read requires same physical owner transaction",
         ));
     }
-    let unknown:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.channel_id=encode($2,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR (g.spatial_position=$3 AND (g.map_revision<>$4 OR g.content_revision<>$5 OR g.native_room_placement_context<>$6))))")
-        .bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(&target.spatial_position).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).fetch_one(&mut **tx).await?;
+    let (scope_kind, channel, instance) =
+        super::item_mint::ground_scope_columns(authority.runtime_scope());
+    let unknown:bool=sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_item_ground_locations g JOIN game_item_instances i USING(item_instance_id) WHERE g.world_id=encode($1,'hex')::uuid AND g.scope_kind=$7 AND g.channel_id IS NOT DISTINCT FROM encode($2,'hex')::uuid AND g.instance_id IS NOT DISTINCT FROM encode($8,'hex')::uuid AND i.lifecycle=1 AND (octet_length(g.spatial_position)<>10 OR (g.spatial_position=$3 AND (g.map_revision<>$4 OR g.content_revision<>$5 OR g.native_room_placement_context<>$6))))")
+        .bind(authority.world.as_slice()).bind(channel.map(|id| id.to_vec())).bind(&target.spatial_position).bind(&target.map_revision).bind(&target.content_revision).bind(&target.placement_context).bind(scope_kind).bind(instance.map(|id| id.to_vec())).fetch_one(&mut **tx).await?;
     if unknown {
         return Err(SpellItemError::Rejected(
             "unreconciled opaque or incompatible Ground placement",
@@ -1309,11 +1350,13 @@ pub async fn locked_tile_rows_for_scope(
     }
     let rows = sqlx::query(TILE_ROWS)
         .bind(authority.world.as_slice())
-        .bind(authority.channel.as_slice())
+        .bind(channel.map(|id| id.to_vec()))
         .bind(&target.spatial_position)
         .bind(&target.map_revision)
         .bind(&target.content_revision)
         .bind(&target.placement_context)
+        .bind(scope_kind)
+        .bind(instance.map(|id| id.to_vec()))
         .fetch_all(&mut **tx)
         .await?;
     if rows.len() > 500 {
@@ -1582,6 +1625,16 @@ fn encode_intent(
     {
         return Err(SpellItemError::Rejected("spell item request shape"));
     }
+    if authority.instance_bytes().is_some()
+        && (!request.operations.is_empty()
+            || request.companion.is_some()
+            || request.direct_companion.is_some()
+            || request.swing_ordinal.is_some())
+    {
+        return Err(SpellItemError::Rejected(
+            "Instance physical Item custody is unavailable",
+        ));
+    }
     if request.swing_ordinal.is_some() {
         let valid_source = request.operations.len() == 1
             && matches!(&request.operations[0],
@@ -1602,11 +1655,7 @@ fn encode_intent(
         }
     }
     if let Some(origin) = &request.caster_origin
-        && (*origin.actor.world_id().as_bytes() != authority.world
-            || !origin
-                .actor
-                .channel_id()
-                .is_some_and(|channel| *channel.as_bytes() == authority.channel)
+        && (origin.actor.runtime_scope() != authority.runtime_scope
             || origin.actor.scope_generation().get() != authority.ownership_generation
             || origin.character_lease_generation != authority.character_lease_generation)
     {
@@ -1816,6 +1865,19 @@ fn encode_intent(
         operations.push(value);
     }
     let mut intent = serde_json::json!({"version":1,"world":authority.world,"channel":authority.channel,"character":authority.character,"session":authority.command.game_session_id().as_bytes(),"command":authority.command.command_id().get(),"ownership_generation":authority.ownership_generation,"spell":reference(&request.spell),"catalog_digest":request.catalog_digest.as_slice(),"transaction":request.transaction_id,"event":request.event_id,"cost":cost,"operations":operations,"companion":request.companion.as_ref().map(|p|p.binding.json()),"caster_origin":request.caster_origin.as_ref().map(|o|serde_json::json!({"placement":o.actor.placement_identity(),"lease":o.character_lease_generation}))});
+    if let Some(instance) = authority.instance_bytes() {
+        // Preserve existing Channel intent bytes exactly. Instance v2 has an explicit kind
+        // and identity, with channel=null; an origin Channel never stands in for its scope.
+        intent["version"] = serde_json::json!(2);
+        intent["runtime_scope_kind"] = serde_json::json!(2);
+        let mut key = String::with_capacity(32);
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+        for byte in instance {
+            key.push(char::from(HEX[usize::from(byte >> 4)]));
+            key.push(char::from(HEX[usize::from(byte & 15)]));
+        }
+        intent["instance"] = serde_json::json!(key);
+    }
     if let Some(ordinal) = request.swing_ordinal {
         intent["swing_ordinal"] = serde_json::json!(ordinal);
     }
@@ -1959,8 +2021,8 @@ pub async fn apply_spell_items_in_transaction_guarded(
         sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp())*1000)::bigint")
             .fetch_one(&mut **tx)
             .await?;
-    sqlx::query("INSERT INTO game_spell_item_receipts(swing_ordinal,transaction_id,event_id,game_session_id,command_id,character_id,world_id,channel_id,ownership_generation,spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,cost,cost_binding,operation_count,occurred_at_unix_ms,caster_lease_generation,caster_placement_digest) VALUES($21,encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),encode($5,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8::text::numeric(20,0),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19::text::numeric(20,0),$20)")
-        .bind(request.transaction_id.as_slice()).bind(request.event_id.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(authority.character.as_slice()).bind(authority.world.as_slice()).bind(authority.channel.as_slice()).bind(authority.ownership_generation.to_string()).bind(&request.spell.family).bind(&request.spell.production_key).bind(&request.spell.revision_ref).bind(request.catalog_digest.as_slice()).bind(binding.as_slice()).bind(&intent).bind(&cost).bind(cost_binding.as_slice()).bind(i32::try_from(request.operations.len()).map_err(|_|SpellItemError::Rejected("operation count"))?).bind(occurred_at).bind(request.caster_origin.as_ref().map(|o|o.character_lease_generation.to_string())).bind(request.caster_origin.as_ref().map(|o|o.actor.placement_identity().to_vec())).bind(request.swing_ordinal.map(i32::from)).execute(&mut **tx).await?;
+    sqlx::query("INSERT INTO game_spell_item_receipts(swing_ordinal,transaction_id,event_id,game_session_id,command_id,character_id,world_id,channel_id,ownership_generation,spell_family,spell_production_key,spell_revision,catalog_digest,binding,intent,cost,cost_binding,operation_count,occurred_at_unix_ms,caster_lease_generation,caster_placement_digest,runtime_scope_kind,instance_id) VALUES($21,encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),encode($5,'hex')::uuid,encode($6,'hex')::uuid,encode($7,'hex')::uuid,$8::text::numeric(20,0),$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19::text::numeric(20,0),$20,$22,CASE WHEN $23::bytea IS NULL THEN NULL ELSE encode($23,'hex')::uuid END)")
+        .bind(request.transaction_id.as_slice()).bind(request.event_id.as_slice()).bind(request.command.game_session_id().as_bytes().as_slice()).bind(request.command.command_id().get().to_string()).bind(authority.character.as_slice()).bind(authority.world.as_slice()).bind(authority.channel.as_ref().map(|value| value.as_slice())).bind(authority.ownership_generation.to_string()).bind(&request.spell.family).bind(&request.spell.production_key).bind(&request.spell.revision_ref).bind(request.catalog_digest.as_slice()).bind(binding.as_slice()).bind(&intent).bind(&cost).bind(cost_binding.as_slice()).bind(i32::try_from(request.operations.len()).map_err(|_|SpellItemError::Rejected("operation count"))?).bind(occurred_at).bind(request.caster_origin.as_ref().map(|o|o.character_lease_generation.to_string())).bind(request.caster_origin.as_ref().map(|o|o.actor.placement_identity().to_vec())).bind(request.swing_ordinal.map(i32::from)).bind(authority.scope_kind()).bind(authority.instance_bytes().as_ref().map(|value| value.as_slice())).execute(&mut **tx).await?;
     for (index, op) in request.operations.iter().enumerate() {
         apply_operation(tx, authority, request, index + 1, occurred_at, op).await?;
     }
@@ -2650,7 +2712,7 @@ async fn apply_consumption_operation(
     sqlx::query("INSERT INTO game_spell_item_lines(transaction_id,ordinal,operation_kind,item_instance_id,definition_family,definition_production_key,definition_revision,quantity_before,quantity_after,state_revision_before,world_id,channel_id,spatial_position,map_revision,content_revision,placement_context,content_generation_digest,immovable_block_solid,source_parent_item_instance_id,source_placement_ordinal,source_equipment_slot,source_equipment_revision,source_corpse_root,source_entry_is_corpse) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,$7,$8,$9,$10::text::numeric(20,0),encode($11,'hex')::uuid,encode($12,'hex')::uuid,$13,$14,$15,$16,$17,false,CASE WHEN $18::bytea IS NULL THEN NULL ELSE encode($18,'hex')::uuid END,$19::text::numeric(20,0),$20,$21::text::numeric(20,0),CASE WHEN $22::bytea IS NULL THEN NULL ELSE encode($22,'hex')::uuid END,$23)")
         .bind(request.transaction_id.as_slice()).bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("line work bound"))?)
         .bind(kind).bind(id.as_slice()).bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref)
-        .bind(i64::from(before)).bind(i64::from(after)).bind(revision.to_string()).bind(authority.world.as_slice()).bind(authority.channel.as_slice())
+        .bind(i64::from(before)).bind(i64::from(after)).bind(revision.to_string()).bind(authority.world.as_slice()).bind(authority.channel_bytes()?.as_slice())
         .bind(&placement.spatial_position).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context)
         .bind(authority.compatible_content_digest.as_slice()).bind(parent.as_ref().map(|v|v.as_slice())).bind(parent_ordinal.map(|v|v.to_string()))
         .bind(slot.map(i16::from)).bind(equipment_revision.map(|v|v.to_string())).bind(root.as_ref().map(|v|v.as_slice())).bind(corpse_entry)
@@ -3236,10 +3298,10 @@ impl PhysicalItemOwner<'_> {
             Self::Creature(a) => &a.world,
         }
     }
-    fn channel(&self) -> &[u8; 16] {
+    fn channel(&self) -> Result<[u8; 16]> {
         match self {
-            Self::Player(a) => &a.channel,
-            Self::Creature(a) => &a.channel,
+            Self::Player(a) => a.channel_bytes(),
+            Self::Creature(a) => a.ground_channel(),
         }
     }
     fn generation(&self) -> u64 {
@@ -3331,6 +3393,7 @@ pub async fn apply_physical_item_line(
                 // issued current Player authority, already checked in this TX.
                 player_scope = SpellItemScopeAuthority {
                     physical_transaction: authority.physical_transaction.clone(),
+                    runtime_scope: authority.runtime_scope,
                     world: authority.world,
                     channel: authority.channel,
                     ownership_generation: authority.ownership_generation,
@@ -3346,7 +3409,7 @@ pub async fn apply_physical_item_line(
         .map_err(super::ground_cell_limit::GroundCellAdmissionError::into_spell_error)?;
     }
     sqlx::query("INSERT INTO game_spell_item_lines(transaction_id,ordinal,operation_kind,item_instance_id,definition_family,definition_production_key,definition_revision,quantity_before,quantity_after,state_revision_before,world_id,channel_id,spatial_position,map_revision,content_revision,placement_context,source_stack_ordinal,content_generation_digest,blocks_movement,blocks_projectile,expires_at_unix_ms,immovable_block_solid,destination_parent_item_instance_id,destination_ordinal) VALUES(encode($1,'hex')::uuid,$2,$3,encode($4,'hex')::uuid,$5,$6,$7,$8,$9,$10::text::numeric(20,0),encode($11,'hex')::uuid,encode($12,'hex')::uuid,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,CASE WHEN $23::bytea IS NULL THEN NULL ELSE encode($23,'hex')::uuid END,$24::text::numeric(20,0))")
-        .bind(cause.transaction_id().as_slice()).bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("line ordinal"))?).bind(kind).bind(item.as_slice()).bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref).bind(i64::from(quantity_before)).bind(i64::from(quantity_after)).bind(revision.to_string()).bind(owner.world().as_slice()).bind(owner.channel().as_slice()).bind(&placement.spatial_position).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context).bind(stack.map(|n|i64::try_from(n).map_err(|_|SpellItemError::Rejected("Ground ordinal overflow"))).transpose()?).bind(content_digest.as_slice()).bind(blocks_movement).bind(blocks_projectile).bind(expires).bind(match operation {SpellItemOperation::MintGround{definition,blocks_movement,..}=> !definition.movable && *blocks_movement, _=>false}).bind(destination.as_ref().map(|(id,_)|id.as_slice())).bind(destination.as_ref().map(|(_,n)|n.to_string())).execute(&mut **tx).await?;
+        .bind(cause.transaction_id().as_slice()).bind(i32::try_from(ordinal).map_err(|_|SpellItemError::Rejected("line ordinal"))?).bind(kind).bind(item.as_slice()).bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref).bind(i64::from(quantity_before)).bind(i64::from(quantity_after)).bind(revision.to_string()).bind(owner.world().as_slice()).bind(owner.channel()?.as_slice()).bind(&placement.spatial_position).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context).bind(stack.map(|n|i64::try_from(n).map_err(|_|SpellItemError::Rejected("Ground ordinal overflow"))).transpose()?).bind(content_digest.as_slice()).bind(blocks_movement).bind(blocks_projectile).bind(expires).bind(match operation {SpellItemOperation::MintGround{definition,blocks_movement,..}=> !definition.movable && *blocks_movement, _=>false}).bind(destination.as_ref().map(|(id,_)|id.as_slice())).bind(destination.as_ref().map(|(_,n)|n.to_string())).execute(&mut **tx).await?;
     if kind == 1 {
         sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,$3,$4,$5,$6,1,encode($7,'hex')::uuid)")
             .bind(item.as_slice()).bind(owner.world().as_slice()).bind(&definition.family).bind(&definition.production_key).bind(&definition.revision_ref).bind(i64::from(quantity_after)).bind(cause.transaction_id().as_slice()).execute(&mut **tx).await?;
@@ -3399,7 +3462,7 @@ pub async fn apply_physical_item_line(
                 .bind(item.as_slice()).bind(owner.world().as_slice()).bind(owner.player()?.character.as_slice()).bind(parent.as_slice()).bind(ordinal.to_string()).bind(cause.transaction_id().as_slice()).execute(&mut **tx).await?;
         } else {
             sqlx::query("INSERT INTO game_item_ground_locations(item_instance_id,world_id,channel_id,runtime_scope_ownership_generation,spatial_position,corpse_ref,map_revision,content_revision,native_room_placement_context) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,$4::text::numeric(20,0),$5,$6,$7,$8,$9)")
-            .bind(item.as_slice()).bind(owner.world().as_slice()).bind(owner.channel().as_slice()).bind(owner.generation().to_string()).bind(&placement.spatial_position).bind(&placement.corpse_ref).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context).execute(&mut **tx).await?;
+            .bind(item.as_slice()).bind(owner.world().as_slice()).bind(owner.channel()?.as_slice()).bind(owner.generation().to_string()).bind(&placement.spatial_position).bind(&placement.corpse_ref).bind(&placement.map_revision).bind(&placement.content_revision).bind(&placement.native_room_placement_context).execute(&mut **tx).await?;
         }
     } else if kind == 4 {
         let updated=sqlx::query("UPDATE game_item_instances SET quantity=$1,last_transaction_id=encode($2,'hex')::uuid WHERE item_instance_id=encode($3,'hex')::uuid AND lifecycle=1 AND state_revision=$4::text::numeric(20,0) AND quantity=$5")

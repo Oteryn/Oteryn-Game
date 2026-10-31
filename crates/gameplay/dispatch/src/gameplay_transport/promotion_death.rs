@@ -53,17 +53,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(respawn) = self.home_temple(session).await else {
             return (DeathCommit::Unavailable, None);
         };
-        let map_revision = {
+        let (runtime_scope, map_revision) = {
             let runtime = self.runtime.lock().await;
-            runtime.map_revision_digest()
+            (
+                runtime.binding().runtime_scope(),
+                runtime.map_revision_digest(),
+            )
         };
-        let request = player_death_request(
-            progression,
-            (self.world_id, self.channel_id),
-            map_revision,
-            death,
-            respawn,
-        );
+        let request =
+            player_death_request(progression, runtime_scope, map_revision, death, respawn);
         let Ok(Some(fence)) = self.current_quest_fence(session).await else {
             return (DeathCommit::Unavailable, None);
         };

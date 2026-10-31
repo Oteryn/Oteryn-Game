@@ -689,25 +689,29 @@ impl DurabilityRoot {
         validate_request(request)?;
         let (world, channel) = scope_of(fence).map_err(|_| MapItemMintError::AuthorityRejected)?;
         let binding = intent_binding(request, fence.character_id, world, channel)?;
-        let recovery = authority.record_for(self).map_err(|_| MapItemMintError::AuthorityRejected)?;
+        let recovery = authority
+            .record_for(self)
+            .map_err(|_| MapItemMintError::AuthorityRejected)?;
         let command = request.command;
-        self.try_issue_semantic_pass()?.run(move |holder, deadline| {
-            Box::pin(async move {
-                let mut tx = begin_semantic_transaction(holder, deadline).await?;
-                assert_recovery_fence(&mut tx, &recovery).await?;
-                lock_cause(&mut tx, command).await?;
-                let Some(row) = load_receipt(&mut tx, command).await? else {
-                    return Ok(Ok(None));
-                };
-                let stored: Vec<u8> = row.try_get("intent_binding")?;
-                if stored != binding {
-                    return Ok(Err(MapItemMintError::ConflictingCause));
-                }
-                let receipt = decode_receipt(&row)?;
-                commit_semantic_transaction(tx, deadline).await?;
-                Ok(Ok(Some(receipt)))
+        self.try_issue_semantic_pass()?
+            .run(move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx = begin_semantic_transaction(holder, deadline).await?;
+                    assert_recovery_fence(&mut tx, &recovery).await?;
+                    lock_cause(&mut tx, command).await?;
+                    let Some(row) = load_receipt(&mut tx, command).await? else {
+                        return Ok(Ok(None));
+                    };
+                    let stored: Vec<u8> = row.try_get("intent_binding")?;
+                    if stored != binding {
+                        return Ok(Err(MapItemMintError::ConflictingCause));
+                    }
+                    let receipt = decode_receipt(&row)?;
+                    commit_semantic_transaction(tx, deadline).await?;
+                    Ok(Ok(Some(receipt)))
+                })
             })
-        }).await?
+            .await?
     }
 
     /// The `placement_key` of every entry taken in this World, Channel, base
@@ -786,8 +790,11 @@ async fn admit(
     }
     let epoch_current: bool = sqlx::query_scalar(
         "SELECT game_world_reset_map_epoch_current(encode($1,'hex')::uuid,$2::text::numeric)",
-    ).bind(reservation.world_id.as_slice()).bind(request.reset_epoch.to_string())
-        .fetch_one(&mut **tx).await?;
+    )
+    .bind(reservation.world_id.as_slice())
+    .bind(request.reset_epoch.to_string())
+    .fetch_one(&mut **tx)
+    .await?;
     if !epoch_current {
         return Ok(Err(MapItemMintError::AuthorityRejected));
     }
@@ -796,8 +803,12 @@ async fn admit(
     placement.extend_from_slice(&request.placement_key.to_be_bytes());
     let transformed: Option<i64> = sqlx::query_scalar("SELECT state_item_id FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND placement=$3 AND reset_epoch=$4::text::bigint")
         .bind(reservation.world_id.as_slice()).bind(reservation.channel_id.as_slice()).bind(placement).bind(request.reset_epoch.to_string()).fetch_optional(&mut **tx).await?;
-    if transformed.is_some_and(|state| request.item.definition.production_key != format!("oteryn:item.tibia.i{state}")) {
-        return Ok(Err(MapItemMintError::Refused(MapItemMintRefusal::AlreadyTaken)));
+    if transformed.is_some_and(|state| {
+        request.item.definition.production_key != format!("oteryn:item.tibia.i{state}")
+    }) {
+        return Ok(Err(MapItemMintError::Refused(
+            MapItemMintRefusal::AlreadyTaken,
+        )));
     }
     let already_taken: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_map_item_mint_receipts \
@@ -835,6 +846,7 @@ fn ground_of(
         ordinal: 0,
     });
     OneItemGroundV1 {
+        instance_id: None,
         world_id: reservation.world_id.to_vec(),
         channel_id: reservation.channel_id.to_vec(),
         spatial_position: map_item_spatial_position(placement.x, placement.y, placement.floor),
@@ -1039,14 +1051,21 @@ async fn lock_entry(
 ) -> std::result::Result<(), DurabilityError> {
     let mut placement = request.base_bundle_digest.to_vec();
     placement.extend_from_slice(&request.placement_key.to_be_bytes());
-    lock_placement(tx, &reservation.world_id, &reservation.channel_id, &placement, request.reset_epoch).await
+    lock_placement(
+        tx,
+        &reservation.world_id,
+        &reservation.channel_id,
+        &placement,
+        request.reset_epoch,
+    )
+    .await
 }
 
 /// Gathering and materialization serialize the same base placement and reset epoch.
 pub(super) async fn lock_placement(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    world: &[u8;16],
-    channel: &[u8;16],
+    world: &[u8; 16],
+    channel: &[u8; 16],
     placement: &[u8],
     reset_epoch: u64,
 ) -> std::result::Result<(), DurabilityError> {

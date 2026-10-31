@@ -175,13 +175,16 @@ message OneItemStateV1 {
 
 message OneItemGroundV1 {
   bytes world_id = 1;                      // exactly 16-byte non-nil UUIDv7
-  bytes channel_id = 2;                    // exactly 16-byte non-nil UUIDv7
+  bytes channel_id = 2;                    // Channel: UUIDv7; Instance: absent/empty
   bytes spatial_position = 3;              // <= 128 B
   bytes corpse_ref = 4;                    // <= 128 B; provenance, not location authority
   string map_revision = 5;                 // <= 512 B
   string content_revision = 6;             // <= 512 B
   bytes native_room_placement_context = 7; // <= 128 B
   uint64 runtime_scope_ownership_generation = 8; // non-zero
+  // W02 prerequisite: exact Instance custody. Exactly one of channel_id or this
+  // field is present. Legacy Channel fields and encodings remain unchanged.
+  optional bytes instance_id = 9;          // exactly 16-byte non-nil UUIDv7
 }
 
 message OneItemInventoryV1 {
@@ -367,6 +370,15 @@ message OneItemGroundContainerEntryV1 {
 // retires to RETIRED, quantity 0, no location (after), from exactly one live
 // location. Touches 1 ItemInstance with 1 location line (DUR03-RL-01/-RL-06
 // defaults; no new resource row).
+// Exact completed activity; its history alone grants no current authority.
+// Existing Channel audits leave this cause absent.
+message OneItemActivityRetirementV1 {
+  bytes world_id = 1;
+  bytes instance_id = 2;
+  bytes handoff_id = 3;
+  uint64 ownership_generation = 4;
+  bytes item_instance_id = 5;
+}
 message OneItemDecayRetireV1 {
   OneItemStateV1 before = 1; // LIVE, quantity > 0
   OneItemStateV1 after = 2;  // RETIRED, quantity 0; same identity, World and definition
@@ -384,6 +396,7 @@ message OneItemDecayRetireV1 {
   // CorpseDecay bytes retain their original representation.
   OneItemWorldResetV1 world_reset = 7;
   OneItemGroundContainerEntryV1 ground_container_entry = 8;
+  OneItemActivityRetirementV1 activity_retirement = 9;
 }
 
 // Closed FeeBurnCause (decision §4.4): one variant per admitted fee source.
@@ -742,4 +755,12 @@ message OneItemPlayerDeathItemV1 {
   uint64 session_generation = 13;
   bytes game_session_id = 14;
   uint64 lease_generation = 15;
+  // Present exactly for Instance death drops/burns; absent for unchanged Channel events.
+  OneItemPlayerDeathInstanceV1 instance_scope = 16;
+}
+
+// A burn has no Ground line, so its Instance source still needs the exact scope.
+message OneItemPlayerDeathInstanceV1 {
+  bytes instance_id = 1;           // exactly 16-byte non-nil UUIDv7
+  uint64 ownership_generation = 2; // positive; matches Ground and envelope when present
 }

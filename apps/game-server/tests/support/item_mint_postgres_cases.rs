@@ -1924,7 +1924,7 @@ fn d1_loot_request(
     spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
     let mut corpse_ref = Vec::new();
     corpse_ref.extend_from_slice(death.world_id().as_bytes());
-    corpse_ref.extend_from_slice(death.channel_id().as_bytes());
+    corpse_ref.extend_from_slice(death.channel_id().expect("Channel fixture").as_bytes());
     corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
     corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
@@ -1938,7 +1938,8 @@ fn d1_loot_request(
             ),
             "fixture:vsl-combat.drop".into(),
             0,
-        ),
+        )
+        .expect("Channel fixture mint cause"),
         item: definition("ItemType", "fixture:vsl-combat.item", D1_FIXTURE_REVISION),
         quantity: 1,
         ground: GroundPlacement {
@@ -2015,7 +2016,13 @@ async fn d1_reservations_for(
             AND draw_ordinal = 0",
     )
     .bind(death.world_id().as_bytes().as_slice())
-    .bind(death.channel_id().as_bytes().as_slice())
+    .bind(
+        death
+            .channel_id()
+            .expect("Channel fixture")
+            .as_bytes()
+            .as_slice(),
+    )
     .bind(death.scope_ownership_generation().get().to_string())
     .bind(i64::from(death.actor_local_id()))
     .bind(death.actor_local_generation().to_string())
@@ -2072,7 +2079,7 @@ fn d1_one_creature_death_mints_exactly_one_item() -> TestResult {
             WorldId::decode(&id(WORLD)).map_err(debug)?
         );
         assert_eq!(
-            death.channel_id(),
+            death.channel_id().expect("Channel fixture"),
             ChannelId::decode(&id(CHANNEL)).map_err(debug)?
         );
         assert_eq!(death.scope_ownership_generation().get(), 1);

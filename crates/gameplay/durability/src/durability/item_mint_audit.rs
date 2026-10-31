@@ -258,6 +258,55 @@ pub struct OneItemGroundV1 {
     pub native_room_placement_context: Vec<u8>,
     #[prost(uint64, tag = "8")]
     pub runtime_scope_ownership_generation: u64,
+    /// Additive W02 prerequisite: a Channel leaves this absent, preserving its wire bytes.
+    /// Instance Ground has no Channel identifier; mixed or empty scope variants are rejected.
+    #[prost(bytes = "vec", optional, tag = "9")]
+    pub instance_id: Option<Vec<u8>>,
+}
+
+impl OneItemGroundV1 {
+    pub fn runtime_scope(&self) -> Result<crate::foundation::RuntimeScopeRefV1, AuditError> {
+        use crate::foundation::{ChannelId, RuntimeScopeRefV1, WorldId};
+        check_uuid_v7(&self.world_id)?;
+        let world = WorldId::decode(&self.world_id).map_err(|_| AuditError::InvalidInput)?;
+        match &self.instance_id {
+            None => {
+                check_uuid_v7(&self.channel_id)?;
+                let channel =
+                    ChannelId::decode(&self.channel_id).map_err(|_| AuditError::InvalidInput)?;
+                Ok(RuntimeScopeRefV1::channel(world, channel))
+            }
+            Some(instance) if self.channel_id.is_empty() => {
+                check_uuid_v7(instance)?;
+                RuntimeScopeRefV1::instance(
+                    world,
+                    instance
+                        .as_slice()
+                        .try_into()
+                        .map_err(|_| AuditError::InvalidInput)?,
+                )
+                .map_err(|_| AuditError::InvalidInput)
+            }
+            Some(_) => Err(AuditError::InvalidInput),
+        }
+    }
+
+    #[must_use]
+    pub fn with_runtime_scope(mut self, scope: crate::foundation::RuntimeScopeRefV1) -> Self {
+        use crate::foundation::RuntimeScopeRefV1;
+        self.world_id = scope.world_id().as_bytes().to_vec();
+        match scope {
+            RuntimeScopeRefV1::Channel { channel_id, .. } => {
+                self.channel_id = channel_id.as_bytes().to_vec();
+                self.instance_id = None;
+            }
+            RuntimeScopeRefV1::Instance { instance_id, .. } => {
+                self.channel_id.clear();
+                self.instance_id = Some(instance_id.to_vec());
+            }
+        }
+        self
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Message)]
@@ -582,7 +631,12 @@ pub fn check_mint(value: &OneItemMintV1) -> Result<(), AuditError> {
     match (&value.destination, &value.corpse_container_entry) {
         (Some(ground), None) => {
             check_uuid_v7(&ground.world_id)?;
-            check_uuid_v7(&ground.channel_id)?;
+            if !matches!(
+                ground.runtime_scope()?,
+                crate::foundation::RuntimeScopeRefV1::Channel { .. }
+            ) {
+                return Err(AuditError::InvalidInput);
+            }
             check_technical_bytes(&ground.spatial_position)?;
             check_technical_bytes(&ground.corpse_ref)?;
             check_content_key(&ground.map_revision)?;
@@ -1222,6 +1276,7 @@ pub(super) mod tests {
                 content_revision: "content-1".into(),
                 native_room_placement_context: uuid(6),
                 runtime_scope_ownership_generation: 1,
+                instance_id: None,
             }),
             source: Some(OneItemProvenanceV1 {
                 typed_cause: LOOT_MINT_TYPED_CAUSE.into(),
@@ -1285,6 +1340,7 @@ pub(super) mod tests {
                     content_revision: content.clone(),
                     native_room_placement_context: technical_bytes,
                     runtime_scope_ownership_generation: u64::MAX,
+                    instance_id: None,
                 }),
                 source: Some(OneItemProvenanceV1 {
                     typed_cause: technical,
