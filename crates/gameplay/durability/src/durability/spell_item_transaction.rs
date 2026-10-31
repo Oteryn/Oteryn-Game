@@ -1026,7 +1026,7 @@ pub async fn assert_spell_item_scope_with_recovery(
             "current timer scope/node/history authority",
         ));
     }
-    lock_runtime_items(tx, scope).await?;
+    lock_runtime_items(tx, permit, scope).await?;
     let physical_transaction = sqlx::query_scalar("SELECT pg_current_xact_id()::text")
         .fetch_one(&mut **tx)
         .await?;
@@ -1041,10 +1041,12 @@ pub async fn assert_spell_item_scope_with_recovery(
 
 /// Same physical-owner lock for all callers. Channel keys retain their original encoding;
 /// activity keys include their separate assignment namespace and exact Instance identity.
-pub(super) async fn lock_runtime_items(
+async fn lock_runtime_items(
     tx: &mut Transaction<'_, Postgres>,
+    permit: &SpellLanePermit,
     scope: crate::foundation::RuntimeScopeRefV1,
 ) -> Result<()> {
+    permit.check_scope(scope)?;
     match scope {
         crate::foundation::RuntimeScopeRefV1::Channel {
             world_id,
@@ -1240,7 +1242,7 @@ pub(super) async fn assert_spell_item_authority_with_recovery(
         .await?;
     // Channel ground triggers keep their original lock. Instance locks retain the tagged
     // assignment key and cannot collide with a Channel having the same UUID bytes.
-    lock_runtime_items(tx, fence.runtime_scope).await?;
+    lock_runtime_items(tx, permit, fence.runtime_scope).await?;
     Ok(SpellItemAuthority {
         root: root.clone(),
         due_read_only: false,

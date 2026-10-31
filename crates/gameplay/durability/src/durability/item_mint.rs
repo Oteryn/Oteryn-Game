@@ -2057,35 +2057,6 @@ pub(crate) fn decode_ground_scope(
     }
 }
 
-pub(crate) async fn lock_ground_scope(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    scope: crate::foundation::RuntimeScopeRefV1,
-) -> std::result::Result<(), DurabilityError> {
-    let mut key = Vec::with_capacity(33);
-    match scope {
-        crate::foundation::RuntimeScopeRefV1::Channel {
-            world_id,
-            channel_id,
-        } => {
-            key.extend_from_slice(world_id.as_bytes());
-            key.extend_from_slice(channel_id.as_bytes());
-        }
-        crate::foundation::RuntimeScopeRefV1::Instance {
-            world_id,
-            instance_id,
-        } => {
-            key.push(super::runtime_scope_assignment::assignment_scope_key(scope)[0]);
-            key.extend_from_slice(world_id.as_bytes());
-            key.extend_from_slice(&instance_id);
-        }
-    }
-    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex'),33))")
-        .bind(key)
-        .execute(&mut **tx)
-        .await?;
-    Ok(())
-}
-
 pub(super) fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
     let hex: String = value
         .chars()

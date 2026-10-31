@@ -25,7 +25,7 @@ use super::ground_cell_limit::{
 };
 use super::item_mint::{
     GroundItemInstance, GroundPlacement, TypedDefinitionRef, decode_ground_scope,
-    ground_scope_columns, lock_ground_scope, uuid_text,
+    ground_scope_columns, uuid_text,
 };
 use super::item_transfer::{
     BackpackEntry, CurrentCharacterItemFence, GAMEITEM01_CONTAINER_ENTRIES_MAX, InventoryItem,
@@ -1804,7 +1804,30 @@ impl DurabilityRoot {
                 }
                 // Ground rows have no runtime UPDATE grant: retain the existing
                 // location-owner lock rather than FOR SHARE on the Ground table.
-                lock_ground_scope(&mut tx, fence.runtime_scope).await?;
+                // Keep the key-33 acquisition in this inventoried read-only owner.
+                // Channel bytes stay unchanged; Instance uses its tagged assignment key.
+                let mut key = Vec::with_capacity(33);
+                match fence.runtime_scope {
+                    crate::foundation::RuntimeScopeRefV1::Channel {
+                        world_id,
+                        channel_id,
+                    } => {
+                        key.extend_from_slice(world_id.as_bytes());
+                        key.extend_from_slice(channel_id.as_bytes());
+                    }
+                    crate::foundation::RuntimeScopeRefV1::Instance {
+                        world_id,
+                        instance_id,
+                    } => {
+                        key.push(super::runtime_scope_assignment::assignment_scope_key(fence.runtime_scope)[0]);
+                        key.extend_from_slice(world_id.as_bytes());
+                        key.extend_from_slice(&instance_id);
+                    }
+                }
+                sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended(encode($1,'hex'),33))")
+                    .bind(key)
+                    .execute(&mut *tx)
+                    .await?;
                 if ground_container_path(&mut tx, world, container).await?.as_ref() != Some(&path) {
                     return Ok(None);
                 }
