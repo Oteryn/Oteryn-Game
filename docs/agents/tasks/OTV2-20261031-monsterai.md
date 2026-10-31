@@ -9,8 +9,8 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: chatgpt/monsterai
-pr: null
-base_sha: 80dca5fd1578d029f953f05690c6246a0236fd16
+pr: 2766
+base_sha: a52549e3b9230c7486a24df66f4e8ec59d1f96cb
 head_sha: null
 final_head_sha: null
 owner: monsterai-task-owner
@@ -24,7 +24,12 @@ owned_paths:
   - crates/gameplay/dispatch/src/gameplay_transport/monster_profile_cycle/
   - crates/gameplay/dispatch/src/gameplay_transport/postgres_tests/monster_attacks.rs
   - crates/gameplay/content/src/content/native_gameplay.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/actor_conditions.rs
+  - crates/gameplay/dispatch/src/gameplay_transport/actor_spell.rs
   - tools/content-migration/bind_monster_source_definitions.py
+  - tools/content-migration/register_spell_families.py
+  - tools/content-migration/test_bind_monster_source_definitions.py
+  - content/creatures/definitions/spell-native-profiles.json
   - docs/agents/tasks/OTV2-20261031-monsterai.md
 public_contracts: []
 depends_on: []
@@ -92,7 +97,25 @@ Answers are `ANSWER:` comments, read before each new implementation stage and fi
 
 ## Validation
 
-Implementation checks pending; no claim of passing Rust or PostgreSQL tests.
+Completed content checks:
+- `python3 -m unittest test_bind_monster_source_definitions` from
+  `tools/content-migration`: 6 passed.
+- `OTERYN_FULL_SPELL_TEST_MANIFEST=content/spells.manifest.json cargo test --locked
+  -p oteryn-gameplay-content actual_full_manifest_qualifies_source_world_and_all_owner_profiles
+  -- --ignored --nocapture`: 1 passed, no ignored cases in this explicit run.
+- `python3 tools/content-migration/register_spell_families.py`: PASS, 38 registered files,
+  activation remains false.
+- `git diff --check`: passed at content checkpoint.
+
+The serving provider now carries exact attack closures for all 1,863 canonical creatures;
+the seven legacy fixture/familiar identities retain their existing qualified data.
+The source parser census finds 4,032 direct/condition spells, 53 chains, 42 variants,
+6 windups, 64 appearance casts and 116 shapes owned by other consumers or unsupported.
+These counts describe admission only, not yet production execution coverage.
+
+PostgreSQL 18.6 is running in an isolated task-local cluster. Production, AI and combat
+checks remain pending until the worker APIs are integrated. Full regeneration currently
+waits on those APIs because its materializer compiles the game server.
 The task owner records exact commands/results and material omissions in the draft PR.
 
 ## Self-review

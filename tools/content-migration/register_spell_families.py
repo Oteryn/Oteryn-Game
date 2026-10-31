@@ -299,6 +299,10 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     coin_converter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_spell_augment_profiles
     item_spell_augment_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, spell_import.canonical_bytes)
+    # Later admitted creature overlays (for example forge eligibility) change
+    # Creature roots. Bind executable closures only after those policies settle.
+    from bind_monster_source_definitions import bind_definitions
+    generated = bind_definitions(root, generated)
     pin_repository_inputs(root, generated)
     # PKG1R2 owner decision (2026-10-30), Energy_Field_(Field) rev 1011133:
     # Global measurement wins over the immutable donor's 98 seconds for 2122 only.
