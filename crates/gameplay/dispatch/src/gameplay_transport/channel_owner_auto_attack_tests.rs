@@ -392,6 +392,44 @@ fn reentry_protection_refuses_a_target_for_four_seconds() {
 }
 
 #[test]
+fn a_fresh_login_is_no_creature_target_for_crystal_login_protection() {
+    // S15a: Crystal 201189f8 `loginProtectionPeriod = 10 * 1000` (`config.lua.dist:61`),
+    // `checkLoginDelay` (`player.cpp:6434-6436`) read by `Monster::selectTarget`
+    // (`monster.cpp:1014`).
+    let mut owner = owner_with_capacity(OPEN_PLAYER, OPEN_RAT, 3);
+    let session = GameSessionId::decode(&uuid(9)).unwrap();
+    let reservation = owner.runtime.reserve_fresh_session(session).unwrap();
+    let player = owner
+        .runtime
+        .commit_fresh_session_at(reservation, T0)
+        .unwrap();
+    owner
+        .runtime
+        .initialize_first_entry_position(player)
+        .unwrap();
+    for (now, protected) in [
+        (T0, true),
+        (T0 + 10_000_000, true),
+        (T0 + 10_000_001, false),
+    ] {
+        assert_eq!(
+            owner
+                .attack
+                .creature_target_protection(&owner.runtime, player, session, at(now)),
+            Some(protected),
+            "{now}"
+        );
+    }
+    // The player's own target intents are not refused by the login period.
+    assert_eq!(
+        owner
+            .runtime
+            .current_player_reentry_protection(player, session, T0),
+        Ok(false)
+    );
+}
+
+#[test]
 fn a_rat_in_a_protection_zone_and_an_attacker_in_one_are_refused() {
     let mut owner = owner_at(OPEN_PLAYER, PROTECTED);
     let rat = owner.rat;

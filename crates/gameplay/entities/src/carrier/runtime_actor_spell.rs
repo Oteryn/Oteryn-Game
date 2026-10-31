@@ -51,6 +51,8 @@ struct BatchRecord {
 pub struct ActorCombatState {
     /// Actual same-session recovery window, set only after committed reentry.
     pub(super) reentry: Option<(u64, u64)>,
+    /// S15a: inclusive end of the fresh-login monster target protection.
+    pub(super) fresh_login_until: Option<u64>,
     pub(super) pending_owner: Option<Arc<OwnerSpellReservation>>,
     pub(super) pending_source:
         Option<Arc<super::runtime_actor_source_reservation::SourceReservationIdentity>>,
