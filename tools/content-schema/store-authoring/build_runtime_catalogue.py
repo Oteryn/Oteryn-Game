@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Build the runtime Store catalogue (rulesets/economy/store/catalogue.json).
 
 Offers come from the pinned Canary GameStore catalogue. Only item offers whose Item is admitted
@@ -9,6 +8,7 @@ TibiaWiki (Exercise Weapons, Tibia Coins) agrees with every admitted price and c
   python build_runtime_catalogue.py --canary <canary@52550d5e>   # regenerate
   python build_runtime_catalogue.py --check                      # admission against content
 """
+
 from __future__ import annotations
 
 import argparse
@@ -54,7 +54,10 @@ def parse_offers(lua: str) -> list[dict]:
         if not name or number < 8:
             continue
         block = "\n".join(lines[number - 1 : number + 6])
-        fields = {k: int(v) for k, v in re.findall(r"(price|itemtype|charges) = (\d+),", block)}
+        fields = {
+            k: int(v)
+            for k, v in re.findall(r"(price|itemtype|charges) = (\d+),", block)
+        }
         if {"price", "itemtype", "charges"} <= fields.keys():
             offers.append({"name": name.group(1), "line": number, **fields})
     return offers
@@ -75,7 +78,11 @@ def build(lua: str) -> dict:
                 "title": offer["name"],
                 "price": offer["price"],
                 "currency": "TIBIA_COIN",
-                "item": {"key": key, "revision": admitted[0], "charges": offer["charges"]},
+                "item": {
+                    "key": key,
+                    "revision": admitted[0],
+                    "charges": offer["charges"],
+                },
                 "source_line": offer["line"],
             }
         )
@@ -83,7 +90,11 @@ def build(lua: str) -> dict:
     return {
         "schema": "OTERYN_STORE_RUNTIME_CATALOGUE/v1",
         "catalog_revision": REVISION,
-        "source": {"repository": "opentibiabr/canary", "commit": CANARY_COMMIT, "path": SOURCE},
+        "source": {
+            "repository": "opentibiabr/canary",
+            "commit": CANARY_COMMIT,
+            "path": SOURCE,
+        },
         "offers": offers,
     }
 
