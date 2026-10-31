@@ -178,7 +178,6 @@ fn activity_attack_transfer_preserves_deadline_modes_budget_and_pacing_after_sou
     let modes = source.expert_modes(f.member.source_actor, f.member.source_session);
     let mut budget = source.entries[index]
         .defence_blocks
-        .clone()
         .ok_or("spent defence budget")?;
     let clock_now = Instant::now();
     let due = clock_now + Duration::from_millis(250);
