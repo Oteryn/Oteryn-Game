@@ -320,6 +320,8 @@ impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
 #[derive(Clone)]
 pub struct FreshAdmissionStore {
     retired_holder: Option<retired_holder_release::RetiredHolderProof>,
+    departed_activity: Option<super::activity_handoff::DepartedActivityRelease>,
+    offline_activity_mismatch: Option<super::activity_handoff::OfflineActivityMismatchRelease>,
     guards: AdmissionGuardStore,
     maximum_operation_bytes: usize,
     /// CHAR-POSITION-0 §3.2 "At logout": the last position the terminal release writes in its
@@ -414,6 +416,29 @@ impl FreshAdmissionStore {
         }
     }
 
+    pub(crate) fn with_offline_activity_mismatch(
+        &self,
+        proof: super::activity_handoff::OfflineActivityMismatchRelease,
+    ) -> Self {
+        Self {
+            offline_activity_mismatch: Some(proof),
+            ..self.clone()
+        }
+    }
+
+    /// A departed activity's sealed offline return uses this same terminal
+    /// writer. The proof is repeated in the deciding transaction; it cannot
+    /// terminalize a current native successor or a newly adopted transport.
+    pub(crate) fn with_departed_activity_release(
+        &self,
+        proof: super::activity_handoff::DepartedActivityRelease,
+    ) -> Self {
+        Self {
+            departed_activity: Some(proof),
+            ..self.clone()
+        }
+    }
+
     #[must_use]
     pub fn from_root(root: super::DurabilityRoot) -> Self {
         Self {
@@ -422,6 +447,8 @@ impl FreshAdmissionStore {
             training_logout: None,
             final_position: None,
             retired_holder: None,
+            departed_activity: None,
+            offline_activity_mismatch: None,
         }
     }
 
@@ -1982,6 +2009,8 @@ impl FreshAdmissionStore {
             training_logout: None,
             final_position: None,
             retired_holder: None,
+            departed_activity: None,
+            offline_activity_mismatch: None,
         }
     }
     pub(super) async fn replacement_claim_replay(

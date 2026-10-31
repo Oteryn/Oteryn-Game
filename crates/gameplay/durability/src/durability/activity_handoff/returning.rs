@@ -369,16 +369,7 @@ pub(super) async fn recovery_source(
     {
         return Ok(false);
     }
-    let history: bool = sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
-        .fetch_one(&mut **tx)
-        .await?;
-    if !history {
-        return Ok(false);
-    }
-    let lost: Option<bool> = sqlx::query_scalar("SELECT a.state<>1 OR a.ownership_generation<>$2::text::numeric OR NOT game_node_lock_current_registration(a.holder_node_id,a.holder_registration_revision) \
-        FROM game_runtime_scope_assignments a WHERE a.scope_key=$1 FOR SHARE")
-        .bind(assignment_scope_key(source.runtime_scope).as_slice()).bind(source.scope_ownership_generation.get().to_string()).fetch_optional(&mut **tx).await?;
-    if lost != Some(true) {
+    if !departed_scope(tx, source.runtime_scope, source.scope_ownership_generation).await? {
         return Ok(false);
     }
     let guards = AdmissionGuardStore::from_root(root.clone());
@@ -409,7 +400,26 @@ pub(super) async fn recovery_source(
     Ok(exact)
 }
 
-async fn load_receipt(
+/// Independent control history, not absence from a local native directory.
+/// Shared by the live-source recovery and its already committed offline return.
+pub(super) async fn departed_scope(
+    tx: &mut Transaction<'_, Postgres>,
+    scope: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+) -> Result<bool> {
+    let history: bool = sqlx::query_scalar("SELECT game_runtime_scope_assignment_history_valid()")
+        .fetch_one(&mut **tx)
+        .await?;
+    if !history {
+        return Ok(false);
+    }
+    let lost: Option<bool> = sqlx::query_scalar("SELECT a.state<>1 OR a.ownership_generation<>$2::text::numeric OR NOT game_node_lock_current_registration(a.holder_node_id,a.holder_registration_revision) FROM game_runtime_scope_assignments a WHERE a.scope_key=$1 FOR SHARE")
+        .bind(assignment_scope_key(scope).as_slice()).bind(generation.get().to_string())
+        .fetch_optional(&mut **tx).await?;
+    Ok(lost == Some(true))
+}
+
+pub(super) async fn load_receipt(
     tx: &mut Transaction<'_, Postgres>,
     handoff: [u8; 16],
     character: CharacterId,

@@ -93,6 +93,28 @@ pub(super) use composed_methods;
 pub struct TrackerRefresh(Mutex<BTreeSet<(CharacterId, bool, String)>>);
 
 impl TrackerRefresh {
+    /// Move only this Character's pending refresh keys under the activity
+    /// owner's lane/revision fence; other participants keep their notifications.
+    pub(super) fn transfer_activity(
+        &self,
+        destination: &Self,
+        character: CharacterId,
+    ) -> Result<(), ()> {
+        if std::ptr::eq(self, destination) {
+            return Ok(());
+        }
+        let mut source = self.0.lock().map_err(|_| ())?;
+        let mut target = destination.0.lock().map_err(|_| ())?;
+        target.extend(
+            source
+                .iter()
+                .filter(|(owner, _, _)| *owner == character)
+                .cloned(),
+        );
+        source.retain(|(owner, _, _)| *owner != character);
+        Ok(())
+    }
+
     pub(super) fn mark(&self, character: CharacterId, kind: TrackerKind, key: &str) {
         if let Ok(mut marked) = self.0.lock() {
             marked.insert((character, kind == TrackerKind::Bosstiary, key.to_owned()));
@@ -112,6 +134,57 @@ impl TrackerRefresh {
             });
         }
         taken
+    }
+}
+
+#[cfg(test)]
+mod activity_refresh_tests {
+    use super::*;
+
+    #[test]
+    fn activity_tracker_moves_both_kinds_without_losing_other_characters_or_new_marks()
+    -> Result<(), String> {
+        let character = |last| {
+            let mut bytes = [0x11; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes[15] = last;
+            CharacterId::from_bytes(bytes).map_err(|error| format!("{error:?}"))
+        };
+        let (a, b) = (character(1)?, character(2)?);
+        let source = TrackerRefresh::default();
+        let destination = TrackerRefresh::default();
+        source.mark(a, TrackerKind::Bestiary, "oteryn:creature.rat");
+        source.mark(a, TrackerKind::Bosstiary, "oteryn:boss.source");
+        source.mark(b, TrackerKind::Bosstiary, "oteryn:boss.other");
+        destination.mark(a, TrackerKind::Bosstiary, "oteryn:boss.destination");
+        source
+            .transfer_activity(&destination, a)
+            .map_err(|_| "move tracker marks")?;
+        assert_eq!(source.take(a), [Vec::<String>::new(), Vec::new()]);
+        assert_eq!(
+            source.take(b),
+            [Vec::<String>::new(), vec!["oteryn:boss.other".to_owned()]]
+        );
+        assert_eq!(
+            destination.take(a),
+            [
+                vec!["oteryn:creature.rat".to_owned()],
+                vec![
+                    "oteryn:boss.destination".to_owned(),
+                    "oteryn:boss.source".to_owned()
+                ],
+            ]
+        );
+        destination.mark(a, TrackerKind::Bestiary, "oteryn:creature.new");
+        source
+            .transfer_activity(&destination, a)
+            .map_err(|_| "retry tracker marks")?;
+        assert_eq!(
+            destination.take(a),
+            [vec!["oteryn:creature.new".to_owned()], Vec::new()]
+        );
+        Ok(())
     }
 }
 

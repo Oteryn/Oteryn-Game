@@ -46,6 +46,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .finish_switch(source, destination)
             .is_ok()
     }
+    fn finish_activity_connection_lineage(&self, admitted: AdmittedSession) {
+        let _ = self.activity_runtimes.finish_connection_lineage(admitted);
+    }
     async fn sleep_in_bed(
         &self,
         actor: ExactActorRef,

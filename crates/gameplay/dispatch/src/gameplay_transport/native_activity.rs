@@ -8,6 +8,7 @@
 use super::ComposedFreshAdmission;
 use super::activity_runtime::{RegisteredRuntime, ScopeKey};
 use super::actor_spell::PreparedActivitySpellStates;
+use super::attack::PreparedActivityAttackStates;
 use super::connection::{AdmittedSession, ControllerBinding, FirstEntryOutcome, SessionContinuity};
 use super::kill_reward::{DrainOutcome, KillReleaseMark, ReleaseEnd, Seal};
 use crate::durability::activity_handoff::{
@@ -52,6 +53,7 @@ pub(super) struct NativeActivityAttempt<'a> {
     sources: Vec<AdmittedSession>,
     physical: ActivityTransferReservation,
     spells: PreparedActivitySpellStates,
+    attacks: PreparedActivityAttackStates,
     kill_marks: Vec<KillReleaseMark>,
     receipt: Option<ActivityEnterReceipt>,
     moved: Option<Vec<ActivityTransferredActor>>,
@@ -445,17 +447,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 return Err(());
             }
         }
-        let mut slots = Vec::new();
-        slots
-            .try_reserve_exact(request.participants.len())
-            .map_err(|_| ())?;
-        for participant in &request.participants {
-            slots.push(
-                self.revision_sequencer
-                    .acquire(participant.source.character_id)
-                    .await,
-            );
-        }
+        // Shared-XP settlement acquires its lane before recipient revisions.
+        // Both scope lanes must precede every participant slot here as well.
         let source_first = ScopeKey::new(source.scope, source.generation)
             < ScopeKey::new(destination.scope, destination.generation);
         let (_first_lane, _second_lane) = if source_first {
@@ -469,6 +462,17 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 source.lane.acquire().await.map_err(|_| ())?,
             )
         };
+        let mut slots = Vec::new();
+        slots
+            .try_reserve_exact(request.participants.len())
+            .map_err(|_| ())?;
+        for participant in &request.participants {
+            slots.push(
+                self.revision_sequencer
+                    .acquire(participant.source.character_id)
+                    .await,
+            );
+        }
         let (mut from, mut to) = if source_first {
             let from = source.runtime.lock().await;
             let to = destination.runtime.lock().await;
@@ -615,7 +619,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         // Acquire the leaf registry guard before extracting owned state; no
         // fallible registry acquisition or await remains before retention.
-        let attack = source.states.attack.lock().await;
+        let (mut attack, mut destination_attack) = if source_first {
+            let attack = source.states.attack.lock().await;
+            let destination_attack = destination.states.attack.lock().await;
+            (attack, destination_attack)
+        } else {
+            let destination_attack = destination.states.attack.lock().await;
+            let attack = source.states.attack.lock().await;
+            (attack, destination_attack)
+        };
         let pending = {
             let mut attempts = self.activity_runtimes.attempts.lock().map_err(|_| ())?;
             attempts.try_reserve(1).map_err(|_| ())?;
@@ -627,6 +639,19 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     return refuse(ActivityRefusal::AuthorityRejected);
                 }
             };
+            let mut held_attacks =
+                match attack.prepare_activity_attacks(&from, &mut destination_attack, &members) {
+                    Ok(value) => value,
+                    Err(()) => {
+                        spells.abort_activity_states(&mut held);
+                        finish_activity_kills(
+                            attack.kills(),
+                            &mut kill_marks,
+                            ReleaseEnd::Retryable,
+                        );
+                        return refuse(ActivityRefusal::AuthorityRejected);
+                    }
+                };
             let prepared = if boss_room {
                 from.prepare_activity_group_entry(&mut to, &members)
             } else {
@@ -636,6 +661,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 Ok(value) => value,
                 Err(_) => {
                     spells.abort_activity_states(&mut held);
+                    attack.abort_activity_attacks(&mut held_attacks);
                     finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
                     return refuse(ActivityRefusal::NoCapacity);
                 }
@@ -648,6 +674,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 sources,
                 physical,
                 spells: held,
+                attacks: held_attacks,
                 kill_marks,
                 receipt: None,
                 moved: None,
@@ -659,15 +686,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             attempts.insert(key, Arc::clone(&pending));
             pending
         };
+        drop(destination_attack);
         drop(attack);
         drop(destination_spells);
         drop(spells);
         drop(doors);
         drop(to);
         drop(from);
+        drop(slots);
         drop(_second_lane);
         drop(_first_lane);
-        drop(slots);
         self.finish_native_activity(pending).await
     }
 
@@ -683,14 +711,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let destination = attempt.destination.clone();
         let source_view = self.runtime_view(&source);
         let destination_view = self.runtime_view(&destination);
-        let mut slots = Vec::new();
-        for participant in &attempt.request.participants {
-            slots.push(
-                self.revision_sequencer
-                    .acquire(participant.source.character_id)
-                    .await,
-            );
-        }
+        // Shared-XP settlement acquires its lane before recipient revisions.
+        // Both scope lanes must precede every participant slot here as well.
         let source_first = ScopeKey::new(source.scope, source.generation)
             < ScopeKey::new(destination.scope, destination.generation);
         let (_first_lane, _second_lane) = if source_first {
@@ -704,6 +726,14 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 source.lane.acquire().await.map_err(|_| ())?,
             )
         };
+        let mut slots = Vec::new();
+        for participant in &attempt.request.participants {
+            slots.push(
+                self.revision_sequencer
+                    .acquire(participant.source.character_id)
+                    .await,
+            );
+        }
         if attempt.receipt.is_none() {
             // Each participant has an independently authenticated account. Keep
             // current producer evidence held through the durable group claim;
@@ -767,10 +797,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         (from, to)
                     };
                     let mut spells = source.states.spell_states.lock().await;
-                    let attack = source.states.attack.lock().await;
+                    let mut attack = source.states.attack.lock().await;
                     from.abort_activity_transfer(&mut to, &mut attempt.physical)
                         .map_err(|_| ())?;
                     spells.abort_activity_states(&mut attempt.spells);
+                    attack.abort_activity_attacks(&mut attempt.attacks);
                     finish_activity_kills(
                         attack.kills(),
                         &mut attempt.kill_marks,
@@ -793,7 +824,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 (from, to)
             };
             let mut spells = destination.states.spell_states.lock().await;
-            let attack = source.states.attack.lock().await;
+            let (attack, mut destination_attack) = if source_first {
+                let attack = source.states.attack.lock().await;
+                let destination_attack = destination.states.attack.lock().await;
+                (attack, destination_attack)
+            } else {
+                let destination_attack = destination.states.attack.lock().await;
+                let attack = source.states.attack.lock().await;
+                (attack, destination_attack)
+            };
             if attempt.moved.is_none() {
                 let moved = from
                     .commit_activity_transfer(&mut to, &mut attempt.physical)
@@ -803,7 +842,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             let moved = attempt.moved.as_ref().ok_or(())?.clone();
             // No await exposes a destination actor before its existing vitals
             // and cooldowns are installed under the same native owner guard.
-            spells.commit_activity_states(&mut attempt.spells, &moved)?;
+            let NativeActivityAttempt {
+                spells: held_spells,
+                attacks: held_attacks,
+                ..
+            } = &mut *attempt;
+            let attack_commit =
+                destination_attack.prepare_activity_attack_commit(held_attacks, &moved)?;
+            spells.commit_activity_states(held_spells, &moved)?;
+            attack_commit.commit();
             attempt.states_installed = true;
             finish_activity_kills(
                 attack.kills(),

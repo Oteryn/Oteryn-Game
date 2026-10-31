@@ -14,8 +14,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         original: AdmittedSession,
         release: TerminalRelease,
     ) -> GraceExpiryResult {
-        #[cfg(test)]
-        eprintln!("ACTIVITY_TERMINAL_RELEASE begin");
         let admitted = match self.settle_activity_connection(original).await {
             Ok(admitted) => admitted,
             Err(()) => return GraceExpiryResult::Unknown,
@@ -25,8 +23,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Err(()) => return GraceExpiryResult::Unknown,
         };
         let owner = scoped.as_ref().unwrap_or(self);
-        #[cfg(test)]
-        eprintln!("ACTIVITY_TERMINAL_RELEASE scope_resolved");
         let Some(actor) = admitted.runtime_actor else {
             return GraceExpiryResult::NotApplicable;
         };
@@ -36,8 +32,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .hold_while_in_fight(actor, admitted.game_session_id)
             .await
         {}
-        #[cfg(test)]
-        eprintln!("ACTIVITY_TERMINAL_RELEASE combat_hold_cleared");
         let mut death = None;
         if !owner
             .settle_released_death(actor, admitted.game_session_id, &mut death)
@@ -45,8 +39,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return GraceExpiryResult::Unknown;
         }
-        #[cfg(test)]
-        eprintln!("ACTIVITY_TERMINAL_RELEASE death_settled");
         // A proven pending death uses the Death return and post-death owner.
         // Its exact successor then receives this existing terminal release.
         let mut next = self.activity_runtimes.current_connection(admitted);
@@ -64,16 +56,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // its own accepted adapter. This path cannot fabricate one.
                 TerminalRelease::Logout(_) => return GraceExpiryResult::Unknown,
             };
-            #[cfg(test)]
-            eprintln!("ACTIVITY_TERMINAL_RELEASE return_begin");
             let commit = match owner.return_due_activity(next, reason).await {
                 Ok(NativeActivityOutcome::Committed(commit)) => commit,
                 Ok(NativeActivityOutcome::Refused(_)) | Err(()) => {
                     return GraceExpiryResult::Unknown;
                 }
             };
-            #[cfg(test)]
-            eprintln!("ACTIVITY_TERMINAL_RELEASE return_committed");
             if self.publish_activity_commit(&commit).is_err() {
                 return GraceExpiryResult::Unknown;
             }
@@ -129,13 +117,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             }
             TerminalRelease::Logout(_) => return GraceExpiryResult::Unknown,
         };
-        #[cfg(test)]
-        eprintln!("ACTIVITY_TERMINAL_RELEASE channel_release_begin");
         let result = destination
             .release_terminal_in_scope(next, translated)
             .await;
-        #[cfg(test)]
-        eprintln!("ACTIVITY_TERMINAL_RELEASE channel_release_end {result:?}");
         if result == GraceExpiryResult::Released {
             destination.forget_lost(next.game_session_id, next.continuity.connection_generation);
         }

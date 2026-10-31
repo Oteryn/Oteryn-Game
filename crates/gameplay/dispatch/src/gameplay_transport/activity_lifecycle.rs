@@ -11,7 +11,9 @@ use std::collections::BTreeSet;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     pub(super) async fn activity_lifecycle_pass(&self) -> Result<(), ()> {
-        let mut deferred = self.drain_native_activity_attempts().await.is_err();
+        // This must run even with an empty registry after a process restart.
+        let mut deferred = self.recover_departed_activity_pass().await.is_err();
+        deferred |= self.drain_native_activity_attempts().await.is_err();
         deferred |= self.drain_native_return_attempts().await.is_err();
         let owners = self.activity_runtimes.activity_owners()?;
         let mut drained = BTreeSet::new();

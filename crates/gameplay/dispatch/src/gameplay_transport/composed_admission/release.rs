@@ -19,6 +19,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         admitted: AdmittedSession,
         release: TerminalRelease,
     ) -> GraceExpiryResult {
+        self.release_terminal_with_store(
+            admitted,
+            release,
+            FreshAdmissionStore::from_root(self.root.clone()),
+            true,
+        )
+        .await
+    }
+
+    pub(in crate::gameplay_transport) async fn release_terminal_with_store(
+        &self,
+        admitted: AdmittedSession,
+        release: TerminalRelease,
+        store: FreshAdmissionStore,
+        wait_for_combat: bool,
+    ) -> GraceExpiryResult {
         let Some(actor) = admitted.runtime_actor else {
             return GraceExpiryResult::NotApplicable;
         };
@@ -31,9 +47,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return GraceExpiryResult::NotApplicable;
         }
         let session = admitted.game_session_id;
-        let store = FreshAdmissionStore::from_root(self.root.clone());
         // ATTACK0-RL-03: a closed client stays in the world until its in-fight deadline ends.
-        while self.hold_while_in_fight(actor, session).await {}
+        if wait_for_combat {
+            while self.hold_while_in_fight(actor, session).await {}
+        } else if self.terminal_combat_pending(actor, session).await {
+            return GraceExpiryResult::Unknown;
+        }
         let Ok(token) = release.fence(&mut *self.runtime.lock().await) else {
             return GraceExpiryResult::Unknown;
         };

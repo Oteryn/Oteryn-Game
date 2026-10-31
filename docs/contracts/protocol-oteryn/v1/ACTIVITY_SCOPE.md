@@ -9,6 +9,11 @@ GameSession IDs, exact tagged Channel or Instance scope, ownership generation,
 connection generation, Character lease generation and retained capability
 selection. UUIDs, nonzero generations, canonical capability order and the exact
 scope tag are mandatory. A Channel UUID never stands in for an Instance UUID.
+For an entry, the payload UUID is the committed group's handoff UUID. For a
+return, it is the committed return UUID. The live barrier, destination initial
+snapshot and later recovery projection use that same transition UUID. The
+original group UUID remains separate durable provenance for a return; it does
+not replace the return UUID in this wire projection.
 
 ## Live handoff
 

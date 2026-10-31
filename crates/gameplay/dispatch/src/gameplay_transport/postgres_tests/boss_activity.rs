@@ -36,14 +36,21 @@ const TEMPLATE: &str = "oteryn:room.native_activity_fixture";
 
 #[path = "boss_activity/nonreward.rs"]
 mod nonreward;
+#[path = "boss_activity/offline_death.rs"]
+mod offline_death;
 #[path = "boss_activity/recovery.rs"]
 mod recovery;
 #[path = "boss_activity/rewards.rs"]
 mod rewards;
+#[path = "boss_activity/state_continuity.rs"]
+mod state_continuity;
+#[path = "boss_activity/state_effects.rs"]
+mod state_effects;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     Entry,
+    AwardContinuity,
     Rewards,
     LateRewards,
     NonRewardDefeat,
@@ -51,11 +58,18 @@ enum Case {
     RecoveryCancelled,
     RecoveryProtection,
     CapabilityMismatch,
+    OfflineDeathMismatch,
+    OfflineDeathDeadline,
 }
 
 #[test]
 fn boss_activity_postgres_real_wire_native_entry_and_scope_barrier() -> TestResult {
     run_scenario(Case::Entry)
+}
+
+#[test]
+fn boss_activity_postgres_native_award_effects_follow_return_and_apply_once() -> TestResult {
+    run_scenario(Case::AwardContinuity)
 }
 
 #[test]
@@ -93,6 +107,17 @@ fn boss_activity_postgres_capability_mismatch_returns_before_terminal_release() 
     run_scenario(Case::CapabilityMismatch)
 }
 
+#[test]
+fn boss_activity_postgres_offline_native_death_returns_before_mismatch_release() -> TestResult {
+    run_scenario(Case::OfflineDeathMismatch)
+}
+
+#[test]
+fn boss_activity_postgres_offline_native_death_deadline_retry_keeps_retained_trigger() -> TestResult
+{
+    run_scenario(Case::OfflineDeathDeadline)
+}
+
 fn run_scenario(case: Case) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         eprintln!("BOSS_ACTIVITY POSTGRES_CASE_SKIPPED: no admin URL");
@@ -108,18 +133,36 @@ fn run_scenario(case: Case) -> TestResult {
 
 fn scenario(case: Case) -> TestResult {
     run(async |admin| {
-        let with_rewards = matches!(case, Case::Rewards | Case::LateRewards);
+        let with_rewards = matches!(
+            case,
+            Case::Rewards | Case::LateRewards | Case::AwardContinuity
+        );
         let late = case == Case::LateRewards;
+        let with_death = matches!(
+            case,
+            Case::OfflineDeathMismatch | Case::OfflineDeathDeadline
+        );
         reset();
+        // Real progression cases let the current Character admission owner
+        // initialize its pinned policy instead of seeding the harness XP table.
+        let initialized = !with_death && case != Case::AwardContinuity;
         let h =
-            Harness::create_with_admission_seed(admin, "native_activity_wire", true, false).await?;
+            Harness::create_with_admission_seed(admin, "native_activity_wire", initialized, false)
+                .await?;
         let evidence = super::house_transfer::RecoverySource::start(&h).await?;
         super::house_transfer::prepare_owned_session(&h).await?;
         let world = fixture::fence(1)?.runtime_scope.world_id();
-        let (controller, source_pin) = if with_rewards {
+        let (controller, source_pin) = if case == Case::AwardContinuity {
+            state_effects::generation(world, "content-1")?
+        } else if with_rewards {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
             )
+        } else if with_death {
+            // Like the existing composed-death fixture, bind unchanged native
+            // training bytes to the fixture Character's content-1 interpretation
+            // before activation. Production pairs both under s3b-content-1.
+            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?
         } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
         };
@@ -156,7 +199,7 @@ fn scenario(case: Case) -> TestResult {
                 .await?
                 .0,
         );
-        let requested = if case == Case::CapabilityMismatch {
+        let requested = if case == Case::CapabilityMismatch || with_death {
             vec![
                 wire::CAPABILITY_BOSS_ENCOUNTER_V1,
                 oteryn_protocol_oteryn::boss_difficulty::CAPABILITY_BOSS_DIFFICULTY_V1,
@@ -191,7 +234,14 @@ fn scenario(case: Case) -> TestResult {
                 .initialize_first_entry_position(deps.actor)
                 .map_err(debug)?;
         }
-        deps.initialize(&owner).await;
+        if with_death {
+            offline_death::prepare_source(&h, &mut owner, &mut admitted).await?;
+        }
+        if case == Case::AwardContinuity {
+            state_effects::prepare_source(&h, &mut owner, &mut admitted).await?;
+        } else {
+            deps.initialize(&owner).await;
+        }
         owner
             .register_current_runtime()
             .await
@@ -234,10 +284,14 @@ fn scenario(case: Case) -> TestResult {
             .ok_or("allocated Instance")?;
         // Two independent test activation invocations produce equal qualified
         // content. Production uses the consumed activity-template activation API.
-        let (_instance_controller, instance_pin) = if with_rewards {
+        let (_instance_controller, instance_pin) = if case == Case::AwardContinuity {
+            state_effects::generation(world, "content-1")?
+        } else if with_rewards {
             crate::content::native_gameplay::test_support::activated_reward_boss_fixture(
                 world, None,
             )
+        } else if with_death {
+            super::death_ml_loss_composed::production_generation_with_pin(world, "content-1")?
         } else {
             crate::content::native_gameplay::test_support::activated_with_loot_tables(world, None)
         };
@@ -315,7 +369,7 @@ fn scenario(case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1',$2,1,1,1,20,$8,$3,$4,'fixture:reward',true,'fixture-r1',$5,$6,$7,1)")
             .bind(&boss_key).bind(&policy.definition_key).bind(serde_json::json!([cell_json(source_cell)]))
             .bind(TEMPLATE).bind(serde_json::json!([cell_json(entry)]))
-            .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late { 1_i32 } else if case == Case::NonRewardDefeat { 5 } else { 900 }).execute(&h.pool).await?;
+            .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late || matches!(case, Case::Entry | Case::OfflineDeathDeadline) { 1_i32 } else if case == Case::NonRewardDefeat { 5 } else { 900 }).execute(&h.pool).await?;
 
         let (_, refused, switch) = exchange(&owner, &mut admitted, &boss_key, false).await?;
         assert_eq!(
@@ -389,6 +443,11 @@ fn scenario(case: Case) -> TestResult {
                 "the fresh room contains its exact authored living boss before entry"
             );
         }
+        let attack_continuity = if case == Case::Entry {
+            Some(state_continuity::prepare_attack(&owner, admitted).await?)
+        } else {
+            None
+        };
         let old = admitted;
         let (command, reply, barrier) = exchange(&owner, &mut admitted, &boss_key, true).await?;
         let BossActivityReply::Accepted {
@@ -513,7 +572,7 @@ fn scenario(case: Case) -> TestResult {
             crate::foundation::ScopeOwnershipGeneration::new(assignment.ownership_generation + 1)
                 .map_err(debug)?;
         assert!(owner.resolve_runtime_view(forged).await.is_err());
-        if with_rewards {
+        if matches!(case, Case::Rewards | Case::LateRewards) {
             rewards::settle_and_collect(&h, &owner, &destination, admitted, &policy, late).await?;
             if late {
                 eprintln!("BOSS_ACTIVITY_LATE_REWARD_TIMEOUT POSTGRES_CASE_COMPLETED");
@@ -522,6 +581,27 @@ fn scenario(case: Case) -> TestResult {
             }
         }
         match case {
+            Case::Entry => {
+                state_continuity::assert_entry_and_timeout_return(
+                    &h,
+                    &owner,
+                    &destination,
+                    &mut admitted,
+                    &boss_key,
+                    attack_continuity.ok_or("source attack continuity")?,
+                )
+                .await?
+            }
+            Case::AwardContinuity => {
+                state_effects::assert_award_follows_return(
+                    &h,
+                    &owner,
+                    &destination,
+                    admitted,
+                    &policy,
+                )
+                .await?
+            }
             Case::NonRewardDefeat => {
                 nonreward::assert_defeat_and_return(&h, &owner, &destination, admitted, &policy)
                     .await?
@@ -541,6 +621,16 @@ fn scenario(case: Case) -> TestResult {
             }
             Case::CapabilityMismatch => {
                 recovery::assert_capability_mismatch(&h, &owner, admitted).await?
+            }
+            Case::OfflineDeathMismatch | Case::OfflineDeathDeadline => {
+                offline_death::assert_offline_death(
+                    &h,
+                    &owner,
+                    &destination,
+                    admitted,
+                    case == Case::OfflineDeathDeadline,
+                )
+                .await?
             }
             _ => {}
         }
@@ -622,6 +712,23 @@ async fn exchange(
     boss: &str,
     expect_switch: bool,
 ) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
+    exchange_command(
+        owner,
+        admitted,
+        boss,
+        expect_switch,
+        wire::COMMAND_TYPE_BOSS_LEVER,
+    )
+    .await
+}
+
+async fn exchange_command(
+    owner: &ComposedFreshAdmission<'_, '_, '_>,
+    admitted: &mut AdmittedSession,
+    boss: &str,
+    expect_switch: bool,
+    command_type: u32,
+) -> TestResult<(u64, BossActivityReply, Option<ActivityScopeSnapshot>)> {
     let before = *admitted;
     let id = before.continuity.next_command_id;
     let body = wire::encode_boss_key(boss).map_err(debug)?;
@@ -656,7 +763,7 @@ async fn exchange(
                 before.continuity.connection_generation,
                 &ClientCommandValue {
                     command_id: id,
-                    command_type: wire::COMMAND_TYPE_BOSS_LEVER,
+                    command_type,
                     payload: &body,
                 },
             )

@@ -18,6 +18,25 @@ use crate::foundation::{ExactActorRef, GameSessionId};
 pub struct LevelRefresh(Mutex<BTreeSet<CharacterId>>);
 
 impl LevelRefresh {
+    /// Called while the activity owner holds both scope lanes and the
+    /// Character revision. A settled notification follows the live Character.
+    pub(super) fn transfer_activity(
+        &self,
+        destination: &Self,
+        character: CharacterId,
+    ) -> Result<(), ()> {
+        if std::ptr::eq(self, destination) {
+            return Ok(());
+        }
+        let mut source = self.0.lock().map_err(|_| ())?;
+        let mut target = destination.0.lock().map_err(|_| ())?;
+        if source.contains(&character) {
+            target.insert(character);
+            source.remove(&character);
+        }
+        Ok(())
+    }
+
     pub(super) fn mark(&self, characters: impl IntoIterator<Item = CharacterId>) {
         if let Ok(mut marked) = self.0.lock() {
             marked.extend(characters);
@@ -135,5 +154,43 @@ mod tests {
         refresh.unmark(a);
         assert!(!refresh.is_marked(a));
         assert!(refresh.is_marked(b));
+    }
+
+    #[test]
+    fn activity_refresh_moves_only_its_character_and_retry_keeps_new_destination_work()
+    -> Result<(), String> {
+        let character = |last| {
+            let mut bytes = [0x11; 16];
+            bytes[6] = 0x70;
+            bytes[8] = 0x80;
+            bytes[15] = last;
+            CharacterId::from_bytes(bytes).map_err(|error| format!("{error:?}"))
+        };
+        let (a, b, c) = (character(1)?, character(2)?, character(3)?);
+        let source = LevelRefresh::default();
+        let destination = LevelRefresh::default();
+        source.mark([a, b]);
+        destination.mark([c]);
+        source
+            .transfer_activity(&destination, a)
+            .map_err(|_| "move refresh")?;
+        assert!(!source.is_marked(a));
+        assert!(source.is_marked(b));
+        assert!(destination.is_marked(a));
+        assert!(destination.is_marked(c));
+        destination.unmark(a);
+        source
+            .transfer_activity(&destination, a)
+            .map_err(|_| "retry refresh")?;
+        assert!(
+            !destination.is_marked(a),
+            "a consumed source notification is not reissued"
+        );
+        destination.mark([a]);
+        source
+            .transfer_activity(&destination, a)
+            .map_err(|_| "retry after newer mark")?;
+        assert!(destination.is_marked(a));
+        Ok(())
     }
 }

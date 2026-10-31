@@ -14,6 +14,12 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 
+mod lineage;
+use lineage::{
+    ActivityConnectionLineage, advance_lineage, current_connection, prune_delivered_lineage,
+    same_connection,
+};
+
 /// Existing borrowed boot owners and independently owned activity runtimes use
 /// the same lock API. Cloning the handle never clones a playable actor payload.
 pub enum SharedOwner<'a, T> {
@@ -138,13 +144,27 @@ pub struct ActivityRuntimeRegistry<'a> {
             Arc<tokio::sync::Mutex<super::native_activity::NativeActivityAttempt<'a>>>,
         >,
     >,
-    successors: Mutex<HashMap<GameSessionId, (AdmittedSession, AdmittedSession)>>,
+    successors: Mutex<HashMap<GameSessionId, ActivityConnectionLineage>>,
+    // Only current offline successors retain account identity. Historical
+    // transport aliases are not an account directory and may be pruned.
+    offline_accounts: Mutex<
+        HashMap<
+            GameSessionId,
+            (
+                crate::durability::item_transfer::CurrentCharacterItemFence,
+                [u8; 16],
+            ),
+        >,
+    >,
     pub(super) returns: Mutex<
         HashMap<
             super::native_activity_return::ActivityReturnAttemptKey,
             Arc<tokio::sync::Mutex<super::native_activity_return::NativeActivityReturnAttempt<'a>>>,
         >,
     >,
+    /// Server recovery proposals survive SQL cancellation/unknown commit.
+    pub(super) departed_recoveries:
+        Mutex<HashMap<GameSessionId, crate::durability::activity_handoff::ActivityRecoveryRequest>>,
     pub(super) recoveries:
         Mutex<HashMap<Vec<u8>, Arc<super::activity_recovery_admission::NativeActivityRecovery>>>,
     /// Serializes multi-owner handoff preparation, never ordinary gameplay.
@@ -325,31 +345,21 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         {
             return Err(());
         }
+        let mut accounts = self.offline_accounts.lock().map_err(|_| ())?;
         sessions.try_reserve(1).map_err(|_| ())?;
         sessions.insert(admitted.game_session_id, admitted);
+        accounts.remove(&admitted.game_session_id);
         Ok(())
     }
 
     /// This follows only this process's exact controlled connection chain. A
     /// later reconnect has another transport/generation and cannot be selected
     /// for control loss by an obsolete socket's cancellation.
-    pub(super) fn current_connection(&self, mut source: AdmittedSession) -> AdmittedSession {
+    pub(super) fn current_connection(&self, source: AdmittedSession) -> AdmittedSession {
         let Ok(successors) = self.successors.lock() else {
             return source;
         };
-        for _ in 0..successors.len() {
-            let Some((old, next)) = successors.get(&source.game_session_id) else {
-                break;
-            };
-            if old.controller != source.controller
-                || old.item_fence != source.item_fence
-                || old.continuity.connection_generation != source.continuity.connection_generation
-            {
-                break;
-            }
-            source = *next;
-        }
-        source
+        current_connection(&successors, source)
     }
 
     /// An already committed offline return has no transport and emits no wire
@@ -384,55 +394,73 @@ impl<'a> ActivityRuntimeRegistry<'a> {
         }
         let mut pending = self.pending.lock().map_err(|_| ())?;
         let mut successors = self.successors.lock().map_err(|_| ())?;
-        if let Some((old, destination)) = successors.get(&source.game_session_id) {
-            return if old.controller == source.controller
-                && old.item_fence == source.item_fence
-                && *destination == next
-            {
+        let mut sessions = self.connections.lock().map_err(|_| ())?;
+        let Some(registered) = sessions.get(&source.game_session_id) else {
+            // A completed attempt is published repeatedly until room retirement.
+            // Only its first publication has a registered source; a later replay
+            // must not recreate removed aliases, offline state or playable control.
+            return Ok(());
+        };
+        if !same_connection(*registered, source) {
+            return Err(());
+        }
+        if let Some(lineage) = successors.get(&source.game_session_id) {
+            return if same_connection(lineage.source, source) && lineage.destination == next {
                 Ok(())
             } else {
                 Err(())
             };
         }
-        let mut sessions = self.connections.lock().map_err(|_| ())?;
-        if sessions.get(&source.game_session_id).is_some_and(|old| {
-            old.controller != source.controller || old.item_fence != source.item_fence
-        }) {
-            return Err(());
-        }
         if sessions.contains_key(&next.game_session_id) {
             return Err(());
         }
+        let mut accounts = self.offline_accounts.lock().map_err(|_| ())?;
+        let account = match source.controller {
+            Some(controller) => controller.account_id,
+            None => accounts
+                .get(&source.game_session_id)
+                .filter(|(fence, _)| Some(*fence) == source.item_fence)
+                .map(|(_, account)| *account)
+                .ok_or(())?,
+        };
         successors.try_reserve(1).map_err(|_| ())?;
         sessions.try_reserve(1).map_err(|_| ())?;
-        successors.insert(source.game_session_id, (source, next));
+        accounts.try_reserve(1).map_err(|_| ())?;
+        advance_lineage(&mut successors, source, next);
+        // The existing loss/grace loop may retain this source snapshot after
+        // its transport ended. Keep that lifecycle root until its proven end.
+        successors.insert(
+            source.game_session_id,
+            ActivityConnectionLineage {
+                source,
+                destination: next,
+                root: true,
+            },
+        );
         sessions.remove(&source.game_session_id);
         sessions.insert(next.game_session_id, next);
+        accounts.remove(&source.game_session_id);
+        accounts.insert(next.game_session_id, (new_fence, account));
         pending.remove(&source.game_session_id);
+        prune_delivered_lineage(&mut successors, &pending);
+        drop(accounts);
+        drop(sessions);
+        drop(successors);
+        drop(pending);
+        self.forget_source_commands(source);
         self.changed.notify_waiters();
         Ok(())
     }
 
-    /// Account identity is retained for an offline successor, independently of
-    /// playable control. It never manufactures a ControllerBinding or transport.
+    /// Account identity is retained for the exact current offline successor,
+    /// independently of playable control and of historical wire aliases.
     pub(super) fn account_for(&self, admitted: AdmittedSession) -> Option<[u8; 16]> {
         if let Some(controller) = admitted.controller {
             return Some(controller.account_id);
         }
-        let successors = self.successors.lock().ok()?;
-        let mut next = admitted;
-        for _ in 0..successors.len() {
-            let (source, _) = successors.values().find(|(_, candidate)| {
-                candidate.game_session_id == next.game_session_id
-                    && candidate.item_fence == next.item_fence
-                    && candidate.controller == next.controller
-            })?;
-            if let Some(controller) = source.controller {
-                return Some(controller.account_id);
-            }
-            next = *source;
-        }
-        None
+        let accounts = self.offline_accounts.lock().ok()?;
+        let (fence, account) = accounts.get(&admitted.game_session_id)?;
+        (Some(*fence) == admitted.item_fence).then_some(*account)
     }
 
     /// Called synchronously after the existing terminal owner removed this exact
@@ -444,10 +472,60 @@ impl<'a> ActivityRuntimeRegistry<'a> {
                 .is_some_and(|held| held.runtime_actor == Some(actor))
         {
             sessions.remove(&session);
+            if let Ok(mut accounts) = self.offline_accounts.lock() {
+                accounts.remove(&session);
+            }
         }
-        // Pending barriers/lineage and committed physical attempts have their
-        // own reconciliation and room-retirement owner; terminal cleanup does
-        // not discard another group member's still-needed handoff.
+        // The listener may still hold an earlier snapshot while reconciling
+        // this terminal result. Its completion hook, not actor removal alone,
+        // releases the last exact socket/lifecycle alias and pending barrier.
+    }
+
+    /// Forget ingress only after the old session's committed handoff. An open
+    /// source stream owns its Arc independently and can finish its result; the
+    /// directory cannot retain one obsolete stream for every past room visit.
+    fn forget_source_commands(&self, source: AdmittedSession) {
+        let Some(fence) = source.item_fence else {
+            return;
+        };
+        if let Some(owner) = self.get(fence.runtime_scope, fence.scope_ownership_generation.get()) {
+            owner.states.command_ingress.forget(source.game_session_id);
+        }
+    }
+
+    /// The listener calls this only once no more socket/loss/grace callbacks can
+    /// reference this exact chain. Unknown operations and cancelled lifecycles
+    /// do not call it. Durable rows, current connections and owner tokens stay.
+    pub(super) fn finish_connection_lineage(&self, ended: AdmittedSession) -> Result<(), ()> {
+        let mut pending = self.pending.lock().map_err(|_| ())?;
+        let mut successors = self.successors.lock().map_err(|_| ())?;
+        let mut sessions = self.connections.lock().map_err(|_| ())?;
+        let target = current_connection(&successors, ended);
+        let mut old_sources = Vec::new();
+        old_sources.try_reserve(pending.len()).map_err(|_| ())?;
+        pending.retain(|_, switch| {
+            if same_connection(current_connection(&successors, switch.source), target) {
+                if sessions
+                    .get(&switch.source.game_session_id)
+                    .is_some_and(|held| same_connection(*held, switch.source))
+                {
+                    sessions.remove(&switch.source.game_session_id);
+                }
+                old_sources.push(switch.source);
+                false
+            } else {
+                true
+            }
+        });
+        successors.retain(|_, lineage| !same_connection(lineage.destination, target));
+        prune_delivered_lineage(&mut successors, &pending);
+        drop(sessions);
+        drop(successors);
+        drop(pending);
+        for source in old_sources {
+            self.forget_source_commands(source);
+        }
+        Ok(())
     }
 
     pub(super) fn connection(&self, session: GameSessionId) -> Option<AdmittedSession> {
@@ -472,6 +550,8 @@ impl<'a> ActivityRuntimeRegistry<'a> {
             || old_fence.runtime_scope == new_fence.runtime_scope
             || old_fence.character_lease_generation.checked_add(1)
                 != Some(new_fence.character_lease_generation)
+            || new_fence.game_session_id != next.game_session_id
+            || new_fence.connection_generation.get() != next.continuity.connection_generation
             || next.continuity.next_command_id != 1
             || next.continuity.server_sequence != 0
             || next.continuity.selected_capabilities != source.continuity.selected_capabilities
@@ -493,25 +573,47 @@ impl<'a> ActivityRuntimeRegistry<'a> {
                 Err(())
             };
         }
-        pending.try_reserve(1).map_err(|_| ())?;
         let mut successors = self.successors.lock().map_err(|_| ())?;
-        if let Some((old, destination)) = successors.get(&source.game_session_id) {
-            if old.controller != source.controller || *destination != next {
-                return Err(());
-            }
-            // Its pending barrier was already removed by finish_switch. A retry
-            // of the retained durable result must not resurrect a delivered hop.
+        let mut sessions = self.connections.lock().map_err(|_| ())?;
+        let Some(registered) = sessions.get(&source.game_session_id) else {
+            // A retained committed result can outlive its delivered/pruned
+            // source. It is already installed, never a fresh publication grant.
             return Ok(());
+        };
+        if !same_connection(*registered, source) {
+            return Err(());
         }
+        if let Some(lineage) = successors.get(&source.game_session_id) {
+            return if same_connection(lineage.source, source) && lineage.destination == next {
+                Ok(())
+            } else {
+                Err(())
+            };
+        }
+        if sessions
+            .get(&next.game_session_id)
+            .is_some_and(|held| !same_connection(*held, next))
+        {
+            return Err(());
+        }
+        pending.try_reserve(1).map_err(|_| ())?;
         successors.try_reserve(1).map_err(|_| ())?;
-        // SQL and native installation already committed this exact destination.
-        // Recovery/lifecycle must find it even if the source socket loses the
-        // first barrier byte. Keep the source until wire completion. This write
-        // is below both idempotent exits: an old publication cannot resurrect a
-        // retired session or downgrade a subsequently recovered generation.
-        self.remember(next)?;
-        successors.insert(source.game_session_id, (source, next));
+        sessions.try_reserve(1).map_err(|_| ())?;
+        // SQL and physical installation already committed this destination.
+        // Keep the original physical socket root, but compress delivered hops
+        // instead of retaining two AdmittedSession values for every past visit.
+        let continued = advance_lineage(&mut successors, source, next);
+        sessions.insert(next.game_session_id, next);
+        successors.insert(
+            source.game_session_id,
+            ActivityConnectionLineage {
+                source,
+                destination: next,
+                root: !continued,
+            },
+        );
         pending.insert(source.game_session_id, switch);
+        prune_delivered_lineage(&mut successors, &pending);
         self.changed.notify_waiters();
         Ok(())
     }
@@ -542,15 +644,26 @@ impl<'a> ActivityRuntimeRegistry<'a> {
     ) -> Result<(), ()> {
         let mut pending = self.pending.lock().map_err(|_| ())?;
         let current = pending.get(&source.game_session_id).ok_or(())?;
-        if current.source.controller != source.controller || current.destination != destination {
+        if !same_connection(current.source, source) || current.destination != destination {
             return Err(());
         }
-        self.remember(destination)?;
+        let mut successors = self.successors.lock().map_err(|_| ())?;
+        let mut sessions = self.connections.lock().map_err(|_| ())?;
+        // First publication made the actual destination visible. Repeating
+        // remember here could downgrade a reconnect or resurrect an actor that
+        // already returned/terminated while this earlier barrier was in flight.
         pending.remove(&source.game_session_id);
-        self.connections
-            .lock()
-            .map_err(|_| ())?
-            .remove(&source.game_session_id);
+        if sessions
+            .get(&source.game_session_id)
+            .is_some_and(|held| same_connection(*held, source))
+        {
+            sessions.remove(&source.game_session_id);
+        }
+        prune_delivered_lineage(&mut successors, &pending);
+        drop(sessions);
+        drop(successors);
+        drop(pending);
+        self.forget_source_commands(source);
         Ok(())
     }
 }
@@ -588,6 +701,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let old = source.game_session_id;
         let new = next.game_session_id;
         let actor = next.runtime_actor.ok_or(())?;
+        let character = source.item_fence.ok_or(())?.character_id;
+        if next.item_fence.ok_or(())?.character_id != character {
+            return Err(());
+        }
         move_session_entry(
             &self.states.progression_sessions,
             &destination.states.progression_sessions,
@@ -636,6 +753,21 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             from.remove(&old);
             to.insert(new, next);
         }
+        // Settlement publishes these effects before releasing its recipient
+        // revisions/lane. These same guards remain held across this move, so a
+        // committed kill cannot strand a late mark on the retired source owner.
+        self.states
+            .level_refresh
+            .transfer_activity(&destination.states.level_refresh, character)?;
+        self.states
+            .title_refresh
+            .transfer_activity(&destination.states.title_refresh, character)?;
+        self.states
+            .soul_kills
+            .transfer_activity(&destination.states.soul_kills, character)?;
+        self.states
+            .cyclopedia_tracker_refresh
+            .transfer_activity(&destination.states.cyclopedia_tracker_refresh, character)?;
         destination.states.command_ingress.admit(new);
         self.states.appearance_commands.forget(old);
         self.states.chat.forget(old);
@@ -914,3 +1046,7 @@ mod refusal_retention_tests {
 #[cfg(test)]
 #[path = "activity_runtime/switch_tests.rs"]
 mod switch_tests;
+
+#[cfg(test)]
+#[path = "activity_runtime/lineage_tests.rs"]
+mod lineage_tests;

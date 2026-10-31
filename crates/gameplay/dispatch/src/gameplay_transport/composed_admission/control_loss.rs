@@ -149,6 +149,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         self.hold_step_within(actor, session, Duration::MAX).await
     }
 
+    /// A release serialized with Activity transitions must never wait for a
+    /// combat deadline while holding that shared lock. This repeats the normal
+    /// hold preflight, including current PvP locks, without sleeping or driving
+    /// a melee pass. Refusal leaves the existing grace owner in charge.
+    pub(in crate::gameplay_transport) async fn terminal_combat_pending(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+    ) -> bool {
+        let recheck = {
+            let runtime = self.runtime.lock().await;
+            if runtime.owner_fence().is_err()
+                || runtime.player_control_facts(actor, session).is_err()
+            {
+                return true;
+            }
+            let states = self.states.spell_states.lock().await;
+            let attack = self.states.attack.lock().await;
+            if held_step(
+                &states,
+                &attack,
+                actor,
+                session,
+                self.owner_now(),
+                Duration::MAX,
+            )
+            .is_some()
+            {
+                return true;
+            }
+            !states.is_dead(actor) && pvp_live::tracked(&states, actor, session)
+        };
+        if !recheck {
+            return false;
+        }
+        if !self.refresh_pvp_locks(actor, session).await {
+            return true;
+        }
+        let runtime = self.runtime.lock().await;
+        if runtime.owner_fence().is_err() || runtime.player_control_facts(actor, session).is_err() {
+            return true;
+        }
+        let states = self.states.spell_states.lock().await;
+        let attack = self.states.attack.lock().await;
+        held_step(
+            &states,
+            &attack,
+            actor,
+            session,
+            self.owner_now(),
+            Duration::MAX,
+        )
+        .is_some()
+    }
+
     /// One hold step of at most `limit`; `false`, without waiting, when nothing holds the actor.
     pub(in crate::gameplay_transport) async fn hold_step_within(
         &self,

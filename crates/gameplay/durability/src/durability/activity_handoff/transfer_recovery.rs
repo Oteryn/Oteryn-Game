@@ -12,6 +12,9 @@ use crate::foundation::fnd04_verifier::{
 };
 use crate::foundation::{AuthenticatedTransportRefV1, ConnectionGeneration, GameSessionState};
 
+mod mismatch;
+pub(crate) use mismatch::OfflineActivityMismatchRelease;
+
 /// An inert, current routing projection. Callers must retain the actual native
 /// actor/spell state; the authored destination cell is not permission to reset it.
 #[derive(Clone)]

@@ -118,7 +118,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 })
             })
             .await;
-        if matches!(settled, SessionDeath::Durable) && !releasing {
+        // Instance equipment is refreshed by complete_activity_death_return
+        // after the genuine Channel handoff, before the actor is respawned.
+        // The existing equipment owner cannot read an Instance as a Channel.
+        if matches!(settled, SessionDeath::Durable)
+            && !releasing
+            && matches!(
+                actor.runtime_scope(),
+                crate::foundation::RuntimeScopeRefV1::Channel { .. }
+            )
+        {
             let Ok(Some(committed)) = self
                 .root
                 .reconcile_character_death(self.character, death.occurrence)
@@ -323,6 +332,34 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             if states
                 .player_death(&runtime, actor, admitted.game_session_id)
                 .is_none_or(|death| death.occurrence != occurrence)
+            {
+                return false;
+            }
+        }
+        if committed
+            .items
+            .as_ref()
+            .is_some_and(|items| items.amulet.is_some() || !items.lost.is_empty())
+        {
+            // A returned offline actor is still Reconnectable. Read its exact
+            // current Channel equipment through the lifecycle fence, without
+            // broadening the active-session command or observation readers.
+            let Some(_permit) = self.spell_lane_permit().await else {
+                return false;
+            };
+            let Ok(effects) = self.read_activity_death_effects(expected).await else {
+                return false;
+            };
+            self.states
+                .attack
+                .lock()
+                .await
+                .forget_weapon(actor, admitted.game_session_id);
+            let runtime = self.runtime.lock().await;
+            if self
+                .install_admission_suppressions(&runtime, actor, admitted.game_session_id, effects)
+                .await
+                .is_none()
             {
                 return false;
             }

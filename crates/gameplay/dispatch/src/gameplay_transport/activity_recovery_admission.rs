@@ -200,9 +200,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(Some(resumed));
         }
         let selected = retained.continuity.selected_capabilities;
-        if !selected.resumable_with(attempt.supported_capabilities) {
-            return Err(RecoveryCapabilityRequired);
-        }
+        let selection_mismatch = !selected.resumable_with(attempt.supported_capabilities);
         if !owner.required_capabilities.matches_current(
             candidate.runtime_scope,
             candidate.scope_generation.get(),
@@ -221,7 +219,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 &candidate.current.world_policy_revision,
             )
             .map_err(|_| Rejected)?;
-        if capabilities.selected() != selected {
+        if !selection_mismatch && capabilities.selected() != selected {
             return Err(Rejected);
         }
         if attempt.game_session_id == candidate.current_session
@@ -293,6 +291,54 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                 == Some(mark.grace_deadline)
                     }) => {}
             _ => return Err(Rejected),
+        }
+        if selection_mismatch {
+            // D449 applies only after every other recovery check. An offline
+            // returned Channel owns no transport or independent loss receipt;
+            // the existing release writer repeats its sealed Activity/S2 proof.
+            if candidate.return_id.is_none()
+                || retained.controller.is_some()
+                || !matches!(
+                    candidate.runtime_scope,
+                    crate::foundation::RuntimeScopeRefV1::Channel { .. }
+                )
+                || current.session_state() != GameSessionState::Reconnectable
+            {
+                return Err(RecoveryCapabilityRequired);
+            }
+            let epoch = current.current_control_loss_epoch().ok_or(Rejected)?;
+            let store = handoffs
+                .offline_return_mismatch_store(
+                    owner.character,
+                    owner.holder,
+                    candidate,
+                    verified,
+                    attempt.transport,
+                    capabilities.current_check(),
+                )
+                .map_err(|_| Unavailable)?;
+            drop(spells);
+            drop(runtime);
+            drop(_lane);
+            drop(_revision);
+            let release = owner
+                .release_terminal_with_store(
+                    retained,
+                    super::TerminalRelease::CapabilityMismatch(epoch),
+                    store,
+                    false,
+                )
+                .await;
+            if release == GraceExpiryResult::Released {
+                owner.forget_lost(
+                    retained.game_session_id,
+                    retained.continuity.connection_generation,
+                );
+            }
+            return Err(match release {
+                GraceExpiryResult::Released | GraceExpiryResult::NotApplicable => Rejected,
+                GraceExpiryResult::Unknown => Unavailable,
+            });
         }
         let stream = owner
             .states
