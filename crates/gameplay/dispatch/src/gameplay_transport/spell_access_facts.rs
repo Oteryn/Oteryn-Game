@@ -92,6 +92,7 @@ impl<A: CurrentSpellAccessOwner> CurrentSpellAccessOwner for WheelCastAccess<'_,
     ) -> Result<AccessProjections, AccessFactsError> {
         let mut projections = self.other.read_current(binding, now)?;
         projections.wheel = None;
+        projections.wheel_promoted = false;
         let read = self.read.raw();
         if read.command != self.raw.command
             || read.fence != self.raw.fence
@@ -116,6 +117,7 @@ impl<A: CurrentSpellAccessOwner> CurrentSpellAccessOwner for WheelCastAccess<'_,
                 now,
                 self.read.promoted(),
             );
+            projections.wheel_promoted = self.read.promoted();
         }
         Ok(projections)
     }
@@ -431,6 +433,7 @@ fn qualify_current_cast_facts(
         native,
         projections.wheel.as_ref(),
         projections.premium.as_ref(),
+        projections.wheel_promoted,
         now_micros,
     )?;
     let facts = OwnedCastFacts::from_owner_reads(binding, build, level, equipment, projections)?;

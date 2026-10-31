@@ -1,6 +1,7 @@
 //! I14 parity: potion and food values the item-use path reads from the activated content, against
 //! Crystal `201189f8` `data/scripts/actions/items/potions.lua` (table at lines 44-68) and
-//! `foods.lua` (regeneration = value x 12 s). The ids below are recorded source data.
+//! `foods.lua` (regeneration = value x 12 s), with the I14G owner-selected Global overrides.
+//! The ids below are recorded source data.
 #![allow(clippy::expect_used, clippy::panic)]
 
 use super::*;
@@ -235,7 +236,94 @@ fn i14_matching_restore_potions_and_foods_are_admitted() {
     }
 }
 
-/// Conflicting values and unsupported condition effects remain unadmitted.
+/// Owner decision I14G (2026-10-30): Global wins the five conflicts.
+/// TibiaWiki revisions are recorded next to each exact range/duration.
+#[test]
+fn i14_global_consumables_are_admitted() {
+    let controller = native();
+    let state = controller
+        .active()
+        .and_then(|active| active.native_gameplay())
+        .expect("native gameplay");
+    use ReferenceRestoreResource::{Health, Mana};
+    for (id, restores, level, allowed) in [
+        // Great Spirit Potion rev 1183259.
+        (
+            7642,
+            vec![(Health, 250, 350), (Mana, 125, 185)],
+            80,
+            vec![Vocation::Paladin, Vocation::Monk],
+        ),
+        // Ultimate Spirit Potion rev 1183261.
+        (
+            23374,
+            vec![(Health, 420, 580), (Mana, 150, 250)],
+            130,
+            vec![Vocation::Paladin, Vocation::Monk],
+        ),
+        // Supreme Health Potion rev 1183258.
+        (
+            23375,
+            vec![(Health, 875, 1175)],
+            200,
+            vec![Vocation::Knight],
+        ),
+    ] {
+        let policy = policy_of(state, id).unwrap_or_else(|| panic!("item {id} is admitted"));
+        let semantics = &policy.record().semantics;
+        let ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) =
+            &semantics.consumption
+        else {
+            panic!("{id} is a potion")
+        };
+        assert_eq!(
+            potion
+                .restores
+                .iter()
+                .map(|r| (r.resource, r.min, r.max))
+                .collect::<Vec<_>>(),
+            restores,
+            "{id}"
+        );
+        let ReferenceItemField::Known(flask) = &potion.empty_flask else {
+            panic!("{id} names its flask")
+        };
+        assert_eq!(flask.key, "oteryn:item.tibia.i284");
+        assert!(policy_of(state, 284).is_some());
+        for vocation in [
+            Vocation::None,
+            Vocation::Knight,
+            Vocation::Paladin,
+            Vocation::Monk,
+            Vocation::Druid,
+            Vocation::Sorcerer,
+        ] {
+            assert_eq!(
+                requirements_met(&semantics.use_requirements, facts_at(vocation, level)),
+                allowed.contains(&vocation),
+                "{id} {vocation:?}"
+            );
+            assert!(
+                !requirements_met(&semantics.use_requirements, facts_at(vocation, level - 1)),
+                "{id} below level"
+            );
+        }
+    }
+    for (id, seconds) in [
+        (3250, 96),   // The Carrot of Doom rev 1016926.
+        (23535, 300), // Energy Bar rev 1011115.
+    ] {
+        let policy = policy_of(state, id).expect("food is admitted");
+        let ReferenceItemField::Known(ReferenceItemConsumption::Food(food)) =
+            &policy.record().semantics.consumption
+        else {
+            panic!("{id} is food")
+        };
+        assert_eq!(food.regeneration_seconds, seconds, "{id}");
+    }
+}
+
+/// Great Mana needs a canonical correction stage; condition effects remain unsupported.
 #[test]
 fn i14_unresolved_crystal_consumables_remain_unadmitted() {
     let controller = native();
@@ -243,7 +331,7 @@ fn i14_unresolved_crystal_consumables_remain_unadmitted() {
         .active()
         .and_then(|active| active.native_gameplay())
         .expect("native gameplay");
-    for id in [238, 7642, 7644, 23374, 23375, 3250, 23535] {
+    for id in [238, 7644] {
         assert!(policy_of(state, id).is_none(), "item {id}");
     }
 }

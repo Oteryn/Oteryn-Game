@@ -48,13 +48,17 @@ fn parameter_spell_protected_exiva_real_session_postgres() -> TestResult {
 mod exiva_settings;
 
 pub(super) fn scenario(case: u8) -> TestResult {
+    scenario_in_world(case, None)
+}
+
+pub(super) fn scenario_in_world(case: u8, world_type: Option<i16>) -> TestResult {
     if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
         return Ok(());
     }
     std::thread::Builder::new()
         .stack_size(128 << 20)
         .spawn(move || {
-            run(async move |admin| scenario_inner(admin, case).await)
+            run(async move |admin| scenario_inner(admin, case, world_type).await)
                 .map_err(|error| error.to_string())
         })?
         .join()
@@ -62,7 +66,7 @@ pub(super) fn scenario(case: u8) -> TestResult {
         .map_err(Into::into)
 }
 
-async fn scenario_inner(admin: String, case: u8) -> TestResult {
+async fn scenario_inner(admin: String, case: u8, world_type: Option<i16>) -> TestResult {
     let h = Harness::create_with_admission_seed(
         admin,
         &format!("parameter_spell_{case}"),
@@ -70,7 +74,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
         false,
     )
     .await?;
-    eprintln!("PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}");
+    eprintln!("PARAM-CAST-WIRE-1 PostgreSQL harness created, case={case}, world_type={world_type:?}");
     prepare_current_session(&h).await?;
     h.seed_pvp_target().await?;
     if !matches!(case, 1 | 5 | 6) {
@@ -302,6 +306,7 @@ async fn scenario_inner(admin: String, case: u8) -> TestResult {
             admitted,
             target_actor.ok_or("target actor")?,
             case,
+            world_type,
         )
         .await;
     }

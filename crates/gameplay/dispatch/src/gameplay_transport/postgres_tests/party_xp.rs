@@ -63,6 +63,20 @@ impl Case {
                 | Self::ForgeForeign
         )
     }
+    /// Cases that settle a shared kill need the second member's committed activity. Its
+    /// real swings are staged before the leader's, so the content-seeded draws can never
+    /// let the leader kill the rat before the ally has landed a hit.
+    fn staged_ally(self) -> bool {
+        matches!(
+            self,
+            Self::Shared
+                | Self::Modifiers
+                | Self::Replay
+                | Self::Rollback
+                | Self::Exhausted
+                | Self::PzContention
+        )
+    }
 }
 #[test]
 fn party_xp_real_dispatch_equal_split() -> TestResult {
@@ -680,6 +694,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         Case::Foreign => &[2, 0],
         Case::ForgeForeign => &[2],
         Case::Pz | Case::Concurrent => &[0],
+        _ if case.staged_ally() => &[1],
         _ => &[],
     };
     // These cases test settlement, not competing content-seeded swing draws.
@@ -757,6 +772,15 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 .expect("clock");
         }
     }
+    if case.staged_ally() {
+        // The ally's activity is recent; leave one HP so the leader's next landed swing is
+        // lethal well inside the shared-experience activity window.
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        runtime
+            .commit_monster_lab_damage(creature.actor, b"party-xp-staged-ally-fixture", health - 1)
+            .map_err(debug)?;
+    }
     if matches!(case, Case::OneHit) {
         // The ally earns real activity first; the killer's first hit is lethal.
         let (actor, session) = players[1];
@@ -829,7 +853,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     for (index, (actor, session)) in players.iter().copied().enumerate() {
         if index == 2
             || (index == 0 && matches!(case, Case::Pz | Case::Concurrent | Case::Foreign))
-            || (index == 1 && matches!(case, Case::Inactive | Case::OneHit | Case::ForgeIdle))
+            || (index == 1
+                && (case.staged_ally()
+                    || matches!(case, Case::Inactive | Case::OneHit | Case::ForgeIdle)))
         {
             continue;
         }

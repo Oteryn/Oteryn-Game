@@ -84,6 +84,7 @@ pub fn project(
     native: &NativeGameplayState,
     wheel: Option<&CurrentProjection<BTreeMap<String, u8>>>,
     premium: Option<&CurrentProjection<bool>>,
+    promoted: bool,
     now_micros: u64,
 ) -> Result<Option<MagnitudeOwnedAttributes>, AccessFactsError> {
     validate_current_binding(raw, binding, native)?;
@@ -113,6 +114,7 @@ pub fn project(
         native.wheel_profile(),
         wheel,
         premium,
+        promoted,
         now_micros,
     )?;
     let wheel_flat = wheel_observation.map(|(flat, _)| flat);
@@ -186,6 +188,7 @@ fn project_current_wheel_flat(
     profile: Option<&oteryn_gameplay_content::content::spell_wheel_profile::CompiledWheelProfile>,
     wheel: Option<&CurrentProjection<BTreeMap<String, u8>>>,
     premium: Option<&CurrentProjection<bool>>,
+    promoted: bool,
     now: u64,
 ) -> Result<Option<WheelFlatObservation>, AccessFactsError> {
     let Some(wheel) = wheel.filter(|p| p.current(binding, now)) else {
@@ -213,10 +216,8 @@ fn project_current_wheel_flat(
         .ok_or(AccessFactsError::Unavailable(
             "Wheel magnitude accepted ruleset",
         ))?;
-    if !matches!(
-        vocation,
-        "elder_druid" | "elite_knight" | "exalted_monk" | "royal_paladin" | "master_sorcerer"
-    ) {
+    // The build keeps the base vocation after promotion; the durable promotion read decides.
+    if !promoted {
         return Ok(None);
     }
     let rules = ruleset
@@ -265,12 +266,19 @@ mod wheel_magnitude_tests {
         binding: &CastFactsBinding,
         stages: [u8; 4],
     ) -> CurrentProjection<BTreeMap<String, u8>> {
+        vocation_wheel(binding, "elder_druid", stages)
+    }
+    fn vocation_wheel(
+        binding: &CastFactsBinding,
+        vocation: &str,
+        stages: [u8; 4],
+    ) -> CurrentProjection<BTreeMap<String, u8>> {
         let ruleset = crate::wheel_gem_data::WheelGemData::embedded()
             .expect("accepted Wheel")
             .wheel_ruleset()
             .expect("accepted ruleset");
         let keys = &ruleset
-            .vocation("elder_druid")
+            .vocation(vocation)
             .expect("actual vocation")
             .revelations;
         CurrentProjection {
@@ -300,6 +308,7 @@ mod wheel_magnitude_tests {
                 Some(&p),
                 Some(&wheel(&b, [0, 1, 2, 3])),
                 Some(&prem),
+                true,
                 99
             )
             .expect("current source flat"),
@@ -312,10 +321,30 @@ mod wheel_magnitude_tests {
                 Some(&p),
                 Some(&wheel(&b, [0; 4])),
                 Some(&prem),
+                true,
                 99
             )
             .expect("current zero"),
             Some(((0, 0), 4))
+        );
+    }
+    #[test]
+    fn wheel_magnitude_gates_on_durable_promotion_not_the_stored_base_vocation() {
+        // The build keeps the base vocation after promotion; only the durable promotion
+        // read decides whether the Wheel flat applies.
+        let b = binding();
+        let p = profile(b.content_digest);
+        let prem = premium(&b);
+        let w = vocation_wheel(&b, "monk", [3; 4]);
+        assert_eq!(
+            project_current_wheel_flat(&b, "monk", Some(&p), Some(&w), Some(&prem), true, 1)
+                .expect("promoted monk"),
+            Some(((80, 80), 4))
+        );
+        assert!(
+            project_current_wheel_flat(&b, "monk", Some(&p), Some(&w), Some(&prem), false, 1)
+                .expect("unpromoted monk")
+                .is_none()
         );
     }
     #[test]
@@ -325,34 +354,42 @@ mod wheel_magnitude_tests {
         let w = wheel(&b, [3; 4]);
         let mut prem = premium(&b);
         assert!(
-            project_current_wheel_flat(&b, "elder_druid", Some(&p), None, Some(&prem), 1)
+            project_current_wheel_flat(&b, "elder_druid", Some(&p), None, Some(&prem), true, 1)
                 .expect("missing Wheel")
                 .is_none()
         );
         assert!(
-            project_current_wheel_flat(&b, "elder_druid", None, Some(&w), Some(&prem), 1)
+            project_current_wheel_flat(&b, "elder_druid", None, Some(&w), Some(&prem), true, 1)
                 .expect("missing profile")
                 .is_none()
         );
         assert!(
-            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), None, 1)
+            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), None, true, 1)
                 .expect("missing Premium")
                 .is_none()
         );
         assert!(
-            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), 100)
-                .expect("expired")
-                .is_none()
+            project_current_wheel_flat(
+                &b,
+                "elder_druid",
+                Some(&p),
+                Some(&w),
+                Some(&prem),
+                true,
+                100
+            )
+            .expect("expired")
+            .is_none()
         );
         prem.value = false;
         assert!(
-            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), 1)
+            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), true, 1)
                 .expect("negative Premium")
                 .is_none()
         );
         prem.value = true;
         assert!(
-            project_current_wheel_flat(&b, "druid", Some(&p), Some(&w), Some(&prem), 1)
+            project_current_wheel_flat(&b, "druid", Some(&p), Some(&w), Some(&prem), false, 1)
                 .expect("unpromoted")
                 .is_none()
         );
@@ -366,24 +403,24 @@ mod wheel_magnitude_tests {
         let key = w.value.keys().next().expect("real source key").clone();
         w.value.remove(&key);
         assert!(
-            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), 1)
+            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), true, 1)
                 .is_err()
         );
         w = wheel(&b, [4, 0, 0, 0]);
         assert!(
-            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), 1)
+            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), true, 1)
                 .is_err()
         );
         w = wheel(&b, [1; 4]);
         w.authority_revision += 1;
         assert!(
-            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), 1)
+            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), true, 1)
                 .is_err()
         );
         w = wheel(&b, [1; 4]);
         w.valid_until_micros += 1;
         assert!(
-            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), 1)
+            project_current_wheel_flat(&b, "elder_druid", Some(&p), Some(&w), Some(&prem), true, 1)
                 .is_err()
         );
         w = wheel(&b, [1; 4]);
@@ -394,13 +431,22 @@ mod wheel_magnitude_tests {
                 Some(&profile([8; 32])),
                 Some(&w),
                 Some(&prem),
+                true,
                 1
             )
             .is_err()
         );
         assert!(
-            project_current_wheel_flat(&b, "master_sorcerer", Some(&p), Some(&w), Some(&prem), 1)
-                .is_err()
+            project_current_wheel_flat(
+                &b,
+                "master_sorcerer",
+                Some(&p),
+                Some(&w),
+                Some(&prem),
+                true,
+                1
+            )
+            .is_err()
         );
     }
     #[test]
@@ -440,6 +486,7 @@ mod wheel_magnitude_tests {
                     Some(&p),
                     Some(&w),
                     Some(&prem),
+                    true,
                     1
                 )
                 .expect("stale withheld")
