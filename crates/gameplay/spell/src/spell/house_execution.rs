@@ -9,7 +9,8 @@ use crate::durability::spell_item_transaction::{
     SpellItemAuthority, SpellItemError, check_transaction,
 };
 use crate::foundation::{
-    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementFacing, MovementPositionSnapshot,
+    ChannelRuntimeV1, ExactActorRef, GameSessionId, MovementFacing, MovementLocalPosition,
+    MovementPositionSnapshot,
 };
 use sqlx::{Postgres, Transaction};
 #[derive(Debug)]
@@ -28,7 +29,7 @@ pub struct CurrentHousePresence<'owner> {
     house: &'owner QualifiedHousePlacement,
     runtime: &'owner ChannelRuntimeV1,
     session: GameSessionId,
-    current: MovementPositionSnapshot,
+    current: Option<MovementPositionSnapshot>,
 }
 impl CurrentHousePresence<'_> {
     pub fn world(&self) -> crate::foundation::WorldId {
@@ -49,7 +50,8 @@ impl CurrentHousePresence<'_> {
     pub fn has_door(&self, id: u32) -> bool {
         self.house.has_door(id)
     }
-    pub fn current_position(&self) -> MovementPositionSnapshot {
+    /// `None` for an actor held in House custody, which has no Channel position.
+    pub fn current_position(&self) -> Option<MovementPositionSnapshot> {
         self.current
     }
     pub fn entry(&self) -> LogicalCell {
@@ -88,14 +90,8 @@ pub fn current_house_presence<'owner>(
     actor: ExactActorRef,
     expected: MovementPositionSnapshot,
 ) -> Result<CurrentHousePresence<'owner>, Error> {
-    let pin = runtime.content_pin();
-    let cells = room.movement_cells();
-    if cells.scope().world_id != runtime.binding().world_id()
-        || room.compiled().server_digest() != pin.server_artifact_digest()
-        || cells.scope().generation_digest != pin.server_artifact_digest()
-        || room.frame_binding().digest() != pin.frame_binding_digest()
-        || room.map_revision_digest() != pin.map_revision_digest()
-        || expected.context() != runtime.pinned_movement_context()
+    check_room_pin(room, runtime)?;
+    if expected.context() != runtime.pinned_movement_context()
         || runtime
             .positioned_player_for_session(session)
             .map_err(|_| Error::Authority)?
@@ -104,16 +100,7 @@ pub fn current_house_presence<'owner>(
         return Err(Error::Authority);
     }
     let p = expected.position();
-    let cell = LogicalCell {
-        x: p.x,
-        y: p.y,
-        z: i32::from(p.floor),
-    };
-    let house = cells
-        .house_tiles()
-        .house_at(cells.scope(), cell)
-        .map_err(|_| Error::PlacementUnknown)?
-        .ok_or(Error::NotInHouse)?;
+    let house = house_at_position(room, p)?;
     // The qualified placement is part of the content-pinned physical runtime and the
     // actor/session lookup above proves current occupancy. House identity itself is
     // World-global (the placement contains no Channel component); durable writers still
@@ -122,8 +109,71 @@ pub fn current_house_presence<'owner>(
         house,
         runtime,
         session,
-        current: expected,
+        current: Some(expected),
     })
+}
+/// The presence of an actor held in House custody (its Channel slot position is cleared), read
+/// from the custody that owns it. Returns the presence with the actor's interior position.
+pub fn current_house_resident_presence<'owner>(
+    room: &'owner QualifiedNativeEntryRoom,
+    runtime: &'owner ChannelRuntimeV1,
+    session: GameSessionId,
+    actor: ExactActorRef,
+) -> Result<(CurrentHousePresence<'owner>, MovementLocalPosition), Error> {
+    check_room_pin(room, runtime)?;
+    let state = runtime
+        .house_actor_state(actor, session)
+        .map_err(|_| Error::Authority)?;
+    let p = MovementLocalPosition {
+        x: state.position.x,
+        y: state.position.y,
+        floor: state.position.floor,
+    };
+    let house = house_at_position(room, p)?;
+    if house.house().key != state.house {
+        return Err(Error::Authority);
+    }
+    Ok((
+        CurrentHousePresence {
+            house,
+            runtime,
+            session,
+            current: None,
+        },
+        p,
+    ))
+}
+fn check_room_pin(
+    room: &QualifiedNativeEntryRoom,
+    runtime: &ChannelRuntimeV1,
+) -> Result<(), Error> {
+    let pin = runtime.content_pin();
+    let cells = room.movement_cells();
+    if cells.scope().world_id != runtime.binding().world_id()
+        || room.compiled().server_digest() != pin.server_artifact_digest()
+        || cells.scope().generation_digest != pin.server_artifact_digest()
+        || room.frame_binding().digest() != pin.frame_binding_digest()
+        || room.map_revision_digest() != pin.map_revision_digest()
+    {
+        return Err(Error::Authority);
+    }
+    Ok(())
+}
+fn house_at_position(
+    room: &QualifiedNativeEntryRoom,
+    p: MovementLocalPosition,
+) -> Result<&QualifiedHousePlacement, Error> {
+    let cells = room.movement_cells();
+    let cell = LogicalCell {
+        x: p.x,
+        y: p.y,
+        z: i32::from(p.floor),
+    };
+    cells
+        .house_tiles()
+        .house_at(cells.scope(), cell)
+        .map_err(|_| Error::PlacementUnknown)?
+        .ok_or(Error::NotInHouse)
 }
 /// Native House editor view replaces the legacy numeric house/window id. The
 /// matching one-use editor token and current session are checked again on save.

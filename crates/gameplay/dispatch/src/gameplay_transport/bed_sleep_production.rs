@@ -78,17 +78,28 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return Ok(UseOutcome::rejected());
         };
         let runtime = self.runtime.lock().await;
-        let Ok(position) = runtime.read_actor_position(actor) else {
-            return Ok(UseOutcome::rejected());
-        };
-        let Ok(presence) = crate::spell::house_execution::current_house_presence(
-            room,
-            &runtime,
-            command.game_session_id,
-            actor,
-            position,
-        ) else {
-            return Ok(UseOutcome::rejected());
+        // A resident of the House is held in House custody and has no Channel position.
+        let (presence, actor_position) = if let Ok(position) = runtime.read_actor_position(actor) {
+            let Ok(presence) = crate::spell::house_execution::current_house_presence(
+                room,
+                &runtime,
+                command.game_session_id,
+                actor,
+                position,
+            ) else {
+                return Ok(UseOutcome::rejected());
+            };
+            (presence, position.position())
+        } else {
+            let Ok(resident) = crate::spell::house_execution::current_house_resident_presence(
+                room,
+                &runtime,
+                command.game_session_id,
+                actor,
+            ) else {
+                return Ok(UseOutcome::rejected());
+            };
+            resident
         };
         let Some((target_position, _)) = crate::map::view::placement_of(placement_key) else {
             return Ok(UseOutcome::rejected());
@@ -101,7 +112,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(head) = presence.bed_head_at(target_cell) else {
             return Ok(UseOutcome::rejected());
         };
-        let actor_position = position.position();
         if actor_position.floor != i16::from(target_position.floor)
             || actor_position.x.abs_diff(i32::from(target_position.x)) > 1
             || actor_position.y.abs_diff(i32::from(target_position.y)) > 1

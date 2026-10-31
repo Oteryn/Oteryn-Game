@@ -635,19 +635,40 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 Some(None) => None,
                 None => kept,
             };
+            // A House resident has no Channel position, so `get` cannot serve it; the House
+            // transfer reads the same live state directly under the same owner guards.
+            let resident_state = || {
+                runtime.house_actor_state(actor, session).ok()?;
+                states
+                    .actors
+                    .iter()
+                    .find(|(held, owner, _)| *held == actor && *owner == session)
+                    .map(|(_, _, state)| state)
+            };
             let rest = states
                 .get(&runtime, actor, session)
+                .or_else(resident_state)
                 .map(|state| state.bed_rest_snapshot(self.owner_now().get()))
                 .or_else(|| track.written.and_then(|saved| saved.rest));
             (vitals, rest)
         };
-        let Ok(snapshot) = runtime.read_actor_position(actor) else {
-            return Captured::Gone;
+        // An actor in House custody has no Channel position; its record is the Channel cell it
+        // entered from, the same cell the House transfer stored.
+        let position = match runtime.read_actor_position(actor) {
+            Ok(snapshot) if snapshot.context() == runtime.pinned_movement_context() => {
+                snapshot.position()
+            }
+            Ok(_) => return Captured::Gone,
+            Err(_) => match runtime.house_actor_state(actor, session) {
+                Ok(state) => MovementLocalPosition {
+                    x: state.origin_position.x,
+                    y: state.origin_position.y,
+                    floor: state.origin_position.floor,
+                },
+                Err(_) => return Captured::Gone,
+            },
         };
-        if snapshot.context() != runtime.pinned_movement_context() {
-            return Captured::Gone;
-        }
-        let mut placed = self.placed_record(&runtime, snapshot.position());
+        let mut placed = self.placed_record(&runtime, position);
         placed.record.vitals = vitals;
         placed.record.rest = rest;
         Captured::At(Capture {

@@ -75,6 +75,35 @@ impl QualifiedHouseTiles {
         self.houses.as_ref().is_some_and(Vec::is_empty)
     }
 
+    /// Test-support only: production bundle Worlds carry no authored House with beds yet, so a
+    /// test installs one qualified House with one door and a single bed pair under `scope`.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn single_bed_house_for_test(
+        scope: EngineeringStaticCellScope,
+        house_key: &str,
+        cells: impl IntoIterator<Item = LogicalCell>,
+        entry: LogicalCell,
+        door: LogicalCell,
+        head: LogicalCell,
+        partner: LogicalCell,
+    ) -> Self {
+        let house = QualifiedHousePlacement {
+            house: ProjectV2DefinitionRef {
+                family: ProjectV2Family::House,
+                key: house_key.to_owned(),
+                revision: "test-1".to_owned(),
+            },
+            cells: cells.into_iter().collect(),
+            entry,
+            doors: [(door, 1)].into_iter().collect(),
+            beds: [(head, head), (partner, head)].into_iter().collect(),
+        };
+        Self {
+            scope,
+            houses: Some(vec![house]),
+        }
+    }
+
     pub(super) fn from_source_world(
         world: &super::native_spell_world::QualifiedNativeSpellWorld,
     ) -> Self {

@@ -787,6 +787,13 @@ impl QualifiedNativeEntryRoom {
         &self.movement_cells
     }
 
+    /// Test-support only: the room with `house_tiles` as its House placement metadata.
+    #[cfg(any(test, feature = "test-support"))]
+    pub fn with_house_tiles_for_test(mut self, house_tiles: super::QualifiedHouseTiles) -> Self {
+        self.movement_cells.house_tiles = house_tiles;
+        self
+    }
+
     /// SHA-256 of the qualified map revision this room was compiled with.
     pub const fn map_revision_digest(&self) -> [u8; 32] {
         self.map_revision_digest
