@@ -94,6 +94,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                                     y: position.y,
                                     z: i32::from(position.floor),
                                 },
+                                oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_HORIZONTAL_RANGE,
                                 oteryn_gameplay_progression::wheel::TEMPLE_REMOVAL_RADIUS,
                             )
                         })
@@ -115,7 +116,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     occurrence,
                     expected_wheel_revision: request.expected_revision,
                     slots,
-                    vessels: None,
+                    vessels: request.vessels,
                 },
             );
             Some(
@@ -151,10 +152,35 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         if let Some(actor) = admitted.runtime_actor {
             self.refresh_wheel_vitals(actor, session).await;
         }
+        // Old allocation clients receive the exact original reply shape. A vessel-aware
+        // save returns the current projection reloaded by the same durable Wheel writer.
+        let vessels = if request.vessels.is_some() {
+            let Ok(sessions) = self.states.atelier_sessions.lock() else {
+                return WheelAllocationReply::Unavailable;
+            };
+            let mut vessels = [None; wire::WHEEL_VESSELS];
+            if let Some(Some(state)) = sessions.get(&session) {
+                for gem in state.gems.values().filter(|gem| gem.vessel) {
+                    let index = match gem.domain {
+                        oteryn_gameplay_progression::wheel::WheelDomain::Green => 0,
+                        oteryn_gameplay_progression::wheel::WheelDomain::Red => 1,
+                        oteryn_gameplay_progression::wheel::WheelDomain::Purple => 2,
+                        oteryn_gameplay_progression::wheel::WheelDomain::Blue => 3,
+                    };
+                    if vessels[index].replace(gem.id.to_be_bytes()).is_some() {
+                        return WheelAllocationReply::Unavailable;
+                    }
+                }
+            }
+            Some(vessels)
+        } else {
+            None
+        };
         wire::encode_wheel_reply(&wire::WheelAllocationReply {
             refused,
             revision: allocation.wheel_revision,
             points: *allocation.slots.points(),
+            vessels,
         })
         .map_or(
             WheelAllocationReply::Unavailable,

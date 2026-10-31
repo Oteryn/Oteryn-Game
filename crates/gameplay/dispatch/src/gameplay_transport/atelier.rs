@@ -4,8 +4,8 @@ pub use oteryn_gameplay_progression::atelier::{
     AtelierAction, AtelierCommit, AtelierRefusal, AtelierState,
 };
 
-/// In-memory action boundary. Production admission, fenced item/fee writes, durable receipts
-/// and wire routing must be composed before enabling Atelier commands for players.
+/// Pure state-transition boundary; the wire path below adds the admitted Character fence,
+/// ordinary item/fee custody and immutable durable receipts.
 pub fn dispatch_atelier(
     state: &mut AtelierState,
     expected_revision: u64,
@@ -55,59 +55,182 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
         {
             return AtelierWireReply::Rejected;
         }
-        let mut refused = false;
-        if kind == wire::COMMAND_TYPE_ATELIER_QUERY {
-            if wire::decode_query(payload).is_err() {
-                return AtelierWireReply::Rejected;
+        let request = match kind {
+            wire::COMMAND_TYPE_ATELIER_QUERY => {
+                if wire::decode_query(payload).is_err() {
+                    return AtelierWireReply::Rejected;
+                }
+                None
             }
-        } else if kind == wire::COMMAND_TYPE_ATELIER_SET_LOCK {
-            let Ok(request) = wire::decode_set_lock(payload) else {
-                return AtelierWireReply::Rejected;
-            };
+            wire::COMMAND_TYPE_ATELIER_SET_LOCK => {
+                let Ok(request) = wire::decode_set_lock(payload) else {
+                    return AtelierWireReply::Rejected;
+                };
+                Some(crate::durability::character_atelier::AtelierRequest {
+                    occurrence: request.occurrence,
+                    expected_atelier_revision: request.expected_revision,
+                    mutation: crate::durability::character_atelier::AtelierMutation::SetLock {
+                        gem: request.gem,
+                        locked: request.locked,
+                    },
+                    resources: None,
+                })
+            }
+            wire::COMMAND_TYPE_ATELIER_MUTATE => {
+                let Ok(request) = wire::decode_mutate(payload) else {
+                    return AtelierWireReply::Rejected;
+                };
+                let Some(mutation) = paid_wire_mutation(request.mutation) else {
+                    return AtelierWireReply::Rejected;
+                };
+                Some(crate::durability::character_atelier::AtelierRequest {
+                    occurrence: request.occurrence,
+                    expected_atelier_revision: request.expected_revision,
+                    mutation,
+                    resources: None,
+                })
+            }
+            _ => return AtelierWireReply::Rejected,
+        };
+        let mut refused = false;
+        let mut recorded = None;
+        if let Some(mut request) = request {
             let Some(permit) = self.spell_lane_permit().await else {
                 return AtelierWireReply::Unavailable;
             };
+            {
+                let states = self.states.spell_states.lock().await;
+                if admitted.runtime_actor.is_none_or(|actor| {
+                    states.is_dead(actor)
+                        || states.has_pending_spell_commit(actor, admitted.game_session_id)
+                }) {
+                    return AtelierWireReply::Rejected;
+                }
+            }
+            let backpack = match self
+                .root
+                .read_character_backpack(self.character, expected.character_id)
+                .await
+            {
+                Ok(backpack) => backpack,
+                Err(_) => return AtelierWireReply::Unavailable,
+            };
+            let content = self
+                .active_generation
+                .and_then(crate::content::ActiveGeneration::native_gameplay)
+                .map(|native| {
+                    super::item_ref_admission::NativeItemWeights(native)
+                        .with_wheel(self.premium_coordinator)
+                });
+            {
+                let runtime = self.runtime.lock().await;
+                let binding = runtime.binding();
+                if admitted.world_id != binding.world_id()
+                    || admitted.channel_id != binding.channel_id()
+                    || expected.runtime_scope
+                        != crate::foundation::RuntimeScopeRefV1::channel(
+                            binding.world_id(),
+                            binding.channel_id(),
+                        )
+                    || expected.scope_ownership_generation != binding.scope_generation()
+                    || runtime.owner_fence().is_err()
+                    || !admitted.runtime_actor.is_some_and(|actor| {
+                        runtime
+                            .player_control_facts(actor, admitted.game_session_id)
+                            .is_ok_and(|facts| facts.control_loss.is_none())
+                            && runtime
+                                .bound_attacker_lease(actor, admitted.game_session_id)
+                                .is_ok_and(|lease| {
+                                    lease.character_id().as_bytes()
+                                        == expected.character_id.as_bytes()
+                                        && lease.generation() == expected.character_lease_generation
+                                })
+                            && runtime.assert_actor_spell_unreserved(actor).is_ok()
+                    })
+                {
+                    return AtelierWireReply::Rejected;
+                }
+                // Pinned native definitions and the ordinary backpack/coin owner supply all
+                // economic facts. Missing resources do not hide an already committed receipt.
+                if let Some(content) = &content {
+                    request.resources = atelier_wire_resources(
+                        self,
+                        &runtime,
+                        backpack.as_ref(),
+                        content,
+                        admitted.game_session_id,
+                        &request,
+                    );
+                }
+            }
             let result = self
                 .commit_wheel_client(
                     admitted.game_session_id,
-                    GemBuildCommand::Atelier(
-                        crate::durability::character_atelier::AtelierRequest {
-                            occurrence: request.occurrence,
-                            expected_atelier_revision: request.expected_revision,
-                            mutation:
-                                crate::durability::character_atelier::AtelierMutation::SetLock {
-                                    gem: request.gem,
-                                    locked: request.locked,
-                                },
-                            resources: None,
-                        },
-                    ),
+                    GemBuildCommand::Atelier(request),
                     false,
                     Some(expected),
                 )
                 .await;
             drop(permit);
-            refused = match result {
+            match result {
                 Ok(GemBuildOutcome::Atelier(
                     crate::durability::character_atelier::AtelierOutcome::Refused,
-                )) => true,
-                Ok(GemBuildOutcome::Atelier(_)) => false,
+                )) => refused = true,
+                Ok(GemBuildOutcome::Atelier(
+                    crate::durability::character_atelier::AtelierOutcome::Committed { state, .. }
+                    | crate::durability::character_atelier::AtelierOutcome::AlreadyCommitted { state, .. },
+                )) => recorded = Some(state),
                 Err(crate::durability::character_progression::CharacterProgressionError::InvalidInput
                     | crate::durability::character_progression::CharacterProgressionError::AuthorityRejected
                     | crate::durability::character_progression::CharacterProgressionError::ConflictingOccurrence) => return AtelierWireReply::Rejected,
                 _ => return AtelierWireReply::Unavailable,
-            };
-        } else {
-            return AtelierWireReply::Rejected;
+            }
+            if let Some(actor) = admitted.runtime_actor {
+                self.refresh_wheel_vitals(actor, admitted.game_session_id)
+                    .await;
+            }
         }
-        let state = self
-            .states
-            .atelier_sessions
-            .lock()
-            .ok()
-            .and_then(|states| states.get(&admitted.game_session_id).cloned().flatten());
-        let Some(state) = state else {
-            return AtelierWireReply::Unavailable;
+        let state = recorded.or_else(|| {
+            self.states
+                .atelier_sessions
+                .lock()
+                .ok()
+                .and_then(|states| states.get(&admitted.game_session_id).cloned().flatten())
+        });
+        let state = match state {
+            Some(state) => state,
+            None => match self
+                .root
+                .read_character_atelier(self.character, expected.character_id)
+                .await
+            {
+                Ok(Some(state)) => state,
+                // Admission intentionally creates no Atelier row below eligibility. A
+                // selected client may still query the panel; this is a rule refusal,
+                // not a failed storage read or an indeterminate committed mutation.
+                Ok(None) => {
+                    return wire::encode_reply(&wire::AtelierReply {
+                        refused: true,
+                        revision: 0,
+                        gems: Vec::new(),
+                        grades: Vec::new(),
+                        quality_quotes: Vec::new(),
+                        grade_quotes: Vec::new(),
+                    })
+                    .map_or(AtelierWireReply::Unavailable, AtelierWireReply::Payload);
+                }
+                Err(_) => return AtelierWireReply::Unavailable,
+            },
+        };
+        let (quality_quotes, grade_quotes) = if kind == wire::COMMAND_TYPE_ATELIER_QUERY {
+            let Some(quotes) = atelier_price_quotes() else {
+                return AtelierWireReply::Unavailable;
+            };
+            quotes
+        } else {
+            // Mutation replies are immutable receipt projections. Current prices and
+            // derived vessel flags come from a subsequent live query.
+            (Vec::new(), Vec::new())
         };
         let gems = state
             .gems
@@ -127,12 +250,27 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                 },
                 locked: gem.locked,
                 vessel: gem.vessel,
+                modifiers: gem.mods.clone(),
             })
             .collect();
         wire::encode_reply(&wire::AtelierReply {
             refused,
             revision: state.revision,
             gems,
+            grades: state
+                .grades
+                .iter()
+                .map(|(&(kind, mod_id), &grade)| wire::GradeView {
+                    kind: match kind {
+                        oteryn_gameplay_progression::atelier::FragmentKind::Basic => 0,
+                        oteryn_gameplay_progression::atelier::FragmentKind::Supreme => 1,
+                    },
+                    mod_id,
+                    grade,
+                })
+                .collect(),
+            quality_quotes,
+            grade_quotes,
         })
         .map_or(AtelierWireReply::Unavailable, AtelierWireReply::Payload)
     }
@@ -198,9 +336,23 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .lock()
             .map_err(|_| Error::InvalidInput)?
             .insert(session, None);
+        // The durable writer invokes this only after its locked receipt lookup.
+        // Keep the first decision across the Character sequencer's revision retry;
+        // the leaf gate lock is released before any database or owner await.
+        let admitted = std::sync::OnceLock::new();
+        let admit = || {
+            *admitted.get_or_init(|| {
+                self.states.world_gate.lock().is_ok_and(|mut gate| {
+                    gate.admit_wheel_mutation(
+                        session,
+                        std::time::Duration::from_micros(self.owner_now().get()),
+                    )
+                })
+            })
+        };
         let outcome = match command {
             GemBuildCommand::Atelier(request) => GemBuildOutcome::Atelier(
-                slot.atelier(
+                slot.atelier_with_admission(
                     self.root,
                     self.character,
                     self.holder,
@@ -208,11 +360,12 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     request,
                     std::sync::Arc::clone(ruleset),
                     gate,
+                    &admit,
                 )
                 .await?,
             ),
             GemBuildCommand::Wheel(request) => GemBuildOutcome::Wheel(Box::new(
-                slot.commit_wheel(
+                slot.commit_wheel_with_admission(
                     self.root,
                     self.character,
                     self.holder,
@@ -221,6 +374,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     std::sync::Arc::clone(ruleset),
                     crate::durability::character_wheel::WheelChangeFacts { at_temple },
                     gate,
+                    &admit,
                 )
                 .await?,
             )),
@@ -250,6 +404,157 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
             .insert(session, Some(allocation));
         Ok(outcome)
     }
+}
+
+fn atelier_price_quotes() -> Option<(
+    Vec<oteryn_protocol_oteryn::atelier::QualityQuote>,
+    Vec<oteryn_protocol_oteryn::atelier::GradeQuote>,
+)> {
+    use oteryn_gameplay_progression::{atelier::GemQuality, wheel_gem_data::WheelGemData};
+    use oteryn_protocol_oteryn::atelier::{GradeQuote, QualityQuote};
+    let data = WheelGemData::embedded().ok()?;
+    let catalogue = &data.gems()["catalogue"];
+    let atelier = &catalogue["atelier"];
+    let mut qualities = Vec::with_capacity(3);
+    for (quality, key, kind) in [
+        (0, "lesser", GemQuality::Lesser),
+        (1, "regular", GemQuality::Regular),
+        (2, "greater", GemQuality::Greater),
+    ] {
+        let (fragment_min, fragment_max) = kind.revealed_fragment_yield();
+        qualities.push(QualityQuote {
+            quality,
+            reveal_gold: atelier["fees"]["reveal"][key].as_u64()?,
+            switch_gold: atelier["fees"]["switch_domain"][key].as_u64()?,
+            fragment_kind: match atelier["fragment_yields"][key]["fragment"].as_str()? {
+                "basic" => 0,
+                "supreme" => 1,
+                _ => return None,
+            },
+            fragment_min,
+            fragment_max,
+        });
+    }
+    let mut grades = Vec::with_capacity(6);
+    for grade in 1..=3 {
+        for (kind, key) in [(0, "basic"), (1, "supreme")] {
+            let cost = &catalogue["grade_costs"][usize::from(grade - 1)][key];
+            grades.push(GradeQuote {
+                kind,
+                grade,
+                gold: cost["gold"].as_u64()?,
+                fragments: u32::try_from(cost["fragments"].as_u64()?).ok()?,
+            });
+        }
+    }
+    Some((qualities, grades))
+}
+
+fn paid_wire_mutation(
+    action: oteryn_protocol_oteryn::atelier::Mutation,
+) -> Option<crate::durability::character_atelier::AtelierMutation> {
+    use crate::durability::character_atelier::AtelierMutation;
+    use oteryn_gameplay_progression::atelier::{FragmentKind, GemQuality};
+    use oteryn_protocol_oteryn::atelier::Mutation;
+    Some(match action {
+        Mutation::Reveal { quality } => AtelierMutation::Reveal {
+            quality: match quality {
+                0 => GemQuality::Lesser,
+                1 => GemQuality::Regular,
+                2 => GemQuality::Greater,
+                _ => return None,
+            },
+        },
+        Mutation::Dismantle { gem } => AtelierMutation::Dismantle { gem },
+        Mutation::SwitchDomain { gem } => AtelierMutation::SwitchDomain { gem },
+        Mutation::GradeUp { kind, mod_id } => AtelierMutation::GradeUp {
+            kind: match kind {
+                0 => FragmentKind::Basic,
+                1 => FragmentKind::Supreme,
+                _ => return None,
+            },
+            mod_id,
+        },
+    })
+}
+
+fn atelier_change_id(
+    session: crate::foundation::GameSessionId,
+    occurrence: [u8; 16],
+    slot: u8,
+) -> [u8; 16] {
+    use sha2::{Digest, Sha256};
+    let mut hash = Sha256::new();
+    hash.update(b"oteryn:atelier:coin-change:v1");
+    // An occurrence is Character-local; coin ItemInstance identities are global.
+    hash.update(session.as_bytes());
+    hash.update(occurrence);
+    hash.update([slot]);
+    let digest = hash.finalize();
+    let mut id = occurrence;
+    id[6..].copy_from_slice(&digest[..10]);
+    id[6] = (id[6] & 15) | 0x70;
+    id[8] = (id[8] & 63) | 0x80;
+    id
+}
+
+fn atelier_wire_resources<'a>(
+    admission: &super::ComposedFreshAdmission<'_, '_, '_>,
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    backpack: Option<&crate::durability::item_transfer::CharacterBackpack>,
+    content: &'a dyn crate::durability::item_loop_move::ItemLoopContent,
+    session: crate::foundation::GameSessionId,
+    request: &crate::durability::character_atelier::AtelierRequest<'_>,
+) -> Option<Box<crate::durability::character_atelier::AtelierResources<'a>>> {
+    use crate::durability::character_atelier::{AtelierMutation, AtelierResources};
+    use oteryn_gameplay_progression::atelier::{FragmentKind, GemQuality};
+    if matches!(
+        request.mutation,
+        AtelierMutation::SetLock { .. } | AtelierMutation::Initialize
+    ) {
+        return None;
+    }
+    let supreme = match request.mutation {
+        AtelierMutation::GradeUp { kind, .. } => kind == FragmentKind::Supreme,
+        AtelierMutation::Dismantle { gem } => admission
+            .states
+            .atelier_sessions
+            .lock()
+            .ok()
+            .and_then(|sessions| {
+                sessions
+                    .get(&session)
+                    .and_then(Option::as_ref)
+                    .and_then(|state| state.gems.get(&u128::from_be_bytes(gem)))
+                    .map(|gem| gem.quality == GemQuality::Greater)
+            })
+            .unwrap_or(false),
+        _ => false,
+    };
+    let key = if supreme {
+        "oteryn:item.tibia.i46626"
+    } else {
+        "oteryn:item.tibia.i46625"
+    };
+    let index = super::item_ref_admission::pinned_index(runtime, admission.active_generation)?;
+    let coins = super::charm_progression::fee_change(
+        admission,
+        runtime,
+        backpack,
+        [
+            atelier_change_id(session, request.occurrence, 0),
+            atelier_change_id(session, request.occurrence, 1),
+        ],
+    )?;
+    Some(Box::new(AtelierResources {
+        content,
+        coins,
+        fragment: crate::durability::item_mint::TypedDefinitionRef {
+            family: "Item".into(),
+            production_key: key.into(),
+            revision_ref: index.revision(key)?.into(),
+        },
+    }))
 }
 
 macro_rules! authority_methods {
@@ -293,6 +598,63 @@ mod tests {
 
     fn apply(state: &mut AtelierState, action: AtelierAction) -> AtelierCommit {
         dispatch_atelier(state, state.revision, action).unwrap()
+    }
+
+    #[test]
+    fn atelier_change_identity_binds_the_server_session_and_output_slot() {
+        let mut session_id = [1; 16];
+        session_id[6] = 0x70;
+        session_id[8] = 0x80;
+        let session = crate::foundation::GameSessionId::decode(&session_id).unwrap();
+        session_id[15] = 2;
+        let other = crate::foundation::GameSessionId::decode(&session_id).unwrap();
+        let occurrence = [7; 16];
+        let first = atelier_change_id(session, occurrence, 0);
+        assert_eq!(first, atelier_change_id(session, occurrence, 0));
+        assert_ne!(first, atelier_change_id(session, occurrence, 1));
+        assert_ne!(first, atelier_change_id(other, occurrence, 0));
+        assert_eq!(first[6] >> 4, 7);
+        assert_eq!(first[8] >> 6, 2);
+    }
+
+    #[test]
+    fn atelier_quotes_use_the_writer_catalogue_and_crystal_fragment_bounds() {
+        let (qualities, grades) = atelier_price_quotes().unwrap();
+        assert_eq!(
+            qualities
+                .iter()
+                .map(|quote| quote.reveal_gold)
+                .collect::<Vec<_>>(),
+            vec![125_000, 1_000_000, 6_000_000]
+        );
+        assert_eq!(
+            qualities
+                .iter()
+                .map(|quote| quote.switch_gold)
+                .collect::<Vec<_>>(),
+            vec![125_000, 250_000, 500_000]
+        );
+        assert_eq!(
+            qualities
+                .iter()
+                .map(|quote| (quote.fragment_min, quote.fragment_max))
+                .collect::<Vec<_>>(),
+            vec![(1, 5), (2, 10), (1, 5)]
+        );
+        assert_eq!(
+            grades
+                .iter()
+                .map(|quote| (quote.kind, quote.grade, quote.gold, quote.fragments))
+                .collect::<Vec<_>>(),
+            vec![
+                (0, 1, 2_000_000, 5),
+                (1, 1, 5_000_000, 5),
+                (0, 2, 5_000_000, 15),
+                (1, 2, 12_000_000, 15),
+                (0, 3, 30_000_000, 30),
+                (1, 3, 75_000_000, 30)
+            ]
+        );
     }
 
     fn reveal(state: &mut AtelierState, id: u128, quality: GemQuality, mods: Vec<u16>) {
