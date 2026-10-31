@@ -282,6 +282,24 @@ python fandom_island_snapshot.py fetch && python convert_islands.py
 
 ## Base map (step 3)
 
+Quest-door startup bindings are restored by `quest_door_bindings.py` from the pinned
+Crystal 201189f and Canary 47dfd51f tables and storage definitions. The six accepted
+Kilmaresh decisions in `quest-authoring/conflict_decisions.json` select Global's
+per-mask gates. The capture records each value's file/line witness; numeric actions
+resolve to the same named tracks used by quest content. No id is invented for an
+unbound placement. `convert_world_base.py` applies this overlay in fresh builds.
+
+```sh
+python quest_door_bindings.py --crystal-root PATH --canary-root PATH
+python quest_door_bindings.py --apply --census
+python quest_door_bindings.py --apply --census --check
+```
+
+The generated `samples/quest-door-coverage.json` lists all placements without a
+storage action and their reasons. After applying, refresh the world bundle pins
+with the repository content tooling; `--apply` only updates regions and their index.
+
+
 `WorldPlacement.Base` holds every tile and item of `world.otbm` (19,325,129 tiles,
 24,925,845 items, floors 0-15) plus the fills from `maps.7z` and the Edron rework and the minimap draft below
 (19,351,010 tiles, 24,959,455 items in all) in `content/world/placements/`. JSON is not used: the same

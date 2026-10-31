@@ -19,17 +19,39 @@ use oteryn_gameplay_social_rules::egress::{self, LineClass};
 /// Translate a wire line into its pure drop class.
 fn drop_rank(line: &ChatLine) -> u8 {
     egress::drop_rank(match line {
-        ChatLine::Guild(_) | ChatLine::PrivateChannel(_) | ChatLine::Room { .. } => LineClass::Room,
+        ChatLine::Party { .. }
+        | ChatLine::Guild(_)
+        | ChatLine::PrivateChannel(_)
+        | ChatLine::Room { .. } => LineClass::Room,
         ChatLine::Local { .. } => LineClass::Local,
         ChatLine::Private { .. } => LineClass::Private,
         ChatLine::Dropped => LineClass::Dropped,
     })
 }
 
+/// Server-only routing evidence, retained with a queued Party line and never encoded.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct PartyChatDestination {
+    pub party_id: [u8; 16],
+    pub sent_at_micros: u64,
+}
+impl std::fmt::Debug for PartyChatDestination {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PartyChatDestination")
+            .finish_non_exhaustive()
+    }
+}
+
+#[derive(Debug)]
+struct QueuedLine {
+    line: ChatLine,
+    party: Option<PartyChatDestination>,
+}
+
 /// One session's undelivered chat lines.
 #[derive(Debug, Default)]
 pub struct ChatEgress {
-    lines: VecDeque<ChatLine>,
+    lines: VecDeque<QueuedLine>,
     marker_owed: bool,
     /// A marker was sent and no line has been delivered since: further overflow stays covered
     /// by it.
@@ -46,17 +68,45 @@ impl ChatEgress {
 
     /// Queues `line`; a [`ChatLine::Dropped`] argument only owes the marker.
     pub fn push(&mut self, line: ChatLine) {
-        if matches!(line, ChatLine::Dropped) {
+        self.push_queued(QueuedLine { line, party: None });
+    }
+
+    pub fn push_party(
+        &mut self,
+        speaker_name: String,
+        text: String,
+        destination: PartyChatDestination,
+    ) {
+        self.push_queued(QueuedLine {
+            line: ChatLine::Party { speaker_name, text },
+            party: Some(destination),
+        });
+    }
+
+    pub fn party_destination(&self) -> Option<PartyChatDestination> {
+        if self.marker_owed {
+            return None;
+        }
+        self.lines.front()?.party
+    }
+
+    fn push_queued(&mut self, line: QueuedLine) {
+        if matches!(line.line, ChatLine::Dropped) {
             self.marker_owed = true;
             return;
         }
         if self.lines.len() + usize::from(self.in_flight) >= EGRESS_MAX_LINES {
             self.marker_owed = !self.marker_sent;
-            let worst = self.lines.iter().map(drop_rank).max().unwrap_or(0);
-            if drop_rank(&line) > worst {
+            let worst = self
+                .lines
+                .iter()
+                .map(|queued| drop_rank(&queued.line))
+                .max()
+                .unwrap_or(0);
+            if drop_rank(&line.line) > worst {
                 return;
             }
-            if let Some(index) = self.lines.iter().position(|q| drop_rank(q) == worst) {
+            if let Some(index) = self.lines.iter().position(|q| drop_rank(&q.line) == worst) {
                 self.lines.remove(index);
             }
         }
@@ -76,7 +126,7 @@ impl ChatEgress {
         if self.marker_owed {
             Some(&ChatLine::Dropped)
         } else {
-            self.lines.front()
+            self.lines.front().map(|queued| &queued.line)
         }
     }
 
@@ -85,7 +135,7 @@ impl ChatEgress {
             self.marker_sent = true;
             return Some(ChatLine::Dropped);
         }
-        self.lines.pop_front()
+        self.lines.pop_front().map(|queued| queued.line)
     }
 
     /// Hands out the next line to write (the owed marker first). A real line counts against the

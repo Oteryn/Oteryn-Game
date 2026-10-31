@@ -75,6 +75,8 @@ pub enum ItemKey {
     },
     /// An overlay-added volatile item of the map view, by its overlay entry id.
     MapAdded(u64),
+    /// An ephemeral tile browse view. It never names a durable item instance.
+    BrowseField { x: i32, y: i32, floor: i16 },
 }
 
 /// One item of a view, with its server-internal key.
@@ -252,6 +254,8 @@ pub struct ItemHandleTable {
     views: [Vec<u32>; 5],
     /// Capability 14 is selected: the bound is `ITEMV0-RL-03-CONTAINER-TREE`.
     container_tree: bool,
+    /// Capability 230 extends only browse pages to 30 entries.
+    browse_field: bool,
     /// Capability 18 is selected: the bound adds `MAPW-RL-04`.
     map_view: bool,
     slots: Vec<Slot>,
@@ -281,9 +285,17 @@ impl ItemHandleTable {
         self
     }
 
+    pub const fn with_browse_field(mut self) -> Self {
+        self.container_tree = true;
+        self.browse_field = true;
+        self
+    }
+
     /// The bound of this session's live handles.
     pub const fn limit(&self) -> usize {
-        let base = if self.container_tree {
+        let base = if self.browse_field {
+            oteryn_protocol_oteryn::browse_field::MAX_LIVE_ITEM_HANDLES_BROWSE_FIELD
+        } else if self.container_tree {
             MAX_LIVE_ITEM_HANDLES_CONTAINER_TREE
         } else {
             MAX_LIVE_ITEM_HANDLES
@@ -569,6 +581,11 @@ impl SessionItemView {
         self
     }
 
+    pub fn with_browse_field(mut self) -> Self {
+        self.table = self.table.with_browse_field();
+        self
+    }
+
     /// Capability 12 is selected: domain 9 shows the occupied equipment slots.
     pub const fn with_equip_drop(mut self) -> Self {
         self.equip_drop = true;
@@ -647,17 +664,22 @@ impl SessionItemView {
         keys: &[ItemKey],
         encode: impl FnOnce(&ItemHandleTable) -> Result<Vec<u8>, ItemViewError>,
     ) -> Result<ItemViewDelta, ItemViewError> {
-        let previous = self.table.keys_of(View::Tree);
-        self.table.replace(View::Tree, keys)?;
+        let undo = self.table.replace_undoable(View::Tree, keys)?;
         let payload = match encode(&self.table) {
             Ok(payload) => payload,
             Err(error) => {
-                let _ = self.table.replace(View::Tree, &previous);
+                self.table.rollback(undo);
                 return Err(error);
             }
         };
         let from = self.views_revision;
-        let to = advance(&mut self.views_revision)?;
+        let to = match advance(&mut self.views_revision) {
+            Ok(to) => to,
+            Err(error) => {
+                self.table.rollback(undo);
+                return Err(error);
+            }
+        };
         Ok(ItemViewDelta {
             domain_id: STATE_DOMAIN_CONTAINER_VIEWS,
             from,

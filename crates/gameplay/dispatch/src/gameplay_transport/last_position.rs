@@ -645,6 +645,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         let (vitals, rest) = {
             let states = self.states.spell_states.lock().await;
+            if states.enchanting_pending.contains(&(actor, session)) {
+                return Captured::Held;
+            }
             if states.is_dead(actor) {
                 return Captured::Dead;
             }

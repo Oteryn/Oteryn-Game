@@ -98,9 +98,22 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M08B: the pick and its stone, loose stone and loose ice piles 593/594, 606/615 and
     // 608/609 in tool-item-profiles.json (Canary 99902524). None of them is equipment.
     ("TOOLS-M08B", 6),
+    // W19F: the 24 rust-removal and lottery-ticket profiles 3357..=3360, 3362, 3364,
+    // 3370..=3372, 3377, 3381, 3382, 3557, 3558, 5957, 5958, 8063, 8894..=8899 and 9016
+    // (tools/content-migration/rust_lottery_profiles.py). All have speed_bonus=0.
+    ("W19F-RUST-LOTTERY", 24),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),
+    // PKG1 Amber: the amber kusarigama 50239 (tools/content-migration/monk_reward_profiles.py,
+    // Crystal ff7ede59 items.xml), a monk weapon with speed_bonus=0.
+    ("PKG1-AMBER", 1),
+    // GEMX I19 enchanting (tools/content-migration/enchanting_item_profiles.py): 108 shrine,
+    // gem and enchantable/enchanted item profiles 146..=161, 660..=693, 761..=763, 774,
+    // 779..=798, 801..=810, 3029, 3030, 3032, 3033, 3271, 3279, 3311, 3317, 3318, 3333,
+    // 3342, 7380, 7383, 7384, 7389, 7392, 7402, 7406, 7415 and 8077..=8081.
+    // 8080 (sparking rainbow shield) has speed_bonus=10; the other 107 have speed_bonus=0.
+    ("GEMX-I19", 108),
 ];
 
 #[test]

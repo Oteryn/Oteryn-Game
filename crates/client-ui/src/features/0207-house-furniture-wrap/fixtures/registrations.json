@@ -1,0 +1,19 @@
+[
+  {
+    "mechanic": "0207-house-furniture-wrap",
+    "kind": "handlers",
+    "id": "0207-house-furniture-wrap-unsupported",
+    "status": "unsupported",
+    "reason": "Native furniture wrap input is not yet migrated.",
+    "commands": [
+      402
+    ],
+    "not_applicable": {
+      "state": "Server authoritative.",
+      "protocol": "Codec is owned by protocol-oteryn.",
+      "view": "Uses existing world and inventory views.",
+      "input": "Pending native wrap action.",
+      "settings": "No client setting."
+    }
+  }
+]

@@ -59,6 +59,16 @@ where
         }
         Next::Visibility => {
             refresh::visibility(stream, authority, session).await?;
+            // Browse observations can outlast the visibility interval. Start the next
+            // existing interval after completion so another ready refresh cannot keep
+            // winning over buffered steps and client frames in the priority poll.
+            if session
+                .selected_capabilities
+                .contains(oteryn_protocol_oteryn::browse_field::CAPABILITY_BROWSE_FIELD_V1)
+                && let Some(refresh) = session.visibility_refresh.as_mut()
+            {
+                refresh.reset();
+            }
             return Ok(None);
         }
         Next::Frame(Ok(frame)) if session.buffered.is_some() => {
@@ -141,3 +151,7 @@ where
         buffered_original,
     }))
 }
+
+#[cfg(test)]
+#[path = "inbound_tests.rs"]
+mod tests;

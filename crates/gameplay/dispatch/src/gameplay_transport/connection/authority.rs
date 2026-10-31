@@ -396,6 +396,17 @@ pub trait FreshAdmissionAuthority {
         async move { Some(self.use_item(actor, command, item).await) }
     }
 
+    fn use_consume_transform(
+        &self,
+        _actor: ExactActorRef,
+        _command: UseCommand,
+        _intent: UseIntent,
+        _source: Option<ItemKey>,
+        _target: Option<ItemKey>,
+    ) -> impl Future<Output = Option<UseOutcome>> {
+        async { None }
+    }
+
     fn use_coin_converter(
         &self,
         _actor: ExactActorRef,
@@ -834,6 +845,21 @@ pub trait FreshAdmissionAuthority {
         _admitted: AdmittedSession,
     ) -> impl Future<Output = oteryn_protocol_oteryn::chat::guild_room::GuildRoomState> {
         std::future::ready(oteryn_protocol_oteryn::chat::guild_room::GuildRoomState::Unavailable)
+    }
+
+    fn chat_party_admit(&self, _admitted: AdmittedSession) -> impl Future<Output = ()> {
+        std::future::ready(())
+    }
+
+    fn chat_party_intent(
+        &self,
+        _admitted: AdmittedSession,
+        _text: String,
+    ) -> impl Future<Output = ChatIntentResult> {
+        std::future::ready(ChatIntentResult {
+            disposition: oteryn_protocol_oteryn::chat::ChatDisposition::Rejected,
+            wait_seconds: 0,
+        })
     }
 
     fn chat_guild_intent(

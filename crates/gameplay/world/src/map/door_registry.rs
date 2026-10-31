@@ -353,6 +353,8 @@ pub(super) fn quest_door_of(appearance: u32) -> Option<u32> {
         (5131, 5132),
         (5287, 5288),
         (5289, 5290),
+        // Crystal 201189f data/libs/tables/doors.lua:208.
+        (5745, 5746),
         (5749, 5748),
         (6201, 6202),
         (6203, 6204),
@@ -399,6 +401,9 @@ pub(super) fn quest_door_of(appearance: u32) -> Option<u32> {
         (39351, 39353),
         (39352, 39354),
         (42744, 42745),
+        // Crystal 201189f data/libs/tables/doors.lua:255-256.
+        (51285, 51286),
+        (51287, 51288),
     ];
     QUEST_DOORS
         .iter()
@@ -416,6 +421,13 @@ pub fn open_of(closed: u32) -> Option<u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn m06q_quest_families_include_the_remaining_donor_doors() {
+        for (closed, open) in [(5745, 5746), (51285, 51286), (51287, 51288)] {
+            assert_eq!(quest_door_of(closed), Some(open));
+        }
+    }
 
     #[test]
     fn key_door_predicates_cover_every_source_triple() {

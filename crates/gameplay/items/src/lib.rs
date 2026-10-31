@@ -18,6 +18,7 @@ pub mod mining;
 pub mod pickup;
 pub mod quick_loot;
 pub mod reward_bag;
+pub mod rust_lottery;
 pub mod stacking;
 pub mod starter_grant;
 

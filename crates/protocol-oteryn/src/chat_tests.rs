@@ -433,6 +433,13 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 schema("ChatChannelListV1"),
                 private_channel::MAX_CHAT_CHANNEL_LIST_BYTES as u64
             ),
+            // S19 adds negotiated typing updates to the existing CHAT revision stream.
+            (
+                u64::from(crate::player_typing::DELTA_TYPE_PLAYER_TYPING_V1),
+                "PLAYER_TYPING_DELTA_V1".to_owned(),
+                "docs/contracts/protocol-oteryn/v1/player-typing-v1.md#update".to_owned(),
+                crate::player_typing::MAX_UPDATE_BYTES as u64
+            ),
         ]
     );
     assert_eq!(
@@ -588,5 +595,61 @@ fn fuzz_decode_chat_line() {
         },
         decode_chat_line,
         |v| encode_chat_line(v).expect("line"),
+    );
+}
+
+#[test]
+fn party_chat_roundtrips_and_refuses_empty_or_duplicate_text() {
+    let intent = ChatIntent::Party {
+        text: "party only".into(),
+    };
+    assert_eq!(
+        decode_chat_intent(&encode_chat_intent(&intent).expect("encode")).expect("decode"),
+        intent
+    );
+    assert!(
+        encode_chat_intent(&ChatIntent::Party {
+            text: String::new()
+        })
+        .is_err()
+    );
+    assert!(decode_chat_intent(&[114, 6, 10, 1, b'a', 10, 1, b'b']).is_err());
+    let line = ChatLine::Party {
+        speaker_name: "Leader".into(),
+        text: "hello".into(),
+    };
+    assert_eq!(
+        decode_chat_line(&encode_chat_line(&line).expect("encode")).expect("decode"),
+        line
+    );
+}
+
+#[test]
+fn party_chat_line_bounds_and_alien_fields_fail_closed() {
+    let line = ChatLine::Party {
+        speaker_name: text(MAX_CHAT_NAME_BYTES),
+        text: text(MAX_CHAT_TEXT_BYTES),
+    };
+    let encoded = encode_chat_line(&line).expect("bounded");
+    assert!(encoded.len() <= MAX_CHAT_LINE_BYTES);
+    assert_eq!(decode_chat_line(&encoded).expect("bounded"), line);
+    for suffix in [&[104, 1][..], &[48, 1][..], &[98, 0][..]] {
+        let mut alien = encoded.clone();
+        alien.extend_from_slice(suffix);
+        assert!(decode_chat_line(&alien).is_err());
+    }
+    assert!(
+        encode_chat_line(&ChatLine::Party {
+            speaker_name: String::new(),
+            text: "hi".into()
+        })
+        .is_err()
+    );
+    assert!(
+        encode_chat_line(&ChatLine::Party {
+            speaker_name: "Leader".into(),
+            text: String::new()
+        })
+        .is_err()
     );
 }

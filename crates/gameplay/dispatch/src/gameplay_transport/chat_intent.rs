@@ -77,6 +77,8 @@ struct ChatSession {
 pub struct ChatRuntime {
     sessions: Mutex<HashMap<GameSessionId, ChatSession>>,
     pub(super) guild: super::guild_chat::GuildChatRuntime,
+    pub(super) party: super::guild_chat::GuildChatRuntime,
+    pub(super) typing: super::player_typing::TypingRuntime,
     /// What the NPCs of the Channel say; unset until the boot wiring installs it.
     npc_talk: OnceLock<Arc<NpcTalkBook>>,
     /// The World relay; unset on a node without one, which refuses room and private lines.
@@ -103,6 +105,8 @@ impl ChatRuntime {
         now: SemanticTimeMicros,
     ) {
         self.guild.forget(session);
+        self.party.forget(session);
+        // Typing admission owns its generation-aware reset after this generic chat snapshot.
         if let Ok(mut sessions) = self.sessions.lock() {
             let entry = sessions.entry(session).or_insert_with(|| ChatSession {
                 name: name.to_owned(),
@@ -244,6 +248,7 @@ impl ChatRuntime {
     /// A reconnect of a known session: drops undelivered lines, keeps the name and limiter.
     pub fn refresh(&self, session: GameSessionId) {
         self.guild.forget(session);
+        self.party.forget(session);
         if let Ok(mut sessions) = self.sessions.lock()
             && let Some(entry) = sessions.get_mut(&session)
         {
@@ -418,6 +423,8 @@ impl ChatRuntime {
 
     pub fn forget(&self, session: GameSessionId) {
         self.guild.forget(session);
+        self.party.forget(session);
+        self.typing.forget(session);
         self.forget_private_channels(session);
         if let Ok(mut sessions) = self.sessions.lock() {
             sessions.remove(&session);

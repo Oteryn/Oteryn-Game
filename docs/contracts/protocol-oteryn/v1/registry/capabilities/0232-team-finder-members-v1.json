@@ -1,0 +1,19 @@
+{
+  "id": 232,
+  "name": "TEAM_FINDER_MEMBERS_V1",
+  "owner_decision": "S14b+S14c",
+  "owner": "Game Team Finder owner",
+  "requires": [
+    7,
+    42,
+    200
+  ],
+  "command_types": [
+    444,
+    445,
+    446
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "S14b/S14c: bundle-world nodes offer through BUNDLE_WORLD_OFFERED_CAPABILITIES; leader listing, ordinary Party and private status feedback are prerequisites."
+}

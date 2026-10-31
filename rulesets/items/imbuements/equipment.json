@@ -63999,7 +63999,7 @@
       },
       "evidence_status": "COMMUNITY_CORROBORATED",
       "identity_evidence": {
-        "canonical_definition_sha256": "d3cc487c1b79e2cc592822a912e6bac934d476f086f08fa6913ba9ee35474cfd",
+        "canonical_definition_sha256": "5c1eafe2ae20aae39e727783210be69a4558f381be5887a08785dc3c09a1e931",
         "canonical_name": "amber kusarigama",
         "canonical_path": "content/items/definitions/items-27500-27999.json",
         "wiki_observations": [

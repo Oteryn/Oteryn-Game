@@ -15,6 +15,7 @@ use oteryn_simulation_determinism::{
 };
 use sha2::{Digest, Sha256};
 
+pub(super) mod enchanting;
 mod rope;
 mod terrain;
 
@@ -47,6 +48,12 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         source: Option<ItemKey>,
         target: Option<ItemKey>,
     ) -> Option<UseOutcome> {
+        if let Some(result) = self
+            .use_enchanting(actor, command, &intent, source, target)
+            .await
+        {
+            return result;
+        }
         match self
             .use_terrain_tool(actor, command, &intent, source, target)
             .await
@@ -78,6 +85,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             source: [0; 16],
             tool: None,
             gathering: None,
+            enchanting: None,
             station: None,
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).ok()?,
         };
@@ -185,12 +193,15 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .iter()
                 .flat_map(|b| &b.entries)
                 .chain(inventory.nested.iter().map(|(_, entry)| entry));
+            let water_key = &request.station.as_ref()?.production_key;
             let rod = entries
                 .clone()
                 .find(|entry| {
                     entry.item.item_instance_id == source
-                        && entry.item.definition.production_key
-                            == oteryn_gameplay_items::fishing::FISHING_ROD
+                        && oteryn_gameplay_items::fishing::accepts_fishing_rod(
+                            &entry.item.definition.production_key,
+                            water_key,
+                        )
                 })?
                 .item
                 .item_instance_id;
@@ -309,7 +320,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     expected_revision: i64::try_from(revision).ok()?,
                     before: u32::from(target_id),
                     after: attempt.after.map_or(0, u32::from),
-                    decay: if target_id == 7236 {
+                    // Crystal items.xml:18875-18881: only spent hole 7237 decays;
+                    // the open 7236 made by a pick has no duration/decayTo.
+                    decay: if attempt.after == Some(7237) {
                         vec![(7200, 900_000)]
                     } else {
                         Vec::new()
