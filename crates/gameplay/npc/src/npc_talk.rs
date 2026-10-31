@@ -122,84 +122,98 @@ impl NpcTalkBook {
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
                 .any(|service| service.bank);
-            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) =
-                if let Some(replies) = &npc.generated_replies {
-                    let mut lines: Vec<&str> = Vec::new();
-                    for (_, line) in &replies.services {
-                        if !lines.contains(&line.text.as_str()) {
-                            lines.push(&line.text);
-                        }
+            let (greeting_reply, farewell_reply, topic_reply, dialogue_keywords) = if matches!(
+                reference.key.as_str(),
+                "oteryn:npc.ambassador_manop" | "oteryn:npc.enpa_deia_pema"
+            ) {
+                // MONKQUEST3: greeting belongs to the NPC owner; stateful pilgrimage
+                // replies and all writes belong to the native quest caller in dispatch.
+                (
+                    format!(
+                        "Harmony, friend. I am {}. Ask me about the pilgrimage.",
+                        npc.name
+                    ),
+                    "May your path lead to enlightenment.".into(),
+                    Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
+                    Vec::new(),
+                )
+            } else if let Some(replies) = &npc.generated_replies {
+                let mut lines: Vec<&str> = Vec::new();
+                for (_, line) in &replies.services {
+                    if !lines.contains(&line.text.as_str()) {
+                        lines.push(&line.text);
                     }
-                    (
-                        replies.greeting.text.clone(),
-                        replies.farewell.text.clone(),
-                        (!lines.is_empty()).then(|| lines.join(" ")),
-                        Vec::new(),
-                    )
-                } else if !travel_routes.is_empty() {
-                    (
-                        format!("Greetings, I am {}.", npc.name),
-                        "Farewell.".into(),
-                        Some("Ask me for a passage to your destination.".into()),
-                        Vec::new(),
-                    )
-                } else if !premium_services.is_empty() {
-                    (
-                        format!("Greetings, I am {}.", npc.name),
-                        "Farewell.".into(),
-                        Some("Ask me about promotion or a blessing.".into()),
-                        Vec::new(),
-                    )
-                } else if bank {
-                    // Only the Bank Dialogue's explicitly supported, authored message shape is
-                    // consumed. Missing/multipart/stateful dialogue stays held, never generated.
-                    let Some(dialogue) = &npc.bank_dialogue else {
-                        continue;
-                    };
-                    if dialogue.greet.len() != 1
-                        || dialogue.farewell.len() != 1
-                        || dialogue
-                            .keywords
-                            .iter()
-                            .any(|keyword| !literal_keyword(keyword))
-                    {
-                        continue;
-                    }
-                    (
-                        dialogue.greet[0].clone(),
-                        dialogue.farewell[0].clone(),
-                        None,
-                        dialogue.keywords.clone(),
-                    )
-                } else if matches!(
-                    reference.key.as_str(),
-                    "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
-                ) && npc.services.is_empty()
-                {
-                    // SUMMER: the model's historical `bank_dialogue` carrier holds the
-                    // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
-                    // literal, single-line lore is qualified here. Quest callbacks and
-                    // multipart/stateful branches remain outside the talk consumer.
-                    let Some(dialogue) = &npc.bank_dialogue else {
-                        continue;
-                    };
-                    if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
-                        continue;
-                    }
-                    (
-                        dialogue.greet[0].clone(),
-                        dialogue.farewell[0].clone(),
-                        None,
-                        dialogue
-                            .keywords
-                            .iter()
-                            .filter(|keyword| literal_keyword(keyword))
-                            .cloned()
-                            .collect(),
-                    )
-                } else {
+                }
+                (
+                    replies.greeting.text.clone(),
+                    replies.farewell.text.clone(),
+                    (!lines.is_empty()).then(|| lines.join(" ")),
+                    Vec::new(),
+                )
+            } else if !travel_routes.is_empty() {
+                (
+                    format!("Greetings, I am {}.", npc.name),
+                    "Farewell.".into(),
+                    Some("Ask me for a passage to your destination.".into()),
+                    Vec::new(),
+                )
+            } else if !premium_services.is_empty() {
+                (
+                    format!("Greetings, I am {}.", npc.name),
+                    "Farewell.".into(),
+                    Some("Ask me about promotion or a blessing.".into()),
+                    Vec::new(),
+                )
+            } else if bank {
+                // Only the Bank Dialogue's explicitly supported, authored message shape is
+                // consumed. Missing/multipart/stateful dialogue stays held, never generated.
+                let Some(dialogue) = &npc.bank_dialogue else {
                     continue;
                 };
+                if dialogue.greet.len() != 1
+                    || dialogue.farewell.len() != 1
+                    || dialogue
+                        .keywords
+                        .iter()
+                        .any(|keyword| !literal_keyword(keyword))
+                {
+                    continue;
+                }
+                (
+                    dialogue.greet[0].clone(),
+                    dialogue.farewell[0].clone(),
+                    None,
+                    dialogue.keywords.clone(),
+                )
+            } else if matches!(
+                reference.key.as_str(),
+                "oteryn:npc.mayor_pocaro" | "oteryn:npc.wayland_smythers"
+            ) && npc.services.is_empty()
+            {
+                // SUMMER: the model's historical `bank_dialogue` carrier holds the
+                // admitted messages for every Dialogue-backed NPC. Only these Summer NPCs'
+                // literal, single-line lore is qualified here. Quest callbacks and
+                // multipart/stateful branches remain outside the talk consumer.
+                let Some(dialogue) = &npc.bank_dialogue else {
+                    continue;
+                };
+                if dialogue.greet.len() != 1 || dialogue.farewell.len() != 1 {
+                    continue;
+                }
+                (
+                    dialogue.greet[0].clone(),
+                    dialogue.farewell[0].clone(),
+                    None,
+                    dialogue
+                        .keywords
+                        .iter()
+                        .filter(|keyword| literal_keyword(keyword))
+                        .cloned()
+                        .collect(),
+                )
+            } else {
+                continue;
+            };
             book.npcs.insert(
                 reference.key.clone(),
                 NpcTalkEntry {
@@ -369,6 +383,26 @@ fn start<K: Copy + PartialEq>(
 #[allow(clippy::expect_used, reason = "test fixtures")]
 mod tests {
     use super::*;
+
+    #[test]
+    fn monk_pilgrimage_npcs_have_native_conversation_entries() -> Result<(), String> {
+        let catalogue = crate::content::NpcDataCatalogue::load(
+            std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../content")),
+            std::ffi::OsStr::new("world"),
+            crate::content::npc_catalogue_preproduction_limits(),
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let model = catalogue
+            .service_model_for_project()
+            .map_err(|e| format!("{e:?}"))?;
+        let book = NpcTalkBook::from_model(&model);
+        for key in ["oteryn:npc.ambassador_manop", "oteryn:npc.enpa_deia_pema"] {
+            let entry = book.get(key).ok_or(key)?;
+            assert!(entry.greeting_reply.contains("pilgrimage"));
+            assert!(!entry.admitted_dialogue);
+        }
+        Ok(())
+    }
 
     fn entry(name: &str, topic: Option<&str>) -> NpcTalkEntry {
         NpcTalkEntry::new(name, topic)

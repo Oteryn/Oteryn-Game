@@ -60,6 +60,10 @@ const KIND_NESTED: i16 = 2;
 const KIND_GROUND: i16 = 3;
 const KIND_DEPOT: i16 = 4;
 const KIND_CORPSE: i16 = 5;
+/// A depot-search retrieval from the Character's Inbox root.
+const KIND_INBOX: i16 = 6;
+/// A depot-search retrieval of an entry nested under a depot or Inbox root.
+const KIND_CUSTODY_NESTED: i16 = 7;
 #[path = "item_quick_loot.rs"]
 mod quick_loot;
 pub use quick_loot::is_loot_coin;
@@ -67,6 +71,9 @@ pub(super) use quick_loot::pouch_weight;
 #[path = "depot_move.rs"]
 mod depot_move;
 pub use depot_move::DepotMove;
+#[path = "depot_search_retrieve.rs"]
+mod depot_search_retrieve;
+pub use depot_search_retrieve::DepotSearchRetrieval;
 const KIND_UNCHANGED: i16 = 9;
 
 const OPERATION_MOVE: i16 = 1;
@@ -480,6 +487,8 @@ enum SourceKind {
     Ground,
     Depot,
     Corpse,
+    Inbox,
+    CustodyNested { parent: [u8; 16] },
 }
 
 impl SourceKind {
@@ -490,6 +499,8 @@ impl SourceKind {
             Self::Ground => KIND_GROUND,
             Self::Depot => KIND_DEPOT,
             Self::Corpse => KIND_CORPSE,
+            Self::Inbox => KIND_INBOX,
+            Self::CustodyNested { .. } => KIND_CUSTODY_NESTED,
         }
     }
 }
@@ -743,7 +754,11 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             Target::Container { parent, .. } => match source {
                 SourceKind::Main => *parent == slot.item_instance_id,
                 SourceKind::Nested { parent: from } => from == *parent,
-                SourceKind::Ground | SourceKind::Depot | SourceKind::Corpse => false,
+                SourceKind::Ground
+                | SourceKind::Depot
+                | SourceKind::Corpse
+                | SourceKind::Inbox
+                | SourceKind::CustodyNested { .. } => false,
             },
             Target::Ground(_) | Target::Depot { .. } => false,
         };
@@ -785,7 +800,11 @@ async fn plan_loop_destination<C: ItemLoopContent>(
             && match source {
                 SourceKind::Main => *parent == slot.item_instance_id,
                 SourceKind::Nested { parent: from } => from == *parent,
-                SourceKind::Ground | SourceKind::Depot | SourceKind::Corpse => false,
+                SourceKind::Ground
+                | SourceKind::Depot
+                | SourceKind::Corpse
+                | SourceKind::Inbox
+                | SourceKind::CustodyNested { .. } => false,
             };
         let occupied = entries.len() - usize::from(already_here);
         if placed && *capacity != 0 && occupied + 1 > *capacity as usize {
@@ -796,7 +815,11 @@ async fn plan_loop_destination<C: ItemLoopContent>(
         let added = if placed {
             (if matches!(
                 source,
-                SourceKind::Ground | SourceKind::Depot | SourceKind::Corpse
+                SourceKind::Ground
+                | SourceKind::Depot
+                | SourceKind::Corpse
+                | SourceKind::Inbox
+                | SourceKind::CustodyNested { .. }
             ) {
                 size
             } else {
@@ -820,7 +843,11 @@ async fn plan_loop_destination<C: ItemLoopContent>(
     // B3-3: a pickup brings the whole stack into the Character.
     if matches!(
         source,
-        SourceKind::Ground | SourceKind::Depot | SourceKind::Corpse
+        SourceKind::Ground
+                | SourceKind::Depot
+                | SourceKind::Corpse
+                | SourceKind::Inbox
+                | SourceKind::CustodyNested { .. }
     ) {
         let unit = match content.weight_of(definition) {
             Ok(unit) => unit,
@@ -872,6 +899,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     intent: &[u8],
     depot: Option<DepotMove>,
     quick: Option<quick_loot::MoveContext>,
+    search: Option<i16>,
 ) -> LoopResult<LoopMoveReceipt> {
     let character = fence.character_id;
     let (world_id, channel_id) =
@@ -889,6 +917,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     let row = sqlx::query(
         "SELECT e.character_id::text AS entry_character, \
                 d.character_id::text AS depot_character, d.town_id, d.box_number, \
+                x.character_id::text AS inbox_character, \
                 n.parent_item_instance_id::text AS nested_parent, \
                 g.channel_id::text AS ground_channel, g.spatial_position AS ground_cell, \
                 COALESCE(game_item_loop_drop_ref(g.corpse_ref), false) \
@@ -896,6 +925,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
            FROM game_item_instances i \
            LEFT JOIN game_item_container_entries e ON e.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_character_depot_locations d ON d.item_instance_id = i.item_instance_id \
+           LEFT JOIN game_item_character_inbox_locations x ON x.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_nested_entries n ON n.item_instance_id = i.item_instance_id \
            LEFT JOIN game_item_ground_locations g ON g.item_instance_id = i.item_instance_id \
           WHERE i.item_instance_id = encode($1,'hex')::uuid",
@@ -913,9 +943,22 @@ async fn apply_loop_move<C: ItemLoopContent>(
         return refuse(LoopMoveRefusal::Stale);
     }
     let depot_character = optional_uuid(row.try_get("depot_character")?)?;
+    let inbox_character = optional_uuid(row.try_get("inbox_character")?)?;
     let source = if let Some(context) = quick {
         quick_loot::assert_corpse_source(tx, fence, request.item, context).await?;
         SourceKind::Corpse
+    } else if search.is_some() && depot_character.is_none() {
+        // Depot search: an Inbox root, or an entry nested under a depot or Inbox root.
+        if inbox_character == Some(*character.as_bytes()) {
+            SourceKind::Inbox
+        } else if let Some(parent) = nested_parent
+            && depot_search_retrieve::custody_owner(tx, request.item).await?
+                == Some(*character.as_bytes())
+        {
+            SourceKind::CustodyNested { parent }
+        } else {
+            return refuse(LoopMoveRefusal::Stale);
+        }
     } else if let Some(owner) = depot_character {
         let Some(access) = depot.filter(|access| !access.deposit) else {
             return refuse(LoopMoveRefusal::NotSupported);
@@ -1176,7 +1219,7 @@ async fn apply_loop_move<C: ItemLoopContent>(
     .bind(intent)
     .bind(depot.map(|access| i32::from(access.town)))
     .bind(depot.map(|access| i16::from(access.box_number)))
-    .bind(quick.map_or(0, |q| q.ordinal))
+    .bind(quick.map_or(search.unwrap_or(0), |q| q.ordinal))
     .execute(&mut **tx)
     .await?;
     for (index, line) in lines.iter().enumerate() {
@@ -1213,9 +1256,12 @@ async fn apply_loop_move<C: ItemLoopContent>(
                 "DELETE FROM game_item_container_entries \
                   WHERE item_instance_id = encode($1,'hex')::uuid"
             }
-            SourceKind::Nested { .. } => {
+            SourceKind::Nested { .. } | SourceKind::CustodyNested { .. } => {
                 "DELETE FROM game_item_nested_entries \
                   WHERE item_instance_id = encode($1,'hex')::uuid"
+            }
+            SourceKind::Inbox => {
+                "SELECT game_depot_search_inbox_remove(encode($1,'hex')::uuid)"
             }
             SourceKind::Corpse => {
                 "DELETE FROM game_item_corpse_container_entries WHERE item_instance_id = encode($1,'hex')::uuid"
@@ -1333,9 +1379,9 @@ async fn apply_loop_move<C: ItemLoopContent>(
         }
     }
     // Run the deferred proofs inside the attempt, so a violation is a refusal, not a commit error.
-    // A quick-loot batch proves each exact line before the next child may top it up.
-    // Its terminal parent receipt and all other deferred guards still run at batch commit.
-    sqlx::query(if quick.is_some() {
+    // A quick-loot or depot-search batch proves each exact line before the next child may top
+    // it up. Its terminal parent receipt and all other deferred guards still run at batch commit.
+    sqlx::query(if quick.is_some() || search.is_some() {
         "SET CONSTRAINTS game_item_loop_line_proven IMMEDIATE"
     } else {
         "SET CONSTRAINTS ALL IMMEDIATE"
@@ -1506,7 +1552,7 @@ impl DurabilityRoot {
                             }
                             apply_loop_move(
                                 &mut tx, permit, &record, &node, &fence, command, content,
-                                &request, &intent, depot, None,
+                                &request, &intent, depot, None, None,
                             )
                             .await
                             .map(Ok)

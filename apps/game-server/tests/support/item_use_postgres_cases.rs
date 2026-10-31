@@ -777,3 +777,59 @@ fn item_use_commit_throughput_is_measured() -> TestResult {
 mod item_use_fluid_tests;
 #[path = "item_use_postgres_cases/item_use_nested_tests.rs"]
 mod item_use_nested_tests;
+
+#[test]
+fn the_potion_that_completes_the_count_grants_potion_addict_once_and_food_counts_nothing()
+-> TestResult {
+    run(async |admin| {
+        let used = Use::create(admin, "addict").await?;
+        let key = "oteryn:achievement/potion_addict";
+        let state = async || -> TestResult<(Vec<i64>, i64)> {
+            let progress = sqlx::query_scalar(
+                "SELECT progress FROM game_character_achievement_progress \
+                  WHERE character_id = encode($1,'hex')::uuid ORDER BY achievement_key",
+            )
+            .bind(id(CHARACTER).as_slice())
+            .fetch_all(&used.harness.pool)
+            .await?;
+            let requests = sqlx::query_scalar(
+                "SELECT count(*) FROM game_account_achievement_grant_requests \
+                  WHERE achievement_key = $1",
+            )
+            .bind(key)
+            .fetch_one(&used.harness.pool)
+            .await?;
+            Ok((progress, requests))
+        };
+        used.use_item(&food(1, 140, 3)).await.map_err(debug)?;
+        assert_eq!(state().await?, (vec![], 0));
+        sqlx::query(
+            "INSERT INTO game_character_achievement_progress \
+             VALUES (encode($1,'hex')::uuid, $2, 99999)",
+        )
+        .bind(id(CHARACTER).as_slice())
+        .bind(key)
+        .execute(&used.harness.pool)
+        .await?;
+        used.use_item(&potion(2, 150, POTION, 2, flask_stack(FLASK_STACK, 5)))
+            .await
+            .map_err(debug)?;
+        assert_eq!(state().await?, (vec![100_000], 1));
+        // The replay and a later potion neither count past the total nor grant again.
+        used.use_item(&potion(2, 150, POTION, 2, flask_stack(FLASK_STACK, 5)))
+            .await
+            .map_err(debug)?;
+        used.use_item(&potion(3, 160, POTION, 1, flask_stack(FLASK_STACK, 6)))
+            .await
+            .map_err(debug)?;
+        assert_eq!(state().await?, (vec![100_000], 1));
+        let facts: i64 = sqlx::query_scalar(
+            "SELECT count(*) FROM game_account_achievements WHERE achievement_key = $1",
+        )
+        .bind(key)
+        .fetch_one(&used.harness.pool)
+        .await?;
+        assert_eq!(facts, 1);
+        used.cleanup().await
+    })
+}

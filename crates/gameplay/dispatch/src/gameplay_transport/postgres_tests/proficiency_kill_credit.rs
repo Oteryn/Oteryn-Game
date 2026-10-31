@@ -424,6 +424,7 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
                 activity: &[],
                 queue: &queue,
                 rewards: native.reward_table(),
+                charms: None,
             },
             summon,
             crate::combat::CapturedRewardPrincipal {
@@ -467,6 +468,7 @@ async fn scenario(h: &Harness, case: Scenario) -> TestResult {
                 activity: &[],
                 queue: &queue,
                 rewards: native.reward_table(),
+                charms: None,
             },
             creature.actor,
             crate::combat::CapturedRewardPrincipal {
@@ -754,6 +756,7 @@ fn record(
             activity: &[],
             queue,
             rewards,
+            charms: None,
         },
         target,
         principal,

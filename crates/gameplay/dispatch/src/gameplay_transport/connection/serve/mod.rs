@@ -5,6 +5,8 @@ use super::*;
 mod autowalk;
 mod command;
 mod creature_push;
+mod cyclopedia_tracker;
+mod hotkey_equip;
 mod house_transfer;
 mod idle;
 mod inbound;
@@ -67,6 +69,8 @@ struct ServeState {
     party_icons: Vec<oteryn_protocol_oteryn::party_skull::PartyIcon>,
     party_view: crate::gameplay_transport::party_command::SessionPartyView,
     market_revision: u64,
+    /// P22d: the domain 98 revision this connection has seen; 1 after the join snapshot.
+    cyclopedia_tracker_revision: u64,
     notices_selected: bool,
     overlay_served: bool,
     revision: u64,
@@ -177,6 +181,42 @@ where
                 authority.player_trade_disconnected(session.admitted.game_session_id);
                 return end.finish(session.admitted);
             }
+        }
+    }
+}
+
+/// Drive the actual STEP router with a production admission snapshot in dispatch regressions.
+#[cfg(test)]
+pub(in crate::gameplay_transport) async fn regression_routed_step<A: FreshAdmissionAuthority>(
+    authority: &A,
+    mut admitted: AdmittedSession,
+    actor: ExactActorRef,
+    direction: StepDirection,
+) -> Result<StepOutcome, &'static str> {
+    let (mut stream, _client) = tokio::io::duplex(1 << 22);
+    let baseline = authority.observe(actor).await.ok_or("step baseline")?;
+    let mut session = setup::prepare(
+        &mut stream,
+        &mut admitted,
+        authority,
+        IDLE_LIVENESS,
+        actor,
+        baseline,
+        integrity::Integrity::default(),
+    )
+    .await
+    .map_err(|_| "step setup")?;
+    let payload = oteryn_protocol_oteryn::world_spatial::encode_step_intent(direction);
+    let command = oteryn_protocol_oteryn::ClientCommandView {
+        command_id: admitted.continuity.next_command_id,
+        command_type: oteryn_protocol_oteryn::world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+        payload: &payload,
+    };
+    loop {
+        match route::step(authority, &mut session, command, false).await {
+            route::StepAction::Dispatch(Dispatch::Step(outcome, _)) => return Ok(outcome),
+            route::StepAction::Wait(due) => tokio::time::sleep_until(due).await,
+            _ => return Err("step router did not dispatch"),
         }
     }
 }

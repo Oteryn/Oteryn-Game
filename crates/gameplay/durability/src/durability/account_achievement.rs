@@ -231,6 +231,91 @@ pub async fn record_achievement_grant(
     }))
 }
 
+/// The embedded catalogue's entry for `key` (`content/achievements`), parsed once.
+fn embedded_lookup(key: &str) -> std::result::Result<AchievementCatalogueLookup, DurabilityError> {
+    use oteryn_gameplay_progression::achievement_catalogue::{Entry, SHARDS, parse_shards};
+    static CATALOGUE: std::sync::LazyLock<Option<std::collections::BTreeMap<String, Entry>>> =
+        std::sync::LazyLock::new(|| parse_shards(&SHARDS).ok());
+    let catalogue = CATALOGUE
+        .as_ref()
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    Ok(match catalogue.get(key) {
+        None => AchievementCatalogueLookup::Absent,
+        Some(entry) if entry.retired => AchievementCatalogueLookup::Retired,
+        Some(entry) => AchievementCatalogueLookup::Earnable {
+            revision: entry.revision.clone(),
+        },
+    })
+}
+
+/// Grant each of `keys` that the Character's account lacks, from one source event, in the
+/// granter's transaction after its complete fence and `character_root` lock. A held key writes
+/// nothing, so a counter that stays past its threshold does not grow the request log.
+pub(super) async fn grant_missing(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: CharacterId,
+    keys: &[&str],
+    source_kind: &str,
+    event_id: &[u8],
+) -> std::result::Result<(), DurabilityError> {
+    if keys.is_empty() {
+        return Ok(());
+    }
+    let held: Vec<String> = sqlx::query_scalar(
+        "SELECT f.achievement_key FROM game_account_achievements f \
+           JOIN game_character_roots r ON r.account_id = f.account_id \
+          WHERE r.character_id = encode($1,'hex')::uuid AND f.achievement_key = ANY($2)",
+    )
+    .bind(character_id.as_bytes().as_slice())
+    .bind(keys)
+    .fetch_all(&mut **tx)
+    .await?;
+    for key in keys.iter().filter(|key| !held.iter().any(|held| held == *key)) {
+        let request = AchievementGrantRequest {
+            achievement_key: (*key).to_owned(),
+            catalogue: embedded_lookup(key)?,
+            source: AchievementSourceEvent {
+                kind: source_kind.to_owned(),
+                event_id: event_id.to_vec(),
+            },
+        };
+        let granter = FencedGrantingCharacter::in_transaction(tx, character_id).await?;
+        record_achievement_grant(tx, granter, &request)
+            .await?
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+    }
+    Ok(())
+}
+
+/// Count one event toward `key` for the Character and grant it when the count reaches `total`.
+/// A count at its total stays there and writes nothing (Crystal `register_achievements.lua:696`).
+pub(super) async fn add_progress(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character_id: CharacterId,
+    key: &str,
+    total: u32,
+    source_kind: &str,
+    event_id: &[u8],
+) -> std::result::Result<(), DurabilityError> {
+    let progress: Option<i64> = sqlx::query_scalar(
+        "INSERT INTO game_character_achievement_progress AS p \
+                (character_id, achievement_key, progress) \
+         VALUES (encode($1,'hex')::uuid, $2, 1) \
+         ON CONFLICT (character_id, achievement_key) \
+         DO UPDATE SET progress = p.progress + 1 WHERE p.progress < $3 \
+         RETURNING progress",
+    )
+    .bind(character_id.as_bytes().as_slice())
+    .bind(key)
+    .bind(i64::from(total))
+    .fetch_optional(&mut **tx)
+    .await?;
+    if progress == Some(i64::from(total)) {
+        grant_missing(tx, character_id, &[key], source_kind, event_id).await?;
+    }
+    Ok(())
+}
+
 async fn load_fact(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     account: &str,

@@ -24,6 +24,7 @@ use {
 #[derive(Debug)]
 pub struct SourcePartyWorld {
     source: PartySnapshot,
+    characters: std::collections::BTreeMap<u32, [u8; 16]>,
     caster: ChainCreature,
     party: Option<Vec<ChainCreature>>,
     physical: Vec<(
@@ -133,6 +134,7 @@ fn facts(
         alive: vitals.health > 0,
         removed: false,
         health: u64::from(vitals.health),
+        max_health: u64::from(state.character_facts().max_health),
     }
 }
 /// Call with actual runtime -> player locks and source transaction held throughout use.
@@ -221,6 +223,8 @@ async fn read_source_party_world(
     let caster_position = runtime
         .read_actor_position(caster)
         .map_err(|_| SpellItemError::Rejected("party caster position"))?;
+    let mut characters =
+        std::collections::BTreeMap::from([(caster.actor_local_id(), source.character)]);
     let mut physical = vec![(caster, session, caster_position, caster_state.clone())];
     let mut party = source.party_id.map(|_| Vec::new());
     // A local occurrence ordinal identifies equality inside this already-qualified group.
@@ -282,6 +286,7 @@ async fn read_source_party_world(
             }
             seen.insert(character);
             source_order.insert(u64::from(actor.actor_local_id()), member.invitation_order);
+            characters.insert(actor.actor_local_id(), character);
             physical.push((actor, member_session, position, state.clone()));
             member_facts.push(facts(actor, state, position, local_party));
             party
@@ -322,6 +327,7 @@ async fn read_source_party_world(
     member_facts.sort_by_key(|f| source_order.get(&f.id).copied().unwrap_or(u64::MAX));
     Ok(SourcePartyWorld {
         source,
+        characters,
         caster: creature(caster, caster_position),
         party,
         physical,
@@ -463,7 +469,7 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                     .ok_or(DurabilityError::Unavailable)?;
                 for (monk_actor, _, _, monk_state) in &world.physical {
                     use oteryn_gameplay_spell_rules::native_actor_states::{
-                        PartyBonusKind, StandardStance, plan_party_bonuses,
+                        PartyBonusKind, StandardStance, plan_party_bonuses_with_guiding,
                     };
                     if !matches!(
                         monk_state.standard_stance(),
@@ -499,9 +505,20 @@ impl super::ComposedFreshAdmission<'_, '_, '_> {
                             .as_ref()
                             .is_some_and(crate::spell::harmony::MonkState::serene)
                     };
-                    let plans =
-                        plan_party_bonuses(parameters, *facts, &world.member_facts, true, serene)
+                    let guiding = if monk_state.hunting_premium_current(owner.owner_now().get()) {
+                        let character = world.characters.get(&monk_actor.actor_local_id()).ok_or(DurabilityError::Unavailable)?;
+                        let character = crate::domain::CharacterId::from_bytes(*character)
+                            .map_err(|_| DurabilityError::InvalidStoredState)?;
+                        let ruleset = crate::wheel_gem_data::WheelGemData::embedded()
+                            .map_err(|_| DurabilityError::Unavailable)?.wheel_ruleset()
                             .map_err(|_| DurabilityError::Unavailable)?;
+                        crate::durability::character_wheel::read_party_guiding_presence_in_transaction(
+                            &mut tx, character, &ruleset,
+                        ).await?
+                    } else { false };
+                    let plans = plan_party_bonuses_with_guiding(
+                        parameters, *facts, &world.member_facts, true, serene, guiding,
+                    ).map_err(|_| DurabilityError::Unavailable)?;
                     for plan in plans
                         .into_iter()
                         .filter(|p| p.target == u64::from(actor.actor_local_id()))

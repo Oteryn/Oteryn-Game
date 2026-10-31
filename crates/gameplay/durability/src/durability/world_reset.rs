@@ -22,7 +22,7 @@ pub struct RetiringWorldReset {
 pub struct PlannedWorldReset {
     /// The active epoch the planned reset ends.
     pub ending_epoch: u64,
-    /// The next 10:00 Europe/Berlin strictly after `database_now_unix_ms`.
+    /// The next 06:00 Europe/Berlin strictly after `database_now_unix_ms`.
     pub reset_at_unix_ms: i64,
     pub database_now_unix_ms: i64,
 }

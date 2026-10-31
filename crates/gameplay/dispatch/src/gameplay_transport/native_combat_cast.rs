@@ -970,7 +970,7 @@ fn prepare_paid_self(
                 .actor_for_id(selected)
                 .ok_or(SpellCastDisposition::Rejected)?;
             let amount = healing
-                .finish_draw(draw(healing.bounds.minimum, healing.bounds.maximum))
+                .draw_normal(draw)
                 .map_err(|_| SpellCastDisposition::Rejected)?;
             Some((actor, amount))
         } else {

@@ -39,3 +39,35 @@ python tools/content-schema/quest-authoring/run_checks.py
 ```
 
 No executable quest journey or production deployment is claimed by this DATA batch.
+
+## MONKQUEST2 reviewed annotation amendment (2026-10-30)
+
+The cumulative receipt now has 28 reviewed cores (the historical guard test name
+still says `twenty_six`; its exact count advances from 27 to 28). Following the
+exact-pair amendments in `source_npc_exchange_guard.py` and
+`source_comment_write_guard.py`, `source_monk_native_guard.py` substitutes only the
+approved Monk `native_lowering` snapshot before the ordinary structural checks.
+The immutable baseline, selection, recipes, existing 27 pairs and graph approvals
+are preserved. Neither runtime admission nor the whole-quest hold changes.
+
+The authored `source-fix-evidence/monk-native-lowering.json` records the owner's
+2026-10-30 approval ("2, tak"), the ten callback annotation and the MONKQUEST
+references: Canary `04b83b512114bfd888000d6e1433ed8ecaec7c5b`, shrine script SHA-256
+`b5ecb4fefeaf409c59d55667362ba393d5bab53d9fb64a73a41fc0cebc5a7391`, and TibiaWiki
+revisions 1169052 / 1203780. These references do not independently qualify Global
+coordinates or the still-unbound equipment, spells and final pilgrimage rewards.
+
+No general receipt writer existed in this package. The bounded amendment tool
+uses `source_fix_guard` canonical digests and exact-pair validation to regenerate
+the approval and receipt, including their compiler, proof and approval hashes:
+
+```sh
+python tools/content-schema/quest-authoring/amend_monk_source_receipt.py
+python tools/content-schema/quest-authoring/amend_monk_source_receipt.py --check
+```
+
+It verifies every untouched input hash, reconstructs the original Monk core against
+the immutable baseline, and requires the reviewed annotation to match the callback
+compiler. The receipt pins the evidence, callback input, amendment tool, compiler
+and negative tests. Regenerate downstream Quest artifacts with their authoring
+commands, then run `run_checks.py --part checks` and `--part unit-tests`.

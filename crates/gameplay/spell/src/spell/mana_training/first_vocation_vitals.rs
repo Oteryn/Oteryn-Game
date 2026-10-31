@@ -15,8 +15,39 @@ impl PlayerSpellState {
         formula: &CompiledTrainingFormula,
         now: SemanticTimeMicros,
     ) -> Option<Self> {
-        if before.vocation() != "none"
-            || facts.vocation == Vocation::None
+        if before.vocation() != "none" {
+            return None;
+        }
+        self.after_vocation_change(before, after, facts, formula, now, true)
+    }
+
+    /// S16c: a Dawnport trial tile switched the committed vocation below level 20. Crystal
+    /// 201189f8 data-global/lib/others/dawnport.lua:97-118 refills both pools only above level
+    /// 8; up to level 8 the current pools are kept.
+    pub fn after_vocation_trial(
+        &self,
+        before: &DurableBuildState,
+        after: &DurableBuildState,
+        facts: CharacterCastFacts,
+        formula: &CompiledTrainingFormula,
+        now: SemanticTimeMicros,
+    ) -> Option<Self> {
+        if before.vocation() == after.vocation() || facts.level >= 20 {
+            return None;
+        }
+        self.after_vocation_change(before, after, facts, formula, now, facts.level > 8)
+    }
+
+    fn after_vocation_change(
+        &self,
+        before: &DurableBuildState,
+        after: &DurableBuildState,
+        facts: CharacterCastFacts,
+        formula: &CompiledTrainingFormula,
+        now: SemanticTimeMicros,
+        refill: bool,
+    ) -> Option<Self> {
+        if facts.vocation == Vocation::None
             || Vocation::from_key(after.vocation()) != Some(facts.vocation)
             || facts.magic_level != u32::from(after.magic().0)
         {
@@ -30,7 +61,7 @@ impl PlayerSpellState {
                 && self.owned_skills == Some(after.skills().map(|(level, _)| level)))
             .then(|| self.clone());
         }
-        if self.facts.vocation != Vocation::None
+        if Some(self.facts.vocation) != Vocation::from_key(before.vocation())
             || self.facts.level != facts.level
             || self.facts.magic_level != u32::from(before.magic().0)
             || self.owned_skills != Some(before.skills().map(|(level, _)| level))
@@ -48,14 +79,23 @@ impl PlayerSpellState {
         // Use the same constructor to validate maxima, level and monk initialization bounds.
         let validated = Self::new(facts, 0, 0)?;
         let mut next = self.clone();
-        // A vocationless actor has no Wheel contribution, so the new maxima are the base.
+        // A vocationless actor, or one below level 20 (Dawnport trial), has no Wheel
+        // contribution, so the new maxima are the base.
         next.base_max_health = facts.max_health;
         next.base_max_mana = facts.max_mana;
         next.facts = facts;
         // Dawnport changeVocation: recompute as if levelled from 8, then fill both pools.
         // The existing stance key/conditions survive the donor's setVocation call.
-        next.health = facts.max_health;
-        next.mana = facts.max_mana;
+        next.health = if refill {
+            facts.max_health
+        } else {
+            self.health.min(facts.max_health)
+        };
+        next.mana = if refill {
+            facts.max_mana
+        } else {
+            self.mana.min(facts.max_mana)
+        };
         next.base_speed = validated.base_speed;
         next.monk = validated.monk;
         next.make_playable(now).ok()?;

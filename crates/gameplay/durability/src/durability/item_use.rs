@@ -16,6 +16,7 @@
 //! backpack. The record, the item changes, the entry changes and the one audit event (type 2,
 //! `item_use`) commit together; the database guards of 0083 admit each change only with them.
 
+use super::account_achievement::add_progress;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, assert_item_only_fence, numeric_u64, uuid_text,
@@ -38,6 +39,7 @@ use super::item_use_audit::{
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
 use crate::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_progression::item_use_achievement;
 use oteryn_gameplay_items::item_transfer::GAMEITEM01_CONTAINER_ENTRIES_MAX;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
@@ -45,9 +47,12 @@ use sqlx::postgres::PgConnection;
 
 mod carried_inventory;
 mod carried_source;
+pub mod concoction;
 pub mod fluid;
 pub mod mining;
 pub mod mount_taming;
+pub mod proficiency_catalyst;
+pub mod proficiency_orb;
 
 pub use carried_inventory::ItemUseInventory;
 pub(super) use carried_inventory::read_use_inventory;
@@ -59,6 +64,11 @@ pub enum ItemUseKind {
     Food,
     Potion,
     MountTaming,
+    /// P08: one unit composed with its `catalyst` proficiency receipt.
+    ProficiencyCatalyst,
+    /// P08: one Lunar Ascension Orb composed with its `ORB_RANK` modification line.
+    ProficiencyOrb,
+    Concoction,
     PickRefine {
         tool: [u8; 16],
         wire_binding: [u8; 32],
@@ -72,6 +82,9 @@ impl ItemUseKind {
             Self::Food => ITEM_USE_CAUSE_FOOD,
             Self::Potion => ITEM_USE_CAUSE_POTION,
             Self::MountTaming => mount_taming::TAMING_CAUSE,
+            Self::ProficiencyCatalyst => proficiency_catalyst::CATALYST_CAUSE,
+            Self::ProficiencyOrb => proficiency_orb::ORB_CAUSE,
+            Self::Concoction => concoction::CONCOCTION_CAUSE,
             Self::PickRefine { .. } => mining::PICK_REFINE_CAUSE,
         }
     }
@@ -135,6 +148,8 @@ pub enum ItemUseError {
     StaleState,
     /// The CommandRef or the TransactionId was committed by another request.
     ConflictingCommand,
+    /// The concoction's cooldown has not run out; nothing was written.
+    Cooldown,
     Unavailable(DurabilityError),
 }
 
@@ -159,6 +174,7 @@ impl std::fmt::Display for ItemUseError {
             Self::ConflictingCommand => {
                 formatter.write_str("item use command was committed by another request")
             }
+            Self::Cooldown => formatter.write_str("item use is on cooldown"),
             Self::Unavailable(error) => write!(formatter, "item use storage failed: {error:?}"),
         }
     }
@@ -188,9 +204,21 @@ impl ItemUseRequest {
         let flask_valid = match (&self.flask, self.kind) {
             (
                 ItemUseFlaskPlan::None,
-                ItemUseKind::Food | ItemUseKind::Potion | ItemUseKind::MountTaming,
+                ItemUseKind::Food
+                | ItemUseKind::Potion
+                | ItemUseKind::MountTaming
+                | ItemUseKind::Concoction
+                | ItemUseKind::ProficiencyCatalyst
+                | ItemUseKind::ProficiencyOrb,
             ) => true,
-            (_, ItemUseKind::Food | ItemUseKind::MountTaming) => false,
+            (
+                _,
+                ItemUseKind::Food
+                | ItemUseKind::MountTaming
+                | ItemUseKind::Concoction
+                | ItemUseKind::ProficiencyCatalyst
+                | ItemUseKind::ProficiencyOrb,
+            ) => false,
             (ItemUseFlaskPlan::Missing, ItemUseKind::Potion) => true,
             (
                 ItemUseFlaskPlan::Stack {
@@ -339,7 +367,10 @@ impl DurabilityRoot {
     ) -> Result<ItemUseOutcome> {
         if matches!(
             request.kind,
-            ItemUseKind::PickRefine { .. } | ItemUseKind::MountTaming
+            ItemUseKind::PickRefine { .. }
+                | ItemUseKind::MountTaming
+                | ItemUseKind::ProficiencyCatalyst
+                | ItemUseKind::ProficiencyOrb
         ) {
             return Err(ItemUseError::InvalidInput);
         }
@@ -421,8 +452,47 @@ impl DurabilityRoot {
                             Err(error) => return Ok(Err(error)),
                         }
                     }
-                    match write(&mut tx, &fence, &request, tuple).await {
+                    if request.kind == ItemUseKind::Concoction {
+                        match concoction::admit(&mut tx, &fence, &request).await {
+                            Ok(()) => {}
+                            Err(ItemUseError::Unavailable(error)) => return Err(error),
+                            Err(error) => return Ok(Err(error)),
+                        }
+                    }
+                    let written = match write(&mut tx, &fence, &request, tuple).await {
+                        Ok(outcome @ ItemUseOutcome::Written { .. })
+                            if request.kind == ItemUseKind::Concoction =>
+                        {
+                            concoction::start(&mut tx, &fence, &request)
+                                .await
+                                .map(|()| outcome)
+                        }
+                        result => result,
+                    };
+                    match written {
                         Ok(outcome) => {
+                            let counted = match request.kind {
+                                ItemUseKind::Potion => Some(item_use_achievement::POTION_ADDICT),
+                                ItemUseKind::PickRefine { .. } => {
+                                    Some(item_use_achievement::PETROLOGIST)
+                                }
+                                ItemUseKind::Food
+                                | ItemUseKind::MountTaming
+                                | ItemUseKind::ProficiencyCatalyst
+                                | ItemUseKind::ProficiencyOrb
+                                | ItemUseKind::Concoction => None,
+                            };
+                            if let Some(counted) = counted {
+                                add_progress(
+                                    &mut tx,
+                                    fence.character_id,
+                                    counted.key,
+                                    counted.total,
+                                    item_use_achievement::SOURCE_KIND,
+                                    &request.event_id,
+                                )
+                                .await?;
+                            }
                             tx.commit(deadline).await?;
                             Ok(Ok(outcome))
                         }

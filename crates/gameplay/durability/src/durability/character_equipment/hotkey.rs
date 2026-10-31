@@ -236,6 +236,7 @@ mod tests {
                 ([2; 16], entry(6, 1)),
                 ([5; 16], entry(7, 1)),
             ],
+            keys: vec![],
         };
         assert_eq!(
             search_order(&inventory)

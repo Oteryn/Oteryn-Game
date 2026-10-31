@@ -79,6 +79,7 @@ fn proficiency_checkpoint_one_receipt_all_tracks_retains_successor_and_rebases_l
             state: line.after().clone(),
             committed_character_revision: CharacterRevision::new(2).expect("revision"),
             last_proficiency_occurrence_id: *retained.request.occurrence().as_bytes(),
+            modifications: [None, None],
         })
         .collect();
     for track in &stored {

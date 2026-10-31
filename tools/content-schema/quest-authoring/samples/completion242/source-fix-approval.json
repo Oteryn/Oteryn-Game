@@ -56,6 +56,11 @@
       "to_digest": "150434fc05b024b372ddd518a17736d0e7b82ff36f14d7bfb44485025ab9bd39"
     },
     {
+      "from_digest": "a0ffd72f162b385c3b6048d666c6c1eb450f0ba7a9901d644cc6e005c3a1ea3f",
+      "key": "oteryn:quest.grave_danger_quest",
+      "to_digest": "2bfe897328ce926112c17222d485d017c8a5e60d40281674d77758a498b7a3fc"
+    },
+    {
       "from_digest": "f42c2d832920b8d84b0de9f9eb6281ba1f34384d6a15741e0d17372cd41c1b67",
       "key": "oteryn:quest.heart_of_destruction_quest",
       "to_digest": "66a358bf42acb8b27a3c920f773361199ab25e8b2be6ba75b83ffb29c3b216bc"
@@ -66,6 +71,11 @@
       "to_digest": "53cb83801b1f95bc0c49d3c732f24828ebd7a7c776a3fc71298ebf9fb8295f3c"
     },
     {
+      "from_digest": "2e90d2d2616a920c2e5d3dab886d327f897424ad09264b43e6677de910a9d689",
+      "key": "oteryn:quest.kilmaresh_quest",
+      "to_digest": "2f11ebb27f3142109f0f49fff698ae41c8abb49bf4e10f8255844e0c3e28c6a8"
+    },
+    {
       "from_digest": "61609b79a77ab84e1cc8ceac55d4fb247ba6ccb038a04373bd93f7b68d9c682c",
       "key": "oteryn:quest.marlin_trophy_quest",
       "to_digest": "a951589b804f01e9ff6e97c39a18180a82430bf50a881388f49090b687a76c69"
@@ -74,6 +84,11 @@
       "from_digest": "fe7e0d6782f65adb93d583de033333874f8584afc5a6eb6bb7715ec2574039d2",
       "key": "oteryn:quest.roshamuul_quest",
       "to_digest": "125286abebfe50d3832663d1ac5bd2864e9377ab842bf2d57424ee4f5aaf33ba"
+    },
+    {
+      "from_digest": "2b6aaf9727c229c21eac86cd537cc16265306196a38938e8203d30db405d0eee",
+      "key": "oteryn:quest.rotten_blood_quest",
+      "to_digest": "cee076574489399f6506ee2820cb868cfb4f6572b98760b1e348af7a5d62d991"
     },
     {
       "from_digest": "ff7af16139c1d4cc94ac1a23faf6ff9ba9d715fa4b355f60f6544558c1a95804",
@@ -131,19 +146,9 @@
       "to_digest": "53cb22fa6e0330c485e4fcd8c889dc1d93dc7e1be6d1baf682bfc43b3a06ba0e"
     },
     {
-      "key": "oteryn:quest.kilmaresh_quest",
-      "from_digest": "2e90d2d2616a920c2e5d3dab886d327f897424ad09264b43e6677de910a9d689",
-      "to_digest": "2f11ebb27f3142109f0f49fff698ae41c8abb49bf4e10f8255844e0c3e28c6a8"
-    },
-    {
-      "key": "oteryn:quest.rotten_blood_quest",
-      "from_digest": "2b6aaf9727c229c21eac86cd537cc16265306196a38938e8203d30db405d0eee",
-      "to_digest": "cee076574489399f6506ee2820cb868cfb4f6572b98760b1e348af7a5d62d991"
-    },
-    {
-      "key": "oteryn:quest.grave_danger_quest",
-      "from_digest": "a0ffd72f162b385c3b6048d666c6c1eb450f0ba7a9901d644cc6e005c3a1ea3f",
-      "to_digest": "2bfe897328ce926112c17222d485d017c8a5e60d40281674d77758a498b7a3fc"
+      "from_digest": "7addcebd2921ad8756619da11d2c60218d38b99ba97709f866f2d3e55306ae43",
+      "key": "oteryn:quest.the_way_of_the_monk_quest",
+      "to_digest": "3da1b09ece89d8302d484bf5b940970908fe3760a2dd93289d178bebae083c68"
     }
   ],
   "approved_graphs": [
@@ -330,6 +335,10 @@
   ],
   "compiler_inputs": [
     {
+      "path": "tools/content-schema/quest-authoring/amend_monk_source_receipt.py",
+      "sha256": "6ef13056cc46c9263d61415e1bd503f97d31238cf8e63904bbce37627635ec7c"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/lua_writers.py",
       "sha256": "b2f60628606bde1146a65d6847fd7f9afae125c9e2fd45e0137a3f3ebeb6637a"
     },
@@ -354,6 +363,14 @@
       "sha256": "1101e84ddd745c907dab515e53b30c78bbee2c0cdee4bbc1630653b9b54cfbc0"
     },
     {
+      "path": "tools/content-schema/quest-authoring/quest_tree.schema.json",
+      "sha256": "fa6765c57fe18ff40b935821d3b13f58041c19ae6760af6220e436d2b9adcbf0"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/quest_tree_authoring.py",
+      "sha256": "130eebb4b48ea9908d734d06cfc0a220033f25ed6981a2637738d25d38f6f3cc"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/reward_aliases.py",
       "sha256": "0e844abbc713ebbfb14ffc9000ddee7ef1f121d35878486c97dd6dcdc71c47bc"
     },
@@ -362,12 +379,20 @@
       "sha256": "c83d7ed6892a91abeca72d29c40ab5137852bd7f60e8f483b890897caa848555"
     },
     {
+      "path": "tools/content-schema/quest-authoring/source_comment_write_guard.py",
+      "sha256": "aee12bd90013e4d7156197df03598f948883707bc022568780f6be72b0a95911"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/source_fix_guard.py",
-      "sha256": "64c7992bf3f30f185b692c026cf73ad419716d0d640d15ea2fdfc2c8e4cf733b"
+      "sha256": "bdd2a96329c72b70df4fc5c42a32f06f3063c68b7fee4b583a23aa55bf5c9eee"
     },
     {
       "path": "tools/content-schema/quest-authoring/source_kilmaresh_owner_guard.py",
       "sha256": "d22bc8e55dc2d82af9a1339716d1cbd5c1879e177fd4c7ced481ae147778aae3"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/source_monk_native_guard.py",
+      "sha256": "b6c3c114ee469eef652767d41a8dcaf2482ac28cdce817ba1924d01c5617c9fb"
     },
     {
       "path": "tools/content-schema/quest-authoring/source_npc_exchange.py",
@@ -394,12 +419,36 @@
       "sha256": "591bdd971093754a831da90535dbd5f91eb0cd24054d433531077cc3f3c39985"
     },
     {
+      "path": "tools/content-schema/quest-authoring/test_lua_writer_comment_filter.py",
+      "sha256": "65539454889bc27f03aa17eedf32cbdf322b1733d730bbfdd087be6dd65f2555"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_monk_native_lowering.py",
+      "sha256": "7ea6d0114becb378c85ddd0ebcaf7636d193ea636d688fac199b364180fdab53"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_quest_completion_authoring.py",
+      "sha256": "bda86c3031ad41a1aecb3791504bf04bb771966c5eca95739f7a4e1a8a64b556"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/test_reward_aliases.py",
       "sha256": "2a8843b92220202522eaf3180624c9e873fb257195531380449ad406d7043976"
     },
     {
+      "path": "tools/content-schema/quest-authoring/test_source_comment_write_guard.py",
+      "sha256": "f1ec68db79d727eb0cac575ba3583893201719483f778046dee7b91f8bf4c503"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_fix_guard.py",
+      "sha256": "b3586a856c30a451e5b1c68ea9fbdb29572ea310da869b9500936552c795a9e0"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/test_source_kilmaresh_owner_guard.py",
       "sha256": "59b85e1af8faada21f3bbbb15fbe5f28134831f4d6bc1b3e9a31ad0215fe1099"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/test_source_monk_native_guard.py",
+      "sha256": "a43043e3314cf320062df8699436f251d26d6de04331d1cd2af5e28021eb7c33"
     },
     {
       "path": "tools/content-schema/quest-authoring/test_source_npc_exchange.py",
@@ -416,18 +465,6 @@
     {
       "path": "tools/content-schema/quest-authoring/track_owners.json",
       "sha256": "4fee5910074a907adbde7f918067144563bdff5f7b9032068cfce7bba931574e"
-    },
-    {
-      "path": "tools/content-schema/quest-authoring/source_comment_write_guard.py",
-      "sha256": "aee12bd90013e4d7156197df03598f948883707bc022568780f6be72b0a95911"
-    },
-    {
-      "path": "tools/content-schema/quest-authoring/test_source_comment_write_guard.py",
-      "sha256": "f1ec68db79d727eb0cac575ba3583893201719483f778046dee7b91f8bf4c503"
-    },
-    {
-      "path": "tools/content-schema/quest-authoring/test_lua_writer_comment_filter.py",
-      "sha256": "65539454889bc27f03aa17eedf32cbdf322b1733d730bbfdd087be6dd65f2555"
     }
   ],
   "immutable_inputs": [
@@ -452,8 +489,28 @@
   "parent_frozen_head": "88d63a18b44123ce342008cf52bcdb427c909ec2",
   "proof_inputs": [
     {
+      "path": "content/quests/monk-pilgrimage.json",
+      "sha256": "6381c009a19433a49db5eb4f263aee4529be0f13c7df682b1373e331fb6aac17"
+    },
+    {
+      "path": "content/quests/world-callbacks.json",
+      "sha256": "ca5264b67c9d45766074d740d57a091ffe8c6f270000e1677964c8e47a03e4e2"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",
+      "sha256": "1c7c5a4c61cc352e75ce7391824eec91455a4f55bcf18a64b944e6490ae1d266"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/snapshots.json",
+      "sha256": "c6564dfb3c029258c36f1d1e98cebb2132194cc276907b1d3b870e38fff60f88"
+    },
+    {
       "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-evidence/copy-api-evidence.json",
       "sha256": "7cf0448a167368f9617c7e80753a93ad2196bb58a8c6fb3ef3e1eed1d03f3e57"
+    },
+    {
+      "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-evidence/monk-native-lowering.json",
+      "sha256": "e879f2d8b061aa368edfd63e744fe10605ae61e8272bb6b5f2223c0414ce3e03"
     },
     {
       "path": "tools/content-schema/quest-authoring/samples/completion242/source-fix-evidence/source-delta-qualification.json",
@@ -588,10 +645,6 @@
       "sha256": "12771f0d11bdf8109a017c1e4c1d113f1966e031dfcf36fef1b917e505a8571d"
     },
     {
-      "path": "tools/content-schema/quest-authoring/script_quests.json",
-      "sha256": "c83d7ed6892a91abeca72d29c40ab5137852bd7f60e8f483b890897caa848555"
-    },
-    {
       "path": "tools/content-schema/quest-authoring/samples/uid-range-fix/graphs.json",
       "sha256": "195f24cd422f44922472a18225fab94e8faca06a16c23a586761ee587b7bdf04"
     },
@@ -600,12 +653,8 @@
       "sha256": "c8487025f28eb35b2bbb0d40b1bab8d8d7a9ae044f8504656d3acf7383cc456a"
     },
     {
-      "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/snapshots.json",
-      "sha256": "c6564dfb3c029258c36f1d1e98cebb2132194cc276907b1d3b870e38fff60f88"
-    },
-    {
-      "path": "tools/content-schema/quest-authoring/samples/comment-write-fix/evidence.json",
-      "sha256": "1c7c5a4c61cc352e75ce7391824eec91455a4f55bcf18a64b944e6490ae1d266"
+      "path": "tools/content-schema/quest-authoring/script_quests.json",
+      "sha256": "c83d7ed6892a91abeca72d29c40ab5137852bd7f60e8f483b890897caa848555"
     }
   ],
   "schema": "OTERYN_REVIEWED_SOURCE_TRANSCRIPTION_APPROVAL/v1"

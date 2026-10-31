@@ -968,7 +968,7 @@ pub(super) async fn verify_character_proficiency_receipt_history(
           OR h.committed_character_revision>r.character_revision \
           OR (get_byte(uuid_send(h.proficiency_occurrence_id),6)>>4)<>7 \
           OR (get_byte(uuid_send(h.proficiency_occurrence_id),8)&192)<>128 \
-          OR h.cause NOT IN ('training','perk_selection','migration','perk_modification') \
+          OR h.cause NOT IN ('training','perk_selection','migration','perk_modification','catalyst') \
           OR octet_length(h.command_binding) NOT BETWEEN 1 AND 1024 OR octet_length(h.policy_digest)<>32 \
           OR h.level_before NOT BETWEEN 1 AND 4294967295 OR h.level_after<>h.level_before \
           OR h.experience_before<0 OR h.experience_after<>h.experience_before OR h.committed_at<0 \
@@ -977,7 +977,7 @@ pub(super) async fn verify_character_proficiency_receipt_history(
               WHERE v IS NULL OR v !~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$') \
           OR (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
               WHERE l.proficiency_occurrence_id=h.proficiency_occurrence_id)=0 \
-          OR (h.cause IN ('perk_selection','perk_modification') AND (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
+          OR (h.cause IN ('perk_selection','perk_modification','catalyst') AND (SELECT count(*) FROM game_character_proficiency_receipt_lines l \
               WHERE l.proficiency_occurrence_id=h.proficiency_occurrence_id)<>1)) \
          UNION ALL SELECT 1 FROM game_character_proficiency_receipt_lines l \
           LEFT JOIN game_character_proficiency_receipts h USING (proficiency_occurrence_id) \

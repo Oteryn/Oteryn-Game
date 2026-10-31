@@ -29,7 +29,7 @@ pub(super) async fn reset_epochs(
             )
             .await?
     );
-    assert!(sqlx::query_scalar::<_, bool>("SELECT game_world_reset_initialize(encode($1,'hex')::uuid,$2,$3,$2,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_10',1)")
+    assert!(sqlx::query_scalar::<_, bool>("SELECT game_world_reset_initialize(encode($1,'hex')::uuid,$2,$3,$2,$4,$5,'TIBIA_SERVER_SAVE_BERLIN_06',1)")
         .bind(world.as_bytes().as_slice()).bind(room.compiled().server_digest().as_slice())
         .bind(room.movement_cells().scope().map_revision.as_str()).bind(room.compiled().client_digest().as_slice())
         .bind(room.frame_binding().digest().as_slice()).fetch_one(&h.pool).await?);

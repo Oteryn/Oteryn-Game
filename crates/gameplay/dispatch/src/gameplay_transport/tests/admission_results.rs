@@ -308,6 +308,24 @@ fn achievement_earned_names_the_grant_and_sums_the_account_facts() -> Result<(),
     Ok(())
 }
 
+/// P11: Crystal's achievement advance text preserves the catalogue display name verbatim.
+#[test]
+fn achievement_notification_uses_the_donor_message_text() {
+    assert_eq!(
+        achievement_notification_text("Allow Cookies?!"),
+        "Congratulations! You earned the achievement Allow Cookies?!."
+    );
+}
+
+/// P11: the durable `AlreadyHeld` outcome becomes `NoneEarned` and cannot notify again.
+#[test]
+fn achievement_notification_sends_nothing_for_a_second_award() {
+    assert_eq!(
+        achievement_notification(&connection::EarnedNotice::NoneEarned),
+        None
+    );
+}
+
 /// Display contract §3.3, §4.3: a valid page encodes; a row over its byte bounds fails closed
 /// with `PAYLOAD_LIMIT_EXCEEDED`; an unknown key with `ACCOUNT_DATA_INTEGRITY` and one operator
 /// event (owner decision 2026-09-30); a malformed row is a plain `REJECTED`. Nothing is

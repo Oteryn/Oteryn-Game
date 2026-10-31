@@ -18,6 +18,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         cause: QuestCause,
         fence: Option<CurrentCharacterGameplayFence>,
         slot: Option<&mut RevisionSlot>,
+        optional_pvp: Option<bool>,
     ) -> UseDisposition {
         if !runtime
             .player_control_facts(actor, session)
@@ -210,14 +211,27 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
             {
                 Ok(
-                    QuestTransitionOutcome::Committed(_)
-                    | QuestTransitionOutcome::AlreadyCommitted(_),
+                    QuestTransitionOutcome::Committed(ref committed)
+                    | QuestTransitionOutcome::AlreadyCommitted(ref committed),
                 ) => {
                     #[cfg(test)]
                     if self.states.quest_callbacks.interrupt_after_commit.swap(false, std::sync::atomic::Ordering::AcqRel) {
                         return UseDisposition::Rejected;
                     }
                     self.states.loop_ground.invalidate();
+                    // Shrine bonuses must see the committed flag before the next swing;
+                    // the cadence still reloads the durable copy for recovery and XP.
+                    if callback.quest == "oteryn:quest.the_way_of_the_monk_quest"
+                        && let Ok(mut sessions) = self.states.quest_sessions.lock()
+                        && let Some(entry) = sessions.get_mut(&session)
+                    {
+                        entry.copy = entry.copy.take().and_then(|mut copy| {
+                            let next = entry.version.checked_add(1)?;
+                            if !copy.apply(committed) { return None; }
+                            entry.version = next;
+                            Some(copy)
+                        });
+                    }
                     self.schedule_quest_refresh(session);
                 }
                 Err(crate::durability::character_progression::CharacterProgressionError::Unavailable(_)) => {
@@ -249,6 +263,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let Ok(snapshot) = runtime.commit_source_step(proof) else {
                 return UseDisposition::Rejected;
             };
+            states.stage_special_movement_step(
+                runtime,
+                map,
+                actor,
+                session,
+                self.owner_now().get(),
+                Some(expected.position()),
+                snapshot.position(),
+                optional_pvp,
+            );
             states.stage_underwater_step(
                 runtime,
                 actor,

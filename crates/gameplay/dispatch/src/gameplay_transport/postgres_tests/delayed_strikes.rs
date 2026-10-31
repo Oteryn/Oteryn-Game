@@ -828,16 +828,25 @@ async fn scenario_inner(admin: String, plan: Plan) -> TestResult {
                 .finalize();
             let mut bytes = [0; 16];
             bytes.copy_from_slice(&hash[..16]);
-            let random = oteryn_simulation_determinism::deterministic_decision_u64(
-                &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
-                    native.source_digest(),
-                ),
-                oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(bytes),
-                "spell.strike.due.draw",
-                0,
-            )
-            .map_err(debug)?;
-            let raw = crate::spell::uniform_draw(random, min, max) as f64;
+            let random = |ordinal| {
+                oteryn_simulation_determinism::deterministic_decision_u64(
+                    &oteryn_simulation_determinism::GameplayDecisionRoot::from_bytes(
+                        native.source_digest(),
+                    ),
+                    oteryn_simulation_determinism::DecisionOccurrenceId::from_bytes(bytes),
+                    "spell.strike.due.draw",
+                    ordinal,
+                )
+                .map_err(debug)
+            };
+            let mut raw = crate::spell::uniform_draw(random(0)?, min, max) as f64;
+            // The second draw is the base player critical (no critical equipment here).
+            let (chance, extra) =
+                oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence::default()
+                    .player_critical();
+            if crate::spell::uniform_draw(random(1)?, 1, 10000) <= i64::from(chance) {
+                raw = (raw * (1.0 + f64::from(extra) / 10000.0)).trunc();
+            }
             let after_mitigation = (raw - raw * mitigation_percent / 100.0).trunc();
             Some(
                 (after_mitigation * (100.0 - resistance) / 100.0)

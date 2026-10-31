@@ -3,6 +3,7 @@ use super::*;
 
 mod autowalk;
 pub use autowalk::{AutoWalkRoute, AutoWalkTarget};
+pub(super) mod special_movement;
 pub(super) mod underwater_drown;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
@@ -38,6 +39,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return (StepOutcome::rejected(), None);
         }
         let equipment = self.read_movement_equipment(actor, session).await;
+        let optional_pvp = self.special_movement_policy(&permit, actor, session).await;
         // Lock order (§1.2): the lane before any Channel guard.
         let mut runtime = self.runtime.lock().await;
         let mut states = self.states.spell_states.lock().await;
@@ -132,6 +134,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 // PAR-M10: underwater ground drowns on entry and stops on exit, in the same
                 // owner turn as the committed step.
                 if let Some(map) = self.bundle_map() {
+                    states.stage_special_movement_step(
+                        &runtime,
+                        map,
+                        actor,
+                        session,
+                        now,
+                        origin.map(|origin| origin.position()),
+                        snapshot.position(),
+                        optional_pvp,
+                    );
                     states.stage_underwater_step(
                         &runtime,
                         actor,
@@ -150,8 +162,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         let snapshot = self
                             .citizen_step(actor, session, direction, origin, snapshot)
                             .await;
-                        self.step_quest_callback(&permit, actor, session, origin, snapshot)
-                            .await
+                        let snapshot = self
+                            .step_quest_callback(&permit, actor, session, origin, snapshot)
+                            .await;
+                        self.dawnport_trial_step(actor, session, snapshot).await;
+                        snapshot
                     }
                     None => snapshot,
                 };

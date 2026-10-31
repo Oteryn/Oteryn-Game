@@ -6,7 +6,7 @@ use super::item_view::{ItemKey, SessionItemView};
 use crate::durability::item_craft::ItemCraftRequest;
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::{CommandId, CommandRef, ExactActorRef};
-use crate::map::view::{self, MapEntryKey};
+use crate::map::view::{self, MapEntryKey, MapFacts};
 use oteryn_gameplay_progression::hit_training::{FISHING_TRIES_PER_USE, SkillFamily};
 use oteryn_protocol_oteryn::world_map::MapDefinition;
 use oteryn_protocol_oteryn::world_object::{MapUseTarget, UseDisposition, UseIntent, UseTarget};
@@ -77,6 +77,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             command: CommandRef::new(command.game_session_id, id),
             source: [0; 16],
             tool: None,
+            gathering: None,
             station: None,
             intent: oteryn_protocol_oteryn::world_object::encode_item_use_intent(&intent).ok()?,
         };
@@ -102,7 +103,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return disposition(UseDisposition::StaleState);
         };
         request.source = source;
-        request.station = Some({
+        let (station, map_target) = {
             let mut runtime = self.runtime.lock().await;
             let states = self.states.spell_states.lock().await;
             if states.is_dead(actor) || !states.spell_idle(&runtime, actor, command.game_session_id)
@@ -148,8 +149,25 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let MapDefinition::Item(reference) = entry.facts.definition else {
                 return disposition(UseDisposition::NothingToUse);
             };
-            super::item_look::typed_definition(index, reference)?
-        });
+            let map_target = (
+                key,
+                facts.object_revision(match key {
+                    MapEntryKey::Base(k) => k,
+                    _ => return None,
+                }),
+                entry.facts.bound
+                    || facts.house_tile(pos)
+                    || entry.facts.count != 1
+                    || entry.facts.sub_type != 0,
+            );
+            (
+                super::item_look::typed_definition(index, reference)?,
+                map_target,
+            )
+        };
+        request.station = Some(station);
+        let mut catch_roll = 1;
+        let mut fishing_skill = 10;
         // Fishing is the same durable consume/mint owner as cooking, but keeps the rod and
         // consumes a worm only after the skill-scaled catch succeeds.
         if request
@@ -208,6 +226,8 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .ok()?;
             let roll = u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()?;
+            catch_roll = roll;
+            fishing_skill = skill;
             let mut due = Vec::new();
             {
                 let runtime = self.runtime.lock().await;
@@ -231,6 +251,73 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             request.tool = Some(rod);
             request.source = worm?;
         }
+        let inventory = self
+            .root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+            .ok()?;
+        let tool = inventory
+            .backpack
+            .iter()
+            .flat_map(|b| &b.entries)
+            .find(|entry| entry.item.item_instance_id == source);
+        let target_id = request
+            .station
+            .as_ref()
+            .and_then(|s| item_id(&s.production_key));
+        if let (Some(tool), Some(target_id)) = (tool, target_id)
+            && let Some(tool_id) = item_id(&tool.item.definition.production_key)
+            && oteryn_gameplay_items::fishing::gathering_rule(tool_id, target_id).is_some()
+        {
+            let attempt = oteryn_gameplay_items::fishing::gathering_attempt(
+                tool_id,
+                target_id,
+                fishing_skill,
+                catch_roll,
+                gathering_roll(
+                    native.source_digest(),
+                    command.game_session_id,
+                    command.command_id,
+                    &request.intent,
+                )?,
+            )?;
+            let (MapEntryKey::Base(key), revision, invalid) = map_target else {
+                return None;
+            };
+            if invalid {
+                return disposition(UseDisposition::NothingToUse);
+            }
+            let map = self.bundle_map()?;
+            if map.facts.terrain_tool_action(key) != Some(None)
+                || !map.facts.quest_callback_capacity(key, revision, 0)
+            {
+                return disposition(UseDisposition::NothingToUse);
+            }
+            let mut placement = map.overlay.base().digest().to_vec();
+            placement.extend_from_slice(&key.to_be_bytes());
+            request.gathering = Some(crate::durability::item_craft::GatheringCraft {
+                scope: crate::durability::terrain_tool::TerrainScope {
+                    map_revision: crate::map::overlay::map_revision(map.overlay.base()),
+                    content_generation: native.source_digest(),
+                    reset_epoch: i64::try_from(self.reset_epoch).ok()?,
+                },
+                mutation: crate::durability::terrain_tool::TerrainMutation {
+                    tool: source,
+                    tool_key: tool.item.definition.production_key.clone(),
+                    tool_revision: tool.item.definition.revision_ref.clone(),
+                    placement,
+                    expected_revision: i64::try_from(revision).ok()?,
+                    before: u32::from(target_id),
+                    after: attempt.after.map_or(0, u32::from),
+                    decay: if target_id == 7236 {
+                        vec![(7200, 900_000)]
+                    } else {
+                        Vec::new()
+                    },
+                },
+                attempt,
+            });
+        }
         if !self
             .states
             .player_trades
@@ -252,8 +339,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             )
             .await
             .ok()??;
+        drop(_permit);
+        if result == UseDisposition::Committed {
+            self.refresh_terrain_tools().await;
+        }
         disposition(result)
     }
+}
+
+fn item_id(key: &str) -> Option<u16> {
+    key.strip_prefix("oteryn:item.tibia.i")?.parse().ok()
+}
+
+pub(in crate::gameplay_transport) fn gathering_roll(
+    digest: [u8; 32],
+    session: crate::foundation::GameSessionId,
+    command_id: u64,
+    intent: &[u8],
+) -> Option<u32> {
+    let digest = Sha256::new()
+        .chain_update(b"oteryn.gathering.yield.v1")
+        .chain_update(session.as_bytes())
+        .chain_update(command_id.to_be_bytes())
+        .chain_update(intent)
+        .chain_update(digest)
+        .finalize();
+    let mut occurrence = [0; 16];
+    occurrence.copy_from_slice(&digest[..16]);
+    let draw = deterministic_decision_u64(
+        &GameplayDecisionRoot::from_bytes(digest.into()),
+        DecisionOccurrenceId::from_bytes(occurrence),
+        "gathering.yield",
+        0,
+    )
+    .ok()?;
+    u32::try_from(crate::spell::uniform_draw(draw, 1, 100_000)).ok()
 }
 
 #[cfg(test)]

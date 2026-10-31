@@ -792,6 +792,13 @@ async fn admit(
         return Ok(Err(MapItemMintError::AuthorityRejected));
     }
     lock_entry(tx, request, reservation).await?;
+    let mut placement = request.base_bundle_digest.to_vec();
+    placement.extend_from_slice(&request.placement_key.to_be_bytes());
+    let transformed: Option<i64> = sqlx::query_scalar("SELECT state_item_id FROM game_terrain_tool_transforms WHERE world_id=encode($1,'hex')::uuid AND channel_id=encode($2,'hex')::uuid AND placement=$3 AND reset_epoch=$4::text::bigint")
+        .bind(reservation.world_id.as_slice()).bind(reservation.channel_id.as_slice()).bind(placement).bind(request.reset_epoch.to_string()).fetch_optional(&mut **tx).await?;
+    if transformed.is_some_and(|state| request.item.definition.production_key != format!("oteryn:item.tibia.i{state}")) {
+        return Ok(Err(MapItemMintError::Refused(MapItemMintRefusal::AlreadyTaken)));
+    }
     let already_taken: bool = sqlx::query_scalar(
         "SELECT EXISTS (SELECT 1 FROM game_map_item_mint_receipts \
                          WHERE world_id = encode($1,'hex')::uuid \
@@ -1030,19 +1037,26 @@ async fn lock_entry(
     request: &MapItemMintRequest,
     reservation: &Reservation,
 ) -> std::result::Result<(), DurabilityError> {
-    let mut key = Vec::with_capacity(96);
-    key.extend_from_slice(&reservation.world_id);
-    key.extend_from_slice(&reservation.channel_id);
-    key.extend_from_slice(&request.base_bundle_digest);
-    key.extend_from_slice(&request.placement_key.to_be_bytes());
-    key.extend_from_slice(&request.reset_epoch.to_be_bytes());
-    sqlx::query(
-        "SELECT pg_advisory_xact_lock(hashtextextended(\
-         'oteryn:map-item-entry:' || encode($1, 'hex'), 0))",
-    )
-    .bind(key.as_slice())
-    .execute(&mut **tx)
-    .await?;
+    let mut placement = request.base_bundle_digest.to_vec();
+    placement.extend_from_slice(&request.placement_key.to_be_bytes());
+    lock_placement(tx, &reservation.world_id, &reservation.channel_id, &placement, request.reset_epoch).await
+}
+
+/// Gathering and materialization serialize the same base placement and reset epoch.
+pub(super) async fn lock_placement(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    world: &[u8;16],
+    channel: &[u8;16],
+    placement: &[u8],
+    reset_epoch: u64,
+) -> std::result::Result<(), DurabilityError> {
+    let mut key = Vec::with_capacity(80);
+    key.extend_from_slice(world);
+    key.extend_from_slice(channel);
+    key.extend_from_slice(placement);
+    key.extend_from_slice(&reset_epoch.to_be_bytes());
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('oteryn:map-item-entry:' || encode($1,'hex'),0))")
+        .bind(key).execute(&mut **tx).await?;
     Ok(())
 }
 

@@ -382,6 +382,7 @@ where
         | Dispatch::Unregistered => {}
     }
     player_trade::refresh(stream, authority, session).await?;
+    cyclopedia_tracker::refresh(stream, authority, session).await?;
     if training_logged_out {
         return Err(ServeEnd::LoggedOut);
     }

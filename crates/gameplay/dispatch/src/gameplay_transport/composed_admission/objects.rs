@@ -12,27 +12,38 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         target: &oteryn_protocol_oteryn::world_object::WorldObjectTarget,
     ) -> Option<UseOutcome> {
         let map = self.bundle_map()?;
-        let ItemKey::MapBase {
-            bundle_digest,
-            placement_key,
-            reset_epoch,
-        } = key
-        else {
-            // Persisted key action ids require migration 0321 and are deliberately fail-closed
-            // until that instance metadata is present.
+        let ItemKey::Instance(instance) = key else {
             return None;
         };
-        if bundle_digest != map.overlay.base().digest() || reset_epoch != self.reset_epoch {
-            return Some(UseOutcome::rejected());
-        }
-        let action = map.facts.action_at(placement_key)?;
+        let _permit = self.spell_lane_permit().await?;
+        let fence = command.item_fence?;
+        let inventory = self
+            .root
+            .read_item_use_inventory(self.character, self.holder, fence)
+            .await
+            .ok()?;
+        let action = inventory.key_action(instance)?;
         let mut runtime = self.runtime.lock().await;
-        if self.states.spell_states.lock().await.is_dead(actor)
+        let Ok(states) = self.states.spell_states.try_lock() else {
+            return Some(UseOutcome::rejected());
+        };
+        if states.is_dead(actor)
             || !runtime
                 .player_control_facts(actor, command.game_session_id)
                 .is_ok_and(|facts| facts.control_loss.is_none())
         {
             return Some(UseOutcome::rejected());
+        }
+        if !self
+            .states
+            .world_gate
+            .lock()
+            .is_ok_and(|mut gate| gate.admit(actor, self.clock_origin.elapsed()))
+        {
+            return Some(UseOutcome {
+                disposition: oteryn_protocol_oteryn::world_object::UseDisposition::Exhausted,
+                ..UseOutcome::rejected()
+            });
         }
         let expected = runtime.borrow_movement_position().read(actor).ok()?;
         let position = expected.position();

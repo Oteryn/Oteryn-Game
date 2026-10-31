@@ -174,6 +174,7 @@ fn a_lethal_due_receipt_appends_one_entry_and_a_non_lethal_one_none() {
         activity: &[],
         queue: &queue,
         rewards: &rewards,
+        charms: None,
     };
     let wound = hit(&mut f, 1, 5);
     record_batch_kills(&mut f.runtime, sink, &wound, 1_000);
@@ -201,6 +202,7 @@ fn a_lethal_receipt_without_a_reward_row_appends_nothing() {
         activity: &[],
         queue: &queue,
         rewards: &rewards,
+        charms: None,
     };
     let lethal = hit(&mut f, 1, 1_000);
     record_batch_kills(&mut f.runtime, sink, &lethal, 1_000);

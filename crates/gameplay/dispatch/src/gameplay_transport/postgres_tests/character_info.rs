@@ -238,9 +238,12 @@ fn dispatch_scenario() -> TestResult {
         );
         let (status, payload) = exchange(&owner, &mut admitted, 7, 113, &[0, 0, 0, 50]).await?;
         assert_eq!(status, CommandStatus::Accepted);
+        // PAR-P12a: the self query runs the automatic unlock first. The fixture Character was
+        // created more than ten years before now (Aeternal, 6) and is at least level 50
+        // (Trolltrasher, 42).
         assert_eq!(
-            &payload[payload.len() - 3..],
-            &[1, 1, 1],
+            &payload[payload.len() - 5..],
+            &[3, 1, 6, 42, 1],
             "earned and selected title survive reconnect"
         );
         for (command, tag) in [(8, 1), (9, 4)] {
@@ -281,8 +284,8 @@ fn dispatch_scenario() -> TestResult {
         let (status, payload) = exchange(&owner, &mut admitted, 12, 113, &[0, 0, 0, 1]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(
-            &payload[payload.len() - 3..],
-            &[1, 1, 0],
+            &payload[payload.len() - 5..],
+            &[3, 1, 6, 42, 0],
             "conditional title and its selection are revoked"
         );
         let revoked: bool = sqlx::query_scalar("SELECT NOT EXISTS(SELECT 1 FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=2)")
@@ -321,8 +324,8 @@ fn dispatch_scenario() -> TestResult {
         let (status, payload) = exchange(&owner, &mut admitted, 16, 113, &[0, 0, 0, 1]).await?;
         assert_eq!(status, CommandStatus::Accepted);
         assert_eq!(
-            &payload[payload.len() - 3..],
-            &[1, 1, 0],
+            &payload[payload.len() - 5..],
+            &[3, 1, 6, 42, 0],
             "Globetrotter and its selection are revoked like Global"
         );
         let (globetrotter, selected): (bool, Option<i16>) = sqlx::query_as("SELECT EXISTS(SELECT 1 FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid AND title=3),(SELECT title FROM game_character_title_selection WHERE character_id=encode($1,'hex')::uuid)")
@@ -330,6 +333,104 @@ fn dispatch_scenario() -> TestResult {
         assert!(!globetrotter);
         assert_eq!(selected, None);
         drop(owner);
+        drop(authority);
+        drop(seal);
+        h.cleanup().await
+    })
+}
+
+/// PAR-P12a: the automatic refresh grants a title from its native owner (a 7-day reward
+/// streak) and, in the same transaction, revokes a stored conditional title whose predicate
+/// fails (Cyclopscamper below level 100) together with its selection.
+#[test]
+fn character_titles_refresh_grants_and_revokes_from_native_facts() -> TestResult {
+    if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+        return Ok(());
+    }
+    use super::fixture::id;
+    run(async |admin| {
+        let h = Harness::create_with_admission_seed(admin, "character_title_refresh", false, false)
+            .await?;
+        eprintln!(
+            "POSTGRES_STARTED CHARACTER-INFO-1 character_titles_refresh_grants_and_revokes_from_native_facts"
+        );
+        prepare_current_session(&h).await?;
+        let current =
+            crate::durability::fresh_admission::FreshAdmissionStore::from_root(h.root.clone())
+                .current_session_at(
+                    crate::foundation::GameSessionId::decode(&id(50)).map_err(debug)?,
+                )
+                .await?
+                .0;
+        let fence =
+            crate::gameplay_transport::item_fence_of(current).ok_or("current item fence")?;
+        let seal = h.recovery.seal_current().map_err(debug)?;
+        let authority = h
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        assert!(
+            h.root
+                .unlock_character_title(
+                    &authority,
+                    &h.node,
+                    fence,
+                    CharacterTitle::Cyclopscamper,
+                    100,
+                    None
+                )
+                .await
+                .map_err(debug)?
+        );
+        h.root
+            .select_character_title(
+                &authority,
+                &h.node,
+                fence,
+                Some(CharacterTitle::Cyclopscamper),
+            )
+            .await
+            .map_err(debug)?;
+        super::daily_reward::epoch(&h, 1).await?;
+        let mut tx = h.pool.begin().await?;
+        sqlx::query("INSERT INTO game_character_daily_rewards(character_id,world_id,lane_day,streak,last_claim_epoch,last_claim_day) SELECT encode($1,'hex')::uuid,world_id,2,7,reset_epoch,reset_day FROM game_world_reset_history WHERE world_id=encode($2,'hex')::uuid AND reset_epoch=1")
+            .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
+        sqlx::query("INSERT INTO game_character_daily_reward_claims(character_id,world_id,reset_epoch,reset_day,transaction_id,request_binding,lane_day,streak_before,streak_after,jokers_spent,premium) SELECT character_id,world_id,last_claim_epoch,last_claim_day,encode($1,'hex')::uuid,$2,1,6,7,0,false FROM game_character_daily_rewards WHERE character_id=encode($3,'hex')::uuid")
+            .bind(id(91).as_slice()).bind([3_u8;32].as_slice()).bind(id(41).as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
+        let now = 1_800_000_000_000;
+        let granted = h
+            .root
+            .refresh_character_titles(&authority, &h.node, fence, now)
+            .await
+            .map_err(debug)?;
+        // The fixture's creation receipt is more than ten years before `now` (Aeternal).
+        assert_eq!(
+            granted,
+            [CharacterTitle::Aeternal, CharacterTitle::CreatureOfHabitGrade1]
+        );
+        let (titles, selected): (Vec<i16>, Option<i16>) = sqlx::query_as("SELECT ARRAY(SELECT title FROM game_character_titles WHERE character_id=encode($1,'hex')::uuid ORDER BY title),(SELECT title FROM game_character_title_selection WHERE character_id=encode($1,'hex')::uuid)")
+            .bind(id(41).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(titles, [6, 14], "streak title granted, Cyclopscamper revoked");
+        assert_eq!(selected, None, "the revoked selection is cleared");
+        assert!(
+            h.root
+                .refresh_character_titles(&authority, &h.node, fence, now)
+                .await
+                .map_err(debug)?
+                .is_empty(),
+            "replay grants nothing"
+        );
+        let mut stale = fence;
+        stale.connection_generation =
+            crate::foundation::ConnectionGeneration::new(2).map_err(debug)?;
+        assert!(
+            h.root
+                .refresh_character_titles(&authority, &h.node, stale, now)
+                .await
+                .is_err()
+        );
         drop(authority);
         drop(seal);
         h.cleanup().await

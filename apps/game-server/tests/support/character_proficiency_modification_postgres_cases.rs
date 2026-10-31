@@ -1,6 +1,7 @@
 #![allow(clippy::expect_used)]
-// PROF-SHAPE-1a and -1b PostgreSQL cases (PROFICIENCY-1B §13 rows 1-7, 9-11, 13, 14 as far as
-// these slices reach; the orb BURN shape waits for a later slice).
+// PROF-SHAPE-1a and -1b PostgreSQL cases (PROFICIENCY-1B §13 rows 1-7, 9-11, 13, 14) with the
+// PROFICIENCY-1C rank model and migration 0575's activation; the orb burn itself runs through
+// the dispatch command path (`postgres_tests/proficiency_modification.rs`).
 use crate::bestiary_postgres_harness::{
     CHARACTER, Harness, TestResult, configured_admin, debug, fence, id, runtime,
 };
@@ -114,6 +115,7 @@ struct Shaping {
     entries: usize,
     clear_dust: u64,
     pool_known: bool,
+    orbs: u8,
 }
 impl Default for Shaping {
     fn default() -> Self {
@@ -122,6 +124,7 @@ impl Default for Shaping {
             entries: 5,
             clear_dust: 0,
             pool_known: true,
+            orbs: 0,
         }
     }
 }
@@ -135,15 +138,15 @@ impl ProficiencyShapingSource for Shaping {
                     .map(|index| ProficiencyShapingEntry {
                         perk_identity: format!("perk-{index}"),
                         weight: Some(1),
-                        rank_values: [true; 10],
+                        rank_values: [true; 11],
                     })
                     .collect()
             }),
             modify_cost: [Some(0); 2],
-            rank_step_cost: [Some(0); 9],
+            rank_step_cost: [Some(0); 10],
             reshape_offer_cost: Some(0),
             clear_cost: Some(self.clear_dust),
-            orb_count: Some(0),
+            orb_count: Some(self.orbs),
         })
     }
     fn perk_identity(
@@ -206,6 +209,7 @@ impl Actor<'_, '_, '_> {
                 fence(at).map_err(|_| Error::InvalidInput)?,
                 command,
                 context,
+                None,
                 Arc::new(Definitions::default()),
                 Arc::new(shaping),
             )
@@ -452,6 +456,59 @@ where
 }
 
 #[test]
+fn migration_activates_production_shaping_and_its_secret() -> TestResult {
+    run("profshape_activation", async |a| {
+        // 0575 activates shaping-r1 for every shaped definition with no control-plane step.
+        let (active, sword): (i64, Option<String>) = sqlx::query_as(
+            "SELECT count(*) FILTER (WHERE shaping_revision = 'shaping-r1' AND active), \
+             max(shaping_revision) FILTER (WHERE active \
+                 AND shaping_key = 'oteryn:proficiency-shaping.tibia.p6') \
+             FROM game_proficiency_shaping_revisions",
+        )
+        .fetch_one(&a.h.pool)
+        .await?;
+        assert_eq!((active, sword.as_deref()), (422, Some("shaping-r1")));
+        // The draw secret exists once and reads the same every time (SIM-DETERMINISM-01 §10).
+        let secret =
+            a.h.root
+                .read_proficiency_shaping_secret()
+                .await
+                .map_err(debug)?;
+        assert_ne!(secret, [0; 32]);
+        assert_eq!(
+            a.h.root
+                .read_proficiency_shaping_secret()
+                .await
+                .map_err(debug)?,
+            secret
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn orb_rank_without_a_carried_orb_is_no_orb() -> TestResult {
+    run("profshape_no_orb", async |a| {
+        a.accept(3, command(90, 1, Kind::Modify { level: 0 }, 3, "shaping-1"))
+            .await?;
+        let orbs = Shaping {
+            orbs: 1,
+            ..Shaping::default()
+        };
+        a.refuse(
+            "orb rank without an orb",
+            4,
+            command(91, 1, Kind::OrbRank, 4, "shaping-1"),
+            orbs,
+            IN_ZONE,
+            R::NoOrb,
+        )
+        .await?;
+        Ok(())
+    })
+}
+
+#[test]
 fn modification_lifecycle_replays_and_verifies() -> TestResult {
     run("profshape_lifecycle", async |a| {
         let modify = command(20, 1, Kind::Modify { level: 0 }, 3, "shaping-1");
@@ -468,7 +525,7 @@ fn modification_lifecycle_replays_and_verifies() -> TestResult {
         );
         let after = receipt.after.clone().expect("modified");
         assert_ne!(after.entry_index, 0, "the selected perk is never drawn");
-        assert_eq!((after.level, after.rank, after.pending_offer), (0, 1, None));
+        assert_eq!((after.level, after.rank, after.pending_offer), (0, 0, None));
         assert_eq!(a.h.root_revision().await?, "4");
         assert_eq!(a.track_revision().await?, 4);
         assert_eq!(
@@ -502,7 +559,7 @@ fn modification_lifecycle_replays_and_verifies() -> TestResult {
         // RANK_UP, offer, rank refused while pending, choose, offer, decline, clear.
         a.accept(4, command(21, 1, Kind::RankUp, 4, "shaping-1"))
             .await?;
-        assert_eq!(a.row(1).await?.and_then(|row| row.2), Some(2));
+        assert_eq!(a.row(1).await?.and_then(|row| row.2), Some(1));
         a.accept(5, command(22, 1, Kind::ReshapeOffer, 5, "shaping-1"))
             .await?;
         let offer = a
@@ -544,7 +601,7 @@ fn modification_lifecycle_replays_and_verifies() -> TestResult {
         let chosen = a.row(1).await?.expect("row");
         assert_eq!(
             (chosen.1, chosen.2, chosen.3),
-            (Some(offer[1]), Some(2), None)
+            (Some(offer[1]), Some(1), None)
         );
         a.accept(7, command(25, 1, Kind::ReshapeOffer, 7, "shaping-1"))
             .await?;
@@ -607,7 +664,7 @@ fn refusals_follow_the_order_and_write_nothing() -> TestResult {
         .await?;
         let orb = command(30, 1, Kind::OrbRank, 3, "shaping-1");
         a.refuse(
-            "orb before 1b",
+            "orb rank without an orb count",
             3,
             orb,
             Shaping::default(),
@@ -1240,6 +1297,10 @@ fn database_checks_refuse_forbidden_shapes() -> TestResult {
             .await?;
         let refused = async |sql: &str| -> TestResult<String> {
             let mut tx = a.h.pool.begin().await?;
+            // 0575's orb pairing runs at the statement, ahead of 0055's deferred line guard.
+            sqlx::query("SET CONSTRAINTS game_proficiency_orb_line_burn IMMEDIATE")
+                .execute(&mut *tx)
+                .await?;
             let statement = sqlx::query(sqlx::AssertSqlSafe(sql.to_owned()))
                 .execute(&mut *tx)
                 .await;
@@ -1259,7 +1320,8 @@ fn database_checks_refuse_forbidden_shapes() -> TestResult {
                 .await?
                 .contains("does not equal its latest line")
         );
-        // Each operation changing a forbidden field, and any orb before the orb BURN, fails its CHECK.
+        // Each operation changing a forbidden field fails its CHECK, and an orb line without its
+        // burn fails 0575's pairing guard at commit.
         let line = "INSERT INTO game_character_proficiency_modification_lines SELECT \
             proficiency_occurrence_id, character_id, committed_character_revision, cause, item_key, 2, ";
         for (tail, name) in [
@@ -1273,7 +1335,7 @@ fn database_checks_refuse_forbidden_shapes() -> TestResult {
             ),
             (
                 "'ORB_RANK', bound_shaping_revision, level_after, shaping_key_after, shaping_revision_after, entry_index_after, rank_after, NULL, level_after, shaping_key_after, shaping_revision_after, entry_index_after, 10, NULL, 0, 0, 1, 1",
-                "line_no_orb_burn",
+                "orb burn and ORB_RANK line differ",
             ),
             (
                 "'RESHAPE_DECLINE', bound_shaping_revision, level_after, shaping_key_after, shaping_revision_after, entry_index_after, rank_after, NULL, level_after, shaping_key_after, shaping_revision_after, entry_index_after, rank_after, NULL, 0, 0, 0, 0",
@@ -1289,7 +1351,7 @@ fn database_checks_refuse_forbidden_shapes() -> TestResult {
         // Two slots in one perk_modification receipt are refused, even with a matching row.
         let error = refused(&format!(
             "WITH line AS ({line}'MODIFY', bound_shaping_revision, NULL, NULL, NULL, NULL, NULL, NULL, \
-             1, shaping_key_after, shaping_revision_after, entry_index_after, 1, NULL, 0, 0, 0, 0 \
+             1, shaping_key_after, shaping_revision_after, entry_index_after, 0, NULL, 0, 0, 0, 0 \
              FROM game_character_proficiency_modification_lines RETURNING *) \
              INSERT INTO game_character_proficiency_modifications SELECT character_id, item_key, slot, \
              level_after, shaping_key_after, shaping_revision_after, entry_index_after, rank_after, NULL, \

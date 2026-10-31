@@ -24,13 +24,13 @@ impl LevelRefresh {
         }
     }
 
-    fn is_marked(&self, character: CharacterId) -> bool {
+    pub(super) fn is_marked(&self, character: CharacterId) -> bool {
         self.0
             .lock()
             .is_ok_and(|marked| marked.contains(&character))
     }
 
-    fn unmark(&self, character: CharacterId) {
+    pub(super) fn unmark(&self, character: CharacterId) {
         if let Ok(mut marked) = self.0.lock() {
             marked.remove(&character);
         }

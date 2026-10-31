@@ -293,12 +293,12 @@ fn c15_stamina_bands_equal_crystal_final_bonus_stamina_without_other_modifiers()
 }
 
 #[test]
-fn c15_prey_and_boost_rounding_is_the_recorded_d118_divergence() {
-    // Crystal `onGainExperience`: `ceil(exp * (100 + prey) / 100)`, then
-    // `exp * (1 + boost / 100 + lowLevel / 100) * stamina`, truncated once. Oteryn floors each
-    // D118 step. These pins name the divergence; they are not adopted.
-    assert_eq!(hunting_experience(1, 5, 0, 2000, false, 51), Ok(1)); // Crystal ceil(1.05) = 2
-    assert_eq!(hunting_experience(1, 0, 50, 2520, true, 51), Ok(1)); // Crystal 1 * 1.5 * 1.5 = 2.25 -> 2
+fn c15_prey_and_boost_rounding_matches_crystal_global_parity() {
+    // Owner C15 adopts Global single final truncation, including the Prey fraction.
+    // Crystal 201189f `data/events/scripts/player.lua:523` instead ceils Prey first:
+    // ceil(1.05) = 2. Its line 627 combines the remaining modifiers.
+    assert_eq!(hunting_experience(1, 5, 0, 2000, false, 51), Ok(1));
+    assert_eq!(hunting_experience(1, 0, 50, 2520, true, 51), Ok(2));
 }
 
 #[test]

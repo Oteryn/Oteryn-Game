@@ -41,13 +41,16 @@ fn amount_prompt(exchange: CoinExchange) -> &'static str {
     match exchange {
         CoinExchange::GoldToPlatinum => "How many platinum coins would you like to get?",
         CoinExchange::PlatinumToGold => {
-            "How many platinum coins would you like to change into {gold}?"
+            "How many platinum coins would you like to change into gold?"
         }
         CoinExchange::PlatinumToCrystal => "How many crystal coins would you like to get?",
         CoinExchange::CrystalToPlatinum => {
             "How many crystal coins would you like to change into platinum?"
         }
     }
+}
+fn platinum_destination_prompt() -> &'static str {
+    "Would you like to change your platinum coins into gold or crystal?"
 }
 fn parse_amount(text: &str) -> Option<u64> {
     let digits: String = text
@@ -189,9 +192,7 @@ pub(super) fn prepare(
         }
     };
     let line = match next {
-        Topic::PlatinumDestination => {
-            "Would you like to change your platinum coins into {gold} or {crystal}?".into()
-        }
+        Topic::PlatinumDestination => platinum_destination_prompt().into(),
         Topic::Amount(exchange) => amount_prompt(exchange).into(),
         Topic::Confirm(exchange, amount) => quote(exchange, amount),
     };
@@ -364,6 +365,14 @@ mod tests {
         assert_eq!(
             amount_prompt(CoinExchange::CrystalToPlatinum),
             "How many crystal coins would you like to change into platinum?"
+        );
+        assert_eq!(
+            amount_prompt(CoinExchange::PlatinumToGold),
+            "How many platinum coins would you like to change into gold?"
+        );
+        assert_eq!(
+            platinum_destination_prompt(),
+            "Would you like to change your platinum coins into gold or crystal?"
         );
         for command in [
             "balance",

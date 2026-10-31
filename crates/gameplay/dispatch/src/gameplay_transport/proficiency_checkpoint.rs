@@ -51,6 +51,12 @@ impl WeaponProficiencyDispatch {
                 state: line.after().clone(),
                 committed_character_revision: receipt.committed_character_revision,
                 last_proficiency_occurrence_id: receipt.occurrence_id,
+                // Progress moves no modification row; keep the live track's committed rows.
+                modifications: self
+                    .tracks
+                    .get(line.after().item_key())
+                    .map(|track| track.modifications.clone())
+                    .unwrap_or_default(),
             };
             if let Some(track) = catalogue.live_track(&stored) {
                 self.install_track(stored.state.item_key(), track);

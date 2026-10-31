@@ -318,6 +318,7 @@ async fn live<A: FreshAdmissionAuthority>(
         party_view,
         party_icons: Vec::new(),
         market_revision: 1,
+        cyclopedia_tracker_revision: 1,
         item_view,
         visibility,
         appearances,

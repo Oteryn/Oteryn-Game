@@ -1578,7 +1578,8 @@ fn the_notice_read_is_bounded_by_the_catalogue_size() -> TestResult {
         let first = granted(commit(1, OTHER_CHEST_PLACEMENT, 1).await?)?;
         assert_eq!(first.achievement_key, ANNIHILATOR);
         assert_eq!(first.account_fact_keys, [ANNIHILATOR]);
-        // The same key again: `AlreadyHeld`, no notice.
+        // P11: the same key again is `AlreadyHeld`, so the text-message owner receives no
+        // `Granted` notice from which it could send a second notification.
         assert_eq!(
             commit(2, THIRD_CHEST_PLACEMENT, 1).await?,
             GrantNotice::None

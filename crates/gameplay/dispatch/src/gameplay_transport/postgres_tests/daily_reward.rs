@@ -101,13 +101,13 @@ pub(super) fn results(
 pub(super) async fn epoch(h: &Harness, value: u64) -> TestResult {
     // World owner fixture: not a daily runtime clock or a client-supplied epoch.
     if value == 1 {
-        sqlx::query("INSERT INTO game_world_reset_epochs VALUES(encode($1,'hex')::uuid,0,$2,'daily-map',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,'2026-10-01 08:00:00Z','2026-10')")
+        sqlx::query("INSERT INTO game_world_reset_epochs VALUES(encode($1,'hex')::uuid,0,$2,'daily-map',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,'2026-10-01 08:00:00Z','2026-10')")
             .bind(id(42).as_slice()).bind([8_u8;32].as_slice()).execute(&h.pool).await?;
         let epoch:String=sqlx::query_scalar("SELECT reset_epoch::text FROM game_world_reset_history WHERE world_id=encode($1,'hex')::uuid").bind(id(42).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(epoch, "1");
         return Ok(());
     }
-    sqlx::query("INSERT INTO game_world_reset_history SELECT encode($1,'hex')::uuid,$2::text::numeric,((DATE '2026-10-01'+($2::text::integer-1))-DATE '1970-01-01')::bigint,extract(epoch FROM ((DATE '2026-10-01'+($2::text::integer-1))::timestamp + interval '10 hours') AT TIME ZONE 'Europe/Berlin')::bigint*1000,extract(epoch FROM ((DATE '2026-10-01'+($2::text::integer-1))::timestamp + interval '10 hours') AT TIME ZONE 'Europe/Berlin')::bigint*1000")
+    sqlx::query("INSERT INTO game_world_reset_history SELECT encode($1,'hex')::uuid,$2::text::numeric,((DATE '2026-10-01'+($2::text::integer-1))-DATE '1970-01-01')::bigint,extract(epoch FROM ((DATE '2026-10-01'+($2::text::integer-1))::timestamp + interval '6 hours') AT TIME ZONE 'Europe/Berlin')::bigint*1000,extract(epoch FROM ((DATE '2026-10-01'+($2::text::integer-1))::timestamp + interval '6 hours') AT TIME ZONE 'Europe/Berlin')::bigint*1000")
         .bind(id(42).as_slice()).bind(value.to_string()).execute(&h.pool).await?;
     Ok(())
 }

@@ -18,7 +18,12 @@ pub struct ChannelSessionStates {
     pub attack: Mutex<attack::ChannelAttackStates>,
     /// CHAT-WIRE-1: speaker name, spam limiter and queued lines of each chatting session.
     pub chat: chat_intent::ChatRuntime,
+    /// P22d: settled kills of tracked creatures awaiting a domain 98 refresh. A leaf lock.
+    pub(super) cyclopedia_tracker_refresh: super::cyclopedia_tracker::TrackerRefresh,
     pub(super) daily_rewards: super::daily_reward::DailyRewardSessions,
+    /// S16c: sessions whose Dawnport trial build commit awaits live installation; their last
+    /// position capture is held like a retained NPC vocation choice. A leaf lock.
+    pub(super) dawnport_trials: std::sync::Mutex<std::collections::HashSet<GameSessionId>>,
     /// SESSION-INGRESS-1: the ordered command stream and latest terminal result per session.
     pub command_ingress: super::session_ingress::SessionCommands,
     /// The releases holding each write fence of the slot (CHARM-DESC-FENCE-LEASE step c).
@@ -74,6 +79,9 @@ pub struct ChannelSessionStates {
     /// `runtime`, never before, like `door`.
     pub spell_states: Mutex<actor_spell::ChannelSpellStates>,
     pub(super) timed_items: super::timed_item::TimedRuntime,
+    /// PAR-P12a: Characters whose level, tracked kill or boss kill may have changed a title
+    /// predicate; refreshed on the actor's cadence like `level_refresh`. A leaf lock.
+    pub(super) title_refresh: level_up_live::LevelRefresh,
     pub(super) training: super::loop_training::TrainingRuntime,
     pub(super) tutorial_sessions: tutorial_session::TutorialSessions,
     /// Committed Atelier gems and grades, with the current Wheel vessel overlay.

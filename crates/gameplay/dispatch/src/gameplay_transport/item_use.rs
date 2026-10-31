@@ -98,7 +98,15 @@ impl ItemUseGate {
         let (ready, cooldown) = match kind {
             ItemUseKind::Food => (&mut self.food_ready_ms, FOOD_COOLDOWN_MS),
             ItemUseKind::Potion => (&mut self.potion_ready_ms, POTION_COOLDOWN_MS),
-            ItemUseKind::PickRefine { .. } | ItemUseKind::MountTaming => {
+            // The concoction cooldown is durable; the writer refuses inside it.
+            ItemUseKind::Concoction => {
+                self.in_flight_since_ms = Some(now_ms);
+                return Ok(());
+            }
+            ItemUseKind::PickRefine { .. }
+            | ItemUseKind::MountTaming
+            | ItemUseKind::ProficiencyCatalyst
+            | ItemUseKind::ProficiencyOrb => {
                 return Err(UseDisposition::Rejected);
             }
         };
@@ -166,6 +174,8 @@ impl ItemUseGates {
 enum Effect {
     Food(u16),
     Potion(Vec<ReferencePotionRestore>),
+    /// W22c: the durable effect row is the whole effect; the kill settle reads it.
+    Concoction,
 }
 
 enum UseSource {
@@ -302,27 +312,41 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .chain(inventory.nested.iter().map(|(_, entry)| entry))
             .find(|entry| entry.item.item_instance_id == source)
             .ok_or(UseDisposition::StaleState)?;
-        let record = record(native, &entry.item.definition).ok_or(UseDisposition::NothingToUse)?;
-        if let ReferenceItemField::Known(_) = &record.semantics.fluid {
+        let record = record(native, &entry.item.definition);
+        if let Some(record) = record
+            && let ReferenceItemField::Known(_) = &record.semantics.fluid
+        {
             let fluid = inventory.fluids.get(&source).copied().unwrap_or(0);
             let definition = entry.item.definition.clone();
             return self
                 .drink(actor, &command, fence, source, definition, fluid)
                 .await;
         }
-        let (kind, effect, flask) = match &record.semantics.consumption {
-            ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
-                if food.regeneration_seconds > 0 =>
+        let (kind, effect, flask) = match record.map(|record| &record.semantics.consumption) {
+            None if entry.item.definition.production_key
+                == crate::durability::item_use::concoction::WEALTH_DUPLEX_KEY =>
             {
-                let effect = Effect::Food(food.regeneration_seconds);
-                (ItemUseKind::Food, effect, ItemUseFlaskPlan::None)
+                (
+                    ItemUseKind::Concoction,
+                    Effect::Concoction,
+                    ItemUseFlaskPlan::None,
+                )
             }
-            ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) => {
-                let flask = flask_plan(native, &inventory, entry, &potion.empty_flask)?;
-                let effect = Effect::Potion(potion.restores.clone());
-                (ItemUseKind::Potion, effect, flask)
-            }
-            _ => return Err(UseDisposition::NothingToUse),
+            None => return Err(UseDisposition::NothingToUse),
+            Some(consumption) => match consumption {
+                ReferenceItemField::Known(ReferenceItemConsumption::Food(food))
+                    if food.regeneration_seconds > 0 =>
+                {
+                    let effect = Effect::Food(food.regeneration_seconds);
+                    (ItemUseKind::Food, effect, ItemUseFlaskPlan::None)
+                }
+                ReferenceItemField::Known(ReferenceItemConsumption::Potion(potion)) => {
+                    let flask = flask_plan(native, &inventory, entry, &potion.empty_flask)?;
+                    let effect = Effect::Potion(potion.restores.clone());
+                    (ItemUseKind::Potion, effect, flask)
+                }
+                _ => return Err(UseDisposition::NothingToUse),
+            },
         };
         let reserved: Vec<[u8; 16]> = std::iter::once(source)
             .chain(match &flask {
@@ -363,7 +387,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .then(|| states.get(&runtime, actor, session))
                 .flatten()
                 .ok_or(UseDisposition::Rejected)?;
-            if !requirements_met(&record.semantics.use_requirements, state.character_facts()) {
+            if record.is_some_and(|record| {
+                !requirements_met(&record.semantics.use_requirements, state.character_facts())
+            }) {
                 return Err(UseDisposition::RequirementNotMet);
             }
             // FOOD-REGEN-1: eating that would reach the cap is refused; nothing is burned.
@@ -391,6 +417,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 (UseDisposition::Committed, false, false)
             }
             Ok(Err(ItemUseError::StaleState)) => (UseDisposition::StaleState, false, false),
+            Ok(Err(ItemUseError::Cooldown)) => (UseDisposition::Exhausted, false, false),
             Ok(Err(ItemUseError::Unavailable(_))) | Err(_) => {
                 (UseDisposition::Rejected, false, true)
             }
@@ -764,6 +791,7 @@ fn apply_effect(
                 };
             }
         }
+        Effect::Concoction => {}
     }
 }
 

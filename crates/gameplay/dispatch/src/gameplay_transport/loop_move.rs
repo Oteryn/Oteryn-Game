@@ -498,7 +498,7 @@ pub(super) async fn move_loop_item(
     let ItemKey::Instance(item) = request.item else {
         return refused(LoopMoveRefusal::NotSupported);
     };
-    let (native, pins, index) = {
+    let (native, pins, index, mailbox) = {
         let mut runtime = admission.runtime.lock().await;
         let states = admission.states.spell_states.lock().await;
         let dead = states.is_dead(actor);
@@ -509,8 +509,19 @@ pub(super) async fn move_loop_item(
         let pin = runtime.content_pin();
         let content_revision = sha256_revision(pin.server_artifact_digest());
         let placement_context = pin.frame_binding_digest().to_vec();
+        let mut mailbox = None;
         let pins =
             super::bundle_map_position(&mut runtime, admission.movement_cells, actor).map(|at| {
+                // MAIL: a move onto a tile holding a mailbox posts into it.
+                if let (LoopTarget::Ground(to), Some(index)) = (&request.target, index)
+                    && let (Ok(x), Ok(y), Ok(floor)) = (
+                        u16::try_from(to.x),
+                        u16::try_from(to.y),
+                        i8::try_from(to.floor),
+                    )
+                {
+                    mailbox = super::mail::mailbox_at(at.map, index, TilePos { x, y, floor });
+                }
                 (
                     at.map.overlay.base().clone(),
                     (at.at.x, at.at.y, at.at.floor),
@@ -518,7 +529,7 @@ pub(super) async fn move_loop_item(
                     placement_context,
                 )
             });
-        (native, pins, index)
+        (native, pins, index, mailbox)
     };
     let Some(native) = native else {
         return refused(LoopMoveRefusal::Rejected);
@@ -554,6 +565,18 @@ pub(super) async fn move_loop_item(
             let Some((base, at, content_revision, placement_context)) = &pins else {
                 return refused(LoopMoveRefusal::NotSupported);
             };
+            if let Some(mailbox) = mailbox {
+                if !in_reach(*at, (to.x, to.y, to.floor)) {
+                    return LoopMoveResult::TooFar;
+                }
+                if let Some(posted) =
+                    super::mail::post_moved(admission, fence, command.command_id, item, mailbox)
+                        .await
+                {
+                    drop(permit);
+                    return posted;
+                }
+            }
             match drop_cell(base, *at, to) {
                 Ok(spatial_position) => LoopDestination::Ground(LoopGround {
                     spatial_position,

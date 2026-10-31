@@ -1072,11 +1072,14 @@ async fn admit(
         Ok(plan) => plan,
         Err(refusal) => return Ok(Err(ItemTransferError::Refused(refusal))),
     };
-    if let Err(refusal) = check_transfer_capacity(
+    if weights.generation_digest() != request.weight_generation_digest {
+        return Ok(Err(ItemTransferError::Refused(ItemTransferRefusal::WeightGenerationMismatch)));
+    }
+    if let Err(refusal) = check_incoming_capacity(
         tx,
         fence.character_id,
         world_id.as_bytes(),
-        request,
+        &request.item,
         &source.item,
         weights,
     )
@@ -1106,23 +1109,20 @@ async fn admit(
 
 /// Weigh the actual custody graph while the native Character root is locked.
 /// No client total, persisted capacity, or separately cached inventory participates.
-async fn check_transfer_capacity(
+pub(super) async fn check_incoming_capacity(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     character: CharacterId,
     world: &[u8; 16],
-    request: &ItemTransferRequest,
+    item: &ItemDefinitionFacts,
     source: &InventoryItem,
     weights: &dyn ItemWeightLookup,
 ) -> std::result::Result<std::result::Result<(), ItemTransferRefusal>, DurabilityError> {
-    if weights.generation_digest() != request.weight_generation_digest {
-        return Ok(Err(ItemTransferRefusal::WeightGenerationMismatch));
-    }
     let incoming = match weights.weight_of(&source.definition) {
         Ok(weight) => weight,
         Err(error) => return Ok(Err(weight_refusal(error))),
     };
-    if request.item.weight != Some(incoming) {
-        return Ok(Err(if request.item.weight.is_none() {
+    if item.weight != Some(incoming) {
+        return Ok(Err(if item.weight.is_none() {
             ItemTransferRefusal::WeightUnknown
         } else {
             ItemTransferRefusal::WeightDefinitionMismatch
@@ -1199,7 +1199,7 @@ async fn check_transfer_capacity(
     };
     let incoming = [IncomingWeight {
         item: source,
-        weight_definition: &request.item.definition,
+        weight_definition: &item.definition,
         unit_weight: Some(incoming),
     }];
     match plan_capacity(CapacityMove::IntoCharacter {

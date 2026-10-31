@@ -32,6 +32,18 @@ class ConvertPlacementsTest(unittest.TestCase):
         self.assertEqual({r["declaration"]["npc"] for r in self.records}, scope - {h["npc"] for h in self.held})
         self.assertLessEqual(scope, cp.admitted_keys())
 
+    def test_monk_pilgrimage_npcs_use_the_reviewed_crystal_cells(self):
+        expected = {
+            'oteryn:npc.ambassador_manop': {'x': 32057, 'y': 31898, 'floor': 4},
+            'oteryn:npc.enpa_deia_pema': {'x': 33603, 'y': 31468, 'floor': 7},
+        }
+        actual = {r['declaration']['npc']: r['declaration'] for r in self.records
+                  if r['declaration']['npc'] in expected}
+        self.assertEqual(set(actual), set(expected))
+        for key, cell in expected.items():
+            self.assertEqual(actual[key]['cell'], cell)
+            self.assertTrue(any(p['origin'] == 'crystal' for p in actual[key]['provenance']))
+
     def test_records_sorted_unique_and_keyed_by_cell(self):
         keys = [r["declaration"]["identity"]["key"] for r in self.records]
         self.assertEqual(keys, sorted(set(keys)))

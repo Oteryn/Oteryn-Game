@@ -26,6 +26,12 @@ pub fn valid_key_bytes(value: &str) -> bool {
 // (2026-10-06), superseding the older Canary snapshot for rate and cap.
 // MARKET0 §3.2 additionally caps the checked total, not only the piece price.
 pub const MAX_OPEN_OFFERS: usize = 100;
+/// Crystal `src/io/iomarket.hpp:33`: this is a book projection bound, not a
+/// placement-capacity rule.
+pub const MAX_VISIBLE_OFFERS_PER_ITEM_SIDE: u32 = 700;
+/// Crystal `src/io/iomarket.hpp:34`: each side of the owner's projection has
+/// its own display bound. Global's placement limit remains 100 offers total.
+pub const MAX_VISIBLE_OWN_OFFERS_PER_SIDE: u32 = 1_000;
 pub const MAX_AMOUNT: u32 = 64_000;
 // MARKET0 §6 limits a transaction to this many native ItemInstances.
 pub const MAX_TOUCHED_ITEMS: usize = 100;

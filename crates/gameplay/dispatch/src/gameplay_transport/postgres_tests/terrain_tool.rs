@@ -25,15 +25,35 @@ fn m08_machete_cuts_grass_through_wire_and_recovers_regrowth() -> TestResult {
     run_case("oteryn:item.tibia.i3308", 3702, 3701)
 }
 
+#[test]
+fn m08b_pick_opens_a_stone_pile_through_the_wire_and_it_decays_back() -> TestResult {
+    run_case("oteryn:item.tibia.i3456", 593, 594)
+}
+
+#[test]
+fn m08b_pick_opens_a_loose_stone_pile_through_the_wire_and_it_decays_back() -> TestResult {
+    run_case("oteryn:item.tibia.i3456", 606, 615)
+}
+
+#[test]
+fn m08b_pick_opens_a_loose_ice_pile_through_the_wire_and_it_decays_back() -> TestResult {
+    run_case("oteryn:item.tibia.i3456", 608, 609)
+}
+
 fn run_case(tool: &'static str, before: u16, after: u16) -> TestResult {
     if crate::bestiary_postgres_harness::configured_admin().is_none() {
         return Ok(());
     }
+    let started = std::time::Instant::now();
     std::thread::Builder::new()
         .stack_size(256 << 20)
         .spawn(move || scenario(tool, before, after).map_err(|e| e.to_string()))?
         .join()
         .map_err(|_| "terrain tool e2e panic")??;
+    eprintln!(
+        "M08B_PG_CASE_EXECUTED tool={tool} target={before} elapsed_ms={}",
+        started.elapsed().as_millis()
+    );
     Ok(())
 }
 

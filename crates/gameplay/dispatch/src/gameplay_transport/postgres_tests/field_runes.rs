@@ -487,7 +487,8 @@ fn field_creature_hit(output: u32, ordinal: u32) -> i64 {
         (21465, _) => 9,
         (2122, 0) => 22,
         (2122, _) => 18,
-        (105, _) => 4,
+        // Owner Global 2026-10-30 poison 4: trunc(4 * 0.9903) = 3, then trunc(3 * 1.1) = 3.
+        (105, _) => 3,
         (_, 0) => 19,
         _ => 9,
     }

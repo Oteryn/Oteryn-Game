@@ -20,6 +20,7 @@ fn party_xp_spell_death_preserves_original_precise_clock_on_replay()
         activity: &[],
         queue: &queue,
         rewards: &rewards,
+        charms: None,
     };
     record_batch_kills(&mut f.runtime, sink, &receipt, 999_999);
     let taken = match queue.take(f.session, 1) {

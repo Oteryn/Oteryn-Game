@@ -1,0 +1,887 @@
+{
+  "schema": "oteryn.weapon-proficiency.shaping/v1",
+  "revision": "shaping-r1",
+  "evidence": {
+    "class": "OWNER_VERIFIED",
+    "url": "https://www.tibiamonk.com/en/info/perk-shaping",
+    "per_vocation": "https://www.tibiamonk.com/en/info/perk-shaping/<vocation>",
+    "read": "2026-10-30",
+    "decision": "docs/architecture/reviews/OTERYN_GAME_PROFICIENCY1C_PERK_SHAPING_GLOBAL_VALUES_AMENDMENT_2026-10-30.md"
+  },
+  "costs": {
+    "modify_dust": [
+      250,
+      1000
+    ],
+    "rank_step_dust": [
+      125,
+      200,
+      275,
+      350,
+      425,
+      500,
+      575,
+      650,
+      725,
+      800
+    ],
+    "reshape_offer_dust": 250,
+    "clear_dust": 0,
+    "clear_evidence": "TibiaWiki Updates/15.30.a30dad: cleared to restore the original perk for free",
+    "orb_count": 1,
+    "orb_item": "oteryn:item.tibia.i53695"
+  },
+  "weights": "ASSUMPTION_UNIFORM",
+  "ranks": {
+    "min": 0,
+    "max": 10,
+    "evidenced": [
+      0,
+      10
+    ]
+  },
+  "universal": [
+    {
+      "identity": "alpha_strike_damage",
+      "name": "Alpha Strike Extra Damage",
+      "unit": "percent",
+      "rank0": 2,
+      "rank10": 10
+    },
+    {
+      "identity": "armor_penetration",
+      "name": "Armor Penetration",
+      "unit": "percent",
+      "rank0": 4,
+      "rank10": 10
+    },
+    {
+      "identity": "auto_attack_critical_extra_damage",
+      "name": "Auto-Attack Critical Extra Damage",
+      "unit": "percent",
+      "rank0": 3,
+      "rank10": 20
+    },
+    {
+      "identity": "auto_attack_critical_hit_chance",
+      "name": "Auto-Attack Critical Hit Chance",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:10:Human",
+      "name": "Bestiary Damage Human",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:11:Humanoid",
+      "name": "Bestiary Damage Humanoid",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:12:Lycanthrope",
+      "name": "Bestiary Damage Lycanthrope",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:13:Magical",
+      "name": "Bestiary Damage Magical",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:14:Mammal",
+      "name": "Bestiary Damage Mammal",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:15:Plant",
+      "name": "Bestiary Damage Plant",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:16:Reptile",
+      "name": "Bestiary Damage Reptile",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:17:Slime",
+      "name": "Bestiary Damage Slime",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:18:Undead",
+      "name": "Bestiary Damage Undead",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:19:Vermin",
+      "name": "Bestiary Damage Vermin",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:1:Amphibic",
+      "name": "Bestiary Damage Amphibic",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:20:Extra Dimensional",
+      "name": "Bestiary Damage Extra Dimensional",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:21:Inkborn",
+      "name": "Bestiary Damage Inkborn",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:2:Aquatic",
+      "name": "Bestiary Damage Aquatic",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:3:Bird",
+      "name": "Bestiary Damage Bird",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:4:Construct",
+      "name": "Bestiary Damage Construct",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:5:Demon",
+      "name": "Bestiary Damage Demon",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:6:Dragon",
+      "name": "Bestiary Damage Dragon",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:7:Elemental",
+      "name": "Bestiary Damage Elemental",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:8:Fey",
+      "name": "Bestiary Damage Fey",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "bestiary_class_damage:9:Giant",
+      "name": "Bestiary Damage Giant",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "life_on_hit",
+      "name": "Life Gain on Hit",
+      "unit": "points",
+      "rank0": 2,
+      "rank10": 12
+    },
+    {
+      "identity": "life_on_kill",
+      "name": "Life Gain on Kill",
+      "unit": "points",
+      "rank0": 10,
+      "rank10": 50
+    },
+    {
+      "identity": "mana_on_kill",
+      "name": "Mana Gain on Kill",
+      "unit": "points",
+      "rank0": 4,
+      "rank10": 24
+    },
+    {
+      "identity": "omega_strike_damage",
+      "name": "Omega Strike Extra Damage",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 2.5
+    },
+    {
+      "identity": "rune_critical_extra_damage",
+      "name": "Rune Critical Extra Damage",
+      "unit": "percent",
+      "rank0": 2,
+      "rank10": 15
+    },
+    {
+      "identity": "rune_critical_hit_chance",
+      "name": "Rune Critical Hit Chance",
+      "unit": "percent",
+      "rank0": 0.5,
+      "rank10": 1.5
+    },
+    {
+      "identity": "skill_scaled_auto_attack_damage:highest_combat",
+      "name": "Highest Combat Skill Percentage Auto-Attack Damage",
+      "unit": "percent",
+      "rank0": 2,
+      "rank10": 10
+    },
+    {
+      "identity": "skill_scaled_healing:highest_combat",
+      "name": "Highest Combat Skill Percentage Spell Healing",
+      "unit": "percent",
+      "rank0": 2,
+      "rank10": 10
+    },
+    {
+      "identity": "skill_scaled_spell_damage:highest_combat",
+      "name": "Highest Combat Skill Percentage Spell Damage",
+      "unit": "percent",
+      "rank0": 1,
+      "rank10": 8
+    }
+  ],
+  "spell_augments": [
+    {
+      "augment": "base_damage",
+      "unit": "percent",
+      "rank0": 1,
+      "rank10": 3
+    },
+    {
+      "augment": "critical_extra_damage",
+      "unit": "percent",
+      "rank0": 5,
+      "rank10": 20
+    },
+    {
+      "augment": "critical_hit_chance",
+      "unit": "percent",
+      "rank0": 1,
+      "rank10": 3
+    },
+    {
+      "augment": "life_leech",
+      "unit": "percent",
+      "rank0": 1,
+      "rank10": 12
+    },
+    {
+      "augment": "mana_leech",
+      "unit": "percent",
+      "rank0": 1,
+      "rank10": 6
+    }
+  ],
+  "spell_augment_overrides": [
+    {
+      "spell_client_id": 289,
+      "augment": "base_damage",
+      "rank10": 5
+    }
+  ],
+  "vocation_spells": {
+    "knight": [
+      {
+        "spell": "Berserk",
+        "spell_client_id": 80
+      },
+      {
+        "spell": "Executioner's Throw",
+        "spell_client_id": 261
+      },
+      {
+        "spell": "Fierce Berserk",
+        "spell_client_id": 105
+      },
+      {
+        "spell": "Front Sweep",
+        "spell_client_id": 59
+      },
+      {
+        "spell": "Groundshaker",
+        "spell_client_id": 106
+      },
+      {
+        "spell": "Shield Slam",
+        "spell_client_id": 316
+      }
+    ],
+    "paladin": [
+      {
+        "spell": "Divine Barrage",
+        "spell_client_id": 302
+      },
+      {
+        "spell": "Divine Caldera",
+        "spell_client_id": 124
+      },
+      {
+        "spell": "Divine Grenade",
+        "spell_client_id": 258
+      },
+      {
+        "spell": "Divine Missile",
+        "spell_client_id": 122
+      },
+      {
+        "spell": "Ethereal Barrage",
+        "spell_client_id": 303
+      },
+      {
+        "spell": "Strong Ethereal Spear",
+        "spell_client_id": 57
+      }
+    ],
+    "sorcerer": [
+      {
+        "spell": "Death Echo",
+        "spell_client_id": 310
+      },
+      {
+        "spell": "Energy Wave",
+        "spell_client_id": 13
+      },
+      {
+        "spell": "Great Death Beam",
+        "spell_client_id": 260
+      },
+      {
+        "spell": "Great Energy Beam",
+        "spell_client_id": 23
+      },
+      {
+        "spell": "Great Fire Wave",
+        "spell_client_id": 240
+      },
+      {
+        "spell": "Hell's Core",
+        "spell_client_id": 24
+      }
+    ],
+    "druid": [
+      {
+        "spell": "Forked Glacier",
+        "spell_client_id": 317
+      },
+      {
+        "spell": "Forked Thorns",
+        "spell_client_id": 318
+      },
+      {
+        "spell": "Ice Burst",
+        "spell_client_id": 263
+      },
+      {
+        "spell": "Strong Ice Wave",
+        "spell_client_id": 43
+      },
+      {
+        "spell": "Terra Burst",
+        "spell_client_id": 262
+      },
+      {
+        "spell": "Terra Wave",
+        "spell_client_id": 120
+      }
+    ],
+    "monk": [
+      {
+        "spell": "Chained Penance",
+        "spell_client_id": 288
+      },
+      {
+        "spell": "Flurry of Blows",
+        "spell_client_id": 287
+      },
+      {
+        "spell": "Greater Flurry of Blows",
+        "spell_client_id": 289
+      },
+      {
+        "spell": "Mystic Repulse",
+        "spell_client_id": 290
+      },
+      {
+        "spell": "Sweeping Takedown",
+        "spell_client_id": 294
+      },
+      {
+        "spell": "Thousand Fist Blows",
+        "spell_client_id": 301
+      }
+    ]
+  },
+  "definition_vocations": {
+    "oteryn:proficiency.tibia.p10": "knight",
+    "oteryn:proficiency.tibia.p100": "druid",
+    "oteryn:proficiency.tibia.p101": "knight",
+    "oteryn:proficiency.tibia.p102": "knight",
+    "oteryn:proficiency.tibia.p103": "knight",
+    "oteryn:proficiency.tibia.p104": "knight",
+    "oteryn:proficiency.tibia.p105": "knight",
+    "oteryn:proficiency.tibia.p106": "knight",
+    "oteryn:proficiency.tibia.p107": "monk",
+    "oteryn:proficiency.tibia.p108": "paladin",
+    "oteryn:proficiency.tibia.p109": "knight",
+    "oteryn:proficiency.tibia.p11": "knight",
+    "oteryn:proficiency.tibia.p110": "knight",
+    "oteryn:proficiency.tibia.p111": "knight",
+    "oteryn:proficiency.tibia.p112": "knight",
+    "oteryn:proficiency.tibia.p113": "knight",
+    "oteryn:proficiency.tibia.p114": "knight",
+    "oteryn:proficiency.tibia.p115": "monk",
+    "oteryn:proficiency.tibia.p117": "knight",
+    "oteryn:proficiency.tibia.p118": "knight",
+    "oteryn:proficiency.tibia.p119": "knight",
+    "oteryn:proficiency.tibia.p12": "knight",
+    "oteryn:proficiency.tibia.p120": "knight",
+    "oteryn:proficiency.tibia.p121": "knight",
+    "oteryn:proficiency.tibia.p122": "knight",
+    "oteryn:proficiency.tibia.p123": "monk",
+    "oteryn:proficiency.tibia.p124": "paladin",
+    "oteryn:proficiency.tibia.p125": "paladin",
+    "oteryn:proficiency.tibia.p126": "paladin",
+    "oteryn:proficiency.tibia.p127": "paladin",
+    "oteryn:proficiency.tibia.p128": "paladin",
+    "oteryn:proficiency.tibia.p129": "paladin",
+    "oteryn:proficiency.tibia.p13": "paladin",
+    "oteryn:proficiency.tibia.p130": "paladin",
+    "oteryn:proficiency.tibia.p131": "paladin",
+    "oteryn:proficiency.tibia.p132": "paladin",
+    "oteryn:proficiency.tibia.p133": "paladin",
+    "oteryn:proficiency.tibia.p134": "knight",
+    "oteryn:proficiency.tibia.p135": "knight",
+    "oteryn:proficiency.tibia.p136": "knight",
+    "oteryn:proficiency.tibia.p137": "monk",
+    "oteryn:proficiency.tibia.p138": "paladin",
+    "oteryn:proficiency.tibia.p139": "knight",
+    "oteryn:proficiency.tibia.p14": "monk",
+    "oteryn:proficiency.tibia.p140": "knight",
+    "oteryn:proficiency.tibia.p141": "knight",
+    "oteryn:proficiency.tibia.p142": "monk",
+    "oteryn:proficiency.tibia.p143": "paladin",
+    "oteryn:proficiency.tibia.p144": "knight",
+    "oteryn:proficiency.tibia.p145": "knight",
+    "oteryn:proficiency.tibia.p146": "knight",
+    "oteryn:proficiency.tibia.p147": "monk",
+    "oteryn:proficiency.tibia.p148": "paladin",
+    "oteryn:proficiency.tibia.p149": "paladin",
+    "oteryn:proficiency.tibia.p15": "sorcerer",
+    "oteryn:proficiency.tibia.p150": "paladin",
+    "oteryn:proficiency.tibia.p151": "druid",
+    "oteryn:proficiency.tibia.p152": "sorcerer",
+    "oteryn:proficiency.tibia.p153": "druid",
+    "oteryn:proficiency.tibia.p154": "sorcerer",
+    "oteryn:proficiency.tibia.p155": "druid",
+    "oteryn:proficiency.tibia.p156": "sorcerer",
+    "oteryn:proficiency.tibia.p157": "paladin",
+    "oteryn:proficiency.tibia.p158": "paladin",
+    "oteryn:proficiency.tibia.p159": "paladin",
+    "oteryn:proficiency.tibia.p16": "druid",
+    "oteryn:proficiency.tibia.p161": "knight",
+    "oteryn:proficiency.tibia.p163": "paladin",
+    "oteryn:proficiency.tibia.p164": "knight",
+    "oteryn:proficiency.tibia.p165": "knight",
+    "oteryn:proficiency.tibia.p166": "knight",
+    "oteryn:proficiency.tibia.p17": "knight",
+    "oteryn:proficiency.tibia.p178": "paladin",
+    "oteryn:proficiency.tibia.p179": "knight",
+    "oteryn:proficiency.tibia.p18": "knight",
+    "oteryn:proficiency.tibia.p180": "knight",
+    "oteryn:proficiency.tibia.p181": "knight",
+    "oteryn:proficiency.tibia.p19": "knight",
+    "oteryn:proficiency.tibia.p193": "paladin",
+    "oteryn:proficiency.tibia.p194": "knight",
+    "oteryn:proficiency.tibia.p195": "knight",
+    "oteryn:proficiency.tibia.p196": "knight",
+    "oteryn:proficiency.tibia.p20": "knight",
+    "oteryn:proficiency.tibia.p207": "knight",
+    "oteryn:proficiency.tibia.p208": "knight",
+    "oteryn:proficiency.tibia.p209": "knight",
+    "oteryn:proficiency.tibia.p21": "knight",
+    "oteryn:proficiency.tibia.p210": "knight",
+    "oteryn:proficiency.tibia.p211": "knight",
+    "oteryn:proficiency.tibia.p212": "knight",
+    "oteryn:proficiency.tibia.p213": "monk",
+    "oteryn:proficiency.tibia.p214": "druid",
+    "oteryn:proficiency.tibia.p215": "paladin",
+    "oteryn:proficiency.tibia.p216": "sorcerer",
+    "oteryn:proficiency.tibia.p218": "knight",
+    "oteryn:proficiency.tibia.p219": "knight",
+    "oteryn:proficiency.tibia.p22": "knight",
+    "oteryn:proficiency.tibia.p223": "knight",
+    "oteryn:proficiency.tibia.p224": "knight",
+    "oteryn:proficiency.tibia.p225": "knight",
+    "oteryn:proficiency.tibia.p226": "knight",
+    "oteryn:proficiency.tibia.p227": "knight",
+    "oteryn:proficiency.tibia.p228": "paladin",
+    "oteryn:proficiency.tibia.p229": "monk",
+    "oteryn:proficiency.tibia.p23": "paladin",
+    "oteryn:proficiency.tibia.p231": "knight",
+    "oteryn:proficiency.tibia.p232": "knight",
+    "oteryn:proficiency.tibia.p233": "knight",
+    "oteryn:proficiency.tibia.p234": "knight",
+    "oteryn:proficiency.tibia.p235": "knight",
+    "oteryn:proficiency.tibia.p236": "knight",
+    "oteryn:proficiency.tibia.p237": "knight",
+    "oteryn:proficiency.tibia.p238": "knight",
+    "oteryn:proficiency.tibia.p239": "knight",
+    "oteryn:proficiency.tibia.p24": "monk",
+    "oteryn:proficiency.tibia.p240": "knight",
+    "oteryn:proficiency.tibia.p241": "knight",
+    "oteryn:proficiency.tibia.p242": "knight",
+    "oteryn:proficiency.tibia.p243": "knight",
+    "oteryn:proficiency.tibia.p244": "knight",
+    "oteryn:proficiency.tibia.p245": "knight",
+    "oteryn:proficiency.tibia.p246": "knight",
+    "oteryn:proficiency.tibia.p247": "knight",
+    "oteryn:proficiency.tibia.p248": "knight",
+    "oteryn:proficiency.tibia.p249": "knight",
+    "oteryn:proficiency.tibia.p25": "druid",
+    "oteryn:proficiency.tibia.p250": "knight",
+    "oteryn:proficiency.tibia.p251": "knight",
+    "oteryn:proficiency.tibia.p252": "knight",
+    "oteryn:proficiency.tibia.p253": "druid",
+    "oteryn:proficiency.tibia.p254": "knight",
+    "oteryn:proficiency.tibia.p255": "sorcerer",
+    "oteryn:proficiency.tibia.p256": "paladin",
+    "oteryn:proficiency.tibia.p257": "monk",
+    "oteryn:proficiency.tibia.p258": "knight",
+    "oteryn:proficiency.tibia.p259": "knight",
+    "oteryn:proficiency.tibia.p26": "sorcerer",
+    "oteryn:proficiency.tibia.p260": "knight",
+    "oteryn:proficiency.tibia.p261": "druid",
+    "oteryn:proficiency.tibia.p262": "sorcerer",
+    "oteryn:proficiency.tibia.p263": "knight",
+    "oteryn:proficiency.tibia.p264": "knight",
+    "oteryn:proficiency.tibia.p265": "paladin",
+    "oteryn:proficiency.tibia.p266": "knight",
+    "oteryn:proficiency.tibia.p268": "knight",
+    "oteryn:proficiency.tibia.p269": "sorcerer",
+    "oteryn:proficiency.tibia.p27": "knight",
+    "oteryn:proficiency.tibia.p270": "druid",
+    "oteryn:proficiency.tibia.p271": "druid",
+    "oteryn:proficiency.tibia.p272": "sorcerer",
+    "oteryn:proficiency.tibia.p273": "druid",
+    "oteryn:proficiency.tibia.p274": "sorcerer",
+    "oteryn:proficiency.tibia.p275": "knight",
+    "oteryn:proficiency.tibia.p28": "knight",
+    "oteryn:proficiency.tibia.p283": "knight",
+    "oteryn:proficiency.tibia.p284": "knight",
+    "oteryn:proficiency.tibia.p285": "knight",
+    "oteryn:proficiency.tibia.p286": "sorcerer",
+    "oteryn:proficiency.tibia.p287": "druid",
+    "oteryn:proficiency.tibia.p288": "knight",
+    "oteryn:proficiency.tibia.p289": "knight",
+    "oteryn:proficiency.tibia.p29": "knight",
+    "oteryn:proficiency.tibia.p290": "sorcerer",
+    "oteryn:proficiency.tibia.p291": "druid",
+    "oteryn:proficiency.tibia.p292": "sorcerer",
+    "oteryn:proficiency.tibia.p293": "druid",
+    "oteryn:proficiency.tibia.p294": "knight",
+    "oteryn:proficiency.tibia.p295": "knight",
+    "oteryn:proficiency.tibia.p296": "knight",
+    "oteryn:proficiency.tibia.p297": "knight",
+    "oteryn:proficiency.tibia.p298": "knight",
+    "oteryn:proficiency.tibia.p299": "knight",
+    "oteryn:proficiency.tibia.p30": "knight",
+    "oteryn:proficiency.tibia.p300": "knight",
+    "oteryn:proficiency.tibia.p301": "knight",
+    "oteryn:proficiency.tibia.p302": "knight",
+    "oteryn:proficiency.tibia.p303": "knight",
+    "oteryn:proficiency.tibia.p304": "knight",
+    "oteryn:proficiency.tibia.p305": "knight",
+    "oteryn:proficiency.tibia.p307": "knight",
+    "oteryn:proficiency.tibia.p308": "knight",
+    "oteryn:proficiency.tibia.p309": "knight",
+    "oteryn:proficiency.tibia.p31": "knight",
+    "oteryn:proficiency.tibia.p310": "knight",
+    "oteryn:proficiency.tibia.p311": "knight",
+    "oteryn:proficiency.tibia.p312": "sorcerer",
+    "oteryn:proficiency.tibia.p313": "druid",
+    "oteryn:proficiency.tibia.p315": "paladin",
+    "oteryn:proficiency.tibia.p316": "knight",
+    "oteryn:proficiency.tibia.p317": "knight",
+    "oteryn:proficiency.tibia.p318": "druid",
+    "oteryn:proficiency.tibia.p319": "druid",
+    "oteryn:proficiency.tibia.p32": "knight",
+    "oteryn:proficiency.tibia.p320": "sorcerer",
+    "oteryn:proficiency.tibia.p321": "sorcerer",
+    "oteryn:proficiency.tibia.p322": "druid",
+    "oteryn:proficiency.tibia.p323": "druid",
+    "oteryn:proficiency.tibia.p324": "sorcerer",
+    "oteryn:proficiency.tibia.p325": "sorcerer",
+    "oteryn:proficiency.tibia.p326": "druid",
+    "oteryn:proficiency.tibia.p327": "sorcerer",
+    "oteryn:proficiency.tibia.p328": "knight",
+    "oteryn:proficiency.tibia.p329": "knight",
+    "oteryn:proficiency.tibia.p33": "monk",
+    "oteryn:proficiency.tibia.p330": "knight",
+    "oteryn:proficiency.tibia.p331": "paladin",
+    "oteryn:proficiency.tibia.p332": "knight",
+    "oteryn:proficiency.tibia.p333": "paladin",
+    "oteryn:proficiency.tibia.p334": "knight",
+    "oteryn:proficiency.tibia.p335": "paladin",
+    "oteryn:proficiency.tibia.p336": "paladin",
+    "oteryn:proficiency.tibia.p337": "knight",
+    "oteryn:proficiency.tibia.p338": "paladin",
+    "oteryn:proficiency.tibia.p339": "knight",
+    "oteryn:proficiency.tibia.p34": "paladin",
+    "oteryn:proficiency.tibia.p340": "paladin",
+    "oteryn:proficiency.tibia.p341": "knight",
+    "oteryn:proficiency.tibia.p342": "knight",
+    "oteryn:proficiency.tibia.p343": "knight",
+    "oteryn:proficiency.tibia.p344": "knight",
+    "oteryn:proficiency.tibia.p345": "knight",
+    "oteryn:proficiency.tibia.p346": "knight",
+    "oteryn:proficiency.tibia.p347": "knight",
+    "oteryn:proficiency.tibia.p348": "paladin",
+    "oteryn:proficiency.tibia.p349": "knight",
+    "oteryn:proficiency.tibia.p35": "druid",
+    "oteryn:proficiency.tibia.p350": "knight",
+    "oteryn:proficiency.tibia.p351": "sorcerer",
+    "oteryn:proficiency.tibia.p352": "druid",
+    "oteryn:proficiency.tibia.p353": "knight",
+    "oteryn:proficiency.tibia.p354": "knight",
+    "oteryn:proficiency.tibia.p355": "knight",
+    "oteryn:proficiency.tibia.p356": "paladin",
+    "oteryn:proficiency.tibia.p357": "knight",
+    "oteryn:proficiency.tibia.p358": "sorcerer",
+    "oteryn:proficiency.tibia.p359": "knight",
+    "oteryn:proficiency.tibia.p36": "sorcerer",
+    "oteryn:proficiency.tibia.p360": "knight",
+    "oteryn:proficiency.tibia.p361": "paladin",
+    "oteryn:proficiency.tibia.p362": "paladin",
+    "oteryn:proficiency.tibia.p363": "paladin",
+    "oteryn:proficiency.tibia.p364": "paladin",
+    "oteryn:proficiency.tibia.p365": "paladin",
+    "oteryn:proficiency.tibia.p366": "knight",
+    "oteryn:proficiency.tibia.p367": "knight",
+    "oteryn:proficiency.tibia.p368": "knight",
+    "oteryn:proficiency.tibia.p369": "knight",
+    "oteryn:proficiency.tibia.p37": "knight",
+    "oteryn:proficiency.tibia.p370": "knight",
+    "oteryn:proficiency.tibia.p372": "paladin",
+    "oteryn:proficiency.tibia.p373": "paladin",
+    "oteryn:proficiency.tibia.p374": "knight",
+    "oteryn:proficiency.tibia.p375": "knight",
+    "oteryn:proficiency.tibia.p376": "knight",
+    "oteryn:proficiency.tibia.p377": "knight",
+    "oteryn:proficiency.tibia.p378": "paladin",
+    "oteryn:proficiency.tibia.p379": "knight",
+    "oteryn:proficiency.tibia.p38": "knight",
+    "oteryn:proficiency.tibia.p380": "knight",
+    "oteryn:proficiency.tibia.p381": "paladin",
+    "oteryn:proficiency.tibia.p382": "paladin",
+    "oteryn:proficiency.tibia.p383": "knight",
+    "oteryn:proficiency.tibia.p384": "knight",
+    "oteryn:proficiency.tibia.p385": "knight",
+    "oteryn:proficiency.tibia.p386": "paladin",
+    "oteryn:proficiency.tibia.p387": "knight",
+    "oteryn:proficiency.tibia.p388": "paladin",
+    "oteryn:proficiency.tibia.p389": "knight",
+    "oteryn:proficiency.tibia.p39": "knight",
+    "oteryn:proficiency.tibia.p391": "paladin",
+    "oteryn:proficiency.tibia.p392": "paladin",
+    "oteryn:proficiency.tibia.p393": "paladin",
+    "oteryn:proficiency.tibia.p397": "monk",
+    "oteryn:proficiency.tibia.p398": "monk",
+    "oteryn:proficiency.tibia.p399": "monk",
+    "oteryn:proficiency.tibia.p40": "knight",
+    "oteryn:proficiency.tibia.p400": "monk",
+    "oteryn:proficiency.tibia.p401": "monk",
+    "oteryn:proficiency.tibia.p402": "monk",
+    "oteryn:proficiency.tibia.p403": "paladin",
+    "oteryn:proficiency.tibia.p404": "knight",
+    "oteryn:proficiency.tibia.p405": "paladin",
+    "oteryn:proficiency.tibia.p406": "knight",
+    "oteryn:proficiency.tibia.p407": "knight",
+    "oteryn:proficiency.tibia.p408": "knight",
+    "oteryn:proficiency.tibia.p409": "knight",
+    "oteryn:proficiency.tibia.p41": "knight",
+    "oteryn:proficiency.tibia.p410": "knight",
+    "oteryn:proficiency.tibia.p411": "knight",
+    "oteryn:proficiency.tibia.p412": "knight",
+    "oteryn:proficiency.tibia.p413": "knight",
+    "oteryn:proficiency.tibia.p414": "knight",
+    "oteryn:proficiency.tibia.p415": "knight",
+    "oteryn:proficiency.tibia.p416": "knight",
+    "oteryn:proficiency.tibia.p417": "knight",
+    "oteryn:proficiency.tibia.p418": "knight",
+    "oteryn:proficiency.tibia.p419": "knight",
+    "oteryn:proficiency.tibia.p42": "knight",
+    "oteryn:proficiency.tibia.p420": "knight",
+    "oteryn:proficiency.tibia.p421": "knight",
+    "oteryn:proficiency.tibia.p422": "knight",
+    "oteryn:proficiency.tibia.p423": "knight",
+    "oteryn:proficiency.tibia.p424": "knight",
+    "oteryn:proficiency.tibia.p425": "knight",
+    "oteryn:proficiency.tibia.p426": "knight",
+    "oteryn:proficiency.tibia.p427": "knight",
+    "oteryn:proficiency.tibia.p428": "knight",
+    "oteryn:proficiency.tibia.p429": "knight",
+    "oteryn:proficiency.tibia.p43": "monk",
+    "oteryn:proficiency.tibia.p430": "knight",
+    "oteryn:proficiency.tibia.p431": "knight",
+    "oteryn:proficiency.tibia.p432": "knight",
+    "oteryn:proficiency.tibia.p433": "knight",
+    "oteryn:proficiency.tibia.p434": "knight",
+    "oteryn:proficiency.tibia.p435": "knight",
+    "oteryn:proficiency.tibia.p436": "knight",
+    "oteryn:proficiency.tibia.p437": "knight",
+    "oteryn:proficiency.tibia.p438": "knight",
+    "oteryn:proficiency.tibia.p439": "knight",
+    "oteryn:proficiency.tibia.p44": "paladin",
+    "oteryn:proficiency.tibia.p440": "knight",
+    "oteryn:proficiency.tibia.p441": "sorcerer",
+    "oteryn:proficiency.tibia.p442": "sorcerer",
+    "oteryn:proficiency.tibia.p443": "knight",
+    "oteryn:proficiency.tibia.p444": "knight",
+    "oteryn:proficiency.tibia.p445": "knight",
+    "oteryn:proficiency.tibia.p446": "knight",
+    "oteryn:proficiency.tibia.p447": "paladin",
+    "oteryn:proficiency.tibia.p448": "paladin",
+    "oteryn:proficiency.tibia.p449": "knight",
+    "oteryn:proficiency.tibia.p45": "druid",
+    "oteryn:proficiency.tibia.p450": "paladin",
+    "oteryn:proficiency.tibia.p451": "paladin",
+    "oteryn:proficiency.tibia.p452": "paladin",
+    "oteryn:proficiency.tibia.p453": "paladin",
+    "oteryn:proficiency.tibia.p457": "knight",
+    "oteryn:proficiency.tibia.p458": "knight",
+    "oteryn:proficiency.tibia.p459": "knight",
+    "oteryn:proficiency.tibia.p46": "sorcerer",
+    "oteryn:proficiency.tibia.p460": "monk",
+    "oteryn:proficiency.tibia.p461": "paladin",
+    "oteryn:proficiency.tibia.p462": "sorcerer",
+    "oteryn:proficiency.tibia.p463": "druid",
+    "oteryn:proficiency.tibia.p47": "knight",
+    "oteryn:proficiency.tibia.p474": "paladin",
+    "oteryn:proficiency.tibia.p475": "knight",
+    "oteryn:proficiency.tibia.p476": "knight",
+    "oteryn:proficiency.tibia.p477": "druid",
+    "oteryn:proficiency.tibia.p478": "knight",
+    "oteryn:proficiency.tibia.p479": "sorcerer",
+    "oteryn:proficiency.tibia.p48": "knight",
+    "oteryn:proficiency.tibia.p480": "knight",
+    "oteryn:proficiency.tibia.p481": "paladin",
+    "oteryn:proficiency.tibia.p482": "knight",
+    "oteryn:proficiency.tibia.p483": "paladin",
+    "oteryn:proficiency.tibia.p484": "monk",
+    "oteryn:proficiency.tibia.p485": "knight",
+    "oteryn:proficiency.tibia.p486": "knight",
+    "oteryn:proficiency.tibia.p487": "knight",
+    "oteryn:proficiency.tibia.p488": "druid",
+    "oteryn:proficiency.tibia.p489": "knight",
+    "oteryn:proficiency.tibia.p49": "knight",
+    "oteryn:proficiency.tibia.p490": "sorcerer",
+    "oteryn:proficiency.tibia.p491": "knight",
+    "oteryn:proficiency.tibia.p492": "paladin",
+    "oteryn:proficiency.tibia.p493": "knight",
+    "oteryn:proficiency.tibia.p494": "paladin",
+    "oteryn:proficiency.tibia.p495": "monk",
+    "oteryn:proficiency.tibia.p496": "knight",
+    "oteryn:proficiency.tibia.p50": "knight",
+    "oteryn:proficiency.tibia.p51": "knight",
+    "oteryn:proficiency.tibia.p52": "knight",
+    "oteryn:proficiency.tibia.p53": "monk",
+    "oteryn:proficiency.tibia.p54": "paladin",
+    "oteryn:proficiency.tibia.p55": "sorcerer",
+    "oteryn:proficiency.tibia.p56": "druid",
+    "oteryn:proficiency.tibia.p57": "knight",
+    "oteryn:proficiency.tibia.p58": "knight",
+    "oteryn:proficiency.tibia.p59": "knight",
+    "oteryn:proficiency.tibia.p6": "knight",
+    "oteryn:proficiency.tibia.p60": "knight",
+    "oteryn:proficiency.tibia.p61": "knight",
+    "oteryn:proficiency.tibia.p62": "knight",
+    "oteryn:proficiency.tibia.p63": "monk",
+    "oteryn:proficiency.tibia.p64": "paladin",
+    "oteryn:proficiency.tibia.p65": "sorcerer",
+    "oteryn:proficiency.tibia.p66": "druid",
+    "oteryn:proficiency.tibia.p67": "knight",
+    "oteryn:proficiency.tibia.p68": "knight",
+    "oteryn:proficiency.tibia.p69": "knight",
+    "oteryn:proficiency.tibia.p70": "knight",
+    "oteryn:proficiency.tibia.p71": "knight",
+    "oteryn:proficiency.tibia.p72": "knight",
+    "oteryn:proficiency.tibia.p73": "monk",
+    "oteryn:proficiency.tibia.p74": "paladin",
+    "oteryn:proficiency.tibia.p75": "druid",
+    "oteryn:proficiency.tibia.p76": "sorcerer",
+    "oteryn:proficiency.tibia.p77": "knight",
+    "oteryn:proficiency.tibia.p78": "knight",
+    "oteryn:proficiency.tibia.p79": "knight",
+    "oteryn:proficiency.tibia.p8": "knight",
+    "oteryn:proficiency.tibia.p80": "knight",
+    "oteryn:proficiency.tibia.p81": "knight",
+    "oteryn:proficiency.tibia.p82": "knight",
+    "oteryn:proficiency.tibia.p83": "monk",
+    "oteryn:proficiency.tibia.p84": "sorcerer",
+    "oteryn:proficiency.tibia.p85": "druid",
+    "oteryn:proficiency.tibia.p86": "paladin",
+    "oteryn:proficiency.tibia.p87": "knight",
+    "oteryn:proficiency.tibia.p88": "knight",
+    "oteryn:proficiency.tibia.p89": "knight",
+    "oteryn:proficiency.tibia.p9": "knight",
+    "oteryn:proficiency.tibia.p90": "monk",
+    "oteryn:proficiency.tibia.p91": "paladin",
+    "oteryn:proficiency.tibia.p92": "druid",
+    "oteryn:proficiency.tibia.p93": "sorcerer",
+    "oteryn:proficiency.tibia.p94": "knight",
+    "oteryn:proficiency.tibia.p95": "knight",
+    "oteryn:proficiency.tibia.p96": "knight",
+    "oteryn:proficiency.tibia.p97": "monk",
+    "oteryn:proficiency.tibia.p98": "paladin",
+    "oteryn:proficiency.tibia.p99": "sorcerer"
+  },
+  "unshaped_definitions": [
+    "oteryn:proficiency.tibia.p162",
+    "oteryn:proficiency.tibia.p177",
+    "oteryn:proficiency.tibia.p192",
+    "oteryn:proficiency.tibia.p217",
+    "oteryn:proficiency.tibia.p220",
+    "oteryn:proficiency.tibia.p221",
+    "oteryn:proficiency.tibia.p222"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "events": [
+    {
+      "name": "Eexample 1",
+      "startdate": "01/01/2024",
+      "enddate": "12/31/2024",
+      "ingame": {
+        "exprate": 100,
+        "lootrate": 100,
+        "spawnrate": 100,
+        "skillrate": 100
+      }
+    },
+    {
+      "name": "Eexample 2",
+      "startdate": "01/01/2024",
+      "enddate": "12/31/2024",
+      "ingame": {
+        "exprate": 100,
+        "lootrate": 100,
+        "spawnrate": 100,
+        "skillrate": 100
+      }
+    }
+  ]
+}

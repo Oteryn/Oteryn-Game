@@ -70,14 +70,15 @@ impl QualifiedFieldCondition {
     /// select Global damage only after that complete record has been validated.
     /// Rune/bomb/wall: TibiaQA 24717; Fire Field Rune 1189770 (9 s),
     /// Electrified 1040087 (11 s), Poisoned 937846 (4 s). The owner's poison
-    /// table wins over Poison Gas 1119032's four later ticks of five.
+    /// measurement below overrides Poison Gas rev 1119032.
     /// Map fire, owner Global PKG1R4: 2123 has a separate 19 entry hit,
     /// then seven Burning ticks of 9 every 9 s; 2124 has six Burning ticks
     /// of 9 every 9 s, first on step-in, with no separate entry hit.
     /// Campfire, owner Global PKG1R6 (2026-10-30, 0% resistance): 1998 big
     /// flames shares 2123 (17:43:03 entry through 17:44:06); 1999 medium
     /// (17:46:45..17:47:30) and 2000 embers (17:36:18..17:37:03) share 2124.
-    /// Unmeasured 10069..10071 remain unchanged.
+    /// PKG1R7 owner-approved donor chains: 2131 shares 2118's record;
+    /// Zaoan fire 10069..10071 shares 2119's record, so both use FIRE.
     /// Final fire 2120/2125 stays harmless (Fire 1011382). Safe rune products
     /// 2132 (21465's decay), 2134 and 2135 share their recipe; player immunity remains with the contact owner.
     /// Yellow flame 21465 is explicitly excluded, even when rune-created.
@@ -90,13 +91,18 @@ impl QualifiedFieldCondition {
             }
         }
         const FIRE: &[FieldDamageEntry] = &[entry(20, 9_000, 1), entry(10, 9_000, 7)];
+        /// TibiaWiki Energy Field (Field) rev 1011133 and Energy Field Rune
+        /// rev 1189766: 30 on entry, then 25 after leaving the field.
+        /// Electrified rev 1040087 gives the 11 s interval.
         const ENERGY: &[FieldDamageEntry] = &[entry(30, 11_000, 1), entry(25, 11_000, 1)];
+        // Owner Global measurement 2026-10-30, map field, no resistances:
+        // entry 4, then 4x4, 3x5, 2x7, 1x10 every 4 s (59 total).
+        // Overrides TibiaWiki Poison Gas rev 1119032's 105-damage recipe.
         const POISON: &[FieldDamageEntry] = &[
-            entry(5, 4_000, 6),
             entry(4, 4_000, 5),
-            entry(3, 4_000, 7),
-            entry(2, 4_000, 10),
-            entry(1, 4_000, 19),
+            entry(3, 4_000, 5),
+            entry(2, 4_000, 7),
+            entry(1, 4_000, 10),
         ];
         const BURNING_TICK_DAMAGE: u32 = 9;
         const BURNING_TICK_INTERVAL_MS: u32 = 9_000;
@@ -110,9 +116,9 @@ impl QualifiedFieldCondition {
             return None;
         }
         match self.source.server_item_id {
-            2118 | 2119 | 2132 => Some(FIRE),
+            2118 | 2119 | 2131 | 2132 | 10069..=10071 => Some(FIRE),
             2122 | 2135 => Some(ENERGY),
-            105 | 2134 => Some(POISON),
+            105 | 2121 | 2134 => Some(POISON),
             1998 | 2123 => Some(MAP_FIRE),
             1999 | 2000 | 2124 => Some(MAP_FIRE_MEDIUM),
             _ => None,
@@ -239,7 +245,7 @@ mod tests {
     fn source_poison_preserves_ramp_fire_count_and_barrier_known_none() {
         let poison = profile(105);
         assert_eq!(poison.element().unwrap(), Some(DotElement::Poison));
-        assert_eq!(poison.total_damage().unwrap(), 110);
+        assert_eq!(poison.total_damage().unwrap(), 59);
         let FieldConditionKind::Damage { entries, .. } = poison.condition else {
             panic!("damage")
         };

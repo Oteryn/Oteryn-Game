@@ -112,6 +112,8 @@ use crate::foundation::CommandRef;
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
+mod monk;
+
 type Result<T> = std::result::Result<T, RewardClaimMintError>;
 type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>, DurabilityError>;
 const INTENT_BINDING_VERSION: u8 = 2;
@@ -185,6 +187,8 @@ pub enum RewardClaimRefusal {
     UnsupportedContainerCapacity,
     /// No free direct entry in the main backpack (D92).
     MainBackpackFull,
+    /// The real carried custody graph plus the reward exceeds native capacity.
+    CarryingCapacity,
     /// The Character already has `QUESTSTATE0-RL-07` open quest obligations.
     ObligationsFull,
 }

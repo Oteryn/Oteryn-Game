@@ -450,8 +450,12 @@ async fn settle_loot(
 ) -> Result<CommittedCorpseLoot, CombatDeathRewardLootError> {
     let plan: LootPlan = plan_creature_loot(loot_plan_seed(death), loot_table_ref, loot_table)
         .map_err(CombatDeathRewardLootError::Plan)?;
-    // W22a: the approved migration changes custody only. Never silently discard subtype state.
-    if plan.entries.iter().any(|entry| entry.subtype.is_some()) {
+    // W22a: Oteryn stores no fluid state, so a subtype the donor would apply is refused.
+    if plan
+        .entries
+        .iter()
+        .any(crate::combat::LootPlanEntry::needs_subtype_state)
+    {
         return Err(CombatDeathRewardLootError::Plan(
             crate::combat::LootPlanError::UnsupportedItemSubtype,
         ));

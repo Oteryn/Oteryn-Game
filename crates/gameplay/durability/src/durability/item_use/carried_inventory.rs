@@ -15,11 +15,20 @@ pub struct ItemUseInventory {
     pub equipment: Vec<InventoryItem>,
     pub backpack: Option<CharacterBackpack>,
     pub nested: Vec<([u8; 16], BackpackEntry)>,
+    /// Immutable key action ids for carried instances, read in the same fenced snapshot.
+    pub keys: Vec<([u8; 16], u16)>,
     /// I10a: the fluid sub-type of each carried container that holds one (migration 0560).
     pub fluids: std::collections::BTreeMap<[u8; 16], u8>,
 }
 
 impl ItemUseInventory {
+    /// Returns the immutable action id only when the instance is in this fenced carried tree.
+    pub fn key_action(&self, instance: [u8; 16]) -> Option<u16> {
+        self.keys
+            .iter()
+            .find_map(|(item, number)| (*item == instance).then_some(*number))
+    }
+
     /// ITEM-USE-0 §11: reserve a compatible main-backpack stack, a fresh main entry, or a
     /// missing flask. Retiring a nested source never frees a main entry. This PREPARE plan
     /// grants no authority: the fenced writer checks it again under the item and owner locks.
@@ -180,8 +189,9 @@ pub(in crate::durability) async fn read_use_inventory(
          ) SELECT c.item::text, c.world::text AS custody_world, c.parent::text, \
                   c.ordinal::text, c.depth, c.slot, i.world_id::text AS item_world, \
                   i.definition_family, i.definition_production_key, i.definition_revision_ref, \
-                  i.quantity, i.lifecycle, f.fluid_subtype AS fluid \
+                  i.quantity, i.lifecycle, k.key_number, f.fluid_subtype AS fluid \
              FROM carried c JOIN game_item_instances i ON i.item_instance_id = c.item \
+             LEFT JOIN game_item_keys k ON k.item_instance_id = i.item_instance_id \
              LEFT JOIN game_item_fluid_states f ON f.item_instance_id = i.item_instance_id \
             ORDER BY c.slot, c.depth, c.ordinal DESC LIMIT 510",
     )
@@ -195,6 +205,7 @@ pub(in crate::durability) async fn read_use_inventory(
         equipment: Vec::new(),
         backpack: None,
         nested: Vec::new(),
+        keys: Vec::new(),
         fluids: std::collections::BTreeMap::new(),
     };
     let mut seen = std::collections::BTreeSet::new();
@@ -226,6 +237,12 @@ pub(in crate::durability) async fn read_use_inventory(
             quantity: u32::try_from(row.try_get::<i64, _>("quantity")?)
                 .map_err(|_| DurabilityError::InvalidStoredState)?,
         };
+        if let Some(number) = row.try_get::<Option<i32>, _>("key_number")? {
+            inventory.keys.push((
+                id,
+                u16::try_from(number).map_err(|_| DurabilityError::InvalidStoredState)?,
+            ));
+        }
         if slot != 0 {
             inventory.equipment.push(item);
             if inventory.equipment.len() > 9 {
@@ -265,4 +282,24 @@ pub(in crate::durability) async fn read_use_inventory(
         }
     }
     Ok(inventory)
+}
+
+#[cfg(test)]
+mod key_tests {
+    use super::*;
+
+    #[test]
+    fn carried_key_action_requires_the_exact_instance() {
+        let inventory = ItemUseInventory {
+            content_revision: "c".into(),
+            ruleset_revision: "r".into(),
+            equipment: Vec::new(),
+            backpack: None,
+            nested: Vec::new(),
+            keys: vec![([7; 16], 4321)],
+            fluids: Default::default(),
+        };
+        assert_eq!(inventory.key_action([7; 16]), Some(4321));
+        assert_eq!(inventory.key_action([8; 16]), None);
+    }
 }

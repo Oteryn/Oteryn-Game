@@ -49,7 +49,11 @@ pub fn encode_request(r: MarketRequest) -> Result<Vec<u8>, Error> {
         }
         _ => false,
     };
-    if !valid || r.page > 100_000 || (r.action == 3 && r.page > 3) || (r.action == 4 && r.page > 18)
+    // Crystal iomarket.hpp:34 allows 1,000 own offers per side: 2,000 rows / 32 per page.
+    if !valid
+        || r.page > 100_000
+        || (r.action == 3 && r.page > 62)
+        || (r.action == 4 && r.page > 18)
     {
         return Err(Error::Malformed);
     }
@@ -162,6 +166,28 @@ pub fn encode_reply(r: &MarketReply) -> Result<Vec<u8>, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn market_wire_own_projection_reaches_one_thousand_offers_per_side() -> Result<(), Error> {
+        let request = MarketRequest {
+            action: 3,
+            definition: 0,
+            offer: [0; 16],
+            amount: 0,
+            price: 0,
+            anonymous: false,
+            page: 62,
+        };
+        assert_eq!(decode_request(&encode_request(request)?)?, request);
+        assert!(
+            encode_request(MarketRequest {
+                page: 63,
+                ..request
+            })
+            .is_err()
+        );
+        Ok(())
+    }
+
     #[test]
     fn market_wire_rejects_ambiguous_or_unbounded_requests() -> Result<(), Error> {
         let r = MarketRequest {
