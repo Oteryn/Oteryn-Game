@@ -318,6 +318,7 @@ impl ChannelRuntimeV1 {
                 context,
                 position,
                 revision: 1,
+                last_translation_revision: 0,
                 facing: Some(placement.direction),
             },
         };
@@ -393,6 +394,7 @@ mod tests {
             .expect("Movement reads the placed NPC");
         assert_eq!(snapshot.context(), runtime.pinned_movement_context());
         assert_eq!(snapshot.facing(), Some(MovementFacing::South));
+        assert_eq!(snapshot.last_translation_revision(), 0);
         let others_before = runtime.carrier.slots[1..].to_vec();
         for (x, y, facing) in [
             (20, 9, MovementFacing::North),
@@ -410,6 +412,7 @@ mod tests {
             assert_eq!(snapshot.position(), next);
             assert_eq!(snapshot.context(), old.context());
             assert_eq!(snapshot.revision(), old.revision() + 1);
+            assert_eq!(snapshot.last_translation_revision(), snapshot.revision());
             assert_eq!(snapshot.facing(), Some(facing));
             assert_eq!(runtime.borrow_movement_position().read(actor), Ok(snapshot));
             let visible = runtime.visible_entities();
@@ -480,7 +483,7 @@ mod tests {
             .read(actor)
             .expect("NPC position");
         let before = runtime.carrier.slots.clone();
-        for changed in 0..9 {
+        for changed in 0..10 {
             let mut wrong = initial;
             match changed {
                 0 => wrong.0.actor_ref = other.0,
@@ -491,7 +494,8 @@ mod tests {
                 5 => wrong.0.version.revision += 1,
                 6 => wrong.0.version.facing = Some(MovementFacing::West),
                 7 => wrong.0.version.actor_local_id = other.0.actor_local_id,
-                _ => wrong.0.version.actor_local_generation = ActorLocalGeneration(2),
+                8 => wrong.0.version.actor_local_generation = ActorLocalGeneration(2),
+                _ => wrong.0.version.last_translation_revision += 1,
             }
             let next = MovementLocalPosition {
                 x: wrong.position().x + 1,

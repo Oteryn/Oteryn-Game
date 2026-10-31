@@ -62,6 +62,7 @@ fn evicting_a_corpse_projection_evicts_its_reward_occurrence() {
                 floor: 7,
             },
             revision: 1,
+            last_translation_revision: 0,
             facing: None,
         },
     };

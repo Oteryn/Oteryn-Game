@@ -947,6 +947,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let mut vitals = PlayerBiteVitals {
             quest_sessions: Some(&self.states.quest_sessions),
             charm: None,
+            conditions: None,
             states: &mut *states,
             attack: &mut *attack,
             formula: content.training_formula(),

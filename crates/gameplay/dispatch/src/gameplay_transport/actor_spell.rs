@@ -146,6 +146,10 @@ pub struct ChannelSpellStates {
     pub(in crate::gameplay_transport) monster_melee: crate::ai_monster_melee::MonsterMeleeOwner,
     pub(in crate::gameplay_transport) monster_spells:
         crate::creature_damage_spell::DamageSpellOwner,
+    pub(in crate::gameplay_transport) monster_chains:
+        Option<crate::creature_chain_attack::ChainOwner<crate::creature_damage_spell::SpellSource>>,
+    pub(in crate::gameplay_transport) monster_composed:
+        crate::creature_damage_spell::composed::ComposedOwner,
     pub(in crate::gameplay_transport) next_monster_ai_pass_us: u64,
     pub(in crate::gameplay_transport) monster_ai_sequence: u64,
     pub(in crate::gameplay_transport) monster_ai_cursor: usize,
@@ -290,6 +294,8 @@ impl Default for ChannelSpellStates {
             next_party_deadline_pass_us: Default::default(),
             monster_melee: Default::default(),
             monster_spells: Default::default(),
+            monster_chains: None,
+            monster_composed: Default::default(),
             monster_summons: Default::default(),
             next_monster_ai_pass_us: Default::default(),
             monster_ai_sequence: Default::default(),
@@ -1313,64 +1319,10 @@ impl ChannelSpellStates {
         Some(text)
     }
 }
-impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
-    fn reflect_equipment_damage(
-        &mut self,
-        runtime: &mut ChannelRuntimeV1,
-        source: ExactActorRef,
-        target: ExactActorRef,
-        session: GameSessionId,
-        element: Option<&str>,
-        magnitude: u32,
-        stream: &[u8],
-        now: crate::foundation::owner_timer::SemanticTimeMicros,
-    ) -> bool {
-        self.reflect_equipment(
-            runtime, source, target, session, element, magnitude, stream, now,
-        )
-    }
-
-    fn apply_source_appearance_batch(
-        &mut self,
-        runtime: &mut ChannelRuntimeV1,
-        fence: &crate::foundation::ScopeRuntimeFence,
-        stamp: crate::foundation::RuntimeWorkStamp,
-        source: ExactActorRef,
-        definitions: &[crate::foundation::ConditionDefinition],
-        targets: &[crate::player_lethal::SourceAppearanceTarget<'_>],
-    ) -> Option<Vec<crate::player_lethal::SourceAppearanceReceipt>> {
-        self.native_source_appearance_batch(runtime, fence, stamp, source, definitions, targets)
-    }
-
-    fn apply_attack_conditions(
-        &mut self,
-        runtime: &mut ChannelRuntimeV1,
-        target: ExactActorRef,
-        session: GameSessionId,
-        occurrence: &str,
-        source: ExactActorRef,
-        definitions: &[crate::foundation::ConditionDefinition],
-        facts: &crate::foundation::ApplicationFacts<'_>,
-        immunities: &[crate::foundation::ConditionType],
-        fence: &crate::foundation::ScopeRuntimeFence,
-        stamp: crate::foundation::RuntimeWorkStamp,
-    ) -> bool {
-        self.native_composite_conditions(
-            runtime,
-            target,
-            session,
-            occurrence,
-            source,
-            definitions,
-            facts,
-            immunities,
-            None,
-            fence,
-            stamp,
-        )
-        .is_some()
-    }
-    fn apply_composite_attack_damage(
+impl ChannelSpellStates {
+    // Current and externally fenced entry points share staging, receipts and secondary effects.
+    #[allow(clippy::too_many_arguments)]
+    fn source_composite_attack_damage(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
         target: ExactActorRef,
@@ -1381,14 +1333,15 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         definitions: &[crate::foundation::ConditionDefinition],
         facts: &crate::foundation::ApplicationFacts<'_>,
         immunities: &[crate::foundation::ConditionType],
-        fence: &crate::foundation::ScopeRuntimeFence,
+        fence: Option<&crate::foundation::ScopeRuntimeFence>,
         stamp: crate::foundation::RuntimeWorkStamp,
     ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        let current = fence.or_else(|| runtime.owner_fence().ok())?;
         let binding = runtime.binding();
-        if !fence.is_current_for_scope(
+        if !current.is_current_for_scope(
             crate::foundation::RuntimeScopeRefV1::channel(binding.world_id(), binding.channel_id()),
             binding.scope_generation(),
-        ) || !fence.accepts_stamp(stamp)
+        ) || !current.accepts_stamp(stamp)
         {
             return None;
         }
@@ -1405,7 +1358,8 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         });
         let magnitude = magnitude - (u64::from(magnitude) * u64::from(percent) / 100) as u32;
         if definitions.is_empty() {
-            return self.apply_attack_damage(
+            return crate::player_lethal::PlayerLethalVitals::apply_attack_damage(
+                self,
                 runtime,
                 target,
                 session,
@@ -1440,6 +1394,164 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         }
         Some(receipt)
     }
+}
+impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
+    fn reflect_equipment_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        source: ExactActorRef,
+        target: ExactActorRef,
+        session: GameSessionId,
+        element: Option<&str>,
+        magnitude: u32,
+        stream: &[u8],
+        now: crate::foundation::owner_timer::SemanticTimeMicros,
+    ) -> bool {
+        self.reflect_equipment(
+            runtime, source, target, session, element, magnitude, stream, now,
+        )
+    }
+
+    fn apply_source_appearance_batch(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        fence: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        targets: &[crate::player_lethal::SourceAppearanceTarget<'_>],
+    ) -> Option<Vec<crate::player_lethal::SourceAppearanceReceipt>> {
+        self.native_source_appearance_batch(
+            runtime,
+            Some(fence),
+            stamp,
+            source,
+            definitions,
+            targets,
+        )
+    }
+
+    fn apply_source_appearance_batch_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: crate::foundation::RuntimeWorkStamp,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        targets: &[crate::player_lethal::SourceAppearanceTarget<'_>],
+    ) -> Option<Vec<crate::player_lethal::SourceAppearanceReceipt>> {
+        self.native_source_appearance_batch(runtime, None, stamp, source, definitions, targets)
+    }
+
+    fn apply_attack_conditions(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        fence: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> bool {
+        self.native_composite_conditions(
+            runtime,
+            target,
+            session,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            None,
+            Some(fence),
+            stamp,
+        )
+        .is_some()
+    }
+    fn apply_attack_conditions_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> bool {
+        self.native_composite_conditions(
+            runtime,
+            target,
+            session,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            None,
+            None,
+            stamp,
+        )
+        .is_some()
+    }
+    fn apply_composite_attack_damage(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        fence: &crate::foundation::ScopeRuntimeFence,
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        self.source_composite_attack_damage(
+            runtime,
+            target,
+            session,
+            magnitude,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            Some(fence),
+            stamp,
+        )
+    }
+    fn apply_composite_attack_damage_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        magnitude: u32,
+        occurrence: &str,
+        source: ExactActorRef,
+        definitions: &[crate::foundation::ConditionDefinition],
+        facts: &crate::foundation::ApplicationFacts<'_>,
+        immunities: &[crate::foundation::ConditionType],
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> Option<crate::player_lethal::PlayerDamageReceipt> {
+        self.source_composite_attack_damage(
+            runtime,
+            target,
+            session,
+            magnitude,
+            occurrence,
+            source,
+            definitions,
+            facts,
+            immunities,
+            None,
+            stamp,
+        )
+    }
     fn remove_attack_invisibility(
         &mut self,
         runtime: &mut ChannelRuntimeV1,
@@ -1450,7 +1562,27 @@ impl crate::player_lethal::PlayerLethalVitals for ChannelSpellStates {
         fence: &crate::foundation::ScopeRuntimeFence,
         stamp: crate::foundation::RuntimeWorkStamp,
     ) -> bool {
-        self.native_remove_attack_invisibility(runtime, target, session, source, now, fence, stamp)
+        self.native_remove_attack_invisibility(
+            runtime,
+            target,
+            session,
+            source,
+            now,
+            Some(fence),
+            stamp,
+        )
+    }
+
+    fn remove_attack_invisibility_current(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        target: ExactActorRef,
+        session: GameSessionId,
+        source: ExactActorRef,
+        now: u64,
+        stamp: crate::foundation::RuntimeWorkStamp,
+    ) -> bool {
+        self.native_remove_attack_invisibility(runtime, target, session, source, now, None, stamp)
     }
 
     fn source_player_health(

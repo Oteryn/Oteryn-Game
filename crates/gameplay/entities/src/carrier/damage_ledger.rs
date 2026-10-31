@@ -128,6 +128,9 @@ pub const COMBAT01_DAMAGE_CONTRIBUTORS_PER_CREATURE_MAX: usize = 16;
 pub struct DamageContributor {
     pub(super) character: CharacterId,
     pub total: u64,
+    /// AI targeting follows Crystal's actor-scoped damage map. Reward totals above survive
+    /// reconnection, but this subtotal belongs only to the high-water lease and session.
+    pub(super) current_session_total: u64,
     pub(super) last_update_ordinal: u64,
     /// D141: this attacker's `(session, sequence, sub_ordinal)` high-water mark. A new current
     /// session replaces it outright; within one session it only ever rises.
@@ -186,7 +189,18 @@ impl DamageContributors {
         {
             existing.total = existing.total.saturating_add(damage);
             existing.last_update_ordinal = ordinal;
-            if high_water.is_some() {
+            if let Some((lease, session, _, _)) = high_water {
+                existing.current_session_total =
+                    if existing
+                        .high_water
+                        .is_some_and(|(old_lease, old_session, _, _)| {
+                            old_lease == lease && old_session == session
+                        })
+                    {
+                        existing.current_session_total.saturating_add(damage)
+                    } else {
+                        damage
+                    };
                 existing.high_water = high_water;
             }
             existing.last_damage_at_ms = existing.last_damage_at_ms.max(at_ms);
@@ -198,6 +212,7 @@ impl DamageContributors {
         self.entries.push(DamageContributor {
             character,
             total: damage,
+            current_session_total: if high_water.is_some() { damage } else { 0 },
             last_update_ordinal: ordinal,
             high_water,
             last_damage_at_ms: at_ms,
@@ -1191,6 +1206,36 @@ impl CurrentOwnerCombatDeath<'_> {
             _ => Err(CarrierError::NotCreature),
         }
     }
+    /// Current-session damage for AI, from the same owner and exact creature generation.
+    /// Crystal monster.cpp:885 reads damage by actor ID; a successor session starts at zero.
+    /// Reward attribution deliberately continues to use `reward_damage_shares`.
+    pub fn current_session_damage_shares(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<Vec<RewardDamageShare>, CarrierError> {
+        let index = self.carrier.validate_ref(self.continuity, actor.0)?;
+        match &self.carrier.slots[index] {
+            Slot::CreatureOccupied {
+                damage_contributors,
+                ..
+            } => Ok(damage_contributors
+                .entries
+                .iter()
+                .filter_map(|entry| {
+                    let (lease, session, _, _) = entry.high_water?;
+                    Some(RewardDamageShare {
+                        character: entry.character,
+                        total: entry.current_session_total,
+                        lease_generation: Some(lease),
+                        session: Some(session),
+                        last_damage_at_ms: entry.last_damage_at_ms,
+                    })
+                })
+                .collect()),
+            _ => Err(CarrierError::NotCreature),
+        }
+    }
+
     pub fn damage_contributing_characters(
         &self,
         actor: ExactActorRef,
@@ -1224,3 +1269,6 @@ pub fn project_fixed_one_creature_death<'a>(
     let receipt = owner.committed_lethal_receipt(actor)?;
     owner.project_committed_lethal(receipt)
 }
+
+#[cfg(test)]
+mod session_damage_tests;

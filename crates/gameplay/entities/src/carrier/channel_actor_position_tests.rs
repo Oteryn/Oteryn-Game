@@ -263,3 +263,217 @@ fn stale_position_and_revision_overflow_reject_without_mutation() {
     );
     assert_eq!(carrier.slots, before);
 }
+
+#[test]
+fn translation_stamp_ignores_turns_and_same_cell_writes() {
+    let (continuity, mut carrier) = fixture(60, 1);
+    let actor = carrier.admit(&continuity, ActorState(1)).expect("admit");
+    let scope = context(&continuity);
+    let initial = carrier
+        .initialize_position(&continuity, actor, scope, position(4))
+        .expect("initialize");
+    let mut current = MovementPositionSnapshot(initial);
+    assert_eq!(current.last_translation_revision(), 0);
+    for facing in [
+        MovementFacing::North,
+        MovementFacing::West,
+        MovementFacing::South,
+    ] {
+        let before = current;
+        current = carrier
+            .current_owner_movement_position(&continuity)
+            .commit_turn(before, facing)
+            .expect("real turn");
+        assert_eq!(current.position(), before.position());
+        assert_eq!(current.facing(), Some(facing));
+        assert!(current.revision() > before.revision());
+        assert_eq!(current.last_translation_revision(), 0);
+    }
+    let next = MovementLocalPosition {
+        x: 5,
+        ..current.position()
+    };
+    let moved = carrier
+        .current_owner_movement_position(&continuity)
+        .commit_cardinal(current, next)
+        .expect("real translation");
+    assert_eq!(moved.last_translation_revision(), moved.revision());
+    let turned = carrier
+        .current_owner_movement_position(&continuity)
+        .commit_turn(moved, MovementFacing::East)
+        .expect("turn after movement");
+    assert_eq!(
+        turned.last_translation_revision(),
+        moved.last_translation_revision()
+    );
+    let same_cell = MovementPositionSnapshot(
+        carrier
+            .compare_commit_position(&continuity, turned.0, scope, turned.0.version.position)
+            .expect("same-cell owner write"),
+    );
+    assert!(same_cell.revision() > turned.revision());
+    assert_eq!(same_cell.position(), moved.position());
+    assert_eq!(
+        same_cell.last_translation_revision(),
+        moved.last_translation_revision()
+    );
+}
+
+#[test]
+fn translation_stamp_observes_out_and_back_and_rejects_stale_snapshots() {
+    let (continuity, mut carrier) = fixture(70, 1);
+    let actor = carrier.admit(&continuity, ActorState(1)).expect("admit");
+    let scope = context(&continuity);
+    let initial = MovementPositionSnapshot(
+        carrier
+            .initialize_position(&continuity, actor, scope, position(4))
+            .expect("initialize"),
+    );
+    let away = carrier
+        .current_owner_movement_position(&continuity)
+        .commit_cardinal(
+            initial,
+            MovementLocalPosition {
+                x: 5,
+                ..initial.position()
+            },
+        )
+        .expect("step out");
+    let returned = carrier
+        .current_owner_movement_position(&continuity)
+        .commit_cardinal(away, initial.position())
+        .expect("step back");
+    assert_eq!(returned.position(), initial.position());
+    assert!(returned.last_translation_revision() > away.last_translation_revision());
+    assert_eq!(returned.last_translation_revision(), returned.revision());
+    let before = carrier.slots.clone();
+    assert_eq!(
+        carrier
+            .current_owner_movement_position(&continuity)
+            .commit_cardinal(initial, away.position()),
+        Err(CarrierError::PositionSnapshotMismatch)
+    );
+    // The readonly marker remains part of the owner's exact snapshot comparison.
+    let mut altered = returned;
+    altered.0.version.last_translation_revision = away.last_translation_revision();
+    assert_eq!(
+        carrier
+            .current_owner_movement_position(&continuity)
+            .commit_cardinal(altered, away.position()),
+        Err(CarrierError::PositionSnapshotMismatch)
+    );
+    assert_eq!(carrier.slots, before);
+}
+
+#[test]
+fn translation_stamp_tracks_relocation_in_the_same_position_owner() {
+    // This sealed fixture exercises the position owner only. Production relocation
+    // eligibility still comes from the existing World/SQL proof producer.
+    struct Proof(
+        ExactActorRef,
+        MovementPositionSnapshot,
+        MovementLocalPosition,
+    );
+    impl relocation_seal::Sealed for Proof {}
+    impl SpellRelocationProof for Proof {
+        fn parts(
+            &self,
+        ) -> (
+            ExactActorRef,
+            MovementPositionSnapshot,
+            MovementLocalPosition,
+        ) {
+            (self.0, self.1, self.2)
+        }
+    }
+    let (continuity, mut carrier) = fixture(80, 1);
+    let actor = carrier.admit(&continuity, ActorState(1)).expect("admit");
+    let scope = context(&continuity);
+    let initial = MovementPositionSnapshot(
+        carrier
+            .initialize_position(&continuity, actor, scope, position(4))
+            .expect("initialize"),
+    );
+    let destination = MovementLocalPosition {
+        x: 20,
+        y: 5,
+        floor: 8,
+    };
+    let moved = carrier
+        .current_owner_movement_position(&continuity)
+        .commit_spell_relocation(Proof(ExactActorRef(actor), initial, destination))
+        .expect("same-slot floor relocation");
+    assert_eq!(moved.position(), destination);
+    assert_eq!(moved.last_translation_revision(), moved.revision());
+    let same_cell = carrier
+        .current_owner_movement_position(&continuity)
+        .commit_spell_relocation(Proof(ExactActorRef(actor), moved, destination))
+        .expect("same-cell relocation owner write");
+    assert_eq!(
+        same_cell.last_translation_revision(),
+        moved.last_translation_revision()
+    );
+    let returned = carrier
+        .current_owner_movement_position(&continuity)
+        .commit_spell_relocation(Proof(ExactActorRef(actor), same_cell, initial.position()))
+        .expect("relocation back");
+    assert_eq!(returned.position(), initial.position());
+    assert!(returned.last_translation_revision() > moved.last_translation_revision());
+    assert_eq!(returned.last_translation_revision(), returned.revision());
+}
+
+#[test]
+fn translation_stamp_is_scoped_to_the_exact_actor_and_current_owner() {
+    let (mut continuity, mut carrier) = fixture(90, 1);
+    let actor = carrier.admit(&continuity, ActorState(1)).expect("admit");
+    let scope = context(&continuity);
+    let initial = MovementPositionSnapshot(
+        carrier
+            .initialize_position(&continuity, actor, scope, position(4))
+            .expect("initialize"),
+    );
+    let old = carrier
+        .current_owner_movement_position(&continuity)
+        .commit_cardinal(
+            initial,
+            MovementLocalPosition {
+                x: 5,
+                ..initial.position()
+            },
+        )
+        .expect("old actor moved");
+    carrier
+        .remove(&continuity, actor)
+        .expect("remove old actor");
+    let recycled = carrier
+        .admit(&continuity, ActorState(2))
+        .expect("reuse slot");
+    assert_eq!(recycled.actor_local_id, actor.actor_local_id);
+    assert_ne!(
+        recycled.actor_local_generation,
+        actor.actor_local_generation
+    );
+    let fresh = MovementPositionSnapshot(
+        carrier
+            .initialize_position(&continuity, recycled, scope, position(5))
+            .expect("new actor position"),
+    );
+    assert_eq!(fresh.position(), old.position());
+    assert_eq!(fresh.last_translation_revision(), 0);
+    let before = carrier.slots.clone();
+    assert!(
+        carrier
+            .current_owner_movement_position(&continuity)
+            .commit_cardinal(old, initial.position())
+            .is_err()
+    );
+    assert_eq!(carrier.slots, before);
+    continuity.advance(grant(90, 2)).expect("owner retired");
+    assert_eq!(
+        carrier
+            .current_owner_movement_position(&continuity)
+            .commit_cardinal(fresh, initial.position()),
+        Err(CarrierError::WrongScope)
+    );
+    assert_eq!(carrier.slots, before);
+}

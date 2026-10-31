@@ -448,7 +448,9 @@ fn runtime_rejects_invalid_assignment_identity_and_zero_provenance() {
         // one pointer and reduces the largest variant by another 8 bytes: 168 -> 160.
         // D314: SPELL-BATCH candidate budget of 184 bytes for the boxed actual spell combat
         // state and qualified companion metadata on top of COND-1c; measured 160 -> 176.
-        176,
+        // The derived last-translation revision uses the remaining u64 within that
+        // unchanged 184-byte budget; it introduces no independent counter or allocation.
+        184,
         "spell candidate fixed-slot footprint must stay inside the D314 budget"
     );
 }

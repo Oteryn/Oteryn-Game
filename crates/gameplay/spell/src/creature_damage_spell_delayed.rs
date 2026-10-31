@@ -22,6 +22,7 @@ struct Pending {
     source: SpellSource,
     proposal: ProfileAbilityProposal,
     session: GameSessionId,
+    due: SemanticTimeMicros,
 }
 /// Private one-use native due pulse. Cannot be cloned or fabricated by the generic caller.
 pub(super) struct Pulse {
@@ -29,6 +30,21 @@ pub(super) struct Pulse {
     pub(super) stamp: RuntimeWorkStamp,
 }
 impl Pulse {
+    pub(super) fn context(
+        &self,
+    ) -> (
+        &SpellSource,
+        &ProfileAbilityProposal,
+        GameSessionId,
+        RuntimeWorkStamp,
+    ) {
+        (
+            &self.pending.source,
+            &self.pending.proposal,
+            self.pending.session,
+            self.stamp,
+        )
+    }
     pub(super) fn into_parts(
         self,
     ) -> (
@@ -135,6 +151,7 @@ impl DelayedOwner {
             source: source.clone(),
             proposal: p.clone(),
             session,
+            due,
         };
         self.timers
             .schedule(f, stamp, Family, self.next, Some(p.issuer), due)
@@ -155,8 +172,35 @@ impl DelayedOwner {
         f: &mut ScopeRuntimeFence,
         clock: &impl OwnerClock,
     ) -> PreparedDueCasts {
+        self.current(r, f, clock.now())?;
+        let ordinal = f
+            .accept_input(self.generation)
+            .map_err(|_| AttackError::StaleOwner)?;
+        self.drain_prepared(r, f, f.stamp(ordinal), clock)
+    }
+    pub(super) fn drain_current(
+        &mut self,
+        r: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        clock: &impl OwnerClock,
+    ) -> PreparedDueCasts {
+        // The caller minted this turn before resolving source-specific current facts.
+        // drain_prepared checks that authority before cancelling or consuming timers.
+        let fence = r.owner_fence().map_err(|_| AttackError::StaleOwner)?;
+        self.drain_prepared(r, fence, stamp, clock)
+    }
+    fn drain_prepared(
+        &mut self,
+        r: &ChannelRuntimeV1,
+        f: &ScopeRuntimeFence,
+        stamp: RuntimeWorkStamp,
+        clock: &impl OwnerClock,
+    ) -> PreparedDueCasts {
         let now = clock.now();
         self.current(r, f, now)?;
+        if !f.accepts_stamp(stamp) {
+            return Err(AttackError::StaleOwner);
+        }
         let mut pulses = Vec::new();
         let mut cancellations = Vec::new();
         pulses
@@ -165,12 +209,6 @@ impl DelayedOwner {
         cancellations
             .try_reserve(self.pending.len())
             .map_err(|_| AttackError::LedgerFull)?;
-        // Obtain one genuine batch work ordinal before draining any pending timer.
-        // No later ordinal failure can discard earlier committed due-cast outcomes.
-        let ordinal = f
-            .accept_input(self.generation)
-            .map_err(|_| AttackError::StaleOwner)?;
-        let stamp = f.stamp(ordinal);
         let mut index = 0;
         while index < self.pending.len() {
             let p = &self.pending[index];
@@ -211,6 +249,30 @@ impl DelayedOwner {
         }
         self.clock = Some(now);
         Ok((pulses, cancellations))
+    }
+    pub(super) fn next_due_time(&self) -> Option<SemanticTimeMicros> {
+        self.pending.iter().map(|pending| pending.due).min()
+    }
+    /// Read-only source metadata; a snapshot cannot create or consume a timer pulse.
+    pub(super) fn pending_sources(
+        &self,
+    ) -> Vec<(
+        SpellSource,
+        ProfileAbilityProposal,
+        GameSessionId,
+        SemanticTimeMicros,
+    )> {
+        self.pending
+            .iter()
+            .map(|pending| {
+                (
+                    pending.source.clone(),
+                    pending.proposal.clone(),
+                    pending.session,
+                    pending.due,
+                )
+            })
+            .collect()
     }
     #[cfg(any(test, feature = "test-support"))]
     pub fn pending_len(&self) -> usize {

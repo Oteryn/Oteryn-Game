@@ -296,6 +296,9 @@ impl ChannelRuntimeV1 {
                 .revision
                 .checked_add(1)
                 .ok_or(CarrierError::CapacityArithmeticOverflow)?;
+            if restored.position != resident.channel_position.position {
+                restored.last_translation_revision = restored.revision;
+            }
             let index = actor.actor_local_id() as usize - 1;
             let attacker = self
                 .carrier
@@ -393,3 +396,6 @@ impl ChannelRuntimeV1 {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod translation_tests;

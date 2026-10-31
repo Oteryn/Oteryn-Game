@@ -62,6 +62,17 @@ pub trait ChainDamage<S: ChainSource> {
         world: &mut Self::World<'_>,
         now: SemanticTimeMicros,
     ) -> Result<S::Outcome, AttackError>;
+
+    #[allow(clippy::too_many_arguments)]
+    fn consume_chain_pulse_current(
+        &self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        pulse: ChainPulse<S>,
+        world: &mut Self::World<'_>,
+        now: SemanticTimeMicros,
+    ) -> Result<S::Outcome, AttackError>;
 }
 
 /// Current map-owner facts, not inferred from native geometry or precomputed source records.
@@ -124,6 +135,15 @@ struct Memo {
     binding: [u8; 32],
     result: Result<u64, AttackError>,
 }
+/// Read-only next-step metadata for independently preparing current map and effect facts.
+/// This is not a pulse and cannot authorize damage execution.
+pub struct PendingChainSource<S> {
+    pub source: S,
+    pub proposal: ProfileAbilityProposal,
+    pub session: GameSessionId,
+    pub due: SemanticTimeMicros,
+    pub from: TilePosition,
+}
 /// Sealed one-use capability produced only by draining this lane. No Clone/Copy constructor.
 pub struct ChainPulse<S> {
     source: S,
@@ -142,6 +162,17 @@ pub struct ChainOwner<S: ChainSource> {
     casts: Vec<Cast<S>>,
     memos: Vec<Memo>,
     next_token: u64,
+}
+impl<S: ChainSource> std::fmt::Debug for ChainOwner<S> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ChainOwner")
+            .field("scope", &self.scope)
+            .field("generation", &self.generation)
+            .field("casts", &self.casts.len())
+            .field("memos", &self.memos.len())
+            .finish()
+    }
 }
 impl<S: ChainSource> ChainOwner<S> {
     pub fn new(runtime: &ChannelRuntimeV1, fence: &ScopeRuntimeFence) -> Result<Self, AttackError> {
@@ -173,6 +204,10 @@ impl<S: ChainSource> ChainOwner<S> {
             memos: Vec::new(),
             next_token: 1,
         })
+    }
+    pub fn new_current(runtime: &ChannelRuntimeV1) -> Result<Self, AttackError> {
+        let fence = runtime.owner_fence().map_err(|_| AttackError::StaleOwner)?;
+        Self::new(runtime, fence)
     }
     fn current(&self, runtime: &ChannelRuntimeV1, fence: &ScopeRuntimeFence) -> bool {
         let b = runtime.binding();
@@ -350,6 +385,21 @@ impl<S: ChainSource> ChainOwner<S> {
         }
         result
     }
+    /// Admit the same source schedule under the runtime's independently current fence.
+    #[allow(clippy::too_many_arguments)]
+    pub fn schedule_current(
+        &mut self,
+        runtime: &ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        source: &S,
+        proposal: &ProfileAbilityProposal,
+        world: &mut (impl ChainWorldReader + ?Sized),
+        map: &mut dyn ChainMapFacts,
+        now: SemanticTimeMicros,
+    ) -> Result<u64, AttackError> {
+        let fence = runtime.owner_fence().map_err(|_| AttackError::StaleOwner)?;
+        self.schedule(runtime, fence, stamp, source, proposal, world, map, now)
+    }
     fn pick(
         &self,
         runtime: &ChannelRuntimeV1,
@@ -510,17 +560,131 @@ impl<S: ChainSource> ChainOwner<S> {
         map: &mut dyn ChainMapFacts,
         clock: &impl OwnerClock,
     ) -> ChainPulseResults<S::Outcome> {
-        if !self.current(runtime, fence) {
+        self.run_due_inner(
+            runtime,
+            Some(fence),
+            None,
+            clock,
+            |runtime, fence, stamp, pulse, from, now| {
+                Self::apply_due_pulse(
+                    runtime, fence, stamp, vitals, damage, world, map, pulse, from, now,
+                )
+            },
+        )
+    }
+    /// Use caller-issued current work so independently prepared facts bind to this exact turn.
+    #[allow(clippy::too_many_arguments)]
+    pub fn run_due_current<D: ChainDamage<S>>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        damage: &D,
+        world: &mut D::World<'_>,
+        map: &mut dyn ChainMapFacts,
+        clock: &impl OwnerClock,
+    ) -> ChainPulseResults<S::Outcome> {
+        self.run_due_inner(
+            runtime,
+            None,
+            Some(stamp),
+            clock,
+            |runtime, fence, stamp, pulse, from, now| {
+                Self::apply_due_pulse(
+                    runtime, fence, stamp, vitals, damage, world, map, pulse, from, now,
+                )
+            },
+        )
+    }
+    /// Each sealed due pulse selects its own source/recipient/map facts from the caller's bank.
+    /// The callback returns owned readers; it cannot replace or fabricate the pulse.
+    #[allow(clippy::too_many_arguments)]
+    pub fn run_due_current_with<'a, D, F>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        damage: &D,
+        clock: &impl OwnerClock,
+        mut readers: F,
+    ) -> ChainPulseResults<S::Outcome>
+    where
+        D: ChainDamage<S>,
+        F: FnMut(
+            &S,
+            &ProfileAbilityProposal,
+            GameSessionId,
+            TilePosition,
+            RuntimeWorkStamp,
+        ) -> Option<(Box<D::World<'a>>, Box<dyn ChainMapFacts + 'a>)>,
+    {
+        self.run_due_inner(
+            runtime,
+            None,
+            Some(stamp),
+            clock,
+            |runtime, fence, stamp, pulse, from, now| {
+                let (mut world, mut map) =
+                    readers(&pulse.source, &pulse.proposal, pulse.session, from, stamp)
+                        .ok_or(AttackError::MissingCombatFacts)?;
+                Self::apply_due_pulse(
+                    runtime,
+                    fence,
+                    stamp,
+                    vitals,
+                    damage,
+                    world.as_mut(),
+                    map.as_mut(),
+                    pulse,
+                    from,
+                    now,
+                )
+            },
+        )
+    }
+    fn run_due_inner<F>(
+        &mut self,
+        runtime: &mut ChannelRuntimeV1,
+        mut fence: Option<&mut ScopeRuntimeFence>,
+        supplied_stamp: Option<RuntimeWorkStamp>,
+        clock: &impl OwnerClock,
+        mut apply: F,
+    ) -> ChainPulseResults<S::Outcome>
+    where
+        F: FnMut(
+            &mut ChannelRuntimeV1,
+            Option<&ScopeRuntimeFence>,
+            RuntimeWorkStamp,
+            ChainPulse<S>,
+            TilePosition,
+            SemanticTimeMicros,
+        ) -> Result<S::Outcome, AttackError>,
+    {
+        let current = current_fence(runtime, fence.as_deref())?;
+        if !self.current(runtime, current)
+            || supplied_stamp.is_some_and(|stamp| !current.accepts_stamp(stamp))
+        {
             return Err(AttackError::StaleOwner);
         }
+        // Supplied current authority is checked before pruning or consuming any timer.
+        let stamp = match fence.as_deref_mut() {
+            Some(fence) => {
+                let ordinal = fence
+                    .accept_input(self.generation)
+                    .map_err(|_| AttackError::StaleOwner)?;
+                fence.stamp(ordinal)
+            }
+            None => supplied_stamp.ok_or(AttackError::StaleOwner)?,
+        };
         self.prune(runtime);
-        let fired = self
-            .timers
-            .drain_due(clock, fence, |a| runtime.contains_live_creature(a));
         let mut results = Vec::new();
         results
-            .try_reserve_exact(fired.len())
+            .try_reserve_exact(self.casts.len())
             .map_err(|_| AttackError::LedgerFull)?;
+        let current = current_fence(runtime, fence.as_deref())?;
+        let fired = self
+            .timers
+            .drain_due(clock, current, |a| runtime.contains_live_creature(a));
         for timer in fired {
             let Some(index) = self.casts.iter().position(|c| {
                 c.token == timer.occurrence.cast && c.next == usize::from(timer.occurrence.step)
@@ -530,52 +694,21 @@ impl<S: ChainSource> ChainOwner<S> {
             let mut cast = self.casts.remove(index);
             let step = cast.next;
             cast.next += 1;
-            let ordinal = fence
-                .accept_input(self.generation)
-                .map_err(|_| AttackError::StaleOwner)?;
-            let stamp = fence.stamp(ordinal);
             let target = &cast.targets[step];
-            let mut proposal = cast.proposal.clone();
-            proposal.target = target.actor;
-            proposal.occurrence = crate::ability::chain_step_occurrence(&proposal.occurrence, step)
-                .map_err(|_| AttackError::InvalidPlan)?;
-            proposal.intent = AbilityIntent::normalize(
-                ProposalSource::Ai,
-                &atom(proposal.issuer),
-                &[&atom(target.actor)],
-            )
-            .map_err(|_| AttackError::InvalidPlan)?;
-            let outcome = match runtime.read_actor_position(target.actor) {
-                Err(_) => Err(AttackError::StaleTarget),
-                Ok(position) => {
-                    let to = position.position();
-                    let current_to = TilePosition {
-                        x: to.x,
-                        y: to.y,
-                        floor: to.floor,
-                    };
-                    match map.sight(runtime, target.from, current_to, stamp) {
-                        None => Err(AttackError::MissingCombatFacts),
-                        Some(false) => Err(AttackError::OutOfRange),
-                        Some(true) => {
-                            let pulse = ChainPulse {
-                                source: cast.source.clone(),
-                                proposal,
-                                session: target.session,
-                            };
-                            damage.consume_chain_pulse(
-                                runtime,
-                                fence,
-                                stamp,
-                                vitals,
-                                pulse,
-                                world,
-                                clock.now(),
-                            )
-                        }
-                    }
-                }
+            let proposal = step_proposal(&cast.proposal, target.actor, step)?;
+            let pulse = ChainPulse {
+                source: cast.source.clone(),
+                proposal,
+                session: target.session,
             };
+            let outcome = apply(
+                runtime,
+                fence.as_deref(),
+                stamp,
+                pulse,
+                target.from,
+                clock.now(),
+            );
             cast.receipts.push(outcome.clone());
             results.push((cast.token, step, outcome));
             if cast.next < cast.targets.len() {
@@ -587,7 +720,7 @@ impl<S: ChainSource> ChainOwner<S> {
                 if self
                     .timers
                     .schedule(
-                        fence,
+                        current_fence(runtime, fence.as_deref())?,
                         stamp,
                         Family(cast.entry as u8),
                         StepKey {
@@ -602,12 +735,88 @@ impl<S: ChainSource> ChainOwner<S> {
                     cast.receipts.push(Err(AttackError::InvalidPlan));
                     cast.next = cast.targets.len();
                 }
-                self.casts.push(cast);
-            } else {
-                self.casts.push(cast);
             }
+            self.casts.push(cast);
         }
         Ok(results)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn apply_due_pulse<D: ChainDamage<S>>(
+        runtime: &mut ChannelRuntimeV1,
+        fence: Option<&ScopeRuntimeFence>,
+        stamp: RuntimeWorkStamp,
+        vitals: &mut dyn PlayerLethalVitals,
+        damage: &D,
+        world: &mut D::World<'_>,
+        map: &mut dyn ChainMapFacts,
+        pulse: ChainPulse<S>,
+        from: TilePosition,
+        now: SemanticTimeMicros,
+    ) -> Result<S::Outcome, AttackError> {
+        let to = runtime
+            .read_actor_position(pulse.proposal.target)
+            .map_err(|_| AttackError::StaleTarget)?
+            .position();
+        let current_to = TilePosition {
+            x: to.x,
+            y: to.y,
+            floor: to.floor,
+        };
+        match map.sight(runtime, from, current_to, stamp) {
+            None => Err(AttackError::MissingCombatFacts),
+            Some(false) => Err(AttackError::OutOfRange),
+            Some(true) => match fence {
+                Some(fence) => {
+                    damage.consume_chain_pulse(runtime, fence, stamp, vitals, pulse, world, now)
+                }
+                None => {
+                    damage.consume_chain_pulse_current(runtime, stamp, vitals, pulse, world, now)
+                }
+            },
+        }
+    }
+    /// Actual next-step deadline metadata; reading it grants no callback authority.
+    pub fn next_due_time(&self) -> Option<SemanticTimeMicros> {
+        self.casts
+            .iter()
+            .filter_map(|cast| {
+                let target = cast.targets.get(cast.next)?;
+                if cast.next == 0 {
+                    Some(cast.start)
+                } else {
+                    cast.start
+                        .get()
+                        .checked_add(target.delay)
+                        .map(SemanticTimeMicros::from_micros)
+                }
+            })
+            .min()
+    }
+    /// Exact frozen next recipients with source metadata for fresh owner-fact reads.
+    /// Only `run_due` can produce the sealed pulse that permits damage execution.
+    pub fn pending_sources(&self) -> Result<Vec<PendingChainSource<S>>, AttackError> {
+        self.casts
+            .iter()
+            .filter(|cast| cast.next < cast.targets.len())
+            .map(|cast| {
+                let target = &cast.targets[cast.next];
+                let due = if cast.next == 0 {
+                    cast.start.get()
+                } else {
+                    cast.start
+                        .get()
+                        .checked_add(target.delay)
+                        .ok_or(AttackError::NumericOverflow)?
+                };
+                Ok(PendingChainSource {
+                    source: cast.source.clone(),
+                    proposal: step_proposal(&cast.proposal, target.actor, cast.next)?,
+                    session: target.session,
+                    due: SemanticTimeMicros::from_micros(due),
+                    from: target.from,
+                })
+            })
+            .collect()
     }
     pub fn receipts(&self, token: u64) -> Option<&[Result<S::Outcome, AttackError>]> {
         self.casts
@@ -615,6 +824,29 @@ impl<S: ChainSource> ChainOwner<S> {
             .find(|c| c.token == token)
             .map(|c| c.receipts.as_slice())
     }
+}
+fn current_fence<'a>(
+    runtime: &'a ChannelRuntimeV1,
+    provided: Option<&'a ScopeRuntimeFence>,
+) -> Result<&'a ScopeRuntimeFence, AttackError> {
+    provided.map_or_else(
+        || runtime.owner_fence().map_err(|_| AttackError::StaleOwner),
+        Ok,
+    )
+}
+fn step_proposal(
+    parent: &ProfileAbilityProposal,
+    target: ExactActorRef,
+    step: usize,
+) -> Result<ProfileAbilityProposal, AttackError> {
+    let mut proposal = parent.clone();
+    proposal.target = target;
+    proposal.occurrence = crate::ability::chain_step_occurrence(&proposal.occurrence, step)
+        .map_err(|_| AttackError::InvalidPlan)?;
+    proposal.intent =
+        AbilityIntent::normalize(ProposalSource::Ai, &atom(proposal.issuer), &[&atom(target)])
+            .map_err(|_| AttackError::InvalidPlan)?;
+    Ok(proposal)
 }
 fn atom(a: ExactActorRef) -> String {
     format!(

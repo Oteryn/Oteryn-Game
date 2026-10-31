@@ -7,6 +7,7 @@ use crate::movement::monster_map::CurrentMonsterMap;
 use oteryn_simulation_determinism::GameplayDecisionRoot;
 
 pub(super) mod physical_spell;
+mod source_items;
 
 impl ComposedFreshAdmission<'_, '_, '_> {
     #[allow(clippy::too_many_arguments)]
@@ -21,15 +22,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         revisions: &crate::ability::RevisionSet,
         candidates: &[crate::ai_think::targeting::TargetCandidate],
         now: u64,
-    ) -> Result<Option<u64>, ()> {
+    ) -> Result<(Option<u64>, Vec<crate::foundation::ExactActorRef>), ()> {
         use crate::durability::spell_item_transaction::{
             assert_spell_item_scope_in_transaction, begin_spell_owner_transaction,
         };
         let pass = self.root.try_issue_semantic_pass().map_err(|_| ())?;
-        let mut context = (
-            self, runtime, states, attack, room, native, permit, revisions, candidates,
-        );
-        pass.run_with_context(&mut context, move |holder, deadline, context| {
+        let (next_due, proposals, native_actors) = {
+            let mut context = (
+                self,
+                &mut *runtime,
+                states,
+                attack,
+                room,
+                native,
+                permit,
+                revisions,
+                candidates,
+            );
+            pass.run_with_context(&mut context, move |holder, deadline, context| {
             Box::pin(async move {
                 let (owner, runtime, states, attack, room, native, permit, revisions, candidates) =
                     context;
@@ -156,7 +166,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     .collect::<std::collections::BTreeSet<_>>();
                 let summons = &mut states.monster_summons;
                 let mut proposals = Vec::new();
-                table
+                let native_reports = table
                     .run_due_current_thinks(
                         runtime,
                         now,
@@ -179,11 +189,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                         },
                     )
                     .await;
+                let native_actors = native_reports.into_iter()
+                    .map(|(actor, _)| actor).collect::<Vec<_>>();
                 let next_step = table
                     .drive_current_movement(
                         runtime,
                         room.movement_cells(),
-                        objects.collision_cells(),
+                        doors,
                         *native,
                         &root,
                         now,
@@ -217,13 +229,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 )
                 .await;
                 drop(map);
+                let next_due = next_due.into_iter()
+                    .chain(states.monster_spells.next_windup_due_time().map(|due| due.get()))
+                    .chain(states.monster_chains.as_ref().and_then(|owner| owner.next_due_time()).map(|due| due.get()))
+                    .min();
                 tx.rollback()
                     .await
                     .map_err(|_| crate::durability::DurabilityError::Unavailable)?;
-                Ok(next_due)
+                Ok((next_due, proposals, native_actors))
             })
         })
         .await
-        .map_err(|_| ())
+        .map_err(|_| ())?
+        };
+        // End the read transaction and semantic pass before the existing durable Item
+        // owner opens its own fenced write transaction for the same source occurrence.
+        source_items::execute(self, runtime, room, native, permit, &proposals)
+            .await
+            .map_err(|_| ())?;
+        Ok((next_due, native_actors))
     }
 }
