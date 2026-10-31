@@ -870,7 +870,9 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             continue;
         }
         let runtime = owner.runtime.lock().await;
-        if case.forge() || matches!(case, Case::Inactive) {
+        if case.forge() || matches!(case, Case::Inactive | Case::Foreign) {
+            // Foreign's final attacker must land before the leader's activity expires;
+            // Balanced content draws can take 66 three-second passes even at one HP.
             // These level-one fist attackers qualify reward settlement, not fight-mode
             // balance. Content-pinned draws can leave the 72-HP Fiendish rat alive
             // after 256 Balanced passes. Use the same real Offensive mode for every

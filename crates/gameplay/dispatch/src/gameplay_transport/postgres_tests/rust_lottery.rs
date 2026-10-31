@@ -182,8 +182,9 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         };
         let used = typed(key).ok_or("used definition")?;
         let tool = typed(tool_key).ok_or("tool definition")?;
-        let source = if rust { id(72) } else { id(71) };
-        let plan = |command_id| {
+        let seeded_source = if rust { id(72) } else { id(71) };
+        let command_id = 1;
+        let plan = |source| {
             let session = *fence.game_session_id.as_bytes();
             if rust {
                 let chance = reward_bag_bounded_draw(session, command_id, source, 1, 10_000)?;
@@ -193,11 +194,24 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
                 lottery_conversion(native, &used, reward_bag_bounded_draw(session, command_id, source, 3, 98)?)
             }
         };
-        let command_id = (1..100_000)
-            .find(|id| plan(*id).is_some_and(|p| p.outputs.is_empty() != success))
+        // A fresh wire session starts at CommandId 1. Seed the input identity instead of
+        // inventing a command high-water mark without retained ingress history.
+        let source = (1_u32..100_000)
+            .map(|nonce| {
+                let mut source = seeded_source;
+                source[12..].copy_from_slice(&nonce.to_be_bytes());
+                source
+            })
+            .find(|source| plan(*source).is_some_and(|p| p.outputs.is_empty() != success))
             .ok_or("seeded outcome")?;
-        let expected = plan(command_id).ok_or("plan")?;
-        admitted.continuity.next_command_id = command_id;
+        let expected = plan(source).ok_or("plan")?;
+        let mut tx = harness.pool.begin().await?;
+        sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_item_instances SET item_instance_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid")
+            .bind(source.as_slice()).bind(seeded_source.as_slice()).execute(&mut *tx).await?;
+        sqlx::query("UPDATE game_item_container_entries SET item_instance_id=encode($1,'hex')::uuid WHERE item_instance_id=encode($2,'hex')::uuid")
+            .bind(source.as_slice()).bind(seeded_source.as_slice()).execute(&mut *tx).await?;
+        tx.commit().await?;
         let intent = UseIntent {
             target: UseTarget::Item(std::num::NonZeroU64::new(1).ok_or("source")?),
             use_with: None,

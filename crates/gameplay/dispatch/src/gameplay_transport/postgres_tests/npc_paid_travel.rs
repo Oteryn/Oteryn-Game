@@ -697,7 +697,9 @@ fn scenario() -> TestResult {
         ))
         .execute(&mut *tx)
         .await?;
-        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,3,encode($5,'hex')::uuid)")
+        // Earlier fare change already occupies ordinal 3. Seed after the current tail,
+        // as a real placement does, so the fee planner sees distinct coin ordinals.
+        sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,(SELECT COALESCE(MAX(placement_ordinal),0)+1 FROM game_item_container_entries WHERE parent_item_instance_id=encode($2,'hex')::uuid),encode($5,'hex')::uuid)")
             .bind(id(41).as_slice()).bind(id(70).as_slice()).bind(id(92).as_slice()).bind(id(42).as_slice()).bind(id(93).as_slice()).execute(&mut *tx).await?;
         // Re-close Seagull's earlier unlock so Karith's apostrophe keyword exercises refusal too.
         sqlx::query("UPDATE game_character_quest_tracks SET value=0 WHERE character_id=encode($1,'hex')::uuid AND track_key='oteryn:quest-progress/quest/u8_4/in_service_of_yalahar/searoutes_around_yalahar/ab_dendriel'")
