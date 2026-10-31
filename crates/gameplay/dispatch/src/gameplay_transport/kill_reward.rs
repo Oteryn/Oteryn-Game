@@ -2060,6 +2060,16 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         {
             leveled.extend(super::level_up_live::leveled_character(xp));
         }
+        // PAR-P12a: a level, a tracked creature or a boss kill can unlock a title.
+        let titled = row.race.as_ref().is_some_and(|race| {
+            oteryn_protocol_oteryn::character_info::TRACKED_CREATURES.contains(&race.key())
+        }) || row.boss.is_some();
+        admission.states.title_refresh.mark(
+            leveled
+                .iter()
+                .copied()
+                .chain(titled.then_some(fence.character_id)),
+        );
         admission.states.level_refresh.mark(leveled);
         if let Ok(outcome) = &outcome
             && let Ok(xp) = &outcome.rewards.xp

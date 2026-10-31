@@ -1,0 +1,10 @@
+{
+  "id": 388,
+  "name": "CYCLOPEDIA_CHARACTER_TAB",
+  "owner_decision": "PAR-P12c Crystal re-audit 2026-10-28 mechanic 44; command 388",
+  "capability": 199,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-character-v1.md#character-tab-request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/cyclopedia-character-v1.md#character-tab-reply",
+  "max_payload_bytes": 20,
+  "max_result_payload_bytes": 16384
+}

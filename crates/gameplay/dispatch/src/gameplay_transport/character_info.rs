@@ -85,7 +85,67 @@ macro_rules! authority_methods {
 }
 pub(super) use authority_methods;
 
+pub(super) fn unix_now_ms() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .and_then(|duration| i64::try_from(duration.as_millis()).ok())
+        .unwrap_or(0)
+}
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// PAR-P12a/b automatic title unlock and account badge grant for `session`'s Character from
+    /// its native facts. Best effort:
+    /// a failed refresh keeps every stored title and is repeated at the next trigger.
+    pub(super) async fn refresh_session_titles(&self, session: crate::foundation::GameSessionId) {
+        let Ok(Some(fence)) = self.current_quest_fence(session).await else {
+            return;
+        };
+        let item_fence = crate::durability::item_transfer::CurrentCharacterItemFence {
+            character_id: fence.character_id,
+            game_session_id: fence.game_session_id,
+            connection_generation: fence.connection_generation,
+            character_lease_generation: fence.character_lease_generation,
+            runtime_scope: fence.runtime_scope,
+            scope_ownership_generation: fence.scope_ownership_generation,
+        };
+        let now = unix_now_ms();
+        let _ = self
+            .root
+            .refresh_character_titles(self.character, self.holder, item_fence, now)
+            .await;
+        // PAR-P12b: badges share the trigger points (Crystal checks both at login).
+        let _ = self
+            .root
+            .refresh_account_badges(self.character, self.holder, item_fence, now)
+            .await;
+    }
+
+    /// The actor-cadence leg of [`Self::refresh_session_titles`] for a Character marked by a
+    /// kill settlement (level, tracked creature or boss).
+    pub(super) async fn refresh_marked_titles(
+        &self,
+        actor: crate::foundation::ExactActorRef,
+        session: crate::foundation::GameSessionId,
+    ) {
+        let character = {
+            let runtime = self.runtime.lock().await;
+            let Ok(lease) = runtime.bound_attacker_lease(actor, session) else {
+                return;
+            };
+            let Ok(character) = crate::domain::CharacterId::from_bytes(*lease.character_id().as_bytes())
+            else {
+                return;
+            };
+            character
+        };
+        if !self.states.title_refresh.is_marked(character) {
+            return;
+        }
+        self.states.title_refresh.unmark(character);
+        self.refresh_session_titles(session).await;
+    }
+
     pub(super) async fn character_info_command(
         &self,
         admitted: AdmittedSession,
@@ -108,18 +168,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             return CharacterInfoReply::Rejected;
         }
         let character = fence.character_id;
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .ok()
-            .and_then(|duration| i64::try_from(duration.as_millis()).ok())
-            .unwrap_or(0);
+        let now = unix_now_ms();
         match operation {
             CharacterInfoOperation::Unlock(title) => {
                 // Qualification is deliberately sourced from the native owners. Until an
                 // observation proves a catalogue predicate, a client cannot mint an earned fact.
                 let facts = match self
                     .root
-                    .character_title_facts(self.character, character)
+                    .character_title_facts(self.character, character, now)
                     .await
                 {
                     Ok(facts) => facts,
@@ -193,6 +249,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         page: PageRequest,
         now: i64,
     ) -> CharacterInfoReply {
+        // The self view runs the automatic unlock first, so it never shows a stale catalogue.
+        if target == fence.character_id
+            && self
+                .root
+                .refresh_character_titles(self.character, self.holder, fence, now)
+                .await
+                .is_err()
+        {
+            return CharacterInfoReply::Rejected;
+        }
         let mut bytes = match self
             .root
             .read_character_info(self.character, fence.character_id, target, page, now)
@@ -203,7 +269,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         };
         let facts = match self
             .root
-            .character_title_facts(self.character, target)
+            .character_title_facts(self.character, target, now)
             .await
         {
             Ok(facts) => facts,
@@ -320,7 +386,7 @@ mod tests {
             );
         }
         assert_eq!(decode(&[2, 0]), Err(DecodeError));
-        assert_eq!(decode(&[2, 6]), Err(DecodeError));
-        assert_eq!(decode(&[3, 6]), Err(DecodeError));
+        assert_eq!(decode(&[2, 44]), Err(DecodeError));
+        assert_eq!(decode(&[3, 44]), Err(DecodeError));
     }
 }

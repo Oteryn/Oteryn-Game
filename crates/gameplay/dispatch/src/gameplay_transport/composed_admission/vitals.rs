@@ -68,6 +68,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await;
         }
         self.refresh_level_up_vitals(actor, game_session_id).await;
+        self.refresh_marked_titles(actor, game_session_id).await;
         self.refresh_wheel_vitals(actor, game_session_id).await;
         if self
             .active_generation
