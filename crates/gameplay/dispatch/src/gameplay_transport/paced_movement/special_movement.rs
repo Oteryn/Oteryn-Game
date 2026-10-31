@@ -338,6 +338,16 @@ impl ChannelSpellStates {
                 }
             }
         }
+        // closing_door.lua:58-109: a level or quest door shuts behind its walker.
+        if let Some(door) = origin.and_then(tile_position)
+            && map.facts.doors().at(door)
+        {
+            let occupied = map.overlay.has_added_item(door)
+                || tile_position(destination).is_none_or(|at| {
+                    crate::gameplay_transport::map_door::doorway_occupied(runtime, actor, at, door)
+                });
+            changed |= map.facts.doors().close_vacated(door, occupied);
+        }
         let enabled =
             !protection_zone && ids.iter().filter(|(_, e)| e.appearance_id == 3482).count() <= 1;
         if enabled {
@@ -595,6 +605,123 @@ mod tests {
             .spawn(|| movement_case(12368, 12368, false, false))?
             .join()
             .map_err(|_| "movement test thread")?
+    }
+
+    /// Crystal closing_door.lua:58-109 on the committed player step owner: the level door 1646
+    /// (action 1001) closes once its walker leaves the threshold; a plain door does not.
+    fn door_case(
+        closed: u32,
+        open: u32,
+        action: Option<u16>,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+        use crate::gameplay_transport::actor_spell::tests::{FACTS, runtime_with_player};
+        use crate::map::boot::{self, BundleCollisionIndexExt};
+        use std::num::NonZeroU32;
+        let (mut runtime, actor, session) = runtime_with_player(0x72);
+        runtime
+            .initialize_first_entry_position(actor)
+            .map_err(|e| format!("{e:?}"))?;
+        let mut states = ChannelSpellStates::default();
+        states
+            .initialize(
+                &runtime,
+                actor,
+                session,
+                FACTS,
+                (0, 0),
+                oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
+            )
+            .ok_or("state")?;
+        let door = format!("oteryn:item.tibia.i{closed}");
+        let (bytes, mut pins) =
+            boot::tests::bundle_with_items(&door, &format!("oteryn:item.tibia.i{open}"));
+        let mut bundle = oteryn_world_bundle::writer::read(&bytes)?;
+        for tile in &mut bundle.sectors[0].tiles {
+            if tile.x == 6 {
+                tile.items.get_mut(1).ok_or("door")?.attrs.action = action;
+            }
+        }
+        let bytes = oteryn_world_bundle::writer::write(
+            &bundle.manifest,
+            &bundle.sectors,
+            &Default::default(),
+        )?;
+        pins.digest = oteryn_world_bundle::writer::read(&bytes)?.digest;
+        let pos = TilePos {
+            x: 6,
+            y: 0,
+            floor: -7,
+        };
+        let base = crate::map::load(&bytes, &pins).map_err(|e| format!("{e:?}"))?;
+        let booted = boot::boot(
+            &bytes,
+            &boot::BootPins {
+                map_revision: crate::map::overlay::map_revision(&base),
+                bundle: pins,
+                start: TilePos { x: 1, ..pos },
+            },
+            actor.world_id(),
+            actor.channel_id().ok_or("channel")?,
+            |key| {
+                let closed = key == door;
+                Some(crate::map::facts::ItemDefinition {
+                    reference: NonZeroU32::new(if closed { 1 } else { 2 })?,
+                    solid: Some(closed),
+                    blocks_projectile: closed,
+                    pickupable: false,
+                    door: closed,
+                })
+            },
+        )
+        .map_err(|e| format!("{e:?}"))?;
+        let room = crate::content::qualify_native_entry_room(actor.world_id())
+            .map_err(|e| format!("{e:?}"))?;
+        let cells = booted
+            .movement_cells(room.movement_cells())
+            .map_err(|e| format!("{e:?}"))?;
+        let crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(collision) =
+            cells.index()
+        else {
+            return Err("bundle collision".into());
+        };
+        let map = collision.map();
+        let key = boot::tests::door_key();
+        let doors = map.facts.doors();
+        if !matches!(
+            doors.toggle(key, 0, false, u32::MAX, true),
+            Some(crate::map::door::DoorUse::Toggled { open: true, .. })
+        ) {
+            return Err("door did not open".into());
+        }
+        let at = MovementLocalPosition {
+            x: 6,
+            y: 0,
+            floor: 7,
+        };
+        let away = MovementLocalPosition { x: 1, ..at };
+        // Stepping onto the threshold never closes it.
+        states.stage_special_movement_step(&runtime, map, actor, session, 1, Some(away), at, None);
+        assert_eq!(map.facts.object_revision(key), 1);
+        states.stage_special_movement_step(&runtime, map, actor, session, 2, Some(at), away, None);
+        let closed = doors.blocks(pos);
+        assert_eq!(map.facts.object_revision(key), if closed { 2 } else { 1 });
+        Ok(closed)
+    }
+
+    #[test]
+    fn m06_level_door_closes_behind_its_walker_and_a_plain_door_stays_open()
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        std::thread::Builder::new()
+            .stack_size(64 << 20)
+            .spawn(|| {
+                // Level door 1646/1647 with Crystal action 1001 (level 1).
+                assert!(door_case(1646, 1647, Some(1001))?);
+                // A plain door (1629/1630) stays open after its walker leaves.
+                assert!(!door_case(1629, 1630, None)?);
+                Ok(())
+            })?
+            .join()
+            .map_err(|_| "door test thread")?
     }
 
     #[test]

@@ -271,6 +271,47 @@ impl DoorBook {
         self.doors.iter().map(|door| door.key)
     }
 
+    /// Crystal 201189f8 `data/scripts/movements/closing_door.lua:58-109`: an open level or quest
+    /// door on `pos` closes once its walker steps off and nothing else holds the doorway.
+    /// `occupied` is whether a creature or an item still occupies `pos`; Crystal moves such items
+    /// off (`:78-98`), and Oteryn keeps the door open instead, as a `USE` does. Returns whether a
+    /// door closed.
+    pub fn close_vacated(&self, pos: TilePos, occupied: bool) -> bool {
+        let Some(tile) = super::view::placement_key(pos, 0) else {
+            return false;
+        };
+        if occupied {
+            return false;
+        }
+        let start = self.doors.partition_point(|door| door.key < tile);
+        let mut closed = false;
+        for door in self.doors[start..]
+            .iter()
+            .take_while(|door| door.key <= tile | 0xFF)
+            .filter(|door| door.required_level.is_some() || door.required_storage.is_some())
+        {
+            let current = door.state.load(Ordering::Acquire);
+            if current & 3 != 1 {
+                continue;
+            }
+            let Some(revision) = (current >> 2)
+                .checked_add(1)
+                .filter(|r| *r <= u64::MAX >> 2)
+            else {
+                continue;
+            };
+            if door
+                .state
+                .compare_exchange(current, revision << 2, Ordering::AcqRel, Ordering::Acquire)
+                .is_ok()
+            {
+                self.version.fetch_add(1, Ordering::AcqRel);
+                closed = true;
+            }
+        }
+        closed
+    }
+
     /// Refuses a locked door, or opens/closes placement `key` when `expected_revision` is its current
     /// revision. `occupied` is whether an actor stands on the door's tile: it keeps an open door
     /// from closing. The change is one compare-and-swap, so concurrent `USE`s of a revision
@@ -501,6 +542,44 @@ mod key_tests {
                 })
             );
             assert_eq!(doors.toggle(7, 3, false, 1, false), Some(DoorUse::Locked));
+        }
+    }
+
+    #[test]
+    fn m06_level_and_quest_doors_close_when_vacated_and_plain_doors_stay_open() {
+        let pos = TilePos {
+            x: 0,
+            y: 0,
+            floor: 0,
+        };
+        for (level, storage, closes) in [
+            (Some(50), None, true),
+            (None, Some(4321), true),
+            (None, None, false),
+        ] {
+            let mut doors = DoorBook::default();
+            doors.push(7, true, false, open_facts(), false, None, level, storage);
+            doors.finish();
+            // A closed door is never touched.
+            assert!(!doors.close_vacated(pos, false));
+            assert!(matches!(
+                doors.toggle(7, 0, false, 99, true),
+                Some(DoorUse::Toggled { open: true, .. })
+            ));
+            // Another creature or an item on the threshold keeps the door open.
+            assert!(!doors.close_vacated(pos, true));
+            assert_eq!(doors.revision(7), 1);
+            assert_eq!(doors.close_vacated(pos, false), closes);
+            assert_eq!(doors.revision(7), if closes { 2 } else { 1 });
+            assert_eq!(doors.blocks(pos), closes);
+            assert!(!doors.close_vacated(
+                TilePos {
+                    x: 1,
+                    y: 0,
+                    floor: 0
+                },
+                false
+            ));
         }
     }
 
