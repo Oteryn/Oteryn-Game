@@ -152,7 +152,7 @@ pub(super) async fn write<C: ItemLoopContent>(
     else {
         return Ok(UseDisposition::NotPossible);
     };
-    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await?;
+    let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
     if after_weight > capacity {
         return Ok(UseDisposition::NotPossible);
     }

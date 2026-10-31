@@ -99,7 +99,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 request.clone(),
                 native,
-                &NativeItemWeights(native),
+                &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                 true,
             )
             .await
@@ -347,7 +347,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 fence,
                 request,
                 native,
-                &NativeItemWeights(native),
+                &NativeItemWeights(native).with_wheel(self.premium_coordinator),
                 false,
             )
             .await

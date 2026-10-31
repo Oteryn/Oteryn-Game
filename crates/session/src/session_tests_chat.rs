@@ -108,9 +108,10 @@ fn room_line(text: &str) -> ChatLine {
 fn the_advertised_set_carries_chat_and_stays_closed() {
     assert!(CLIENT_SUPPORTED_CAPABILITIES.contains(&CAPABILITY_CHAT_V1));
     // PROTOCOL_OTERYN_V1_REGISTRY.json: capability 7 requires nothing.
+    // Capability 148 now has playable Wheel and Atelier controls.
     assert_eq!(
         CLIENT_SUPPORTED_CAPABILITIES,
-        &[4, 6, 7, 11, 13, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 91, 147]
+        &[4, 6, 7, 11, 13, 15, 16, 17, 18, 21, 22, 25, 30, 31, 36, 37, 91, 147, 148]
     );
 }
 

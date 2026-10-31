@@ -137,8 +137,8 @@ pub(super) async fn apply(
                 return Ok(false);
             };
             let row = &catalogue["atelier"]["fragment_yields"][quality_key(gem.quality)];
-            let low = number(&row["revealed"][0])?;
-            let high = number(&row["revealed"][1])?;
+            let (low, high) = gem.quality.revealed_fragment_yield();
+            let (low, high) = (u64::from(low), u64::from(high));
             let root = draw_root(tx, fence, "gem_dismantle", data.revision()).await?;
             let amount = u32::try_from(
                 low + draw(

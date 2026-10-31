@@ -89,7 +89,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     command.game_session_id,
                     CommandId::new(command.command_id).ok()?,
                 ),
-                &super::item_ref_admission::NativeItemWeights(content),
+                &super::item_ref_admission::NativeItemWeights(content).with_wheel(self.premium_coordinator),
                 cell,
                 premium,
                 request,

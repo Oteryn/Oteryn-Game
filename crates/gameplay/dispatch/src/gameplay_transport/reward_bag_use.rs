@@ -62,7 +62,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             station: None,
             intent: [INTENT_TAG, id.as_slice()].concat(),
         };
-        let content = NativeItemWeights(native);
+        let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         // Replay of an exact receipt precedes every live check, including the consumed bag.
         let replay = self
             .root

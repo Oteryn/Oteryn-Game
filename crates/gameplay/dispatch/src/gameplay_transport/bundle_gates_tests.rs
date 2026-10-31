@@ -738,7 +738,9 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/postgres_tests/task_board.rs", 1),
     ("gameplay_transport/postgres_tests/vertical_move.rs", 2),
     ("gameplay_transport/postgres_tests/utility_runes.rs", 3),
-    ("gameplay_transport/postgres_tests/wheel_allocation.rs", 3),
+    // Wheel socket/unsocket fixtures add two explicit empty-room overrides;
+    // the production qualified-room construction remains unchanged.
+    ("gameplay_transport/postgres_tests/wheel_allocation.rs", 5),
     ("gameplay_transport/rune_use_bridge_postgres_tests.rs", 2),
     ("node/serve.rs", 1),
     ("qualification.rs", 1),

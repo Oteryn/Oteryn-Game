@@ -276,7 +276,7 @@ async fn plan<C: ItemLoopContent>(
             Err(super::item_loop_move::LoopError::Database(error)) => return Err(error.into()),
             Err(super::item_loop_move::LoopError::Durability(error)) => return Err(error),
         };
-        let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id).await?;
+        let capacity = read_derived_transfer_capacity_centi_oz(tx, fence.character_id, content).await?;
         if carried
             .checked_add(u64::from(weight) * u64::from(amount))
             .is_none_or(|total| total > capacity)

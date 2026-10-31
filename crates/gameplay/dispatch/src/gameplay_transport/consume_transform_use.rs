@@ -32,7 +32,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             disposition,
             ..UseOutcome::rejected()
         };
-        let content = NativeItemWeights(native);
+        let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         match self
             .root
             .consume_transform(
@@ -142,7 +142,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             target: None,
             intent: [b"oteryn:lottery-ticket-use:v1".as_slice(), id.as_slice()].concat(),
         };
-        let content = NativeItemWeights(native);
+        let content = NativeItemWeights(native).with_wheel(self.premium_coordinator);
         match self
             .root
             .consume_transform(

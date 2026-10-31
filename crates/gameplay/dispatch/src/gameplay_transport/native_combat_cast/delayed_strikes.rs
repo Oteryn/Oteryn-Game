@@ -263,17 +263,9 @@ pub(super) fn requests(
         now.get() / 1000,
     )
     .map_err(|_| SpellCastDisposition::Rejected)?;
-    let mut scheduled = scheduled.clone();
-    if let Some((lo, hi)) = scheduled.captured_raw_bounds.as_mut() {
-        *lo = lo
-            .checked_add(i64::from(cast_modifiers.flat_damage))
-            .ok_or(SpellCastDisposition::Rejected)?
-            .max(0);
-        *hi = hi
-            .checked_add(i64::from(cast_modifiers.flat_damage))
-            .ok_or(SpellCastDisposition::Rejected)?
-            .max(0);
-    }
+    // Preserve the source raw formula snapshot. Crystal computes current Wheel
+    // flat/gem/Focus bonuses in the new due Combat, never inside planted bounds.
+    let scheduled = scheduled.clone();
     Ok(vec![ScheduleRequest {
         occurrence: SpellTimerOccurrence {
             command: batch.command,

@@ -28,6 +28,9 @@ fn fixture() -> Fixture {
     fixture_with_damage_healing(0)
 }
 fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
+    fixture_with_capacity(source_percent, false)
+}
+fn fixture_with_capacity(source_percent: i64, extra_slots: bool) -> Fixture {
     let uuid = |tag| [1, 0x90, 0, 0, 0, tag, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, tag];
     let world = crate::foundation::WorldId::decode(&uuid(0x60)).expect("world");
     let mut runtime = ChannelRuntimeV1::from_committed_assignment(
@@ -38,7 +41,7 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
         1,
         1,
         "runtime-scope-assignment:1",
-        4,
+        if extra_slots { 16 } else { 4 },
         oteryn_gameplay_content::content::channel_content_pin::ChannelContentPin::test(world),
     )
     .expect("bounded actual owner4 slots");
@@ -180,6 +183,8 @@ fn fixture_with_damage_healing(source_percent: i64) -> Fixture {
             (Element::Earth, 0),
             (Element::Death, 0),
         ]),
+        // Wheel/Atelier ownership is supplied separately by runtime effect tests.
+        wheel_effects: None,
         wheel_flat_damage: Some(4),
         wheel_flat_healing: Some(3),
         source_damage_multiplier_percent: Some(0),
@@ -1056,4 +1061,1433 @@ fn item_spell_augments_named_base_healing_critical_and_unchanged_owner_binding()
             .validate_current(&f.runtime, &f.state, &changed, &[])
             .is_err()
     );
+}
+
+fn wheel_healing_spell() -> crate::spell::SpellDefinition {
+    let catalog: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../../tools/content-schema/spell-authoring/samples/executable-spell-catalog.json"
+    ))
+    .expect("source spell catalogue");
+    let row = catalog["bundles"]
+        .as_array()
+        .expect("bundles")
+        .iter()
+        .find(|row| row["bundle"]["spell"]["identity"]["key"] == "candidate:spell/light_healing")
+        .expect("light healing");
+    oteryn_gameplay_content::content::spell_data::authoring::spell_from_bundle(
+        &row["bundle"],
+        &row["dependencies"],
+    )
+    .expect("qualified spell")
+}
+
+#[test]
+fn wheel_battle_healing_uses_real_shield_and_only_selected_spell_healing() {
+    use crate::spell::cast::{WheelEquipment, WheelHand};
+    let mut f = fixture();
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects.active_unique_perks.insert("battle_healing".into());
+    f.attributes.wheel_effects = Some(effects);
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat");
+    };
+    combat.element = Element::Healing;
+    combat.block_armor = false;
+    combat.hits.truncate(1);
+    combat.hits[0].target = 1;
+    combat.hits[0].bonus_percent = 0;
+    combat.hits[0].side_percent = None;
+    let hit = combat.hits[0].clone();
+    let spell = wheel_healing_spell();
+    for (real_shield, expected) in [(false, 114), (true, 135)] {
+        f.state.install_wheel_equipment(Some(WheelEquipment {
+            shield_hand: Some(WheelHand {
+                real_shield,
+                secondary_shield: !real_shield,
+                ..Default::default()
+            }),
+            ..Default::default()
+        }));
+        let mut owner = qualify(&f, &p).expect("actual owner snapshot");
+        assert_eq!(
+            owner.finish(&p, &hit, &f.bindings[0], &mut |_, _| panic!(
+                "no critical roll"
+            )),
+            Ok(104),
+            "unnamed heal is excluded"
+        );
+        owner.select_item_spell(&spell).expect("spell origin");
+        assert_eq!(
+            owner.finish(&p, &hit, &f.bindings[0], &mut |_, _| panic!(
+                "no critical roll"
+            )),
+            Ok(expected)
+        );
+    }
+    f.state.install_wheel_equipment(None);
+    let mut owner = qualify(&f, &p).expect("after removal");
+    owner.select_item_spell(&spell).expect("spell origin");
+    assert_eq!(
+        owner.finish(&p, &hit, &f.bindings[0], &mut |_, _| panic!(
+            "no critical roll"
+        )),
+        Ok(114)
+    );
+}
+
+#[test]
+fn wheel_grove_healing_critical_is_after_flat_and_never_rolls_fatal() {
+    use oteryn_gameplay_progression::wheel::{WheelAllocation, WheelSlots};
+    use oteryn_gameplay_progression::wheel_gem_data::WheelGemData;
+    let data = WheelGemData::embedded().expect("source Wheel");
+    let mut points = [0; 36];
+    let mut remaining = 500_u16;
+    for (index, slot) in data.wheel()["topology"]
+        .as_array()
+        .expect("topology")
+        .iter()
+        .enumerate()
+    {
+        if slot["domain"] == "red" {
+            let amount = u16::try_from(slot["capacity"].as_u64().expect("capacity"))
+                .expect("bounded")
+                .min(remaining);
+            points[index] = amount;
+            remaining -= amount;
+        }
+    }
+    assert_eq!(remaining, 0);
+    let allocation = WheelAllocation {
+        wheel_ruleset_revision: Some(data.revision().into()),
+        wheel_revision: 1,
+        slots: WheelSlots::new(points).expect("bounded slots"),
+        current: true,
+    };
+    let effects = oteryn_gameplay_progression::wheel_effects::derive_runtime_effects(
+        data.wheel(),
+        &allocation,
+        "druid",
+        550,
+        true,
+        true,
+    )
+    .expect("actual stage two numeric projection");
+    assert_eq!(
+        effects.revelation_value_milli("blessing_of_the_grove", "healing_bonus"),
+        7_500
+    );
+    let mut f = fixture();
+    f.state.conditions.clear_on_death();
+    f.attributes.wheel_flat_healing =
+        Some(i32::try_from(effects.flat_healing_bonus().expect("flat")).expect("bounded"));
+    f.attributes.wheel_effects = Some(effects);
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat");
+    };
+    combat.element = Element::Healing;
+    combat.block_armor = false;
+    combat.hits.truncate(1);
+    combat.hits[0].target = 1;
+    combat.hits[0].magnitude = 100;
+    combat.hits[0].bonus_percent = 0;
+    combat.hits[0].side_percent = None;
+    let hit = combat.hits[0].clone();
+    for (roll, expected) in [(12, 163), (13, 109)] {
+        let mut owner = qualify(&f, &p).expect("current owner");
+        owner
+            .select_item_spell(&wheel_healing_spell())
+            .expect("real spell");
+        let mut draws = 0;
+        assert_eq!(
+            owner.finish(&p, &hit, &f.bindings[0], &mut |low, high| {
+                assert_eq!((low, high), (1, 100));
+                draws += 1;
+                roll
+            }),
+            Ok(expected)
+        );
+        assert_eq!(draws, 1, "Grove rolls critical only, per target");
+    }
+}
+
+#[test]
+fn wheel_healing_link_uses_uncapped_parent_heal_and_one_atomic_echo() {
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::spell::combat_batch as batch;
+    let mut f = fixture();
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects.active_unique_perks.insert("healing_link".into());
+    f.attributes.wheel_effects = Some(effects);
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat");
+    };
+    combat.element = Element::Healing;
+    combat.block_armor = false;
+    combat.hits.truncate(1);
+    combat.hits[0].bonus_percent = 0;
+    combat.hits[0].side_percent = None;
+    let mut spell = wheel_healing_spell();
+    spell.name = "Heal Friend".into();
+    let mut owner = qualify(&f, &p).expect("current actual owner");
+    owner
+        .select_item_spell(&spell)
+        .expect("source-selected name");
+    let template = batch::OwnerCombatBatch {
+        caster: f.caster,
+        attacker: f.attributes.binding.character,
+        current_lease_generation: 1,
+        command: CommandRef::new(f.session, CommandId::new(7001).expect("command")),
+        occurrence: batch::SpellOccurrenceBinding {
+            id: "wheel-healing-link".into(),
+            revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"].map(str::to_owned),
+        },
+        binding: vec![1],
+        anchor: None,
+        now_us: None,
+        now_ms: 100,
+        effects: vec![],
+        deferred: None,
+    };
+    let mut lowered = batch::lower_native(
+        &f.runtime,
+        template,
+        1,
+        &p,
+        &f.bindings,
+        0,
+        &mut |plan, hit, binding| {
+            owner.finish_with_damage_healing(plan, hit, binding, &mut |_, _| panic!("no critical"))
+        },
+    )
+    .expect("same owner batch");
+    owner
+        .append_wheel_healing_echo(&mut lowered)
+        .expect("one echo");
+    assert_eq!(lowered.batch.effects.len(), 2);
+    let batch::OwnerCombatChange::Heal { magnitude, .. } = lowered.batch.effects[0].change else {
+        panic!("parent heal");
+    };
+    assert_eq!(
+        magnitude, 104,
+        "raw101 + flat3; target maximum20 does not change the link basis"
+    );
+    let echo = &lowered.batch.effects[1];
+    assert_eq!(echo.target, f.caster);
+    let batch::OwnerCombatChange::Heal { magnitude, .. } = echo.change else {
+        panic!("caster echo");
+    };
+    assert_eq!(
+        magnitude, 29,
+        "floor(104*25%) + flat3 on the recursive unnamed heal"
+    );
+    owner
+        .append_wheel_healing_echo(&mut lowered)
+        .expect("already drained");
+    assert_eq!(
+        lowered.batch.effects.len(),
+        2,
+        "lowering a retained result cannot append it twice"
+    );
+    owner
+        .validate_current(&f.runtime, &f.state, &f.attributes, &[])
+        .expect("all predecessor facts remain intact");
+}
+
+#[test]
+fn positional_formula_census_is_revalidated_before_the_same_owner_commits() {
+    let mut f = fixture();
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects
+        .active_unique_perks
+        .insert("positional_tactics".into());
+    f.attributes.wheel_effects = Some(effects);
+    let prepared = qualify(&f, &plan()).expect("current census");
+    prepared
+        .validate_current(&f.runtime, &f.state, &f.attributes, &[])
+        .expect("unchanged census");
+    let session =
+        GameSessionId::decode(&[1, 0x90, 0, 0, 0, 91, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 91])
+            .expect("session");
+    let reservation = f
+        .runtime
+        .reserve_fresh_session(session)
+        .expect("free fourth actor slot");
+    let actor = f
+        .runtime
+        .commit_fresh_session(reservation)
+        .expect("new actor");
+    f.runtime
+        .initialize_first_entry_position(actor)
+        .expect("positioned actor");
+    assert_eq!(
+        prepared.validate_current(&f.runtime, &f.state, &f.attributes, &[]),
+        Err(Error::SnapshotChanged)
+    );
+}
+
+#[test]
+fn runic_uses_current_projection_and_same_name_conjurer_without_resource_admission() {
+    use crate::spell::cast::{CharacterCastFacts, prepare_ordinary_owner_cast_with_wheel};
+    use crate::spell::formula::{Expression, Formula, Input};
+    use crate::spell::harmony::HarmonyMultiplier;
+    use crate::spell::owned_cast_facts::{
+        AccessProjections, CastFactsBinding, CurrentProjection, OwnedCastFacts,
+    };
+    use crate::spell::wheel_formula::WheelFormulaMagic;
+    use crate::spell::{
+        Carrier, CasterPremium, CasterState, Execution, ManaCost, ResolvedEffect, SpellBook,
+        Vocation,
+    };
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    let f = fixture();
+    let mut state = PlayerSpellState::new(
+        CharacterCastFacts {
+            vocation: Vocation::Druid,
+            level: 500,
+            magic_level: 101,
+            max_health: 1000,
+            max_mana: 1000,
+            max_soul: 200,
+        },
+        0,
+        0,
+    )
+    .expect("caster");
+    state
+        .apply_owner_promotion_transition(true, true, Some(10_000_000))
+        .expect("premium");
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects.active_unique_perks.insert("runic_mastery".into());
+    state.install_wheel_effects(effects.clone());
+    let binding = CastFactsBinding {
+        actor: f.caster,
+        session: f.session,
+        character: [7; 16],
+        character_revision: 4,
+        lease_generation: 1,
+        connection_generation: 1,
+        player_revision: state.revision(),
+        content_digest: f.runtime.content_pin().server_artifact_digest(),
+        equipment_revision: 2,
+    };
+    let equipment = crate::durability::character_equipment::EquipmentSnapshot {
+        character: binding.character,
+        content_digest: binding.content_digest,
+        character_revision: 4,
+        revision: 2,
+        combat_mode: None,
+        items: vec![],
+    };
+    let mut owned = OwnedCastFacts::from_owner_reads(
+        binding.clone(),
+        crate::durability::character_build::DurableBuildState::new("druid", (101, 0), [(10, 0); 7])
+            .expect("build"),
+        500,
+        equipment,
+        AccessProjections {
+            premium: Some(CurrentProjection {
+                binding: binding.clone(),
+                authority_revision: 1,
+                valid_until_micros: 10_000_000,
+                value: true,
+            }),
+            wheel_promoted: true,
+            wheel_effects: Some(CurrentProjection {
+                binding: binding.clone(),
+                authority_revision: 4,
+                valid_until_micros: 10_000_000,
+                value: effects,
+            }),
+            ..Default::default()
+        },
+    )
+    .expect("fenced read");
+    let caster = CasterState {
+        vocation: Vocation::Druid,
+        level: 500,
+        magic_level: 101,
+        premium: CasterPremium::from_current(true),
+        mana: 1000,
+        max_mana: 1000,
+        soul: 200,
+        learned: Default::default(),
+        attack_skill: 0,
+        attack_value: 0,
+        attack_factor: 0.0,
+        shielding_skill: 0,
+        melee_weapon: false,
+        shield_defense: None,
+        harmony_multiplier: HarmonyMultiplier::ONE,
+    };
+    let mut rune = wheel_healing_spell();
+    rune.authored = None;
+    rune.key = "candidate:spell/source_test_rune".into();
+    rune.name = "Source Test Rune".into();
+    rune.carrier = Carrier::Rune {
+        item: 3155,
+        charges: 1,
+        magic_level: 0,
+    };
+    rune.level = 1;
+    rune.mana = ManaCost::Fixed(0);
+    rune.soul = 0;
+    rune.vocations = [Vocation::Druid].into_iter().collect();
+    rune.learning_required = false;
+    rune.execution = Execution::Effects(vec![crate::spell::SpellEffect::Heal {
+        formula: Formula {
+            minimum: Expression::Var(Input::MagicLevel),
+            maximum: Expression::Var(Input::MagicLevel),
+        },
+    }]);
+    let mut conjurer = rune.clone();
+    conjurer.key = "candidate:spell/source_test_conjurer".into();
+    conjurer.name = rune.name.to_ascii_lowercase(); // Crystal's getInstantSpellByName uses strcasecmp.
+    conjurer.carrier = Carrier::Instant {
+        words: "source test".into(),
+        takes_parameter: false,
+    };
+    conjurer.level = 9999;
+    conjurer.mana = ManaCost::Fixed(u32::MAX);
+    conjurer.premium = true;
+    let operational = crate::spell::OperationalCastFacts {
+        caster_position: crate::spell::chain::TilePosition {
+            x: 1,
+            y: 1,
+            floor: 7,
+        },
+        target_position: None,
+        target: None,
+        line_of_sight_clear: None,
+        direction_available: false,
+        wheel_unlocked: None,
+        in_protection_zone: false,
+        target_tile_solid: None,
+        target_tile_creature: None,
+    };
+    for (can_conjure, expected) in [(true, 121), (false, 111)] {
+        conjurer.vocations = [if can_conjure {
+            Vocation::Druid
+        } else {
+            Vocation::Sorcerer
+        }]
+        .into_iter()
+        .collect();
+        let book =
+            SpellBook::canonical(vec![rune.clone(), conjurer.clone()]).expect("distinct carriers");
+        let wheel =
+            WheelFormulaMagic::from_owners(&owned, &f.runtime, &rune, &book, &caster, &f.state, 1)
+                .expect("actual current owner");
+        let paid = prepare_ordinary_owner_cast_with_wheel(
+            &book,
+            &state,
+            &rune,
+            &operational,
+            SemanticTimeMicros::from_micros(1),
+            &caster,
+            None,
+            None,
+            &mut |low, _| low,
+            wheel,
+        )
+        .expect("paid rune");
+        assert_eq!(
+            paid.resolution.effects,
+            vec![ResolvedEffect::Heal {
+                magnitude: expected
+            }]
+        );
+        assert_eq!(state.character_facts().magic_level, 101);
+    }
+    let no_conjurer = SpellBook::canonical(vec![rune.clone()]).expect("one rune");
+    assert_eq!(
+        WheelFormulaMagic::from_owners(
+            &owned,
+            &f.runtime,
+            &rune,
+            &no_conjurer,
+            &caster,
+            &f.state,
+            1
+        )
+        .expect("known absence"),
+        WheelFormulaMagic::default()
+    );
+    let book = SpellBook::canonical(vec![rune.clone(), conjurer]).expect("book");
+    assert_eq!(
+        WheelFormulaMagic::from_owners(
+            &owned, &f.runtime, &rune, &book, &caster, &f.state, 10_000_000
+        )
+        .expect("expired"),
+        WheelFormulaMagic::default()
+    );
+    owned.access.wheel_promoted = false;
+    assert_eq!(
+        WheelFormulaMagic::from_owners(&owned, &f.runtime, &rune, &book, &caster, &f.state, 1)
+            .expect("unpromoted"),
+        WheelFormulaMagic::default()
+    );
+}
+
+#[test]
+fn battle_instinct_reads_current_incoming_actor_census_and_closes_on_expiry() {
+    use crate::spell::{Vocation, cast::CharacterCastFacts};
+    let mut f = fixture_with_capacity(0, true);
+    let mut state = PlayerSpellState::new(
+        CharacterCastFacts {
+            vocation: Vocation::Knight,
+            level: 500,
+            magic_level: 20,
+            max_health: 1000,
+            max_mana: 500,
+            max_soul: 200,
+        },
+        0,
+        0,
+    )
+    .expect("player");
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects.active_unique_perks.insert("battle_instinct".into());
+    state.install_wheel_effects(effects);
+    state
+        .apply_owner_promotion_transition(true, true, Some(100))
+        .expect("current owner Premium");
+    let at = f
+        .runtime
+        .read_actor_position(f.caster)
+        .expect("position")
+        .position();
+    let initial =
+        crate::spell::cast::wheel_adjacent_monsters(&f.runtime, f.caster).expect("census");
+    assert!(initial < 5);
+    assert_eq!(
+        state
+            .wheel_battle_instinct(&f.runtime, f.caster, 99)
+            .expect("read")
+            .shielding,
+        0
+    );
+    let destination = MovementLocalPosition {
+        x: at.x + 20,
+        y: at.y,
+        floor: at.floor,
+    };
+    for index in 0..5 {
+        let actor = f
+            .runtime
+            .admit_pinned_test_creature(MovementLocalPosition {
+                x: destination.x + index % 3 - 1,
+                y: destination.y + index / 3 - 1,
+                floor: destination.floor,
+            })
+            .expect("destination creature");
+        f.runtime
+            .install_creature_policy(actor, "fixture:qualified")
+            .expect("destination source policy");
+    }
+    assert_eq!(
+        state
+            .wheel_battle_instinct_at(&f.runtime, f.caster, destination, 99)
+            .expect("qualified field destination")
+            .shielding,
+        6
+    );
+    assert_eq!(
+        state
+            .wheel_battle_instinct(&f.runtime, f.caster, 99)
+            .expect("actor has not moved")
+            .shielding,
+        0
+    );
+    assert_eq!(
+        f.runtime
+            .read_actor_position(f.caster)
+            .expect("same owner position")
+            .position(),
+        at
+    );
+    for index in initial..5 {
+        let actor = f
+            .runtime
+            .admit_pinned_test_creature(MovementLocalPosition {
+                x: at.x + (index % 3) as i32 - 1,
+                y: at.y + (index / 3) as i32 - 1,
+                floor: at.floor,
+            })
+            .expect("adjacent live creature");
+        f.runtime
+            .install_creature_policy(actor, "fixture:qualified")
+            .expect("source policy");
+    }
+    let bonus = state
+        .wheel_battle_instinct(&f.runtime, f.caster, 99)
+        .expect("current census");
+    assert_eq!((bonus.melee, bonus.shielding), (1, 6));
+    assert_eq!(
+        state
+            .wheel_battle_instinct(&f.runtime, f.caster, 100)
+            .expect("expired owner")
+            .shielding,
+        0
+    );
+    state.install_wheel_effects(Default::default());
+    assert_eq!(
+        state
+            .wheel_battle_instinct(&f.runtime, f.caster, 99)
+            .expect("removed perk")
+            .shielding,
+        0
+    );
+}
+
+#[test]
+fn active_gem_values_keep_global_and_named_spell_critical_and_damage_separate() {
+    let mut f = fixture();
+    f.state.conditions.clear_on_death();
+    f.attributes.base_critical_chance_permyriad = Some(10_000);
+    f.attributes.equipment_critical_chance_permyriad = Some(0);
+    f.attributes.base_critical_extra_permyriad = Some(0);
+    f.attributes.equipment_critical_extra_permyriad = Some(0);
+    f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+        numerator: 0,
+        denominator: 1,
+    });
+    f.attributes.wheel_flat_damage = Some(0);
+    let mut spell = wheel_healing_spell();
+    spell.name = "Executioner's Throw".into();
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects.sockets.gem_values_milli.extend([
+        (
+            (
+                "critical_extra_damage".into(),
+                "Critical Extra Damage".into(),
+            ),
+            2_200,
+        ),
+        (("critical_extra_damage".into(), spell.name.clone()), 12_000),
+        (("base_damage_bonus".into(), spell.name.clone()), 10_000),
+        (
+            ("critical_extra_damage".into(), "Unrelated Spell".into()),
+            80_000,
+        ),
+    ]);
+    f.attributes.wheel_effects = Some(effects);
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat");
+    };
+    combat.element = Element::Physical;
+    combat.block_armor = false;
+    combat.hits.truncate(1);
+    combat.hits[0].magnitude = 100;
+    combat.hits[0].bonus_percent = 0;
+    combat.hits[0].side_percent = None;
+    let hit = combat.hits[0].clone();
+    let mut owner = qualify(&f, &p).expect("source owner");
+    owner.select_item_spell(&spell).expect("named cast");
+    assert_eq!(
+        owner.finish(&p, &hit, &f.bindings[1], &mut |low, high| {
+            assert_eq!((low, high), (1, 10_000));
+            low
+        }),
+        Ok(118),
+        "14.2% critical then 5% creature mitigation then 10% named Wheel bonus"
+    );
+    spell.name = "Another Spell".into();
+    owner
+        .select_item_spell(&spell)
+        .expect("fresh named selection");
+    assert_eq!(
+        owner.finish(&p, &hit, &f.bindings[1], &mut |low, _| low),
+        Ok(96),
+        "only the global2.2% survives a different spell"
+    );
+}
+
+#[test]
+fn active_gem_healing_is_named_and_precedes_the_wheel_flat_stage() {
+    let mut f = fixture();
+    f.state.conditions.clear_on_death();
+    let mut spell = wheel_healing_spell();
+    spell.name = "Heal Friend".into();
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects
+        .sockets
+        .gem_values_milli
+        .insert(("base_healing_bonus".into(), spell.name.clone()), 5_000);
+    f.attributes.wheel_effects = Some(effects);
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat");
+    };
+    combat.element = Element::Healing;
+    combat.block_armor = false;
+    combat.hits.truncate(1);
+    combat.hits[0].target = 1;
+    combat.hits[0].magnitude = 100;
+    combat.hits[0].bonus_percent = 0;
+    combat.hits[0].side_percent = None;
+    let hit = combat.hits[0].clone();
+    let mut owner = qualify(&f, &p).expect("source owner");
+    owner.select_item_spell(&spell).expect("named cast");
+    assert_eq!(
+        owner.finish(&p, &hit, &f.bindings[0], &mut |_, _| panic!(
+            "ordinary heal cannot crit"
+        )),
+        Ok(108)
+    );
+    spell.name = "Another Heal".into();
+    owner
+        .select_item_spell(&spell)
+        .expect("new selection resets bonuses");
+    assert_eq!(
+        owner.finish(&p, &hit, &f.bindings[0], &mut |_, _| panic!(
+            "ordinary heal cannot crit"
+        )),
+        Ok(103)
+    );
+}
+
+#[test]
+fn delayed_snapshot_selection_keeps_current_gems_and_focus_exactly_once() {
+    for echo in [false, true] {
+        let mut f = fixture();
+        f.state = PlayerSpellState::new(
+            crate::spell::cast::CharacterCastFacts {
+                vocation: crate::spell::Vocation::Sorcerer,
+                level: 500,
+                magic_level: 10,
+                max_health: 1_000,
+                max_mana: 500,
+                max_soul: 100,
+            },
+            0,
+            0,
+        )
+        .expect("current caster");
+        f.state
+            .apply_owner_promotion_transition(true, true, Some(20_000_000))
+            .expect("Premium");
+        let mut spell = wheel_healing_spell();
+        spell.name = if echo { "Death Echo" } else { "Divine Grenade" }.into();
+        let mut at_cast =
+            oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+        at_cast.active_unique_perks.insert("focus_mastery".into());
+        at_cast
+            .sockets
+            .gem_values_milli
+            .insert(("base_damage_bonus".into(), spell.name.clone()), 80_000);
+        f.state.install_wheel_effects(at_cast.clone());
+        f.state
+            .complete_wheel_focus_cast(true, 0)
+            .expect("armed Focus");
+        f.attributes.binding.player_revision = f.state.revision();
+        f.attributes.wheel_effects = Some(at_cast);
+        f.attributes.base_critical_chance_permyriad = Some(0);
+        f.attributes.equipment_critical_chance_permyriad = Some(0);
+        f.attributes.base_critical_extra_permyriad = Some(0);
+        f.attributes.equipment_critical_extra_permyriad = Some(0);
+        f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+            numerator: 0,
+            denominator: 1,
+        });
+        f.attributes.wheel_flat_damage = Some(50);
+        f.attributes.source_damage_multiplier_percent = Some(10);
+        let planted = StrikeCastModifiers::capture(&f.attributes, &f.state, &spell.name, 0)
+            .expect("established cast snapshot");
+        let stance = f
+            .attributes
+            .delayed_stance_snapshot(crate::spell::native_delayed::Element::Death, 1, 310)
+            .expect("established stance snapshot");
+
+        // The original snapshot saw 80%, but the actual due Combat sees 20%.
+        let mut current = f.attributes.wheel_effects.clone().expect("Wheel");
+        current
+            .sockets
+            .gem_values_milli
+            .insert(("base_damage_bonus".into(), spell.name.clone()), 20_000);
+        f.attributes.wheel_effects = Some(current.clone());
+        f.state.install_wheel_effects(current);
+        f.attributes.wheel_flat_damage = Some(7);
+        f.attributes.source_damage_multiplier_percent = Some(90);
+        let mut p = plan();
+        let NativeCombatPlan::Combat(combat) = &mut p else {
+            panic!("combat");
+        };
+        combat.element = Element::Physical;
+        combat.block_armor = false;
+        combat.hits.truncate(1);
+        combat.hits[0].magnitude = 100;
+        combat.hits[0].bonus_percent = 0;
+        combat.hits[0].side_percent = None;
+        let hit = combat.hits[0].clone();
+        for (focus, expected) in [(true, 163), (false, 130)] {
+            if !focus {
+                f.state
+                    .complete_wheel_focus_cast(false, 100_000)
+                    .expect("other Combat consumed Focus");
+            }
+            let mut owner = qualify(&f, &p).expect("current numerical owner");
+            owner.select_item_spell(&spell).expect("selected source");
+            if echo {
+                owner.select_echo_stance(&stance).expect("echo snapshot");
+            } else {
+                owner
+                    .select_planted_strike(&planted)
+                    .expect("planted snapshot");
+            }
+            assert_eq!(
+                owner.finish(&p, &hit, &f.bindings[1], &mut |_, _| panic!(
+                    "no critical roll"
+                )),
+                Ok(expected)
+            );
+            // 100 minus source creature mitigation5%; then retained10% plus
+            // current gem20% and current Focus35% (or zero after consumption),
+            // then the current flat7 rather than the cast-time flat50.
+            owner
+                .validate_current(&f.runtime, &f.state, &f.attributes, &[])
+                .expect("fresh owner binding remains intact");
+        }
+        // Legacy stance critical facts remain selected, while current global
+        // and named gem extra damage still join the due critical multiplier.
+        let mut old_critical = f.attributes.clone();
+        old_critical.base_critical_chance_permyriad = Some(10_000);
+        old_critical.source_damage_multiplier_percent = Some(10);
+        let critical_stance = old_critical
+            .delayed_stance_snapshot(crate::spell::native_delayed::Element::Death, 1, 310)
+            .expect("critical stance snapshot");
+        f.attributes.base_critical_chance_permyriad = Some(10_000);
+        let mut current = f.attributes.wheel_effects.clone().expect("current Wheel");
+        current.sockets.gem_values_milli.extend([
+            (
+                (
+                    "critical_extra_damage".into(),
+                    "Critical Extra Damage".into(),
+                ),
+                2_200,
+            ),
+            (("critical_extra_damage".into(), spell.name.clone()), 12_000),
+        ]);
+        f.attributes.wheel_effects = Some(current.clone());
+        f.state.install_wheel_effects(current);
+        let mut owner = qualify(&f, &p).expect("current critical owner");
+        owner.select_item_spell(&spell).expect("due source");
+        if echo {
+            owner
+                .select_echo_stance(&critical_stance)
+                .expect("legacy critical stance");
+        } else {
+            owner
+                .select_planted_strike(&planted)
+                .expect("legacy raw snapshot");
+        }
+        assert_eq!(
+            owner.finish(&p, &hit, &f.bindings[1], &mut |low, high| {
+                assert_eq!((low, high), (1, 10_000));
+                low
+            }),
+            Ok(147),
+            "current gem critical14.2%, target mitigation5%, source30%, current flat7"
+        );
+    }
+}
+
+#[test]
+fn pvp_target_block_precedes_attacker_wheel_and_requires_exact_numerical_owner_proof() {
+    use crate::foundation::{CommandId, CommandRef};
+    use crate::gameplay_transport::actor_spell::{
+        ChannelSpellStates, stage_player_batch, stage_player_batch_with_magnitude,
+    };
+    use crate::spell::cast::{CharacterCastFacts, WheelEquipment};
+    use crate::spell::combat_batch as batch;
+    use oteryn_simulation_determinism::SemanticTimeMicros;
+    let mut f = fixture();
+    f.state.conditions.clear_on_death();
+    f.attributes.base_critical_chance_permyriad = Some(0);
+    f.attributes.equipment_critical_chance_permyriad = Some(0);
+    f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+        numerator: 0,
+        denominator: 1,
+    });
+    f.attributes.wheel_flat_damage = Some(3);
+    let session =
+        GameSessionId::decode(&[1, 0x90, 0, 0, 0, 92, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 92])
+            .expect("target session");
+    let reservation = f
+        .runtime
+        .reserve_fresh_session(session)
+        .expect("fourth slot");
+    let target = f
+        .runtime
+        .commit_fresh_session(reservation)
+        .expect("target actor");
+    f.runtime
+        .initialize_first_entry_position(target)
+        .expect("target position");
+    let facts = CharacterCastFacts {
+        vocation: crate::spell::Vocation::Knight,
+        level: 500,
+        magic_level: 20,
+        max_health: 1000,
+        max_mana: 500,
+        max_soul: 200,
+    };
+    let mut target_state = PlayerSpellState::new(facts, 0, 0).expect("target state");
+    target_state
+        .load_owned_build(
+            &crate::durability::character_build::DurableBuildState::new(
+                "knight",
+                (20, 0),
+                [(100, 0); 7],
+            )
+            .expect("durable build"),
+        )
+        .expect("qualified shielding");
+    target_state.install_wheel_equipment(Some(WheelEquipment::default()));
+    target_state
+        .apply_owner_promotion_transition(true, true, Some(1_000_000))
+        .expect("Premium");
+    let mut effects = oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects::default();
+    effects
+        .sockets
+        .gem_values_milli
+        .insert(("Physical Resistance".into(), "".into()), 1_010);
+    target_state.install_wheel_effects(effects);
+    crate::spell::actor_conditions::apply_combat_change(
+        &mut target_state,
+        &OwnerCombatChange::Avatar(AvatarState {
+            expires_ms: 1000,
+            outfit_look_type: 1595,
+            incoming_reduction_percent: 15,
+            critical_chance_percent: 100,
+            critical_extra_percentage_points: 15,
+        }),
+        0,
+    )
+    .expect("real Avatar");
+    let mut states = ChannelSpellStates::default();
+    states
+        .initialize(
+            &f.runtime,
+            f.caster,
+            f.session,
+            FACTS,
+            (0, 0),
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("caster owner");
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        f.caster,
+        f.session,
+        f.state.clone()
+    ));
+    states
+        .initialize(
+            &f.runtime,
+            target,
+            session,
+            facts,
+            (0, 0),
+            SemanticTimeMicros::from_micros(0),
+        )
+        .expect("target owner");
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        target,
+        session,
+        target_state.clone()
+    ));
+    f.bindings.push(LiveActorBinding {
+        source_id: 4,
+        actor: target,
+        target_atom: crate::spell::combat_execution::actor_atom(target),
+    });
+    let mut p = plan();
+    let NativeCombatPlan::Combat(combat) = &mut p else {
+        panic!("combat")
+    };
+    combat.element = Element::Physical;
+    combat.block_armor = false;
+    combat.hits.truncate(1);
+    combat.hits[0].target = 4;
+    combat.hits[0].magnitude = 200;
+    combat.hits[0].bonus_percent = 0;
+    combat.hits[0].side_percent = None;
+    let mut owner = PreparedMagnitudeOwner::qualify_pvp(
+        &f.runtime,
+        &f.state,
+        f.caster,
+        f.session,
+        Some(&f.attributes),
+        &p,
+        &f.bindings,
+        &[(target, &target_state)],
+        100,
+        &[(target, false)],
+    )
+    .expect("real target numerical owner");
+    let template = batch::OwnerCombatBatch {
+        caster: f.caster,
+        attacker: f.attributes.binding.character,
+        current_lease_generation: 1,
+        command: CommandRef::new(f.session, CommandId::new(7002).expect("command")),
+        occurrence: batch::SpellOccurrenceBinding {
+            id: "wheel-player-block".into(),
+            revisions: ["rules:1", "content:1", "world:1", "formula:1", "sim:1"].map(str::to_owned),
+        },
+        binding: vec![1],
+        anchor: None,
+        now_us: Some(SemanticTimeMicros::from_micros(100_000)),
+        now_ms: 100,
+        effects: vec![],
+        deferred: None,
+    };
+    let lowered = batch::lower_native(
+        &f.runtime,
+        template,
+        1,
+        &p,
+        &f.bindings,
+        0,
+        &mut |plan, hit, binding| {
+            owner.finish_with_damage_healing(plan, hit, binding, &mut |_, _| {
+                panic!("no random stage")
+            })
+        },
+    )
+    .expect("real lowering");
+    let OwnerCombatChange::Damage { magnitude, .. } = lowered.batch.effects[0].change else {
+        panic!("damage")
+    };
+    assert_eq!(
+        magnitude, 85,
+        "200/2=100; baseline1.3%=98; gem1.01%=97; Avatar15%=82; attackerflat3=85"
+    );
+    let proof =
+        stage_player_batch_with_magnitude(&f.runtime, &states, &lowered.batch, None, Some(&owner))
+            .expect("qualified final HP stage");
+    let receipt = crate::foundation::runtime_actor_spell_types::PlayerBatchProof::health_receipt(
+        &proof, target, 0,
+    )
+    .expect("same hit receipt");
+    assert_eq!(
+        receipt.health_after, 915,
+        "baseline and Avatar are applied once before attacker flat"
+    );
+    let plain = stage_player_batch(&f.runtime, &states, &lowered.batch, None)
+        .expect("legacy input still has full block stage");
+    let receipt = crate::foundation::runtime_actor_spell_types::PlayerBatchProof::health_receipt(
+        &plain, target, 0,
+    )
+    .expect("legacy receipt");
+    assert_eq!(
+        receipt.health_after, 930,
+        "a naked magnitude never requests the preprocessed path"
+    );
+    let mut forged = lowered.batch.clone();
+    if let OwnerCombatChange::Damage { magnitude, .. } = &mut forged.effects[0].change {
+        *magnitude += 1;
+    }
+    assert!(
+        stage_player_batch_with_magnitude(&f.runtime, &states, &forged, None, Some(&owner))
+            .is_err()
+    );
+    let attack = crate::spell::cast::PreparedWheelAttackHit::prepare(
+        &f.runtime,
+        crate::spell::cast::WheelAttackActor {
+            actor: f.caster,
+            session: f.session,
+            state: &f.state,
+        },
+        crate::spell::cast::WheelAttackActor {
+            actor: target,
+            session,
+            state: &target_state,
+        },
+        crate::spell::cast::WheelAttackComponents {
+            primary: (100, crate::player_lethal::PlayerHitKind::Physical),
+            secondary: (0, crate::player_lethal::PlayerHitKind::Fire),
+        },
+        0,
+        100_000,
+        &mut |magnitude, _| Some(magnitude),
+    )
+    .expect("current autoattack observations");
+    assert_eq!(
+        attack.magnitude(),
+        82,
+        "same incoming block stage without a caster flat grant"
+    );
+    let mut attack_batch = lowered.batch.clone();
+    if let OwnerCombatChange::Damage { magnitude, .. } = &mut attack_batch.effects[0].change {
+        *magnitude = i64::from(attack.magnitude());
+    }
+    let attack_proof = crate::gameplay_transport::actor_spell::stage_player_batch_with_attack(
+        &f.runtime,
+        &states,
+        &attack_batch,
+        &attack,
+    )
+    .expect("existing autoattack joined owner");
+    let receipt = crate::foundation::runtime_actor_spell_types::PlayerBatchProof::health_receipt(
+        &attack_proof,
+        target,
+        0,
+    )
+    .expect("attack receipt");
+    assert_eq!(receipt.health_after, 918);
+    let mut equipment_inputs = Vec::new();
+    let protected = crate::spell::cast::PreparedWheelAttackHit::prepare(
+        &f.runtime,
+        crate::spell::cast::WheelAttackActor {
+            actor: f.caster,
+            session: f.session,
+            state: &f.state,
+        },
+        crate::spell::cast::WheelAttackActor {
+            actor: target,
+            session,
+            state: &target_state,
+        },
+        crate::spell::cast::WheelAttackComponents {
+            primary: (101, crate::player_lethal::PlayerHitKind::Physical),
+            secondary: (0, crate::player_lethal::PlayerHitKind::Fire),
+        },
+        0,
+        100_000,
+        &mut |magnitude, _| {
+            equipment_inputs.push(magnitude);
+            let protected = oteryn_gameplay_items::equipment_effects::apply_protection(
+                i64::from(magnitude),
+                crate::content::ReferenceRationalPercent {
+                    numerator: 10,
+                    denominator: 1,
+                },
+            )?;
+            u32::try_from(protected).ok()
+        },
+    )
+    .expect("same existing equipment owner after baseline");
+    assert_eq!(
+        equipment_inputs,
+        [99, 0],
+        "baseline mitigation precedes the equipment read's protection formula"
+    );
+    assert_eq!(
+        protected.magnitude(),
+        75,
+        "101→baseline99→existing equipment90→gem89→Avatar75"
+    );
+    let mut component_target = target_state.clone();
+    component_target.health = 500;
+    let mut component_effects = component_target
+        .wheel_effects_at(100_000)
+        .expect("current effects")
+        .clone();
+    component_effects
+        .revelation_stages
+        .insert("combat_mastery".into(), 3);
+    component_effects
+        .sockets
+        .gem_values_milli
+        .insert(("Fire Resistance".into(), "".into()), 1_010);
+    component_target.install_wheel_effects(component_effects);
+    component_target
+        .install_virtue_party_bonuses(
+            crate::spell::harmony::VirtuePartyBonuses {
+                damage_reduction: 3,
+                ..Default::default()
+            },
+            0,
+        )
+        .expect("current party observation");
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        target,
+        session,
+        component_target.clone()
+    ));
+    let components = crate::spell::cast::PreparedWheelAttackHit::prepare(
+        &f.runtime,
+        crate::spell::cast::WheelAttackActor {
+            actor: f.caster,
+            session: f.session,
+            state: &f.state,
+        },
+        crate::spell::cast::WheelAttackActor {
+            actor: target,
+            session,
+            state: &component_target,
+        },
+        crate::spell::cast::WheelAttackComponents {
+            primary: (27, crate::player_lethal::PlayerHitKind::Physical),
+            secondary: (27, crate::player_lethal::PlayerHitKind::Fire),
+        },
+        0,
+        100_001,
+        &mut |magnitude, _| Some(magnitude),
+    )
+    .expect("two real component types");
+    assert_eq!(
+        components.magnitude(),
+        42,
+        "each27→baseline26→gem25→Avatar21"
+    );
+    let mut component_batch = attack_batch.clone();
+    component_batch.now_us = Some(SemanticTimeMicros::from_micros(100_001));
+    // The proof and final HP owner must retain the semantic remainder below one millisecond.
+    if let OwnerCombatChange::Damage { magnitude, .. } = &mut component_batch.effects[0].change {
+        *magnitude = 42;
+    }
+    let proof = crate::gameplay_transport::actor_spell::stage_player_batch_with_attack(
+        &f.runtime,
+        &states,
+        &component_batch,
+        &components,
+    )
+    .expect("one joined HP occurrence for both components");
+    let receipt = crate::foundation::runtime_actor_spell_types::PlayerBatchProof::health_receipt(
+        &proof, target, 0,
+    )
+    .expect("component receipt");
+    assert_eq!(
+        receipt.health_after, 464,
+        "each21→CM19→Virtue18, so36 total instead of37 after premature aggregation"
+    );
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        target,
+        session,
+        target_state.clone()
+    ));
+    let mut caster_with_changed_equipment = f.state.clone();
+    caster_with_changed_equipment.install_wheel_equipment(Some(WheelEquipment::default()));
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        f.caster,
+        f.session,
+        caster_with_changed_equipment
+    ));
+    assert!(
+        attack_proof.validate_current(&f.runtime, &states).is_err(),
+        "pending attack also compares the original caster equipment"
+    );
+    assert!(
+        crate::gameplay_transport::actor_spell::stage_player_batch_with_attack(
+            &f.runtime,
+            &states,
+            &attack_batch,
+            &attack
+        )
+        .is_err()
+    );
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        f.caster,
+        f.session,
+        f.state.clone()
+    ));
+    let mut target_with_removed_grant = target_state.clone();
+    target_with_removed_grant.install_wheel_effects(Default::default());
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        target,
+        session,
+        target_with_removed_grant
+    ));
+    assert!(
+        stage_player_batch_with_magnitude(&f.runtime, &states, &lowered.batch, None, Some(&owner))
+            .is_err(),
+        "current target grant was removed"
+    );
+    assert!(states.replace_owned_player_state_test_fixture(
+        &f.runtime,
+        target,
+        session,
+        target_state.clone()
+    ));
+    f.runtime
+        .record_control_loss(
+            target,
+            session,
+            crate::foundation::ControlLossMark {
+                epoch: 1,
+                grace_deadline: 500,
+            },
+        )
+        .expect("target remains physically present during loss");
+    let prepare_attack = |runtime: &ChannelRuntimeV1| {
+        crate::spell::cast::PreparedWheelAttackHit::prepare(
+            runtime,
+            crate::spell::cast::WheelAttackActor {
+                actor: f.caster,
+                session: f.session,
+                state: &f.state,
+            },
+            crate::spell::cast::WheelAttackActor {
+                actor: target,
+                session,
+                state: &target_state,
+            },
+            crate::spell::cast::WheelAttackComponents {
+                primary: (100, crate::player_lethal::PlayerHitKind::Physical),
+                secondary: (0, crate::player_lethal::PlayerHitKind::Fire),
+            },
+            0,
+            100_000,
+            &mut |magnitude, _| Some(magnitude),
+        )
+    };
+    let detached_target =
+        prepare_attack(&f.runtime).expect("control loss grants no target invulnerability");
+    assert!(
+        crate::gameplay_transport::actor_spell::stage_player_batch_with_attack(
+            &f.runtime,
+            &states,
+            &attack_batch,
+            &detached_target
+        )
+        .is_ok()
+    );
+    f.runtime
+        .record_control_loss(
+            f.caster,
+            f.session,
+            crate::foundation::ControlLossMark {
+                epoch: 1,
+                grace_deadline: 500,
+            },
+        )
+        .expect("attacker loss");
+    assert!(
+        prepare_attack(&f.runtime).is_none(),
+        "a new attack still requires current caster control"
+    );
+}
+
+#[test]
+fn ascetic_spell_and_rune_damage_use_own_mantra_after_flat_before_sanctuary() {
+    use crate::spell::harmony::VirtuePartyBonuses;
+    use crate::spell::{Carrier, Vocation, cast::CharacterCastFacts};
+    use oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects;
+    for vocation in [Vocation::Monk, Vocation::ExaltedMonk] {
+        for rune in [false, true] {
+            for (own_mantra, expected) in [(3, 139), (0, 129)] {
+                // This genuine creature policy also supplies Energy immunity, so
+                // the final source additions cannot revive a blocked-zero hit.
+                let mut f = fixture_with_damage_healing(100);
+                f.state = PlayerSpellState::new(
+                    CharacterCastFacts {
+                        vocation,
+                        level: 500,
+                        magic_level: 20,
+                        max_health: 1000,
+                        max_mana: 500,
+                        max_soul: 200,
+                    },
+                    5,
+                    0,
+                )
+                .expect("current Monk with five Harmony");
+                f.state
+                    .apply_owner_promotion_transition(true, true, Some(20_000_000))
+                    .expect("current Premium and promotion");
+                f.state.install_equipped_mantra(own_mantra);
+                f.state
+                    .install_virtue_party_bonuses(
+                        VirtuePartyBonuses {
+                            mantra: 17,
+                            ..Default::default()
+                        },
+                        0,
+                    )
+                    .expect("another member's current Mantra observation");
+                let mut effects = WheelRuntimeEffects::default();
+                effects.revelation_stages.insert("ascetic".into(), 3);
+                effects.active_unique_perks.insert("sanctuary".into());
+                f.state.install_wheel_effects(effects.clone());
+                f.attributes.wheel_effects = Some(effects);
+                f.attributes.binding.player_revision = f.state.revision();
+                f.attributes.base_critical_chance_permyriad = Some(0);
+                f.attributes.equipment_critical_chance_permyriad = Some(0);
+                f.attributes.base_critical_extra_permyriad = Some(0);
+                f.attributes.equipment_critical_extra_permyriad = Some(0);
+                f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+                    numerator: 0,
+                    denominator: 1,
+                });
+                f.attributes.wheel_flat_damage = Some(3);
+                f.attributes.source_damage_multiplier_percent = Some(20);
+                let mut spell = wheel_healing_spell();
+                spell.name = "Tiger Clash".into();
+                if rune {
+                    spell.carrier = Carrier::Rune {
+                        item: 3155,
+                        charges: 1,
+                        magic_level: 0,
+                    };
+                } else {
+                    assert!(matches!(&spell.carrier, Carrier::Instant { .. }));
+                }
+                let target = &f.bindings[2];
+                assert_eq!(target.source_id, 3);
+                let source_position = f
+                    .runtime
+                    .read_actor_position(f.caster)
+                    .expect("current caster position")
+                    .position();
+                let target_position = f
+                    .runtime
+                    .read_actor_position(target.actor)
+                    .expect("current target position")
+                    .position();
+                assert_eq!((target_position.x, target_position.y), (11, 9));
+                assert!(
+                    source_position.floor != target_position.floor
+                        || source_position.x.abs_diff(target_position.x) > 1
+                        || source_position.y.abs_diff(target_position.y) > 1,
+                    "the real target must not add Sanctuary's separate adjacency bonus"
+                );
+                for element in [Element::Physical, Element::Fire, Element::Energy] {
+                    let mut p = plan();
+                    let NativeCombatPlan::Combat(combat) = &mut p else {
+                        panic!("combat");
+                    };
+                    combat.element = element;
+                    combat.block_armor = false;
+                    combat.hits.truncate(1);
+                    combat.hits[0].target = target.source_id;
+                    combat.hits[0].magnitude = 100;
+                    combat.hits[0].bonus_percent = 0;
+                    combat.hits[0].side_percent = None;
+                    let hit = combat.hits[0].clone();
+                    let mut owner = qualify(&f, &p).expect("actual current numerical owner");
+                    owner
+                        .select_item_spell(&spell)
+                        .expect("selected Instant or Rune source");
+                    assert_eq!(
+                        owner.finish(&p, &hit, target, &mut |_, _| {
+                            panic!("zero critical and fatal chances cannot draw")
+                        }),
+                        Ok(if element == Element::Energy {
+                            0
+                        } else {
+                            expected
+                        }),
+                        "{vocation:?}, rune={rune}, own Mantra={own_mantra}, {element:?}"
+                    );
+                    owner
+                        .validate_current(&f.runtime, &f.state, &f.attributes, &[])
+                        .expect("the same current numerical proof remains valid");
+                }
+                // Crystal: raw 100 -> target mitigation 95 -> source 20% gives 114 -> flat 3 gives 117
+                // -> own Ascetic 3 x 3 gives 126 -> Sanctuary Harmony 5 rounds 138.6 to 139.
+                // Own 0 keeps 117 and rounds 128.7 to 129 despite the party's Mantra 17.
+            }
+        }
+    }
 }
