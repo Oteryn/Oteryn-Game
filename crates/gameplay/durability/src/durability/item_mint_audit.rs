@@ -2060,6 +2060,9 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/npc_trade.rs",
                 "crates/gameplay/durability/src/durability/player_death_items.rs",
                 "crates/gameplay/durability/src/durability/player_trade/storage.rs",
+                // W03 collection keeps the caller's Type2Transaction through delivery
+                // and binds its selected tuple in both the envelope and outbox.
+                "crates/gameplay/durability/src/durability/reward_claim_mint/boss_reward/delivery.rs",
                 "crates/gameplay/durability/src/durability/reward_claim_mint.rs",
             ]
         );
