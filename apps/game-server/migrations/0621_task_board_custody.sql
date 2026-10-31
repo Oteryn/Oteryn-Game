@@ -345,14 +345,15 @@ BEGIN
             END IF;
 $arm$;
         WHEN 'game_stash_balance_guard' THEN arm:=$arm$
+            -- 0189's owner retains the local row variable e; use a distinct SQL alias.
             IF TG_OP='UPDATE' AND EXISTS(SELECT 1 FROM game_task_board_stash_sources s
-                JOIN game_character_stash_entries e ON e.entry_id=s.entry_id
+                JOIN game_character_stash_entries task_entry ON task_entry.entry_id=s.entry_id
                 WHERE NEW.last_entry_id=s.entry_id AND s.created_xact_id=pg_current_xact_id()
-                  AND e.created_xact_id=pg_current_xact_id() AND to_jsonb(OLD)=s.before_balance
+                  AND task_entry.created_xact_id=pg_current_xact_id() AND to_jsonb(OLD)=s.before_balance
                   AND (NEW.character_id,NEW.world_id,NEW.definition_key,NEW.definition_revision)=
                       (OLD.character_id,OLD.world_id,OLD.definition_key,OLD.definition_revision)
-                  AND NEW.quantity=OLD.quantity-s.amount AND e.quantity_after=NEW.quantity
-                  AND e.quantity_before=OLD.quantity AND e.previous_entry_id=OLD.last_entry_id) THEN RETURN NEW; END IF;
+                  AND NEW.quantity=OLD.quantity-s.amount AND task_entry.quantity_after=NEW.quantity
+                  AND task_entry.quantity_before=OLD.quantity AND task_entry.previous_entry_id=OLD.last_entry_id) THEN RETURN NEW; END IF;
 $arm$;
         WHEN 'game_quest_callback_admit' THEN arm:=$arm$
             IF NEW.location_kind IN('depot','depot_nested','depot_container') THEN
