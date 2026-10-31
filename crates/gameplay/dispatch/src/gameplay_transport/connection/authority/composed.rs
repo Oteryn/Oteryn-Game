@@ -151,15 +151,42 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
-    async fn chat_private_channels(&self, session: GameSessionId, selected: bool) {
-        self.states.chat.set_private_channels(session, selected);
+    async fn public_chat_admit(
+        &self,
+        admitted: AdmittedSession,
+        rooms: oteryn_protocol_oteryn::chat::ChatRoomSet,
+    ) -> oteryn_protocol_oteryn::chat::ChatRoomSet {
+        ComposedFreshAdmission::public_chat_admit(self, admitted, rooms).await
     }
 
-    async fn chat_channel_list(
+    async fn public_chat_preflight(
         &self,
-        session: GameSessionId,
+        admitted: AdmittedSession,
+        command_id: u64,
+        intent: &oteryn_protocol_oteryn::chat::ChatIntent,
+    ) -> Option<Option<oteryn_protocol_oteryn::chat::ChatIntentResult>> {
+        ComposedFreshAdmission::public_chat_preflight(self, admitted, command_id, intent).await
+    }
+
+    async fn chat_private_admit_bound(&self, admitted: AdmittedSession, selected: bool) {
+        self.private_channel_admit(admitted, selected).await;
+    }
+
+    async fn chat_channel_list_bound(
+        &self,
+        admitted: AdmittedSession,
     ) -> Option<oteryn_protocol_oteryn::chat::private_channel::ChatChannelList> {
-        self.states.chat.take_channel_list(session)
+        self.private_channel_list(admitted).await
+    }
+
+    async fn chat_private_intent(
+        &self,
+        admitted: AdmittedSession,
+        command_id: u64,
+        intent: oteryn_protocol_oteryn::chat::private_channel::PrivateChannelIntent,
+    ) -> Option<oteryn_protocol_oteryn::chat::ChatIntentResult> {
+        self.private_channel_command(admitted, command_id, &intent)
+            .await
     }
 
     async fn chat_guild_admit(
@@ -207,11 +234,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         self.states.chat.delivered(session);
     }
 
-    async fn chat_rooms_changed(
+    async fn chat_rooms_changed_bound(
         &self,
-        session: GameSessionId,
+        admitted: AdmittedSession,
     ) -> Option<oteryn_protocol_oteryn::chat::ChatRoomSet> {
-        self.states.chat.take_rooms_change(session)
+        self.states.chat.take_public_rooms_change(&admitted)
     }
 
     async fn npc_session_open(&self, session: GameSessionId) {

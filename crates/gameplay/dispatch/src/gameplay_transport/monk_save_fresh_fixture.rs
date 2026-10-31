@@ -236,7 +236,7 @@ pub mod fresh {
                 },
             )
         }
-        fn with_current(now: i64, current: FreshCurrentEvidence) -> TestResult<Self> {
+        pub(crate) fn with_current(now: i64, current: FreshCurrentEvidence) -> TestResult<Self> {
             let mut source = Self {
                 now,
                 key: SigningKey::from_bytes(&[31; 32]),
@@ -346,6 +346,18 @@ pub mod fresh {
             identity: Option<(&str, &str)>,
             now: i64,
         ) -> TestResult<FreshAdmissionCommitRequestV1> {
+            self.request_with_nonce(session, transport, identity, now, None)
+        }
+
+        /// Extra peers use distinct verified grants without changing existing fixture tokens.
+        pub(crate) fn request_with_nonce(
+            &self,
+            session: GameSessionId,
+            transport: AuthenticatedTransportRefV1,
+            identity: Option<(&str, &str)>,
+            now: i64,
+            nonce: Option<[u8; 32]>,
+        ) -> TestResult<FreshAdmissionCommitRequestV1> {
             let header = r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#;
             let mut payload: serde_json::Value = serde_json::from_str(&fresh_payload())?;
             if let Some((account, character)) = identity {
@@ -355,6 +367,17 @@ pub mod fresh {
                     .encode([8; 32])
                     .into();
                 payload["attempt_ref"] = "00000000-0000-7000-8000-000000000002".into();
+            }
+            // The shared fixture also admits independently assigned Channels in one World.
+            payload["world_id"] =
+                crate::gameplay_transport::canonical_uuid(self.current.world_id.as_bytes()).into();
+            payload["channel_id"] =
+                crate::gameplay_transport::canonical_uuid(self.current.channel_id.as_bytes())
+                    .into();
+            if let Some(nonce) = nonce {
+                payload["jti"] = base64::engine::general_purpose::URL_SAFE_NO_PAD
+                    .encode(nonce)
+                    .into();
             }
             payload["scope_ownership_generation"] =
                 self.current.scope_ownership_generation.to_string().into();

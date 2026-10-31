@@ -1,4 +1,5 @@
 //! Ordered private phases of an admitted actor connection.
+mod vip_presence;
 
 use super::*;
 

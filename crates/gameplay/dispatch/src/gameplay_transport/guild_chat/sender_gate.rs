@@ -1,5 +1,4 @@
 use super::*;
-use oteryn_protocol_oteryn::chat::private_channel::PrivateChannelIntent;
 
 impl ChatRuntime {
     pub(super) fn sender_gate(
@@ -15,11 +14,8 @@ impl ChatRuntime {
             ChatIntent::Guild { text } | ChatIntent::Party { text } => {
                 return self.pre_gate_relay(session, None, text, now);
             }
-            // A create reads the Premium gate after this gate (`chat_speak`).
-            ChatIntent::PrivateChannel(PrivateChannelIntent::Create) => return None,
-            ChatIntent::PrivateChannel(intent) => {
-                return Some(self.private_channel(session, intent, now));
-            }
+            // The World private owner requires the complete admitted connection and CommandRef.
+            ChatIntent::PrivateChannel(_) => return Some(result(ChatDisposition::Rejected)),
             ChatIntent::Private { text, .. } => {
                 return self.pre_gate_relay(session, None, text, now);
             }

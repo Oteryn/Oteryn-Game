@@ -29,6 +29,66 @@ fn drop_rank(line: &ChatLine) -> u8 {
     })
 }
 
+#[cfg(test)]
+mod private_channel_queue_tests {
+    #![allow(clippy::expect_used)]
+    use super::*;
+
+    fn private(
+        epoch: u64,
+    ) -> (
+        oteryn_protocol_oteryn::chat::private_channel::PrivateChannelLine,
+        PrivateChannelChatDestination,
+    ) {
+        (
+            oteryn_protocol_oteryn::chat::private_channel::PrivateChannelLine {
+                channel_id: 100,
+                speaker_name: "Sender".into(),
+                text: "private channel".into(),
+            },
+            PrivateChannelChatDestination {
+                channel_id: 100,
+                epoch,
+                sent_at_micros: 1,
+            },
+        )
+    }
+
+    #[test]
+    fn private_channel_lines_share_existing_queue_capacity_and_preserve_epoch() {
+        let mut queue = ChatEgress::default();
+        for _ in 0..EGRESS_MAX_LINES {
+            queue.push(ChatLine::Room {
+                room: oteryn_protocol_oteryn::chat::ChatRoom::World,
+                speaker_name: "Sender".into(),
+                text: "room".into(),
+            });
+        }
+        for epoch in 1..=EGRESS_MAX_LINES as u64 {
+            let (line, destination) = private(epoch);
+            queue.push_private_channel(line, destination);
+            assert!(queue.len() + usize::from(queue.in_flight) <= EGRESS_MAX_LINES);
+        }
+        assert_eq!(queue.next_for_write(), Some(ChatLine::Dropped));
+        let destination = queue
+            .private_channel_destination()
+            .expect("first private metadata");
+        assert_eq!(destination.epoch, 1);
+        assert!(matches!(
+            queue.next_for_write(),
+            Some(ChatLine::PrivateChannel(_))
+        ));
+        let (line, destination) = private(99);
+        queue.push_private_channel(line, destination);
+        assert_eq!(queue.len() + usize::from(queue.in_flight), EGRESS_MAX_LINES);
+        queue.delivered();
+        assert!(queue.private_channel_destination().is_some());
+        queue.clear();
+        assert!(queue.private_channel_destination().is_none());
+        assert_eq!(queue.len(), 0);
+    }
+}
+
 /// Server-only routing evidence, retained with a queued Party line and never encoded.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct PartyChatDestination {
@@ -42,10 +102,25 @@ impl std::fmt::Debug for PartyChatDestination {
     }
 }
 
+/// Server-only custody of one private-channel incarnation. It shares the existing queue bound.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct PrivateChannelChatDestination {
+    pub channel_id: u16,
+    pub epoch: u64,
+    pub sent_at_micros: u64,
+}
+impl std::fmt::Debug for PrivateChannelChatDestination {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PrivateChannelChatDestination")
+            .finish_non_exhaustive()
+    }
+}
+
 #[derive(Debug)]
 struct QueuedLine {
     line: ChatLine,
     party: Option<PartyChatDestination>,
+    private_channel: Option<PrivateChannelChatDestination>,
 }
 
 /// One session's undelivered chat lines.
@@ -68,7 +143,11 @@ impl ChatEgress {
 
     /// Queues `line`; a [`ChatLine::Dropped`] argument only owes the marker.
     pub fn push(&mut self, line: ChatLine) {
-        self.push_queued(QueuedLine { line, party: None });
+        self.push_queued(QueuedLine {
+            line,
+            party: None,
+            private_channel: None,
+        });
     }
 
     pub fn push_party(
@@ -80,7 +159,27 @@ impl ChatEgress {
         self.push_queued(QueuedLine {
             line: ChatLine::Party { speaker_name, text },
             party: Some(destination),
+            private_channel: None,
         });
+    }
+
+    pub fn push_private_channel(
+        &mut self,
+        line: oteryn_protocol_oteryn::chat::private_channel::PrivateChannelLine,
+        destination: PrivateChannelChatDestination,
+    ) {
+        self.push_queued(QueuedLine {
+            line: ChatLine::PrivateChannel(line),
+            party: None,
+            private_channel: Some(destination),
+        });
+    }
+
+    pub fn private_channel_destination(&self) -> Option<PrivateChannelChatDestination> {
+        if self.marker_owed {
+            return None;
+        }
+        self.lines.front()?.private_channel
     }
 
     pub fn party_destination(&self) -> Option<PartyChatDestination> {
