@@ -1990,6 +1990,8 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/consume_transform.rs",
                 "crates/gameplay/durability/src/durability/house_interior.rs",
                 "crates/gameplay/durability/src/durability/item_craft.rs",
+                // GEMX I19: shrine enchanting writes its outbox row from its Type2Transaction.
+                "crates/gameplay/durability/src/durability/item_craft/enchanting.rs",
                 "crates/gameplay/durability/src/durability/item_decay_retire.rs",
                 "crates/gameplay/durability/src/durability/item_fee_burn.rs",
                 "crates/gameplay/durability/src/durability/item_mint.rs",
