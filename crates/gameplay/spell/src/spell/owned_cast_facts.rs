@@ -44,6 +44,8 @@ pub struct AccessProjections {
     pub premium: Option<CurrentProjection<bool>>,
     pub learned: Option<CurrentProjection<BTreeSet<String>>>,
     pub wheel: Option<CurrentProjection<BTreeMap<String, u8>>>,
+    pub wheel_effects:
+        Option<CurrentProjection<oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects>>,
     /// Durable promotion read in the same Wheel cast transaction as `wheel`. The build keeps
     /// the base vocation, so a promoted vocation name never proves promotion.
     pub wheel_promoted: bool,
@@ -111,6 +113,22 @@ impl OwnedCastFacts {
     }
     pub fn binding(&self) -> &CastFactsBinding {
         &self.binding
+    }
+    pub fn current_wheel_effects(
+        &self,
+        now: u64,
+    ) -> Option<&oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects> {
+        self.access
+            .wheel_effects
+            .as_ref()
+            .filter(|value| value.current(&self.binding, now))
+            .filter(|_| {
+                self.access.wheel_promoted
+                    && self
+                        .current_premium(now)
+                        .is_some_and(|premium| premium.value)
+            })
+            .map(|value| &value.value)
     }
     pub fn wheel_revision(&self) -> Option<u64> {
         self.access.wheel.as_ref().map(|p| p.authority_revision)
@@ -214,7 +232,8 @@ impl OwnedCastFacts {
         let vitals = state.vitals();
         let skill_adjustments = state
             .owned_skill_adjustments(now)
-            .map_err(|_| OwnedFactsError::BuildMismatch)?;
+            .map_err(|_| OwnedFactsError::BuildMismatch)?
+            .with_wheel(self.current_wheel_effects(now));
         if state.revision() != self.binding.player_revision
             || content.source_digest() != self.binding.content_digest
         {
