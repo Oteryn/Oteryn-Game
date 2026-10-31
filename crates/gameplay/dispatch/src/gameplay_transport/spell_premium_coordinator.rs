@@ -316,6 +316,15 @@ impl SpellPremiumCoordinator {
     pub const fn has_clock(&self) -> bool {
         self.clock.is_some()
     }
+    /// P20: the entitlement of `account` itself ended
+    /// ([`PremiumConsumer::premium_entitlement_ended`]), read only once Premium is delivered
+    /// (PREMIUM-ACTIVATION-0 §1.2): before the switch-over no account lost Premium. It reads the
+    /// latch from memory, so a caller settles delivery with [`Self::premium_gate`] first.
+    pub fn premium_entitlement_ended(&self, account: [u8; 16]) -> bool {
+        self.delivery
+            .delivered_now(self.read_now())
+            .is_some_and(|now| self.consumer.premium_entitlement_ended(account, Some(now)))
+    }
     /// The live view of `account`. Unavailable without a registered clock owner. It reads the
     /// latch from memory, so a caller settles delivery with [`Self::premium_gate`] first.
     pub fn view(&self, account: [u8; 16]) -> Arc<RegisteredSpellAccessOwner> {
@@ -1080,6 +1089,32 @@ mod tests {
         // A held row is never undone by a later, different latch.
         current.delivery.hold(latch("premium-activation-0", T0));
         assert_eq!(status_name(&current), "current");
+    }
+
+    /// P20: only a delivered deployment with a clock reads an ended entitlement.
+    #[test]
+    fn an_ended_entitlement_is_read_only_after_delivery() {
+        let clock = || -> Option<Arc<dyn RegisteredPremiumClock>> { Some(clock_at(T0 + MINUTE)) };
+        for state in [
+            EntitlementState::Expired,
+            EntitlementState::Revoked,
+            EntitlementState::None,
+        ] {
+            assert!(delivered(proven(state, FAR), clock()).premium_entitlement_ended(ACCOUNT));
+        }
+        // effective_until surely passed.
+        let lapsed = delivered(proven(EntitlementState::Active, T0), clock());
+        assert!(lapsed.premium_entitlement_ended(ACCOUNT));
+        // Current, unknown, undelivered or unclocked: not ended.
+        let active = || proven(EntitlementState::Active, FAR);
+        assert!(!delivered(active(), clock()).premium_entitlement_ended(ACCOUNT));
+        assert!(!delivered(active(), clock()).premium_entitlement_ended([2; 16]));
+        let expired = || proven(EntitlementState::Expired, FAR);
+        assert!(!delivered(expired(), None).premium_entitlement_ended(ACCOUNT));
+        let unread = SpellPremiumCoordinator::new(expired(), clock(), Some(activation(T0)), None);
+        assert!(!unread.premium_entitlement_ended(ACCOUNT));
+        let free = SpellPremiumCoordinator::new(expired(), clock(), None, None);
+        assert!(!free.premium_entitlement_ended(ACCOUNT));
     }
 
     fn batch_names(

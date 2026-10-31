@@ -425,7 +425,7 @@ fn uuid_text(bytes: &[u8; 16]) -> String {
     )
 }
 
-fn uuid_bytes(text: &str) -> Option<[u8; 16]> {
+pub(super) fn uuid_bytes(text: &str) -> Option<[u8; 16]> {
     let hex: String = text.chars().filter(|c| *c != '-').collect();
     if hex.len() != 32 || text.len() != 36 {
         return None;

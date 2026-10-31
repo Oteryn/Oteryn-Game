@@ -262,6 +262,16 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Ok(decided) = self.read_tutorial_admission_position(position_fence).await else {
             return (FirstEntryOutcome::RefusedUnavailable, None, None);
         };
+        // P20: Crystal's login check (`login.lua:8-15`) runs before the owner places the actor.
+        let account = super::super::store::uuid_bytes(&request.binding().account_id);
+        let temple = match account {
+            Some(account) => self.premium_ended_temple(account, game_session_id).await,
+            None => None,
+        };
+        let decided = match temple {
+            Some(temple) => decided.relocated(temple, self.world_id),
+            None => decided,
+        };
         #[cfg(test)]
         stage("durable_position_read");
         match self.reserve_precondition().await {

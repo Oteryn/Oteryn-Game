@@ -26,7 +26,63 @@ fn citizen_town(unique: u16) -> Option<u32> {
     })
 }
 
+/// Crystal 201189f8 `data-global/scripts/creaturescripts/others/login.lua:5-6`: the towns of the
+/// free-account area, by the engine town ids of the pinned catalogue (Ab'Dendriel 5, Carlin 6,
+/// Kazordoon 7, Thais 8, Venore 9, Rookgaard 3, Dawnport 2). Its Dawnport Tutorial, Island of
+/// Destiny and Targuna have no hometown entry in the catalogue, so no Character lives there.
+/// Yalahar 17 is added by the accepted Premium decision (PREMIUM-ACTIVATION-0 §4.5, D70: "the six
+/// free cities (Yalahar included)"), which Crystal's list predates.
+const FREE_ACCOUNT_TOWNS: [u32; 8] = [2, 3, 5, 6, 7, 8, 9, 17];
+/// The same file, :5 (`defaultTown = "Thais"`): where a home town in the premium area moves.
+const FREE_ACCOUNT_DEFAULT_TOWN: u32 = 8;
+
+/// P20 (the same file, :8): a home town outside the free-account area.
+fn premium_area_town(town: u32) -> bool {
+    !FREE_ACCOUNT_TOWNS.contains(&town)
+}
+
+/// Crystal `login.lua:15`.
+const PREMIUM_EXPIRED_TEXT: &str = "Your premium time has expired!";
+
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// P20: at login, a Character whose account's Premium entitlement ended and whose home town
+    /// is in the premium area becomes a citizen of Thais and enters at its temple (Crystal
+    /// `login.lua:8-15`). `None` leaves the admission as it was: Premium current or unknown, a
+    /// free-area town, no hometown catalogue, or a failed citizenship write.
+    pub(super) async fn premium_ended_temple(
+        &self,
+        account: [u8; 16],
+        session: GameSessionId,
+    ) -> Option<MovementLocalPosition> {
+        let coordinator = self.premium_coordinator?;
+        let table = &self.bundle_map()?.overlay.base().subareas;
+        let temple = table.town(FREE_ACCOUNT_DEFAULT_TOWN)?.temple?;
+        if !premium_area_town(self.home_town(session, None).await?) {
+            return None;
+        }
+        // Settle delivery, then load the durable fence: this account's pulls start only after
+        // admission, and an ended entitlement is a restrictive durable fact.
+        let _ = coordinator.premium_gate(account).await;
+        let _ = coordinator.consumer().load(self.root, account).await;
+        if !coordinator.premium_entitlement_ended(account) {
+            return None;
+        }
+        let town = self
+            .commit_home_town(session, None, Some(FREE_ACCOUNT_DEFAULT_TOWN))
+            .await?;
+        if town != FREE_ACCOUNT_DEFAULT_TOWN {
+            return None;
+        }
+        self.states
+            .chat
+            .push_quest_feedback(session, PREMIUM_EXPIRED_TEXT);
+        Some(MovementLocalPosition {
+            x: i32::from(temple.x),
+            y: i32::from(temple.y),
+            floor: i16::from(-temple.floor),
+        })
+    }
+
     pub(super) async fn home_temple(
         &self,
         session: GameSessionId,
@@ -84,10 +140,26 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         session: GameSessionId,
         citizenship: Option<(ExactActorRef, u32)>,
     ) -> Option<u32> {
+        self.commit_home_town(
+            session,
+            citizenship.map(|(actor, _)| actor),
+            citizenship.map(|(_, town)| town),
+        )
+        .await
+    }
+
+    /// [`Self::home_town`]; a citizenship chosen by an actor's step also proves that actor's
+    /// bound lease, a login relocation (`actor` absent) runs before the lease is bound.
+    async fn commit_home_town(
+        &self,
+        session: GameSessionId,
+        actor: Option<ExactActorRef>,
+        citizenship: Option<u32>,
+    ) -> Option<u32> {
         let map = self.bundle_map()?;
         let table = &map.overlay.base().subareas;
         let default = table.default_town?;
-        if citizenship.is_some_and(|(_, id)| table.town(id).is_none()) {
+        if citizenship.is_some_and(|id| table.town(id).is_none()) {
             return None;
         }
         let mut fence = self.current_quest_fence(session).await.ok()??;
@@ -103,7 +175,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 return None;
             }
-            if let Some((actor, _)) = citizenship {
+            if let Some(actor) = actor {
                 let lease = runtime.bound_attacker_lease(actor, session).ok()?;
                 if lease.character_id().as_bytes() != fence.character_id.as_bytes()
                     || lease.generation() != fence.character_lease_generation
@@ -116,13 +188,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         fence.expected_character_revision = slot.cursor(self.root, self.character).await.ok()?;
         let outcome = self
             .root
-            .character_home_town(
-                self.character,
-                self.holder,
-                fence,
-                default,
-                citizenship.map(|(_, id)| id),
-            )
+            .character_home_town(self.character, self.holder, fence, default, citizenship)
             .await;
         slot.observe_home_town();
         outcome.ok()
@@ -220,5 +286,22 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             let _ = runtime.commit_source_step(proof);
         }
         runtime.read_actor_position(actor).unwrap_or(entered)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// P20: Crystal `login.lua:6` lists the free-account towns, with Yalahar added by
+    /// PREMIUM-ACTIVATION-0 §4.5; every other hometown of the pinned catalogue is premium.
+    #[test]
+    fn only_the_free_account_towns_are_outside_the_premium_area() {
+        let premium: Vec<u32> = (1..=22)
+            .filter(|town| super::premium_area_town(*town))
+            .collect();
+        assert_eq!(
+            premium,
+            vec![1, 4, 10, 11, 12, 13, 14, 15, 16, 18, 19, 20, 21, 22]
+        );
+        assert!(!super::premium_area_town(super::FREE_ACCOUNT_DEFAULT_TOWN));
     }
 }

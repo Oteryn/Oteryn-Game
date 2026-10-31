@@ -26,7 +26,13 @@ fn towns() -> oteryn_world_bundle::subarea::Table {
         default_town: Some(8),
         client_version: "15.30".into(),
         candidate_sha256: hash.clone(),
-        areas: vec![area(1, None, 0), area(2, Some(8), 2), area(3, Some(6), 8)],
+        // Town 11 (Edron) is the P20 premium-area home town; 8 and 6 are free-account towns.
+        areas: vec![
+            area(1, None, 0),
+            area(2, Some(8), 2),
+            area(3, Some(6), 8),
+            area(4, Some(11), 14),
+        ],
         masks: vec![Mask {
             subarea: 2,
             asset: format!("content/assets/files/subarea-0002-{hash}.bmp.lzma"),
@@ -48,15 +54,24 @@ fn towns() -> oteryn_world_bundle::subarea::Table {
 
 #[test]
 fn citizen_tile_persists_town_death_uses_temple_and_reconnect_keeps_it() -> TestResult {
+    on_large_stack(false)
+}
+
+#[test]
+fn p20_ended_premium_moves_a_premium_area_citizen_to_the_thais_temple() -> TestResult {
+    on_large_stack(true)
+}
+
+fn on_large_stack(p20: bool) -> TestResult {
     std::thread::Builder::new()
         .stack_size(256 << 20)
-        .spawn(|| scenario().map_err(|error| error.to_string()))?
+        .spawn(move || scenario(p20).map_err(|error| error.to_string()))?
         .join()
         .map_err(|_| "home town PostgreSQL thread panicked")??;
     Ok(())
 }
 
-fn scenario() -> TestResult {
+fn scenario(p20: bool) -> TestResult {
     run(async |admin| {
         reset();
         let h = Harness::create_with_admission_seed(admin, "citizen_temple", false, false).await?;
@@ -109,6 +124,7 @@ fn scenario() -> TestResult {
                 .spell_book()
                 .clone(),
         )?;
+        let (consumer, coordinator) = premium_reads(&h);
         let mut owner = deps.owner(&h, &authority);
         owner.active_generation = Some(active);
         owner.movement_cells = &cells;
@@ -166,6 +182,13 @@ fn scenario() -> TestResult {
             "SELECT count(*) FROM game_character_home_town_receipts WHERE character_id=encode($1,'hex')::uuid",
         ).bind(id(41).as_slice()).fetch_one(&h.pool).await?;
         assert_eq!(receipts, 1, "one receipt for the actual town change");
+        if p20 {
+            premium_ended(&h, &mut owner, (&consumer, &coordinator), actor, session).await?;
+            drop(owner);
+            drop(authority);
+            drop(seal);
+            return h.cleanup().await;
+        }
         assert!(sqlx::query(
             "UPDATE game_character_home_towns SET town_id=8 WHERE character_id=encode($1,'hex')::uuid",
         ).bind(id(41).as_slice()).execute(&h.pool).await.is_err(), "town writes require their receipt");
@@ -250,6 +273,112 @@ fn scenario() -> TestResult {
         drop(seal);
         h.cleanup().await
     })
+}
+
+const P20_NOW: i64 = 1_790_812_800_000_000;
+
+struct P20Clock(std::sync::Mutex<Option<crate::premium::TrustedNow>>);
+impl crate::gameplay_transport::spell_premium_coordinator::clock_registration::Registered
+    for P20Clock
+{
+}
+impl crate::gameplay_transport::spell_premium_coordinator::RegisteredPremiumClock for P20Clock {
+    fn read_current_window(&self) -> Option<crate::premium::TrustedNow> {
+        *self.0.lock().expect("clock")
+    }
+}
+
+/// P20: delivered Premium reads with a trusted clock and the durable latch.
+fn premium_reads(
+    h: &Harness,
+) -> (
+    std::sync::Arc<crate::premium::PremiumConsumer>,
+    crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+) {
+    use crate::gameplay_transport::spell_premium_coordinator::{
+        PremiumActivation, SpellPremiumCoordinator,
+    };
+    let consumer = std::sync::Arc::new(crate::premium::PremiumConsumer::default());
+    let coordinator = SpellPremiumCoordinator::new(
+        consumer.clone(),
+        Some(std::sync::Arc::new(P20Clock(std::sync::Mutex::new(
+            crate::premium::TrustedNow::new(P20_NOW, 1_000_000),
+        )))),
+        Some(PremiumActivation {
+            activation_id: "p20-test".to_owned(),
+            switch_over_us: P20_NOW - 60_000_000,
+        }),
+        Some(h.root.clone()),
+    );
+    (consumer, coordinator)
+}
+
+/// P20: Crystal 201189f8 `data-global/scripts/creaturescripts/others/login.lua:8-15`.
+async fn premium_ended<'a>(
+    h: &Harness,
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'a, '_, '_>,
+    (consumer, coordinator): (
+        &crate::premium::PremiumConsumer,
+        &'a crate::gameplay_transport::spell_premium_coordinator::SpellPremiumCoordinator,
+    ),
+    actor: crate::foundation::ExactActorRef,
+    session: crate::foundation::GameSessionId,
+) -> TestResult {
+    use crate::durability::premium_fence::{EntitlementState, PremiumEvidence};
+    let now = P20_NOW;
+    let evidence = |state| PremiumEvidence {
+        account_id: id(40),
+        producer_revision: "1".repeat(40),
+        producer_profile: crate::premium::PRODUCER_PROFILE.to_owned(),
+        product_id: crate::premium::PRODUCT_ID.to_owned(),
+        product_version: crate::premium::PRODUCT_VERSION,
+        entitlement_id: Some("01926c1e-8a40-7c3b-9f2e-5a1d3c4b6e70".to_owned()),
+        state,
+        lifecycle_revision: 1,
+        authority_revision: 7,
+        effective_from_us: now - 60_000_000,
+        effective_until_us: now + 3_600_000_000,
+        authority_issued_at_us: now,
+        authority_valid_until_us: now + 3_600_000_000,
+        refresh_after_us: now + 1_800_000_000,
+    };
+    let town = async |h: &Harness| -> TestResult<i32> {
+        Ok(sqlx::query_scalar("SELECT town_id FROM game_character_home_towns WHERE character_id=encode($1,'hex')::uuid").bind(id(41).as_slice()).fetch_one(&h.pool).await?)
+    };
+    assert_eq!(owner.home_town(session, Some((actor, 11))).await, Some(11));
+    // Without Premium reads the admission is unchanged.
+    owner.premium_coordinator = None;
+    assert_eq!(owner.premium_ended_temple(id(40), session).await, None);
+    owner.premium_coordinator = Some(coordinator);
+    // Current Premium keeps the premium-area town.
+    consumer.prove_for_test(evidence(EntitlementState::Active));
+    assert_eq!(owner.premium_ended_temple(id(40), session).await, None);
+    assert_eq!(town(h).await?, 11);
+    // An ended entitlement moves the citizen to Thais (town 8) and enters at its temple.
+    consumer.prove_for_test(PremiumEvidence {
+        authority_revision: 8,
+        ..evidence(EntitlementState::Expired)
+    });
+    let thais = MovementLocalPosition {
+        x: 2,
+        y: 11,
+        floor: 7,
+    };
+    assert_eq!(
+        owner.premium_ended_temple(id(40), session).await,
+        Some(thais)
+    );
+    assert_eq!(town(h).await?, 8);
+    assert_eq!(owner.home_temple(session).await, Some(thais));
+    // A free-area town stays where it is on the next login.
+    assert_eq!(owner.premium_ended_temple(id(40), session).await, None);
+    let receipts: Vec<(i32, i32)> = sqlx::query_as(
+        "SELECT town_before, town_after FROM game_character_home_town_receipts WHERE character_id=encode($1,'hex')::uuid ORDER BY committed_character_revision",
+    ).bind(id(41).as_slice()).fetch_all(&h.pool).await?;
+    assert_eq!(receipts, vec![(8, 6), (6, 11), (11, 8)]);
+    eprintln!("P20_POSTGRES_EXECUTED: ended Premium, premium-area town 11 -> Thais temple");
+    owner.premium_coordinator = None;
+    Ok(())
 }
 
 async fn revisions(h: &Harness) -> TestResult<(u64, u64)> {
