@@ -15,6 +15,8 @@ enum Case {
     Gut,
     DuplexOn,
     DuplexOff,
+    DuplexOfflineIgnored,
+    DuplexOnlineSpent,
     BoostedBossUnique,
 }
 thread_local! { static CASE: Cell<Option<Case>> = const { Cell::new(None) }; }
@@ -62,6 +64,20 @@ fn w22c_a_kill_without_wealth_duplex_rolls_its_loot_once() -> TestResult {
     })
 }
 #[test]
+fn w22b_wealth_duplex_ignores_wall_clock_time_spent_offline() -> TestResult {
+    scenario_thread::run("w22b-duplex-offline", || {
+        CASE.set(Some(Case::DuplexOfflineIgnored));
+        scenario()
+    })
+}
+#[test]
+fn w22b_wealth_duplex_ends_after_one_online_hour() -> TestResult {
+    scenario_thread::run("w22b-duplex-online-spent", || {
+        CASE.set(Some(Case::DuplexOnlineSpent));
+        scenario()
+    })
+}
+#[test]
 fn w22a_mint_into_a_container_outside_the_kill_corpse_is_refused() -> TestResult {
     scenario_thread::run("w22a-outside", || {
         CASE.set(Some(Case::Outside));
@@ -94,7 +110,7 @@ pub(super) fn table_override() -> TestResult<Option<Vec<u8>>> {
         .ok_or("rat table")?;
     match case {
         Case::Large => table["entries"] = Value::Array(vec![entry(3031); 20]),
-        Case::DuplexOn | Case::DuplexOff => {
+        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent => {
             table["entries"] = Value::Array(vec![entry(3031); DUPLEX_BASE_ENTRIES]);
         }
         Case::ChargedSubtype => {
@@ -140,6 +156,10 @@ pub(super) async fn before_kill(
 ) -> TestResult {
     if matches!(CASE.get(), Some(Case::DuplexOn)) {
         return use_wealth_duplex(owner, h, actor, session).await;
+    }
+    if let Some(case @ (Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent)) = CASE.get() {
+        use_wealth_duplex(owner, h, actor, session).await?;
+        return age_wealth_duplex(h, session, matches!(case, Case::DuplexOnlineSpent)).await;
     }
     if !matches!(CASE.get(), Some(Case::Gut)) {
         return Ok(());
@@ -244,6 +264,57 @@ async fn use_wealth_duplex(
     Ok(())
 }
 
+/// W22b: the activation is moved two hours into the past on the wall clock. With `online`
+/// the current session is moved back as well, so those two hours were spent online; without
+/// it the Character was offline for them. Also proves the terminal stamp ends a session's span.
+async fn age_wealth_duplex(
+    h: &Harness,
+    session: crate::foundation::GameSessionId,
+    online: bool,
+) -> TestResult {
+    const TWO_HOURS_US: i64 = 7_200_000_000;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role = replica")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("UPDATE game_character_concoction_effects SET started_at=started_at-interval '2 hours', expires_at=expires_at-interval '2 hours'")
+        .execute(&mut *tx)
+        .await?;
+    if online {
+        sqlx::query("UPDATE game_durability_reconnect_sessions SET training_created_at_us=training_created_at_us-$1 WHERE character_id=encode($2,'hex')::uuid")
+            .bind(TWO_HOURS_US)
+            .bind(id(41).as_slice())
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    // A terminal session counts only up to its stamp, never up to a later `now` (rolled back).
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state=3,current_transport_ref=NULL,prepared_attempt_ref=NULL WHERE game_session_id=encode($1,'hex')::uuid")
+        .bind(session.as_bytes().as_slice())
+        .execute(&mut *tx)
+        .await?;
+    let (stamped, at_end, an_hour_later): (i64, i64, i64) = sqlx::query_as(
+        "SELECT (SELECT count(*) FROM game_character_session_ends \
+                  WHERE game_session_id=encode($1,'hex')::uuid AND character_id=encode($2,'hex')::uuid), \
+                game_character_online_us(encode($2,'hex')::uuid, clock_timestamp()-interval '1 day', clock_timestamp()), \
+                game_character_online_us(encode($2,'hex')::uuid, clock_timestamp()-interval '1 day', clock_timestamp()+interval '1 hour')",
+    )
+    .bind(session.as_bytes().as_slice())
+    .bind(id(41).as_slice())
+    .fetch_one(&mut *tx)
+    .await?;
+    tx.rollback().await?;
+    eprintln!("W22B_ONLINE stamped={stamped} at_end={at_end} an_hour_later={an_hour_later}");
+    assert_eq!(stamped, 1, "the terminal transition stamps the session end");
+    assert!(
+        an_hour_later - at_end < 1_000_000,
+        "an ended session stops counting online time"
+    );
+    assert_eq!(at_end >= TWO_HOURS_US, online, "only online time is counted");
+    Ok(())
+}
+
 /// The draw ordinals the rat's table plans at this death, with `gut` on its creature products.
 fn planned_ordinals(
     owner: &ComposedFreshAdmission<'_, '_, '_>,
@@ -315,8 +386,14 @@ pub(super) async fn qualify(
         .await?;
     match case {
         Case::Gut => assert_eq!(nested, 0),
-        Case::DuplexOn | Case::DuplexOff => {
-            let rolls = if matches!(case, Case::DuplexOn) { 2 } else { 1 };
+        Case::DuplexOn | Case::DuplexOff | Case::DuplexOfflineIgnored | Case::DuplexOnlineSpent => {
+            // W22b: two wall-clock hours spent offline leave the online hour live; spent
+            // online, they end it.
+            let rolls = if matches!(case, Case::DuplexOn | Case::DuplexOfflineIgnored) {
+                2
+            } else {
+                1
+            };
             eprintln!("W22C_DUPLEX corpse_entries={direct} rolls={rolls}");
             assert_eq!(direct, i64::try_from(DUPLEX_BASE_ENTRIES * rolls)?);
             assert_eq!(nested, 0);
