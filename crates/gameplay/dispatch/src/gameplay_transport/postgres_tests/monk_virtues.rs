@@ -493,6 +493,12 @@ pub(super) async fn scenario(
             .await,
         oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
     );
+    // The oracle reads the committed allocation, not a possibly older actor cache.
+    let expected_allocation = owner.root.read_character_wheel(
+        owner.character, fence.character_id, Arc::clone(&rules),
+    ).await.map_err(debug)?;
+    assert!(expected_allocation.current);
+    assert_eq!(expected_allocation.slots.points(), &points);
     for (index, serene) in [true, false].into_iter().enumerate() {
         if !serene {
             let mut runtime = owner.runtime.lock().await;
@@ -554,6 +560,14 @@ pub(super) async fn scenario(
             let states = owner.states.spell_states.lock().await;
             let state = states.get(&runtime, player.0, player.1).ok_or("monk")?;
             let facts = state.character_facts();
+            // Full blue includes slot 33's +1 Fist. This is only the numerical
+            // oracle; the real cast below still qualifies its own current facts.
+            let expected_wheel = oteryn_gameplay_progression::wheel_effects::derive_runtime_effects(
+                data.wheel(), &expected_allocation, "monk", facts.level, true, true,
+            ).ok_or("full blue expected Wheel projection")?;
+            let wheel_fist = expected_wheel.skill_bonus(0);
+            assert_eq!(wheel_fist, 1,
+                "the committed full blue allocation grants exactly one Fist skill");
             use crate::content::ReferenceItemField as F;
             let policy = native
                 .item_policy("oteryn:item.tibia.i50157", "definition-r1")
@@ -573,7 +587,8 @@ pub(super) async fn scenario(
                 max_mana: facts.max_mana,
                 soul: 100,
                 learned: Default::default(),
-                attack_skill: 10,
+                attack_skill: 10_u32.checked_add(wheel_fist)
+                    .ok_or("expected base plus Wheel Fist")?,
                 attack_value: u32::try_from(attack.0)?,
                 attack_factor: 1.0,
                 shielding_skill: 10,
