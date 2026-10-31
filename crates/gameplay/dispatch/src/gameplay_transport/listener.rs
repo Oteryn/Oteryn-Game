@@ -203,6 +203,17 @@ where
         _ => None,
     };
     drop(stream);
+    // This physical socket has no subsequent loss/grace owner. Keep its
+    // root through the whole serve future (including shutdown), then drop
+    // only local aliases after the listener has selected the final result.
+    if lost.is_none()
+        && let ConnectionEnd::AdmittedThenClosed(session, _)
+            | ConnectionEnd::AdmittedThenDisconnected(session)
+            | ConnectionEnd::AdmittedThenControlLost(session)
+            | ConnectionEnd::AdmittedThenLoggedOut(session) = end
+    {
+        authority.finish_activity_connection_lineage(session);
+    }
     observer.ended(end);
     lost.map(|(session, wait)| {
         let reset = drain.and_then(|drain| drain.reset());
@@ -272,10 +283,13 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
                         tokio::time::sleep(backoff).await;
                         backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
                     }
+                    authority.finish_activity_connection_lineage(lost.session);
                     break;
                 }
                 ControlLossResult::ResumedHistory => {
-                    let _ = authority.release_abandoned(lost.session).await;
+                    if authority.release_abandoned(lost.session).await != GraceExpiryResult::Unknown {
+                        authority.finish_activity_connection_lineage(lost.session);
+                    }
                     break;
                 }
                 // LOGOUT-WIRE-1 (§1.6): a release committed without its acknowledgement retires
@@ -287,6 +301,7 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
                         tokio::time::sleep(backoff).await;
                         backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
                     }
+                    authority.finish_activity_connection_lineage(lost.session);
                     break;
                 }
                 ControlLossResult::Unknown => {
@@ -296,7 +311,17 @@ pub(super) async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
                     backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
                     wait = Duration::ZERO;
                 }
-                ControlLossResult::NotApplicable | ControlLossResult::Refused => break,
+                ControlLossResult::NotApplicable => {
+                    authority.finish_activity_connection_lineage(lost.session);
+                    break;
+                }
+                ControlLossResult::Refused => {
+                    // This definite refusal also ends the listener's callback;
+                    // only Unknown retains a retry. Current control and native
+                    // attempts stay owned independently of these local aliases.
+                    authority.finish_activity_connection_lineage(lost.session);
+                    break;
+                }
             }
         }
     };

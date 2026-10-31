@@ -2182,11 +2182,9 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             )
             .await
         };
-        // The runtime lock is first in the lock order, so the lane permit and the revision slot
-        // are released before it is taken.
-        drop(slot);
-        drop(other_slots);
-        drop(permit);
+        // Publish every committed recipient effect while its revision slots
+        // and the source lane are still held. An activity handoff takes these
+        // same guards, so it cannot move the Character between award and mark.
         if let Ok(outcome) = &outcome
             && let Ok(xp) = &outcome.rewards.xp
         {
@@ -2225,6 +2223,11 @@ impl DurableKillSettle<'_, '_, '_, '_> {
                 marks.mark(self.fence.character_id, TrackerKind::Bosstiary, &boss.key);
             }
         }
+        // No leaf notification lock survives this point. Release revisions and
+        // lane before descendants that take the native runtime or reenter a lane.
+        drop(slot);
+        drop(other_slots);
+        drop(permit);
         // TASKBOARD-1 §2.4: the settled kill credits the principal's active Task Board task.
         if outcome.is_ok()
             && let Some(race) = &row.race

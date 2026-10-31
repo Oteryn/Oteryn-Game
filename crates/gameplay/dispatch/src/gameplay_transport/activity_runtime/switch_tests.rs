@@ -26,7 +26,14 @@ fn debug(error: impl std::fmt::Debug) -> String {
     format!("{error:?}")
 }
 
-fn native_switch() -> Result<ActivityConnectionSwitch, String> {
+pub(super) fn native_switch() -> Result<ActivityConnectionSwitch, String> {
+    native_switch_with_pin().map(|(switch, _)| switch)
+}
+
+pub(super) fn native_switch_with_pin() -> Result<
+    (ActivityConnectionSwitch, crate::content::channel_content_pin::ChannelContentPin),
+    String,
+> {
     let world = WorldId::decode(&id(1)).map_err(debug)?;
     let channel = ChannelId::decode(&id(2)).map_err(debug)?;
     let node = NodeId::decode(&id(4)).map_err(debug)?;
@@ -56,7 +63,7 @@ fn native_switch() -> Result<ActivityConnectionSwitch, String> {
         1,
         "runtime-scope-assignment:1",
         1,
-        pin,
+        pin.clone(),
     )
     .map_err(debug)?;
     let source_reservation = source_runtime
@@ -126,11 +133,11 @@ fn native_switch() -> Result<ActivityConnectionSwitch, String> {
         selection: selected.as_slice().to_vec(),
     })
     .map_err(debug)?;
-    Ok(ActivityConnectionSwitch {
+    Ok((ActivityConnectionSwitch {
         source,
         destination,
         payload,
-    })
+    }, pin))
 }
 
 #[test]

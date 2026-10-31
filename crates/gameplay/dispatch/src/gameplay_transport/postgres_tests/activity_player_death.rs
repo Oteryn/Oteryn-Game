@@ -36,11 +36,15 @@ use crate::gameplay_transport::death_ml_loss_postgres::death as death_request;
 use crate::gameplay_transport::item_fence_of;
 use crate::spell::mana_training::CompiledTrainingFormula;
 
+#[path = "activity_player_death/departed_process.rs"]
+mod departed_process;
+
 #[derive(Clone, Copy)]
 enum Case {
     RedSkullDrop,
     Amulet,
     InterruptedDrop,
+    DepartedProcessDrop,
 }
 
 #[test]
@@ -58,6 +62,11 @@ fn activity_player_death_postgres_amulet_burn_replay_and_pending_obligation() ->
 fn activity_player_death_postgres_partial_loss_resumes_only_after_proven_owner_loss() -> TestResult
 {
     run_case(Case::InterruptedDrop)
+}
+
+#[test]
+fn activity_player_death_postgres_partial_loss_recovers_through_empty_origin_lifecycle() -> TestResult {
+    run_case(Case::DepartedProcessDrop)
 }
 
 fn run_case(case: Case) -> TestResult {
@@ -228,7 +237,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         .as_ref()
         .ok_or("immutable death item selection")?;
     match case {
-        Case::RedSkullDrop | Case::InterruptedDrop => {
+        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop => {
             assert_eq!(selection.lost.len(), 2);
             assert!(selection.lost.contains(&id(70)));
             assert!(selection.lost.contains(&id(75)));
@@ -321,6 +330,37 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     let dispatch = deps.owner(h, &authority);
     let lane = SpellLane::for_scope(current.runtime_scope);
     let permit = lane.acquire().await.map_err(|_| "spell lane unavailable")?;
+    if matches!(case, Case::DepartedProcessDrop) {
+        // Commit the real first selected loss, then discard this process-local
+        // owner. The new lifecycle must discover and finish the remaining loss.
+        h.root
+            .commit_player_death_drop(
+                &permit,
+                &authority,
+                &h.node,
+                current,
+                PlayerDeathDropCause {
+                    death_occurrence: *request.occurrence.as_bytes(),
+                    item_instance: id(75),
+                },
+                PlayerDeathItemRequest::selected(&death, id(75), false).map_err(debug)?,
+            )
+            .await
+            .map_err(debug)?;
+        drop(permit);
+        drop(dispatch);
+        drop(deps);
+        return departed_process::recover(
+            h,
+            &_evidence.evidence,
+            current,
+            request.occurrence,
+            enter.participants[0].source.runtime_scope,
+            temple,
+            death.committed_character_revision,
+        )
+        .await;
+    }
     let departed = if matches!(case, Case::InterruptedDrop) {
         // A real first selected one-item transaction commits; the process then
         // stops before the backpack operation. No incomplete transaction survives.
@@ -672,7 +712,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     let saved: (i32, i32, i16, Option<i32>, Option<i32>) = sqlx::query_as("SELECT tile_x,tile_y,tile_floor,health,mana FROM game_character_last_positions WHERE character_id=encode($1,'hex')::uuid")
         .bind(back.character_id.as_bytes().as_slice()).fetch_one(&h.pool).await?;
     assert_eq!(saved, (temple.x, temple.y, temple.floor, None, None));
-    if matches!(case, Case::RedSkullDrop | Case::InterruptedDrop) {
+    if matches!(case, Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop) {
         // This is a current Channel session, not the stale pre-entry source fence.
         // Scope refusal therefore proves actual private Ground isolation.
         let take = ItemTransferRequest {
@@ -755,7 +795,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .is_empty()
     );
     match case {
-        Case::RedSkullDrop | Case::InterruptedDrop => {
+        Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop => {
             assert!(retired > 0);
             let live: i64 = sqlx::query_scalar("SELECT count(*) FROM game_item_instances WHERE item_instance_id IN(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid) AND lifecycle=1")
                 .bind(id(70).as_slice()).bind(id(71).as_slice()).bind(id(75).as_slice()).fetch_one(&h.pool).await?;
@@ -794,7 +834,7 @@ async fn seed_equipment(h: &Harness, case: Case) -> TestResult {
         .bind(id(75).as_slice()).bind(id(42).as_slice()).bind(id(76).as_slice()).execute(&mut *tx).await?;
     sqlx::query("INSERT INTO game_character_equipment_slots(character_id,slot,item_instance_id,world_id,placed_transaction_id) VALUES(encode($1,'hex')::uuid,7,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid)")
         .bind(id(41).as_slice()).bind(id(75).as_slice()).bind(id(42).as_slice()).bind(id(76).as_slice()).execute(&mut *tx).await?;
-    if matches!(case, Case::RedSkullDrop | Case::InterruptedDrop) {
+    if matches!(case, Case::RedSkullDrop | Case::InterruptedDrop | Case::DepartedProcessDrop) {
         sqlx::query("INSERT INTO game_character_pvp_state(character_id,world_id,skull,skull_until) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,1,clock_timestamp()+interval '1 day')")
             .bind(id(41).as_slice()).bind(id(42).as_slice()).execute(&mut *tx).await?;
     }

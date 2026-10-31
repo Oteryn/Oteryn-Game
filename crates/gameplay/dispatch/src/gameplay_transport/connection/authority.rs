@@ -66,6 +66,10 @@ pub trait FreshAdmissionAuthority {
     ) -> bool {
         true
     }
+    /// Local bookkeeping only, after the listener has completed all callbacks
+    /// for this exact socket/loss lifecycle. Cancellation or an unknown durable
+    /// outcome must retain the aliases needed by the existing recovery owners.
+    fn finish_activity_connection_lineage(&self, _admitted: AdmittedSession) {}
     mechanic_authority_methods!();
     /// KEYDOOR-1: use a resolved carried/map key on a non-movable map door.
     fn use_key_on_door(

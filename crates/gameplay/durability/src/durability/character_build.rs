@@ -262,6 +262,17 @@ impl BuildCause {
         matches!(self, Self::VocationChoice | Self::VocationTrial)
     }
 
+    /// Pending native training follows its Character into an activity Instance.
+    /// Other build causes retain their Channel admission contract. This only
+    /// admits the input shape; every new write still proves the complete current
+    /// session, lease, runtime assignment and Character revision fence below.
+    fn admits_runtime_scope(self, scope: RuntimeScopeRefV1) -> bool {
+        match scope {
+            RuntimeScopeRefV1::Channel { .. } => true,
+            RuntimeScopeRefV1::Instance { .. } => matches!(self, Self::Training),
+        }
+    }
+
     fn admits(self, before: &DurableBuildState, after: &DurableBuildState) -> bool {
         let (from, to) = (before.families(), after.families());
         match self {
@@ -407,7 +418,7 @@ pub(super) async fn prepare_character_build_with_recovery(
     formula: &dyn BuildFormula,
 ) -> Result<PendingBuildChange> {
     if fence.character_lease_generation == 0
-        || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+        || !request.cause.admits_runtime_scope(fence.runtime_scope)
         || !request.cause.admits(&request.before, &request.after)
         || !normalized(formula, &request.after)
         || request
@@ -810,7 +821,7 @@ impl DurabilityRoot {
         formula: &dyn BuildFormula,
     ) -> Result<BuildCommitOutcome> {
         if fence.character_lease_generation == 0
-            || !matches!(fence.runtime_scope, RuntimeScopeRefV1::Channel { .. })
+            || !request.cause.admits_runtime_scope(fence.runtime_scope)
             || !request.cause.admits(&request.before, &request.after)
             || !normalized(formula, &request.after)
             || request.pruned_stance.as_deref().is_some_and(|stance| {

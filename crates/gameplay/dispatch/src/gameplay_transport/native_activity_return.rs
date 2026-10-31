@@ -2,6 +2,7 @@
 //! The retained source room supplies its exit; no client chooses a Channel/cell.
 use super::activity_runtime::{RegisteredRuntime, ScopeKey};
 use super::actor_spell::PreparedActivitySpellStates;
+use super::attack::PreparedActivityAttackStates;
 use super::connection::{
     AdmittedSession, ConnectionIdentifiers, ControllerBinding, FirstEntryOutcome,
 };
@@ -37,10 +38,14 @@ pub(super) struct NativeActivityReturnAttempt<'a> {
     source: RegisteredRuntime<'a>,
     destination: RegisteredRuntime<'a>,
     admitted: AdmittedSession,
+    // The original autonomous trigger keeps its exact retry identity even when
+    // a proven native death selects the temple return instead of a room exit.
+    trigger_reason: ActivityReturnReason,
     placement: ActivityReturnPlacement,
     request: ActivityReturnRequest,
     physical: ActivityTransferReservation,
     spells: PreparedActivitySpellStates,
+    attacks: PreparedActivityAttackStates,
     kill_marks: Vec<KillReleaseMark>,
     receipt: Option<ActivityReturnReceipt>,
     moved: Option<ActivityTransferredActor>,
@@ -281,7 +286,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .cloned();
         if let Some(pending) = existing {
             let held = pending.lock().await;
-            if held.request.reason != reason
+            if held.trigger_reason != reason
                 || held.admitted.controller != admitted.controller
                 || held.admitted.item_fence != admitted.item_fence
             {
@@ -303,38 +308,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 return self.finish_native_activity_return(pending).await;
             }
         }
-        let owner = ActivityHandoffOwner::new(self.root.clone());
-        let placement = match reason {
-            ActivityReturnReason::Death { occurrence } => {
-                owner
-                    .read_death_return_placement(self.character, self.holder, fence, occurrence)
-                    .await
-            }
-            _ => {
-                owner
-                    .read_return_placement(self.character, self.holder, fence)
-                    .await
-            }
-        }
-        .map_err(|_| ())?;
-        let Some(placement) = placement else {
-            return refuse(ActivityRefusal::AuthorityRejected);
-        };
         let Some(source) = self
             .activity_runtimes
             .get(fence.runtime_scope, fence.scope_ownership_generation.get())
         else {
             return refuse(ActivityRefusal::AuthorityRejected);
         };
-        let Some(destination) = self.activity_runtimes.get(
-            placement.destination_scope,
-            placement.destination_generation.get(),
-        ) else {
-            return refuse(ActivityRefusal::NoCapacity);
-        };
-        if !matches!(destination.scope, RuntimeScopeRefV1::Channel { .. }) {
-            return refuse(ActivityRefusal::InvalidInput);
-        }
         let (current, now) = FreshAdmissionStore::from_root(self.root.clone())
             .current_session_at(admitted.game_session_id)
             .await
@@ -401,6 +380,64 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         {
             return refuse(ActivityRefusal::NotDue);
         }
+        let trigger_reason = reason;
+        let source_view = self.runtime_view(&source);
+        // A disconnected participant has no online respawn cadence. Preserve
+        // the original transport/epoch/deadline checks above before choosing a
+        // proven Death return; a stale release must not inherit control of a
+        // new Channel successor merely because the actor happens to be dead.
+        let reason = if command.is_none() && !matches!(reason, ActivityReturnReason::Death { .. }) {
+            let native_death = if let Some(actor) = admitted.runtime_actor {
+                let runtime = source.runtime.lock().await;
+                let states = source.states.spell_states.lock().await;
+                states.player_death(&runtime, actor, admitted.game_session_id)
+            } else {
+                None
+            };
+            if let Some(death) = native_death {
+                let actor = admitted.runtime_actor.ok_or(())?;
+                // This actor continues under the destination owner: the same
+                // path as online respawn must refresh post-loss equipment as
+                // well as finish the durable death and its selected Item work.
+                let (settled, _) = source_view
+                    .settle_death(actor, admitted.game_session_id, death, false)
+                    .await;
+                if settled != super::SessionDeath::Durable {
+                    return Err(());
+                }
+                ActivityReturnReason::Death { occurrence: *death.occurrence.as_bytes() }
+            } else {
+                reason
+            }
+        } else {
+            reason
+        };
+        let owner = ActivityHandoffOwner::new(self.root.clone());
+        let placement = match reason {
+            ActivityReturnReason::Death { occurrence } => {
+                owner
+                    .read_death_return_placement(self.character, self.holder, fence, occurrence)
+                    .await
+            }
+            _ => {
+                owner
+                    .read_return_placement(self.character, self.holder, fence)
+                    .await
+            }
+        }
+        .map_err(|_| ())?;
+        let Some(placement) = placement else {
+            return refuse(ActivityRefusal::AuthorityRejected);
+        };
+        let Some(destination) = self.activity_runtimes.get(
+            placement.destination_scope,
+            placement.destination_generation.get(),
+        ) else {
+            return refuse(ActivityRefusal::NoCapacity);
+        };
+        if !matches!(destination.scope, RuntimeScopeRefV1::Channel { .. }) {
+            return refuse(ActivityRefusal::InvalidInput);
+        }
         let destination_session = SecureIdentifiers.game_session_id().ok_or(())?;
         let return_id = *SecureIdentifiers.game_session_id().ok_or(())?.as_bytes();
         let destination_transport = if online {
@@ -414,7 +451,6 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             .map_err(|_| ())?
             .try_reserve(1)
             .map_err(|_| ())?;
-        let source_view = self.runtime_view(&source);
         let destination_view = self.runtime_view(&destination);
         // Complete every already captured shared lethal before reading live
         // vitals. The queue seal below closes the capture-to-freeze race.
@@ -433,7 +469,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 return Err(());
             }
         }
-        let slot = self.revision_sequencer.acquire(fence.character_id).await;
+        // Shared-XP settlement acquires its lane before recipient revisions.
+        // Both scope lanes must precede every participant slot here as well.
         let source_first = ScopeKey::new(source.scope, source.generation)
             < ScopeKey::new(destination.scope, destination.generation);
         let (_first_lane, _second_lane) = if source_first {
@@ -447,6 +484,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 source.lane.acquire().await.map_err(|_| ())?,
             )
         };
+        let slot = self.revision_sequencer.acquire(fence.character_id).await;
         let (mut from, mut to) = if source_first {
             let from = source.runtime.lock().await;
             let to = destination.runtime.lock().await;
@@ -571,7 +609,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             current_vitals: vitals,
             current_rest: rest,
         };
-        let attack = source.states.attack.lock().await;
+        let (mut attack, mut destination_attack) = if source_first {
+            let attack = source.states.attack.lock().await;
+            let destination_attack = destination.states.attack.lock().await;
+            (attack, destination_attack)
+        } else {
+            let destination_attack = destination.states.attack.lock().await;
+            let attack = source.states.attack.lock().await;
+            (attack, destination_attack)
+        };
         if matches!(
             reason,
             ActivityReturnReason::Logout
@@ -606,6 +652,18 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                     return refuse(ActivityRefusal::AuthorityRejected);
                 }
             };
+            let mut held_attacks = match attack.prepare_activity_attacks(
+                &from,
+                &mut destination_attack,
+                &[member],
+            ) {
+                Ok(value) => value,
+                Err(()) => {
+                    spells.abort_activity_states(&mut held);
+                    finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
+                    return refuse(ActivityRefusal::AuthorityRejected);
+                }
+            };
             let prepared = if placement.boss_room {
                 from.prepare_activity_boss_return(&mut to, &[member])
             } else {
@@ -615,6 +673,7 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 Ok(reserved) => reserved,
                 Err(_) => {
                     spells.abort_activity_states(&mut held);
+                    attack.abort_activity_attacks(&mut held_attacks);
                     finish_activity_kills(attack.kills(), &mut kill_marks, ReleaseEnd::Retryable);
                     return refuse(ActivityRefusal::NoCapacity);
                 }
@@ -623,10 +682,12 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 source: source.clone(),
                 destination: destination.clone(),
                 admitted,
+                trigger_reason,
                 placement,
                 request,
                 physical,
                 spells: held,
+                attacks: held_attacks,
                 kill_marks,
                 receipt: None,
                 moved: None,
@@ -640,15 +701,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
             attempts.insert(key, Arc::clone(&pending));
             pending
         };
+        drop(destination_attack);
         drop(attack);
         drop(destination_spells);
         drop(spells);
         drop(doors);
         drop(to);
         drop(from);
+        drop(slot);
         drop(_second_lane);
         drop(_first_lane);
-        drop(slot);
         self.finish_native_activity_return(pending).await
     }
 
@@ -664,10 +726,8 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         let destination = attempt.destination.clone();
         let source_view = self.runtime_view(&source);
         let destination_view = self.runtime_view(&destination);
-        let _slot = self
-            .revision_sequencer
-            .acquire(attempt.request.source.character_id)
-            .await;
+        // Shared-XP settlement acquires its lane before recipient revisions.
+        // Both scope lanes must precede every participant slot here as well.
         let source_first = ScopeKey::new(source.scope, source.generation)
             < ScopeKey::new(destination.scope, destination.generation);
         let (_first_lane, _second_lane) = if source_first {
@@ -681,6 +741,10 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 source.lane.acquire().await.map_err(|_| ())?,
             )
         };
+        let _slot = self
+            .revision_sequencer
+            .acquire(attempt.request.source.character_id)
+            .await;
         if attempt.receipt.is_none() {
             let account = super::canonical_uuid(&attempt.placement.account_id);
             let evidence = self
@@ -712,10 +776,11 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                         (from, to)
                     };
                     let mut spells = source.states.spell_states.lock().await;
-                    let attack = source.states.attack.lock().await;
+                    let mut attack = source.states.attack.lock().await;
                     from.abort_activity_transfer(&mut to, &mut attempt.physical)
                         .map_err(|_| ())?;
                     spells.abort_activity_states(&mut attempt.spells);
+                    attack.abort_activity_attacks(&mut attempt.attacks);
                     finish_activity_kills(
                         attack.kills(),
                         &mut attempt.kill_marks,
@@ -771,7 +836,15 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 (from, to)
             };
             let mut spells = destination.states.spell_states.lock().await;
-            let attack = source.states.attack.lock().await;
+            let (attack, mut destination_attack) = if source_first {
+                let attack = source.states.attack.lock().await;
+                let destination_attack = destination.states.attack.lock().await;
+                (attack, destination_attack)
+            } else {
+                let destination_attack = destination.states.attack.lock().await;
+                let attack = source.states.attack.lock().await;
+                (attack, destination_attack)
+            };
             if attempt.moved.is_none() {
                 let moved = from
                     .commit_activity_transfer(&mut to, &mut attempt.physical)
@@ -786,7 +859,16 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
                 to.record_control_loss(moved.destination_actor, moved.destination_session, mark)
                     .map_err(|_| ())?;
             }
-            spells.commit_activity_states(&mut attempt.spells, &[moved])?;
+            let moved_states = [moved];
+            let NativeActivityReturnAttempt {
+                spells: held_spells,
+                attacks: held_attacks,
+                ..
+            } = &mut *attempt;
+            let attack_commit = destination_attack
+                .prepare_activity_attack_commit(held_attacks, &moved_states)?;
+            spells.commit_activity_states(held_spells, &moved_states)?;
+            attack_commit.commit();
             attempt.states_installed = true;
             finish_activity_kills(
                 attack.kills(),
@@ -818,9 +900,9 @@ impl<'a, 'f, 's> ComposedFreshAdmission<'a, 'f, 's> {
         }
         // The destination's existing death owner takes its own lane and revision
         // slot while it places, consumes and refills the transferred dead tuple.
+        drop(_slot);
         drop(_second_lane);
         drop(_first_lane);
-        drop(_slot);
         if let ActivityReturnReason::Death { occurrence } = attempt.request.reason
             && !attempt.death_completed
         {

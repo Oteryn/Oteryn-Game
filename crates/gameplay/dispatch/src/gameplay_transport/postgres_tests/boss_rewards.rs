@@ -36,6 +36,9 @@ mod movement;
 #[path = "boss_rewards/privacy.rs"]
 mod privacy;
 
+#[path = "boss_rewards/concurrent.rs"]
+mod concurrent;
+
 #[derive(Clone, Copy)]
 enum Case {
     Collection,
@@ -43,6 +46,7 @@ enum Case {
     NativeDeath,
     OfflineReward,
     LivePrivacy,
+    ConcurrentCollection,
 }
 
 #[test]
@@ -68,6 +72,11 @@ fn boss_rewards_postgres_disconnected_contributor_keeps_earned_entitlement() -> 
 #[test]
 fn boss_rewards_postgres_live_rewards_are_private_between_current_characters() -> TestResult {
     run_case(Case::LivePrivacy)
+}
+
+#[test]
+fn boss_rewards_postgres_concurrent_collectors_on_two_roots_transfer_once() -> TestResult {
+    run_case(Case::ConcurrentCollection)
 }
 
 fn run_case(case: Case) -> TestResult {
@@ -274,7 +283,11 @@ fn scenario(case: Case) -> TestResult {
             crate::gameplay_transport::item_look::typed_definition(index, reference(gold)?)
                 .ok_or("gold definition")?;
         let minted = match case {
-            Case::Collection | Case::NativeDeath | Case::OfflineReward | Case::LivePrivacy => now,
+            Case::Collection
+            | Case::NativeDeath
+            | Case::OfflineReward
+            | Case::LivePrivacy
+            | Case::ConcurrentCollection => now,
             Case::Expiry => now - 604_800_000 + 1_000,
         };
         let contribution = RewardParticipation {
@@ -282,6 +295,8 @@ fn scenario(case: Case) -> TestResult {
             damage_received: 20,
             healing_others: 10,
         };
+        // The concurrent case isolates one live ordinal; all original cases retain four.
+        let item_count = if matches!(case, Case::ConcurrentCollection) { 1 } else { 4 };
         let plan = BossRewardDeath {
             death,
             boss_key: "oteryn:boss.reward_fixture".into(),
@@ -302,7 +317,7 @@ fn scenario(case: Case) -> TestResult {
                         definition,
                         quantity: 1
                     };
-                    4
+                    item_count
                 ],
             }],
         };
@@ -375,7 +390,7 @@ fn scenario(case: Case) -> TestResult {
                 .await?
         );
         let frozen: (i64, i64, i64) = sqlx::query_as("SELECT (SELECT count(*) FROM game_boss_reward_deaths),(SELECT count(*) FROM game_boss_reward_contributors),(SELECT count(*) FROM game_boss_reward_items)").fetch_one(&h.pool).await?;
-        assert_eq!(frozen, (1, 1, 4));
+        assert_eq!(frozen, (1, 1, i64::try_from(item_count)?));
         let mut conflict = plan;
         conflict.chests[0].items[0].quantity = 2;
         assert!(
@@ -420,6 +435,11 @@ fn scenario(case: Case) -> TestResult {
                 privacy::live_other_character(&h, &deps, &owner, &mut admitted, fence, death)
                     .await
                     .map_err(|error| format!("W03 live private rewards: {error}"))?;
+            }
+            Case::ConcurrentCollection => {
+                concurrent::collect_on_two_roots(&h, &owner, fence, death)
+                    .await
+                    .map_err(|error| format!("W03 concurrent collection: {error}"))?;
             }
         }
         eprintln!("BOSS_REWARDS POSTGRES_CASE_COMPLETED");

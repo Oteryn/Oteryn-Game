@@ -126,7 +126,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         };
         encode_activity_scope(&ActivityScopeSnapshot {
-            handoff: candidate.handoff_id,
+            // A return is its own immutable transition, as in the live barrier.
+            // The group handoff remains separate authority/audit provenance.
+            handoff: candidate.return_id.unwrap_or(candidate.handoff_id),
             source_session: *candidate.source_session.as_bytes(),
             session: *admitted.game_session_id.as_bytes(),
             scope,

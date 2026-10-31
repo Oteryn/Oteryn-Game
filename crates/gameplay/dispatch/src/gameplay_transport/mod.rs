@@ -8,6 +8,7 @@ include!(concat!(env!("OUT_DIR"), "/mechanic_modules.rs"));
 // Keep sorted by module name; insert in order, never append.
 mod activity_content;
 mod activity_cycles;
+mod activity_departed;
 mod activity_lifecycle;
 mod activity_logout;
 mod activity_recovery;

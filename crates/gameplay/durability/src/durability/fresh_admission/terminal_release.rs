@@ -23,6 +23,10 @@ impl FreshAdmissionStore {
                 && !retired_holder_release::validate(&mut tx, proof, current).await? {
                 return Err(DurabilityError::Unavailable);
             }
+            if let Some(proof) = &store.departed_activity
+                && !proof.validate(&mut tx, current).await? {
+                return Err(DurabilityError::Unavailable);
+            }
             let mut rows = Vec::with_capacity(2);
             for prior in &evidence.transition.predecessors { rows.push(store.guards.load_locked(&mut tx, &prior.key).await?); }
             if !store.guards.successor_history_available(&mut tx, &evidence.transition.successors, &rows).await? { return Err(DurabilityError::Unavailable); }
