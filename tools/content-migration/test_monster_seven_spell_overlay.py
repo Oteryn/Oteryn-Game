@@ -57,11 +57,21 @@ class AcceptedOverlayTests(unittest.TestCase):
             self.assertEqual(new, old)
         added = [r for r in after["records"]
                  if r["production_definition"]["production_key"] in registration.POTION_KEYS]
-        self.assertEqual(len(added), 13)
+        self.assertEqual(len(added), 18)
         world = json.loads((ROOT / 'content/world/definitions/reference.json').read_bytes())
         for record in added:
             source = next(r for r in world["records"] if r["identity"] == record["authoring"]["item"])
-            self.assertEqual(record["semantics"], source["semantics"])
+            expected = copy.deepcopy(source["semantics"])
+            key = source["identity"]["key"]
+            if key == registration.CARROT_KEY:
+                expected["physical"]["value"]["movable"] = {"state": "KNOWN", "value": True}
+            if key in registration.GLOBAL_POTION_RESTORES:
+                _, restores = registration.GLOBAL_POTION_RESTORES[key]
+                expected["consumption"]["value"]["value"]["restores"] = [
+                    {"resource": resource, "min": low, "max": high}
+                    for resource, low, high in restores
+                ]
+            self.assertEqual(record["semantics"], expected)
             self.assertEqual(record["production_binding"]["target"], source["identity"])
             self.assertEqual(record["attributes"], {})
             self.assertEqual(record["admission"]["stack_class"], source["stack_class"])
@@ -102,7 +112,7 @@ class AcceptedOverlayTests(unittest.TestCase):
                    if r["identity"]["key"] in registration.POTION_KEYS]
         bindings = [b for b in json.loads(actual_read(bindings_path))["bindings"]
                     if b["target"]["key"] in registration.POTION_KEYS]
-        for operator in ("missing", "duplicate", "binding", "physical", "consumption"):
+        for operator in ("missing", "duplicate", "binding", "physical", "carrot_immovable", "consumption"):
             world = {"records": copy.deepcopy(sources)}
             admitted = {"bindings": copy.deepcopy(bindings)}
             potion = next(r for r in world["records"] if r["identity"]["key"] == 'oteryn:item.tibia.i266')
@@ -114,6 +124,9 @@ class AcceptedOverlayTests(unittest.TestCase):
                 admitted["bindings"][0]["target"]["revision"] = "unqualified"
             elif operator == "physical":
                 potion["semantics"]["physical"]["value"]["movable"] = {"state": "UNKNOWN"}
+            elif operator == "carrot_immovable":
+                carrot = next(r for r in world["records"] if r["identity"]["key"] == registration.CARROT_KEY)
+                carrot["semantics"]["physical"]["value"]["movable"] = {"state": "KNOWN", "value": False}
             else:
                 potion["semantics"]["consumption"]["value"]["value"]["restores"][0]["min"] = 1
             replacements = {world_path: producer.canonical_bytes(world),

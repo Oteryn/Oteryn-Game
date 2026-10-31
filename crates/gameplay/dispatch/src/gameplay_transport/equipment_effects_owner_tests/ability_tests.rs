@@ -25,6 +25,10 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // I14: seven restore potions, two foods and the two larger flasks admitted from
     // digest-pinned consumption facts. They carry no equipment/speed qualification.
     ("I14", 11),
+    // I14G: 3250, 7642, 23374, 23375 and 23535 are non-equipment consumables.
+    // Crystal 201189f8 items.xml:8201,20873,46095,46100,46862 and Canary
+    // 99902524 items.xml:8170,20782,45877,45882,46644 carry no speed attribute.
+    ("I14G", 5),
     // 4 timed-item profiles.
     ("ITEM-TIMED-1", 4),
     // The wooden chairs 2358..=2361 (tools/content-migration/item_transform_profiles.py).
@@ -151,6 +155,8 @@ fn equipment_effects_owner_pinned_production_speed_matches_all_raw_attributes() 
             [236, 237, 239, 268, 283, 284, 3578, 3606, 7643, 7876, 23373]
                 .map(|id| format!("oteryn:item.tibia.i{id}")),
         )
+        // I14G preserves absent speed for the five additional non-equipment consumables.
+        .chain([3250, 7642, 23374, 23375, 23535].map(|id| format!("oteryn:item.tibia.i{id}")))
         // READ-WRITE-1: the 19 readable profiles carry no speed attribute and are not equipment.
         .chain(
             [
