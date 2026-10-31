@@ -1,0 +1,14 @@
+{
+  "id": 240,
+  "name": "CHAT_PARTY_ROOM_V1",
+  "owner_decision": "CHATCH lane allocation 2026-10-31; S04c Party channel on existing CHAT_V1 and Party owner",
+  "owner": "World communication / Party membership",
+  "requires": [
+    7,
+    42
+  ],
+  "command_types": [],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES only. Extends CHAT_V1 command 13 with intent tag 14, disposition 10 NOT_ALLOWED and domain 12 line kind 7 with fields 4, 7 only. Existing peers selecting 7 and 42 without 240 receive no Party line. The Party owner chooses and checks membership; no client-supplied destination. No durable chat text or new membership authority."
+}
