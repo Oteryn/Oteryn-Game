@@ -73,16 +73,60 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             .server_sequence
             .checked_add(1)
             .ok_or(ServeEnd::Disconnected)?;
+        let actor = admitted.runtime_actor.ok_or(ServeEnd::Disconnected)?;
+        let selected = admitted.continuity.selected_capabilities;
+        let mut house_items = if selected
+            .contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_VIEW_MOVE_V1)
+            && selected
+                .contains(oteryn_protocol_oteryn::house_wrap::CAPABILITY_HOUSE_FURNITURE_WRAP_V1)
+        {
+            let mut view = SessionItemView::resume(admitted.continuity.item_view);
+            if selected.contains(oteryn_protocol_oteryn::item_view::CAPABILITY_ITEM_EQUIP_DROP_V1) {
+                view = view.with_equip_drop();
+            }
+            if selected
+                .contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1)
+            {
+                view = view.with_container_tree();
+            }
+            Some(view)
+        } else {
+            None
+        };
+        let mut item_domains = Vec::new();
+        if let Some(view) = house_items.as_mut() {
+            let inventory =
+                item_move::observe_inventory(authority, actor, admitted.game_session_id, view)
+                    .await
+                    .ok_or(ServeEnd::Disconnected)?;
+            item_domains.extend(
+                view.snapshot(inventory, None)
+                    .map_err(|_| ServeEnd::Disconnected)?,
+            );
+            if selected
+                .contains(oteryn_protocol_oteryn::container_tree::CAPABILITY_CONTAINER_TREE_V1)
+            {
+                item_domains.push(view.views_snapshot().map_err(|_| ServeEnd::Disconnected)?);
+            }
+            admitted.continuity.item_view = view.continuity();
+        }
+        let mut domains = vec![DomainSnapshot {
+            domain_id: STATE_DOMAIN_HOUSE_SCOPE,
+            revision: 1,
+            snapshot_type: 1,
+            payload: &projection,
+        }];
+        domains.extend(item_domains.iter().map(|domain| DomainSnapshot {
+            domain_id: domain.domain_id,
+            revision: domain.revision,
+            snapshot_type: domain.snapshot_type,
+            payload: &domain.payload,
+        }));
         let snapshot = encode_single_chunk_snapshot(
             admitted.continuity.connection_generation,
             sequence,
             sequence,
-            &[DomainSnapshot {
-                domain_id: STATE_DOMAIN_HOUSE_SCOPE,
-                revision: 1,
-                snapshot_type: 1,
-                payload: &projection,
-            }],
+            &domains,
         )
         .map_err(|_| ServeEnd::Disconnected)?;
         for frame in snapshot {
@@ -174,19 +218,33 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             if permit.is_some() && !authority.house_transfer_input(admitted).await {
                 return Err(ServeEnd::Disconnected);
             }
-            let (next, payload) = if permit.is_some()
+            let (next, payload, status) = if permit.is_some()
                 && command.command_type == COMMAND_TYPE_HOUSE_TRANSFER
                 && admitted
                     .continuity
                     .selected_capabilities
                     .command_selected(command.command_type)
             {
-                authority
+                let (next, payload) = authority
                     .house_transfer(admitted, command.command_id, command.payload)
                     .await
-                    .ok_or(ServeEnd::Disconnected)?
+                    .ok_or(ServeEnd::Disconnected)?;
+                let status = if next.is_some() {
+                    CommandStatus::Accepted
+                } else {
+                    CommandStatus::Rejected
+                };
+                (next, payload, status)
+            } else if permit.is_some()
+                && command.command_type == oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
+                && selected.command_selected(command.command_type)
+            {
+                match routing::house_wrap::route(authority, &admitted, command).await {
+                    Some(Dispatch::Reply(status, payload)) => (None, payload, status),
+                    _ => return Err(ServeEnd::Disconnected),
+                }
             } else {
-                (None, Vec::new())
+                (None, Vec::new(), CommandStatus::Rejected)
             };
             drop(permit);
             let sequence = admitted
@@ -194,18 +252,9 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
                 .server_sequence
                 .checked_add(1)
                 .ok_or(ServeEnd::Disconnected)?;
-            let result = encode_command_result(
-                generation,
-                sequence,
-                command.command_id,
-                if next.is_some() {
-                    CommandStatus::Accepted
-                } else {
-                    CommandStatus::Rejected
-                },
-                &payload,
-            )
-            .map_err(|_| ServeEnd::Disconnected)?;
+            let result =
+                encode_command_result(generation, sequence, command.command_id, status, &payload)
+                    .map_err(|_| ServeEnd::Disconnected)?;
             commands
                 .terminalize_with(command.command_id, &result, || {})
                 .ok_or(ServeEnd::Disconnected)?;
@@ -217,6 +266,26 @@ pub(super) async fn serve<S: AsyncRead + AsyncWrite + Unpin, A: FreshAdmissionAu
             write_frame(stream, &result)
                 .await
                 .map_err(|_| ServeEnd::Disconnected)?;
+            if command.command_type == oteryn_protocol_oteryn::house_wrap::COMMAND_WRAP
+                && matches!(
+                    oteryn_protocol_oteryn::house_wrap::Reply::decode(&payload),
+                    Some(oteryn_protocol_oteryn::house_wrap::Reply::Committed(_))
+                )
+                && let Some(view) = house_items.as_mut()
+            {
+                let mut sequence = admitted.continuity.server_sequence;
+                item_use_view_refresh::refresh(
+                    stream,
+                    authority,
+                    actor,
+                    &mut admitted,
+                    view,
+                    None,
+                    &mut sequence,
+                )
+                .await
+                .ok_or(ServeEnd::Disconnected)?;
+            }
             if next.is_some() {
                 return Ok(admitted);
             }
