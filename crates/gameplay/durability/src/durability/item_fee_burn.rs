@@ -64,6 +64,10 @@ pub mod test_support;
 /// The closed `FeeBurnCause` (decision §4.4): one variant per admitted fee source.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FeeBurnCause {
+    Forge {
+        occurrence: [u8; 16],
+        proof: Vec<u8>,
+    },
     PreyListReroll {
         slot: u8,
         occurrence: [u8; 16],
@@ -311,6 +315,7 @@ async fn burn_fee(
             FeeBurnCause::NpcRepair { .. }
                 | FeeBurnCause::Imbuement { .. }
                 | FeeBurnCause::NpcTravel { .. }
+                | FeeBurnCause::Forge { .. }
         )))
         .and_then(|value| CharacterRevision::new(value).ok())
         .ok_or(FeeBurnError::InvalidInput)?;

@@ -273,7 +273,7 @@ counts. Items already carried stay carried when capacity falls (Global).
 ## 9. Forge resources (FORGE-1)
 
 - **Dust is a Character balance**, the second DUR-03 §18 non-item asset after bank gold:
-  `game_character_forge_dust` (CharacterId, `balance` 0 to `dust_limit`, `dust_limit` 100-225,
+  `game_character_forge_dust` (CharacterId, `balance` 0 to `dust_limit`, D1230 `dust_limit` 100+20*n up to4600,
   `last_entry_id`) with an immutable ledger (`GAIN`, `SPEND`, `CONVERT`, `LIMIT_RAISE`), as
   BANK-0 §3. Character scope, not Account: Global keeps dust per character.
   **Amendment (pending on acceptance of PROFICIENCY-1; `reviews/OTERYN_GAME_PROFICIENCY1_PERK_MODIFICATION_AND_CATALYSTS_DECISION_2026-10-01.md` §4).** Weapon Proficiency modifications, ranks and
@@ -284,16 +284,30 @@ counts. Items already carried stay carried when capacity falls (Global).
   `SPEND` entry with cause `proficiency`, under the same ledger and dust row lock (DUR-03 §15,
   migration 0060). The orb BURN, ranks and reshape offers stay unadmitted.
 - **Slivers and exalted cores are items**: stackable, marketable and tradeable per content.
-- **Dust limit:** raised by one for (limit − 75) dust, up to 225 (Canary; `PARITY_PENDING`). A
-  gain above the limit is lost, as in Global; the lost part is recorded in the ledger entry.
+- **Dust limit:** accepted D1230 progression remains100+20*n, cost25+n, at most225 upgrades,
+  final4600 (DUR-03 §§2160–2187; [PR2785 Q1 answer](https://github.com/Oteryn/Oteryn-Game/pull/2785#issuecomment-6547490683)).
+  This intentionally differs from literal Crystal201189f: its configured225 threshold plus
+  a20-step allows240, then stops. A gain above the current limit is lost and recorded.
 - **Composition amendment (FORGE-1):** rule 1 also covers dust ledger entries and balance rows of
   the acting character, as BANK-0 §7.2 did for bank rows. The lock order is rule 4's, then the
   dust row. This decision states the need; FORGE-1 writes it.
 
 ## 10. Forge operations (FORGE-1)
 
-The forge is a world object; USE opens the forge window under `FORGE_V1`. Both items are main
-backpack direct entries, neither imbued. The roll is drawn from the simulation RNG under purpose
+The Forge wire remains command181/capability152. The51-byte request carries session ItemHandles
+in its two item slots (little-endian u64 plus eight zero bytes), resolved by the existing item-view
+owner. The original wire intent and privately resolved native operands are retained separately;
+replay precedes current handle resolution and responses never expose native ItemInstance UUIDs
+([PR2785 Q7](https://github.com/Oteryn/Oteryn-Game/pull/2785#issuecomment-6547660725)).
+P18 widens the earlier direct-main-backpack
+slice to recursively carried, unequipped inputs; imbued items are excluded. Slivers and cores
+are consumed from that carried inventory and the existing native stash, in the same transaction
+([PR2785 Q2/Q3 answer](https://github.com/Oteryn/Oteryn-Game/pull/2785#issuecomment-6547490683);
+Crystal201189f `player.cpp:5821–5848,5953–5967,1506–1531`). No Exaltation Chest is created:
+`PRESERVE_INSTANCE` applies to both tier mutation and retained-source bonuses. Fusion and
+transfer need no spare slot. A conversion that needs a new item preflights a free slot before
+consuming a source; stack top-ups create no new item. The existing inventory depth8/tree500
+bounds apply. The roll is drawn from the simulation RNG under purpose
 `forge_fusion`, keyed by the operation occurrence and a server seed the client cannot derive; the
 outcome is stored in the receipt, so a replay or a new CommandId never rerolls a known outcome.
 
@@ -319,26 +333,48 @@ outcome is stored in the receipt, so a replay or a new CommandId never rerolls a
 | Fusion (A, B same definition and tier t) | A `STATE_MUTATION`; B BURN or `STATE_MUTATION`; dust BURN value line; cores BURN (0-2); fee BURN | success: A → t+1, B burned; failure: A unchanged, B → t−1 or burned at t = 0; the tier-loss core keeps B at t with 50% |
 | Convergence fusion (class 4, same slot and tier) | as fusion | always success; no core bonus |
 | Transfer (donor t ≥ 2, receiver tier 0, same class) | donor BURN; receiver `STATE_MUTATION` to t−1; dust BURN; cores BURN (per tier); fee BURN | always success |
-| Convergence transfer (class 4) | as transfer, receiver to t | always success |
+| Convergence transfer (class4, donor t≥1; receiver tier0) | as transfer, receiver to t; cross-slot pairs admitted by the donor executor | always success |
 | Dust → slivers | dust `CONVERSION` debit 60; sliver `CONVERSION` output 3 | a compatible stack or a new entry; no room: refused |
 | Slivers → core | sliver `CONVERSION` input 50; core `CONVERSION` output 1 | as above |
-| Dust limit | dust BURN value line; `STATE_MUTATION` of `dust_limit` | +1 |
+| Dust limit | dust BURN value line; `STATE_MUTATION` of `dust_limit` | D1230 +20, cost25+n, final4600 |
 
 - **Cause:** closed `ForgeCause {Fusion | ConvergenceFusion | Transfer | ConvergenceTransfer |
-  DustToSlivers | SliversToCore | DustLimit, occurrence}`; the fee variants
-  `FeeBurnCause::ForgeFusion {kind: Fusion | ConvergenceFusion, items, occurrence}` (`items` = the
-  target and the sacrificed item) and `ForgeTransfer {kind, items, occurrence}` are admitted by I1 a);
-  each binds the forge occurrence, so audit and reconciliation identify the authorizing attempt and
-  the fusion kind.
-- **Costs are spent on failure**, as in Global. The success bonuses (dust, cores or gold not
-  spent; B kept at t−1, t or t+1; A to t+2 within the class cap) are content with Canary rates,
-  `PARITY_PENDING`; a bonus only omits or changes a line of the same shape.
-- Every refusal (resources, class, tier cap, imbued item, no room) comes before the transaction
-  and writes nothing. Fees above the coins go to the bank (BANK-FEE-0).
+  DustToSlivers | SliversToCore | DustLimit, occurrence}`. The implemented fee shape is
+  `FeeBurnCause::Forge {occurrence, proof}`: its closed proof carries the exact operation kind,
+  item/result binding, revisions, draws and costs. Native operation19 and fee cause14 are reserved
+  by [PR2785 Q4 correction](https://github.com/Oteryn/Oteryn-Game/pull/2785#issuecomment-6547509519);
+  death17/18 remain unchanged. The native fee owner still consumes eligible direct-main-backpack
+  coins, then Account/World bank gold. No parallel gold balance is admitted.
+- **Costs are spent on failure.** Pinned Crystal201189f rules/bonus thresholds and prices are
+  implemented in `crates/gameplay/items/src/forge.rs` and `forge/prices.rs`, with file:line donor
+  comments. Nominal dust/cores are required before a bonus; the actual fee may be waived.
+  The donor bonus7 class-bound check remains exact. Convergence fusion always persists/replies
+  success; Crystal's random success display flag is intentionally corrected (PR2785 Q6).
+- Resource, class, tier, imbuement, room and cooldown refusals persist a terminal occurrence reply
+  with no value effects, audit or visible history. Invalid unadmitted wire input is rejected before
+  an occurrence is reserved. A replay returns recorded bytes before current custody, resources,
+  cooldown or Content-rule evaluation; the independently current session/scope fence still applies.
+- Crystal `game.cpp:10994–11064` and `config.lua.dist:469` admit an action every490ms, including
+  history and invalid rule attempts. Normal fusion uses50% or65% with its optional boost core;
+  event-scheduler probability modifiers are a separate mechanic (PR2785 Q5).
 - **DUR-03 amendment (FORGE-1):** §15 admits `ForgeCause` as a sink; §18 names forge dust; §39.3
   admits these shapes (`DUR03-RL-01-FORGE`, `DUR03-RL-03-FORGE`) and the receipt-only
   `REVISION_CHANGED` terminal record. FORGE-1 writes the text.
-- **History:** each operation writes a forge history row (`IMBFORGE0-RL-12`).
+- **SQL admission proof:** migration 0723 projects the already admitted native Forge Item
+  profiles, material revisions and Crystal 201189f prices into immutable SQL proof functions,
+  following migration 0070's policy precedent. The producer
+  `tools/content-migration/forge_sql_admission.py --check` verifies equality with the owning
+  Content and rule sources. Runtime cannot supply classification, tier caps or prices. A future
+  definition, revision or policy change needs a successor migration and checked projection;
+  absent admissions fail closed. The guard checks current scope Content activation, derives the
+  reserved draws independently from the immutable server root using simulation v1, and proves
+  exact legal effects, costs, reply and audit snapshot hashes. It creates no alternate item or
+  resource state.
+- **History:** every applied action (including failed fusion) adds one row to the same1000-row
+  Character history (`IMBFORGE0-RL-12`). DustLimit's native retained history is incorporated;
+  refusals retain their terminal receipt without a visible history row. Command181 reads at most50
+  entries; one full maximum-value reply is336 compact JSON bytes and50 wrapped entries are18951
+  bytes, checked by the native test. SQL bounds each retained reply to512 bytes.
 
 ## 11. Dust and sliver sources (FORGE-CREATURE-1, admitted by I2 a)
 
@@ -392,8 +428,8 @@ The chance per tier is content (Canary quadratic; `PARITY_PENDING`). Only equipp
 | Row | Value |
 |---|---|
 | `DUR03-RL-01-IMBUE` touched items | 1 target + 3 material stacks + fee inputs and change (GOLD-FEE-2) |
-| `DUR03-RL-01-FORGE` touched items | 2 targets + 2 core or sliver stacks + fee inputs and change |
-| `DUR03-RL-03-FORGE` value lines | at most 3 (dust, bank fee part, dust limit) |
+| `DUR03-RL-01-FORGE` touched items | 109: 2 operands + up to85 separate core stacks + native20 fee inputs +2 change outputs |
+| `DUR03-RL-03-FORGE` value lines | at most3: Character dust, native stash debit, bank fee part; DustLimit retains its separate admitted shape |
 | `IMBFORGE0-RL-01` imbuement slots per item | 3 |
 | `IMBFORGE0-RL-02` imbuement duration | 72,000,000 ms (20 h) |
 | `IMBFORGE0-RL-03` shrine or forge operations in flight per actor | 1 |
@@ -401,7 +437,7 @@ The chance per tier is content (Canary quadratic; `PARITY_PENDING`). Only equipp
 | `IMBFORGE0-RL-05` checkpoint interval of ticking time | 60 s |
 | `IMBFORGE0-RL-06` checkpoint writes per channel per second at peak | measured by IMBUE-RT-1 |
 | `IMBFORGE0-RL-07` item tier | 0-10, capped by class |
-| `IMBFORGE0-RL-08` dust limit | 100-225 |
+| `IMBFORGE0-RL-08` dust limit | D1230 grid100+20*n, final4600 |
 | `IMBFORGE0-RL-09` fiendish creatures per channel | content, `PARITY_PENDING` (Canary 4) |
 | `IMBFORGE0-RL-13` items touched per checkpoint transaction | 10 (Global's ten equipment slots; 3 rows each, no materials or fee; owner-confirmed on #162, comment 5919525206); `DUR03-RL-01-IMBUE-CHECKPOINT` registers it, IMBUE-RT-1 proves the bound and the max+1 (11) rejection |
 | `DUR03-RL-06-IMBUE-CHECKPOINT-PARTICIPANTS` | 10: one participant per touched ItemInstance, as `DUR03-RL-06-PARTICIPANTS` counts participants (the Character is the actor, not a participant); max (10) accepted, max+1 (11) rejected by IMBUE-RT-1 |

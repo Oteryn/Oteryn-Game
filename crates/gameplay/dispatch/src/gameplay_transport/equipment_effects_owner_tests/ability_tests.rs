@@ -105,6 +105,8 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // PKG1 Amber: the amber kusarigama 50239 (tools/content-migration/monk_reward_profiles.py,
     // Crystal ff7ede59 items.xml), a monk weapon with speed_bonus=0.
     ("PKG1-AMBER", 1),
+    // P18 admits exalted core37110 from Crystal201189f; material speed_bonus=0.
+    ("P18-FORGE-CORE", 1),
 ];
 
 #[test]

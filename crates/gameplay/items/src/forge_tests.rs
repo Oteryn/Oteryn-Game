@@ -31,6 +31,7 @@ pub(super) fn request(
             max_tier: FORGE_CLASS_CAPS[usize::from(class)],
         },
         tier: ItemTier::new(tier).ok_or(ForgeRuleError::InvalidClassCap)?,
+        slot: EquipmentSlot::RightHand,
     };
     Ok(ForgeRequest {
         operation,
@@ -59,7 +60,7 @@ const FUSION: ForgeOperation = ForgeOperation::Fusion {
 
 #[test]
 fn forge_reference_prices_and_transfer_indices() -> Result<(), ForgeRuleError> {
-    // Each row is one task-card parity row, transcribed from Canary item_tiers.lua.
+    // Crystal 201189f item_tiers.lua:1-90. Standard transfer uses RESULT tier gold.
     let rows = [
         (1, 1, 25_000, 1),
         (2, 1, 750_000, 1),
@@ -94,13 +95,14 @@ fn forge_reference_prices_and_transfer_indices() -> Result<(), ForgeRuleError> {
             let mut req = request(&item, class, 0, ForgeOperation::Transfer)?;
             req.source.tier = ItemTier::new(tier).ok_or(ForgeRuleError::InvalidClassCap)?;
             let transfer = ForgeQuote::try_from(req)?;
-            assert_eq!(transfer.cost.gold, gold);
+            assert_eq!(transfer.cost.gold, price(class, tier - 1)?.gold);
             assert_eq!(transfer.cost.cores, price(class, tier - 1)?.transfer_cores);
             let plan = ForgePlan::try_from(ForgeAttempt {
                 quote: transfer,
                 resources: resources()?,
                 success_roll: 99,
                 protection_roll: 99,
+                bonus_roll: 0,
             })?;
             assert!(plan.success);
             assert_eq!(plan.target_tier.get(), tier - 1);
@@ -188,6 +190,7 @@ fn forge_reference_success_protection_and_failure_costs() -> Result<(), ForgeRul
                         resources: before,
                         success_roll: roll,
                         protection_roll,
+                        bonus_roll: 0,
                     };
                     let plan = ForgePlan::try_from(attempt)?;
                     assert_eq!(plan, ForgePlan::try_from(attempt)?); // supplied draws never reroll
@@ -200,7 +203,7 @@ fn forge_reference_success_protection_and_failure_costs() -> Result<(), ForgeRul
                         plan.source_tier.map(ItemTier::get),
                         if success {
                             None
-                        } else if protect && protection_roll < 50 {
+                        } else if protect && protection_roll >= 50 {
                             Some(tier)
                         } else {
                             tier.checked_sub(1)
@@ -236,6 +239,7 @@ fn forge_missing_resources_invalid_draws_and_transfer_prerequisites() -> Result<
         resources: resources()?,
         success_roll: 0,
         protection_roll: 0,
+        bonus_roll: 0,
     };
     for (resources, error) in [
         (
@@ -279,6 +283,7 @@ fn forge_missing_resources_invalid_draws_and_transfer_prerequisites() -> Result<
         assert_eq!(
             ForgePlan::try_from(ForgeAttempt {
                 protection_roll: draw,
+                bonus_roll: 0,
                 ..attempt
             }),
             Err(ForgeRuleError::InvalidRoll)
@@ -393,12 +398,13 @@ fn convergence_is_class_four_guaranteed_and_uses_global_prices() -> Result<(), F
             },
             success_roll: 99,
             protection_roll: 99,
+            bonus_roll: 0,
         })?;
         assert!(plan.success);
         assert_eq!(plan.target_tier.get(), tier);
         assert_eq!(plan.source_tier, None);
 
-        if tier >= 2 {
+        if tier >= 1 {
             let mut transfer = request(&item, 4, 0, ForgeOperation::ConvergenceTransfer)?;
             transfer.target.definition = &other;
             transfer.source.tier = ItemTier::new(tier).ok_or(ForgeRuleError::InvalidClassCap)?;
@@ -438,5 +444,272 @@ fn convergence_is_class_four_guaranteed_and_uses_global_prices() -> Result<(), F
             ))
         );
     }
+    Ok(())
+}
+
+#[test]
+fn forge_crystal_bonus_boundaries_charge_exact_resources_and_retain_exact_items()
+-> Result<(), ForgeRuleError> {
+    let item = definition("forge:bonuses");
+    let quote = ForgeQuote::try_from(request(
+        &item,
+        4,
+        1,
+        ForgeOperation::Fusion {
+            boost: true,
+            protect: true,
+        },
+    )?)?;
+    for (low, high, bonus, target, source) in [
+        (0, 7399, 0, 2, None),
+        (7400, 8999, 1, 2, None),
+        (9000, 9499, 2, 2, None),
+        (9500, 9524, 3, 2, None),
+        (9525, 9549, 4, 2, Some(0)),
+        (9550, 9949, 5, 2, Some(1)),
+        (9950, 9974, 6, 2, Some(2)),
+        (9975, 10000, 7, 3, None),
+    ] {
+        for bonus_roll in [low, high] {
+            let before = resources()?;
+            let attempt = ForgeAttempt {
+                quote,
+                resources: before,
+                success_roll: 0,
+                protection_roll: 0,
+                bonus_roll,
+            };
+            let plan = ForgePlan::try_from(attempt)?;
+            assert_eq!(plan, ForgePlan::try_from(attempt)?);
+            assert!(plan.success);
+            assert_eq!((plan.bonus, plan.target_tier.get()), (bonus, target));
+            assert_eq!(plan.source_tier.map(ItemTier::get), source);
+            let cost = ForgeCost {
+                gold: if bonus == 3 { 0 } else { quote.cost.gold },
+                dust: if bonus == 1 { 0 } else { quote.cost.dust },
+                cores: if bonus == 2 { 0 } else { quote.cost.cores },
+            };
+            assert_eq!(plan.cost, cost);
+            assert_eq!(before.gold - plan.resources_after.gold, cost.gold);
+            assert_eq!(
+                u32::from(before.dust.balance() - plan.resources_after.dust.balance()),
+                cost.dust
+            );
+            assert_eq!(
+                before.cores - plan.resources_after.cores,
+                u64::from(cost.cores)
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn forge_crystal_bonus_zero_tier_retention_and_double_tier_classification_limit()
+-> Result<(), ForgeRuleError> {
+    let item = definition("forge:bonus-caps");
+    for (class, original, draw, expected_target, expected_source) in [
+        (1, 0, 9525, 1, Some(0)),
+        (1, 0, 9975, 1, None),
+        (2, 0, 9975, 2, None),
+        (3, 1, 10000, 3, None),
+        (4, 2, 9975, 4, None),
+        (4, 3, 9975, 4, None),
+        (4, 9, 10000, 10, None),
+    ] {
+        let plan = ForgePlan::try_from(ForgeAttempt {
+            quote: ForgeQuote::try_from(request(&item, class, original, FUSION)?)?,
+            resources: resources()?,
+            success_roll: 0,
+            protection_roll: 0,
+            bonus_roll: draw,
+        })?;
+        assert_eq!(plan.target_tier.get(), expected_target);
+        assert_eq!(plan.source_tier.map(ItemTier::get), expected_source);
+    }
+    let mut request = request(&item, 4, 1, FUSION)?;
+    request.target.profile.max_tier = 2;
+    request.source.profile.max_tier = 2;
+    let plan = ForgePlan::try_from(ForgeAttempt {
+        quote: ForgeQuote::try_from(request)?,
+        resources: resources()?,
+        success_roll: 0,
+        protection_roll: 0,
+        bonus_roll: 10000,
+    })?;
+    assert_eq!(plan.target_tier.get(), 2);
+    Ok(())
+}
+
+#[test]
+fn forge_crystal_bonus_never_bypasses_dust_or_core_preconditions() -> Result<(), ForgeRuleError> {
+    let item = definition("forge:bonus-preconditions");
+    let quote = ForgeQuote::try_from(request(
+        &item,
+        4,
+        0,
+        ForgeOperation::Fusion {
+            boost: true,
+            protect: true,
+        },
+    )?)?;
+    let attempt = ForgeAttempt {
+        quote,
+        resources: resources()?,
+        success_roll: 0,
+        protection_roll: 0,
+        bonus_roll: 0,
+    };
+    assert_eq!(
+        ForgePlan::try_from(ForgeAttempt {
+            bonus_roll: 7400,
+            resources: ForgeResources {
+                dust: ForgeDustBalance::default(),
+                ..resources()?
+            },
+            ..attempt
+        }),
+        Err(ForgeRuleError::InsufficientDust)
+    );
+    assert_eq!(
+        ForgePlan::try_from(ForgeAttempt {
+            bonus_roll: 9000,
+            resources: ForgeResources {
+                cores: 1,
+                ..resources()?
+            },
+            ..attempt
+        }),
+        Err(ForgeRuleError::InsufficientCores)
+    );
+    let no_gold = ForgeResources {
+        gold: 0,
+        ..resources()?
+    };
+    let saved_gold = ForgePlan::try_from(ForgeAttempt {
+        bonus_roll: 9500,
+        resources: no_gold,
+        ..attempt
+    })?;
+    assert_eq!(
+        (saved_gold.cost.gold, saved_gold.resources_after.gold),
+        (0, 0)
+    );
+    for bonus_roll in [0, 7400, 9000, 9525, 9550, 9950, 9975] {
+        assert_eq!(
+            ForgePlan::try_from(ForgeAttempt {
+                bonus_roll,
+                resources: no_gold,
+                ..attempt
+            }),
+            Err(ForgeRuleError::InsufficientGold)
+        );
+    }
+    for bonus_roll in [10001, u16::MAX] {
+        assert_eq!(
+            ForgePlan::try_from(ForgeAttempt {
+                bonus_roll,
+                ..attempt
+            }),
+            Err(ForgeRuleError::InvalidRoll)
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn forge_crystal_failure_ignores_success_bonuses_and_protection_loss_roll_is_exact()
+-> Result<(), ForgeRuleError> {
+    let item = definition("forge:failure");
+    for tier in [0, 1] {
+        let quote = ForgeQuote::try_from(request(
+            &item,
+            4,
+            tier,
+            ForgeOperation::Fusion {
+                boost: true,
+                protect: true,
+            },
+        )?)?;
+        for bonus_roll in [0, 7400, 9000, 9500, 9525, 9550, 9950, 9975, 10000] {
+            for protection_roll in [0, 49, 50, 99] {
+                let plan = ForgePlan::try_from(ForgeAttempt {
+                    quote,
+                    resources: resources()?,
+                    success_roll: 99,
+                    protection_roll,
+                    bonus_roll,
+                })?;
+                assert!(!plan.success);
+                assert_eq!(plan.target_tier.get(), tier);
+                assert_eq!(plan.cost, quote.cost);
+                assert_eq!(plan.bonus, if protection_roll >= 50 { 8 } else { 0 });
+                assert_eq!(
+                    plan.source_tier.map(ItemTier::get),
+                    if protection_roll >= 50 {
+                        Some(tier)
+                    } else {
+                        tier.checked_sub(1)
+                    }
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn forge_crystal_slot_rules_and_tier_one_convergence_transfer() -> Result<(), ForgeRuleError> {
+    let item = definition("forge:head");
+    let other = definition("forge:other");
+    let mut fusion = request(&item, 4, 1, ForgeOperation::ConvergenceFusion)?;
+    fusion.source.definition = &other;
+    fusion.target.slot = EquipmentSlot::Head;
+    fusion.source.slot = EquipmentSlot::Head;
+    assert!(ForgeQuote::try_from(fusion).is_ok());
+    fusion.source.slot = EquipmentSlot::Feet;
+    assert_eq!(
+        ForgeQuote::try_from(fusion),
+        Err(ForgeRuleError::Shape(
+            ForgeShapeError::DifferentEquipmentSlot
+        ))
+    );
+    fusion.source.slot = EquipmentSlot::LeftHand;
+    fusion.target.slot = EquipmentSlot::RightHand;
+    assert!(ForgeQuote::try_from(fusion).is_ok());
+    fusion.operation = FUSION;
+    assert_eq!(
+        ForgeQuote::try_from(fusion),
+        Err(ForgeRuleError::Shape(ForgeShapeError::DifferentDefinition))
+    );
+
+    let mut transfer = request(&item, 4, 0, ForgeOperation::Transfer)?;
+    transfer.source.definition = &other;
+    transfer.source.tier = ItemTier::new(2).ok_or(ForgeRuleError::InvalidClassCap)?;
+    transfer.target.slot = EquipmentSlot::Head;
+    transfer.source.slot = EquipmentSlot::Feet;
+    assert_eq!(
+        ForgeQuote::try_from(transfer),
+        Err(ForgeRuleError::Shape(
+            ForgeShapeError::DifferentEquipmentSlot
+        ))
+    );
+    transfer.operation = ForgeOperation::ConvergenceTransfer;
+    transfer.source.tier = ItemTier::new(1).ok_or(ForgeRuleError::InvalidClassCap)?;
+    let quote = ForgeQuote::try_from(transfer)?;
+    assert_eq!(quote.target_tier.get(), 1);
+    assert_eq!(
+        quote.cost,
+        ForgeCost {
+            gold: 65_000_000,
+            dust: 160,
+            cores: 1
+        }
+    );
+    transfer.source.tier = ItemTier::ZERO;
+    assert_eq!(
+        ForgeQuote::try_from(transfer),
+        Err(ForgeRuleError::Shape(ForgeShapeError::DonorTierTooLow))
+    );
     Ok(())
 }

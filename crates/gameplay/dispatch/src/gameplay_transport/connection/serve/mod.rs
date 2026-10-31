@@ -6,6 +6,7 @@ mod autowalk;
 mod command;
 mod creature_push;
 mod cyclopedia_tracker;
+mod forge;
 mod hotkey_equip;
 mod house_transfer;
 mod idle;

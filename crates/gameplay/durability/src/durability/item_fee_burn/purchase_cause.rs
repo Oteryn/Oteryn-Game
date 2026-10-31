@@ -5,6 +5,7 @@ use crate::durability::item_fee_burn_audit::OneItemNpcPurchaseV1;
 impl FeeBurnCause {
     pub(super) fn kind(&self) -> i16 {
         match self {
+            Self::Forge { .. } => 14,
             Self::PreyListReroll { .. } => 12,
             Self::GemReveal { .. } => 9,
             Self::GemSwitchDomain { .. } => 10,
@@ -21,6 +22,7 @@ impl FeeBurnCause {
     }
     pub(super) fn occurrence(&self) -> &[u8; 16] {
         match self {
+            Self::Forge { occurrence, .. } => occurrence,
             Self::PreyListReroll { occurrence, .. }
             | Self::GemReveal { occurrence, .. }
             | Self::GemSwitchDomain { occurrence }
@@ -37,6 +39,7 @@ impl FeeBurnCause {
     }
     pub(super) fn key(&self) -> &str {
         match self {
+            Self::Forge { .. } => "oteryn:service.forge",
             Self::PreyListReroll { slot, .. } => match slot {
                 1 => "oteryn:prey.list_reroll.1",
                 2 => "oteryn:prey.list_reroll.2",
@@ -64,6 +67,14 @@ impl FeeBurnCause {
     pub(super) fn validate(&self) -> Result<()> {
         check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
         match self {
+            Self::Forge { occurrence, proof } => {
+                let value = crate::durability::character_forge_dust::live::audit::decode(proof)
+                    .map_err(|_| FeeBurnError::InvalidInput)?;
+                if value.occurrence.as_slice() != occurrence || value.gold_spent == 0 {
+                    return Err(FeeBurnError::InvalidInput);
+                }
+                Ok(())
+            }
             Self::PreyListReroll { slot: 1..=3, .. } => Ok(()),
             Self::GemReveal { .. } | Self::GemSwitchDomain { .. } | Self::GemGradeUp { .. } => {
                 Ok(())
@@ -104,6 +115,11 @@ impl FeeBurnCause {
     }
     pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
+            Self::Forge { proof, .. } => {
+                FeeBurnCauseV1::Forge(crate::durability::character_forge_dust::OneItemForgeV1 {
+                    proof: proof.clone(),
+                })
+            }
             Self::PreyListReroll { occurrence, .. } => {
                 FeeBurnCauseV1::PreyListReroll(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),

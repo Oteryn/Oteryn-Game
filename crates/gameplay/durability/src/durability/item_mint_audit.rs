@@ -351,6 +351,9 @@ pub enum OneItemOperationV1 {
     Craft(super::item_craft::audit::OneItemCraftV1),
     #[prost(message, tag = "16")]
     Atelier(super::character_atelier::custody::OneItemAtelierV1),
+    // 17/18 belong to the PlayerDeathItem owner and retain their existing encoding.
+    #[prost(message, tag = "19")]
+    Forge(super::character_forge_dust::OneItemForgeV1),
     // End tag-sorted variants.
 }
 
@@ -376,6 +379,7 @@ pub struct OneItemTransactionV1 {
             14, // PlayerTrade
             15, // Craft
             16, // Atelier
+            19, // Native Forge
         )
     )]
     pub operation: Option<OneItemOperationV1>,
@@ -1992,6 +1996,8 @@ pub(super) mod tests {
                 "crates/gameplay/durability/src/durability/item_craft.rs",
                 "crates/gameplay/durability/src/durability/item_decay_retire.rs",
                 "crates/gameplay/durability/src/durability/item_fee_burn.rs",
+                // P18 zero-gold Forge events use the fenced transaction's selected tuple.
+                "crates/gameplay/durability/src/durability/item_forge_live/actions.rs",
                 "crates/gameplay/durability/src/durability/item_mint.rs",
                 "crates/gameplay/durability/src/durability/item_timed_state.rs",
                 "crates/gameplay/durability/src/durability/item_transfer.rs",
