@@ -416,12 +416,15 @@ pub(super) async fn exercise(
         .wheel_stat_bonuses(session, "sorcerer", 2_000, true, true)
         .ok_or("gem effects")?;
     assert_eq!(effects.sockets.grade_iv_points, 1);
+    // Crystal 201189f player_wheel.cpp:2735-2752 reads each modifier's own
+    // shared grade. The three upgrades above raised mods[1] to grade 3;
+    // switching domain preserves that modifier and its independently earned grade.
     assert_eq!(
         effects
             .sockets
             .effective_grades
             .get(&u128::from_be_bytes(green)),
-        Some(&vec![0, 0])
+        Some(&vec![0, 3])
     );
     assert!(!effects.sockets.gem_values_milli.is_empty());
     let supreme_mod = stored(h).await?.gems[&u128::from_be_bytes(id(182))].mods[2];
