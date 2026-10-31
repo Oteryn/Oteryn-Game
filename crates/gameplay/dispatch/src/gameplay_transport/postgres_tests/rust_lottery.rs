@@ -8,7 +8,7 @@ use crate::gameplay_transport::connection::{
     FirstEntryOutcome, FreshAdmissionAuthority, UseCommand,
 };
 use crate::gameplay_transport::item_view::ItemKey;
-use oteryn_gameplay_items::reward_bag::reward_bag_draw;
+use oteryn_gameplay_items::reward_bag::reward_bag_bounded_draw;
 use oteryn_gameplay_items::rust_lottery::{lottery_conversion, rust_conversion};
 use oteryn_protocol_oteryn::world_object::{
     MapUseTarget, UseDisposition, UseIntent, UseTarget, encode_item_use_intent,
@@ -49,6 +49,7 @@ fn run_scenario(key: &'static str, rust: bool, success: bool) -> TestResult {
 }
 fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
     run(async |admin| {
+        let started = std::time::Instant::now();
         let harness =
             Harness::create_with_admission_seed(admin, "rust_lottery", true, false).await?;
         super::reset();
@@ -183,11 +184,13 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         let tool = typed(tool_key).ok_or("tool definition")?;
         let source = if rust { id(72) } else { id(71) };
         let plan = |command_id| {
-            let draw = reward_bag_draw(*fence.game_session_id.as_bytes(), command_id, source);
+            let session = *fence.game_session_id.as_bytes();
             if rust {
-                rust_conversion(native, &tool, &used, draw)
+                let chance = reward_bag_bounded_draw(session, command_id, source, 1, 10_000)?;
+                let selection = reward_bag_bounded_draw(session, command_id, source, 2, 420)?;
+                rust_conversion(native, &tool, &used, selection * 10_000 + chance)
             } else {
-                lottery_conversion(native, &used, draw)
+                lottery_conversion(native, &used, reward_bag_bounded_draw(session, command_id, source, 3, 98)?)
             }
         };
         let command_id = (1..100_000)
@@ -241,7 +244,7 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         keys.sort_unstable();
         expected_keys.sort_unstable();
         assert_eq!(keys, expected_keys);
-        let (recipe, outputs, before, hash_matches): (String, serde_json::Value, serde_json::Value, bool) = sqlx::query_as("SELECT r.recipe,r.outputs,r.before_item,a.envelope_sha256=sha256(a.envelope) AND a.envelope_sha256=r.envelope_sha256 FROM game_item_craft_records r JOIN game_item_audit_outbox a USING(event_id)").fetch_one(&harness.pool).await?;
+        let (recipe, outputs, before, hash_matches): (String, serde_json::Value, serde_json::Value, bool) = sqlx::query_as("SELECT r.recipe,r.outputs,r.before_secondary,a.envelope_sha256=sha256(a.envelope) AND a.envelope_sha256=r.envelope_sha256 FROM game_item_consume_transform_records r JOIN game_item_audit_outbox a USING(event_id)").fetch_one(&harness.pool).await?;
         assert_eq!(recipe, expected.recipe);
         assert_eq!(
             outputs.as_array().ok_or("outputs")?.len(),
@@ -251,15 +254,15 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         if rust {
             let proof = before;
             assert_eq!(
-                proof["consumed_tool"]["definition_production_key"],
+                proof["definition_production_key"],
                 tool_key
             );
-            assert_eq!(proof["consumed_tool"]["quantity"], tool_quantity);
+            assert_eq!(proof["quantity"], tool_quantity);
         }
         // Receipt replay with the exact original request must not consume another flask.
         let replay = if rust {
             owner
-                .use_craft(
+                .use_consume_transform(
                     deps.actor,
                     UseCommand {
                         game_session_id: fence.game_session_id,
@@ -271,8 +274,8 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
                         &actual,
                     )
                     .map_err(debug)?,
-                    Some(ItemKey::Instance(id(71))),
-                    Some(ItemKey::Instance(source)),
+                    None,
+                    None,
                 )
                 .await
         } else {
@@ -291,7 +294,7 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         .ok_or("replay")?;
         assert_eq!(replay.disposition, UseDisposition::Committed);
         assert_eq!(
-            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_craft_records")
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM game_item_consume_transform_records")
                 .fetch_one(&harness.pool)
                 .await?,
             1
@@ -299,9 +302,13 @@ fn scenario(key: &str, rust: bool, success: bool) -> TestResult {
         if rust {
             assert_eq!(sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid").bind(id(71).as_slice()).fetch_one(&harness.pool).await?, tool_quantity - 1);
         }
+        // Re-enter the real connection with the post-use inventory, then replay the wire command.
+        let (_, replayed, _) = exchange(&owner, end, command_id, &actual, None, None).await?;
+        assert_eq!(replayed, UseDisposition::Committed);
+        let elapsed = started.elapsed();
+        assert!(elapsed > std::time::Duration::ZERO);
         eprintln!(
-            "W19E_PG_EXECUTED rust={rust} success={success} command={command_id} next={}",
-            end.continuity.next_command_id
+            "W19E_PG_EXECUTED rust={rust} success={success} command={command_id} elapsed={elapsed:?}"
         );
         drop(owner);
         drop(authority);
