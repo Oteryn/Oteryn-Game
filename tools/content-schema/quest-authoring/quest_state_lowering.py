@@ -350,12 +350,56 @@ def append_source_herald_grouped_transitions(quests, records):
     quest['transitions'].sort(key=lambda t: t['key'])
 
 
+def append_newhaven_npc_transitions(quests):
+    """Crystal201189f Gustavo75-98/Viola140-179; owner Q1 kill rule/Q9 retry.
+
+    The donor's NPC storages are not captured by the historical source packet.
+    Keep them in the existing Newhaven quest, alongside its portal storages.
+    """
+    quest = next(q for q in quests if q['quest'] == 'oteryn:quest.newhaven_quest')
+    prefix = 'oteryn:quest-progress/crystalserver/quest/u15_12/'
+    names = ('newhaven_goblin_quest_start', 'newhaven_goblin_quest_done',
+             'newhaven_muglex_kill_count', 'newhaven_viola_book_quest_start',
+             'newhaven_viola_light', 'newhaven_viola_wound_cleansing')
+    for name in names:
+        quest['tracks'].append({
+            'key': prefix + name, 'quest': quest['quest'], 'initial': -1,
+            'min': -1, 'max': 20 if name.endswith('kill_count') else 1,
+            'bounds_basis': 'owner_credited_kills_capped_20' if name.endswith('kill_count') else 'observed_values',
+            'source_key': 'crystalserver:quest-progress/quest/u15_12/' + name,
+        })
+    def effect(name, op, before, kind, after):
+        return {'track': prefix + name, 'from': {'op': op, 'value': before},
+                'from_exact': True, 'effect': {'kind': kind, 'value': after}}
+    start, done, kills, book, light, wound = names
+    for name, npc, effects in (
+        ('gustavo-start', 'gustavo_the_guard', [effect(start, 'NE', 1, 'SET', 1),
+            effect(done, 'NE', 1, 'ADD', 0), effect(kills, 'ANY', 0, 'SET', 0)]),
+        ('gustavo-kill', 'gustavo_the_guard', [effect(start, 'EQ', 1, 'ADD', 0),
+            effect(done, 'NE', 1, 'ADD', 0), effect(kills, 'LT', 20, 'ADD', 1)]),
+        ('gustavo-finish', 'gustavo_the_guard', [effect(start, 'EQ', 1, 'ADD', 0),
+            effect(done, 'NE', 1, 'SET', 1), effect(kills, 'GE', 20, 'ADD', 0)]),
+        ('viola-start', 'viola', [effect(book, 'NE', 1, 'SET', 1)]),
+        ('viola-light', 'viola', [effect(light, 'NE', 1, 'SET', 1)]),
+        ('viola-wound-cleansing', 'viola', [effect(wound, 'NE', 1, 'SET', 1)]),
+    ):
+        quest['transitions'].append({
+            'key': 'oteryn:quest-transition/newhaven/' + name, 'quest': quest['quest'],
+            'completes': False, 'effects': effects, 'requested_by': None,
+            'source': {'callback': None, 'key': name, 'owner': 'npc',
+                       'script': 'npc/' + npc + '.lua', 'servers': ['crystalserver']},
+        })
+    quest['tracks'].sort(key=lambda t: t['key'])
+    quest['transitions'].sort(key=lambda t: t['key'])
+
+
 def expected(root):
     shards, records = definitions(root)
     owned = owners(records)
     values = mission_values(records)
     quests = [lower_quest(d, owned, values) for d in records if (d.get('source_data') or {}).get('progress')]
     append_source_herald_grouped_transitions(quests, records)
+    append_newhaven_npc_transitions(quests)
     quests.sort(key=lambda q: q['quest'])
     chests = chest_transitions(root, quests)
     validate(quests)

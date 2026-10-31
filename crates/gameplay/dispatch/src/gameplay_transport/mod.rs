@@ -95,6 +95,7 @@ mod monster_profile_cycle;
 mod monster_quest_death;
 mod mount_taming;
 mod newhaven_arrival;
+mod newhaven_ferry;
 mod newhaven_travel;
 mod npc_actor;
 mod npc_command;

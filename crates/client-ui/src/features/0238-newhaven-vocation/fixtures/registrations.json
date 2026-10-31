@@ -1,0 +1,33 @@
+[
+  {
+    "mechanic": "0238-newhaven-vocation",
+    "kind": "handlers",
+    "id": "0238-newhaven-vocation-choice",
+    "status": "supported",
+    "commands": [
+      456
+    ],
+    "direction": "client_to_server",
+    "capability": 238,
+    "entry": "protocol.rs::request",
+    "not_applicable": {
+      "settings": "The server owns vocation; no local preference is stored."
+    }
+  },
+  {
+    "mechanic": "0238-newhaven-vocation",
+    "kind": "keybindings",
+    "id": "0238-newhaven-vocation-keys",
+    "status": "supported",
+    "context": "gameplay",
+    "chord": "1-5",
+    "entry": "input.rs::choice_key"
+  },
+  {
+    "mechanic": "0238-newhaven-vocation",
+    "kind": "panels",
+    "id": "0238-newhaven-vocation-prompt",
+    "status": "supported",
+    "entry": "view.rs::panel_text"
+  }
+]

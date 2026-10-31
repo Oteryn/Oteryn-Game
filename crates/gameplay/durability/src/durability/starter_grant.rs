@@ -188,3 +188,7 @@ impl DurabilityRoot {
             .await
     }
 }
+
+#[path = "starter_grant/newhaven.rs"]
+mod newhaven;
+pub use newhaven::NewhavenStarterOutcome;

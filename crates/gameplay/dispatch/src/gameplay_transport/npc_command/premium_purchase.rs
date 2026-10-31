@@ -162,6 +162,7 @@ pub(super) async fn apply(
         return rejected();
     };
     let service = match &pending.service {
+        PremiumNpcService::SpellLearning { key, .. } => PurchaseService::SpellLearning(key.clone()),
         PremiumNpcService::Henricus => {
             PurchaseService::Blessing("oteryn:service.blessing.henricus".into())
         }
@@ -261,6 +262,7 @@ pub(super) async fn apply(
 
 fn completion(intent: &NpcTalkIntent, receipt: &PurchaseReceipt) -> NpcTalkOutcome {
     let line = match receipt.service {
+        PurchaseService::SpellLearning(_) => "Here you are. Look in your spellbook for the pronunciation of this spell.",
         PurchaseService::Promotion(_) => "You are now promoted.",
         PurchaseService::Blessing(ref key) if key == "oteryn:service.blessing.henricus" => {
             "You have received the blessings of the Inquisition."
@@ -312,6 +314,9 @@ pub(in crate::gameplay_transport) async fn resume_npc_talk(
     actor: ExactActorRef,
     command: UseCommand,
 ) -> Option<NpcTalkOutcome> {
+    if let Some(outcome) = super::newhaven::resume(admission, command).await {
+        return Some(outcome);
+    }
     if let Some(outcome) = super::monk::resume(admission, command).await {
         return Some(outcome);
     }

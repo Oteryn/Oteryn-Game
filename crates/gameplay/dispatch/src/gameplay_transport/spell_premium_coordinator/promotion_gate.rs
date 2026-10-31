@@ -19,6 +19,7 @@ impl NpcPurchaseGate for SpellPremiumCoordinator {
             PurchaseService::Promotion(_) => {
                 oteryn_gameplay_progression::promotion::purchase_permitted(&status)
             }
+            PurchaseService::SpellLearning(_) => true,
             PurchaseService::Blessing(_) => status.gate().premium_current(),
         })
         .await

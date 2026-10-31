@@ -133,6 +133,46 @@ impl PartialEq for BundleWorld {
 
 impl Eq for BundleWorld {}
 
+/// Resolve bundle Item facts from the active generation, shared by node boot and
+/// real-World qualification. Unknown movement facts remain unknown and fail closed.
+pub fn native_item_definition(
+    gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
+    key: &str,
+) -> Option<ItemDefinition> {
+    use crate::content::{ReferenceItemField, ReferenceItemType};
+    let index = gameplay?.item_index()?;
+    let revision = index.revision(key)?;
+    let reference = index.definition_ref("Item", key, revision)?;
+    let profile = gameplay
+        .and_then(|state| state.item_policy(key, revision))
+        .map(|policy| policy.record());
+    let pickupable = profile.is_some_and(|profile| {
+        matches!(
+            &profile.semantics.physical,
+            ReferenceItemField::Known(physical)
+                if physical.pickupable == ReferenceItemField::Known(true)
+        )
+    });
+    // MAP-DOOR-1: doorhood is the content profile's `item_type`, never an appearance id.
+    let door = profile.is_some_and(|profile| {
+        matches!(
+            &profile.semantics.classification,
+            ReferenceItemField::Known(classification)
+                if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
+        )
+    });
+    let attributes = profile.map(|profile| &profile.attributes);
+    Some(crate::map::facts::ItemDefinition {
+        reference,
+        solid: attributes.and_then(|attributes| attributes.blocks_movement),
+        blocks_projectile: attributes
+            .and_then(|attributes| attributes.blocks_projectile)
+            .unwrap_or(true),
+        pickupable,
+        door,
+    })
+}
+
 /// Boots `world_id`'s Channel `channel_id` from the bundle bytes: [`check`], then
 /// [`CheckedBundle::boot`].
 pub fn boot(

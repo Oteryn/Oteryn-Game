@@ -17,6 +17,7 @@ impl FeeBurnCause {
             Self::Imbuement { .. } => 7,
             Self::PromotionPurchase { .. } => 2,
             Self::BlessingPurchase { .. } => 3,
+            Self::SpellLearning { .. } => 13,
         }
     }
     pub(super) fn occurrence(&self) -> &[u8; 16] {
@@ -32,7 +33,7 @@ impl FeeBurnCause {
             Self::NpcRepair { occurrence, .. } | Self::Imbuement { occurrence, .. } => occurrence,
             Self::NpcTravel { occurrence, .. }
             | Self::PromotionPurchase { occurrence, .. }
-            | Self::BlessingPurchase { occurrence, .. } => occurrence,
+            | Self::BlessingPurchase { occurrence, .. } | Self::SpellLearning { occurrence, .. } => occurrence,
         }
     }
     pub(super) fn key(&self) -> &str {
@@ -52,7 +53,7 @@ impl FeeBurnCause {
             Self::Imbuement { .. } => "oteryn:service.imbuement",
             Self::NpcTravel { service, .. }
             | Self::PromotionPurchase { service, .. }
-            | Self::BlessingPurchase { service, .. } => service,
+            | Self::BlessingPurchase { service, .. } | Self::SpellLearning { service, .. } => service,
         }
     }
     pub(super) fn charm_key(&self) -> Option<&str> {
@@ -65,6 +66,7 @@ impl FeeBurnCause {
         check_uuid_v7(self.occurrence()).map_err(|_| FeeBurnError::InvalidInput)?;
         match self {
             Self::PreyListReroll { slot: 1..=3, .. } => Ok(()),
+            Self::SpellLearning { service, .. } if matches!(service.as_str(), "oteryn:spell.cure_poison" | "oteryn:spell.magic_rope") => Ok(()),
             Self::GemReveal { .. } | Self::GemSwitchDomain { .. } | Self::GemGradeUp { .. } => {
                 Ok(())
             }
@@ -104,6 +106,9 @@ impl FeeBurnCause {
     }
     pub(in super::super) fn audit(&self) -> FeeBurnCauseV1 {
         match self {
+            Self::SpellLearning { service, occurrence } => FeeBurnCauseV1::SpellLearning(OneItemNpcPurchaseV1 {
+                atelier_proof: Vec::new(), service_key: service.clone(), occurrence: occurrence.to_vec(),
+            }),
             Self::PreyListReroll { occurrence, .. } => {
                 FeeBurnCauseV1::PreyListReroll(OneItemNpcPurchaseV1 {
                     service_key: self.key().into(),

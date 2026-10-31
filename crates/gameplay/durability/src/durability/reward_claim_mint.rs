@@ -113,6 +113,7 @@ use sha2::{Digest, Sha256};
 use sqlx::Row;
 
 mod monk;
+mod newhaven;
 
 type Result<T> = std::result::Result<T, RewardClaimMintError>;
 type Pass<T> = std::result::Result<std::result::Result<T, RewardClaimMintError>, DurabilityError>;

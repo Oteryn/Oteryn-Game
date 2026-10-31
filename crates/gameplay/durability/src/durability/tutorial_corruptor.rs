@@ -52,6 +52,12 @@ impl DurabilityRoot {
                 commit_semantic_transaction(tx,deadline).await?;
                 return Ok(Ok(previous));
             }
+            // Unavailable source rewards retain eligibility. The session fence and
+            // any prior same-death receipt were checked above, before this no-op.
+            if defined.is_empty() {
+                commit_semantic_transaction(tx,deadline).await?;
+                return Ok(Ok(Vec::new()));
+            }
             let TutorialProgressOutcome::Read(Some(stored))=tutorial_progress_in_transaction(&mut tx,fence.character_id,None).await? else {return Ok(Ok(Vec::new()));};
             let Some(next)=tutorial_transition(true,Some(stored.progress),TutorialEvent::Corruptor,"none",false) else {return Ok(Ok(Vec::new()));};
             let build=super::character_death::load_death_build(&mut tx,fence.character_id).await?;

@@ -2100,6 +2100,7 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             admission
                 .credit_task_board_kill(self.fence, race.key(), entry.facts.occurrence)
                 .await;
+            admission.credit_newhaven_kill(self.fence, race.key(), entry.facts.occurrence).await;
         }
         if outcome.is_ok() {
             admission.credit_weapon_proficiency_kill(&entry).await;

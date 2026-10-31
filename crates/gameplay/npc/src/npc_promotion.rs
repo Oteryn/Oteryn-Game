@@ -4,6 +4,7 @@ use oteryn_gameplay_content::content::npc_catalogue::premium_services::PremiumNp
 pub fn select<'a>(text: &str, services: &'a [PremiumNpcService]) -> Option<&'a PremiumNpcService> {
     let text = text.trim_matches(' ');
     services.iter().find(|service| match service {
+        PremiumNpcService::SpellLearning { name, .. } => text.eq_ignore_ascii_case(name),
         PremiumNpcService::Henricus => {
             text.eq_ignore_ascii_case("bless")
                 || text.eq_ignore_ascii_case("blessing")
@@ -18,6 +19,7 @@ pub fn select<'a>(text: &str, services: &'a [PremiumNpcService]) -> Option<&'a P
 
 pub fn prompt(service: &PremiumNpcService) -> String {
     match service {
+        PremiumNpcService::SpellLearning { name, price, .. } => format!("Do you want to learn {name} for {price} gold?"),
         PremiumNpcService::Henricus => "Do you want all five regular blessings at your current level price plus 10%? You must have completed The Inquisition Quest and hold none of these blessings.".into(),
         PremiumNpcService::Promotion { .. } => {
             "Do you want to be promoted for 20000 gold coins?".into()

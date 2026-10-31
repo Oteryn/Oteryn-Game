@@ -1,0 +1,7 @@
+{
+  "mechanic": "0238-newhaven-vocation",
+  "kind": "panels",
+  "id": "0238-newhaven-vocation-prompt",
+  "status": "supported",
+  "entry": "view.rs::panel_text"
+}

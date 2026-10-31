@@ -6,9 +6,604 @@
       "records": [
         {
           "destination": "container_slot",
-          "item": {"key": "oteryn:item.tibia.i2854", "revision": "definition-r1"},
+          "item": {
+            "key": "oteryn:item.tibia.i2854",
+            "revision": "definition-r1"
+          },
           "key": "oteryn:starter.main_backpack",
           "quantity": 1
+        }
+      ]
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_sorcerer",
+      "records": [
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_backpack",
+          "item": {
+            "key": "oteryn:item.tibia.i2854",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "container_slot"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_head",
+          "item": {
+            "key": "oteryn:item.tibia.i3355",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_head"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_armor",
+          "item": {
+            "key": "oteryn:item.tibia.i3561",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_armor"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_legs",
+          "item": {
+            "key": "oteryn:item.tibia.i3559",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_legs"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_feet",
+          "item": {
+            "key": "oteryn:item.tibia.i3552",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_feet"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_ammo",
+          "item": {
+            "key": "oteryn:item.tibia.i34017",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_ammo"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_right",
+          "item": {
+            "key": "oteryn:item.tibia.i21400",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_right"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_left",
+          "item": {
+            "key": "oteryn:item.tibia.i21348",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_left"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_268",
+          "item": {
+            "key": "oteryn:item.tibia.i268",
+            "revision": "definition-r1"
+          },
+          "quantity": 10,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_266",
+          "item": {
+            "key": "oteryn:item.tibia.i266",
+            "revision": "definition-r1"
+          },
+          "quantity": 2,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_3031",
+          "item": {
+            "key": "oteryn:item.tibia.i3031",
+            "revision": "definition-r1"
+          },
+          "quantity": 50,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_3578",
+          "item": {
+            "key": "oteryn:item.tibia.i3578",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_sorcerer_21351",
+          "item": {
+            "key": "oteryn:item.tibia.i21351",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "backpack"
+        }
+      ]
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_druid",
+      "records": [
+        {
+          "key": "oteryn:starter.newhaven_druid_backpack",
+          "item": {
+            "key": "oteryn:item.tibia.i2854",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "container_slot"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_head",
+          "item": {
+            "key": "oteryn:item.tibia.i3355",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_head"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_armor",
+          "item": {
+            "key": "oteryn:item.tibia.i3561",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_armor"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_legs",
+          "item": {
+            "key": "oteryn:item.tibia.i3559",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_legs"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_feet",
+          "item": {
+            "key": "oteryn:item.tibia.i3552",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_feet"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_ammo",
+          "item": {
+            "key": "oteryn:item.tibia.i34017",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_ammo"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_right",
+          "item": {
+            "key": "oteryn:item.tibia.i21400",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_right"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_left",
+          "item": {
+            "key": "oteryn:item.tibia.i21350",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_left"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_268",
+          "item": {
+            "key": "oteryn:item.tibia.i268",
+            "revision": "definition-r1"
+          },
+          "quantity": 10,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_266",
+          "item": {
+            "key": "oteryn:item.tibia.i266",
+            "revision": "definition-r1"
+          },
+          "quantity": 2,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_3031",
+          "item": {
+            "key": "oteryn:item.tibia.i3031",
+            "revision": "definition-r1"
+          },
+          "quantity": 50,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_3578",
+          "item": {
+            "key": "oteryn:item.tibia.i3578",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_druid_21351",
+          "item": {
+            "key": "oteryn:item.tibia.i21351",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "backpack"
+        }
+      ]
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_paladin",
+      "records": [
+        {
+          "key": "oteryn:starter.newhaven_paladin_backpack",
+          "item": {
+            "key": "oteryn:item.tibia.i2854",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "container_slot"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_head",
+          "item": {
+            "key": "oteryn:item.tibia.i3355",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_head"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_armor",
+          "item": {
+            "key": "oteryn:item.tibia.i3561",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_armor"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_legs",
+          "item": {
+            "key": "oteryn:item.tibia.i3559",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_legs"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_feet",
+          "item": {
+            "key": "oteryn:item.tibia.i3552",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_feet"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_ammo",
+          "item": {
+            "key": "oteryn:item.tibia.i34017",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_ammo"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_left",
+          "item": {
+            "key": "oteryn:item.tibia.i3350",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_left"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_right",
+          "item": {
+            "key": "oteryn:item.tibia.i35562",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_right"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_268",
+          "item": {
+            "key": "oteryn:item.tibia.i268",
+            "revision": "definition-r1"
+          },
+          "quantity": 7,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_266",
+          "item": {
+            "key": "oteryn:item.tibia.i266",
+            "revision": "definition-r1"
+          },
+          "quantity": 5,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_3031",
+          "item": {
+            "key": "oteryn:item.tibia.i3031",
+            "revision": "definition-r1"
+          },
+          "quantity": 50,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_3578",
+          "item": {
+            "key": "oteryn:item.tibia.i3578",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_arrows_1",
+          "item": {
+            "key": "oteryn:item.tibia.i3447",
+            "revision": "definition-r1"
+          },
+          "quantity": 100,
+          "destination": "quiver"
+        },
+        {
+          "key": "oteryn:starter.newhaven_paladin_arrows_2",
+          "item": {
+            "key": "oteryn:item.tibia.i3447",
+            "revision": "definition-r1"
+          },
+          "quantity": 100,
+          "destination": "quiver"
+        }
+      ]
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_knight",
+      "records": [
+        {
+          "key": "oteryn:starter.newhaven_knight_backpack",
+          "item": {
+            "key": "oteryn:item.tibia.i2854",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "container_slot"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_head",
+          "item": {
+            "key": "oteryn:item.tibia.i3355",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_head"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_armor",
+          "item": {
+            "key": "oteryn:item.tibia.i3561",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_armor"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_legs",
+          "item": {
+            "key": "oteryn:item.tibia.i3559",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_legs"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_feet",
+          "item": {
+            "key": "oteryn:item.tibia.i3552",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_feet"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_ammo",
+          "item": {
+            "key": "oteryn:item.tibia.i34017",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_ammo"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_left",
+          "item": {
+            "key": "oteryn:item.tibia.i3272",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_left"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_right",
+          "item": {
+            "key": "oteryn:item.tibia.i3412",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_right"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_268",
+          "item": {
+            "key": "oteryn:item.tibia.i268",
+            "revision": "definition-r1"
+          },
+          "quantity": 2,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_266",
+          "item": {
+            "key": "oteryn:item.tibia.i266",
+            "revision": "definition-r1"
+          },
+          "quantity": 10,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_3031",
+          "item": {
+            "key": "oteryn:item.tibia.i3031",
+            "revision": "definition-r1"
+          },
+          "quantity": 50,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_knight_3578",
+          "item": {
+            "key": "oteryn:item.tibia.i3578",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "backpack"
+        }
+      ]
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_monk",
+      "records": [
+        {
+          "key": "oteryn:starter.newhaven_monk_backpack",
+          "item": {
+            "key": "oteryn:item.tibia.i2854",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "container_slot"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_head",
+          "item": {
+            "key": "oteryn:item.tibia.i3355",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_head"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_armor",
+          "item": {
+            "key": "oteryn:item.tibia.i3561",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_armor"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_legs",
+          "item": {
+            "key": "oteryn:item.tibia.i3559",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_legs"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_feet",
+          "item": {
+            "key": "oteryn:item.tibia.i3552",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_feet"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_ammo",
+          "item": {
+            "key": "oteryn:item.tibia.i34017",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_ammo"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_left",
+          "item": {
+            "key": "oteryn:item.tibia.i50166",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "equipment_left"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_268",
+          "item": {
+            "key": "oteryn:item.tibia.i268",
+            "revision": "definition-r1"
+          },
+          "quantity": 5,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_266",
+          "item": {
+            "key": "oteryn:item.tibia.i266",
+            "revision": "definition-r1"
+          },
+          "quantity": 7,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_3031",
+          "item": {
+            "key": "oteryn:item.tibia.i3031",
+            "revision": "definition-r1"
+          },
+          "quantity": 50,
+          "destination": "backpack"
+        },
+        {
+          "key": "oteryn:starter.newhaven_monk_3578",
+          "item": {
+            "key": "oteryn:item.tibia.i3578",
+            "revision": "definition-r1"
+          },
+          "quantity": 1,
+          "destination": "backpack"
         }
       ]
     }

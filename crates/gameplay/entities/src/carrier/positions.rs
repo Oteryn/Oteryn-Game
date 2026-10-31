@@ -136,6 +136,28 @@ impl CurrentOwnerMovementPosition<'_> {
             .read_movement_position(self.continuity, actor.0)
     }
 
+    /// Commit a map-authored world interaction after its current session, reach,
+    /// destination and collision predicates were checked under the runtime owner lock.
+    /// Unlike respawn placement this preserves conditions and vitals.
+    pub fn commit_world_relocation(
+        &mut self,
+        expected: MovementPositionSnapshot,
+        next: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        self.carrier
+            .compare_commit_position(
+                self.continuity,
+                expected.0,
+                expected.0.version.context,
+                LocalPosition {
+                    x: next.x,
+                    y: next.y,
+                    floor: next.floor,
+                },
+            )
+            .map(MovementPositionSnapshot)
+    }
+
     pub fn commit_cardinal(
         &mut self,
         expected: MovementPositionSnapshot,

@@ -37,6 +37,7 @@ pub use oteryn_gameplay_npc::npc_command::{NpcContinuity, NpcTalkOutcome, NpcUpd
 type RecentIntents = VecDeque<u64>;
 mod coin_exchange;
 mod monk;
+mod newhaven;
 mod premium_purchase;
 mod service_context;
 pub(super) use premium_purchase::resume_npc_talk;
@@ -53,6 +54,9 @@ struct SessionNpc {
     exchange: Option<coin_exchange::Pending>,
     premium: Option<premium_purchase::PendingPurchase>,
     monk: Option<monk::Pending>,
+    newhaven: Option<newhaven::Pending>,
+    newhaven_book_prompt: Option<(u64, u64, String)>,
+    newhaven_free_spell: Option<((u64,u64,String), &'static str)>,
 }
 
 pub struct PendingBank {
@@ -618,6 +622,10 @@ pub(super) async fn npc_bank_talk(
             _trade_permit.as_ref(),
         )
         .await;
+    }
+    if let Some(step) = newhaven::prepare(admission, actor, command, &intent, &runtime) {
+        drop(runtime);
+        return newhaven::apply(admission, actor, command, intent, step).await;
     }
     if let Some(step) = monk::prepare(admission, actor, command, &intent, &runtime) {
         drop(runtime);

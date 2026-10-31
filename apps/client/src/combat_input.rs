@@ -8,6 +8,8 @@ pub enum PlayCommand {
     /// Capability-16 query encoded by its feature controls.
     QuestLog(Vec<u8>),
     Exiva(Vec<u8>),
+    /// Explicit Newhaven first-vocation choice.
+    NewhavenVocation(Vec<u8>),
     Step(StepDir),
     Combat(CombatCommand),
     /// Leave the game (capability 21 `LOGOUT_INTENT`).

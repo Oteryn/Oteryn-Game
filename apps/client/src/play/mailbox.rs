@@ -57,6 +57,7 @@ pub(super) const MAX_PUSHED_MARKERS: usize = 1024;
 
 #[derive(Debug, Default)]
 pub(super) struct Mailbox {
+    pub(super) vocation: oteryn_client_ui::newhaven_vocation::VocationPanel,
     pub(super) exiva: oteryn_client_ui::exiva_settings::ExivaPanel,
     pub(super) quest: oteryn_client_ui::quest_log::QuestPanel,
     pub(super) quest_pending: bool,
@@ -93,6 +94,7 @@ impl Outbox {
 
     pub(super) fn push(&self, events: Vec<SessionEvent>) {
         let mut mailbox = lock(&self.0);
+        super::feature_0238_newhaven_vocation::protocol::notices(&mut mailbox.vocation, &events);
         coalesce_pushed(&mut mailbox.pushed, events);
         let deltas = std::mem::take(&mut mailbox.pushed.quests);
         super::feature_0016_quest_log::protocol::reduce(&mut mailbox.quest, deltas);

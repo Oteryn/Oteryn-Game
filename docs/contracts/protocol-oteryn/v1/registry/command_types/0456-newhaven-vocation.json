@@ -1,0 +1,10 @@
+{
+  "id": 456,
+  "name": "NEWHAVEN_VOCATION",
+  "owner_decision": "OTV2-20261031-newhaven; owner Q8",
+  "capability": 238,
+  "payload_schema": "docs/contracts/protocol-oteryn/v1/newhaven-vocation-v1.md#request",
+  "result_schema": "docs/contracts/protocol-oteryn/v1/newhaven-vocation-v1.md#reply",
+  "max_payload_bytes": 2,
+  "max_result_payload_bytes": 2
+}

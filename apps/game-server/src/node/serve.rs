@@ -2276,41 +2276,7 @@ fn boot_bundle_items(
     channel: ChannelId,
     gameplay: Option<&crate::content::native_gameplay::NativeGameplayState>,
 ) -> Result<crate::map::boot::BundleWorld, BootError> {
-    use crate::content::{ReferenceItemField, ReferenceItemType};
-    let index = gameplay.and_then(|state| state.item_index());
-    let item = |key: &str| {
-        let index = index?;
-        let revision = index.revision(key)?;
-        let reference = index.definition_ref("Item", key, revision)?;
-        let profile = gameplay
-            .and_then(|state| state.item_policy(key, revision))
-            .map(|policy| policy.record());
-        let pickupable = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.physical,
-                ReferenceItemField::Known(physical)
-                    if physical.pickupable == ReferenceItemField::Known(true)
-            )
-        });
-        // MAP-DOOR-1: doorhood is the content profile's `item_type`, never an appearance id.
-        let door = profile.is_some_and(|profile| {
-            matches!(
-                &profile.semantics.classification,
-                ReferenceItemField::Known(classification)
-                    if classification.item_type == ReferenceItemField::Known(ReferenceItemType::Door)
-            )
-        });
-        let attributes = profile.map(|profile| &profile.attributes);
-        Some(crate::map::facts::ItemDefinition {
-            reference,
-            solid: attributes.and_then(|attributes| attributes.blocks_movement),
-            blocks_projectile: attributes
-                .and_then(|attributes| attributes.blocks_projectile)
-                .unwrap_or(true),
-            pickupable,
-            door,
-        })
-    };
+    let item = |key: &str| crate::map::boot::native_item_definition(gameplay, key);
     checked
         .boot(world, channel, item)
         .map_err(BootError::WorldBundle)

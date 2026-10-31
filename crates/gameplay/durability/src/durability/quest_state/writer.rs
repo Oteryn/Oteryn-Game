@@ -543,6 +543,7 @@ impl DurabilityRoot {
                         super::super::quest_monk_rewards::earn(&mut tx, fence, &request, callback,
                             &context.content_revision, achievement.as_ref()).await?;
                     }
+                    super::super::quest_newhaven_rewards::earn(&mut tx, fence, &request, &pin).await?;
                     let committed = CommittedQuestTransition {
                         character_id: character,
                         cause: request.cause,

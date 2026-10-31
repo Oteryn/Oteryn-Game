@@ -275,8 +275,6 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     item_transform_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import reward_bag_profiles
     reward_bag_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
-    import ranged_item_profiles
-    ranged_item_profiles.apply_native(root, generated)
     import readable_item_profiles
     readable_item_profiles.apply_native(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import writable_item_profiles
@@ -295,6 +293,10 @@ def outputs(root: Path = ROOT) -> dict[str, bytes]:
     quest_callback_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import quick_loot_item_profiles
     quick_loot_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import newhaven_item_profiles
+    newhaven_item_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS['item_profiles'], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
+    import ranged_item_profiles
+    ranged_item_profiles.apply_native(root, generated)
     import coin_converter_profiles
     coin_converter_profiles.admit(root, generated, spell_import.PROVIDER_DESTINATIONS["item_profiles"], NATIVE_MANIFEST, provider_order, spell_import.canonical_bytes)
     import item_spell_augment_profiles

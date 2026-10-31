@@ -5,7 +5,8 @@ use crate::durability::character_tutorial::TutorialProgressOutcome;
 use oteryn_gameplay_quests::tutorial::{TutorialProgress, TutorialStep};
 
 #[test]
-fn tutorial_corruptor_claim_clears_once_replays_and_rejects_stale_authority() -> TestResult {
+fn tutorial_corruptor_unavailable_reward_retains_eligibility_and_rejects_stale_authority()
+-> TestResult {
     let Some(admin) = fixture::configured_admin() else {
         return Ok(());
     };
@@ -30,8 +31,8 @@ fn tutorial_corruptor_claim_clears_once_replays_and_rejects_stale_authority() ->
             assert_eq!(h.count("game_tutorial_corruptor_claims").await?, 0);
             assert!(h.root.claim_tutorial_corruptor(&authority, &h.node, current, death, Vec::new()).await.map_err(debug)?.is_empty());
             assert!(h.root.claim_tutorial_corruptor(&authority, &h.node, current, death, Vec::new()).await.map_err(debug)?.is_empty());
-            assert_eq!(h.count("game_tutorial_corruptor_claims").await?, 1);
-            assert!(matches!(h.root.character_tutorial_progress(&authority, &h.node, current, None).await.map_err(debug)?, TutorialProgressOutcome::Read(Some(stored)) if stored.version == 2 && !stored.progress.corruptor && stored.progress.hunting));
+            assert_eq!(h.count("game_tutorial_corruptor_claims").await?, 0);
+            assert!(matches!(h.root.character_tutorial_progress(&authority, &h.node, current, None).await.map_err(debug)?, TutorialProgressOutcome::Read(Some(stored)) if stored.version == 1 && stored.progress.corruptor && stored.progress.hunting));
             assert!(h.root.claim_tutorial_corruptor(&authority, &h.node, stale, death, Vec::new()).await.is_err());
             assert_eq!(h.root_revision().await?, "1");
             Ok(())

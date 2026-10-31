@@ -51,7 +51,7 @@ SEALS_SCHEMA = "OTERYN_STARTER_KIT_SEALS/v1"
 A12_ITEM = re.compile(r"^oteryn:item\.tibia\.i[1-9][0-9]*$")
 RECORD_KEY = re.compile(r"^oteryn:starter\.[a-z0-9_]+$")
 LABEL = re.compile(r"^oteryn:starter-template\.[a-z0-9_-]+$")
-DESTINATIONS = ("container_slot",)
+DESTINATIONS = ("container_slot", "backpack", "quiver", "equipment_head", "equipment_armor", "equipment_legs", "equipment_feet", "equipment_ammo", "equipment_left", "equipment_right")
 KNOWN_STACK = ("NonStackable", "StackCapable")
 
 
@@ -135,6 +135,8 @@ def admission_problem(record: dict, items: dict) -> str | None:
         return "a NonStackable Item takes quantity 1"
     if record["destination"] not in DESTINATIONS:
         return f"unknown destination {record['destination']}"
+    if record["destination"].startswith("equipment_") and record["quantity"] != 1:
+        return "equipment holds one Item"
     if record["destination"] == "container_slot":
         if record["quantity"] != 1:
             return "the container slot holds one Item"

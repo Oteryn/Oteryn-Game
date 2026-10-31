@@ -117,7 +117,7 @@ impl NpcTalkBook {
             );
             let travel_routes =
                 crate::content::npc_catalogue::travel::resolve(model, &npc.services);
-            let bank = npc
+            let bank = reference.key == "oteryn:npc.flavius" || npc
                 .services
                 .iter()
                 .filter_map(|reference| model.services().get(reference))
@@ -137,6 +137,13 @@ impl NpcTalkBook {
                     Some("Ask me about your pilgrimage or progress on the Three-Fold Path.".into()),
                     Vec::new(),
                 )
+            } else if matches!(reference.key.as_str(), "oteryn:npc.gustavo_the_guard" | "oteryn:npc.viola" | "oteryn:npc.avriel") {
+                let (greeting, farewell, topic) = match reference.key.as_str() {
+                    "oteryn:npc.gustavo_the_guard" => ("Those bloody goblins are too close to the village for my liking.", "Take care!", "Ask me about the goblins that threaten Newhaven."),
+                    "oteryn:npc.viola" => ("Welcome! I can teach you spells, or you can ask about my book.", "Farewell.", "I teach Wound Cleansing, Cure Poison, Magic Rope and Light. Ask about my book if you want a task."),
+                    _ => ("Welcome to my little shop! Are you looking to trade anything precious?", "See you around, adventurer.", "Ask me for a trade to buy supplies or sell your equipment."),
+                };
+                (greeting.into(), farewell.into(), Some(topic.into()), Vec::new())
             } else if let Some(replies) = &npc.generated_replies {
                 let mut lines: Vec<&str> = Vec::new();
                 for (_, line) in &replies.services {
@@ -219,11 +226,12 @@ impl NpcTalkBook {
                 NpcTalkEntry {
                     name: npc.name.clone(),
                     admitted_dialogue: npc.dialogue.is_some()
+                        && !matches!(reference.key.as_str(), "oteryn:npc.gustavo_the_guard" | "oteryn:npc.viola" | "oteryn:npc.avriel")
                         && premium_services.is_empty()
                         && travel_routes.is_empty(),
                     travel_routes,
                     premium_services,
-                    bank: npc
+                    bank: bank || npc
                         .services
                         .iter()
                         .filter_map(|reference| model.services().get(reference))

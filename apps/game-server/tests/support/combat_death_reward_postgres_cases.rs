@@ -451,7 +451,7 @@ impl Harness {
     }
 }
 
-fn death_fixture() -> TestResult<CombatDeathFixture> {
+pub(crate) fn death_fixture() -> TestResult<CombatDeathFixture> {
     CombatDeathFixture::new(
         WorldId::decode(&id(WORLD)).map_err(debug)?,
         ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
@@ -632,7 +632,7 @@ fn input(
 /// §1.2: the facts the projecting owner turn captures under the lock, for
 /// the fixed reward principal `id(41)`. No clocked damage is recorded here,
 /// so the facts carry no last-damage time.
-fn capture(
+pub(crate) fn capture(
     fixture: &mut CombatDeathFixture,
     actor: ExactActorRef,
 ) -> TestResult<ProjectedCreatureDeathFacts> {

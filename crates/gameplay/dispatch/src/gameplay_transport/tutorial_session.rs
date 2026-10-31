@@ -61,6 +61,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             Ok(None) => return true,
             Err(_) => return false,
         };
+        if !self.retry_newhaven_starter(actor, session).await {
+            return false;
+        }
         if !stored.pending_islet {
             return true;
         }

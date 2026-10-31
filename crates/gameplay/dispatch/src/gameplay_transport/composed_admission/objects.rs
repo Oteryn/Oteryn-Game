@@ -109,7 +109,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // current runtime generation; a stale slot or superseded session therefore contributes
         // neither a level nor a door mutation. Keep the guard through the toggle so a level-up,
         // death or actor replacement cannot race the predicate.
-        let spell_states = self.states.spell_states.lock().await;
+        let mut spell_states = self.states.spell_states.lock().await;
         if spell_states.is_dead(actor) {
             return UseOutcome::rejected();
         }
@@ -183,6 +183,83 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         let Some(actor_tile) = native(expected.position()) else {
             return UseOutcome::rejected();
         };
+        if item_ref_admission::pinned_index(&runtime, self.active_generation).is_some()
+            && let Some(native) = self
+                .active_generation
+                .and_then(crate::content::ActiveGeneration::native_gameplay)
+            && let Some(ferry) = super::super::newhaven_ferry::resolve(
+                map,
+                native,
+                runtime.content_pin().client_artifact_digest(),
+                actor_tile,
+                target,
+            )
+        {
+            use oteryn_protocol_oteryn::world_object::UseDisposition;
+            let result = |disposition| UseOutcome {
+                disposition,
+                ..UseOutcome::rejected()
+            };
+            if let Err(disposition) = ferry {
+                return result(disposition);
+            }
+            if actor_level < 8 {
+                self.states.tutorial_sessions.notice(
+                    session,
+                    oteryn_protocol_oteryn::tutorial_notices::TutorialNotice::StatusText(
+                        super::super::newhaven_ferry::REFUSAL.into(),
+                    ),
+                );
+                return result(UseDisposition::Locked);
+            }
+            if spell_states.has_pending_spell_commit(actor, session)
+                || self.states.newhaven_travel.held(session)
+            {
+                return UseOutcome::rejected();
+            }
+            let destination = super::super::newhaven_ferry::DESTINATION;
+            let destination_tile = TilePos {
+                x: 32555,
+                y: 32497,
+                floor: -7,
+            };
+            if !respawn_cell_admissible(
+                self.movement_cells.index(),
+                self.movement_cells.scope(),
+                self.world_id,
+                runtime.content_pin().server_artifact_digest(),
+                &std::collections::BTreeSet::new(),
+                destination,
+            ) || map.facts.doors().blocks(destination_tile)
+                || runtime
+                    .position_occupied_by_other(actor, destination)
+                    .unwrap_or(true)
+                || runtime
+                    .reserved_into_by_own_pending(actor, destination)
+                    .unwrap_or(true)
+            {
+                return result(UseDisposition::Occupied);
+            }
+            use oteryn_gameplay_spell_rules::cast::{STAIRHOP_COOLDOWN_KEY, STAIRHOP_MICROS};
+            let Ok(until) = self.owner_now().checked_add(STAIRHOP_MICROS) else {
+                return UseOutcome::rejected();
+            };
+            if runtime
+                .borrow_movement_position()
+                .commit_world_relocation(expected, destination)
+                .is_err()
+            {
+                return UseOutcome::rejected();
+            }
+            if let Some(state) = spell_states.get_mut(&runtime, actor, session) {
+                state
+                    .cooldowns
+                    .groups
+                    .insert(STAIRHOP_COOLDOWN_KEY.into(), until);
+            }
+            self.states.chat.close_out_of_range(&runtime, session);
+            return result(UseDisposition::Committed);
+        }
         if item_ref_admission::pinned_index(&runtime, self.active_generation).is_some()
             && let Some(native) = self
                 .active_generation

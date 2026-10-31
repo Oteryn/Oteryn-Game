@@ -1,0 +1,15 @@
+{
+  "mechanic": "0238-newhaven-vocation",
+  "kind": "handlers",
+  "id": "0238-newhaven-vocation-choice",
+  "status": "supported",
+  "commands": [
+    456
+  ],
+  "direction": "client_to_server",
+  "capability": 238,
+  "entry": "protocol.rs::request",
+  "not_applicable": {
+    "settings": "The server owns vocation; no local preference is stored."
+  }
+}

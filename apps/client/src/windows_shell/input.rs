@@ -9,6 +9,9 @@ impl Application {
         events: &[oteryn_input_actions::NormalizedInputEvent],
     ) {
         if let Some(play) = &mut self.play {
+            if play.link.newhaven_vocation_input(events) {
+                return;
+            }
             if play.link.exiva_input(events) || play.link.quest_input(events) {
                 return;
             }

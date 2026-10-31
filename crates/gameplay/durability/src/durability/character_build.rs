@@ -218,6 +218,8 @@ pub enum BuildCause {
     /// `none` to a vocation key. The owner re-levels cumulative progress under the new vocation
     /// (SKILLS-0 §3.3) and binds the formula table in the policy digest.
     VocationChoice,
+    /// Newhaven first choice preserves the saved current health and mana pools.
+    NewhavenVocationChoice,
     /// S16c: a Dawnport trial tile switches to another vocation key below level 20, re-levelled
     /// like [`Self::VocationChoice`] (Crystal 201189f8 data-global/lib/others/dawnport.lua:26-120).
     VocationTrial,
@@ -237,6 +239,7 @@ impl BuildCause {
             Self::Logout => "logout",
             Self::OfflineSettlement => "offline_settlement",
             Self::VocationChoice => "vocation_choice",
+            Self::NewhavenVocationChoice => "newhaven_vocation_choice",
             Self::VocationTrial => "vocation_trial",
             Self::Promotion => "promotion",
         }
@@ -247,6 +250,7 @@ impl BuildCause {
             Self::Training,
             Self::RestingStamina,
             Self::VocationChoice,
+            Self::NewhavenVocationChoice,
             Self::VocationTrial,
             Self::Promotion,
             Self::Logout,
@@ -259,7 +263,7 @@ impl BuildCause {
     /// The direction of the 0030 cause CHECK, checked before any write.
     /// The causes whose `after` must be exactly [`convert_vocation`] of `before`.
     fn converts(self) -> bool {
-        matches!(self, Self::VocationChoice | Self::VocationTrial)
+        matches!(self, Self::VocationChoice | Self::NewhavenVocationChoice | Self::VocationTrial)
     }
 
     fn admits(self, before: &DurableBuildState, after: &DurableBuildState) -> bool {
@@ -277,7 +281,7 @@ impl BuildCause {
                     && from.iter().zip(&to).all(|(from, to)| to >= from)
                     && from != to
             }
-            Self::VocationChoice => before.vocation == NO_VOCATION && after.vocation != NO_VOCATION,
+            Self::VocationChoice | Self::NewhavenVocationChoice => before.vocation == NO_VOCATION && after.vocation != NO_VOCATION,
             Self::VocationTrial => {
                 after.vocation != NO_VOCATION && before.vocation != after.vocation
             }

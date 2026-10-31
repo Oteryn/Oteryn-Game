@@ -1,0 +1,17 @@
+{
+  "id": 238,
+  "name": "NEWHAVEN_VOCATION_V1",
+  "constant": "newhaven_vocation::CAPABILITY_NEWHAVEN_VOCATION_V1",
+  "requires": [],
+  "acceptance_requires": false,
+  "commands": [
+    456
+  ],
+  "domains": [],
+  "supersedes": [],
+  "offers": {
+    "production": false,
+    "item_view": false,
+    "bundle_world": true
+  }
+}

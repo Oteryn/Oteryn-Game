@@ -30,6 +30,7 @@ XML = IMPORT / "raw/data-global/world/world-monster.xml"
 HELD = IMPORT / "map-content-linking/spawns/held-groups.json"
 HELD_SHA256 = "8a666c3d409edda5ac5996d6dec64cce24b30d5f43c75aa9a1175f1d07297c57"
 BOSSES = Path(__file__).with_name("boss-spawns.json")
+NEWHAVEN = Path(__file__).with_name("newhaven-spawns.json")
 FRAME = "global-target-2026-09-27"
 SHARD_SIZE = 2000
 SOURCE = {
@@ -123,6 +124,17 @@ def convert(xml: bytes) -> dict[str, str]:
                 }
             }
         )
+    # The accepted Newhaven release restores only six independent points of held12958.
+    # The weighted same-cell pair remains excluded; Chief is an explicit owner design.
+    newhaven_bytes = NEWHAVEN.read_bytes()
+    newhaven = json.loads(newhaven_bytes)
+    if newhaven["family"] != "Spawn.Source" or newhaven["coordinate_frame"] != FRAME:
+        sys.exit("Newhaven spawn authoring family or frame mismatch")
+    for record in newhaven["records"]:
+        for point in record["declaration"]["points"]:
+            if point["creature"] not in known or point.get("respawn_ms") != 60000:
+                sys.exit("Newhaven spawn must bind an admitted creature and 60s timer")
+    records.extend(newhaven["records"])
     files, shards = {}, []
     for start in range(0, len(records), SHARD_SIZE):
         part = records[start : start + SHARD_SIZE]
@@ -152,7 +164,8 @@ def convert(xml: bytes) -> dict[str, str]:
             "held_groups": {
                 "group_count": len(held_records),
                 "path": "imports/crystalserver/summer-update/map-content-linking/spawns/held-groups.json",
-                "point_count": sum(r["point_count"] for r in held_records),
+                "point_count": sum(r["point_count"] for r in held_records) - 6,
+                "released_points": {"source_group_ordinal": 12958, "point_count": 6},
                 "sha256": HELD_SHA256,
             },
             "held_bosses": {"path": f"content/world/spawns/{held_name}",
@@ -167,7 +180,10 @@ def convert(xml: bytes) -> dict[str, str]:
             "source": SOURCE,
             "additional_sources": [{"path": "tools/world-bundle-compiler/boss-spawns.json",
                                     "sha256": hashlib.sha256(bosses_bytes).hexdigest(),
-                                    "record_count": len(bosses["records"])}],
+                                    "record_count": len(bosses["records"])},
+                                   {"path": "tools/world-bundle-compiler/newhaven-spawns.json",
+                                    "sha256": hashlib.sha256(newhaven_bytes).hexdigest(),
+                                    "record_count": len(newhaven["records"])}],
         }
     )
     return {name: text + "\n" for name, text in files.items()}

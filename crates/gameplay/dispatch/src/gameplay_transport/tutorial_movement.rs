@@ -90,6 +90,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             {
                 operator_event("tutorial_movement_progress_unavailable");
             }
+            if event == Some(TutorialEvent::Forcefield)
+                && !self.retry_newhaven_starter(actor, session).await
+            {
+                operator_event("newhaven_starter_retry_unavailable");
+            }
         }
         outcome
     }

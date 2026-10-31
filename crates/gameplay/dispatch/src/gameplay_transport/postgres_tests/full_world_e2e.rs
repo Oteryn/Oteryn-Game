@@ -988,7 +988,7 @@ fn scenario() -> TestResult {
 
 /// The successor admission of the fixture Character, as the loop-training reload does: refresh
 /// the fixture Platform sources through their owner API, then commit the next fresh admission.
-async fn relogin(h: &Harness) -> TestResult<GameSessionId> {
+pub(super) async fn relogin(h: &Harness) -> TestResult<GameSessionId> {
     use crate::durability::admission_authority_guards::AdmissionGuardStore;
     use crate::foundation::admission_authority_publication::{
         AdmissionAuthorityGuardKeyV1 as Key, AdmissionAuthorityGuardStateV1 as State,

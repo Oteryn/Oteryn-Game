@@ -53,6 +53,7 @@ pub(in crate::durability) async fn load_by_command(
                 service: match row.try_get::<i16, _>("cause_kind")? {
                     2 => PurchaseService::Promotion(service),
                     3 => PurchaseService::Blessing(service),
+                    13 => PurchaseService::SpellLearning(service),
                     _ => return Err(DurabilityError::InvalidStoredState),
                 },
                 price: u64::try_from(row.try_get::<i64, _>("fee_gold_units")?)

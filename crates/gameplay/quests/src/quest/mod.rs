@@ -19,6 +19,7 @@
 pub mod loader;
 pub mod log;
 pub mod monk_shrines;
+pub mod newhaven;
 pub mod task_board;
 pub mod world_callbacks;
 

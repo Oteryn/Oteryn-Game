@@ -30,12 +30,14 @@ pub const CLIENT_SUPPORTED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::depot::CAPABILITY_DEPOT_V1,
     oteryn_protocol_oteryn::world_object::CAPABILITY_FIELD_RUNES_V1,
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
+    oteryn_protocol_oteryn::newhaven_vocation::CAPABILITY_NEWHAVEN_VOCATION_V1,
 ];
 
 /// Capabilities supported by the raw command/snapshot/delta routes, including opt-in
 /// capabilities absent from `CLIENT_SUPPORTED_CAPABILITIES`. Typed routes stay separate.
 const CLIENT_GATED_CAPABILITIES: &[u32] = &[
     oteryn_protocol_oteryn::exiva::CAPABILITY_EXIVA_SETTINGS_V1,
+    oteryn_protocol_oteryn::newhaven_vocation::CAPABILITY_NEWHAVEN_VOCATION_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_V1,
     oteryn_protocol_oteryn::hotkey_equip::CAPABILITY_HOTKEY_EQUIP_CARRIED_V1,
     quest_log::CAPABILITY_QUEST_LOG_V1,

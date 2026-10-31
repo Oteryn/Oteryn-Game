@@ -109,6 +109,10 @@ pub enum FeeBurnCause {
         service: String,
         occurrence: [u8; 16],
     },
+    SpellLearning {
+        service: String,
+        occurrence: [u8; 16],
+    },
     BlessingPurchase {
         service: String,
         occurrence: [u8; 16],

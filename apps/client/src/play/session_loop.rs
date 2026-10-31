@@ -17,6 +17,15 @@ const IDLE_SLICE: Duration = Duration::from_millis(20);
 
 /// The session calls the task needs; implemented by `Session`.
 pub trait Stepper: Send {
+    fn newhaven_vocation_selected(&self) -> bool {
+        false
+    }
+    fn newhaven_vocation(
+        &mut self,
+        _payload: &[u8],
+    ) -> impl Future<Output = Result<oteryn_session::GatedCommandResult, SessionError>> + Send {
+        async { Err(SessionError::CapabilityNotSelected { capability: 238 }) }
+    }
     fn exiva_selected(&self) -> bool {
         false
     }
@@ -62,6 +71,15 @@ pub trait Stepper: Send {
 }
 
 impl<S: SessionStream + Send> Stepper for Session<S> {
+    fn newhaven_vocation_selected(&self) -> bool {
+        self.is_selected(oteryn_protocol_oteryn::newhaven_vocation::CAPABILITY_NEWHAVEN_VOCATION_V1)
+    }
+    async fn newhaven_vocation(
+        &mut self,
+        payload: &[u8],
+    ) -> Result<oteryn_session::GatedCommandResult, SessionError> {
+        super::feature_0238_newhaven_vocation::protocol::send(self, payload).await
+    }
     fn exiva_selected(&self) -> bool {
         self.is_selected(147)
     }
@@ -129,11 +147,22 @@ pub async fn run_session<T: Stepper>(
     mut commands: UnboundedReceiver<PlayCommand>,
     outbox: Outbox,
 ) {
+    outbox.vocation_initialize(session.newhaven_vocation_selected());
     outbox.exiva_initialize(session.exiva_selected());
     outbox.quest_initialize(session.quest_state());
     let mut held = Vec::new();
     loop {
         let ended = match commands.try_recv() {
+            Ok(PlayCommand::NewhavenVocation(payload)) => {
+                match session.newhaven_vocation(&payload).await {
+                    Ok(result) => {
+                        outbox.vocation_result(&result);
+                        publish(&mut session, &outbox, &mut held);
+                        continue;
+                    }
+                    Err(error) => error,
+                }
+            }
             Ok(PlayCommand::Exiva(payload)) => {
                 let result = session.exiva(&payload).await;
                 match result {

@@ -357,7 +357,10 @@ impl ApplicationHandler for Application {
             }
         }
         if let (Some(play), Some(window)) = (&mut self.play, &self.window) {
-            let status = play.view.combat_status();
+            let status = play
+                .link
+                .newhaven_vocation_status()
+                .map_or_else(|| play.view.combat_status(), str::to_owned);
             if status != play.status {
                 window.set_title(&format!("Oteryn — {status}"));
                 play.status = status;

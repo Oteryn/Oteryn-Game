@@ -5,6 +5,31 @@
       "label": "oteryn:starter-template.main",
       "record_count": 1,
       "records_sha256": "31c650c4c2171296595151d2153f8b9c6a17911cc5bc57e9fed91a6b73d159f9"
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_sorcerer",
+      "record_count": 13,
+      "records_sha256": "275ae79120740e7010457b72005f062e030a11dc90c6ec60f3c0103c583196b3"
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_druid",
+      "record_count": 13,
+      "records_sha256": "96f67ba9661920f3423d2bf60ffd2cc8022ef1463feb4af08051866465df5b7c"
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_paladin",
+      "record_count": 14,
+      "records_sha256": "b8409b4fbd52b5bb9cb42d5257aa66520d8d0e9800575d6e4631b089bfac5d38"
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_knight",
+      "record_count": 12,
+      "records_sha256": "3a316f7f0235feb73416bfb4fa8e297d3cc202c10e74dc2491d71d46b417c088"
+    },
+    {
+      "label": "oteryn:starter-template.newhaven_monk",
+      "record_count": 11,
+      "records_sha256": "38646ff2cd0c0d230d51032839e8026b09af699f0c469d8b8c9749ca031b9c34"
     }
   ]
 }

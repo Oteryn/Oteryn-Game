@@ -1,0 +1,13 @@
+{
+  "id": 238,
+  "name": "NEWHAVEN_VOCATION_V1",
+  "owner_decision": "OTV2-20261031-newhaven; owner Q8",
+  "owner": "Existing Character build, tutorial and starter grant owners",
+  "requires": [],
+  "command_types": [
+    456
+  ],
+  "state_domains": [],
+  "offered": false,
+  "offer_gate": "BUNDLE_WORLD_OFFERED_CAPABILITIES: only the bundle World offers this command. Current session and durable Island tutorial progress are required."
+}

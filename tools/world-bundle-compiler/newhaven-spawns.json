@@ -1,0 +1,110 @@
+{
+  "coordinate_frame": "global-target-2026-09-27",
+  "family": "Spawn.Source",
+  "records": [
+    {
+      "declaration": {
+        "centre": {
+          "floor": 7,
+          "x": 32619,
+          "y": 32450
+        },
+        "identity": {
+          "key": "oteryn:spawn.x32619_y32450_z7",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 7,
+              "x": 32625,
+              "y": 32450
+            },
+            "creature": "oteryn:creature.muglex_clan_assassin",
+            "direction": "north",
+            "respawn_ms": 60000
+          },
+          {
+            "cell": {
+              "floor": 7,
+              "x": 32610,
+              "y": 32451
+            },
+            "creature": "oteryn:creature.corrupted_ghost",
+            "direction": "north",
+            "respawn_ms": 60000
+          },
+          {
+            "cell": {
+              "floor": 7,
+              "x": 32625,
+              "y": 32454
+            },
+            "creature": "oteryn:creature.corrupted_skeleton",
+            "direction": "north",
+            "respawn_ms": 60000
+          },
+          {
+            "cell": {
+              "floor": 7,
+              "x": 32611,
+              "y": 32456
+            },
+            "creature": "oteryn:creature.corrupted_skeleton",
+            "direction": "north",
+            "respawn_ms": 60000
+          },
+          {
+            "cell": {
+              "floor": 7,
+              "x": 32621,
+              "y": 32457
+            },
+            "creature": "oteryn:creature.muglex_clan_footman",
+            "direction": "north",
+            "respawn_ms": 60000
+          },
+          {
+            "cell": {
+              "floor": 7,
+              "x": 32620,
+              "y": 32458
+            },
+            "creature": "oteryn:creature.muglex_clan_footman",
+            "direction": "north",
+            "respawn_ms": 60000
+          }
+        ]
+      }
+    },
+    {
+      "declaration": {
+        "centre": {
+          "floor": 7,
+          "x": 32527,
+          "y": 32430
+        },
+        "identity": {
+          "key": "oteryn:spawn.newhaven_muglex_chief",
+          "revision": "definition-r1"
+        },
+        "points": [
+          {
+            "cell": {
+              "floor": 7,
+              "x": 32527,
+              "y": 32430
+            },
+            "creature": "oteryn:creature.muglex_clan_chief",
+            "direction": "north",
+            "respawn_ms": 60000
+          }
+        ]
+      }
+    }
+  ],
+  "qualification": {
+    "ordinary": "OTS_HYPOTHESIS_ONLY: data-global/world/world-monster.xml:44904-44912 at 201189f; six independent points only. Weighted same-cell pair remains held.",
+    "chief": "OTERYN_DESIGN: owner answer6543106557. Nearest source walkable floor7 tile to32526,32430 is32527,32430 (ground9526 + border4536); target contains solid22262. Timer60s borrows source Corruptor timer, not Chief provenance."
+  }
+}

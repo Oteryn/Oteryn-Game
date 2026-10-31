@@ -1,0 +1,10 @@
+name=newhaven_vocation
+commands=456
+transport=newhaven_vocation
+composed=newhaven_vocation
+authority=newhaven_vocation
+[route]
+match routing::newhaven_vocation::route(authority, session.actor, &session.admitted, command).await {
+    Some(dispatch) => dispatch,
+    None => return Err(ServeEnd::Disconnected),
+}

@@ -37,3 +37,7 @@ pub mod bestiary_charms;
 /// Editable server-owned Exiva player permissions.
 #[path = "features/0147-exiva-settings/mod.rs"]
 pub mod exiva_settings;
+
+/// Server-prompted Newhaven first-vocation chooser.
+#[path = "features/0238-newhaven-vocation/mod.rs"]
+pub mod newhaven_vocation;

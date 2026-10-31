@@ -36,6 +36,7 @@ pub mod player_death_items;
 pub mod player_report;
 pub mod prey;
 pub mod quest_monk_rewards;
+pub mod quest_newhaven_rewards;
 pub mod quest_world_callback;
 pub mod raid_runner;
 pub mod raid_schedule;

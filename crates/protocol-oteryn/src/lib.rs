@@ -73,6 +73,7 @@ pub mod logout;
 pub mod loop_training;
 pub mod mail;
 pub mod market;
+pub mod newhaven_vocation;
 pub mod npc_service;
 pub mod npc_shop;
 pub mod party;

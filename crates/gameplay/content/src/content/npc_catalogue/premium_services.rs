@@ -71,10 +71,16 @@ pub enum PremiumNpcService {
     Promotion { service: String },
     Blessing(Blessing),
     Henricus,
+    SpellLearning { key: String, name: String, price: u64 },
 }
 
 pub fn resolve(npc: &str, services: &[ProjectV2DefinitionRef]) -> Vec<PremiumNpcService> {
     let mut offered = Vec::new();
+    if npc == "oteryn:npc.viola" {
+        for (key,name,price) in [("cure_poison", "Cure Poison",150),("magic_rope","Magic Rope",200)] {
+            offered.push(PremiumNpcService::SpellLearning {key: format!("oteryn:spell.{key}"), name: name.into(),price});
+        }
+    }
     let Some(stem) = npc.strip_prefix("oteryn:npc.") else {
         return offered;
     };

@@ -24,17 +24,19 @@ pub(super) use recovery::verify_purchase_integrity;
 pub enum PurchaseService {
     Promotion(String),
     Blessing(String),
+    SpellLearning(String),
 }
 impl PurchaseService {
     pub fn key(&self) -> &str {
         match self {
-            Self::Promotion(key) | Self::Blessing(key) => key,
+            Self::Promotion(key) | Self::Blessing(key) | Self::SpellLearning(key) => key,
         }
     }
     fn kind(&self) -> i16 {
         match self {
             Self::Promotion(_) => 2,
             Self::Blessing(_) => 3,
+            Self::SpellLearning(_) => 13,
         }
     }
 }
@@ -124,7 +126,7 @@ impl DurabilityRoot {
                 if request.npc_generation == 0 || request.occurred_at_unix_ms <= 0
                     || check_uuid_v7(&request.occurrence).is_err()
                 { return Ok(Err(CharacterProgressionError::InvalidInput)); }
-                if !gate.authorize(&mut tx,request.account,&request.service).await? {
+                if !matches!(request.service, PurchaseService::SpellLearning(_)) && !gate.authorize(&mut tx,request.account,&request.service).await? {
                     return Ok(Ok(PurchaseOutcome::Refused(PurchaseRefusal::PremiumRequired)));
                 }
                 let root = match assert_gameplay_fence(&mut tx, &fence, &node).await? {
@@ -149,6 +151,18 @@ impl DurabilityRoot {
                 }
                 let level = u32::try_from(state.try_get::<i64,_>("level")?).map_err(|_| DurabilityError::InvalidStoredState)?;
                 let quote = match &request.service {
+                    PurchaseService::SpellLearning(key) => {
+                        let price = match (request.npc_key.as_str(), key.as_str()) {
+                            ("oteryn:npc.viola", "oteryn:spell.cure_poison") => Some(150),
+                            ("oteryn:npc.viola", "oteryn:spell.magic_rope") => Some(200),
+                            _ => None,
+                        };
+                        if let Some(price) = price {
+                            let known: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM game_character_known_spells WHERE character_id=encode($1,'hex')::uuid AND spell_key=$2)")
+                                .bind(fence.character_id.as_bytes().as_slice()).bind(key.replace("oteryn:spell.", "candidate:spell/")).fetch_one(&mut **tx).await?;
+                            if known { Err(PurchaseRefusal::AlreadyHeld) } else { Ok((price, Vec::new())) }
+                        } else { Err(PurchaseRefusal::NotEligible) }
+                    },
                     PurchaseService::Promotion(_) => super::promotion_purchase::quote(&mut tx,fence.character_id,&request.npc_key,&request.service,level).await?.map(|(price, _)| (price, Vec::new())),
                     PurchaseService::Blessing(_) => super::blessing_purchase::quote(&mut tx,fence.character_id,&request.npc_key,&request.service,level).await?,
                 };
@@ -159,6 +173,7 @@ impl DurabilityRoot {
                 // Bind the participant to this physical XID before any fee/effect write.
                 let xid: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text").fetch_one(&mut **tx).await?;
                 let cause = match &request.service {
+                    PurchaseService::SpellLearning(service) => FeeBurnCause::SpellLearning { service: service.clone(), occurrence },
                     PurchaseService::Promotion(service) => FeeBurnCause::PromotionPurchase { service: service.clone(), occurrence },
                     PurchaseService::Blessing(service) => FeeBurnCause::BlessingPurchase { service: service.clone(), occurrence },
                 };
@@ -175,7 +190,9 @@ impl DurabilityRoot {
                 let current_xid: String = sqlx::query_scalar("SELECT pg_current_xact_id()::text").fetch_one(&mut **tx).await?;
                 if xid != current_xid { return Err(DurabilityError::InvalidStoredState); }
                 receipt::insert(&mut tx,&fence,&request,&fee,&blessing,&binding).await?;
-                if blessing.is_empty() {
+                if let PurchaseService::SpellLearning(key) = &request.service {
+                    super::character_known_spells::grant_quest_spell(&mut tx, fence.character_id, &key.replace("oteryn:spell.", "candidate:spell/")).await?;
+                } else if blessing.is_empty() {
                     super::promotion_purchase::grant(&mut tx,fence.character_id,occurrence).await?;
                 } else {
                     for key in blessing {
