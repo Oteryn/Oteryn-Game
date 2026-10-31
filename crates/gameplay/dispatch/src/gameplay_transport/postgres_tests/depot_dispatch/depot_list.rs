@@ -1,18 +1,20 @@
 //! E08 read-side proof using possessions stored by the existing custody writers.
 use super::*;
+use crate::gameplay_transport::connection::{AdmittedSession, ConnectionEnd, serve_admitted};
 use oteryn_protocol_oteryn::depot_search::{self as wire, Outcome, Request};
 use oteryn_protocol_oteryn::item_view::ItemHandle;
 use oteryn_protocol_oteryn::stash::{StashAction, StashIntent, StashOutcome};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 async fn dispatch(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    admitted: &mut AdmittedSession,
     id: u64,
     request: Request,
 ) -> TestResult<wire::Reply> {
     let payload = wire::encode_request(request).map_err(debug)?;
     let frame = oteryn_protocol_oteryn::encode_client_command(
-        1,
+        admitted.continuity.connection_generation,
         &oteryn_protocol_oteryn::ClientCommandValue {
             command_id: id,
             command_type: wire::COMMAND_TYPE_DEPOT_SEARCH,
@@ -22,8 +24,23 @@ async fn dispatch(
     .map_err(debug)?;
     let mut input = u32::try_from(frame.len())?.to_be_bytes().to_vec();
     input.extend(frame);
-    let (_, output) =
-        super::super::weather_wire::fixture_access::serve_input(owner, admitted, &input).await?;
+    let expected_status = if id < admitted.continuity.next_command_id {
+        oteryn_protocol_oteryn::CommandStatus::DuplicateReplay
+    } else {
+        oteryn_protocol_oteryn::CommandStatus::Accepted
+    };
+    let (mut server, mut client) = tokio::io::duplex(1 << 20);
+    client.write_all(&input).await?;
+    client.shutdown().await?;
+    let end = serve_admitted(&mut server, *admitted, owner, SCENARIO_LIVENESS).await;
+    drop(server);
+    let mut output = Vec::new();
+    client.read_to_end(&mut output).await?;
+    // Each exchange resumes the same command stream, including its retained replay result.
+    match end {
+        ConnectionEnd::AdmittedThenDisconnected(next) => *admitted = next,
+        other => return Err(format!("depot list command {id}: {other:?}").into()),
+    }
     let mut cursor = output.as_slice();
     while !cursor.is_empty() {
         let len = u32::from_be_bytes(cursor.get(..4).ok_or("length")?.try_into()?) as usize;
@@ -34,10 +51,7 @@ async fn dispatch(
             let result =
                 oteryn_protocol_oteryn::decode_command_result(envelope.payload()).map_err(debug)?;
             assert_eq!(result.command_id, id);
-            assert_eq!(
-                result.status,
-                oteryn_protocol_oteryn::CommandStatus::Accepted
-            );
+            assert_eq!(result.status, expected_status);
             return wire::decode_reply(result.payload).map_err(debug);
         }
     }
@@ -46,10 +60,10 @@ async fn dispatch(
 
 pub(super) async fn prepare(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    mut admitted: AdmittedSession,
     extras: &[(ItemHandle, [u8; 16])],
-) -> TestResult {
-    let empty = dispatch(owner, admitted, 701, Request::Open { after: 0 }).await?;
+) -> TestResult<AdmittedSession> {
+    let empty = dispatch(owner, &mut admitted, 1, Request::Open { after: 0 }).await?;
     assert_eq!(empty.outcome, Outcome::Listed);
     assert!(empty.results.is_empty());
     let actor = admitted.runtime_actor.ok_or("actor")?;
@@ -74,6 +88,20 @@ pub(super) async fn prepare(
         .await
         .ok_or("deposit")?;
     assert_eq!(moved.reply.outcome, DepotOutcome::Moved);
+    let opened = owner
+        .stash(
+            actor,
+            command(700),
+            StashIntent {
+                page: 0,
+                action: StashAction::Browse,
+            },
+            None,
+            false,
+        )
+        .await
+        .ok_or("open stash")?;
+    assert_eq!(opened.outcome, StashOutcome::Opened);
     let (handle, item) = *extras.get(1).ok_or("stash stack")?;
     let stowed = owner
         .stash(
@@ -84,19 +112,19 @@ pub(super) async fn prepare(
                 action: StashAction::Stow(handle),
             },
             Some(ItemKey::Instance(item)),
-            false,
+            true,
         )
         .await
         .ok_or("stow")?;
     assert_eq!(stowed.outcome, StashOutcome::Committed);
-    Ok(())
+    Ok(admitted)
 }
 
 pub(super) async fn exercise(
     owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
-    admitted: crate::gameplay_transport::connection::AdmittedSession,
+    mut admitted: AdmittedSession,
 ) -> TestResult {
-    let reply = dispatch(owner, admitted, 704, Request::Open { after: 0 }).await?;
+    let reply = dispatch(owner, &mut admitted, 2, Request::Open { after: 0 }).await?;
     assert_eq!(reply.outcome, Outcome::Listed);
     assert_eq!(
         reply
@@ -119,14 +147,14 @@ pub(super) async fn exercise(
         }]
     );
     assert_eq!(
-        dispatch(owner, admitted, 704, Request::Open { after: 0 }).await?,
+        dispatch(owner, &mut admitted, 2, Request::Open { after: 0 }).await?,
         reply
     );
-    let search = dispatch(owner, admitted, 705, Request::Search { client_id: 3028 }).await?;
+    let search = dispatch(owner, &mut admitted, 3, Request::Search { client_id: 3028 }).await?;
     let detail = dispatch(
         owner,
-        admitted,
-        706,
+        &mut admitted,
+        4,
         Request::Detail {
             client_id: 3028,
             tier: 0,
@@ -142,8 +170,8 @@ pub(super) async fn exercise(
     );
     let absent = dispatch(
         owner,
-        admitted,
-        707,
+        &mut admitted,
+        5,
         Request::Detail {
             client_id: 3028,
             tier: 1,
@@ -164,7 +192,7 @@ pub(super) async fn exercise(
         [wire::TierCount { tier: 1, count: 0 }]
     );
     assert_eq!(
-        dispatch(owner, admitted, 708, Request::Open { after: 3506 })
+        dispatch(owner, &mut admitted, 6, Request::Open { after: 3506 })
             .await?
             .results,
         reply.results[3..]
@@ -183,10 +211,10 @@ pub(super) async fn exercise(
         oteryn_protocol_oteryn::world_spatial::StepDisposition::Moved
     );
     for (id, request) in [
-        (709, Request::Open { after: 0 }),
-        (710, Request::Search { client_id: 3028 }),
+        (7, Request::Open { after: 0 }),
+        (8, Request::Search { client_id: 3028 }),
         (
-            711,
+            9,
             Request::Detail {
                 client_id: 3028,
                 tier: 0,
@@ -194,7 +222,7 @@ pub(super) async fn exercise(
         ),
     ] {
         assert_eq!(
-            dispatch(owner, admitted, id, request).await?.outcome,
+            dispatch(owner, &mut admitted, id, request).await?.outcome,
             Outcome::Rejected
         );
     }

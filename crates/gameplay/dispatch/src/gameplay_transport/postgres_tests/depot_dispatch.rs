@@ -247,7 +247,7 @@ fn scenario_with_premium(
                 deps.admitted.world_id,
                 "content-1",
             )?;
-        if ground_movement {
+        if ground_movement || mode == Mode::List {
             deps.room = activated_pin.qualified_room().clone();
         }
         let generation = controller.active().ok_or("active generation")?;
@@ -725,7 +725,7 @@ fn scenario_with_premium(
                         ))
                     })
                     .collect::<TestResult<Vec<_>>>()?;
-                depot_list::prepare(&owner, admitted, &extras).await?;
+                admitted = depot_list::prepare(&owner, admitted, &extras).await?;
             }
             mail_cases::exercise(
                 &owner,
