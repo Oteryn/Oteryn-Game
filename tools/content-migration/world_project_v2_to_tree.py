@@ -182,6 +182,8 @@ def main() -> int:
     from quest_reward_item_semantics import apply_admissions
     apply_admissions(item_records, ROOT)
     apply_summer_item_admissions(item_records)
+    from amber_item_semantics import apply_container_fact
+    apply_container_fact(item_records, ROOT)
     item_shards: list[str] = []
     for start in range(0, len(item_records), ITEM_SHARD_SIZE):
         rows = []
