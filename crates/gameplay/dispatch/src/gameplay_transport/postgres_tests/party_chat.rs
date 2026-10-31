@@ -60,7 +60,7 @@ async fn command(
         )
         .map_err(debug)?;
         // An identical command is answered from the real retained ingress result.
-        for _ in 0..2 {
+        for status in [CommandStatus::Accepted, CommandStatus::DuplicateReplay] {
             write_frame(&mut client, &frame).await?;
             loop {
                 let bytes = read_frame(&mut client).await?;
@@ -70,7 +70,7 @@ async fn command(
                 }
                 let result = decode_command_result(env.payload()).map_err(debug)?;
                 assert_eq!(result.command_id, session.continuity.next_command_id);
-                assert_eq!(result.status, CommandStatus::Accepted);
+                assert_eq!(result.status, status);
                 assert_eq!(
                     chat::decode_chat_intent_result(result.payload)
                         .map_err(debug)?
