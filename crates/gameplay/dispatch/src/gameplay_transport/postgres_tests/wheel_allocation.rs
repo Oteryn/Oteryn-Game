@@ -201,9 +201,9 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
             .map_err(debug)?,
         );
         let mut owner = deps.owner(&h, &authority);
-        if matches!(transition, Some(WheelExtensionCase::Capacity)) {
-            owner.active_generation = controller.active();
-        }
+        // Current Premium/promotion application qualifies the same activated content
+        // as the real actor. Every live Wheel scenario needs that owner, not only capacity.
+        owner.active_generation = controller.active();
         owner.wheel_ruleset = Some(Arc::clone(&ruleset));
         owner.premium_coordinator = Some(&gate);
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
@@ -404,6 +404,12 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
                     let runtime = deps.runtime.lock().await;
                     let mut states = owner.states.spell_states.lock().await;
                     let state = states.get_mut(&runtime, deps.actor, session).ok_or("Gift actor")?;
+                    let effects = state.wheel_effects_at(now)
+                        .ok_or("Gift requires current native generation, promotion and Premium")?;
+                    assert_eq!(effects.revelation_stages.get("gift_of_life"), Some(&3),
+                        "the committed Sorcerer allocation qualifies Gift III");
+                    assert_eq!(state.wheel_gift_save(now, true), Some((0, 0)),
+                        "the freshly loaded online cooldown is ready");
                     let facts = state.character_facts();
                     state.restore_saved_vitals((facts.max_health / 10).max(1), 0);
                     let damage = state.health + facts.max_health / 10;
@@ -461,6 +467,7 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
                 None
             };
             let mut restarted = deps.owner(&h, &authority);
+            restarted.active_generation = controller.active();
             restarted.clock_origin = owner.clock_origin;
             restarted.wheel_ruleset = Some(Arc::clone(&ruleset));
             restarted.premium_coordinator = Some(&gate);
@@ -677,6 +684,7 @@ fn scenario(transition: Option<WheelExtensionCase>) -> TestResult {
         owner.rooms = rooms;
         // A fresh composed owner reloads the committed allocation through admission.
         let mut restarted = deps.owner(&h, &authority);
+        restarted.active_generation = controller.active();
         restarted.clock_origin = owner.clock_origin;
         restarted.wheel_ruleset = Some(ruleset);
         restarted.premium_coordinator = Some(&gate);
