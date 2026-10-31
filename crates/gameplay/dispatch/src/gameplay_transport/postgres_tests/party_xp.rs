@@ -747,7 +747,11 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 .health;
             let contributed = if matches!(case, Case::ForgeForeign) {
                 health <= 15
-            } else if index == 0 && matches!(case, Case::Concurrent | Case::Foreign) {
+            } else if index == 0 && matches!(case, Case::Concurrent) {
+                // One landed swing is real activity. Driving the rat to five HP with real
+                // swings let a content-seeded draw kill it here; it is trimmed below.
+                health < initial_health
+            } else if index == 0 && matches!(case, Case::Foreign) {
                 health <= 5
             } else {
                 initial_health - health >= 5
@@ -780,6 +784,16 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         runtime
             .commit_monster_lab_damage(creature.actor, b"party-xp-staged-ally-fixture", health - 1)
             .map_err(debug)?;
+    }
+    if matches!(case, Case::Concurrent) {
+        // The first member's landed swing is recent; leave five HP for the second member.
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        if health > 5 {
+            runtime
+                .commit_monster_lab_damage(creature.actor, b"party-xp-concurrent-fixture", health - 5)
+                .map_err(debug)?;
+        }
     }
     if matches!(case, Case::OneHit) {
         // The ally earns real activity first; the killer's first hit is lethal.
