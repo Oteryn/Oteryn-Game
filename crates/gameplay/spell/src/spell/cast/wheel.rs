@@ -639,8 +639,10 @@ mod mitigation_tests {
         }));
         assert_eq!(state.player_mitigation_percent(0), Some(2.6));
         assert_eq!(state.after_player_mitigation(1_000, 0), Some(974));
-        let mut effects = WheelRuntimeEffects::default();
-        effects.mitigation_milli_percent = 100_000;
+        let effects = WheelRuntimeEffects {
+            mitigation_milli_percent: 100_000,
+            ..WheelRuntimeEffects::default()
+        };
         state.install_wheel_effects(effects);
         assert_eq!(
             state.player_mitigation_percent(0),

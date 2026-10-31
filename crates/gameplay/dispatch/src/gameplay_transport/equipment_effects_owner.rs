@@ -52,10 +52,9 @@ fn equipped_mantra(equipment: &EquipmentSnapshot, content: &NativeGameplayState)
                     && let ReferenceItemField::Known(ReferenceModifierParameter::SignedPoints(
                         points,
                     )) = modifier.parameter
+                    && points.0 > 0
                 {
-                    if points.0 > 0 {
-                        total = total.checked_add(i64::from(points.0))?;
-                    }
+                    total = total.checked_add(i64::from(points.0))?;
                 }
             }
         }

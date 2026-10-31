@@ -805,7 +805,8 @@ mod native_composite_tests {
         assert_eq!(s.deaths.len(), 1);
     }
     #[test]
-    fn zero_resolved_mana_drain_keeps_native_receipt_after_resources_change() {
+    fn zero_resolved_mana_drain_keeps_native_receipt_after_resources_change()
+    -> Result<(), &'static str> {
         for (tag, empty_mana) in [(0x7e, true), (0x7f, false)] {
             let (mut runtime, _, actor, session, _, _, _) = ready(tag);
             let now = SemanticTimeMicros::from_micros(0);
@@ -855,7 +856,7 @@ mod native_composite_tests {
                     "mana-drain:zero",
                     owner_now,
                 )
-                .expect("an admitted zero result still owns a receipt");
+                .ok_or("an admitted zero result still owns a receipt")?;
             assert_eq!(first.applied, 0);
             assert_eq!(first.mana_before, before.vitals().mana);
             assert_eq!(first.mana_after, before.vitals().mana);
@@ -906,14 +907,16 @@ mod native_composite_tests {
                     "mana-drain:fresh",
                     owner_now,
                 )
-                .expect("a new occurrence uses current mana and resistance");
+                .ok_or("a new occurrence uses current mana and resistance")?;
             assert!(fresh.applied > 0);
             assert!(fresh.mana_after < fresh.mana_before);
         }
+        Ok(())
     }
 
     #[test]
-    fn typed_life_drain_receipt_replays_once_and_refuses_a_changed_hit_kind() {
+    fn typed_life_drain_receipt_replays_once_and_refuses_a_changed_hit_kind()
+    -> Result<(), &'static str> {
         use crate::player_lethal::PlayerHitKind;
         let (mut runtime, mut states, actor, session, _, _, _) = ready(0x7d);
         let now = crate::foundation::owner_timer::SemanticTimeMicros::from_micros(0);
@@ -927,7 +930,7 @@ mod native_composite_tests {
                 "life-drain:one",
                 now,
             )
-            .expect("actual owner damage");
+            .ok_or("actual owner damage")?;
         let after = states.get(&runtime, actor, session).cloned();
         assert_eq!(
             states.apply_typed_attack_damage(
@@ -955,6 +958,7 @@ mod native_composite_tests {
                 .is_none()
         );
         assert_eq!(states.get(&runtime, actor, session).cloned(), after);
+        Ok(())
     }
 
     #[test]
