@@ -117,9 +117,9 @@ pub const LIGHT_COLOR: u8 = 215;
 /// sunset (17:30) starts, in Tibian minutes.
 const LIGHT_STEP: u32 = 7;
 const LIGHT_STEP_MINUTES: u32 = 4;
-const SUNRISE_START: u32 = 360;
+pub const SUNRISE_START: u32 = 360;
 const DAY_START: u32 = 480;
-const SUNSET_START: u32 = 1_050;
+pub const SUNSET_START: u32 = 1_050;
 const NIGHT_START: u32 = 1_170;
 /// `WORLDINT0-RL-18`: at most one `WORLD_CLOCK` delta per session in this many milliseconds.
 pub const MIN_DELTA_INTERVAL_MS: u64 = 10_000;

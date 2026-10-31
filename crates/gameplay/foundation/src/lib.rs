@@ -1,5 +1,6 @@
 //! ADR-0019 gameplay crate `oteryn-gameplay-foundation`: modules moved verbatim from `oteryn-game-server` (re-exported there at the old path).
 
 pub mod foundation;
+pub mod scheduled_events;
 #[allow(unused_imports)]
 use oteryn_gameplay_domain::domain;

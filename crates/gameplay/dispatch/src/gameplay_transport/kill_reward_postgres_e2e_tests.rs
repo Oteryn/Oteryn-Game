@@ -384,7 +384,10 @@ fn scenario_with_creature_charmed(
         // The queued kill row carries the native XP; the fresh level-1 Character is then
         // awarded the Global low-level bonus of 100%.
         let queued_xp = expected_xp;
-        let expected_xp = 2 * expected_xp;
+        // W05d: a scheduled event in force at the settle scales the kill's experience before
+        // that bonus (`scheduled_events::test_clock` sets one on this thread).
+        let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
+        let expected_xp = 2 * (expected_xp * i64::from(event_rates.experience) / 100);
         if settle_radiant {
             // Select a positive real occurrence without changing a drop probability.
             // Roll back unused player reservations to advance the reusable creature
@@ -1345,6 +1348,61 @@ fn scenario_with_creature_charmed(
                 ("other", crate::combat::LootSelectionAlgorithm::IndependentBernoulliPpm) => {}
                 _ => return Err("daily boost affected wrong race".into()),
             }
+            drop(taken);
+        }
+        if event_rates.loot != oteryn_gameplay_foundation::scheduled_events::NEUTRAL_RATE {
+            // W05d: the settle rolls the queued table with each drop chance scaled by the event
+            // loot rate, so the corpse is the plan of that scaled table.
+            let attack = owner.states.attack.lock().await;
+            let crate::gameplay_transport::kill_reward::TakeOutcome::Taken(taken) =
+                attack.kills().take(session, 2)
+            else {
+                return Err("event-rated kill".into());
+            };
+            let entry = taken.entry().ok_or("event entry")?;
+            let row = entry.row.as_ref().ok_or("reward row")?;
+            let mut table = row.loot_table.clone();
+            let mut raised = false;
+            for loot in &mut table.entries {
+                if let Some(probability) = &mut loot.probability_ppm {
+                    let scaled = (u64::from(*probability) * u64::from(event_rates.loot) / 100)
+                        .min(1_000_000);
+                    raised |= scaled != u64::from(*probability);
+                    *probability = u32::try_from(scaled).map_err(debug)?;
+                }
+            }
+            assert!(
+                raised,
+                "the event loot rate changes a drop chance of {creature_key}"
+            );
+            let death = entry.facts.death;
+            let plan = |table| {
+                oteryn_gameplay_items::loot_plan::plan_creature_loot(
+                    oteryn_gameplay_items::loot_plan::LootPlanDeathKey::new(
+                        *death.world_id().as_bytes(),
+                        *death.channel_id().as_bytes(),
+                        death.scope_ownership_generation().get(),
+                        death.actor_local_id(),
+                        death.actor_local_generation(),
+                    ),
+                    &row.loot_table_ref,
+                    table,
+                )
+                .map(|plan| {
+                    plan.entries
+                        .into_iter()
+                        .map(|e| (e.item.production_key, i64::from(e.quantity)))
+                        .collect::<Vec<_>>()
+                })
+                .map_err(debug)
+            };
+            let scaled = plan(&table)?;
+            assert_ne!(
+                scaled,
+                plan(&row.loot_table)?,
+                "the event loot rate changes this kill's corpse"
+            );
+            daily_expected_loot = Some(scaled);
             drop(taken);
         }
         // No durable rewards exist before the reward drain.

@@ -26,6 +26,7 @@ pub(super) struct PreparedChannel {
     pub(super) door: Mutex<crate::world_runtime::LocalObjectRuntime>,
     pub(super) chest: crate::content::CanonicalReferencePlayableContent,
     pub(super) runtime: Mutex<ChannelRuntimeV1>,
+    pub(super) timed_npcs: bundle_npcs::TimedNpcSpawns,
     pub(super) required_capabilities: std::sync::Arc<
         crate::gameplay_transport::world_required_capabilities::BoundRequiredCapabilities,
     >,
@@ -219,6 +220,32 @@ pub(super) async fn prepare_channel(
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot)?;
+    // W05b: the server save's daily world changes, rolled once per reset epoch.
+    let unix_ms = crate::world_clock::now_utc_ms()
+        .and_then(|now| i64::try_from(now).ok())
+        .unwrap_or(0);
+    let daily = daily_world_changes::roll(material.world, reset_epoch, unix_ms);
+    let daily_npcs = daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily);
+    event(&format!(
+        "event=daily_world_change reset_epoch={} thawing={} their_masters_voice={} \
+         oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs}",
+        daily.reset_epoch,
+        daily.thawing,
+        daily.their_masters_voice,
+        daily.oriental_trader,
+        daily.grimvale_full_moon,
+        daily.flower_month,
+    ));
+    let timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot);
+    // W05c: the day/night NPCs of the current world minute; one that cannot stand yet is
+    // retried by the world tick (`supervision.rs` `timed_npc_loop`).
+    if let Some(Err(error)) =
+        crate::world_clock::now_utc_ms().and_then(|now| timed_npcs.tick(&mut channel_runtime, now))
+    {
+        event(&format!(
+            "event=timed_npc_boot state=retry reason={error:?}"
+        ));
+    }
     let (spawned_monsters, spawn_windows) = match &bundle {
         Some(world) => match realize_bundle_spawns(&mut channel_runtime, world, signalled).await? {
             Some(realized) => realized,
@@ -257,6 +284,7 @@ pub(super) async fn prepare_channel(
         door,
         chest,
         runtime,
+        timed_npcs,
         required_capabilities,
     }))
 }

@@ -1772,8 +1772,15 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         let mastered = masteries.iter().any(|key| key == &entry.creature);
         let base_xp = u64::try_from(row.xp_amount.get()).unwrap_or(0);
         let animus_xp = animus_mastery_experience(base_xp, masteries.len(), mastered);
+        // W05d: the scheduled event experience rate (Crystal `player.lua:428-429`) applies to the
+        // kill's experience before the party split, so solo and party kills both carry it.
+        let event_rates = oteryn_gameplay_foundation::scheduled_events::current_rates();
+        let event_xp = oteryn_gameplay_foundation::scheduled_events::scale_gain(
+            animus_xp,
+            event_rates.experience,
+        );
         Arc::make_mut(&mut row).xp_amount = oteryn_simulation_determinism::ExactI64::new(
-            i64::try_from(animus_xp).unwrap_or(i64::MAX),
+            i64::try_from(event_xp).unwrap_or(i64::MAX),
         );
         entry.row = Some(Arc::clone(&row));
         // Lock order (SPELL-LOCK-2 §1.2): the lane before the revision slot; the corpse loot
@@ -1856,6 +1863,20 @@ impl DurableKillSettle<'_, '_, '_, '_> {
             .await
             .live_stamina(entry.facts.principal.actor, entry.facts.principal.session);
         apply_hunting_stamina_to_loot(&mut loot_table, live_stamina);
+        // W05d: the scheduled event loot rate scales each drop chance (Crystal
+        // `functions.lua:68-70`), capped at certainty.
+        for loot in &mut loot_table.entries {
+            if let Some(probability) = &mut loot.probability_ppm {
+                *probability = u32::try_from(
+                    oteryn_gameplay_foundation::scheduled_events::scale_gain(
+                        u64::from(*probability),
+                        event_rates.loot,
+                    )
+                    .min(1_000_000),
+                )
+                .unwrap_or(1_000_000);
+            }
+        }
         let input = CreatureDeathRewardInput::<CHARACTER_EXPERIENCE_TABLE_LEVELS> {
             corpse_item: row.corpse_item.clone(),
             loot_table_ref: row.loot_table_ref.clone(),
