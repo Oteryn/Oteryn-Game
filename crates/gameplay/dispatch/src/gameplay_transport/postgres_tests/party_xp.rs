@@ -772,6 +772,16 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
                 .expect("clock");
         }
     }
+    if matches!(case, Case::Foreign) {
+        // The foreign and leader shares came from real swings. Leave one HP so the
+        // member's first landed swing kills while the leader's activity is recent.
+        // Lab damage has no character and does not enter reward_damage_shares.
+        let mut runtime = owner.runtime.lock().await;
+        let health = runtime.companion_snapshot(creature.actor).map_err(debug)?.health;
+        runtime
+            .commit_monster_lab_damage(creature.actor, b"party-xp-foreign-fixture", health - 1)
+            .map_err(debug)?;
+    }
     if case.staged_ally() {
         // The ally's activity is recent; leave one HP so the leader's next landed swing is
         // lethal well inside the shared-experience activity window.
