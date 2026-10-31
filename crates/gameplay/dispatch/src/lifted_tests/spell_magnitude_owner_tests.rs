@@ -1798,8 +1798,15 @@ fn delayed_snapshot_selection_keeps_current_gems_and_focus_exactly_once() {
         });
         f.attributes.wheel_flat_damage = Some(50);
         f.attributes.source_damage_multiplier_percent = Some(10);
-        let planted = StrikeCastModifiers::capture(&f.attributes, &f.state, &spell.name, 0)
-            .expect("established cast snapshot");
+        // No Soulpit hex is active in this Wheel fixture.
+        let planted = StrikeCastModifiers::capture(
+            &f.attributes,
+            &f.state,
+            &spell.name,
+            0,
+            Default::default(),
+        )
+        .expect("established cast snapshot");
         let stance = f
             .attributes
             .delayed_stance_snapshot(crate::spell::native_delayed::Element::Death, 1, 310)

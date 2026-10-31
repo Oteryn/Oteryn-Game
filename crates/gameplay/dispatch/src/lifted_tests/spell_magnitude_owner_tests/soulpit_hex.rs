@@ -195,7 +195,8 @@ fn soulpit_canonical_hex_composes_once_reduces_healing_and_stays_frozen_for_a_pl
         "Hex expiry leaves Attributes' saved-14, hence86% damage"
     );
     let mut planted = qualify_later().map_err(debug)?;
-    planted.select_planted_strike(&frozen);
+    // Main #2779 made planted-strike selection fallible.
+    planted.select_planted_strike(&frozen).map_err(debug)?;
     assert_eq!(
         planted
             .finish(&p, &hit, &f.bindings[1], &mut |_, high| high)
