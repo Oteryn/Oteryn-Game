@@ -3,7 +3,7 @@
 //! Defaults below are pinned Canary provisional values, not verified against Global.
 //! Arbitrary fixture definitions remain distinct from these production defaults.
 
-/// One part per million. All scaling is integer and floors once at the end.
+/// One part per million. Experience floors; incoming damage rounds each bonus upward.
 pub const PPM: u32 = 1_000_000;
 
 #[cfg(test)]
@@ -146,8 +146,14 @@ impl HazardAreaEffects {
             .ok_or(HazardError::Overflow)
     }
 
+    fn scale_damage(value: u64, coefficient: u32) -> Result<u64, HazardError> {
+        let product = u128::from(value) * u128::from(coefficient);
+        u64::try_from(product.div_ceil(u128::from(PPM))).map_err(|_| HazardError::Overflow)
+    }
+
+    /// Crystal player.cpp:5504-5511 rounds the positive incoming damage bonus upward.
     pub fn creature_damage(self, base: u64) -> Result<u64, HazardError> {
-        Self::scale(base, self.coefficients.creature_damage_ppm)
+        Self::scale_damage(base, self.coefficients.creature_damage_ppm)
     }
     #[cfg(test)]
     fn creature_defense(self, base: u64) -> Result<u64, HazardError> {
@@ -161,9 +167,9 @@ impl HazardAreaEffects {
         let scaled = Self::scale(u64::from(base_ppm), self.coefficients.loot_chance_ppm)?;
         u32::try_from(scaled.min(u64::from(PPM))).map_err(|_| HazardError::Overflow)
     }
-    /// Canary applies the hazard critical first, then the ordinary hazard damage boost.
+    /// Crystal player.cpp:5492-5511 applies critical first, then the ordinary damage boost.
     pub fn critical_damage(self, base: u64) -> Result<u64, HazardError> {
-        Self::scale(base, 1_500_000 + u32::from(self.level - 1) * 2_500)
+        Self::scale_damage(base, 1_500_000 + u32::from(self.level - 1) * 2_500)
     }
     pub fn creature_critical(self, draw_ppm: u32) -> bool {
         draw_ppm < self.coefficients.creature_critical_chance_ppm
@@ -192,6 +198,36 @@ pub fn gnomprona_contains(x: i32, y: i32, floor: i16) -> bool {
         && !(floor == 15
             && (((33633..=33649).contains(&x) && (32915..=32928).contains(&y))
                 || ((33630..=33672).contains(&x) && (32887..=32921).contains(&y))))
+}
+
+/// The carrier stores donor x/y and positive legacy z. Only map-view construction
+/// negates z (`dispatch/.../bundle_map_position.rs:86-92`). The active movement
+/// cells must still prove the unshifted source frame, not a translated fixture world.
+pub fn gnomprona_runtime_contains(frame: &str, x: i32, y: i32, floor: i16) -> bool {
+    frame == "oteryn:frame/world-bundle-v3" && gnomprona_contains(x, y, floor)
+}
+
+/// Crystal `hazard.lua:116-126` and `the_primal_menace_killed.lua:9-17`.
+/// Victory only unlocks the next level for a participant fighting at their maximum
+/// when that maximum is also the contributing group's minimum selected level.
+pub fn unlocked_after_primal_menace(
+    unlocked: u16,
+    selected: u16,
+    contributing_minimum: u16,
+) -> Result<u16, HazardError> {
+    if !(1..=12).contains(&unlocked)
+        || !(1..=unlocked).contains(&selected)
+        || !(1..=12).contains(&contributing_minimum)
+    {
+        return Err(HazardError::LevelLocked);
+    }
+    Ok(
+        if unlocked == selected && unlocked == contributing_minimum {
+            (unlocked + 1).min(12)
+        } else {
+            unlocked
+        },
+    )
 }
 
 /// Canary config.lua.dist:225-237 and player.cpp:3641-3645, 5513-5623.
@@ -270,6 +306,53 @@ mod tests {
             Err(HazardError::Overflow)
         );
         Ok(())
+    }
+
+    #[test]
+    fn hazard_crystal_damage_rounds_each_positive_bonus_up() -> Result<(), HazardError> {
+        // Crystal 201189f game.cpp:7948 makes damage positive before player.cpp:5498-5511.
+        let effects = provisional_effects(1)?;
+        assert_eq!(effects.creature_damage(1)?, 2);
+        assert_eq!(effects.critical_damage(1)?, 2);
+        assert_eq!(effects.creature_damage(effects.critical_damage(1)?)?, 3);
+        assert_eq!(effects.creature_damage(51)?, 53);
+        assert_eq!(effects.experience(1)?, 1);
+        assert_eq!(effects.creature_damage(0)?, 0);
+        assert_eq!(effects.critical_damage(0)?, 0);
+        Ok(())
+    }
+
+    #[test]
+    fn hazard_runtime_zone_requires_exact_source_frame_and_legacy_floor() {
+        let frame = "oteryn:frame/world-bundle-v3";
+        assert!(gnomprona_runtime_contains(frame, 33502, 32740, 13));
+        assert!(gnomprona_runtime_contains(frame, 33796, 32996, 15));
+        assert!(!gnomprona_runtime_contains(frame, 33502, 32740, -13));
+        assert!(!gnomprona_runtime_contains(frame, 33640, 32920, 15));
+        assert!(!gnomprona_runtime_contains(frame, 33502, 32740, i16::MIN));
+        assert!(!gnomprona_runtime_contains(
+            "engineering-frame",
+            33502,
+            32740,
+            13
+        ));
+    }
+
+    #[test]
+    fn primal_unlock_requires_own_maximum_and_group_minimum_and_stops_at_twelve() {
+        assert_eq!(unlocked_after_primal_menace(1, 1, 1), Ok(2));
+        assert_eq!(unlocked_after_primal_menace(5, 5, 5), Ok(6));
+        assert_eq!(unlocked_after_primal_menace(5, 4, 4), Ok(5));
+        assert_eq!(unlocked_after_primal_menace(5, 5, 4), Ok(5));
+        assert_eq!(unlocked_after_primal_menace(12, 12, 12), Ok(12));
+        for (unlocked, selected, minimum) in
+            [(0, 0, 1), (13, 1, 1), (1, 2, 1), (1, 1, 0), (1, 1, 13)]
+        {
+            assert_eq!(
+                unlocked_after_primal_menace(unlocked, selected, minimum),
+                Err(HazardError::LevelLocked)
+            );
+        }
     }
 
     fn fixture_area() -> HazardAreaDefinition {

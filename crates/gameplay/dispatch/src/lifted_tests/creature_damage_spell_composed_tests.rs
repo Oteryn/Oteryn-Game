@@ -225,13 +225,38 @@ fn setup(
     RuntimeWorkStamp,
     ExactActorRef,
 ) {
+    setup_at(name, index, npc_name, npc_health, None, FACTS.max_health)
+}
+fn setup_at(
+    name: &str,
+    index: usize,
+    npc_name: &str,
+    npc_health: u64,
+    at: Option<MovementLocalPosition>,
+    maximum_health: u32,
+) -> (
+    ChannelRuntimeV1,
+    ChannelSpellStates,
+    ComposedSource,
+    CreatureHealCatalog,
+    ProfileAbilityProposal,
+    World,
+    ScopeRuntimeFence,
+    RuntimeWorkStamp,
+    ExactActorRef,
+) {
     let (mut r, draft) = fixture();
     let session = GameSessionId::decode(&[1, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 8])
         .expect("qualified fixture");
     let reserved = r.reserve_fresh_session(session).expect("qualified fixture");
     let target = r.commit_fresh_session(reserved).expect("qualified fixture");
-    r.initialize_first_entry_position(target)
-        .expect("qualified fixture");
+    if let Some(at) = at {
+        r.initialize_source_pinned_lab_player_position(target, session, at)
+            .expect("qualified source position");
+    } else {
+        r.initialize_first_entry_position(target)
+            .expect("qualified fixture");
+    }
     let at = r
         .read_actor_position(target)
         .expect("qualified fixture")
@@ -300,12 +325,14 @@ fn setup(
             .expect("qualified fixture"),
     };
     let mut states = ChannelSpellStates::default();
+    let mut facts = FACTS;
+    facts.max_health = maximum_health;
     states
         .initialize(
             &r,
             target,
             session,
-            FACTS,
+            facts,
             (0, 0),
             oteryn_simulation_determinism::SemanticTimeMicros::from_micros(0),
         )
@@ -741,4 +768,134 @@ fn source_formula_revision_and_catalog_pin_reject_before_any_owner_hp() {
         1000
     );
     assert!(owner.memos.is_empty());
+}
+
+// Lab admission intentionally does not install a live CreaturePolicy. Hazard must
+// still prove a current wild monster, so use the existing actual source decoder.
+fn qualify_hazard_monster(runtime: &mut ChannelRuntimeV1, actor: ExactActorRef, key: &str) {
+    let policies = crate::content::native_gameplay::callback_source_native_test_policies(
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/creatures/definitions/spell-native-profiles.json"
+        )),
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../content/presentations/definitions/spell-native-profiles.json"
+        )),
+        runtime.content_pin().server_artifact_digest(),
+    )
+    .expect("actual native Creature policies");
+    runtime
+        .install_companion_policies(policies)
+        .expect("pinned policy table");
+    runtime
+        .install_creature_policy(actor, key)
+        .expect("actual wild Creature policy");
+    assert!(
+        runtime
+            .companion_snapshot_including_dead(actor)
+            .expect("current monster")
+            .state
+            .master
+            .is_none()
+    );
+}
+
+#[test]
+fn hazard_composed_positive_player_callback_scales_and_replays_once() {
+    let at = MovementLocalPosition {
+        x: 33520,
+        y: 32760,
+        floor: 13,
+    };
+    let mut applied = Vec::new();
+    for frame in ["fixture-frame", "oteryn:frame/world-bundle-v3"] {
+        let (mut runtime, mut states, source, catalog, proposal, mut world, fence, stamp, _) =
+            setup_at(
+                "the_source_of_corruption",
+                1,
+                "the_souldespoiler",
+                10000,
+                Some(at),
+                10000,
+            );
+        qualify_hazard_monster(
+            &mut runtime,
+            proposal.issuer,
+            "oteryn:creature.the_source_of_corruption",
+        );
+        runtime
+            .install_hazard_level(proposal.target, world.session, 12)
+            .expect("selection");
+        runtime
+            .install_hazard_world_frame(proposal.target, world.session, frame)
+            .expect("frame");
+        runtime
+            .record_hazard_critical(proposal.target, world.session, 1_000_000)
+            .expect("shared interval");
+        let mut owner = ComposedOwner::default();
+        let hit = owner
+            .execute(
+                &mut runtime,
+                &fence,
+                stamp,
+                &mut states,
+                &catalog,
+                &source,
+                &proposal,
+                &mut world,
+                SemanticTimeMicros::from_micros(2_000_000),
+            )
+            .expect("actual source callback");
+        let callback = hit
+            .branches
+            .iter()
+            .find_map(|(_, target, receipt)| match receipt {
+                Ok(BranchReceipt::PlayerDamage(receipt)) if *target == proposal.target => {
+                    Some(*receipt)
+                }
+                _ => None,
+            })
+            .expect("positive callback HP receipt");
+        assert!(
+            callback.applied > 0,
+            "source fixture must exercise actual callback damage"
+        );
+        assert!(
+            callback.health_after > 0,
+            "the test must not clamp its callback at lethal HP"
+        );
+        applied.push(callback.applied);
+        assert_eq!(
+            runtime.last_hazard_critical_us(proposal.target, world.session),
+            Some(1_000_000)
+        );
+        assert_eq!(
+            owner
+                .execute(
+                    &mut runtime,
+                    &fence,
+                    stamp,
+                    &mut states,
+                    &catalog,
+                    &source,
+                    &proposal,
+                    &mut world,
+                    SemanticTimeMicros::from_micros(9_000_000)
+                )
+                .expect("callback replay"),
+            hit
+        );
+        assert_eq!(
+            states
+                .source_player_health(&runtime, proposal.target, world.session)
+                .expect("retained HP")
+                .0,
+            callback.health_after
+        );
+    }
+    assert_eq!(
+        applied[1],
+        (u64::from(applied[0]) * 124).div_ceil(100) as u32
+    );
 }

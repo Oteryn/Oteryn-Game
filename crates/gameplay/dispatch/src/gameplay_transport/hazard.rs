@@ -19,11 +19,10 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         else {
             return false;
         };
-        self.runtime
-            .lock()
-            .await
-            .install_hazard_level(actor, admitted.game_session_id, selected)
-            .is_ok()
+        let mut runtime = self.runtime.lock().await;
+        let frame = qualified_source_frame(&runtime, self.movement_cells).unwrap_or("");
+        runtime.install_hazard_world_frame(actor, admitted.game_session_id, frame).is_ok()
+            && runtime.install_hazard_level(actor, admitted.game_session_id, selected).is_ok()
     }
 
     pub(super) async fn hazard_wire(
@@ -98,9 +97,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             Ok(Some((_, selected, response))) => {
                 let mut runtime = self.runtime.lock().await;
-                if runtime
-                    .install_hazard_level(actor, admitted.game_session_id, selected)
-                    .is_err()
+                let frame = qualified_source_frame(&runtime, self.movement_cells).unwrap_or("");
+                if runtime.install_hazard_world_frame(actor, admitted.game_session_id, frame).is_err()
+                    || runtime.install_hazard_level(actor, admitted.game_session_id, selected).is_err()
                 {
                     return GuildReply::Unavailable;
                 }
@@ -149,28 +148,7 @@ pub(super) fn effects(
     session: crate::foundation::GameSessionId,
     target: crate::foundation::ExactActorRef,
 ) -> Option<oteryn_gameplay_encounters::bosses::hazard_primal::HazardAreaEffects> {
-    use oteryn_gameplay_encounters::bosses::hazard_primal::{
-        gnomprona_contains, provisional_effects,
-    };
-    if runtime
-        .companion_snapshot_including_dead(target)
-        .ok()?
-        .state
-        .master
-        .is_some()
-    {
-        return None;
-    }
-    for actor in [actor, target] {
-        let at = runtime.read_actor_position(actor).ok()?.position();
-        if !gnomprona_contains(at.x, at.y, at.floor) {
-            return None;
-        }
-    }
-    provisional_effects(oteryn_gameplay_combat::hazard::effective_level(
-        runtime, actor, session,
-    )?)
-    .ok()
+    oteryn_gameplay_combat::hazard::effects_for_monster(runtime, actor, session, target)
 }
 
 pub(super) fn outgoing_damage(
@@ -200,4 +178,33 @@ pub(super) fn outgoing_damage(
     } else {
         damage
     }
+}
+
+/// Bind donor coordinates to the actual immutable bundle generation. A translated source
+/// map, fixture frame or mismatched map/artifact pin cannot activate Hazard bonuses.
+pub(super) fn qualified_source_frame<'a>(
+    runtime: &crate::foundation::ChannelRuntimeV1,
+    cells: &'a super::NativeEntryMovementCells,
+) -> Option<&'a str> {
+    use sha2::{Digest, Sha256};
+    if !matches!(cells.index(), crate::content::native_cell_lookup::NativeMovementCollisionIndex::Bundle(_)) {
+        return None;
+    }
+    let scope = cells.scope();
+    let frame = scope.coordinate_frame.as_str();
+    let pin = runtime.content_pin();
+    if frame != "oteryn:frame/world-bundle-v3"
+        || scope.world_id.as_bytes() != pin.world_id().as_bytes()
+        || scope.generation_digest != pin.server_artifact_digest()
+        || <[u8; 32]>::from(Sha256::digest(scope.map_revision.as_str().as_bytes())) != pin.map_revision_digest()
+    {
+        return None;
+    }
+    let mut bytes = b"OTERYN_WORLD_BUNDLE_FRAME_BINDING/v1\0".to_vec();
+    bytes.extend_from_slice(pin.world_id().as_bytes());
+    for part in [frame, scope.map_revision.as_str()] {
+        bytes.extend_from_slice(&(part.len() as u64).to_be_bytes());
+        bytes.extend_from_slice(part.as_bytes());
+    }
+    (<[u8; 32]>::from(Sha256::digest(bytes)) == pin.frame_binding_digest()).then_some(frame)
 }
