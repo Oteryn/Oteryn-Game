@@ -95592,16 +95592,11 @@
       "authoring": {
         "item": {
           "family": "Item",
-<<<<<<< HEAD
           "key": "candidate:item/8063",
           "revision": "spell-p2-r21"
         },
         "taxonomy": {
           "primary": "Armors"
-=======
-          "key": "candidate:item/8077",
-          "revision": "spell-p2-r21"
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
         }
       },
       "semantics": {
@@ -95610,19 +95605,11 @@
           "value": {
             "name": {
               "state": "KNOWN",
-<<<<<<< HEAD
               "value": "paladin armor"
             },
             "description": {
               "state": "KNOWN",
               "value": ""
-=======
-              "value": "rainbow shield"
-            },
-            "description": {
-              "state": "KNOWN",
-              "value": "Strange elemental magic flows over this shield"
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
             }
           }
         },
@@ -95642,11 +95629,7 @@
           "value": {
             "weight": {
               "state": "KNOWN",
-<<<<<<< HEAD
               "value": 6500
-=======
-              "value": 6900
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
             },
             "movable": {
               "state": "KNOWN",
@@ -95680,11 +95663,7 @@
                   "pattern_id": 1,
                   "primary_slot": {
                     "state": "KNOWN",
-<<<<<<< HEAD
                     "value": "TORSO"
-=======
-                    "value": "SHIELD"
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
                   },
                   "additional_reserved_slots": {
                     "state": "KNOWN",
@@ -95697,20 +95676,12 @@
                   "vocations": {
                     "state": "KNOWN",
                     "value": [
-<<<<<<< HEAD
                       "PALADIN"
-=======
-                      "KNIGHT"
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
                     ]
                   },
                   "level": {
                     "state": "KNOWN",
-<<<<<<< HEAD
                     "value": 0
-=======
-                    "value": 100
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
                   },
                   "compatibility_rule": {
                     "state": "NOT_APPLICABLE"
@@ -95721,62 +95692,13 @@
           }
         },
         "weapon": {
-<<<<<<< HEAD
           "state": "UNKNOWN"
-=======
-          "state": "KNOWN",
-          "value": {
-            "weapon_type": {
-              "state": "KNOWN",
-              "value": "SHIELD"
-            },
-            "attack": {
-              "state": "KNOWN",
-              "value": 0
-            },
-            "defense": {
-              "state": "KNOWN",
-              "value": 30
-            },
-            "extra_defense": {
-              "state": "KNOWN",
-              "value": 0
-            },
-            "range": {
-              "state": "KNOWN",
-              "value": 1
-            },
-            "hit_chance": {
-              "state": "NOT_APPLICABLE"
-            },
-            "max_hit_chance": {
-              "state": "NOT_APPLICABLE"
-            },
-            "ammunition": {
-              "state": "NOT_APPLICABLE"
-            },
-            "elemental": {
-              "state": "KNOWN",
-              "value": []
-            }
-          }
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
         },
         "protection": {
           "state": "UNKNOWN"
         },
         "skill_modifiers": {
-<<<<<<< HEAD
           "state": "UNKNOWN"
-=======
-          "state": "KNOWN",
-          "value": {
-            "modifiers": {
-              "state": "KNOWN",
-              "value": []
-            }
-          }
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
         },
         "charges": {
           "state": "NOT_APPLICABLE"
@@ -95824,29 +95746,231 @@
       },
       "production_binding": {
         "disposition": "EXACT",
-<<<<<<< HEAD
         "external_id": "8063",
-=======
-        "external_id": "8077",
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
         "identity_namespace": "ots/item_server_id",
         "source_key": "oteryn:source.crystalserver",
         "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
         "target": {
           "family": "Item",
-<<<<<<< HEAD
           "key": "oteryn:item.tibia.i8063",
-=======
-          "key": "oteryn:item.tibia.i8077",
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
           "revision": "definition-r1"
         }
       },
       "production_definition": {
         "family": "Item",
-<<<<<<< HEAD
         "production_key": "oteryn:item.tibia.i8063",
-=======
+        "revision_ref": "definition-r1"
+      },
+      "production_binding_qualification": null
+    },
+    {
+      "authoring": {
+        "item": {
+          "family": "Item",
+          "key": "candidate:item/8077",
+          "revision": "spell-p2-r21"
+        }
+      },
+      "semantics": {
+        "presentation": {
+          "state": "KNOWN",
+          "value": {
+            "name": {
+              "state": "KNOWN",
+              "value": "rainbow shield"
+            },
+            "description": {
+              "state": "KNOWN",
+              "value": "Strange elemental magic flows over this shield"
+            }
+          }
+        },
+        "classification": {
+          "state": "KNOWN",
+          "value": {
+            "item_type": {
+              "state": "NOT_APPLICABLE"
+            },
+            "capabilities": {
+              "state": "UNKNOWN"
+            }
+          }
+        },
+        "physical": {
+          "state": "KNOWN",
+          "value": {
+            "weight": {
+              "state": "KNOWN",
+              "value": 6900
+            },
+            "movable": {
+              "state": "KNOWN",
+              "value": true
+            },
+            "pickupable": {
+              "state": "KNOWN",
+              "value": true
+            }
+          }
+        },
+        "stack": {
+          "state": "KNOWN",
+          "value": {
+            "stackable": {
+              "state": "KNOWN",
+              "value": false
+            },
+            "stack_max": {
+              "state": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "equipment": {
+          "state": "KNOWN",
+          "value": {
+            "patterns": {
+              "state": "KNOWN",
+              "value": [
+                {
+                  "pattern_id": 1,
+                  "primary_slot": {
+                    "state": "KNOWN",
+                    "value": "SHIELD"
+                  },
+                  "additional_reserved_slots": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "mutually_exclusive_groups": {
+                    "state": "KNOWN",
+                    "value": []
+                  },
+                  "vocations": {
+                    "state": "KNOWN",
+                    "value": [
+                      "KNIGHT"
+                    ]
+                  },
+                  "level": {
+                    "state": "KNOWN",
+                    "value": 100
+                  },
+                  "compatibility_rule": {
+                    "state": "NOT_APPLICABLE"
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "weapon": {
+          "state": "KNOWN",
+          "value": {
+            "weapon_type": {
+              "state": "KNOWN",
+              "value": "SHIELD"
+            },
+            "attack": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "defense": {
+              "state": "KNOWN",
+              "value": 30
+            },
+            "extra_defense": {
+              "state": "KNOWN",
+              "value": 0
+            },
+            "range": {
+              "state": "KNOWN",
+              "value": 1
+            },
+            "hit_chance": {
+              "state": "NOT_APPLICABLE"
+            },
+            "max_hit_chance": {
+              "state": "NOT_APPLICABLE"
+            },
+            "ammunition": {
+              "state": "NOT_APPLICABLE"
+            },
+            "elemental": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "protection": {
+          "state": "UNKNOWN"
+        },
+        "skill_modifiers": {
+          "state": "KNOWN",
+          "value": {
+            "modifiers": {
+              "state": "KNOWN",
+              "value": []
+            }
+          }
+        },
+        "charges": {
+          "state": "NOT_APPLICABLE"
+        },
+        "temporal": {
+          "state": "NOT_APPLICABLE"
+        },
+        "container": {
+          "state": "NOT_APPLICABLE"
+        },
+        "imbuement": {
+          "state": "UNKNOWN"
+        },
+        "use_transform": {
+          "state": "UNKNOWN"
+        },
+        "trade_restrictions": {
+          "state": "UNKNOWN"
+        },
+        "fluid": {
+          "state": "UNKNOWN"
+        },
+        "readable_writeable": {
+          "state": "UNKNOWN"
+        }
+      },
+      "attributes": {
+        "spell_augments": [],
+        "speed_bonus": 0,
+        "blocks_movement": false,
+        "blocks_projectile": false,
+        "immovable_block_solid": false,
+        "has_height": false,
+        "field_replaceable": null,
+        "field_condition": null,
+        "rune_consumption": null
+      },
+      "admission": {
+        "materializable": true,
+        "stack_class": "NonStackable",
+        "legal_destinations": [
+          "CharacterInventory",
+          "Ground"
+        ]
+      },
+      "production_binding": {
+        "disposition": "EXACT",
+        "external_id": "8077",
+        "identity_namespace": "ots/item_server_id",
+        "source_key": "oteryn:source.crystalserver",
+        "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "target": {
+          "family": "Item",
+          "key": "oteryn:item.tibia.i8077",
+          "revision": "definition-r1"
+        }
+      },
+      "production_definition": {
+        "family": "Item",
         "production_key": "oteryn:item.tibia.i8077",
         "revision_ref": "definition-r1"
       },
@@ -96772,7 +96896,6 @@
       "production_definition": {
         "family": "Item",
         "production_key": "oteryn:item.tibia.i8081",
->>>>>>> origin/claude/happy-davinci-ijz3wy-gemx
         "revision_ref": "definition-r1"
       },
       "production_binding_qualification": null
