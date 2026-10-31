@@ -37,7 +37,8 @@ package oteryn.events.v1;
 // entry of a live corpse container; the corpse item itself is never a source.
 // The reward-claim MINT (operation tag 4, chest decisions §5.1, CHEST-1) mints
 // exactly one live item into a new direct entry of the equipped main backpack
-// for a `once` RewardClaim; it has no Ground and no creature-death source.
+// for a `once` RewardClaim or a W03 frozen personal entitlement. It has no Ground;
+// the additive boss source identifies the immutable death/chest ordinal explicitly.
 // The D3 corpse-loot MINT (D3-2, DUR-03 §39.4) is the same `mint` operation
 // with its destination carried in `corpse_container_entry` (field 5) instead of
 // the Ground `destination` (field 2): exactly one of the two is set, and the
@@ -307,6 +308,18 @@ message OneItemRewardClaimCauseV1 {
   string sim_revision = 8;     // <= 512 B
   OneItemCommandRefV1 command_ref = 9;
   OneItemTypedDefinitionRevisionV1 reward_claim = 10; // the claimed RewardClaim
+  // W03: exactly one of reward_claim and boss_reward; never an invented Content claim.
+  BossRewardClaimSourceV1 boss_reward = 11;
+}
+
+// Frozen personal entitlement of the existing op4 one-item custody mint.
+// The envelope supplies the exact current Channel or Instance collection scope.
+message BossRewardClaimSourceV1 {
+  bytes death = 1;             // exactly 16 non-nil bytes; durable boss death identity
+  uint32 item_ordinal = 2;     // 1..1000 in that Character's immutable chest
+  string boss_key = 3;         // admitted Content key, <= 512 B
+  uint64 lease_generation = 4; // current collecting Character lease, positive
+  uint64 scope_generation = 5; // current collecting scope generation, positive
 }
 
 // One fresh live item placed in a new direct entry of the main backpack; the

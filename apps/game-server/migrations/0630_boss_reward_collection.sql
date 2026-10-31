@@ -1,3 +1,242 @@
+-- W03: the existing reward-claim ItemInstance owner consumes frozen personal entitlements.
+-- One real CommandRef has one result; each selected Item keeps a one-item type-2 transaction.
+CREATE TABLE game_boss_reward_collection_receipts (
+    game_session_id UUID NOT NULL REFERENCES game_durability_reconnect_sessions(game_session_id),
+    command_id NUMERIC(20,0) NOT NULL CHECK (command_id BETWEEN 1 AND 18446744073709551615),
+    character_id UUID NOT NULL REFERENCES game_character_roots(character_id),
+    world_id UUID NOT NULL,
+    intent BYTEA NOT NULL CHECK (octet_length(intent) BETWEEN 1 AND 32),
+    status SMALLINT NOT NULL CHECK (status BETWEEN 0 AND 5),
+    moved INTEGER NOT NULL CHECK (moved BETWEEN 0 AND 20),
+    remaining BIGINT NOT NULL CHECK (remaining BETWEEN 0 AND 4294967295),
+    source_placement TEXT NOT NULL CHECK (octet_length(source_placement) BETWEEN 1 AND 512),
+    scope_kind SMALLINT NOT NULL CHECK (scope_kind IN (1,2)),
+    scope_id UUID NOT NULL,
+    scope_generation NUMERIC(20,0) NOT NULL CHECK (scope_generation>0),
+    lease_generation NUMERIC(20,0) NOT NULL CHECK (lease_generation>0),
+    connection_generation NUMERIC(20,0) NOT NULL CHECK (connection_generation>0),
+    content_digest BYTEA NOT NULL CHECK (octet_length(content_digest)=32),
+    occurred_at BIGINT NOT NULL CHECK (occurred_at>0),
+    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+    PRIMARY KEY(game_session_id,command_id),
+    CHECK ((status=0 AND moved>0) OR (status<>0 AND moved=0))
+);
+CREATE TABLE game_boss_reward_item_collections (
+    transaction_id UUID PRIMARY KEY CHECK (game_character_is_uuid_v7(transaction_id)),
+    event_id UUID NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(event_id)),
+    item_instance_id UUID NOT NULL UNIQUE CHECK (game_character_is_uuid_v7(item_instance_id)),
+    game_session_id UUID NOT NULL,
+    command_id NUMERIC(20,0) NOT NULL,
+    character_id UUID NOT NULL,
+    world_id UUID NOT NULL,
+    death_id UUID NOT NULL,
+    item_ordinal INTEGER NOT NULL,
+    parent_item_instance_id UUID NOT NULL REFERENCES game_item_instances(item_instance_id),
+    placement_ordinal NUMERIC(20,0) NOT NULL CHECK (placement_ordinal>0),
+    occurred_at BIGINT NOT NULL CHECK (occurred_at>0),
+    envelope_sha256 BYTEA NOT NULL CHECK (octet_length(envelope_sha256)=32),
+    created_xact_id XID8 NOT NULL DEFAULT pg_current_xact_id(),
+    UNIQUE(character_id,world_id,death_id,item_ordinal),
+    FOREIGN KEY(character_id,world_id,death_id,item_ordinal)
+        REFERENCES game_boss_reward_items(character_id,world_id,death_id,item_ordinal),
+    FOREIGN KEY(game_session_id,command_id)
+        REFERENCES game_boss_reward_collection_receipts(game_session_id,command_id) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE INDEX game_boss_reward_item_collections_command ON game_boss_reward_item_collections(game_session_id,command_id);
+
+CREATE FUNCTION game_boss_reward_collection_admit() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_TABLE_NAME='game_boss_reward_collection_receipts' THEN
+        IF NOT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions s
+            JOIN game_character_roots r ON r.character_id=s.character_id AND r.world_id=s.world_id
+            JOIN game_durability_admission_character_guards c ON c.character_id=s.character_id
+            JOIN game_durability_admission_account_guards a ON a.account_id=s.account_id
+            WHERE s.game_session_id=NEW.game_session_id AND s.character_id=NEW.character_id
+              AND s.world_id=NEW.world_id AND s.runtime_scope_world_id=NEW.world_id
+              AND s.runtime_scope_kind=NEW.scope_kind AND s.runtime_scope_house_key IS NULL
+              AND ((NEW.scope_kind=1 AND s.runtime_scope_channel_id=NEW.scope_id AND s.runtime_scope_instance_id IS NULL)
+                OR (NEW.scope_kind=2 AND s.runtime_scope_instance_id=NEW.scope_id AND s.runtime_scope_channel_id IS NULL))
+              AND s.current_generation=NEW.connection_generation AND s.character_lease_generation=NEW.lease_generation
+              AND s.scope_ownership_generation=NEW.scope_generation AND s.session_state IN (1,2)
+              AND c.account_id=s.account_id AND c.world_id=NEW.world_id AND c.eligible
+              AND c.lease_generation=NEW.lease_generation AND c.holder_game_session_id=s.game_session_id
+              AND a.presence_character_id=s.character_id AND a.holder_game_session_id=s.game_session_id
+              AND r.lifecycle=1) THEN
+            RAISE EXCEPTION 'boss collection requires current Character/session/scope fence' USING ERRCODE='23514';
+        END IF;
+    ELSE
+        IF NOT EXISTS (SELECT 1 FROM game_boss_reward_items i
+            JOIN game_character_boss_reward_chests p USING(character_id,world_id,death_id)
+            JOIN game_boss_reward_contributors c USING(character_id,world_id,death_id)
+            WHERE (i.character_id,i.world_id,i.death_id,i.item_ordinal)=(NEW.character_id,NEW.world_id,NEW.death_id,NEW.item_ordinal)
+              AND c.eligible AND NOT i.expired AND i.collected_transaction_id IS NULL
+              AND NEW.occurred_at<p.expires_at AND p.expires_at>floor(extract(epoch FROM clock_timestamp())*1000)::bigint)
+            OR EXISTS (SELECT 1 FROM game_item_instances WHERE item_instance_id=NEW.item_instance_id)
+            OR NOT EXISTS (SELECT 1 FROM game_item_container_slots s JOIN game_item_instances b USING(item_instance_id,world_id)
+                WHERE s.character_id=NEW.character_id AND s.world_id=NEW.world_id
+                  AND s.item_instance_id=NEW.parent_item_instance_id AND b.lifecycle=1)
+            OR NEW.placement_ordinal<=(SELECT coalesce(max(placement_ordinal),0) FROM game_item_container_entries WHERE parent_item_instance_id=NEW.parent_item_instance_id) THEN
+            RAISE EXCEPTION 'boss collection requires an unclaimed live entitlement and fresh backpack entry' USING ERRCODE='23514';
+        END IF;
+    END IF;
+    NEW.created_xact_id:=pg_current_xact_id();
+    RETURN NEW;
+END $$;
+
+CREATE FUNCTION game_boss_reward_item_complete(p_transaction UUID) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE c game_boss_reward_item_collections%ROWTYPE;
+BEGIN
+    SELECT * INTO c FROM game_boss_reward_item_collections WHERE transaction_id=p_transaction;
+    IF c.transaction_id IS NULL OR c.created_xact_id<>pg_current_xact_id()
+      OR NOT EXISTS (SELECT 1 FROM game_boss_reward_collection_receipts r
+          WHERE (r.game_session_id,r.command_id,r.character_id,r.world_id)=(c.game_session_id,c.command_id,c.character_id,c.world_id)
+            AND r.status=0 AND r.created_xact_id=pg_current_xact_id() AND r.occurred_at=c.occurred_at)
+      OR NOT EXISTS (SELECT 1 FROM game_boss_reward_items e JOIN game_item_instances i
+            ON i.item_instance_id=c.item_instance_id
+          JOIN game_item_container_entries p ON p.item_instance_id=i.item_instance_id
+          WHERE (e.character_id,e.world_id,e.death_id,e.item_ordinal)=(c.character_id,c.world_id,c.death_id,c.item_ordinal)
+            AND e.collected_transaction_id=c.transaction_id AND NOT e.expired
+            AND i.world_id=c.world_id AND i.definition_family=e.definition_family
+            AND i.definition_production_key=e.definition_production_key AND i.definition_revision_ref=e.definition_revision_ref
+            AND i.quantity=e.quantity AND i.lifecycle=1 AND i.minted_transaction_id=c.transaction_id AND i.last_transaction_id IS NULL
+            AND p.character_id=c.character_id AND p.world_id=c.world_id AND p.parent_item_instance_id=c.parent_item_instance_id
+            AND p.placement_ordinal=c.placement_ordinal AND p.placed_transaction_id=c.transaction_id)
+      OR (SELECT count(*) FROM game_item_instances WHERE minted_transaction_id=c.transaction_id)<>1
+      OR (SELECT count(*) FROM game_item_container_entries WHERE parent_item_instance_id=c.parent_item_instance_id)>20
+      OR (SELECT count(*) FROM game_item_audit_outbox WHERE transaction_id=c.transaction_id)<>1
+      OR NOT EXISTS (SELECT 1 FROM game_item_audit_outbox a WHERE a.event_id=c.event_id AND a.transaction_id=c.transaction_id
+          AND a.item_instance_id=c.item_instance_id AND a.occurred_at=c.occurred_at AND a.envelope_sha256=c.envelope_sha256
+          AND a.transaction_ordinal=1 AND a.transaction_count=1 AND a.event_type_id=2
+          AND a.created_xact_id=pg_current_xact_id() AND a.publication_state=1 AND a.published_at IS NULL) THEN
+        RAISE EXCEPTION 'boss reward mint requires receipt, consumed entitlement, exact custody and type-2 audit together' USING ERRCODE='23514';
+    END IF;
+END $$;
+CREATE FUNCTION game_boss_reward_collection_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_TABLE_NAME='game_boss_reward_item_collections' THEN
+        PERFORM game_boss_reward_item_complete(NEW.transaction_id);
+    ELSE
+        IF (SELECT count(*) FROM game_boss_reward_item_collections c
+            WHERE c.game_session_id=NEW.game_session_id AND c.command_id=NEW.command_id
+              AND c.created_xact_id=pg_current_xact_id())<>NEW.moved THEN
+            RAISE EXCEPTION 'boss collection receipt count differs from its item transitions' USING ERRCODE='23514';
+        END IF;
+    END IF;
+    RETURN NULL;
+END $$;
+
+CREATE FUNCTION game_boss_reward_entitlement_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP='DELETE' THEN RAISE EXCEPTION 'boss entitlement provenance is immutable' USING ERRCODE='23514'; END IF;
+    IF (to_jsonb(NEW)-ARRAY['expired','collected_transaction_id']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['expired','collected_transaction_id'])
+        OR OLD.expired OR OLD.collected_transaction_id IS NOT NULL THEN
+        RAISE EXCEPTION 'boss reward transition must preserve its frozen entitlement' USING ERRCODE='23514';
+    END IF;
+    IF NEW.expired AND NEW.collected_transaction_id IS NULL THEN
+        IF NOT EXISTS (SELECT 1 FROM game_character_boss_reward_chests p
+            WHERE (p.character_id,p.world_id,p.death_id)=(NEW.character_id,NEW.world_id,NEW.death_id)
+              AND p.expires_at<=floor(extract(epoch FROM clock_timestamp())*1000)::bigint) THEN
+            RAISE EXCEPTION 'boss reward cannot expire before seven-day deadline' USING ERRCODE='23514';
+        END IF;
+    ELSIF NOT NEW.expired AND NEW.collected_transaction_id IS NOT NULL THEN
+        IF NOT EXISTS (SELECT 1 FROM game_boss_reward_item_collections c
+            WHERE (c.character_id,c.world_id,c.death_id,c.item_ordinal)=(NEW.character_id,NEW.world_id,NEW.death_id,NEW.item_ordinal)
+              AND c.transaction_id=NEW.collected_transaction_id AND c.created_xact_id=pg_current_xact_id()) THEN
+            RAISE EXCEPTION 'boss reward take requires same-transaction custody proof' USING ERRCODE='23514';
+        END IF;
+    ELSE RAISE EXCEPTION 'boss reward transition must collect or expire' USING ERRCODE='23514'; END IF;
+    RETURN NEW;
+END $$;
+
+CREATE FUNCTION game_boss_reward_projection_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP='DELETE' THEN RAISE EXCEPTION 'boss reward group provenance is immutable' USING ERRCODE='23514'; END IF;
+    IF TG_OP='UPDATE' THEN
+        IF (to_jsonb(NEW)-'item_count') IS DISTINCT FROM (to_jsonb(OLD)-'item_count') THEN
+            RAISE EXCEPTION 'boss group metadata is frozen at death' USING ERRCODE='23514';
+        END IF;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM game_boss_reward_contributors c JOIN game_boss_reward_deaths d USING(world_id,death_id)
+        WHERE (c.character_id,c.world_id,c.death_id)=(NEW.character_id,NEW.world_id,NEW.death_id)
+          AND c.eligible AND d.boss_key=NEW.boss_key AND d.minted_at=NEW.minted_at AND d.expires_at=NEW.expires_at) THEN
+        RAISE EXCEPTION 'boss group requires its frozen eligible contributor' USING ERRCODE='23514';
+    END IF;
+    RETURN NEW;
+END $$;
+CREATE FUNCTION game_boss_reward_projection_complete() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE actual BIGINT; projected INTEGER;
+BEGIN
+    SELECT count(*) INTO actual FROM game_boss_reward_items i
+        WHERE (i.character_id,i.world_id,i.death_id)=(NEW.character_id,NEW.world_id,NEW.death_id)
+          AND NOT i.expired AND i.collected_transaction_id IS NULL;
+    SELECT item_count INTO projected FROM game_character_boss_reward_chests p
+        WHERE (p.character_id,p.world_id,p.death_id)=(NEW.character_id,NEW.world_id,NEW.death_id);
+    IF projected IS NULL OR projected<>actual THEN
+        RAISE EXCEPTION 'boss reward visible group must match retained live items' USING ERRCODE='23514';
+    END IF;
+    RETURN NULL;
+END $$;
+
+-- Extend only the existing custody proof dispatch arms; every prior mechanic stays intact.
+DO $migration$
+DECLARE n TEXT; body TEXT; arm TEXT; begin_at INT;
+BEGIN
+    FOREACH n IN ARRAY ARRAY['game_item_placement_proven','game_item_mint_consistency_guard'] LOOP
+        body:=pg_get_functiondef((n||'()')::regprocedure);
+        begin_at:=regexp_instr(body,E'\\mBEGIN\\M',1,1,0,'i');
+        IF begin_at=0 THEN RAISE EXCEPTION 'unexpected Item custody proof body: %',n; END IF;
+        IF n='game_item_placement_proven' THEN
+            arm:=$arm$
+            IF TG_TABLE_NAME='game_item_container_entries' THEN
+                IF EXISTS (SELECT 1 FROM game_boss_reward_item_collections c
+                    WHERE c.item_instance_id=NEW.item_instance_id AND c.world_id=NEW.world_id
+                      AND c.character_id=NEW.character_id AND c.parent_item_instance_id=NEW.parent_item_instance_id
+                      AND c.placement_ordinal=NEW.placement_ordinal AND c.transaction_id=NEW.placed_transaction_id
+                      AND c.created_xact_id=pg_current_xact_id()) THEN RETURN NULL; END IF;
+            END IF;
+            $arm$;
+        ELSE
+            arm:=$arm$
+            IF EXISTS (SELECT 1 FROM game_boss_reward_item_collections c
+                WHERE c.item_instance_id=NEW.item_instance_id AND c.transaction_id=NEW.minted_transaction_id
+                  AND c.created_xact_id=pg_current_xact_id()) THEN
+                PERFORM game_boss_reward_item_complete(NEW.minted_transaction_id); RETURN NULL;
+            END IF;
+            $arm$;
+        END IF;
+        EXECUTE overlay(body placing E'BEGIN\n'||arm from begin_at for 5);
+    END LOOP;
+END $migration$;
+
+CREATE TRIGGER game_boss_reward_collection_receipts_admit BEFORE INSERT ON game_boss_reward_collection_receipts FOR EACH ROW EXECUTE FUNCTION game_boss_reward_collection_admit();
+CREATE TRIGGER game_boss_reward_item_collections_admit BEFORE INSERT ON game_boss_reward_item_collections FOR EACH ROW EXECUTE FUNCTION game_boss_reward_collection_admit();
+CREATE CONSTRAINT TRIGGER game_boss_reward_collection_receipts_complete AFTER INSERT ON game_boss_reward_collection_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_boss_reward_collection_complete();
+CREATE CONSTRAINT TRIGGER game_boss_reward_item_collections_complete AFTER INSERT ON game_boss_reward_item_collections DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_boss_reward_collection_complete();
+CREATE TRIGGER game_boss_reward_collection_receipts_immutable BEFORE UPDATE OR DELETE ON game_boss_reward_collection_receipts FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_boss_reward_item_collections_immutable BEFORE UPDATE OR DELETE ON game_boss_reward_item_collections FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_boss_reward_collection_receipts_no_truncate BEFORE TRUNCATE ON game_boss_reward_collection_receipts EXECUTE FUNCTION game_item_reject_truncate();
+CREATE TRIGGER game_boss_reward_item_collections_no_truncate BEFORE TRUNCATE ON game_boss_reward_item_collections EXECUTE FUNCTION game_item_reject_truncate();
+CREATE TRIGGER game_boss_reward_entitlement_guard BEFORE UPDATE OR DELETE ON game_boss_reward_items FOR EACH ROW EXECUTE FUNCTION game_boss_reward_entitlement_guard();
+CREATE CONSTRAINT TRIGGER game_boss_reward_entitlement_complete AFTER UPDATE ON game_boss_reward_items DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_boss_reward_projection_complete();
+CREATE TRIGGER game_boss_reward_projection_guard BEFORE INSERT OR UPDATE OR DELETE ON game_character_boss_reward_chests FOR EACH ROW EXECUTE FUNCTION game_boss_reward_projection_guard();
+CREATE CONSTRAINT TRIGGER game_boss_reward_projection_complete AFTER INSERT OR UPDATE ON game_character_boss_reward_chests DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION game_boss_reward_projection_complete();
+CREATE TRIGGER game_boss_reward_projection_no_truncate BEFORE TRUNCATE ON game_character_boss_reward_chests EXECUTE FUNCTION game_item_reject_truncate();
+
+DO $$ DECLARE n TEXT; BEGIN
+    FOREACH n IN ARRAY ARRAY['game_boss_reward_collection_admit','game_boss_reward_collection_complete',
+        'game_boss_reward_entitlement_guard','game_boss_reward_projection_guard','game_boss_reward_projection_complete'] LOOP
+        EXECUTE format('ALTER FUNCTION %I() SET search_path=pg_catalog,%I,pg_temp',n,current_schema());
+    END LOOP;
+    EXECUTE format('ALTER FUNCTION game_boss_reward_item_complete(uuid) SET search_path=pg_catalog,%I,pg_temp',current_schema());
+END $$;
+REVOKE ALL ON game_boss_reward_collection_receipts,game_boss_reward_item_collections FROM PUBLIC;
+REVOKE ALL ON FUNCTION game_boss_reward_collection_admit(),game_boss_reward_collection_complete(),
+    game_boss_reward_item_complete(UUID),game_boss_reward_entitlement_guard(),game_boss_reward_projection_guard(),game_boss_reward_projection_complete() FROM PUBLIC;
+GRANT SELECT,INSERT ON game_boss_reward_collection_receipts,game_boss_reward_item_collections TO oteryn_game_runtime;
+GRANT EXECUTE ON FUNCTION game_boss_reward_item_complete(UUID) TO oteryn_game_runtime;
+REVOKE DELETE,UPDATE ON game_character_boss_reward_chests FROM oteryn_game_runtime;
+GRANT UPDATE(item_count) ON game_character_boss_reward_chests TO oteryn_game_runtime;
+
 -- The native private boss owner reuses PARTY-XP-1. Channel receipt encodings remain
 -- unchanged; only a tagged Instance key can use the additional byte.
 ALTER TABLE game_party_kill_xp_receipts

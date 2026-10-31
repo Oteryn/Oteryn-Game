@@ -47,6 +47,90 @@ pub fn activated_with_loot_tables(
     activated_with_custom_loot_tables(world, source_world, None)
 }
 
+/// Explicit native reward fixture, compiled and pinned before runtime creation.
+/// The current source has no materializable reward-boss corpse. Reclassify the
+/// already admitted rat only in this test input; retain its source HP, XP, corpse,
+/// loot probabilities, quantities and all Item definitions without modification.
+pub fn activated_reward_boss_fixture(
+    world: oteryn_protocol_oteryn::WorldId,
+    source_world: Option<&[u8]>,
+) -> (
+    ContentActivationController,
+    crate::content::NativeEntryContentPin,
+) {
+    let mut supplied = manifest_input();
+    let mut creatures: CreatureProfilesDocument =
+        serde_json::from_slice(&supplied.creature_profiles.bytes).unwrap();
+    let rat = creatures
+        .records
+        .iter_mut()
+        .find(|record| record.profile.target.key == "oteryn:creature.rat")
+        .expect("source-admitted rat");
+    let ProjectV2AuthoringProfileData::Creature(profile) = &mut rat.profile.data else {
+        panic!("rat Creature profile");
+    };
+    profile
+        .details
+        .as_mut()
+        .expect("source rat details")
+        .system_eligibility
+        .reward_boss = true;
+    supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
+    supplied.source_world = source_world.map(pinned);
+    activate(world, &supplied)
+}
+
+#[cfg(test)]
+#[test]
+fn reward_boss_test_fixture_preserves_source_loot_and_production_unavailability() {
+    use crate::content::creature_reward::NoSettlementReason;
+    let world = test_source(1).unwrap().world_id;
+    let (source, _) = activated_with_loot_tables(world, None);
+    let source = source.active().unwrap().native_gameplay().unwrap();
+    let bosses = source
+        .policies()
+        .policies()
+        .iter()
+        .filter(|policy| policy.reward_boss == Some(true))
+        .collect::<Vec<_>>();
+    assert!(!bosses.is_empty());
+    // This current source-qualification expectation must change only when the
+    // admitted content actually supplies a valid reward-boss corpse, not to make
+    // the reward runtime fixture pass by widening production admission.
+    assert!(bosses.iter().all(|policy| matches!(
+        source.reward_table().row(&policy.definition_key),
+        Err(NoSettlementReason::CorpseItemInadmissible)
+    )));
+    let before = source.reward_table().row("oteryn:creature.rat").unwrap();
+    let before_policy = source
+        .policies()
+        .policies()
+        .iter()
+        .find(|policy| policy.definition_key == "oteryn:creature.rat")
+        .unwrap();
+    assert_eq!(before_policy.reward_boss, Some(false));
+    let (fixture, _) = activated_reward_boss_fixture(world, None);
+    let fixture = fixture.active().unwrap().native_gameplay().unwrap();
+    let after = fixture.reward_table().row("oteryn:creature.rat").unwrap();
+    let after_policy = fixture
+        .policies()
+        .policies()
+        .iter()
+        .find(|policy| policy.definition_key == "oteryn:creature.rat")
+        .unwrap();
+    assert_eq!(after_policy.reward_boss, Some(true));
+    assert_eq!(after_policy.maximum_health, before_policy.maximum_health);
+    assert_eq!(
+        after, before,
+        "source XP, corpse, loot and metadata are unchanged"
+    );
+    assert_ne!(
+        fixture.source_digest(),
+        source.source_digest(),
+        "the authored test classification is included in its real generated pin"
+    );
+}
+
 pub fn activated_with_custom_loot_tables(
     world: oteryn_protocol_oteryn::WorldId,
     source_world: Option<&[u8]>,
