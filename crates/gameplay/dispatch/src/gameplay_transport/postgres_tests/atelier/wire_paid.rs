@@ -90,6 +90,62 @@ async fn footprint(h: &Harness) -> TestResult<(i64, i64, i64)> {
     .await?)
 }
 
+// A scope refusal must not pass because its real input or backpack is UNKNOWN.
+// Read the exact SQL definition/revision through the same native item-facts owner
+// used by custody, before the input is nested or retired into the real stash.
+async fn assert_scope_asset_qualification(
+    h: &Harness,
+    owner: &crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    case: Case,
+) -> TestResult {
+    use crate::durability::item_loop_move::ItemLoopContent;
+    use crate::durability::item_mint::TypedDefinitionRef;
+    use crate::durability::item_transfer::ItemStackClass;
+    use crate::gameplay_transport::item_ref_admission::NativeItemWeights;
+    use oteryn_gameplay_content::content::ReferenceItemField::Known;
+    let (input, key, count, weight): (u8, &str, i64, u32) = match case {
+        Case::NestedReveal => (220, "oteryn:item.tibia.i44608", 2, 20),
+        Case::StashGrade => (229, "oteryn:item.tibia.i46625", 100, 5),
+        _ => return Err("expected a custody-scope case".into()),
+    };
+    let native = owner.active_generation.and_then(|active| active.native_gameplay())
+        .ok_or("native custody-scope content")?;
+    let content = NativeItemWeights(native);
+    for (seed, expected_key, expected_count, expected_weight) in [
+        (210_u8, "oteryn:item.tibia.i2854", 1_i64, None),
+        (input, key, count, Some(weight)),
+    ] {
+        let (family, production_key, revision_ref, quantity): (String, String, String, i64) =
+            sqlx::query_as("SELECT definition_family,definition_production_key,definition_revision_ref,quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid AND lifecycle=1")
+                .bind(id(seed).as_slice()).fetch_one(&h.pool).await?;
+        assert_eq!(production_key, expected_key);
+        assert_eq!(quantity, expected_count);
+        let definition = TypedDefinitionRef { family, production_key, revision_ref };
+        let facts = content.loop_facts(&definition).ok_or("qualified custody-scope definition")?;
+        assert_eq!(facts.definition, definition);
+        if let Some(weight) = expected_weight {
+            assert_eq!(facts.weight, Some(weight));
+            assert!(matches!(facts.stack, ItemStackClass::Stackable { proven_maximum: Some(100) }));
+            assert!(facts.container_capacity.is_none());
+            if matches!(case, Case::StashGrade) {
+                let policy = native.item_policy(&definition.production_key, &definition.revision_ref)
+                    .ok_or("native fragment stash policy")?;
+                let semantics = &policy.record().semantics;
+                assert!(matches!(&semantics.trade_restrictions,
+                    Known(trade) if trade.marketable == Known(true)),
+                    "the actual fragment must qualify for the existing stash owner");
+                assert!(!matches!(&semantics.container, Known(_)));
+            }
+        } else {
+            assert!(facts.weight.is_some());
+            assert!(matches!(facts.stack, ItemStackClass::NonStackable));
+            assert!(facts.container_slot_equip_pattern);
+            assert!(facts.container_capacity.is_some_and(|capacity| capacity > 0));
+        }
+    }
+    Ok(())
+}
+
 async fn nest_lesser_gems(h: &Harness) -> TestResult {
     // Fixture custody only: the actual command below uses the restricted runtime
     // role. Copy the admitted backpack definition so this is a real native bag.
@@ -230,6 +286,9 @@ fn scenario(case: Case) -> TestResult {
         assert_eq!(before.gems.len(), 8);
         assert_eq!(before.quality_quotes.len(), 3);
         assert_eq!(before.grade_quotes.len(), 6);
+        if matches!(case, Case::NestedReveal | Case::StashGrade) {
+            assert_scope_asset_qualification(&h, &owner, case).await?;
+        }
         match case {
             Case::NestedReveal => nest_lesser_gems(&h).await?,
             Case::StashGrade => stow_basic_fragments(&owner, &admitted).await?,
@@ -255,6 +314,18 @@ fn scenario(case: Case) -> TestResult {
             occurrence: id(180), expected_revision: before.revision, mutation,
         };
         let payload = wire::encode_mutate(&request).map_err(debug)?;
+        if scope_before.is_some() {
+            assert!(owner.refresh_and_apply_spell_access(deps.actor, session).await
+                .premium_gate().premium_current(), "custody refusal requires current Premium");
+            let required_gold = if matches!(case, Case::NestedReveal) { 125_000 } else { 2_000_000 };
+            assert!(footprint(&h).await?.2 >= required_gold, "custody refusal has enough real gold");
+            // Expire every earlier window of this same monotonic owner. No fresh
+            // Wheel/Atelier action runs between this point and the tested command.
+            let previous_time = owner.owner_now().get();
+            advance_ex_action(&mut owner)?;
+            assert!(owner.owner_now().get().saturating_sub(previous_time) >= 490_000,
+                "custody refusal must not be caused by ExAction exhaustion");
+        }
         let reply_bytes = send_atelier(&owner, &mut admitted, wire::COMMAND_TYPE_ATELIER_MUTATE, &payload).await?;
         let reply = wire::decode_reply(&reply_bytes).map_err(debug)?;
         if let Some(scope_before) = scope_before {
