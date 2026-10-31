@@ -2368,3 +2368,126 @@ fn pvp_target_block_precedes_attacker_wheel_and_requires_exact_numerical_owner_p
         "a new attack still requires current caster control"
     );
 }
+
+#[test]
+fn ascetic_spell_and_rune_damage_use_own_mantra_after_flat_before_sanctuary() {
+    use crate::spell::harmony::VirtuePartyBonuses;
+    use crate::spell::{Carrier, Vocation, cast::CharacterCastFacts};
+    use oteryn_gameplay_progression::wheel_effects::WheelRuntimeEffects;
+    for vocation in [Vocation::Monk, Vocation::ExaltedMonk] {
+        for rune in [false, true] {
+            for (own_mantra, expected) in [(3, 139), (0, 129)] {
+                // This genuine creature policy also supplies Energy immunity, so
+                // the final source additions cannot revive a blocked-zero hit.
+                let mut f = fixture_with_damage_healing(100);
+                f.state = PlayerSpellState::new(
+                    CharacterCastFacts {
+                        vocation,
+                        level: 500,
+                        magic_level: 20,
+                        max_health: 1000,
+                        max_mana: 500,
+                        max_soul: 200,
+                    },
+                    5,
+                    0,
+                )
+                .expect("current Monk with five Harmony");
+                f.state
+                    .apply_owner_promotion_transition(true, true, Some(20_000_000))
+                    .expect("current Premium and promotion");
+                f.state.install_equipped_mantra(own_mantra);
+                f.state
+                    .install_virtue_party_bonuses(
+                        VirtuePartyBonuses {
+                            mantra: 17,
+                            ..Default::default()
+                        },
+                        0,
+                    )
+                    .expect("another member's current Mantra observation");
+                let mut effects = WheelRuntimeEffects::default();
+                effects.revelation_stages.insert("ascetic".into(), 3);
+                effects.active_unique_perks.insert("sanctuary".into());
+                f.state.install_wheel_effects(effects.clone());
+                f.attributes.wheel_effects = Some(effects);
+                f.attributes.binding.player_revision = f.state.revision();
+                f.attributes.base_critical_chance_permyriad = Some(0);
+                f.attributes.equipment_critical_chance_permyriad = Some(0);
+                f.attributes.base_critical_extra_permyriad = Some(0);
+                f.attributes.equipment_critical_extra_permyriad = Some(0);
+                f.attributes.fatal_chance_permyriad = Some(ExactRatio {
+                    numerator: 0,
+                    denominator: 1,
+                });
+                f.attributes.wheel_flat_damage = Some(3);
+                f.attributes.source_damage_multiplier_percent = Some(20);
+                let mut spell = wheel_healing_spell();
+                spell.name = "Tiger Clash".into();
+                if rune {
+                    spell.carrier = Carrier::Rune {
+                        item: 3155,
+                        charges: 1,
+                        magic_level: 0,
+                    };
+                } else {
+                    assert!(matches!(&spell.carrier, Carrier::Instant { .. }));
+                }
+                let target = &f.bindings[2];
+                assert_eq!(target.source_id, 3);
+                let source_position = f
+                    .runtime
+                    .read_actor_position(f.caster)
+                    .expect("current caster position")
+                    .position();
+                let target_position = f
+                    .runtime
+                    .read_actor_position(target.actor)
+                    .expect("current target position")
+                    .position();
+                assert_eq!((target_position.x, target_position.y), (11, 9));
+                assert!(
+                    source_position.floor != target_position.floor
+                        || source_position.x.abs_diff(target_position.x) > 1
+                        || source_position.y.abs_diff(target_position.y) > 1,
+                    "the real target must not add Sanctuary's separate adjacency bonus"
+                );
+                for element in [Element::Physical, Element::Fire, Element::Energy] {
+                    let mut p = plan();
+                    let NativeCombatPlan::Combat(combat) = &mut p else {
+                        panic!("combat");
+                    };
+                    combat.element = element;
+                    combat.block_armor = false;
+                    combat.hits.truncate(1);
+                    combat.hits[0].target = target.source_id;
+                    combat.hits[0].magnitude = 100;
+                    combat.hits[0].bonus_percent = 0;
+                    combat.hits[0].side_percent = None;
+                    let hit = combat.hits[0].clone();
+                    let mut owner = qualify(&f, &p).expect("actual current numerical owner");
+                    owner
+                        .select_item_spell(&spell)
+                        .expect("selected Instant or Rune source");
+                    assert_eq!(
+                        owner.finish(&p, &hit, target, &mut |_, _| {
+                            panic!("zero critical and fatal chances cannot draw")
+                        }),
+                        Ok(if element == Element::Energy {
+                            0
+                        } else {
+                            expected
+                        }),
+                        "{vocation:?}, rune={rune}, own Mantra={own_mantra}, {element:?}"
+                    );
+                    owner
+                        .validate_current(&f.runtime, &f.state, &f.attributes, &[])
+                        .expect("the same current numerical proof remains valid");
+                }
+                // Crystal: raw 100 -> target mitigation 95 -> source 20% gives 114 -> flat 3 gives 117
+                // -> own Ascetic 3 x 3 gives 126 -> Sanctuary Harmony 5 rounds 138.6 to 139.
+                // Own 0 keeps 117 and rounds 128.7 to 129 despite the party's Mantra 17.
+            }
+        }
+    }
+}

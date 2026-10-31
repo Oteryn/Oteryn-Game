@@ -1134,7 +1134,7 @@ impl PreparedMagnitudeOwner {
             value = compound(value, bonus)?
                 .checked_add(i64::from(needed(a.wheel_flat_damage)?))
                 .ok_or(Error::InvalidMagnitude)?;
-            return self.finish_combat_mastery(value, &target);
+            return self.finish_wheel_damage(value, &target);
         }
         let TargetOwner::Creature(source_target) = &target.owner else {
             return invalid();
@@ -1235,7 +1235,7 @@ impl PreparedMagnitudeOwner {
         if let Some(side) = hit.side_percent {
             flat = signed_round(flat as f64 * f64::from(side) / 100.0)?;
         }
-        self.finish_combat_mastery(
+        self.finish_wheel_damage(
             value.checked_add(flat).ok_or(Error::InvalidMagnitude)?,
             &target,
         )
@@ -1302,10 +1302,23 @@ impl PreparedMagnitudeOwner {
         }
     }
 
-    fn finish_combat_mastery(&self, value: i64, target: &Target) -> Result<i64, Error> {
+    fn finish_wheel_damage(&self, value: i64, target: &Target) -> Result<i64, Error> {
         let Some(effects) = &self.resolved_attributes.wheel_effects else {
             return Ok(value);
         };
+        // Crystal 201189f game.cpp:7681-7685,7708-7721 adds own Ascetic after
+        // normal Wheel flat damage and before Sanctuary for each damage component.
+        // player_wheel.cpp:4194-4210 reads only the six-slot getMantraTotal.
+        let ascetic = self.caster.ascetic_attack_bonus(
+            effects
+                .revelation_stages
+                .get("ascetic")
+                .copied()
+                .unwrap_or(0),
+        );
+        let value = value
+            .checked_add(i64::from(ascetic))
+            .ok_or(Error::InvalidMagnitude)?;
         let (health, maximum) = Self::target_health(target)?;
         let two_handed = self
             .caster

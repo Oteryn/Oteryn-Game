@@ -422,14 +422,15 @@ pub(super) async fn scenario(
                 recipient.0
             );
         }
+        if guided {
+            assert_guiding_percentage_without_shared_mantra(owner, player, players[1]).await?;
+        }
         owner.refresh_source_party_serene(players[2].0, players[2].1).await;
         let runtime = owner.runtime.lock().await;
         let states = owner.states.spell_states.lock().await;
         let recipient = states.get(&runtime, players[2].0, players[2].1).ok_or("mantra recipient")?;
-        assert_eq!(recipient.ascetic_attack_bonus_at(1, owner.owner_now().get()), if guided { 17 } else { 0 }, "C11R Guiding mantra");
-        if guided {
-            assert_guiding_percentage_without_shared_mantra(owner, player, players[1]).await?;
-        }
+        assert_eq!(recipient.virtue_party_bonuses(owner.owner_now().get()).mantra, 0, "no local shared Mantra projection");
+        assert_eq!(recipient.ascetic_attack_bonus_at(1, owner.owner_now().get()), 0, "Crystal Ascetic ignores other members Mantra");
     }
     // Eight adjacent monsters stay fixed; moving the knight across the screen boundary toggles Serene.
     let target;
