@@ -57,6 +57,9 @@ pub struct ActorCombatState {
     pub(super) party: super::runtime_actor_party::PartyActorState,
     /// Only creature slots use this field; player maxima belong to PlayerSpellState.
     pub maximum_health: i64,
+    pub echo: Option<oteryn_gameplay_domain::domain::echo_warden::EchoVariant>,
+    pub soulpit: Option<super::soulpit::SoulpitCreatureTag>,
+    pub(super) echo_death_recorded: bool,
     pub forge: Option<oteryn_gameplay_domain::domain::forge_creature::ForgeCreature>,
     pub monster_ai: Option<MonsterAiState>,
     pub(super) hazard: Option<(GameSessionId, u16)>,

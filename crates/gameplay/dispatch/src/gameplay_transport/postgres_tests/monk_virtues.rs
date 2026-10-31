@@ -655,7 +655,18 @@ pub(super) async fn scenario(
             let own_mantra = state.ascetic_attack_bonus(1);
             assert_eq!(own_mantra, 17, "the spender fixture retains its own equipment Mantra");
             let ascetic_flat = i64::from(own_mantra) * 3;
-            bounds.map(|b| b + i64::from(flat) + ascetic_flat)
+            // The cast draw also rolls the base player critical (5% chance, +10%;
+            // this fixture carries no critical equipment), applied to the raw value
+            // before the flat stages. Cast draws are seeded by the content digest
+            // (native_combat_cast.rs), so new content can move this cast between
+            // the two branches: accept exactly the non-critical or the critical range.
+            let (_, critical_extra) =
+                oteryn_gameplay_combat_rules::resolution::equipped_offence::EquippedOffence::default()
+                    .player_critical();
+            let critical =
+                |b: i64| (b as f64 * (1.0 + f64::from(critical_extra) / 10000.0)).trunc() as i64;
+            let flats = i64::from(flat) + ascetic_flat;
+            [bounds.map(|b| b + flats), bounds.map(|b| critical(b) + flats)]
         };
         let before = owner
             .runtime
@@ -675,7 +686,9 @@ pub(super) async fn scenario(
         let runtime = owner.runtime.lock().await;
         let damage = before - runtime.companion_snapshot(target).map_err(debug)?.health;
         assert!(
-            (expected_bounds[0]..=expected_bounds[1]).contains(&damage),
+            expected_bounds
+                .iter()
+                .any(|[low, high]| (*low..=*high).contains(&damage)),
             "stage 3 spender: damage {damage}, bounds {expected_bounds:?}, serene {serene}"
         );
         let states = owner.states.spell_states.lock().await;
