@@ -728,6 +728,7 @@ const CONSTRUCTIONS: &[(&str, usize)] = &[
     ("gameplay_transport/monk_save_postgres_tests.rs", 1),
     ("gameplay_transport/parameter_cast.rs", 3),
     ("gameplay_transport/postgres_tests/admit_cap_2.rs", 2),
+    ("gameplay_transport/postgres_tests/cyclopedia_tracker.rs", 1),
     ("gameplay_transport/postgres_tests/field_runes.rs", 2),
     ("gameplay_transport/postgres_tests/magic2_conjure.rs", 2),
     ("gameplay_transport/postgres_tests/party_buffs.rs", 1),
