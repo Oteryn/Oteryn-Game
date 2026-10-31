@@ -1,6 +1,5 @@
 //! WRAP-1 House-owned furniture and fluid transitions.
-// Rules slice: the House intent route wires `dispatch` in the follow-up; until then only tests call it.
-#![cfg_attr(not(test), allow(dead_code))]
+// Furniture conversions are drafted by `house_wrap` and fenced again by the durable owner.
 
 use oteryn_protocol_oteryn::world_object::UseDisposition;
 use std::collections::BTreeMap;
@@ -9,10 +8,20 @@ use std::collections::BTreeMap;
 pub enum Action {
     Wrap,
     Unwrap,
+    // Retained deterministic rules slice; this command admits furniture wrap/unwrap only.
+    #[cfg_attr(not(test), allow(dead_code))]
     PlaceKit,
+    // Retained deterministic rules slice; this command admits furniture wrap/unwrap only.
+    #[cfg_attr(not(test), allow(dead_code))]
     WeaponHit,
+    // Retained deterministic rules slice; this command admits furniture wrap/unwrap only.
+    #[cfg_attr(not(test), allow(dead_code))]
     Fill,
+    // Retained deterministic rules slice; this command admits furniture wrap/unwrap only.
+    #[cfg_attr(not(test), allow(dead_code))]
     PourGround,
+    // Retained deterministic rules slice; this command admits furniture wrap/unwrap only.
+    #[cfg_attr(not(test), allow(dead_code))]
     PourContainer,
 }
 
