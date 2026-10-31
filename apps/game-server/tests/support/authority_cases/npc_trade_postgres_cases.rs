@@ -788,3 +788,55 @@ fn sell_all_sells_every_stack_once_replays_and_then_finds_nothing() -> TestResul
         Ok(())
     })
 }
+
+#[test]
+fn the_first_trade_with_yasir_grants_si_ariki_once_and_other_npcs_grant_nothing() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "npcsiariki").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        equip(&harness, &authority).await?;
+        give(&harness, &authority, Coin::Gold.production_key(), 100, 201).await?;
+        let with = |seed: u8, npc: &str| -> TestResult<NpcTradeRequest> {
+            let mut request = trade(seed, NpcTradeSide::Buy, 1, 10)?;
+            request.cause.npc_key = npc.into();
+            Ok(request)
+        };
+        let granted = async || -> TestResult<(Vec<String>, i64)> {
+            let keys = sqlx::query_scalar(
+                "SELECT achievement_key FROM game_account_achievements ORDER BY achievement_key",
+            )
+            .fetch_all(&harness.pool)
+            .await?;
+            let requests =
+                sqlx::query_scalar("SELECT count(*) FROM game_account_achievement_grant_requests")
+                    .fetch_one(&harness.pool)
+                    .await?;
+            Ok((keys, requests))
+        };
+
+        committed(&harness, &authority, with(10, "fixture:npc.trader")?).await?;
+        assert_eq!(granted().await?, (vec![], 0));
+        let first = with(30, "oteryn:npc.yasir")?;
+        committed(&harness, &authority, first.clone()).await?;
+        let si_ariki = (vec!["oteryn:achievement/si_ariki".to_owned()], 1);
+        assert_eq!(granted().await?, si_ariki);
+        // The replay is the committed trade; a later trade finds the fact held.
+        assert!(matches!(
+            commit(&harness, &authority, first).await.map_err(debug)?,
+            NpcTradeOutcome::AlreadyCommitted(_)
+        ));
+        committed(&harness, &authority, with(50, "oteryn:npc.yasir")?).await?;
+        assert_eq!(granted().await?, si_ariki);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}

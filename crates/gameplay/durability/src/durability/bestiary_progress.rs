@@ -16,6 +16,7 @@
 //! This component does not prove that Combat legitimately produced the
 //! occurrence or that the kill was credited; `combat::death_reward` does.
 
+use super::account_achievement::grant_missing;
 use super::character_authority::{ReconciledCharacterAuthority, assert_recovery_fence};
 use super::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, assert_gameplay_fence, numeric_u64,
@@ -26,12 +27,18 @@ use super::db::{
 };
 use super::runtime_scope_assignment::NodeIncarnationProof;
 use super::{DurabilityError, DurabilityRoot};
+use crate::content::ProjectEvidenceLimits;
 use crate::domain::bestiary::BestiaryRace;
 use crate::domain::progression::ProgressionRevisionContext;
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::foundation::RuntimeScopeRefV1;
+use oteryn_gameplay_progression::bestiary_achievement::{
+    SOURCE_KIND, completion_keys, kill_count_keys,
+};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
+use std::collections::HashMap;
+use std::sync::LazyLock;
 
 type Result<T> = std::result::Result<T, BestiaryProgressError>;
 const COMMAND_BINDING_VERSION: u8 = 1;
@@ -364,6 +371,13 @@ impl DurabilityRoot {
                     .bind(committed_at)
                     .execute(&mut *tx)
                     .await?;
+                    grant_achievements(
+                        &mut tx,
+                        fence.character_id,
+                        &request,
+                        kill_count_after,
+                    )
+                    .await?;
 
                     let committed = CommittedBestiaryKill {
                         occurrence: request.occurrence,
@@ -596,6 +610,76 @@ fn decode_receipt(
         kill_count_before: count("kill_count_before")?,
         kill_count_after: count("kill_count_after")?,
     })
+}
+
+/// The canonical races by key with their difficulty, decoded once; empty when the canonical
+/// source does not decode, so no completion is then counted.
+fn canonical_difficulties() -> &'static HashMap<String, (BestiaryRace, String)> {
+    static RACES: LazyLock<HashMap<String, (BestiaryRace, String)>> = LazyLock::new(|| {
+        crate::content::canonical_bestiary_difficulties(ProjectEvidenceLimits {
+            max_documents: 5,
+            max_document_bytes: 2_500_000,
+            max_total_bytes: 8_000_000,
+            max_json_depth: 10,
+            max_decoded_fields: 65_000,
+            max_string_bytes: 1_000_000,
+            max_locator_bytes: 128,
+            max_locator_segments: 5,
+            max_reference_records: 4096,
+            max_import_records: 1,
+            max_reimport_states: 1,
+        })
+        .map(|rows| {
+            rows.into_iter()
+                .map(|(race, difficulty)| (race.key().to_owned(), (race, difficulty)))
+                .collect()
+        })
+        .unwrap_or_default()
+    });
+    &RACES
+}
+
+/// P11: the Bestiary achievements of this kill, in its fenced, root-locked transaction. The
+/// completion counts are read only when this kill fully unlocks its entry.
+async fn grant_achievements(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    character: CharacterId,
+    request: &BestiaryKillRequest,
+    kill_count_after: u32,
+) -> std::result::Result<(), DurabilityError> {
+    let race = request.race.key();
+    let mut keys: Vec<&str> = kill_count_keys(race, kill_count_after).collect();
+    if request.race.is_complete(kill_count_after) {
+        let races = canonical_difficulties();
+        // One row per Bestiary race at most: the canonical population bounds it.
+        let rows = sqlx::query(
+            "SELECT race_key, kill_count FROM game_character_bestiary_progress \
+              WHERE character_id = encode($1,'hex')::uuid LIMIT 4096",
+        )
+        .bind(character.as_bytes().as_slice())
+        .fetch_all(&mut **tx)
+        .await?;
+        let mut completed = Vec::with_capacity(rows.len());
+        for row in &rows {
+            let key: &str = row.try_get("race_key")?;
+            let kills = u32::try_from(row.try_get::<i64, _>("kill_count")?)
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            if let Some((canonical, difficulty)) = races.get(key)
+                && (key == race || canonical.is_complete(kills))
+            {
+                completed.push(difficulty.as_str());
+            }
+        }
+        keys.extend(completion_keys(completed));
+    }
+    grant_missing(
+        tx,
+        character,
+        &keys,
+        SOURCE_KIND,
+        request.occurrence.as_bytes(),
+    )
+    .await
 }
 
 #[cfg(test)]
