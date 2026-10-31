@@ -91,6 +91,24 @@ fn loop_monster_input(summons: bool) -> NativeGameplayInput {
             .find(|r| !r.source_item_abilities.is_empty())
             .expect("source Item spell closure");
         let ability = source.source_item_abilities[0].clone();
+        // Keep the reused inline Item body and its exact reference in the fixture closure.
+        let ability_reference = source
+            .attack_definitions
+            .as_ref()
+            .expect("source Item attack closure")
+            .records
+            .iter()
+            .find(|reference| {
+                matches!(reference,
+                    crate::content::ProjectReferenceRecord::Ability { identity, effects, .. }
+                        if identity.family == "Ability"
+                            && identity.key == ability.target.key
+                            && identity.revision == ability.target.revision
+                            && effects.is_empty()
+                )
+            })
+            .expect("source inline Item Ability reference")
+            .clone();
         let Some(ProjectV2AuthoringProfile {
             data: ProjectV2AuthoringProfileData::Behavior(source_behavior),
             ..
@@ -115,6 +133,15 @@ fn loop_monster_input(summons: bool) -> NativeGameplayInput {
         if let ProjectV2AuthoringProfileData::Creature(profile) = &mut rat.profile.data {
             profile.abilities = vec![ability.target.clone()];
         }
+        let definitions = rat.attack_definitions.as_mut().expect("rat attack closure");
+        assert!(
+            !definitions
+                .profiles
+                .iter()
+                .any(|profile| profile.target == ability.target)
+        );
+        definitions.records.push(ability_reference);
+        definitions.profiles.push(ability.clone());
         rat.source_item_abilities = vec![ability];
         rat.monster_melee = None;
         let Some(ProjectV2AuthoringProfile {
@@ -127,9 +154,31 @@ fn loop_monster_input(summons: bool) -> NativeGameplayInput {
         behavior.attacks = vec![attack];
         behavior.defenses.clear();
         behavior.summons = Some(serde_json::from_value(serde_json::json!({"max_summons":2,"entries":[{"creature":child,"interval_ms":1000,"chance_ppm":1000000,"count":2}]})).unwrap());
+        refresh_loop_monster_attack_roots(rat);
         supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
     }
     supplied
+}
+
+// Explicit fixture overlays must retain the exact admitted Creature/Behavior roots.
+// This is called only by these synthetic scenarios, never by activation or validation.
+fn refresh_loop_monster_attack_roots(record: &mut CreatureProfileRecord) {
+    let roots = [
+        record.profile.clone(),
+        record.behavior.as_ref().expect("fixture Behavior").clone(),
+    ];
+    let definitions = record
+        .attack_definitions
+        .as_mut()
+        .expect("fixture attack closure");
+    for root in roots {
+        let bound = definitions
+            .profiles
+            .iter_mut()
+            .find(|profile| profile.target == root.target)
+            .expect("exact fixture root membership");
+        *bound = root;
+    }
 }
 
 pub fn loop_monster_inner_digest(pin: &crate::content::NativeEntryContentPin) -> [u8; 32] {
@@ -159,6 +208,9 @@ pub fn activated_loop_monster_missing_child(
     child.behavior = None;
     child.monster_melee = None;
     child.source_item_abilities.clear();
+    // This scenario intentionally has no child Behavior or executable attack closure;
+    // its failure belongs to runtime summon registration, after valid Content activation.
+    child.attack_definitions = None;
     let child = child.profile.target.clone();
     let rat = creatures
         .records
@@ -173,6 +225,7 @@ pub fn activated_loop_monster_missing_child(
         panic!("parent Behavior");
     };
     behavior.summons.as_mut().expect("summons").entries[0].creature = child;
+    refresh_loop_monster_attack_roots(rat);
     supplied.creature_profiles = pinned(&serde_json::to_vec(&creatures).unwrap());
     activate(world, &supplied)
 }
