@@ -99,6 +99,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // 3370..=3372, 3377, 3381, 3382, 3557, 3558, 5957, 5958, 8063, 8894..=8899 and 9016
     // (tools/content-migration/rust_lottery_profiles.py). All have speed_bonus=0.
     ("W19F-RUST-LOTTERY", 24),
+    // P06/P07: fifteen unrevealed vocation gems and two fragment inputs, from Crystal
+    // 201189f (tools/content-migration/wheel_gem_item_profiles.py). All have speed_bonus=0.
+    ("WHEEL-GEM", 17),
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),
