@@ -16,7 +16,7 @@ use crate::gameplay_transport::connection::{
 use crate::gameplay_transport::guild_intent::GuildReply;
 use crate::gameplay_transport::tcp_tls::{read_frame, write_frame};
 use crate::gameplay_transport::{ComposedFreshAdmission, item_fence_of};
-use oteryn_gameplay_encounter_rules::boss::RewardParticipation;
+use oteryn_gameplay_encounters::bosses::reward_chest::RewardParticipation;
 use oteryn_protocol_oteryn::boss_rewards::*;
 use oteryn_protocol_oteryn::{
     ClientCommandValue, CommandStatus, decode_command_result, encode_client_command,
@@ -30,12 +30,19 @@ use native::native_death;
 #[path = "boss_rewards/paged_count.rs"]
 mod paged_count;
 
+#[path = "boss_rewards/movement.rs"]
+mod movement;
+
+#[path = "boss_rewards/privacy.rs"]
+mod privacy;
+
 #[derive(Clone, Copy)]
 enum Case {
     Collection,
     Expiry,
     NativeDeath,
     OfflineReward,
+    LivePrivacy,
 }
 
 #[test]
@@ -56,6 +63,11 @@ fn boss_rewards_postgres_native_lethal_settlement_and_later_replay() -> TestResu
 #[test]
 fn boss_rewards_postgres_disconnected_contributor_keeps_earned_entitlement() -> TestResult {
     run_case(Case::OfflineReward)
+}
+
+#[test]
+fn boss_rewards_postgres_live_rewards_are_private_between_current_characters() -> TestResult {
+    run_case(Case::LivePrivacy)
 }
 
 fn run_case(case: Case) -> TestResult {
@@ -112,10 +124,10 @@ fn scenario(case: Case) -> TestResult {
         };
         let reward_chest = "oteryn:item.tibia.i19250";
         let gold = "oteryn:item.tibia.i3031";
-        let (bytes, pins) = crate::map::boot::tests::bundle_with_item_ids(
+        let (bytes, pins) = movement::bundle_with_reward_corridor(
             (reward_chest, reference(reward_chest)?.get() - 1),
             (gold, reference(gold)?.get() - 1),
-        );
+        )?;
         let base = crate::map::load(&bytes, &pins)
             .map_err(|error| format!("W03 fixture bundle load: {error:?}"))?;
         let map = crate::map::boot::boot(
@@ -234,11 +246,17 @@ fn scenario(case: Case) -> TestResult {
         admitted.runtime_actor = Some(deps.actor);
         admitted.first_entry = FirstEntryOutcome::Positioned;
         admitted.item_fence = Some(fence);
-        admitted.continuity.selected_capabilities = SelectedCapabilities::select(
-            owner.offered_capabilities(),
-            &[4, 117, CAPABILITY_BOSS_REWARDS_V1],
-        )
-        .ok_or("boss rewards offered capability closure")?;
+        // ITEM_VIEW_MOVE_V1 (4) requires WORLD_SPATIAL_ENTITIES (6). Omitting 6
+        // legitimately prunes both 4 and its dependent BOSS_REWARDS_V1 (224).
+        let supported = [4, 6, 117, CAPABILITY_BOSS_REWARDS_V1];
+        admitted.continuity.selected_capabilities =
+            SelectedCapabilities::select(owner.offered_capabilities(), &supported)
+                .ok_or("boss rewards offered capability closure")?;
+        assert_eq!(
+            admitted.continuity.selected_capabilities.as_slice(),
+            supported.as_slice(),
+            "the physical reward fixture must negotiate every required capability"
+        );
         if matches!(case, Case::NativeDeath) {
             native_death(&h, &owner, &mut admitted, fence).await?;
             eprintln!("BOSS_REWARDS POSTGRES_NATIVE_DEATH_COMPLETED");
@@ -256,7 +274,7 @@ fn scenario(case: Case) -> TestResult {
             crate::gameplay_transport::item_look::typed_definition(index, reference(gold)?)
                 .ok_or("gold definition")?;
         let minted = match case {
-            Case::Collection | Case::NativeDeath | Case::OfflineReward => now,
+            Case::Collection | Case::NativeDeath | Case::OfflineReward | Case::LivePrivacy => now,
             Case::Expiry => now - 604_800_000 + 1_000,
         };
         let contribution = RewardParticipation {
@@ -398,6 +416,11 @@ fn scenario(case: Case) -> TestResult {
                 );
                 eprintln!("BOSS_REWARDS_OFFLINE_ENTITLEMENT POSTGRES_CASE_COMPLETED");
             }
+            Case::LivePrivacy => {
+                privacy::live_other_character(&h, &deps, &owner, &mut admitted, fence, death)
+                    .await
+                    .map_err(|error| format!("W03 live private rewards: {error}"))?;
+            }
         }
         eprintln!("BOSS_REWARDS POSTGRES_CASE_COMPLETED");
         drop(owner);
@@ -505,19 +528,7 @@ async fn collection(
     }
     // A new owner call with the original command reads its durable receipt even after moving
     // away. No ephemeral row ordinal, capacity or physical-reach change can apply it again.
-    owner
-        .runtime
-        .lock()
-        .await
-        .initialize_pinned_test_position(
-            admitted.runtime_actor.ok_or("actor")?,
-            MovementLocalPosition {
-                x: 2,
-                y: 0,
-                floor: 7,
-            },
-        )
-        .map_err(debug)?;
+    movement::walk_corridor(owner, *admitted, [0, 1, 2]).await?;
     let GuildReply::Payload(replayed) = owner
         .boss_rewards_command(*admitted, 3, COMMAND_TYPE_BOSS_REWARD_COLLECT_ALL, &all)
         .await
@@ -820,7 +831,23 @@ async fn exchange(
             if envelope.message_type() == MessageType::CommandResult {
                 let result = decode_command_result(envelope.payload()).map_err(debug)?;
                 assert_eq!(result.command_id, id);
-                assert!(result.payload.len() <= MAX_RESULT_BYTES);
+                // Command 340 retains its existing 64-group metadata page bound;
+                // W03 commands 428-430 retain their separate 1 KiB reply bound.
+                // This helper exercises both protocols, so check the owning one.
+                let result_bound = match kind {
+                    oteryn_protocol_oteryn::boss_encounter::COMMAND_TYPE_BOSS_REWARD_OPEN => {
+                        oteryn_protocol_oteryn::boss_encounter::MAX_RESULT_BYTES
+                    }
+                    COMMAND_TYPE_BOSS_REWARD_BROWSE
+                    | COMMAND_TYPE_BOSS_REWARD_TAKE
+                    | COMMAND_TYPE_BOSS_REWARD_COLLECT_ALL => MAX_RESULT_BYTES,
+                    _ => return Err(format!("unsupported reward fixture command {kind}").into()),
+                };
+                assert!(
+                    result.payload.len() <= result_bound,
+                    "command {kind} result {} exceeds its bound {result_bound}",
+                    result.payload.len()
+                );
                 if !matches!(
                     result.status,
                     CommandStatus::Accepted | CommandStatus::DuplicateReplay

@@ -9,8 +9,6 @@ use super::db::lock_admission_relations;
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
 #[cfg(test)]
-use crate::content::ProductionKey;
-#[cfg(test)]
 use crate::domain::CharacterId;
 use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
 use oteryn_simulation_determinism::{

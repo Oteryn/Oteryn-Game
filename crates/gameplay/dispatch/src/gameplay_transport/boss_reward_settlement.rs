@@ -8,12 +8,9 @@ use crate::durability::boss_encounter::reward_chest::{
 };
 use crate::durability::item_mint::TypedDefinitionRef;
 use crate::foundation::RuntimeScopeRefV1;
-use oteryn_gameplay_encounter_rules::boss::{
-    reward_chest::{
-        FrozenBossContribution, contribution_loot_factors, freeze_personal_rewards, reward_expiry,
-        top_contributor,
-    },
-    reward_eligibility,
+use oteryn_gameplay_encounters::bosses::reward_chest::{
+    FrozenBossContribution, contribution_loot_factors, freeze_personal_rewards, reward_eligibility,
+    reward_expiry, top_contributor,
 };
 use oteryn_gameplay_items::loot_plan::{LootPlan, LootPlanError, plan_boss_loot};
 use sha2::{Digest, Sha256};
@@ -244,6 +241,72 @@ fn plan_personal_death(
 }
 
 impl DurableKillSettle<'_, '_, '_, '_> {
+    /// The room's primary native death starts its authored after-kill return
+    /// even when that creature creates no personal reward group. W03 keeps its
+    /// existing atomic room decision and chest settlement in the transaction below.
+    pub(super) async fn settle_activity_boss_defeat(&self, entry: &PendingKillSettlement) -> bool {
+        let Some(captured) = &entry.activity_death else {
+            return true;
+        };
+        if entry.boss_reward.is_some() {
+            return true;
+        }
+        let admission = self.admission;
+        let Some(native) = admission
+            .active_generation
+            .and_then(|generation| generation.native_gameplay())
+        else {
+            operator_event("activity_defeat_deferred reason=content_unavailable");
+            return false;
+        };
+        let digest = native.source_digest();
+        let revision = format!(
+            "sha256:{}",
+            digest
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>()
+        );
+        let current_pin = {
+            let runtime = admission.runtime.lock().await;
+            runtime.owner_fence().is_ok()
+                && runtime.binding().runtime_scope() == entry.facts.death.runtime_scope()
+                && runtime.binding().scope_generation()
+                    == entry.facts.death.scope_ownership_generation()
+                && runtime.content_pin().server_artifact_digest() == digest
+                && entry.ground.content_revision == revision
+        };
+        if !current_pin {
+            operator_event("activity_defeat_deferred reason=scope_or_content_fenced");
+            return false;
+        }
+        let owner =
+            crate::durability::activity_handoff::ActivityHandoffOwner::new(admission.root.clone());
+        match owner
+            .record_boss_defeat(
+                admission.character,
+                admission.holder,
+                entry.facts.death.runtime_scope(),
+                entry.facts.death.scope_ownership_generation(),
+                crate::durability::activity_handoff::boss_room::BossDefeatOccurrence {
+                    boss_key: &captured.creature,
+                    death: personal_death_id(entry.facts.death),
+                    minted_unix_ms: captured.died_at_unix_ms,
+                },
+            )
+            .await
+        {
+            Ok(true) => true,
+            result => {
+                operator_event(&format!(
+                    "activity_defeat_deferred creature={} result={result:?}",
+                    captured.creature
+                ));
+                false
+            }
+        }
+    }
+
     /// No current recipient lease is needed to issue an earned entitlement. This call is
     /// authorized by the current scope owner and the frozen, retained participant admissions;
     /// collection later proves the recipient's current session independently.

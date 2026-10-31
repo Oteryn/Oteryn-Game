@@ -81,6 +81,19 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                 )
                 .ok_or("boss capability not offered")?;
                 let unselected = admitted.continuity.selected_capabilities;
+                assert!(selected.contains(CAPABILITY_BOSS_ENCOUNTER_V1));
+                assert!(!unselected.contains(CAPABILITY_BOSS_ENCOUNTER_V1));
+                // ProductionKey rejects a segment named "test". Use and validate
+                // a genuine key shape so only its missing definition is negative.
+                let missing_boss =
+                    crate::content::ProductionKey::new("oteryn:boss.unavailable").map_err(debug)?;
+                let defined: bool = sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM game_boss_room_catalogue WHERE boss_key=$1)",
+                )
+                .bind(missing_boss.as_str())
+                .fetch_one(&h.pool)
+                .await?;
+                assert!(!defined);
                 let before = participant_binding(&h, admitted).await?;
                 let mut id = 1;
                 for capabilities in [selected, unselected] {
@@ -91,11 +104,29 @@ fn boss_lever_staged_commands_postgres_real_dispatch() -> TestResult {
                         COMMAND_TYPE_BOSS_TIMEOUT,
                     ] {
                         // A valid key and forged extra policy must both refuse without mutation.
-                        for payload in [cursor("oteryn:boss.test"), vec![10, 0, 16, 1]] {
+                        for (payload, valid_key) in [
+                            (cursor(missing_boss.as_str()), true),
+                            (vec![10, 0, 16, 1], false),
+                        ] {
                             let (status, bytes) =
                                 exchange_kind(&owner, &mut admitted, id, kind, &payload).await?;
                             assert_eq!(status, CommandStatus::Rejected, "command {kind}");
-                            assert!(bytes.is_empty());
+                            if valid_key && capabilities.contains(CAPABILITY_BOSS_ENCOUNTER_V1) {
+                                // W02 now routes valid requests to the fenced activity
+                                // owner. This fixture has no authored boss definition,
+                                // so its refusal carries the exact content reason.
+                                assert_eq!(
+                                    decode_boss_activity_reply(&bytes).map_err(debug)?,
+                                    BossActivityReply::Refused(
+                                        BossActivityRefusal::ContentUnavailable
+                                    ),
+                                    "command {kind} must report unavailable boss content"
+                                );
+                            } else {
+                                // Missing capability and forged policy remain wire
+                                // refusals; neither may reach the activity owner.
+                                assert!(bytes.is_empty());
+                            }
                             id += 1;
                         }
                     }

@@ -102,7 +102,9 @@ pub(super) async fn native_death(
         let staged = runtime.stage_spell_batch(&batch).map_err(debug)?;
         let receipt = runtime.commit_spell_batch(staged).map_err(debug)?;
         assert!(receipt.applied);
-        assert!(runtime.retains_corpse_projection(boss));
+        assert!(receipt.effects.iter().any(|effect| {
+            effect.target == boss && effect.health.is_some_and(|health| health.health_after == 0)
+        }));
         assert!(runtime.live_creature_health(boss).is_none());
         let attack = owner.states.attack.lock().await;
         record_batch_kills(
@@ -117,6 +119,10 @@ pub(super) async fn native_death(
             &receipt,
             now.get() / 1000,
         );
+        // The combat commit installs lethal vitals. record_batch_kills invokes
+        // project_fixed_one_creature_death and owns the retained projection.
+        // This is the native death proof, independent of any later Item MINT.
+        assert!(runtime.retains_corpse_projection(boss));
         assert!(
             attack.kills().has_session(admitted.game_session_id),
             "real lethal capture enters the production queue"

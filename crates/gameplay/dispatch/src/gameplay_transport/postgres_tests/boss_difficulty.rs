@@ -103,7 +103,7 @@ fn window(context: [u8; 16], revision: &str, selected_difficulty: u16) -> TestRe
         content_revision: revision.into(),
         selected_difficulty,
     })
-    .map_err(|error| debug(error).into())
+    .map_err(debug)
 }
 
 #[test]

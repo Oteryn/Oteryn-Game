@@ -1011,7 +1011,7 @@ fn scenario(history_probe: HistoryProbe) -> TestResult {
         use crate::durability::boss_encounter::reward_chest::{
             BossRewardChestPlan, BossRewardContributor, BossRewardDeath, BossRewardItem,
         };
-        let contribution = oteryn_gameplay_encounter_rules::boss::RewardParticipation {
+        let contribution = oteryn_gameplay_encounters::bosses::reward_chest::RewardParticipation {
             damage_dealt: 1,
             damage_received: 0,
             healing_others: 0,

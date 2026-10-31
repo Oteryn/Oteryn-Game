@@ -28,10 +28,14 @@ use oteryn_protocol_oteryn::{
 };
 use tokio::io::AsyncWriteExt;
 
-const BOSS: &str = "oteryn:boss.native_activity_fixture";
+// This isolated catalogue exercises the real cooldown writer, whose
+// ProductionKey validator rejects names containing a fixture marker.
+const BOSS: &str = "oteryn:boss.native_activity";
 const CREATURE: &str = "fixture:activity_boss";
 const TEMPLATE: &str = "oteryn:room.native_activity_fixture";
 
+#[path = "boss_activity/nonreward.rs"]
+mod nonreward;
 #[path = "boss_activity/recovery.rs"]
 mod recovery;
 #[path = "boss_activity/rewards.rs"]
@@ -42,6 +46,7 @@ enum Case {
     Entry,
     Rewards,
     LateRewards,
+    NonRewardDefeat,
     Recovery,
     RecoveryCancelled,
     RecoveryProtection,
@@ -61,6 +66,11 @@ fn boss_activity_postgres_real_instance_native_boss_death_and_reward_custody() -
 #[test]
 fn boss_activity_postgres_late_native_death_drains_and_returns_without_rewards() -> TestResult {
     run_scenario(Case::LateRewards)
+}
+
+#[test]
+fn boss_activity_postgres_nonreward_native_death_replays_and_returns_after_kill() -> TestResult {
+    run_scenario(Case::NonRewardDefeat)
 }
 
 #[test]
@@ -133,6 +143,8 @@ fn scenario(case: Case) -> TestResult {
         owner.rooms = SeamRooms::new(Some(&deps.room), Some(&deps.room));
         let (boss_key, policy) = if with_rewards {
             rewards::source_boss(&owner)?
+        } else if case == Case::NonRewardDefeat {
+            nonreward::source_creature(&owner)?
         } else {
             (BOSS.to_owned(), fixture_policy())
         };
@@ -303,7 +315,7 @@ fn scenario(case: Case) -> TestResult {
         sqlx::query("INSERT INTO game_boss_room_catalogue(boss_key,content_revision,boss_creature_key,minimum_players,maximum_players,minimum_level,cooldown_seconds,time_limit_seconds,lever_positions,room_template_key,reward_key,enabled,template_revision,entry_positions,exit_position,boss_position,after_kill_seconds) VALUES($1,'content-1',$2,1,1,1,20,$8,$3,$4,'fixture:reward',true,'fixture-r1',$5,$6,$7,1)")
             .bind(&boss_key).bind(&policy.definition_key).bind(serde_json::json!([cell_json(source_cell)]))
             .bind(TEMPLATE).bind(serde_json::json!([cell_json(entry)]))
-            .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late { 1_i32 } else { 900 }).execute(&h.pool).await?;
+            .bind(cell_json(source_cell)).bind(cell_json(boss_cell)).bind(if late { 1_i32 } else if case == Case::NonRewardDefeat { 5 } else { 900 }).execute(&h.pool).await?;
 
         let (_, refused, switch) = exchange(&owner, &mut admitted, &boss_key, false).await?;
         assert_eq!(
@@ -510,6 +522,10 @@ fn scenario(case: Case) -> TestResult {
             }
         }
         match case {
+            Case::NonRewardDefeat => {
+                nonreward::assert_defeat_and_return(&h, &owner, &destination, admitted, &policy)
+                    .await?
+            }
             Case::Recovery => recovery::assert_recovery(&h, &owner, old, admitted).await?,
             Case::RecoveryCancelled => {
                 recovery::assert_cancelled_recovery(&h, &owner, old, admitted).await?
@@ -615,15 +631,25 @@ async fn exchange(
         drop(server);
         end
     };
+    let mut stage = "source initial snapshot";
+    let mut frames = std::collections::VecDeque::with_capacity(16);
     let driving = async {
         loop {
             let frame = read_frame(&mut client).await?;
-            if decode_wire_envelope(&frame).map_err(debug)?.message_type()
-                == MessageType::SnapshotCommit
-            {
+            let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if frames.len() == 16 {
+                frames.pop_front();
+            }
+            frames.push_back(format!(
+                "{stage}: {:?}, sequence {}",
+                envelope.message_type(),
+                envelope.server_sequence()
+            ));
+            if envelope.message_type() == MessageType::SnapshotCommit {
                 break;
             }
         }
+        stage = "write boss command";
         write_frame(
             &mut client,
             &encode_client_command(
@@ -637,12 +663,21 @@ async fn exchange(
             .map_err(debug)?,
         )
         .await?;
+        stage = "command result";
         let mut reply = None;
         let mut barrier = None;
         let mut commits_after_barrier = 0;
         loop {
             let frame = read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
+            if frames.len() == 16 {
+                frames.pop_front();
+            }
+            frames.push_back(format!(
+                "{stage}: {:?}, sequence {}",
+                envelope.message_type(),
+                envelope.server_sequence()
+            ));
             match envelope.message_type() {
                 MessageType::CommandResult => {
                     let result = decode_command_result(envelope.payload()).map_err(debug)?;
@@ -664,6 +699,7 @@ async fn exchange(
                     if !expect_switch {
                         break;
                     }
+                    stage = "source scope barrier";
                 }
                 MessageType::SnapshotChunk => {
                     let (_, domains) = decode_snapshot_chunk(envelope.payload()).map_err(debug)?;
@@ -682,6 +718,7 @@ async fn exchange(
                                 );
                             } else {
                                 barrier = Some(projected);
+                                stage = "source scope barrier commit";
                             }
                         }
                     }
@@ -691,11 +728,14 @@ async fn exchange(
                     if commits_after_barrier == 2 {
                         break;
                     }
+                    stage = "destination initial snapshot";
                 }
                 _ => {}
             }
         }
+        stage = "client shutdown";
         client.shutdown().await?;
+        stage = "complete";
         Ok((id, reply.ok_or("command result")?, barrier))
     };
     let (ended, result): (_, TestResult<_>) = tokio::time::timeout(
@@ -708,5 +748,10 @@ async fn exchange(
     {
         *admitted = next;
     }
-    result
+    result.map_err(|error| {
+        format!(
+            "boss wire command {id}, expect_switch={expect_switch}, stage={stage}, source={before:?}, ended={ended:?}, frames={frames:?}: {error}"
+        )
+        .into()
+    })
 }

@@ -49,6 +49,14 @@ pub struct ActivityDueRoomPage {
     pub next_after: Option<[u8; 16]>,
 }
 
+/// Captured death identity and time; the recording owner still proves its scope.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BossDefeatOccurrence<'a> {
+    pub boss_key: &'a str,
+    pub death: [u8; 16],
+    pub minted_unix_ms: i64,
+}
+
 pub(super) struct BossAdmissionPlan {
     definition: BossRoomDefinition,
     now: i64,
@@ -201,10 +209,13 @@ impl ActivityHandoffOwner {
         node: &NodeIncarnationProof,
         scope: RuntimeScopeRefV1,
         generation: ScopeOwnershipGeneration,
-        boss_key: &str,
-        death: [u8; 16],
-        minted: i64,
+        defeat: BossDefeatOccurrence<'_>,
     ) -> Result<bool> {
+        let BossDefeatOccurrence {
+            boss_key,
+            death,
+            minted_unix_ms: minted,
+        } = defeat;
         let recovery = authority
             .record_for(&self.root)
             .map_err(|_| DurabilityError::Unavailable)?;

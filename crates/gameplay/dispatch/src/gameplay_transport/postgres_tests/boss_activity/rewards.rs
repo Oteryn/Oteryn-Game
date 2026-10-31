@@ -34,10 +34,10 @@ pub(super) fn source_boss(
         .reward_table()
         .row(&policy.definition_key)
         .map_err(debug)?;
-    let factor = oteryn_gameplay_encounter_rules::boss::reward_chest::contribution_loot_factors(&[
-        oteryn_gameplay_encounter_rules::boss::reward_chest::FrozenBossContribution {
+    let factor = oteryn_gameplay_encounters::bosses::reward_chest::contribution_loot_factors(&[
+        oteryn_gameplay_encounters::bosses::reward_chest::FrozenBossContribution {
             character: [1; 16],
-            contribution: oteryn_gameplay_encounter_rules::boss::RewardParticipation {
+            contribution: oteryn_gameplay_encounters::bosses::reward_chest::RewardParticipation {
                 damage_dealt: u64::try_from(policy.maximum_health)?,
                 damage_received: 0,
                 healing_others: 0,
@@ -124,7 +124,9 @@ pub(super) async fn settle_and_collect(
         let staged = runtime.stage_spell_batch(&batch).map_err(debug)?;
         let receipt = runtime.commit_spell_batch(staged).map_err(debug)?;
         assert!(receipt.applied);
-        assert!(runtime.retains_corpse_projection(target));
+        assert!(receipt.effects.iter().any(|effect| {
+            effect.target == target && effect.health.is_some_and(|health| health.health_after == 0)
+        }));
         let attack = owner.states.attack.lock().await;
         record_batch_kills(
             &mut runtime,
@@ -138,6 +140,10 @@ pub(super) async fn settle_and_collect(
             &receipt,
             now.get() / 1_000,
         );
+        // Projection is the death owner's next step after the lethal vitals
+        // commit. Retaining this native proof does not authorize the separately
+        // refused ordinary Instance corpse/loot MINT descendant.
+        assert!(runtime.retains_corpse_projection(target));
         assert!(attack.kills().has_session(admitted.game_session_id));
         batch
     };
@@ -287,7 +293,9 @@ pub(super) async fn settle_and_collect(
     // Its retained origin Channel is not the authority for this private read.
     let groups = open_reward_groups(owner, admitted).await?;
     assert!(
-        groups.windows(death.len()).any(|candidate| candidate == death),
+        groups
+            .windows(death.len())
+            .any(|candidate| candidate == death),
         "command 340 must expose the actual Instance death's personal group"
     );
     let ordinal: i32 = sqlx::query_scalar("SELECT item_ordinal FROM game_boss_reward_items WHERE death_id=encode($1,'hex')::uuid AND definition_production_key=$2 ORDER BY item_ordinal LIMIT 1")
@@ -438,16 +446,21 @@ async fn open_reward_groups(
                     command_type: wire::COMMAND_TYPE_BOSS_REWARD_OPEN,
                     payload: &[],
                 },
-            ).map_err(debug)?,
-        ).await?;
+            )
+            .map_err(debug)?,
+        )
+        .await?;
         let payload = loop {
             let frame = read_frame(&mut client).await?;
             let envelope = decode_wire_envelope(&frame).map_err(debug)?;
             if envelope.message_type() == MessageType::CommandResult {
                 let result = decode_command_result(envelope.payload()).map_err(debug)?;
                 assert_eq!(result.command_id, command_id);
-                assert_eq!(result.status, CommandStatus::Accepted,
-                    "current Instance reward discovery must pass the exact scope fence");
+                assert_eq!(
+                    result.status,
+                    CommandStatus::Accepted,
+                    "current Instance reward discovery must pass the exact scope fence"
+                );
                 break result.payload.to_vec();
             }
         };
@@ -457,6 +470,7 @@ async fn open_reward_groups(
     let (ended, result): (_, TestResult<Vec<u8>>) = tokio::time::timeout(
         std::time::Duration::from_secs(30),
         fixture::join_two(serving, driving),
-    ).await?;
+    )
+    .await?;
     result.map_err(|error| format!("Instance command 340 ended {ended:?}: {error}").into())
 }

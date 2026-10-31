@@ -5,7 +5,7 @@ use oteryn_gameplay_domain::domain::loot_data::{
     LootDefinitionRef, LootEntryDetails, LootSelectionAlgorithm, LootTableDefinition,
     LootTableEntry,
 };
-use oteryn_gameplay_encounter_rules::boss::RewardParticipation;
+use oteryn_gameplay_encounters::bosses::reward_chest::RewardParticipation;
 use oteryn_gameplay_items::loot_plan::LootPlanEntry;
 
 fn id(seed: u8) -> [u8; 16] {

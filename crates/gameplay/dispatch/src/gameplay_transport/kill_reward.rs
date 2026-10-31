@@ -89,8 +89,18 @@ pub struct PendingKillSettlement {
     pub(super) forge: Option<ForgeDeath>,
     /// W03: complete contribution census and original loot pin captured on the lethal turn.
     pub(super) boss_reward: Option<boss_reward_contribution::FrozenBossDeath>,
+    /// Nonreward Instance death metadata captured before releasing the lethal turn.
+    pub(super) activity_death: Option<CapturedActivityDeath>,
     /// §1.5: `no_progression_binding` is logged once per death.
     no_progression_logged: bool,
+}
+
+/// A native death's authored creature identity and first observed wall clock.
+/// The existing kill queue retains this beside the sealed death occurrence.
+#[derive(Debug, Clone)]
+pub(super) struct CapturedActivityDeath {
+    pub(super) creature: String,
+    pub(super) died_at_unix_ms: i64,
 }
 
 impl PendingKillSettlement {
@@ -113,6 +123,7 @@ impl PendingKillSettlement {
             damage_shares: Vec::new(),
             forge: None,
             boss_reward: None,
+            activity_death: None,
             no_progression_logged: false,
         }
     }
@@ -173,6 +184,9 @@ struct KillQueueState {
     proficiency_deaths: Vec<FrozenProficiencyDeath>,
     /// One frozen contribution per retained exact corpse projection; pruned on each death.
     prey_loot: Vec<(ExactActorRef, u8)>,
+    /// At most one clock per bounded native corpse projection, including settled
+    /// deaths whose original command may still replay. Pruned on every capture.
+    activity_deaths: Vec<(ExactActorRef, CapturedActivityDeath)>,
     queued: VecDeque<PendingKillSettlement>,
     /// Each in-flight entry's death, principal and killed actor.
     in_flight: Vec<(CreatureDeathOccurrenceKey, Principal, ExactActorRef)>,
@@ -467,6 +481,39 @@ impl KillSettlementQueue {
         }
         state.prey_loot.push((target, percent));
         percent
+    }
+
+    fn freeze_activity_death(
+        &self,
+        runtime: &ChannelRuntimeV1,
+        target: ExactActorRef,
+        creature: &str,
+    ) -> Option<CapturedActivityDeath> {
+        let mut state = self.state();
+        state
+            .activity_deaths
+            .retain(|(actor, _)| runtime.retains_corpse_projection(*actor));
+        if !runtime.retains_corpse_projection(target) {
+            return None;
+        }
+        if let Some((_, frozen)) = state
+            .activity_deaths
+            .iter()
+            .find(|(actor, _)| *actor == target)
+        {
+            return (frozen.creature == creature).then(|| frozen.clone());
+        }
+        let died_at_unix_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()
+            .and_then(|at| i64::try_from(at.as_millis()).ok())?;
+        let frozen = CapturedActivityDeath {
+            creature: creature.to_owned(),
+            died_at_unix_ms,
+        };
+        state.activity_deaths.try_reserve(1).ok()?;
+        state.activity_deaths.push((target, frozen.clone()));
+        Some(frozen)
     }
 
     pub fn append(&self, entry: PendingKillSettlement) -> AppendOutcome {
@@ -919,14 +966,29 @@ pub fn record_creature_kill(
     };
     let daily_boost = runtime.daily_boost().cloned();
     // Freeze the principal's Prey boost on the death turn, before any command can reroll it.
-    let mut owner = runtime.borrow_combat_death();
-    if crate::combat::project_fixed_one_creature_death(&mut owner, target).is_err() {
+    if crate::combat::project_fixed_one_creature_death(&mut runtime.borrow_combat_death(), target)
+        .is_err()
+    {
         return;
     }
     let Ok(creature) = creature else {
         refuse("no_loot_binding", "unknown");
         return;
     };
+    let activity_death = if !personal_rewards
+        && matches!(
+            target.runtime_scope(),
+            crate::foundation::RuntimeScopeRefV1::Instance { .. }
+        ) {
+        let Some(frozen) = sink.queue.freeze_activity_death(runtime, target, &creature) else {
+            refuse("activity_death_capture_unavailable", &creature);
+            return;
+        };
+        Some(frozen)
+    } else {
+        None
+    };
+    let mut owner = runtime.borrow_combat_death();
     let Ok(top) = owner.top_damage_contributor(target) else {
         return;
     };
@@ -964,13 +1026,15 @@ pub fn record_creature_kill(
                 refuse(reason.as_str(), &creature);
                 return;
             };
-            let entry = PendingKillSettlement::for_bosstiary(
+            let mut entry = PendingKillSettlement::for_bosstiary(
                 facts,
                 boss.clone(),
                 ground,
                 target,
                 observed_at,
             );
+            // Only the actual lethal producer supplies the retained Instance clock.
+            entry.activity_death = activity_death;
             accept_kill(runtime, sink.queue, entry);
             return;
         }
@@ -1232,6 +1296,7 @@ pub fn record_creature_kill(
     };
     let entry = PendingKillSettlement {
         boss_reward,
+        activity_death,
         forge,
         activity_observed_at: observed_at.filter(|at| at.get() / 1000 == facts.death_at_ms),
         activity_at_death,
@@ -1826,6 +1891,14 @@ impl DurableKillSettle<'_, '_, '_, '_> {
         inflight_before: usize,
     ) -> SettleReport {
         let admission = self.admission;
+        // W02 is a descendant of the committed native death independently of
+        // personal rewards, ordinary corpse admission or the recipient's presence.
+        if !self.settle_activity_boss_defeat(entry).await {
+            return SettleReport {
+                verdict: SettleVerdict::Retry,
+                no_progression: false,
+            };
+        }
         if let Some(boss) = &entry.bosstiary_only {
             let Some(_permit) = admission.spell_lane_permit().await else {
                 return SettleReport {

@@ -64,19 +64,7 @@ pub(super) async fn all_groups(
         );
     }
     // Move back to the real reward chest after the previous moved-away replay check.
-    owner
-        .runtime
-        .lock()
-        .await
-        .initialize_pinned_test_position(
-            admitted.runtime_actor.ok_or("actor")?,
-            MovementLocalPosition {
-                x: 7,
-                y: 0,
-                floor: 7,
-            },
-        )
-        .map_err(debug)?;
+    movement::walk_corridor(owner, *admitted, [2, 1, 0]).await?;
     // Discovery must cross the same 64-group boundary without requiring the
     // player to consume older rewards first. The legacy first page is unchanged.
     use oteryn_protocol_oteryn::boss_encounter::{
@@ -111,7 +99,7 @@ pub(super) async fn all_groups(
     }
     let mut legacy = *admitted;
     legacy.continuity.selected_capabilities =
-        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 117])
+        SelectedCapabilities::select(owner.offered_capabilities(), &[4, 6, 117])
             .ok_or("legacy boss selection")?;
     assert!(
         matches!(

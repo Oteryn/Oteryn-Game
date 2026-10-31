@@ -4,7 +4,7 @@
 //! existing per-creature ledger, so the reward path cannot invent or reroll damage shares.
 
 use super::*;
-use oteryn_gameplay_encounter_rules::boss::RewardParticipation;
+use oteryn_gameplay_encounters::bosses::reward_chest::RewardParticipation;
 
 #[cfg(test)]
 #[path = "boss_reward_contribution_tests.rs"]
