@@ -36,6 +36,7 @@ pub mod party_kill_xp;
 pub mod player_death_items;
 pub mod player_report;
 pub mod prey;
+pub mod private_channel;
 pub mod quest_monk_rewards;
 pub mod quest_world_callback;
 pub mod raid_runner;
