@@ -21,14 +21,62 @@ pub struct GatheringYield {
 /// Global/Crystal-compatible, bounded gathering rows used by the item-use dispatcher.
 /// Thresholds are out of 100,000, as used by the donor skinning script.
 pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, GatheringYield)> {
-    // Crystal skinning.lua:1,29,51,71,75,109,113; mutations:333-339; tools:356.
-    let (spent_item, item) = match (tool, target) {
-        (5908, 5969) => (4012, 5878),
-        (5908, 6040) => (4325, 5876),
-        (5908, 5973) => (4026, 5877),
-        (5908, 5984) => (4063, 5948),
-        (5942, 5995) => (4098, 5906),
-        (5942, 6006) => (4138, 5905),
+    // Crystal data-crystal/scripts/actions/tools/skinning.lua:3-351,363,394.
+    // Keep every simple corpse row in the donor table.
+    let (spent_item, item, threshold) = match (tool, target) {
+        (5908, 4272) => (4012, 5878, 7000),
+        (5908, 5969) => (4012, 5878, 7000),
+        (5908, 4052) => (4053, 5878, 7000),
+        (5908, 5982) => (4053, 5878, 7000),
+        (5908, 4047) => (4048, 5878, 7000),
+        (5908, 5981) => (4048, 5878, 7000),
+        (5908, 4057) => (4058, 5878, 7000),
+        (5908, 5983) => (4058, 5878, 7000),
+        (5908, 21092) => (21093, 5878, 7000),
+        (5908, 21091) => (21093, 5878, 7000),
+        (5908, 21096) => (21097, 5878, 7000),
+        (5908, 21095) => (21097, 5878, 7000),
+        (5908, 21100) => (21101, 5878, 7000),
+        (5908, 21099) => (21101, 5878, 7000),
+        (5908, 21000) => (21002, 5878, 7000),
+        (5908, 21001) => (21002, 5878, 7000),
+        (5908, 21004) => (21006, 5878, 7000),
+        (5908, 21005) => (21006, 5878, 7000),
+        (5908, 20996) => (20998, 5878, 7000),
+        (5908, 20997) => (20998, 5878, 7000),
+        (5908, 4324) => (4325, 5876, 6000),
+        (5908, 6040) => (4325, 5876, 6000),
+        (5908, 4327) => (4328, 5876, 6000),
+        (5908, 6041) => (4328, 5876, 6000),
+        (5908, 4321) => (4322, 5876, 6000),
+        (5908, 4239) => (4322, 5876, 6000),
+        (5908, 10368) => (10369, 5876, 10000),
+        (5908, 10371) => (10369, 5876, 10000),
+        (5908, 10360) => (10361, 5876, 10000),
+        (5908, 10363) => (10361, 5876, 10000),
+        (5908, 10352) => (10353, 5876, 10000),
+        (5908, 10355) => (10353, 5876, 10000),
+        (5908, 10364) => (10365, 5876, 10000),
+        (5908, 10367) => (10365, 5876, 10000),
+        (5908, 4286) => (4287, 5877, 5000),
+        (5908, 5973) => (4287, 5877, 5000),
+        (5908, 4062) => (4063, 5948, 5000),
+        (5908, 5984) => (4063, 5948, 5000),
+        (5908, 4112) => (4113, 5893, 10000),
+        (5908, 5999) => (4113, 5893, 10000),
+        (5908, 4212) => (4213, 5925, 6000),
+        (5908, 6030) => (4213, 5925, 6000),
+        (5908, 22743) => (22744, 24842, 50000),
+        (5908, 22742) => (22744, 24842, 50000),
+        (5908, 12172) => (4302, 6017, 6000),
+        (5942, 4097) => (4098, 5906, 3000),
+        (5942, 5995) => (4098, 5906, 3000),
+        (5942, 4137) => (4138, 5905, 6000),
+        (5942, 6006) => (4138, 5905, 6000),
+        (5942, 8738) => (8742, 5905, 6000),
+        (5942, 8744) => (8742, 5905, 6000),
+        (5942, 18958) => (18959, 5905, 6000),
+        (5942, 18961) => (18959, 5905, 6000),
         (5908 | 5942, 7441) => {
             return Some((
                 GatheringTarget::Ice { spent_item: 7442 },
@@ -47,14 +95,20 @@ pub fn gathering_rule(tool: u16, target: u16) -> Option<(GatheringTarget, Gather
                 },
             ));
         }
+        (9306, 7236) => {
+            return Some((
+                GatheringTarget::FishingWater { spent_item: 7237 },
+                GatheringYield {
+                    item: 7158,
+                    threshold: 1_000,
+                },
+            ));
+        }
         _ => return None,
     };
     Some((
         GatheringTarget::Corpse { spent_item },
-        GatheringYield {
-            item,
-            threshold: 25_000,
-        },
+        GatheringYield { item, threshold },
     ))
 }
 
@@ -127,6 +181,14 @@ pub fn catches(skill: u16, roll: u32) -> bool {
     (1..=100_000).contains(&roll) && roll <= catch_threshold(skill)
 }
 
+/// Rod admission used before dispatch trains fishing or consumes bait.
+/// Crystal data-global/scripts/actions/other/mechanical_fishing.lua:334-346,378.
+/// Only its ice-hole gathering slice is admitted for the mechanical rod here.
+pub fn accepts_fishing_rod(tool_key: &str, water_key: &str) -> bool {
+    (tool_key == FISHING_ROD && is_water(water_key))
+        || (tool_key == "oteryn:item.tibia.i9306" && water_key == "oteryn:item.tibia.i7236")
+}
+
 pub fn is_water(production_key: &str) -> bool {
     production_key
         .strip_prefix("oteryn:item.tibia.i")
@@ -137,6 +199,130 @@ pub fn is_water(production_key: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn m09_mechanical_rod_is_admitted_on_ice_holes() {
+        assert!(accepts_fishing_rod(
+            "oteryn:item.tibia.i9306",
+            "oteryn:item.tibia.i7236"
+        ));
+        assert!(!accepts_fishing_rod(
+            "oteryn:item.tibia.i9306",
+            "oteryn:item.tibia.i629"
+        ));
+        assert!(!accepts_fishing_rod(
+            "oteryn:item.tibia.i3456",
+            "oteryn:item.tibia.i7236"
+        ));
+        assert!(accepts_fishing_rod(FISHING_ROD, "oteryn:item.tibia.i629"));
+    }
+
+    #[test]
+    fn m09_mechanical_rod_ice_hole_catch_and_loot_boundaries() {
+        assert_eq!(gathering_attempt(9306, 7236, 10, 10_001, 1), None);
+        assert_eq!(gathering_attempt(9306, 7236, 10, 1, 0), None);
+        for (roll, item) in [
+            (1, 7158),
+            (1000, 7158),
+            (1001, 3580),
+            (4000, 3580),
+            (4001, 7159),
+            (10000, 7159),
+            (10001, 3578),
+            (100000, 3578),
+        ] {
+            assert_eq!(
+                gathering_attempt(9306, 7236, 10, 10_000, roll),
+                Some(GatheringAttempt {
+                    after: Some(7237),
+                    yield_item: Some(item),
+                    consumes_bait: true,
+                })
+            );
+        }
+        assert!(gathering_rule(9306, 7237).is_none());
+    }
+
+    #[test]
+    fn m09_all_corpse_rows_use_donor_thresholds_out_of_100000() {
+        // Crystal data-crystal/scripts/actions/tools/skinning.lua:6-350,363,394.
+        for (tool, target, spent, item, threshold) in [
+            (5908, 4272, 4012, 5878, 7000),
+            (5908, 5969, 4012, 5878, 7000),
+            (5908, 4052, 4053, 5878, 7000),
+            (5908, 5982, 4053, 5878, 7000),
+            (5908, 4047, 4048, 5878, 7000),
+            (5908, 5981, 4048, 5878, 7000),
+            (5908, 4057, 4058, 5878, 7000),
+            (5908, 5983, 4058, 5878, 7000),
+            (5908, 21092, 21093, 5878, 7000),
+            (5908, 21091, 21093, 5878, 7000),
+            (5908, 21096, 21097, 5878, 7000),
+            (5908, 21095, 21097, 5878, 7000),
+            (5908, 21100, 21101, 5878, 7000),
+            (5908, 21099, 21101, 5878, 7000),
+            (5908, 21000, 21002, 5878, 7000),
+            (5908, 21001, 21002, 5878, 7000),
+            (5908, 21004, 21006, 5878, 7000),
+            (5908, 21005, 21006, 5878, 7000),
+            (5908, 20996, 20998, 5878, 7000),
+            (5908, 20997, 20998, 5878, 7000),
+            (5908, 4324, 4325, 5876, 6000),
+            (5908, 6040, 4325, 5876, 6000),
+            (5908, 4327, 4328, 5876, 6000),
+            (5908, 6041, 4328, 5876, 6000),
+            (5908, 4321, 4322, 5876, 6000),
+            (5908, 4239, 4322, 5876, 6000),
+            (5908, 10368, 10369, 5876, 10000),
+            (5908, 10371, 10369, 5876, 10000),
+            (5908, 10360, 10361, 5876, 10000),
+            (5908, 10363, 10361, 5876, 10000),
+            (5908, 10352, 10353, 5876, 10000),
+            (5908, 10355, 10353, 5876, 10000),
+            (5908, 10364, 10365, 5876, 10000),
+            (5908, 10367, 10365, 5876, 10000),
+            (5908, 4286, 4287, 5877, 5000),
+            (5908, 5973, 4287, 5877, 5000),
+            (5908, 4062, 4063, 5948, 5000),
+            (5908, 5984, 4063, 5948, 5000),
+            (5908, 4112, 4113, 5893, 10000),
+            (5908, 5999, 4113, 5893, 10000),
+            (5908, 4212, 4213, 5925, 6000),
+            (5908, 6030, 4213, 5925, 6000),
+            (5908, 22743, 22744, 24842, 50000),
+            (5908, 22742, 22744, 24842, 50000),
+            (5908, 12172, 4302, 6017, 6000),
+            (5942, 4097, 4098, 5906, 3000),
+            (5942, 5995, 4098, 5906, 3000),
+            (5942, 4137, 4138, 5905, 6000),
+            (5942, 6006, 4138, 5905, 6000),
+            (5942, 8738, 8742, 5905, 6000),
+            (5942, 8744, 8742, 5905, 6000),
+            (5942, 18958, 18959, 5905, 6000),
+            (5942, 18961, 18959, 5905, 6000),
+        ] {
+            assert_eq!(
+                gathering_rule(tool, target),
+                Some((
+                    GatheringTarget::Corpse { spent_item: spent },
+                    GatheringYield { item, threshold }
+                ))
+            );
+            for roll in [1, threshold, threshold + 1, 100_000] {
+                assert_eq!(
+                    gathering_attempt(tool, target, 10, 1, roll),
+                    Some(GatheringAttempt {
+                        after: Some(spent),
+                        yield_item: (roll <= threshold).then_some(item),
+                        consumes_bait: false,
+                    })
+                );
+            }
+            for invalid in [0, 100_001] {
+                assert_eq!(gathering_attempt(tool, target, 10, 1, invalid), None);
+            }
+        }
+    }
 
     #[test]
     fn global_curve_is_clamped_and_uses_the_reference_slope() {
@@ -158,10 +344,10 @@ mod tests {
     #[test]
     fn seeded_gathering_rows_pin_yields_and_failed_attempts_spend_targets() {
         for (tool, target, spent, item, threshold) in [
-            (5908, 5969, 4012, 5878, 25_000),
-            (5908, 6040, 4325, 5876, 25_000),
-            (5908, 5973, 4026, 5877, 25_000),
-            (5908, 5984, 4063, 5948, 25_000),
+            (5908, 5969, 4012, 5878, 7_000),
+            (5908, 6040, 4325, 5876, 6_000),
+            (5908, 5973, 4287, 5877, 5_000),
+            (5908, 5984, 4063, 5948, 5_000),
         ] {
             let row = GatheringYield { item, threshold };
             assert_eq!(
@@ -202,7 +388,7 @@ mod tests {
                     GatheringTarget::Corpse { spent_item: spent },
                     GatheringYield {
                         item,
-                        threshold: 25_000
+                        threshold: if item == 5906 { 3_000 } else { 6_000 }
                     },
                 ))
             );
@@ -212,9 +398,12 @@ mod tests {
 
     #[test]
     fn m09_corpse_attempt_marks_success_and_failure() {
-        for (tool, target, spent, item) in [(5908, 5969, 4012, 5878), (5942, 5995, 4098, 5906)] {
+        for (tool, target, spent, item, threshold) in [
+            (5908, 5969, 4012, 5878, 7_000),
+            (5942, 5995, 4098, 5906, 3_000),
+        ] {
             assert_eq!(
-                gathering_attempt(tool, target, 10, 100_000, 25_000),
+                gathering_attempt(tool, target, 10, 100_000, threshold),
                 Some(GatheringAttempt {
                     after: Some(spent),
                     yield_item: Some(item),
@@ -222,7 +411,7 @@ mod tests {
                 })
             );
             assert_eq!(
-                gathering_attempt(tool, target, 10, 1, 25_001),
+                gathering_attempt(tool, target, 10, 1, threshold + 1),
                 Some(GatheringAttempt {
                     after: Some(spent),
                     yield_item: None,

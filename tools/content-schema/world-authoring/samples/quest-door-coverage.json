@@ -1,0 +1,1024 @@
+{
+  "placed": 417,
+  "imported": 309,
+  "without_storage_action": 108,
+  "unbound": [
+    {
+      "position": [
+        32051,
+        31998,
+        14
+      ],
+      "item": 30047,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32055,
+        31885,
+        6
+      ],
+      "item": 11239,
+      "unique_binding": {
+        "position": [
+          32055,
+          31885,
+          6
+        ],
+        "unique": 22001,
+        "table_line": 1116
+      },
+      "reason": "dedicated vocation interaction, not a storage door"
+    },
+    {
+      "position": [
+        32058,
+        32266,
+        7
+      ],
+      "item": 6898,
+      "unique_binding": {
+        "position": [
+          32058,
+          32266,
+          7
+        ],
+        "unique": 50085,
+        "table_line": 1150
+      },
+      "reason": "unique id only; no generic storage-action predicate"
+    },
+    {
+      "position": [
+        32059,
+        31885,
+        6
+      ],
+      "item": 6898,
+      "unique_binding": {
+        "position": [
+          32059,
+          31885,
+          6
+        ],
+        "unique": 22003,
+        "table_line": 1126
+      },
+      "reason": "dedicated vocation interaction, not a storage door"
+    },
+    {
+      "position": [
+        32069,
+        31885,
+        6
+      ],
+      "item": 8363,
+      "unique_binding": {
+        "position": [
+          32069,
+          31885,
+          6
+        ],
+        "unique": 22004,
+        "table_line": 1131
+      },
+      "reason": "dedicated vocation interaction, not a storage door"
+    },
+    {
+      "position": [
+        32073,
+        31885,
+        6
+      ],
+      "item": 7040,
+      "unique_binding": {
+        "position": [
+          32073,
+          31885,
+          6
+        ],
+        "unique": 22002,
+        "table_line": 1121
+      },
+      "reason": "dedicated vocation interaction, not a storage door"
+    },
+    {
+      "position": [
+        32074,
+        31974,
+        14
+      ],
+      "item": 30045,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32080,
+        31527,
+        8
+      ],
+      "item": 9567,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32085,
+        32003,
+        8
+      ],
+      "item": 1676,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32111,
+        32003,
+        8
+      ],
+      "item": 6203,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32287,
+        32292,
+        8
+      ],
+      "item": 6258,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32287,
+        32292,
+        9
+      ],
+      "item": 6258,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32288,
+        32292,
+        6
+      ],
+      "item": 5113,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32288,
+        32292,
+        7
+      ],
+      "item": 6258,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32290,
+        32292,
+        5
+      ],
+      "item": 6907,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32334,
+        32262,
+        9
+      ],
+      "item": 5113,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32386,
+        32243,
+        8
+      ],
+      "item": 1644,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32399,
+        32224,
+        8
+      ],
+      "item": 1644,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32408,
+        32172,
+        6
+      ],
+      "item": 5104,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32411,
+        32170,
+        6
+      ],
+      "item": 5113,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32441,
+        31912,
+        12
+      ],
+      "item": 5113,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32542,
+        32143,
+        7
+      ],
+      "item": 1642,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32589,
+        31470,
+        14
+      ],
+      "item": 5289,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32595,
+        31929,
+        5
+      ],
+      "item": 7721,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32595,
+        31938,
+        5
+      ],
+      "item": 7721,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32642,
+        31948,
+        10
+      ],
+      "item": 5289,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32644,
+        31615,
+        6
+      ],
+      "item": 1644,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32660,
+        32192,
+        8
+      ],
+      "item": 1642,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32693,
+        32238,
+        8
+      ],
+      "item": 5113,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32742,
+        31408,
+        8
+      ],
+      "item": 5131,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32771,
+        31355,
+        5
+      ],
+      "item": 6260,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32786,
+        31286,
+        8
+      ],
+      "item": 5287,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32802,
+        31314,
+        7
+      ],
+      "item": 5287,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32858,
+        31374,
+        6
+      ],
+      "item": 5289,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32882,
+        31424,
+        10
+      ],
+      "item": 51285,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32892,
+        31424,
+        12
+      ],
+      "item": 51287,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32893,
+        31417,
+        10
+      ],
+      "item": 51287,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32894,
+        31416,
+        11
+      ],
+      "item": 51285,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32904,
+        31424,
+        12
+      ],
+      "item": 51287,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32909,
+        31430,
+        5
+      ],
+      "item": 51285,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32913,
+        31442,
+        6
+      ],
+      "item": 51285,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32947,
+        32679,
+        2
+      ],
+      "item": 1674,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32952,
+        31417,
+        6
+      ],
+      "item": 51287,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32959,
+        32679,
+        2
+      ],
+      "item": 1674,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32962,
+        32674,
+        2
+      ],
+      "item": 1676,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32963,
+        32297,
+        8
+      ],
+      "item": 20450,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32963,
+        32299,
+        8
+      ],
+      "item": 20450,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32963,
+        32301,
+        8
+      ],
+      "item": 20450,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32963,
+        32303,
+        8
+      ],
+      "item": 20450,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32963,
+        32319,
+        9
+      ],
+      "item": 8361,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32964,
+        32084,
+        8
+      ],
+      "item": 5113,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32968,
+        32324,
+        9
+      ],
+      "item": 8361,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32978,
+        32290,
+        10
+      ],
+      "item": 8361,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32984,
+        32306,
+        9
+      ],
+      "item": 20450,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        32984,
+        32314,
+        9
+      ],
+      "item": 20450,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33122,
+        32765,
+        14
+      ],
+      "item": 1662,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33146,
+        31639,
+        11
+      ],
+      "item": 5113,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33198,
+        32858,
+        9
+      ],
+      "item": 1660,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33208,
+        32071,
+        8
+      ],
+      "item": 8363,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33208,
+        32074,
+        8
+      ],
+      "item": 8363,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33246,
+        32122,
+        8
+      ],
+      "item": 8363,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33258,
+        32468,
+        7
+      ],
+      "item": 1676,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33267,
+        31732,
+        11
+      ],
+      "item": 9567,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33271,
+        31838,
+        6
+      ],
+      "item": 1674,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33282,
+        32787,
+        8
+      ],
+      "item": 9567,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33341,
+        32117,
+        10
+      ],
+      "item": 8361,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33344,
+        32120,
+        10
+      ],
+      "item": 8361,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33348,
+        31412,
+        8
+      ],
+      "item": 9874,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33363,
+        31346,
+        7
+      ],
+      "item": 5122,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33366,
+        31343,
+        7
+      ],
+      "item": 5131,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33371,
+        31349,
+        4
+      ],
+      "item": 6260,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33375,
+        31346,
+        5
+      ],
+      "item": 6260,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33376,
+        31335,
+        3
+      ],
+      "item": 6260,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33460,
+        32797,
+        11
+      ],
+      "item": 22506,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33625,
+        32525,
+        14
+      ],
+      "item": 5131,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33640,
+        32551,
+        14
+      ],
+      "item": 5122,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33655,
+        32766,
+        8
+      ],
+      "item": 39351,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33657,
+        32551,
+        14
+      ],
+      "item": 5122,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33717,
+        32767,
+        5
+      ],
+      "item": 39351,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33736,
+        31726,
+        8
+      ],
+      "item": 5122,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33736,
+        31739,
+        8
+      ],
+      "item": 5122,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33740,
+        31729,
+        8
+      ],
+      "item": 5131,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33744,
+        31322,
+        7
+      ],
+      "item": 5289,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33778,
+        32573,
+        11
+      ],
+      "item": 7721,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33792,
+        32576,
+        8
+      ],
+      "item": 6260,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33793,
+        31474,
+        9
+      ],
+      "item": 9558,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33793,
+        32576,
+        9
+      ],
+      "item": 7723,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33801,
+        32567,
+        10
+      ],
+      "item": 7721,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33812,
+        31613,
+        10
+      ],
+      "item": 9558,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33817,
+        31651,
+        9
+      ],
+      "item": 9567,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33824,
+        31596,
+        9
+      ],
+      "item": 9567,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33824,
+        31603,
+        9
+      ],
+      "item": 31568,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33835,
+        31666,
+        8
+      ],
+      "item": 5287,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33845,
+        31635,
+        7
+      ],
+      "item": 5289,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33847,
+        32785,
+        4
+      ],
+      "item": 39352,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33893,
+        32033,
+        9
+      ],
+      "item": 6201,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33893,
+        32041,
+        10
+      ],
+      "item": 6201,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33959,
+        31501,
+        4
+      ],
+      "item": 31568,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33979,
+        31559,
+        10
+      ],
+      "item": 8363,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        33985,
+        31553,
+        10
+      ],
+      "item": 8361,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        34002,
+        31618,
+        10
+      ],
+      "item": 8361,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        34007,
+        31622,
+        10
+      ],
+      "item": 8363,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        34008,
+        31611,
+        10
+      ],
+      "item": 8363,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        34038,
+        31483,
+        11
+      ],
+      "item": 42744,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        34064,
+        31539,
+        9
+      ],
+      "item": 8361,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        34072,
+        31532,
+        9
+      ],
+      "item": 8363,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        34072,
+        31545,
+        9
+      ],
+      "item": 8363,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    },
+    {
+      "position": [
+        34079,
+        31539,
+        9
+      ],
+      "item": 8361,
+      "reason": "no donor QuestDoorAction or QuestDoorUnique at this position"
+    }
+  ]
+}

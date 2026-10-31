@@ -193,6 +193,7 @@ subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_r
 # Core Item admission is a separate accepted data overlay, retained by every regeneration.
 subprocess.run([sys.executable, str(ROOT / "tools/content-schema/native-gameplay/summer_corpse_items.py"), "--check"], check=True)
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_quest_reward_item_semantics.py")], check=True)
+subprocess.run([sys.executable, str(ROOT / "tools/content-migration/test_amber_item_semantics.py")], check=True)
 subprocess.run([sys.executable, str(ROOT / "tools/content-migration/quest_reward_item_semantics.py"), "--check"], check=True)
 
 assert manifest['families']['Document'] == {'records': 1609, 'index': 'content/documents/index.json'}

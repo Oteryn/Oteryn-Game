@@ -54,6 +54,7 @@ pub(super) async fn scenario(
     h: &Harness,
     players: &[(ExactActorRef, GameSessionId)],
 ) -> TestResult {
+    eprintln!("POSTGRES_STARTED case=c11_monk");
     let player = players[0];
     let fence = owner
         .current_quest_fence(player.1)
@@ -74,7 +75,7 @@ pub(super) async fn scenario(
     use crate::durability::item_fee_burn::test_support::{item, request};
     sqlx::raw_sql(sqlx::AssertSqlSafe(format!(
         "{}{}",
-        item(210, "oteryn:item.tibia.i2854", "rev-1", 1),
+        item(210, "oteryn:item.tibia.i2854", "definition-r1", 1),
         item(212, "oteryn:item.tibia.i3043", "rev-1", 2)
     )))
     .execute(&mut *tx)
@@ -91,6 +92,8 @@ pub(super) async fn scenario(
         .bind(fence.character_id.as_bytes().as_slice()).execute(&mut *tx).await?;
     tx.commit().await?;
     use crate::durability::npc_purchase::{NpcPurchaseRequest, PurchaseOutcome, PurchaseService};
+    let mut coins = request(1, 20_000)?.change;
+    coins.backpack.definition.revision_ref = "definition-r1".into();
     let purchase = NpcPurchaseRequest {
         command: CommandRef::new(player.1, CommandId::new(99).map_err(debug)?),
         occurrence: id(200),
@@ -101,7 +104,7 @@ pub(super) async fn scenario(
         npc_identity: id(203),
         npc_generation: 1,
         service: PurchaseService::Promotion("oteryn:service.promotion.eremo".into()),
-        coins: request(1, 20_000)?.change,
+        coins,
         expected_backpack: Some(id(210)),
         occurred_at_unix_ms: 1_790_000_000_000,
     };
@@ -215,6 +218,42 @@ pub(super) async fn scenario(
             3
         );
     }
+    {
+        let runtime = owner.runtime.lock().await;
+        owner.states.spell_states.lock().await.get_mut(&runtime, player.0, player.1)
+            .ok_or("mantra holder")?.install_equipped_mantra(17);
+    }
+    // The distant recipient must be a Monk to consume the shared mantra through Ascetic.
+    let recipient_fence = owner.current_quest_fence(players[2].1).await.map_err(debug)?
+        .ok_or("mantra recipient fence")?;
+    let before = owner.root.read_character_build_state(owner.character, recipient_fence.character_id)
+        .await.map_err(debug)?;
+    let formula = native.training_formula().ok_or("training formula")?;
+    let build = crate::durability::character_build::convert_vocation(formula, &before, "monk")
+        .map_err(debug)?;
+    owner.revision_sequencer.acquire(recipient_fence.character_id).await.commit_build(
+        owner.root, owner.character, owner.holder, recipient_fence,
+        crate::durability::character_build::BuildChangeRequest {
+            occurrence: crate::durability::character_build::BuildOccurrence::from_bytes(id(217))
+                .map_err(debug)?,
+            cause: crate::durability::character_build::BuildCause::VocationTrial,
+            before, after: build.clone(), pruned_stance: None,
+        }, formula, None,
+    ).await.map_err(debug)?;
+    let crate::gameplay_transport::CastFactsLoad::Ready { facts, .. } =
+        crate::gameplay_transport::load_character_cast_facts(
+            owner.root, owner.character, recipient_fence.character_id,
+        ).await
+    else { return Err("mantra recipient facts".into()); };
+    {
+        let mut recipient = crate::spell::cast::PlayerSpellState::new(facts, 0, 0)
+            .ok_or("mantra recipient state")?;
+        recipient.load_owned_build(&build).map_err(debug)?;
+        recipient.make_playable(owner.owner_now()).map_err(debug)?;
+        let runtime = owner.runtime.lock().await;
+        *owner.states.spell_states.lock().await.get_mut(&runtime, players[2].0, players[2].1)
+            .ok_or("mantra recipient")? = recipient;
+    }
     // PKG8 Q5: a current Guiding Presence allocation scales both the ally and Serene copy.
     // A full green domain reaches Guiding Presence through the actual topology;
     // restore the original blue Ascetic allocation before the spender assertions.
@@ -280,6 +319,11 @@ pub(super) async fn scenario(
                 recipient.0
             );
         }
+        owner.refresh_source_party_serene(players[2].0, players[2].1).await;
+        let runtime = owner.runtime.lock().await;
+        let states = owner.states.spell_states.lock().await;
+        let recipient = states.get(&runtime, players[2].0, players[2].1).ok_or("mantra recipient")?;
+        assert_eq!(recipient.ascetic_attack_bonus_at(1, owner.owner_now().get()), if guided { 17 } else { 0 }, "C11R Guiding mantra");
     }
     // Eight adjacent monsters stay fixed; moving the knight across the screen boundary toggles Serene.
     let target;
@@ -530,5 +574,75 @@ pub(super) async fn scenario(
             healed.vitals().health
         );
     }
+    amber_equipment_and_cast(owner, h, player).await?;
+    Ok(())
+}
+
+async fn amber_equipment_and_cast(
+    owner: &mut ComposedFreshAdmission<'_, '_, '_>, h: &Harness,
+    player: (ExactActorRef, GameSessionId),
+) -> TestResult {
+    use crate::gameplay_transport::connection::UseCommand;
+    use crate::gameplay_transport::equipment_move::move_equipment;
+    use crate::gameplay_transport::item_move::{EquipmentMove, EquipmentMoveResult};
+    use crate::gameplay_transport::item_view::ItemKey;
+    use crate::gameplay_transport::weapon_proficiency::ProductionProficiencyCatalogue;
+    use oteryn_protocol_oteryn::item_view::EquipmentSlot;
+    let key = "oteryn:item.tibia.i50239";
+    let fence = owner.current_quest_fence(player.1).await.map_err(|_| "fence")?.ok_or("fence")?;
+    let mut tx = h.pool.begin().await?;
+    sqlx::query("SET LOCAL session_replication_role=replica").execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_instances(item_instance_id,world_id,definition_family,definition_production_key,definition_revision_ref,quantity,lifecycle,minted_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,'Item',$3,'definition-r1',1,1,encode($1,'hex')::uuid)")
+        .bind(id(216).as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).bind(key).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO game_item_container_entries(character_id,parent_item_instance_id,item_instance_id,world_id,placement_ordinal,placed_transaction_id) VALUES(encode($1,'hex')::uuid,encode($2,'hex')::uuid,encode($3,'hex')::uuid,encode($4,'hex')::uuid,2,encode($3,'hex')::uuid)")
+        .bind(fence.character_id.as_bytes().as_slice()).bind(id(210).as_slice()).bind(id(216).as_slice()).bind(fence.runtime_scope.world_id().as_bytes().as_slice()).execute(&mut *tx).await?;
+    tx.commit().await?;
+    let catalogue = ProductionProficiencyCatalogue::embedded().ok_or("catalogue")?;
+    let mut track = catalogue.empty_track(key).ok_or("amber track")?;
+    track.progress = track.shape.track_shape().final_progress();
+    track.selections = vec![None, Some(0), Some(0), Some(0), Some(1), None, None];
+    owner.states.proficiencies.lock().map_err(|_| "tracks")?.entry(player.1).or_default().install_track(key, track);
+    owner.proficiency_catalogue = Some(catalogue);
+    for (equipped, command) in [(true, 120), (false, 122)] {
+        let fence = owner.current_quest_fence(player.1).await.map_err(|_| "fence")?.ok_or("fence")?;
+        let item = ItemKey::Instance(id(216));
+        assert_eq!(move_equipment(owner, player.0, UseCommand {
+            game_session_id: player.1, command_id: command, item_fence: Some(fence.item_fence()),
+        }, if equipped { EquipmentMove::Equip { item, to: EquipmentSlot::RightHand } }
+           else { EquipmentMove::Unequip { item, from: EquipmentSlot::RightHand } }).await,
+           EquipmentMoveResult::Committed);
+        let spell = owner.spells.spells.iter().find(|s| s.key == "candidate:spell/devastating_knockout").ok_or("knockout")?;
+        // After unequipping, inspect magic through a spell that needs no weapon.
+        let projection_spell = if equipped { spell } else {
+            owner.spells.spells.iter().find(|s| s.key == "candidate:spell/light").ok_or("light")?
+        };
+        let access = owner.refresh_spell_access(player.0, player.1).await;
+        let fence = owner.current_quest_fence(player.1).await.map_err(|_| "fence")?.ok_or("fence")?;
+        {
+            let runtime = owner.runtime.lock().await;
+            let states = owner.states.spell_states.lock().await;
+            let state = states.get(&runtime, player.0, player.1).ok_or("state")?;
+            let mut tx = h.pool.begin().await?;
+            let mut owned = crate::gameplay_transport::spell_access_facts::load_owned_cast_facts_in_transaction(
+                &mut tx, owner.root, owner.character, owner.holder, &fence.item_fence(),
+                CommandRef::new(player.1, CommandId::new(command + 10).map_err(debug)?),
+                &runtime, player.0, state, owner.active_generation.ok_or("generation")?,
+                &access, owner.owner_now().get(),
+            ).await.map_err(debug)?;
+            let before = owned.numerical_caster(state, projection_spell, owner.active_generation.ok_or("generation")?.native_gameplay().ok_or("native")?,
+                crate::spell::harmony::HarmonyMultiplier::with_ascetic(state.character_facts().level, 0, false, false, 0).ok_or("harmony")?, owner.owner_now().get()).map_err(debug)?.magic_level;
+            owner.install_cast_proficiency(spell, &mut owned);
+            assert_eq!(owned.access.proficiency_skills[7], if equipped { 2 } else { 0 });
+            let caster = owned.numerical_caster(state, projection_spell, owner.active_generation.ok_or("generation")?.native_gameplay().ok_or("native")?,
+                crate::spell::harmony::HarmonyMultiplier::with_ascetic(state.character_facts().level, 0, false, false, 0).ok_or("harmony")?, owner.owner_now().get()).map_err(debug)?;
+            assert_eq!(caster.magic_level, before + if equipped { 2 } else { 0 });
+            let augments = &owned.magnitude().ok_or("magnitude")?.item_augments;
+            use oteryn_gameplay_content::content::item_spell_augments::ItemSpellAugmentKind as K;
+            assert_eq!(augments.iter().filter(|a| a.kind == K::BaseDamage).map(|a| a.value).sum::<u32>(), if equipped { 500 } else { 0 });
+            tx.rollback().await?;
+        }
+        if equipped { cast(owner, player, "devastating_knockout", 121, SpellTarget::AttackTarget).await?; }
+    }
+    eprintln!("POSTGRES_EXECUTED case=c11r_amber_equipment_and_cast");
     Ok(())
 }

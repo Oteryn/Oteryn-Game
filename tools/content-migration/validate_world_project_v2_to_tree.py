@@ -727,6 +727,8 @@ def main() -> int:
 
     legacy_items = [row for row in reference["records"] if row["identity"]["family"] == "Item"]
     apply_summer_item_admissions(legacy_items, ROOT)
+    from amber_item_semantics import apply_container_fact
+    apply_container_fact(legacy_items, ROOT)
     require(migrated_items == legacy_items and expected_start == 34043, "ITEM_DEFINITION_ROUNDTRIP")
 
     require(isinstance(mount_index["shards"][0], str), "MOUNT_SHARD_REF")

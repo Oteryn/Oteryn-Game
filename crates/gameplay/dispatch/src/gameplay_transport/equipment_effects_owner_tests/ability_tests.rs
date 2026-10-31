@@ -102,6 +102,9 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // Decision 25 text profiles: 15 one-way sources, their fixed targets and
     // readable carriers. These add no equipment or speed qualification.
     ("WRITE-CONTENT-1", 92),
+    // PKG1 Amber: the amber kusarigama 50239 (tools/content-migration/monk_reward_profiles.py,
+    // Crystal ff7ede59 items.xml), a monk weapon with speed_bonus=0.
+    ("PKG1-AMBER", 1),
 ];
 
 #[test]
