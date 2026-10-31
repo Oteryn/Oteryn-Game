@@ -68,6 +68,9 @@ pub(super) async fn scenario(harness: &Harness) -> TestResult {
         "oteryn:item.tibia.i10181", "oteryn:item.tibia.i2128",
         "oteryn:item.tibia.i10182", "oteryn:item.tibia.i2130",
     ]);
+    // This real 5x5 SourceMap footprint includes static solids at (2,10),
+    // (3,10) and (3,14). Their known collision flags must survive qualification
+    // so the ordinary scan can reach the eligible wall at (1,12).
     let wall = seed_wall(harness, &deps, &owner).await?;
     assert_eq!(wall_state(harness, wall).await?, (1, 1, 1, 1, 1));
     assert!(removal_receipts(harness, monster, wall).await?.is_empty());
