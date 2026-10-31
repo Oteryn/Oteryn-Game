@@ -237,6 +237,23 @@ impl ChannelRuntimeV1 {
         })
     }
 
+    /// Current House occupants under the runtime owner lock, excluding the acting resident.
+    /// Channel positions cannot answer this question: House custody clears them.
+    pub fn house_cell_occupied_except(
+        &self,
+        actor: ExactActorRef,
+        session: GameSessionId,
+        position: LocalPosition,
+    ) -> Result<bool, CarrierError> {
+        let state = self.house_actor_state(actor, session)?;
+        Ok(self.carrier.house_custody.iter().any(|resident| {
+            resident.actor != actor
+                && resident.scope == state.scope
+                && resident.generation == state.generation
+                && resident.position == position
+        }))
+    }
+
     /// Apply a durably committed same-node transfer while the composition holds
     /// the runtime lock. The source slot, conditions and combat state are retained.
     #[allow(clippy::too_many_arguments)]
