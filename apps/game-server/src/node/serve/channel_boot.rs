@@ -16,7 +16,6 @@ pub(super) struct PreparedChannel {
     pub(super) qualified_room: crate::content::QualifiedNativeEntryRoom,
     pub(super) movement_cells: crate::content::NativeEntryMovementCells,
     pub(super) bundle: Option<crate::map::boot::BundleWorld>,
-    pub(super) daily_world_change: oteryn_gameplay_world_change::daily::DailyWorldChange,
     pub(super) combat_room: Option<crate::content::QualifiedNativeEntryRoom>,
     pub(super) spells: crate::spell::SpellBook,
     pub(super) imported_charms: crate::content::charm_source::CanonicalCharmCatalogue,
@@ -47,18 +46,6 @@ pub(super) async fn prepare_channel(
         signalled,
     } = boot;
     let config = &material.config;
-    // W05b: the committed reset epoch owns one stable daily roll. Deriving its draw from that
-    // durable epoch keeps restart recovery on the same day without a second state owner.
-    let daily_world_change = oteryn_gameplay_world_change::daily::DailyWorldChange::roll(
-        reset_epoch,
-        (reset_epoch % 100) as u8,
-    );
-    event(&format!(
-        "event=daily_world_change reset_epoch={} thawing={} placed_items={}",
-        daily_world_change.reset_epoch(),
-        daily_world_change.thawing_active(),
-        daily_world_change.placed_items().count()
-    ));
     let scope = RuntimeScopeRefV1::channel(material.world, material.channel);
     let generation = assignment.ownership_generation;
     let fact = proof.fact();
@@ -233,6 +220,22 @@ pub(super) async fn prepare_channel(
     }
     // NPC-LOAD-1: the bundle's NPC actors take their cells at Channel start, before any creature.
     bundle_npcs::place(&mut channel_runtime, npc_boot)?;
+    // W05b: the server save's daily world changes, rolled once per reset epoch.
+    let unix_ms = crate::world_clock::now_utc_ms()
+        .and_then(|now| i64::try_from(now).ok())
+        .unwrap_or(0);
+    let daily = daily_world_changes::roll(material.world, reset_epoch, unix_ms);
+    let daily_npcs = daily_world_changes::apply(&mut channel_runtime, npc_boot, &daily);
+    event(&format!(
+        "event=daily_world_change reset_epoch={} thawing={} their_masters_voice={} \
+         oriental_trader={:?} grimvale_full_moon={} flower_month={} npcs={daily_npcs}",
+        daily.reset_epoch,
+        daily.thawing,
+        daily.their_masters_voice,
+        daily.oriental_trader,
+        daily.grimvale_full_moon,
+        daily.flower_month,
+    ));
     let timed_npcs = bundle_npcs::TimedNpcSpawns::from_boot(npc_boot);
     // W05c: the day/night NPCs of the current world minute; one that cannot stand yet is
     // retried by the world tick (`supervision.rs` `timed_npc_loop`).
@@ -271,7 +274,6 @@ pub(super) async fn prepare_channel(
         qualified_room,
         movement_cells,
         bundle,
-        daily_world_change,
         combat_room,
         spells,
         imported_charms,

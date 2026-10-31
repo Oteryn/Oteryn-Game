@@ -257,6 +257,13 @@ pub(super) enum NpcBoot {
     },
 }
 
+impl NpcBoot {
+    /// Whether the loaded catalogue admits `key` for a placement at Channel start.
+    pub(super) fn admits(&self, key: &str) -> bool {
+        matches!(self, Self::Place { admitted, .. } if admitted.contains(key))
+    }
+}
+
 fn facing(direction: npc::Direction) -> MovementFacing {
     match direction {
         npc::Direction::North => MovementFacing::North,
