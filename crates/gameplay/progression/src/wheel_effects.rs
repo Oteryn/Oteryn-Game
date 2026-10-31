@@ -4,14 +4,16 @@ use crate::wheel::{WHEEL_LEVEL_OFFSET, WheelAllocation};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
+mod gems;
+
 /// Socket-facing resonance unlocked by full Wheel slices. Gems remain owned by Gem Atelier.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct WheelSocketSeam {
     pub resonance_stages: BTreeMap<String, u8>,
-    /// Active positions only, after the preceding-position grade cap.
+    /// Active positions at their own shared modifier grade (Crystal player_wheel.cpp:2735-2752).
     pub effective_grades: BTreeMap<u128, Vec<u8>>,
     pub grade_iv_points: u32,
-    /// Signed catalogue values in thousandths, including resistance penalties.
+    /// Signed source values in thousandths, including resistance penalties.
     pub gem_values_milli: BTreeMap<(String, String), i64>,
 }
 
@@ -154,6 +156,131 @@ pub fn derive_stat_bonuses(
 }
 
 impl WheelRuntimeEffects {
+    /// Crystal player.cpp:7423-7437 adds Wheel skills after the base/condition projection.
+    /// Crystal 201189f game.cpp:8013-8046 deliberately differs from the historical
+    /// official catalogue: missing-health steps are 12/10/8, with a 50% defence cap.
+    pub fn combat_mastery_percent(&self, health: u64, maximum: u64, doubled: bool) -> u32 {
+        let threshold = match self
+            .revelation_stages
+            .get("combat_mastery")
+            .copied()
+            .unwrap_or(0)
+        {
+            1 => 12,
+            2 => 10,
+            3 => 8,
+            _ => return 0,
+        };
+        if maximum == 0 || health > maximum {
+            return 0;
+        }
+        let missing = (u128::from(maximum - health) * 100 / u128::from(maximum)) as u32;
+        missing / threshold * if doubled { 2 } else { 1 }
+    }
+
+    /// Crystal player_wheel.cpp:3190-3218 rounds the target health percentage and
+    /// includes both boundaries. Self-healing receives no low-health bonus.
+    pub fn grove_healing_bonus_milli(&self, health: u64, maximum: u64, self_target: bool) -> u64 {
+        if self_target || maximum == 0 || health > maximum {
+            return 0;
+        }
+        let percentage = (u128::from(health) * 100 + u128::from(maximum) / 2) / u128::from(maximum);
+        let bonus = self.revelation_value_milli("blessing_of_the_grove", "healing_bonus");
+        if percentage
+            <= u128::from(
+                self.revelation_value("blessing_of_the_grove", "exclusive_low_target_health_limit"),
+            )
+        {
+            bonus.saturating_mul(
+                self.revelation_value("blessing_of_the_grove", "low_health_healing_multiplier"),
+            )
+        } else if percentage
+            <= u128::from(
+                self.revelation_value("blessing_of_the_grove", "exclusive_target_health_limit"),
+            )
+        {
+            bonus
+        } else {
+            0
+        }
+    }
+
+    /// Crystal game.cpp:7665-7685 and 8013-8029. Both zero components stop
+    /// before flat bonuses; when a secondary survives, the primary also receives its flat.
+    pub fn finish_damage_pair(
+        &self,
+        primary: i64,
+        secondary: i64,
+        health: u64,
+        maximum: u64,
+        two_handed: bool,
+    ) -> Option<(i64, i64)> {
+        if primary < 0 || secondary < 0 {
+            return None;
+        }
+        if primary == 0 && secondary == 0 {
+            return Some((0, 0));
+        }
+        let flat = i64::from(self.flat_damage_bonus()?);
+        let multiplier = i128::from(100 + self.combat_mastery_percent(health, maximum, two_handed));
+        let finish = |value: i64| {
+            i64::try_from(i128::from(value.checked_add(flat)?) * multiplier / 100).ok()
+        };
+        Some((
+            finish(primary)?,
+            if secondary == 0 {
+                0
+            } else {
+                finish(secondary)?
+            },
+        ))
+    }
+
+    pub fn skill_bonus(&self, index: usize) -> u32 {
+        let key = match index {
+            0 => "fist_fighting_skill",
+            1..=3 => "weapon_skill",
+            4 => "distance_skill",
+            _ => return 0,
+        };
+        self.skill_bonuses.get(key).copied().unwrap_or(0)
+    }
+
+    pub fn magic_skill_bonus(&self) -> u32 {
+        self.skill_bonuses.get("magic_skill").copied().unwrap_or(0)
+    }
+
+    pub fn revelation_value_milli(&self, perk: &str, kind: &str) -> u64 {
+        self.revelation_numeric_effects
+            .get(perk)
+            .and_then(|effects| effects.get(kind))
+            .map_or(0, |value| value.milli())
+    }
+
+    pub fn revelation_value(&self, perk: &str, kind: &str) -> u64 {
+        self.revelation_numeric_effects
+            .get(perk)
+            .and_then(|effects| effects.get(kind))
+            .map_or(0, |value| value.whole())
+    }
+
+    /// Crystal player_wheel.cpp:2767-2775: every active domain contributes its flat stats.
+    pub fn flat_damage_bonus(&self) -> Option<u32> {
+        self.flat_bonus("flat_damage_bonus")
+    }
+
+    pub fn flat_healing_bonus(&self) -> Option<u32> {
+        self.flat_bonus("flat_healing_bonus")
+    }
+
+    fn flat_bonus(&self, kind: &str) -> Option<u32> {
+        self.revelation_numeric_effects
+            .values()
+            .try_fold(0_u32, |total, effects| {
+                total.checked_add(u32::try_from(effects.get(kind)?.whole()).ok()?)
+            })
+    }
+
     /// Apply the Character's committed vessel projection to the existing Wheel contribution.
     pub fn contribute_gems(
         &mut self,
@@ -179,6 +306,12 @@ impl WheelRuntimeEffects {
         } else {
             0
         };
+        // Crystal player_wheel.cpp:2931-2945 adds every Grade IV modifier to each
+        // revelation domain, independently of whether a gem using it is socketed.
+        for domain in ["green", "red", "purple", "blue"] {
+            let points = domain_points.entry(domain).or_default();
+            *points = points.checked_add(self.sockets.grade_iv_points)?;
+        }
         for gem in state
             .gems
             .values()
@@ -190,6 +323,11 @@ impl WheelRuntimeEffects {
                 crate::wheel::WheelDomain::Purple => "vessel_resonance_bottom_right",
                 crate::wheel::WheelDomain::Blue => "vessel_resonance_bottom_left",
             };
+            let positions = match gem.quality {
+                crate::atelier::GemQuality::Lesser => 1,
+                crate::atelier::GemQuality::Regular => 2,
+                crate::atelier::GemQuality::Greater => 3,
+            };
             let active = usize::from(
                 *self
                     .sockets
@@ -197,8 +335,8 @@ impl WheelRuntimeEffects {
                     .get(resonance_key)
                     .unwrap_or(&0),
             )
-            .min(gem.mods.len());
-            let mut cap = 3;
+            .min(gem.mods.len())
+            .min(positions);
             let mut effective = Vec::new();
             for (position, id) in gem.mods.iter().copied().take(active).enumerate() {
                 let kind = if position == 2 {
@@ -211,8 +349,9 @@ impl WheelRuntimeEffects {
                 } else {
                     0
                 };
-                cap = cap.min(grade);
-                effective.push(cap);
+                // Crystal applies each active modifier's own grade; preceding positions
+                // do not cap it (player_wheel.cpp:2735-2752).
+                effective.push(grade);
                 let catalogue = &data.gems()["catalogue"];
                 if kind == FragmentKind::Basic {
                     let row = catalogue["basic_mods"]
@@ -221,26 +360,33 @@ impl WheelRuntimeEffects {
                         .find(|row| row["source_id"].as_u64() == Some(u64::from(id)))?;
                     for effect in row["effects"].as_array()? {
                         let name = effect["name"].as_str()?;
-                        let value =
-                            effect["values_by_vocation"][vocation][usize::from(cap)].as_f64()?;
+                        let value = gems::basic_milli(id, grade, vocation, effect)?;
                         let entry = self
                             .sockets
                             .gem_values_milli
                             .entry((name.into(), String::new()))
                             .or_default();
-                        *entry = entry.checked_add((value * 1000.0).round() as i64)?;
+                        *entry = entry.checked_add(value)?;
                         match name {
                             "Hit Points" => {
-                                self.max_health = self.max_health.checked_add(value as u32)?
+                                self.max_health = self
+                                    .max_health
+                                    .checked_add(u32::try_from(value / 1_000).ok()?)?
                             }
-                            "Mana" => self.max_mana = self.max_mana.checked_add(value as u32)?,
+                            "Mana" => {
+                                self.max_mana = self
+                                    .max_mana
+                                    .checked_add(u32::try_from(value / 1_000).ok()?)?
+                            }
                             "Capacity" => {
-                                self.capacity = self.capacity.checked_add(value as u32)?
+                                self.capacity = self
+                                    .capacity
+                                    .checked_add(u32::try_from(value / 1_000).ok()?)?
                             }
                             "Mitigation Multiplier" => {
                                 self.mitigation_milli_percent = self
                                     .mitigation_milli_percent
-                                    .checked_add((value * 1000.0).round() as u32)?
+                                    .checked_add(u32::try_from(value).ok()?)?
                             }
                             _ => (),
                         }
@@ -250,18 +396,19 @@ impl WheelRuntimeEffects {
                         .as_array()?
                         .iter()
                         .find(|row| row["source_id"].as_u64() == Some(u64::from(id)))?;
-                    for effect in row["grades"][usize::from(cap)]["numeric_effects"].as_array()? {
-                        let name = effect["kind"].as_str()?;
-                        let value = effect["value"].as_f64()?;
+                    for effect in row["grades"][usize::from(grade)]["numeric_effects"].as_array()? {
+                        let projected = gems::supreme_effect(id, grade, effect)?;
+                        let name = projected.kind;
+                        let value = projected.value_milli;
                         let entry = self
                             .sockets
                             .gem_values_milli
-                            .entry((name.into(), effect["target"].as_str()?.into()))
+                            .entry((name.into(), projected.target.into()))
                             .or_default();
-                        *entry = entry.checked_add((value * 1000.0).round() as i64)?;
+                        *entry = entry.checked_add(value)?;
                         match name {
                             "revelation_mastery_points" => {
-                                let target = effect["target"].as_str()?;
+                                let target = projected.target;
                                 let revelation = family["revelations"]
                                     .as_array()?
                                     .iter()
@@ -269,17 +416,17 @@ impl WheelRuntimeEffects {
                                 let points = domain_points
                                     .entry(revelation["domain"].as_str()?)
                                     .or_default();
-                                *points = points.checked_add(value as u32)?;
+                                *points = points.checked_add(u32::try_from(value / 1_000).ok()?)?;
                             }
                             "life_leech" => {
                                 self.life_leech_hundredths_percent = self
                                     .life_leech_hundredths_percent
-                                    .checked_add((value * 100.0).round() as u32)?
+                                    .checked_add(u32::try_from(value / 10).ok()?)?
                             }
                             "mana_leech" => {
                                 self.mana_leech_hundredths_percent = self
                                     .mana_leech_hundredths_percent
-                                    .checked_add((value * 100.0).round() as u32)?
+                                    .checked_add(u32::try_from(value / 10).ok()?)?
                             }
                             _ => (),
                         }
@@ -551,6 +698,82 @@ mod tests {
     }
 
     #[test]
+    fn crystal_combat_mastery_uses_reworked_thresholds_and_equipment_multiplier() {
+        let mut effects = WheelRuntimeEffects::default();
+        assert_eq!(effects.combat_mastery_percent(1, 100, true), 0);
+        for (stage, expected) in [(1, 4), (2, 5), (3, 6)] {
+            effects
+                .revelation_stages
+                .insert("combat_mastery".to_owned(), stage);
+            assert_eq!(effects.combat_mastery_percent(50, 100, false), expected);
+            assert_eq!(effects.combat_mastery_percent(50, 100, true), expected * 2);
+            assert_eq!(effects.combat_mastery_percent(100, 100, true), 0);
+            assert_eq!(effects.combat_mastery_percent(101, 100, true), 0);
+            assert_eq!(effects.combat_mastery_percent(0, 0, true), 0);
+        }
+    }
+
+    #[test]
+    fn crystal_auto_attack_components_add_flat_after_response_and_do_not_revive_zero_hits() {
+        let mut effects = WheelRuntimeEffects::default();
+        effects.revelation_numeric_effects.insert(
+            "combat_mastery".into(),
+            BTreeMap::from([("flat_damage_bonus".into(), WheelNumericValue(4_000))]),
+        );
+        effects.revelation_stages.insert("combat_mastery".into(), 1);
+        assert_eq!(
+            effects.finish_damage_pair(0, 0, 50, 100, true),
+            Some((0, 0))
+        );
+        assert_eq!(
+            effects.finish_damage_pair(100, 0, 50, 100, false),
+            Some((108, 0))
+        );
+        assert_eq!(
+            effects.finish_damage_pair(100, 0, 50, 100, true),
+            Some((112, 0))
+        );
+        assert_eq!(
+            effects.finish_damage_pair(0, 100, 50, 100, false),
+            Some((4, 108)),
+            "a surviving secondary keeps the primary flat component"
+        );
+        assert_eq!(
+            effects.finish_damage_pair(100, 100, 100, 100, false),
+            Some((104, 104))
+        );
+        assert_eq!(effects.finish_damage_pair(-1, 100, 50, 100, true), None);
+        assert_eq!(effects.finish_damage_pair(i64::MAX, 0, 50, 100, true), None);
+    }
+
+    #[test]
+    fn grove_keeps_fractional_bonus_rounded_inclusive_boundaries_and_self_exclusion() {
+        let data = WheelGemData::embedded().expect("qualified embedded catalogue");
+        let mut effects = WheelRuntimeEffects::default();
+        project_revelations(
+            &data.wheel()["vocations"]["druid"],
+            &BTreeMap::from([("red", 500)]),
+            &mut effects,
+        )
+        .expect("stage two Grove");
+        for (health, bonus) in [
+            (6_000, 7_500),
+            (6_049, 7_500),
+            (6_050, 0),
+            (3_000, 15_000),
+            (3_049, 15_000),
+            (3_050, 7_500),
+        ] {
+            assert_eq!(
+                effects.grove_healing_bonus_milli(health, 10_000, false),
+                bonus
+            );
+        }
+        assert_eq!(effects.grove_healing_bonus_milli(1, 10_000, true), 0);
+        assert_eq!(effects.grove_healing_bonus_milli(1, 0, false), 0);
+    }
+
+    #[test]
     fn full_slices_project_all_perk_classes_and_socket_seam() {
         let data = WheelGemData::embedded().expect("qualified embedded catalogue");
         let topology = data.wheel()["topology"].as_array().expect("topology");
@@ -601,7 +824,7 @@ mod atelier_tests {
     use crate::wheel_gem_data::WheelGemData;
 
     #[test]
-    fn atelier_resonance_caps_shared_grades_and_revelation_mastery() {
+    fn atelier_resonance_uses_independent_shared_grades_and_revelation_mastery() {
         let data = WheelGemData::embedded().expect("catalogue");
         let mut points = [0; 36];
         let mut reduced = false;
@@ -659,7 +882,8 @@ mod atelier_tests {
             .expect("contribution");
         assert_eq!(
             effects.sockets.effective_grades.get(&1),
-            Some(&vec![1, 1, 1])
+            // The pinned Crystal applies independent grades, superseding the old cap.
+            Some(&vec![1, 3, 3])
         );
         assert_eq!(effects.sockets.grade_iv_points, 2);
         assert_eq!(effects.revelation_stages.get("gift_of_life"), Some(&3));
@@ -672,5 +896,124 @@ mod atelier_tests {
             .expect("dormant");
         assert!(dormant.sockets.effective_grades.is_empty());
         assert_eq!(dormant.revelation_stages.get("gift_of_life"), Some(&2));
+    }
+
+    fn allocation_with_domain_points(data: &WheelGemData, total: u16) -> WheelAllocation {
+        let topology = data.wheel()["topology"].as_array().expect("topology");
+        let mut points = [0; 36];
+        for domain in ["green", "red", "purple", "blue"] {
+            let mut remaining = total;
+            for capacity in [50_u16, 75, 100, 150, 200] {
+                for (index, slot) in topology.iter().enumerate() {
+                    if slot["domain"] == domain
+                        && slot["capacity"].as_u64() == Some(u64::from(capacity))
+                    {
+                        let assigned = remaining.min(capacity);
+                        points[index] = assigned;
+                        remaining -= assigned;
+                    }
+                }
+            }
+            assert_eq!(remaining, 0);
+        }
+        WheelAllocation {
+            wheel_ruleset_revision: Some(data.revision().into()),
+            wheel_revision: 1,
+            slots: WheelSlots::new(points).expect("slots"),
+            current: true,
+        }
+    }
+
+    #[test]
+    fn grade_iv_points_advance_every_domain_without_a_socketed_gem() {
+        let data = WheelGemData::embedded().expect("catalogue");
+        let allocation = allocation_with_domain_points(&data, 249);
+        let ruleset = crate::wheel::WheelRuleset::from_catalogue(data.revision(), data.wheel())
+            .expect("ruleset");
+        ruleset
+            .validate(&WheelSlots::ZERO, &allocation.slots, 1950, false)
+            .expect("legal allocation");
+        let mut state = AtelierState {
+            vocation: "knight".into(),
+            grade_ruleset_revision: Some(data.revision().into()),
+            ..Default::default()
+        };
+        state.grades.insert((FragmentKind::Basic, 31), 3);
+        let base = derive_runtime_effects(data.wheel(), &allocation, "knight", 2000, true, true)
+            .expect("effects");
+        assert!(base.revelation_stages.is_empty());
+        let mut effects = base.clone();
+        effects
+            .contribute_gems(&state, &data, &allocation)
+            .expect("grade bonus");
+        assert_eq!(effects.sockets.grade_iv_points, 1);
+        assert_eq!(effects.revelation_stages.len(), 4);
+        assert!(effects.revelation_stages.values().all(|stage| *stage == 1));
+        state.grade_ruleset_revision = Some("old".into());
+        let mut stale = base;
+        stale
+            .contribute_gems(&state, &data, &allocation)
+            .expect("stale grade ignored");
+        assert_eq!(stale.sockets.grade_iv_points, 0);
+        assert!(stale.revelation_stages.is_empty());
+    }
+
+    #[test]
+    fn resonance_count_and_gem_quality_bound_the_active_modifier_positions() {
+        let data = WheelGemData::embedded().expect("catalogue");
+        let allocation = allocation_with_domain_points(&data, 0);
+        for (quality, mods) in [
+            (GemQuality::Lesser, vec![31]),
+            (GemQuality::Regular, vec![31, 0]),
+            (GemQuality::Greater, vec![31, 0, 5]),
+        ] {
+            let mut state = AtelierState {
+                vocation: "knight".into(),
+                grade_ruleset_revision: Some(data.revision().into()),
+                ..Default::default()
+            };
+            state.gems.insert(
+                1,
+                Gem {
+                    id: 1,
+                    quality,
+                    domain: WheelDomain::Green,
+                    mods: mods.clone(),
+                    locked: true,
+                    vessel: true,
+                    ruleset_revision: data.revision().into(),
+                },
+            );
+            for count in 0..=3_u8 {
+                let mut effects = WheelRuntimeEffects::default();
+                effects
+                    .sockets
+                    .resonance_stages
+                    .insert("vessel_resonance_top_left".into(), count);
+                effects
+                    .contribute_gems(&state, &data, &allocation)
+                    .expect("contribution");
+                assert_eq!(
+                    effects.sockets.effective_grades[&1].len(),
+                    usize::from(count).min(mods.len())
+                );
+                if count == 0 {
+                    assert!(effects.sockets.gem_values_milli.is_empty());
+                    assert_eq!(effects.max_health, 0);
+                    assert_eq!(effects.max_mana, 0);
+                }
+            }
+            state.gems.get_mut(&1).expect("gem").vessel = false;
+            let mut effects = WheelRuntimeEffects::default();
+            effects
+                .sockets
+                .resonance_stages
+                .insert("vessel_resonance_top_left".into(), 3);
+            effects
+                .contribute_gems(&state, &data, &allocation)
+                .expect("unsocketed");
+            assert!(effects.sockets.effective_grades.is_empty());
+            assert!(effects.sockets.gem_values_milli.is_empty());
+        }
     }
 }
