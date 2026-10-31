@@ -27,6 +27,7 @@ on:
       - docs/agents/evidence/OTV2-20261002-item-stack-default-successor8-*.json
       - docs/agents/evidence/OTV2-20261003-item-stack-default-successor8-*.json
       - docs/agents/evidence/OTV2-20261003-item-market-true-promotion-v2.json
+      - docs/agents/evidence/OTV2-20261031-item-market-crystal-parity-v1.json
       - docs/agents/evidence/OTV2-20261003-item-movable-promotion-v2.json
       - imports/tibiawiki/batches.json
       - imports/tibiawiki/sources.json
@@ -236,6 +237,11 @@ jobs:
         run: |
           python test_lower_client_market_d289_packet.py
           python lower_client_market_d289_packet.py --check
+
+      - name: Market parity with Crystal (E06) guards
+        # The packet's --check needs a Crystal checkout (--donor); the parity test reads the
+        # committed packet and content only.
+        run: python test_lower_client_market_crystal_parity_packet.py
 
       - name: D289 movable v2 holds and packet drift
         run: |
