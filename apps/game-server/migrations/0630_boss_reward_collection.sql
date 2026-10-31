@@ -481,8 +481,10 @@ ALTER TABLE game_item_corpse_entry_removal_evidence
 
 -- Retaining a handoff id is not authority. All members must have their real
 -- immutable return receipts; no current Instance session may remain. A current
--- assignment must still be this generation and node. A revoked assignment may
--- be cleaned, but a replacement active generation is never touched.
+-- assignment must still be this generation and node, or its exact holder
+-- registration must have ended and the recovery node must hold a current ready
+-- origin Channel. A revoked assignment may be cleaned, but a replacement active
+-- generation is never touched. This matches the existing Rust retirement proof.
 CREATE FUNCTION game_activity_retirement_binding_valid(
  p_handoff UUID,p_world UUID,p_instance UUID,p_generation NUMERIC,p_node UUID,p_registration NUMERIC)
  RETURNS BOOLEAN LANGUAGE sql VOLATILE SECURITY DEFINER AS $$
@@ -501,7 +503,21 @@ CREATE FUNCTION game_activity_retirement_binding_valid(
     AND NOT EXISTS(SELECT 1 FROM game_durability_reconnect_sessions s WHERE s.runtime_scope_kind=2
      AND s.runtime_scope_world_id=g.world_id AND s.runtime_scope_instance_id=g.instance_id AND s.session_state IN(1,2))
     AND (a.state<>1 OR (a.ownership_generation=g.ownership_generation
-     AND a.holder_node_id=p_node AND a.holder_registration_revision=p_registration)))
+     AND ((a.holder_node_id=p_node AND a.holder_registration_revision=p_registration)
+      OR (NOT game_node_lock_current_registration(a.holder_node_id,a.holder_registration_revision)
+       AND EXISTS(SELECT 1
+        FROM game_activity_handoff_participants origin_p
+        JOIN game_runtime_scope_assignments origin_a
+         ON origin_a.scope_key='\x01'::bytea||uuid_send(origin_p.world_id)||uuid_send(origin_p.origin_channel_id)
+        JOIN game_durability_admission_runtime_guards origin_guard ON origin_guard.scope_key=origin_a.scope_key
+        WHERE origin_p.handoff_id=g.handoff_id AND origin_p.world_id=g.world_id
+         AND origin_a.world_id=origin_p.world_id
+         AND origin_a.channel_id IS NOT DISTINCT FROM origin_p.origin_channel_id
+         AND origin_a.activity_instance_id IS NULL AND origin_a.house_key IS NULL
+         AND origin_a.scope_kind=1 AND origin_a.state=1
+         AND origin_a.holder_node_id=p_node AND origin_a.holder_registration_revision=p_registration
+         AND origin_guard.ready AND origin_guard.ownership_generation=origin_a.ownership_generation
+        FOR SHARE OF origin_a,origin_guard))))))
 $$;
 
 -- Capture the exact old Ground namespace. Existing Channel rows and their

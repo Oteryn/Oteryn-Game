@@ -15,7 +15,7 @@ use crate::durability::item_transfer::{
 };
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, AssignmentState, ControlActor,
-    OperationKey, RuntimeScopeAssignmentWriter,
+    NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
 use crate::durability::spell_owner_commit::SpellLane;
 use crate::foundation::admission_authority_publication::AdmissionAuthorityGuardStateV1;
@@ -37,7 +37,16 @@ fn activity_departed_postgres_committed_return_survives_cancel_and_empty_registr
     run(true)
 }
 
+#[test]
+fn activity_departed_postgres_ended_registration_retires_active_assignment_ground() -> TestResult {
+    run_with_departure(false, true)
+}
+
 fn run(cancel_commit: bool) -> TestResult {
+    run_with_departure(cancel_commit, false)
+}
+
+fn run_with_departure(cancel_commit: bool, registration_ended: bool) -> TestResult {
     let Some(admin) = crate::bestiary_postgres_harness::configured_admin() else {
         eprintln!("ACTIVITY_DEPARTED POSTGRES_CASE_SKIPPED: no configured admin");
         return Ok(());
@@ -56,7 +65,7 @@ fn run(cancel_commit: bool) -> TestResult {
                 ))
                 .map_err(|error| error.to_string())?;
             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                runtime.block_on(scenario(&h, cancel_commit))
+                runtime.block_on(scenario(&h, cancel_commit, registration_ended))
             }));
             let cleanup = runtime
                 .block_on(h.cleanup())
@@ -74,7 +83,7 @@ fn run(cancel_commit: bool) -> TestResult {
     Ok(())
 }
 
-async fn scenario(h: &Harness, cancel_commit: bool) -> TestResult {
+async fn scenario(h: &Harness, cancel_commit: bool, registration_ended: bool) -> TestResult {
     let entered = super::activity_runtime::enter_fixture(h).await?;
     let source = entered.fence;
     let origin = entered.request.participants[0].source.runtime_scope;
@@ -158,9 +167,53 @@ async fn scenario(h: &Harness, cancel_commit: bool) -> TestResult {
         before,
         "wrong current origin generation cannot release or retire anything"
     );
-    revoke(h, source.runtime_scope).await?;
+    // Preserve both existing revoke scenarios. The registration-ended case
+    // leaves the exact Instance assignment untouched and replaces only origin.
+    drop(owner);
+    let source_assignment = h
+        .root
+        .read_runtime_scope_assignment(source.runtime_scope)
+        .await
+        .map_err(debug)?
+        .ok_or("retained source assignment")?;
+    assert_eq!(source_assignment.state, AssignmentState::Assigned);
+    assert_eq!(source_assignment.holder, Some(h.node.fact()));
+    let (node, origin_generation) = if registration_ended {
+        let (node, generation) = restart_origin(h, &deps, origin).await?;
+        assert_eq!(
+            h.root
+                .read_runtime_scope_assignment(source.runtime_scope)
+                .await
+                .map_err(debug)?,
+            Some(source_assignment.clone()),
+            "ending the exact holder registration must not revoke or replace Instance"
+        );
+        assert!(
+            durable
+                .departed_activities_after(&authority, &h.node, origin, generation, None)
+                .await
+                .is_err(),
+            "the ended registration cannot recover through the replacement origin"
+        );
+        assert!(
+            durable
+                .departed_activities_after(&authority, &node, origin, origin_generation, None)
+                .await
+                .is_err(),
+            "the replacement node cannot use the old origin generation"
+        );
+        assert_eq!(census(h).await?, before);
+        (node, generation)
+    } else {
+        revoke(h, source.runtime_scope).await?;
+        (h.node.clone(), origin_generation)
+    };
+    let mut owner = deps.owner(h, &authority);
+    owner.holder = &node;
+    owner.evidence = &entered.evidence.evidence;
+    bind_origin_capabilities(&mut owner, origin, origin_generation)?;
     let page = durable
-        .departed_activities_after(&authority, &h.node, origin, origin_generation, None)
+        .departed_activities_after(&authority, &node, origin, origin_generation, None)
         .await?;
     assert_eq!(page.activities.len(), 1);
     assert_eq!(page.activities[0].source(), source);
@@ -183,7 +236,7 @@ async fn scenario(h: &Harness, cancel_commit: bool) -> TestResult {
             .map_err(|_| "departed return pass")?;
     }
     let returned = durable
-        .departed_activities_after(&authority, &h.node, origin, origin_generation, None)
+        .departed_activities_after(&authority, &node, origin, origin_generation, None)
         .await?;
     assert_eq!(returned.activities.len(), 1);
     let proof = returned.activities[0].clone();
@@ -215,7 +268,9 @@ async fn scenario(h: &Harness, cancel_commit: bool) -> TestResult {
     // owner must discover its receipt, not reconstruct a native actor/token.
     drop(owner);
     let mut restarted = deps.owner(h, &authority);
+    restarted.holder = &node;
     restarted.evidence = &entered.evidence.evidence;
+    bind_origin_capabilities(&mut restarted, origin, origin_generation)?;
     assert!(
         restarted
             .activity_runtimes
@@ -269,6 +324,7 @@ async fn scenario(h: &Harness, cancel_commit: bool) -> TestResult {
         .bind(id(70).as_slice()).fetch_one(&h.pool).await?, 1);
     let fresh = fresh_after_release(h, source.character_id, origin).await?;
     assert_eq!(fresh.current_runtime_scope(), origin);
+    assert_eq!(fresh.current_scope_generation(), origin_generation);
     assert_eq!(
         fresh.current_character_lease().generation(),
         source.character_lease_generation + 2
@@ -297,12 +353,54 @@ async fn scenario(h: &Harness, cancel_commit: bool) -> TestResult {
     );
     assert!(
         durable
-            .departed_activities_after(&authority, &h.node, origin, origin_generation, None)
+            .departed_activities_after(&authority, &node, origin, origin_generation, None)
             .await?
             .activities
             .is_empty()
     );
-    eprintln!("ACTIVITY_DEPARTED POSTGRES_CASE_COMPLETED cancel_commit={cancel_commit}");
+    if registration_ended {
+        assert_eq!(
+            h.root
+                .read_runtime_scope_assignment(source.runtime_scope)
+                .await
+                .map_err(debug)?,
+            Some(source_assignment),
+            "return, retirement, terminal release and replay leave Instance assigned to its ended holder"
+        );
+        assert!(
+            h.root
+                .require_current_node_registration(&h.node)
+                .await
+                .is_err()
+        );
+        h.root
+            .require_current_node_registration(&node)
+            .await
+            .map_err(debug)?;
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>("SELECT quantity FROM game_item_instances WHERE item_instance_id=encode($1,'hex')::uuid")
+                .bind(id(71).as_slice()).fetch_one(&h.pool).await?,
+            0
+        );
+        assert_eq!(
+            sqlx::query_scalar::<_, i64>(
+                "SELECT count(*) FROM game_item_decay_retire_receipts r \
+                 JOIN game_item_audit_outbox a USING(event_id) \
+                 WHERE r.item_instance_id=encode($1,'hex')::uuid \
+                   AND r.cause_kind='ACTIVITY_RETIREMENT' \
+                   AND r.activity_handoff_id=encode($2,'hex')::uuid"
+            )
+            .bind(id(71).as_slice())
+            .bind(entered.request.handoff_id.as_slice())
+            .fetch_one(&h.pool)
+            .await?,
+            1,
+            "exactly one retained one-item retirement and matching audit"
+        );
+    }
+    eprintln!(
+        "ACTIVITY_DEPARTED POSTGRES_CASE_COMPLETED cancel_commit={cancel_commit} registration_ended={registration_ended}"
+    );
     Ok(())
 }
 
@@ -373,6 +471,14 @@ pub(super) async fn fresh_after_release(
                 assert!(holder.is_none());
                 source.current.character_lease_generation = *lease_generation;
             }
+            AdmissionAuthorityGuardStateV1::Runtime {
+                ownership_generation,
+                ready,
+                ..
+            } => {
+                assert!(*ready);
+                source.current.scope_ownership_generation = *ownership_generation;
+            }
             _ => {}
         }
     }
@@ -404,6 +510,197 @@ pub(super) async fn fresh_after_release(
         character
     );
     Ok(current)
+}
+
+fn bind_origin_capabilities(
+    owner: &mut crate::gameplay_transport::ComposedFreshAdmission<'_, '_, '_>,
+    origin: RuntimeScopeRefV1,
+    generation: ScopeOwnershipGeneration,
+) -> TestResult {
+    use crate::gameplay_transport::world_required_capabilities::{
+        BoundRequiredCapabilities, offered_for_scope,
+    };
+    owner.required_capabilities = BoundRequiredCapabilities::for_channel_boot(
+        &[],
+        origin,
+        generation.get(),
+        "policy-1",
+        offered_for_scope(false, None),
+    )
+    .map_err(debug)?;
+    Ok(())
+}
+
+async fn restart_origin(
+    h: &Harness,
+    deps: &Dependencies,
+    origin: RuntimeScopeRefV1,
+) -> TestResult<(NodeIncarnationProof, ScopeOwnershipGeneration)> {
+    use crate::durability::admission_authority_guards::GuardPublicationDisposition;
+    use crate::foundation::admission_authority_publication::{
+        AdmissionAuthorityGuardKeyV1, AdmissionAuthorityPublicationV1,
+        AdmissionPublicationPreconditionV1,
+    };
+    let RuntimeScopeRefV1::Channel {
+        world_id,
+        channel_id,
+    } = origin
+    else {
+        return Err("Channel origin required".into());
+    };
+    // Real registration ending and bootstrap issuance. The existing control
+    // writer owns assignment generation, its receipt and the readiness fence.
+    h.root
+        .revoke_node_registration(h.node.fact())
+        .await
+        .map_err(debug)?;
+    assert!(
+        h.root
+            .require_current_node_registration(&h.node)
+            .await
+            .is_err()
+    );
+    let node = super::fixture::registered_node(&h.root, 198).await?;
+    // The normal replacement process claims the existing S2 custody only
+    // after its exact prior registration ended; source observations persist.
+    h.root
+        .claim_native_admission_source_custody(&node)
+        .await
+        .map_err(debug)?;
+    h.root
+        .require_current_node_registration(&node)
+        .await
+        .map_err(debug)?;
+    assert_ne!(node.fact().node_id(), h.node.fact().node_id());
+
+    // Only the explicit fixture control principal receives Replace on origin.
+    sqlx::query("INSERT INTO game_control_scope_grants VALUES(session_user,encode($1,'hex')::uuid,encode($2,'hex')::uuid,2)")
+        .bind(world_id.as_bytes().as_slice()).bind(channel_id.as_bytes().as_slice())
+        .execute(&h.pool).await?;
+    let predecessor = h
+        .root
+        .read_runtime_scope_predecessor(origin)
+        .await
+        .map_err(debug)?
+        .ok_or("origin control predecessor")?;
+    let writer = RuntimeScopeAssignmentWriter::open(h.root.clone(), "sequencer-writer")
+        .await
+        .map_err(debug)?;
+    let outcome = writer
+        .submit(&AssignmentRequest {
+            operation_key: OperationKey::from_bytes([198; 32]),
+            actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+            command: AssignmentCommand::Replace {
+                scope: origin,
+                predecessor,
+                target: node.fact(),
+            },
+        })
+        .await
+        .map_err(debug)?;
+    let AssignmentOutcome::Committed(receipt) = outcome else {
+        return Err(format!("replacement origin: {outcome:?}").into());
+    };
+    assert_eq!(receipt.assignment.scope, origin);
+    assert_eq!(receipt.assignment.state, AssignmentState::Assigned);
+    assert_eq!(receipt.assignment.holder, Some(node.fact()));
+    assert_eq!(
+        receipt.assignment.ownership_generation,
+        predecessor.ownership_generation + 1
+    );
+    let generation =
+        ScopeOwnershipGeneration::new(receipt.assignment.ownership_generation).map_err(debug)?;
+
+    // Republish from the actual post-Replace guard. Keep its exact authority
+    // chain, source revision and CAS; Replace itself deliberately fenced ready.
+    let key = AdmissionAuthorityGuardKeyV1::Runtime(origin);
+    let mut next = AdmissionGuardStore::from_root(h.root.clone())
+        .load(&[key])
+        .await?
+        .into_iter()
+        .next()
+        .flatten()
+        .ok_or("replacement runtime guard")?;
+    assert_eq!(
+        Some(next.publication_revision),
+        receipt.fenced_publication_revision
+    );
+    let AdmissionAuthorityGuardStateV1::Runtime {
+        ownership_generation,
+        ready,
+        ..
+    } = &mut next.state
+    else {
+        return Err("runtime guard required".into());
+    };
+    assert_eq!(*ownership_generation, generation.get());
+    assert!(!*ready);
+    *ready = true;
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&h.pool)
+            .await?;
+    next.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+        expected_publication_revision: next.publication_revision,
+    };
+    next.publication_revision = next
+        .publication_revision
+        .checked_add(1)
+        .ok_or("guard revision")?;
+    next.source.source_revision = next
+        .source
+        .source_revision
+        .checked_add(1)
+        .ok_or("source revision")?;
+    next.source.decision_identity = "departed-origin-restarted-ready".into();
+    next.source.source_observed_at = now.max(next.source.source_observed_at);
+    next.source.clock_uncertainty_seconds = 0;
+    let mut publisher = super::fresh_fixture::fresh::Source::new(now)?;
+    publisher.rows = vec![next];
+    let publication = AdmissionAuthorityPublicationV1::prepare(&publisher, now).map_err(debug)?;
+    assert_eq!(
+        h.root
+            .publish_runtime_readiness(&node, &publication)
+            .await
+            .map_err(debug)?,
+        GuardPublicationDisposition::Applied
+    );
+
+    // Recreate the empty native Channel from the real committed assignment.
+    // Bind its door to the same generation; no old actor is retained.
+    let mut runtime = deps.runtime.lock().await;
+    assert!(
+        runtime
+            .activity_participant_sessions()
+            .map_err(debug)?
+            .is_empty()
+    );
+    let pin = runtime.content_pin().clone();
+    *runtime = crate::foundation::ChannelRuntimeV1::from_committed_assignment(
+        world_id,
+        channel_id,
+        node.fact().node_id(),
+        node.fact().registration_revision(),
+        receipt.assignment.ownership_generation,
+        receipt.assignment.source_revision,
+        &receipt.assignment.decision_identity,
+        2,
+        pin,
+    )
+    .map_err(debug)?;
+    assert_eq!(runtime.binding().scope_generation(), generation);
+    let content = crate::world_runtime::ReferenceContentGeneration::from_content(deps.room.door())
+        .map_err(debug)?;
+    let door_fence =
+        crate::world_runtime::ScopeContentGenerationFence::for_test(origin, generation, content);
+    *deps.door.lock().await = crate::world_runtime::bind_native_entry_door(
+        deps.room.door(),
+        &door_fence,
+        origin,
+        generation,
+    )
+    .map_err(debug)?;
+    Ok((node, generation))
 }
 
 async fn revoke(h: &Harness, scope: RuntimeScopeRefV1) -> TestResult {
