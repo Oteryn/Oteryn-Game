@@ -369,6 +369,10 @@ pub struct OneItemMintV1 {
 /// `map_item_mint` (tag 8, [`super::map_item_mint_audit`]), `npc_trade` (tag 9,
 /// [`super::npc_trade_audit`]) and `item_use` (tag 10, [`super::item_use_audit`]).
 #[derive(Clone, PartialEq, Eq, prost::Oneof)]
+#[allow(
+    clippy::large_enum_variant,
+    reason = "Keep the audit oneof inline for retained-capacity qualification and existing value constructors"
+)]
 pub enum OneItemOperationV1 {
     // Keep sorted by tag; insert in order, never append.
     #[prost(message, tag = "2")]

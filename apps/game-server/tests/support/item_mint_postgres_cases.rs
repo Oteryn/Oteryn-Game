@@ -637,7 +637,8 @@ fn mint_commits_once_and_duplicate_cause_returns_identical_result() -> TestResul
             .map_err(debug)?
             .ok_or("missing item")?;
         assert_eq!(item.world_id.as_bytes(), &id(WORLD));
-        assert_eq!(item.channel_id.as_bytes(), &id(CHANNEL));
+        // Ground now stores a tagged scope; retain the exact Channel fixture assertion.
+        assert_eq!(item.runtime_scope, scope()?);
         assert_eq!(item.runtime_scope_ownership_generation, 1);
         assert_eq!(
             item.definition,
@@ -2044,9 +2045,13 @@ async fn d1_assert_ground_item(
         .map_err(debug)?
         .ok_or("minted item must be readable")?;
     assert_eq!(item.world_id, WorldId::decode(&id(WORLD)).map_err(debug)?);
+    // The tagged scope must still identify this fixture's original World and Channel.
     assert_eq!(
-        item.channel_id,
-        ChannelId::decode(&id(channel)).map_err(debug)?
+        item.runtime_scope,
+        RuntimeScopeRefV1::channel(
+            WorldId::decode(&id(WORLD)).map_err(debug)?,
+            ChannelId::decode(&id(channel)).map_err(debug)?,
+        )
     );
     assert_eq!(item.runtime_scope_ownership_generation, 1);
     assert_eq!(

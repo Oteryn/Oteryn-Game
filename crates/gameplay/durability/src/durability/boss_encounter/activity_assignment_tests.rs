@@ -941,9 +941,12 @@ async fn qualify_live_respawn_retention(
         held_blessings: vec![],
         pvp_contributors: vec![],
         death_cell: DeathCell {
-            world_id: before.runtime_scope.world_id(),
-            channel_id: crate::foundation::ChannelId::decode(&id(fixture::CHANNEL))
-                .map_err(fixture::debug)?,
+            // W02's tagged death cell retains this existing Channel-death fixture.
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::channel(
+                before.runtime_scope.world_id(),
+                crate::foundation::ChannelId::decode(&id(fixture::CHANNEL))
+                    .map_err(fixture::debug)?,
+            ),
             spatial_position: vec![100, 200, 7],
             map_revision: "map-1".into(),
         },

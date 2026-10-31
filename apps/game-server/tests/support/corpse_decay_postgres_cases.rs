@@ -24,7 +24,7 @@ use crate::durability::runtime_scope_assignment::{
     OperationKey, RuntimeScopeAssignmentWriter,
 };
 use crate::durability::spell_owner_commit::SpellLanePermit;
-use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
+use crate::foundation::{ChannelId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId};
 use crate::item_transfer_postgres_cases::{
     CHANNEL, CHARACTER, Harness, SESSION, TestResult, WORLD, configured_admin, debug, fence, id,
     register, runtime, scope, uuid_text,
@@ -33,7 +33,7 @@ use crate::item_transfer_postgres_cases::{
 fn decay_fence(generation: u64) -> TestResult<CorpseDecayFence> {
     Ok(CorpseDecayFence {
         // W02 keeps the existing Channel fixture exact; loss/decay expectations are unchanged.
-        runtime_scope: oteryn_gameplay_durability::foundation::RuntimeScopeRefV1::channel(
+        runtime_scope: RuntimeScopeRefV1::channel(
             WorldId::decode(&id(WORLD)).map_err(debug)?,
             ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
         ),
@@ -132,7 +132,7 @@ async fn retire_step(
     harness
         .root
         .commit_decay_retire(
-            &SpellLanePermit::of_fresh_lane((fence).world_id, (fence).channel_id).await,
+            &SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?,
             authority,
             node,
             fence,
@@ -200,11 +200,8 @@ fn decay_retires_each_entry_then_the_corpse_at_sixty_seconds() -> TestResult {
             harness
                 .root
                 .retire_decayed_corpse(
-                    &SpellLanePermit::of_fresh_lane(
-                        (decay_fence(GENERATION)?).world_id,
-                        (decay_fence(GENERATION)?).channel_id,
-                    )
-                    .await,
+                    &SpellLanePermit::of_fresh_scope(decay_fence(GENERATION)?.runtime_scope)
+                        .await?,
                     &authority,
                     node,
                     decay_fence(GENERATION)?,
@@ -242,11 +239,7 @@ fn decay_retires_each_entry_then_the_corpse_at_sixty_seconds() -> TestResult {
         let report = harness
             .root
             .retire_decayed_corpse(
-                &SpellLanePermit::of_fresh_lane(
-                    (decay_fence(GENERATION)?).world_id,
-                    (decay_fence(GENERATION)?).channel_id,
-                )
-                .await,
+                &SpellLanePermit::of_fresh_scope(decay_fence(GENERATION)?.runtime_scope).await?,
                 &authority,
                 node,
                 decay_fence(GENERATION)?,
@@ -317,11 +310,7 @@ fn decay_retires_each_entry_then_the_corpse_at_sixty_seconds() -> TestResult {
         let again = harness
             .root
             .retire_decayed_corpse(
-                &SpellLanePermit::of_fresh_lane(
-                    (decay_fence(GENERATION)?).world_id,
-                    (decay_fence(GENERATION)?).channel_id,
-                )
-                .await,
+                &SpellLanePermit::of_fresh_scope(decay_fence(GENERATION)?.runtime_scope).await?,
                 &authority,
                 node,
                 decay_fence(GENERATION)?,
@@ -451,7 +440,7 @@ fn the_corpse_step_waits_for_every_live_entry() -> TestResult {
             harness
                 .root
                 .commit_decay_retire(
-                    &SpellLanePermit::of_fresh_lane((fence).world_id, (fence).channel_id).await,
+                    &SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?,
                     &authority,
                     node,
                     fence,
@@ -466,7 +455,7 @@ fn the_corpse_step_waits_for_every_live_entry() -> TestResult {
             harness
                 .root
                 .commit_decay_retire(
-                    &SpellLanePermit::of_fresh_lane((fence).world_id, (fence).channel_id).await,
+                    &SpellLanePermit::of_fresh_scope(fence.runtime_scope).await?,
                     &authority,
                     node,
                     fence,
@@ -606,8 +595,7 @@ fn a_partial_decay_resumes_from_durable_state_after_a_handoff() -> TestResult {
             harness
                 .root
                 .commit_decay_retire(
-                    &SpellLanePermit::of_fresh_lane((old_fence).world_id, (old_fence).channel_id)
-                        .await,
+                    &SpellLanePermit::of_fresh_scope(old_fence.runtime_scope).await?,
                     &authority,
                     &harness.node,
                     old_fence,
@@ -638,11 +626,7 @@ fn a_partial_decay_resumes_from_durable_state_after_a_handoff() -> TestResult {
         let report = harness
             .root
             .retire_decayed_corpse(
-                &SpellLanePermit::of_fresh_lane(
-                    (decay_fence(2)?).world_id,
-                    (decay_fence(2)?).channel_id,
-                )
-                .await,
+                &SpellLanePermit::of_fresh_scope(decay_fence(2)?.runtime_scope).await?,
                 &authority,
                 &node2,
                 decay_fence(2)?,
@@ -675,7 +659,7 @@ fn a_partial_decay_resumes_from_durable_state_after_a_handoff() -> TestResult {
         match harness
             .root
             .commit_decay_retire(
-                &SpellLanePermit::of_fresh_lane((old_fence).world_id, (old_fence).channel_id).await,
+                &SpellLanePermit::of_fresh_scope(old_fence.runtime_scope).await?,
                 &authority,
                 &harness.node,
                 old_fence,
@@ -776,7 +760,7 @@ fn an_entry_picked_up_before_decay_is_never_retired() -> TestResult {
             harness
                 .root
                 .commit_decay_retire(
-                    &SpellLanePermit::of_fresh_lane((fence_1).world_id, (fence_1).channel_id).await,
+                    &SpellLanePermit::of_fresh_scope(fence_1.runtime_scope).await?,
                     &authority,
                     node,
                     fence_1,
@@ -789,7 +773,7 @@ fn an_entry_picked_up_before_decay_is_never_retired() -> TestResult {
         let report = harness
             .root
             .retire_decayed_corpse(
-                &SpellLanePermit::of_fresh_lane((fence_1).world_id, (fence_1).channel_id).await,
+                &SpellLanePermit::of_fresh_scope(fence_1.runtime_scope).await?,
                 &authority,
                 node,
                 fence_1,

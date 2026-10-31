@@ -44,7 +44,7 @@ enum Case {
 }
 
 #[test]
-fn activity_player_death_postgres_exact_ground_channel_isolation_return_and_retirement()
+fn activity_player_death_postgres_death_receipt_loss_private_ground_isolation_return_and_retirement()
 -> TestResult {
     run_case(Case::RedSkullDrop)
 }
@@ -473,7 +473,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
             .read_item_loop_ground_for_scope(enter.participants[0].source.runtime_scope)
             .await?
             .is_empty(),
-        "the origin Channel has no private corpse visibility"
+        "the origin Channel has no private death-drop visibility"
     );
     let child_parent: Vec<u8> = sqlx::query_scalar("SELECT uuid_send(parent_item_instance_id) FROM game_item_container_entries WHERE item_instance_id=encode($1,'hex')::uuid")
         .bind(id(71).as_slice()).fetch_one(&h.pool).await?;
@@ -733,19 +733,14 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     drop(channel_permit);
     let permit = lane.acquire().await.map_err(|_| "spell lane unavailable")?;
     let mut retired = 0;
-    loop {
-        match h
-            .root
-            .retire_activity_ground_step(&permit, &authority, &h.node, &proof)
-            .await
-            .map_err(debug)?
-        {
-            ActivityGroundRetirement::Progress(_) => {
-                retired += 1;
-                assert!(retired <= 4, "bounded fixture retirement must advance");
-            }
-            ActivityGroundRetirement::Complete => break,
-        }
+    while let ActivityGroundRetirement::Progress(_) = h
+        .root
+        .retire_activity_ground_step(&permit, &authority, &h.node, &proof)
+        .await
+        .map_err(debug)?
+    {
+        retired += 1;
+        assert!(retired <= 4, "bounded fixture retirement must advance");
     }
     assert!(
         h.root

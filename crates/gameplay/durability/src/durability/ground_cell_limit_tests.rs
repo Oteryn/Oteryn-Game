@@ -112,7 +112,13 @@ fn overfull_no_new_root_still_checks_identity_scope_and_placement() {
     for mutate in [
         |item: &mut GroundItemInstance| item.item_instance_id = uuid(0),
         |item: &mut GroundItemInstance| item.world_id = world(3),
-        |item: &mut GroundItemInstance| item.channel_id = channel(3),
+        // W02 keeps the existing foreign-Channel negative case under the tagged scope.
+        |item: &mut GroundItemInstance| {
+            item.runtime_scope = crate::foundation::RuntimeScopeRefV1::channel(
+                item.runtime_scope.world_id(),
+                channel(3),
+            );
+        },
         |item: &mut GroundItemInstance| item.runtime_scope_ownership_generation += 1,
         |item: &mut GroundItemInstance| item.ground.spatial_position[0] ^= 1,
         |item: &mut GroundItemInstance| item.ground.map_revision.push('b'),
@@ -179,7 +185,11 @@ fn supplied_scope_and_generation_are_compared_independently() {
         );
     }
     let mut inserted = root(2);
-    inserted.channel_id = channel(3);
+    // W02 preserves the same Channel mismatch; no Instance or origin alias is substituted.
+    inserted.runtime_scope = crate::foundation::RuntimeScopeRefV1::channel(
+        inserted.runtime_scope.world_id(),
+        channel(3),
+    );
     assert_eq!(
         check(&existing, &[inserted]),
         Err(GroundCellLimitError::IncompatibleInput)

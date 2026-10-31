@@ -253,7 +253,8 @@ async fn scenario(h: &Harness) -> TestResult {
         .await?
         .map_err(debug)?;
     assert_eq!(redropped.operation, 4);
-    let receipts: Vec<(i16, Option<Vec<u8>>, Vec<u8>, i16, i16, i16)> = sqlx::query_as(
+    type GroundLoopReceiptRow = (i16, Option<Vec<u8>>, Vec<u8>, i16, i16, i16);
+    let receipts: Vec<GroundLoopReceiptRow> = sqlx::query_as(
         "SELECT r.scope_kind,uuid_send(r.channel_id),uuid_send(r.instance_id),r.operation,l.from_kind,l.to_kind FROM game_item_loop_move_receipts r JOIN game_item_loop_move_lines l USING(transaction_id) WHERE r.game_session_id=encode($1,'hex')::uuid ORDER BY r.command_id,l.line_ordinal")
         .bind(current.game_session_id.as_bytes().as_slice()).fetch_all(&h.pool).await?;
     assert_eq!(

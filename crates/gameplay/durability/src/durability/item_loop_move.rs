@@ -1500,7 +1500,7 @@ impl DurabilityRoot {
                                 source: SourceKind::Ground,
                                 height: 0,
                                 size: 1,
-                                destination: &destination,
+                                destination,
                             },
                         )
                         .await?;

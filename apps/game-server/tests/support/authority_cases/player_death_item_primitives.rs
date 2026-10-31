@@ -105,8 +105,11 @@ fn death() -> TestResult<CharacterDeathRequest<50>> {
         held_blessings: Vec::new(),
         pvp_contributors: Vec::new(),
         death_cell: DeathCell {
-            world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
-            channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            // W02 typed-scope extension preserves this pinned Channel fixture.
+            runtime_scope: crate::foundation::RuntimeScopeRefV1::Channel {
+                world_id: WorldId::decode(&id(WORLD)).map_err(debug)?,
+                channel_id: ChannelId::decode(&id(CHANNEL)).map_err(debug)?,
+            },
             spatial_position: vec![12, 13, 14, 7],
             map_revision: "death-map-1".into(),
         },

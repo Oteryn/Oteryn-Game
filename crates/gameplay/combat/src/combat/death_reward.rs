@@ -1235,10 +1235,15 @@ mod tests {
             sim_revision: "sim-1".into(),
             native_room_placement_context: b"room".to_vec(),
         };
-        let placement_a = ground_placement(death_a, corpse, &ground);
-        let placement_b = ground_placement(death_b, corpse, &ground);
+        // Ordinary creature corpse placement now explicitly refuses Instance deaths.
+        // This Channel fixture must still preserve its existing replay identity.
+        let placement_a =
+            ground_placement(death_a, corpse, &ground).expect("Channel ground placement");
+        let placement_b =
+            ground_placement(death_b, corpse, &ground).expect("Channel ground placement");
         assert_ne!(placement_a.corpse_ref, placement_b.corpse_ref);
-        let replayed = ground_placement(death_a, corpse, &ground);
+        let replayed =
+            ground_placement(death_a, corpse, &ground).expect("Channel ground placement replay");
         assert_eq!(placement_a, replayed);
     }
 }
