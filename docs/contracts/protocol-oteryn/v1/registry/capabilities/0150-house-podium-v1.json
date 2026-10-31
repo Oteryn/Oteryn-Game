@@ -13,5 +13,5 @@
   ],
   "state_domains": [],
   "offered": false,
-  "offer_gate": "W18: offered by the composed native authority (mechanic house_podium) and never by a fixture World, so this entry stays offered false. Every command additionally requires the current House session, node and house-scope generation fences; a set also requires House owner or subowner access and a display known to content and, for an outfit or mount, owned by the Character."
+  "offer_gate": "W18: offered only through BUNDLE_WORLD_OFFERED_CAPABILITIES by the composed native authority (mechanic house_podium) and never by a fixture World, so this entry stays offered false. Every command additionally requires the current House session, node and house-scope generation fences; a set also requires House owner or subowner access and a display known to content and, for an outfit or mount, owned by the Character."
 }
