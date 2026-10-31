@@ -148,6 +148,7 @@ pub mod spell_privacy;
 pub mod sqlstate_codes;
 pub mod starter_grant;
 pub mod store;
+pub mod team_finder;
 pub mod tutorial_corruptor;
 mod tutorial_death;
 pub mod tutorial_islet_placement;
