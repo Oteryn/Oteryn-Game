@@ -57,6 +57,8 @@ pub use oteryn_protocol_oteryn::item_view::{
 };
 use oteryn_protocol_oteryn::logout;
 mod tutorial_notices;
+/// Exiva permission-list wire contract.
+pub use oteryn_protocol_oteryn::exiva;
 /// The capability-21 logout result a client reads, re-exported so it needs no protocol import.
 pub use oteryn_protocol_oteryn::logout::LogoutResult;
 use oteryn_protocol_oteryn::world_interaction;
