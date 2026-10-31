@@ -119,6 +119,7 @@ fn scenario() -> TestResult {
         owner.admit_quest_session(&admitted).await;
         let npc=place_npc(&owner,deps.actor,admitted.game_session_id,"oteryn:npc.bloodshade_rotten").await?;
         for (number,text) in [(80,"hi"),(81,"quest"),(82,"quest")] {
+            advance_npc_turn(&mut owner)?;
             talk(&owner,deps.actor,admitted.game_session_id,npc,number,text).await?;
         }
         assert_eq!(read(&owner,&h,&authority,admitted.game_session_id).await?.access_stage(),5);
@@ -157,6 +158,7 @@ fn scenario() -> TestResult {
         // retained child flags/taints while preserving the final taint.
         let before = current(&owner, admitted.game_session_id).await?;
         for (number,text) in [(197,"hi"),(198,"taints"),(199,"regular"),(200,"yes")] {
+            advance_npc_turn(&mut owner)?;
             talk(&owner,deps.actor,admitted.game_session_id,npc,number,text).await?;
         }
         let cleaned=h.root.reconcile_rotten_blood_cleanse(&authority,before,200,CleanseMode::Regular).await.map_err(debug)?
@@ -173,6 +175,7 @@ fn scenario() -> TestResult {
             Err(CharacterProgressionError::ConflictingOccurrence)));
         let after = current(&owner, admitted.game_session_id).await?;
         for (number,text) in [(201,"taints"),(202,"all"),(203,"yes")] {
+            advance_npc_turn(&mut owner)?;
             talk(&owner,deps.actor,admitted.game_session_id,npc,number,text).await?;
         }
         assert_eq!(h.root.reconcile_rotten_blood_cleanse(&authority,after,203,CleanseMode::All).await.map_err(debug)?,
@@ -203,6 +206,7 @@ fn scenario() -> TestResult {
         assert!(matches!(h.root.commit_rotten_blood_cleanse(&authority, &h.node, after, 203, CleanseMode::All).await.map_err(debug)?,
             RottenBloodOutcome::Refused(RottenBloodRefusal::CleanseCooldown { .. })));
         for (number,text) in [(210,"taints"),(211,"all"),(212,"yes")] {
+            advance_npc_turn(&mut owner)?;
             talk(&owner,deps.actor,admitted.game_session_id,npc,number,text).await?;
         }
         let full = h.root.reconcile_rotten_blood_cleanse(&authority,after,212,CleanseMode::All).await.map_err(debug)?
@@ -448,6 +452,15 @@ pub(super) async fn place_npc(
     Ok(oteryn_protocol_oteryn::world_spatial_entities::EntityRef {
         identity: placed.actor.placement_identity(), generation: placed.generation,
     })
+}
+
+fn advance_npc_turn(owner: &mut ComposedFreshAdmission<'_, '_, '_>) -> TestResult {
+    // Separate source dialogue turns by the existing NPC ingress window.
+    // The production limiter and database cleanse clock remain unchanged.
+    owner.clock_origin=owner.clock_origin.checked_sub(Duration::from_micros(
+        oteryn_gameplay_npc::npc_command::RATE_WINDOW_MICROS,
+    )).ok_or("Rotten NPC rate-window clock")?;
+    Ok(())
 }
 
 pub(super) async fn talk(
