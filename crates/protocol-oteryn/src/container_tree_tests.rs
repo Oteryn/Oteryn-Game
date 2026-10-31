@@ -47,6 +47,7 @@ fn worst_view(id: u8) -> ContainerView {
         entries: (0..MAX_CONTAINER_VIEW_ENTRIES as u64)
             .map(|n| worst_entry(base + n))
             .collect(),
+        browse: None,
     }
 }
 
@@ -58,6 +59,7 @@ fn small_view(id: u8, entries: u64) -> ContainerView {
         parent_handle: None,
         capacity: MAX_CONTAINER_VIEW_ENTRIES as u8,
         entries: (1..=entries).map(|n| small_entry(base + n)).collect(),
+        browse: None,
     }
 }
 
@@ -551,7 +553,9 @@ fn registries_bind_capability_14_and_its_limits() {
         assert_eq!(types[0]["id"], type_id);
         assert_eq!(
             types[0]["max_payload_bytes"].as_u64(),
-            Some(MAX_CONTAINER_VIEWS_BYTES as u64)
+            // Capability 230 adds thirty-entry browse pages to this domain; legacy codecs
+            // and the original BAGS0 resource limit above remain bounded by 10,384 bytes.
+            Some(crate::browse_field::MAX_BROWSE_FIELD_VIEWS_BYTES as u64)
         );
         assert_eq!(
             types[0]["payload_schema"],

@@ -45,9 +45,11 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // M06: the five door profiles 1628, 1646, 1647, 2967 and 2968
     // (tools/content-schema/native-gameplay/build_key_door_profiles.py). All have speed_bonus=0.
     ("M06-KEYS", 5),
-    // M09: 28 gathering profiles from Crystal 201189f
+    // M09: 31 gathering profiles from Crystal 201189f
     // (tools/content-schema/native-gameplay/build_gathering_item_profiles.py). All have speed_bonus=0.
-    ("M09-GATHER", 28),
+    // CLOSE-2 M09 added the nail 953, mechanical rod 9306 and mechanical fish 9307
+    // (mechanical_fishing.lua:203-248) to the original 28.
+    ("M09-GATHER", 31),
     // E09 mail (tools/content-migration/mail_item_profiles.py): the parcel 3503, stamped
     // parcel 3504 and stamped letter 3506 are new; the letter 3505 and label 3507 replace
     // their content-only profiles. None of them is equipment.
@@ -105,6 +107,12 @@ const PROFILE_ADDITIONS: &[(&str, usize)] = &[
     // PKG1 Amber: the amber kusarigama 50239 (tools/content-migration/monk_reward_profiles.py,
     // Crystal ff7ede59 items.xml), a monk weapon with speed_bonus=0.
     ("PKG1-AMBER", 1),
+    // GEMX I19 enchanting (tools/content-migration/enchanting_item_profiles.py): 108 shrine,
+    // gem and enchantable/enchanted item profiles 146..=161, 660..=693, 761..=763, 774,
+    // 779..=798, 801..=810, 3029, 3030, 3032, 3033, 3271, 3279, 3311, 3317, 3318, 3333,
+    // 3342, 7380, 7383, 7384, 7389, 7392, 7402, 7406, 7415 and 8077..=8081.
+    // 8080 (sparking rainbow shield) has speed_bonus=10; the other 107 have speed_bonus=0.
+    ("GEMX-I19", 108),
     // I03: the Crystal spellbooks 3059 and 8073 (Crystal 201189f8 spellbook.lua:52,
     // tools/content-migration/spellbook_item_profiles.py). Neither has a speed attribute.
     ("I03-SPELLBOOKS", 2),

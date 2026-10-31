@@ -3,6 +3,9 @@
 pub const FISHING_ROD: &str = "oteryn:item.tibia.i3483";
 pub const WORM: &str = "oteryn:item.tibia.i3492";
 pub const FISH: &str = "oteryn:item.tibia.i3578";
+pub const MECHANICAL_ROD: &str = "oteryn:item.tibia.i9306";
+pub const NAIL: &str = "oteryn:item.tibia.i953";
+pub const MECHANICAL_FISH: u16 = 9307;
 
 /// The donor target kind determines when a target is spent and where its yield belongs.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -166,6 +169,58 @@ pub fn gathering_attempt(
     })
 }
 
+/// Crystal mechanical_fishing.lua:90-97,203: the Yalahar sewers box, native floor `-z` (z 8).
+pub fn in_yalahar_sewers(x: u16, y: u16, floor: i8) -> bool {
+    (32_736..=32_854).contains(&x) && (31_142..=31_260).contains(&y) && floor == -8
+}
+
+/// Crystal mechanical_fishing.lua:53-67,236-243: a fishable water the nail catch turns into its
+/// non-fishable twin, which decays back to the fishable id after `duration` 1200 s
+/// (items.xml:13998-14004, 14079-14085). `21312/21314` is outside the admitted `WATER` set.
+pub fn nail_spent_water(target: u16) -> Option<u16> {
+    match target {
+        4597..=4602 => Some(target + 12),
+        629..=634 => Some(target + 4_180),
+        _ => None,
+    }
+}
+
+pub const NAIL_WATER_DECAY_MS: i64 = 1_200_000;
+
+/// The fishable id a spent nail-water decays back to (inverse of `nail_spent_water`).
+pub fn nail_spent_water_decays_to(spent: u16) -> Option<u16> {
+    match spent {
+        4609..=4614 => Some(spent - 12),
+        4809..=4814 => Some(spent - 4_180),
+        _ => None,
+    }
+}
+
+/// Rod admission for the Yalahar nail catch; the caller proves sewers position and a held nail.
+pub fn accepts_nail_rod(tool_key: &str, water_key: &str) -> bool {
+    tool_key == MECHANICAL_ROD
+        && water_key
+            .strip_prefix("oteryn:item.tibia.i")
+            .and_then(|id| id.parse::<u16>().ok())
+            .is_some_and(|id| nail_spent_water(id).is_some())
+}
+
+/// Crystal mechanical_fishing.lua:218-248: a skill-scaled catch spends one nail, turns the water
+/// non-fishable and yields mechanical fish 9307. A miss changes nothing here.
+pub fn nail_attempt(target: u16, skill: u16, catch_roll: u32) -> Option<GatheringAttempt> {
+    let after = nail_spent_water(target)?;
+    catches(skill, catch_roll).then_some(GatheringAttempt {
+        after: Some(after),
+        yield_item: Some(MECHANICAL_FISH),
+        consumes_bait: true,
+    })
+}
+
+/// The bait a gathering attempt may consume: a worm, or the nail for the mechanical fish.
+pub fn is_gathering_bait(bait_key: &str, attempt: &GatheringAttempt) -> bool {
+    bait_key == WORM || (bait_key == NAIL && attempt.yield_item == Some(MECHANICAL_FISH))
+}
+
 pub const WATER: [u16; 26] = [
     629, 630, 631, 632, 633, 634, 4597, 4598, 4599, 4600, 4601, 4602, 4609, 4610, 4611, 4612, 4613,
     4614, 7236, 9582, 12560, 12562, 12561, 12563, 13988, 13989,
@@ -199,6 +254,37 @@ pub fn is_water(production_key: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn m09_yalahar_nail_catch_yields_mechanical_fish_and_spends_water() {
+        // Crystal mechanical_fishing.lua:90-97,203-248; items.xml:13998-14004.
+        assert!(in_yalahar_sewers(32_736, 31_142, -8));
+        assert!(in_yalahar_sewers(32_854, 31_260, -8));
+        assert!(!in_yalahar_sewers(32_735, 31_142, -8));
+        assert!(!in_yalahar_sewers(32_800, 31_261, -8));
+        assert!(!in_yalahar_sewers(32_800, 31_200, -7));
+        assert!(accepts_nail_rod(MECHANICAL_ROD, "oteryn:item.tibia.i4597"));
+        assert!(!accepts_nail_rod(FISHING_ROD, "oteryn:item.tibia.i4597"));
+        assert!(!accepts_nail_rod(MECHANICAL_ROD, "oteryn:item.tibia.i4609"));
+        assert!(!accepts_nail_rod(MECHANICAL_ROD, "oteryn:item.tibia.i7236"));
+        for (water, spent) in [(4597, 4609), (4602, 4614), (629, 4809), (634, 4814)] {
+            assert_eq!(nail_spent_water_decays_to(spent), Some(water));
+            assert_eq!(
+                nail_attempt(water, 10, 10_000),
+                Some(GatheringAttempt {
+                    after: Some(spent),
+                    yield_item: Some(9307),
+                    consumes_bait: true,
+                })
+            );
+        }
+        assert_eq!(nail_attempt(4597, 10, 10_001), None);
+        assert_eq!(nail_attempt(4609, 10, 1), None);
+        let nail = nail_attempt(4597, 10, 1);
+        assert!(nail.is_some_and(|a| is_gathering_bait(NAIL, &a) && is_gathering_bait(WORM, &a)));
+        let ice = gathering_attempt(9306, 7236, 10, 1, 1);
+        assert!(ice.is_some_and(|a| is_gathering_bait(WORM, &a) && !is_gathering_bait(NAIL, &a)));
+    }
 
     #[test]
     fn m09_mechanical_rod_is_admitted_on_ice_holes() {

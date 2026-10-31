@@ -2,6 +2,7 @@
 """FIXM09: normalize the bounded Crystal gathering operands through the native importer.
 
 Donor 201189f: skinning.lua:1,4,29,51,71,75,109,113,158-172,333-339,356;
+data-global/scripts/actions/other/mechanical_fishing.lua:203-248 (nail 953, rod 9306, fish 9307);
 data-crystal/scripts/actions/tools/fishing.lua:65-81; items.xml:18878-18881.
 """
 import argparse
@@ -16,9 +17,9 @@ import build_source_item_profiles as native
 ROOT = Path(__file__).resolve().parents[3]
 OUTPUT = 'tools/content-schema/native-gameplay/gathering-item-profiles.json'
 REVISION = '201189f871d23597b82caf88fd611454a2ddefb8'
-IDS = {3580, 4012, 4026, 4063, 4098, 4138, 4325, 5876, 5877, 5878, 5905, 5906,
-       5908, 5942, 5948, 5969, 5973, 5984, 5995, 6006, 6040, 7158, 7159, 7200,
-       7236, 7237, 7441, 7442}
+IDS = {953, 3580, 4012, 4026, 4063, 4098, 4138, 4325, 5876, 5877, 5878, 5905,
+       5906, 5908, 5942, 5948, 5969, 5973, 5984, 5995, 6006, 6040, 7158, 7159,
+       7200, 7236, 7237, 7441, 7442, 9306, 9307}
 
 
 def build(checkout):

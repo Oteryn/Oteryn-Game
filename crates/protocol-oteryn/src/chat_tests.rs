@@ -433,6 +433,13 @@ fn registries_bind_the_chat_wire_ids_and_limits() {
                 schema("ChatChannelListV1"),
                 private_channel::MAX_CHAT_CHANNEL_LIST_BYTES as u64
             ),
+            // S19 adds negotiated typing updates to the existing CHAT revision stream.
+            (
+                u64::from(crate::player_typing::DELTA_TYPE_PLAYER_TYPING_V1),
+                "PLAYER_TYPING_DELTA_V1".to_owned(),
+                "docs/contracts/protocol-oteryn/v1/player-typing-v1.md#update".to_owned(),
+                crate::player_typing::MAX_UPDATE_BYTES as u64
+            ),
         ]
     );
     assert_eq!(

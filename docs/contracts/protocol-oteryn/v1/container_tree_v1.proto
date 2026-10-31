@@ -22,8 +22,9 @@ package oteryn.protocol.v1.container_tree;
 
 import "item_view_v1.proto";
 
-// One open container view. At most 646 encoded bytes (view id 2, container 11, parent 11,
-// capacity 2, 20 entry elements of 31).
+// One open container view. Ordinary views remain at most 646 encoded bytes (view id 2,
+// container 11, parent 11, capacity 2, 20 entry elements of 31). With capability 230 selected,
+// a browse view is at most 965 bytes (30 entries, no parent and up to 20 bytes of metadata).
 message ContainerViewV1 {
   // 0 to 15 (BAGS0-RL-03), unique within the domain.
   uint32 view_id = 1;
@@ -31,17 +32,36 @@ message ContainerViewV1 {
   uint64 container_handle = 2;
   // The container's parent, for UP; absent (0) when the parent is not visible.
   uint64 parent_handle = 3;
-  // The container's entry count, 1 to 20 (GAMEITEM01-CONTAINER-ENTRIES-MAX).
+  // The container's entry count, 1 to 20 (GAMEITEM01-CONTAINER-ENTRIES-MAX), or exactly 30
+  // for a browse field selected through capability 230.
   uint32 capacity = 4;
   // The direct entries in display order, at most `capacity`.
   repeated oteryn.protocol.v1.item_view.ItemEntryV1 entries = 5;
+  // Only with BROWSE_FIELD_V1 selected; absent for an ordinary durable container.
+  BrowseFieldPageV1 browse = 6;
+}
+
+message BrowseFieldPageV1 {
+  // x and y are in the bundle's uint16 coordinate range.
+  sint32 x = 1;
+  sint32 y = 2;
+  // Native floor -15 through 0, in the same frame as WorldTilePositionV1.
+  sint32 floor = 3;
+  // First item index, at most 65535, divisible by 30 and below total (or both zero).
+  uint32 index = 4;
+  // Total eligible tile items, at most 65535. Entries are min(30, total - index).
+  uint32 total = 5;
 }
 
 // StateDomainSnapshot.payload of domain 14, snapshot type 1, and StateDelta.payload of domain 14,
 // delta type 1. A delta carries every open view. Views in strictly ascending view id, at most 16
-// (BAGS0-RL-03), and at most 10,384 bytes. Within a view the container, the parent and the entries
-// hold distinct handles; across views no two views show the same container and no entry appears
-// twice. An empty payload means no view is open, as after every admission and reconnect.
+// (BAGS0-RL-03), and at most 10,384 bytes without capability 230, or 15,488 bytes with it.
+// Within a view the container, the parent and the entries hold distinct handles. Ordinary
+// containers appear in one view only. With capability 230, views may share a browse container
+// handle only when their position and total agree; their page indexes remain independent.
+// An entry may appear in multiple views only under that same browse container owner, never
+// across different browse containers or ordinary containers. An empty payload means no view
+// is open, as after every admission and reconnect.
 message ContainerViewsV1 {
   repeated ContainerViewV1 views = 1;
 }
