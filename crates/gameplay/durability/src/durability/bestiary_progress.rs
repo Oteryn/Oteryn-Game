@@ -903,7 +903,7 @@ mod tests {
         let mut outcomes = std::collections::BTreeSet::new();
         for value in 1..=255_u8 {
             let occurrence =
-                BestiaryKillOccurrence::from_bytes([value; 16]).expect("nonzero occurrence");
+                BestiaryKillOccurrence::from_bytes(id(value)).expect("UUIDv7 occurrence");
             outcomes.insert(talisman_bestiary_increment(occurrence, 5_000));
         }
         assert_eq!(outcomes, [1, 2].into());

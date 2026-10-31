@@ -287,7 +287,8 @@ mod tests {
             self,
             full::{BountyStatus, BountyTask, TaskBoardData},
         };
-        let (mut runtime, caster, session) = runtime_with_capacity(73, 4);
+        // Activation retains half the carrier as player headroom: three actors need six slots.
+        let (mut runtime, caster, session) = runtime_with_capacity(73, 6);
         let character =
             CharacterId::decode(&[1, 0x91, 0, 0, 0, 74, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 74])
                 .expect("character");
@@ -346,30 +347,26 @@ mod tests {
                 .expect("policy"),
             )
             .expect("installed policy");
-        let first = runtime
-            .realize_native_qualification_spawn(
-                pin.clone(),
-                "fixture:rat",
-                MovementLocalPosition {
-                    x: 11,
-                    y: 10,
-                    floor: 7,
-                },
+        runtime
+            .realize_activation_spawns(
+                [11, 12]
+                    .into_iter()
+                    .map(|x| {
+                        (
+                            vec![(x, 10, 7)],
+                            60_000,
+                            5_000,
+                            "fixture:rat".to_owned(),
+                            20,
+                        )
+                    })
+                    .collect(),
             )
-            .expect("first rat")
-            .actor;
-        let second = runtime
-            .realize_native_qualification_spawn(
-                pin.clone(),
-                "fixture:rat",
-                MovementLocalPosition {
-                    x: 12,
-                    y: 10,
-                    floor: 7,
-                },
-            )
-            .expect("second rat")
-            .actor;
+            .expect("distinct rat sources");
+        let rats = runtime.spawn_point_creatures();
+        assert_eq!(rats.len(), 2);
+        let first = rats[0].2.expect("first rat");
+        let second = rats[1].2.expect("second rat");
         runtime
             .set_test_creature_health(second, 10)
             .expect("wounded second rat");

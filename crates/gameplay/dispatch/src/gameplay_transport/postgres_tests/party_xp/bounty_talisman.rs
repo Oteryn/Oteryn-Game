@@ -129,7 +129,6 @@ pub(in super::super) async fn qualify_talisman(
             .clock_origin
             .checked_sub(Duration::from_secs(3))
             .ok_or("clock")?;
-        owner.refresh_attack_weapon(actor, session).await;
         let expected;
         {
             let mut runtime = owner.runtime.lock().await;
@@ -270,6 +269,8 @@ pub(in super::super) async fn qualify_talisman(
                 oteryn_protocol_oteryn::attack::AttackIntentDisposition::Ok
             );
         }
+        // A weapon read is due only after the target has been admitted.
+        owner.refresh_attack_weapon(actor, session).await;
         owner.drain_auto_attacks().await;
         let runtime = owner.runtime.lock().await;
         let real = TARGET_HEALTH.unsigned_abs()

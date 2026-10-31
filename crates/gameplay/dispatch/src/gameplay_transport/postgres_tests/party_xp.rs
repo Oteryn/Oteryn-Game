@@ -292,12 +292,13 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
     // Explicit qualification placement through the normal activation owner. Policies and
     // health come from the active artifact; distinct sources permit two pending deaths.
     let mut sources = Vec::new();
-    for (key, y) in [
-        ("oteryn:creature.rat", 11),
-        ("oteryn:creature.cave_rat", 12),
-        ("oteryn:creature.rat", 10),
+    // Thalom (1,10,-7) is a protection-zone stair; (2,12,-7) is an open combat cell.
+    for (key, x, y) in [
+        ("oteryn:creature.rat", 1, 11),
+        ("oteryn:creature.cave_rat", 1, 12),
+        ("oteryn:creature.rat", 2, 12),
     ] {
-        if y == 10 && !matches!(task_board_case, Case::TaskBoardOrdered) {
+        if x == 2 && !matches!(task_board_case, Case::TaskBoardOrdered) {
             continue;
         }
         let key = if matches!(task_board_case, Case::TaskBoardOrdered) {
@@ -313,7 +314,7 @@ async fn scenario(h: &Harness, case: Case) -> TestResult {
         }
         let policy = runtime.companion_policy(key).map_err(debug)?;
         sources.push((
-            vec![(1, y, -7)],
+            vec![(x, y, -7)],
             60_000,
             5_000,
             key.to_owned(),
