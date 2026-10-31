@@ -427,7 +427,7 @@ fn scenario_with_creature_charmed(
                 policy,
                 oteryn_gameplay_content::content::BossPolicy::AtReset { .. }
             ) {
-                sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),'2026-10')")
+                sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
                     .bind(id(42).as_slice()).bind([1u8;32].as_slice()).execute(&harness.pool).await?;
                 sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
                     .bind(id(42).as_slice())
@@ -645,7 +645,7 @@ fn scenario_with_creature_charmed(
             // Bootstrap the actual durable reset identity for this isolated source-world
             // reward scenario. Production's bundle boot already owns this row.
             let digest = room.map_revision_digest();
-            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'daily-boost-rewards',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),'2026-10')")
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'daily-boost-rewards',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
                 .bind(world.as_bytes().as_slice()).bind(digest.as_slice()).execute(&harness.pool).await?;
             sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)")
                 .bind(world.as_bytes().as_slice())

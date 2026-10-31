@@ -255,6 +255,13 @@ const KEY_DOORS: &[(u32, u32, u32)] = &[
     (44916, 44915, 44918),
 ];
 
+/// Locked and unlocked closed appearances for a key door's authored appearance.
+pub(super) fn key_closed_forms(appearance: u32) -> Option<(u32, u32)> {
+    KEY_DOORS.iter().find_map(|&(locked, closed, _)| {
+        (appearance == locked || appearance == closed).then_some((closed, locked))
+    })
+}
+
 /// The open appearance and initial lock predicate of a source locked/closed key door.
 pub(super) fn key_door_of(appearance: u32) -> Option<(u32, bool)> {
     KEY_DOORS.iter().find_map(|&(locked, closed, open)| {

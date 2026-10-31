@@ -106,8 +106,8 @@ fn daily_reward_invalid_and_nonmonotonic_windows_refuse() {
 }
 
 #[test]
-fn daily_reward_reset_day_uses_local_ten_am_with_checked_arithmetic() {
-    for (second, expected) in [(0, 19999), (35999, 19999), (36000, 20000), (86399, 20000)] {
+fn daily_reward_reset_day_uses_local_six_am_with_checked_arithmetic() {
+    for (second, expected) in [(0, 19999), (21599, 19999), (21600, 20000), (86399, 20000)] {
         assert_eq!(daily_reward_reset_day(20000, second), Ok(expected));
     }
     assert_eq!(daily_reward_reset_day(0, 0), Ok(-1));
@@ -115,7 +115,7 @@ fn daily_reward_reset_day_uses_local_ten_am_with_checked_arithmetic() {
         daily_reward_reset_day(i64::MIN, 0),
         Err(DailyRewardRuleError::InvalidResetTime)
     );
-    assert_eq!(daily_reward_reset_day(i64::MAX, 36000), Ok(i64::MAX));
+    assert_eq!(daily_reward_reset_day(i64::MAX, 21600), Ok(i64::MAX));
     assert_eq!(
         daily_reward_reset_day(0, 86400),
         Err(DailyRewardRuleError::InvalidResetTime)

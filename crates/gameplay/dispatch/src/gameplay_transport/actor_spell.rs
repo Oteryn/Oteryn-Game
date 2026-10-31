@@ -1018,7 +1018,7 @@ pub(super) fn qualified_protection_zone(
 /// occurrence is minted and the death recorded with the cell in the same write, and a dead
 /// player is no target. A failed mint or position read refuses the hit with nothing written.
 impl ChannelSpellStates {
-    fn apply_creature_damage_native(
+    pub(in crate::gameplay_transport) fn apply_creature_damage_native(
         &mut self,
         runtime: &ChannelRuntimeV1,
         target: ExactActorRef,

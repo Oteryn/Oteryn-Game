@@ -145,7 +145,7 @@ fn scenario(crash: bool, full: bool, epoch: u64) -> TestResult {
         if epoch != 0 {
             // An already activated pointer models boot after step 4. This is
             // map-consumer qualification, not evidence for the activation writer.
-            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$7,$4,$5,$6,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),'2026-10')")
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,$2::text::numeric,$3,$7,$4,$5,$6,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
                 .bind(world_id.as_bytes().as_slice()).bind(epoch.to_string()).bind(world.base().digest().as_slice()).bind(generation.identity().server_artifact_digest().as_slice()).bind(generation.identity().client_artifact_digest().as_slice()).bind(activated_pin.frame_binding().digest().as_slice()).bind(crate::map::overlay::map_revision(world.base())).execute(&harness.pool).await?;
             sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,$2::text::numeric)")
                 .bind(world_id.as_bytes().as_slice()).bind(epoch.to_string()).execute(&harness.pool).await?;

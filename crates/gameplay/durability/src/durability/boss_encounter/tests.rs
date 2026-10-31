@@ -1157,7 +1157,7 @@ fn boss_spawn1_activation_reset_and_channel_independence_postgres() -> TestResul
             assert_eq!(restarted.companion_snapshot(recovered).map_err(|e|format!("{e:?}"))?.health,full,"ended owner loses fight state and recovers full health");
             assert!(restarted.realize_boss_spawn(&key.spawn,0).is_err(),"one actor in the recovered generation");
 
-            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_10',1,clock_timestamp(),'2026-10')")
+            sqlx::query("INSERT INTO game_world_reset_epochs(world_id,reset_epoch,target_digest,map_revision,server_digest,client_digest,frame_digest,calendar,calendar_revision,activated_at,reset_month) VALUES(encode($1,'hex')::uuid,0,$2,'map-1',$2,$2,$2,'TIBIA_SERVER_SAVE_BERLIN_06',1,clock_timestamp(),'2026-10')")
                 .bind(key.world.as_bytes().as_slice()).bind([1u8;32].as_slice()).execute(&h.pool).await?;
             sqlx::query("INSERT INTO game_world_reset_active VALUES(encode($1,'hex')::uuid,0)").bind(key.world.as_bytes().as_slice()).execute(&h.pool).await?;
             let yes=oteryn_gameplay_content::content::BossPolicy::AtReset { chance:oteryn_gameplay_content::content::BossChance { numerator:1,denominator:1 } };
