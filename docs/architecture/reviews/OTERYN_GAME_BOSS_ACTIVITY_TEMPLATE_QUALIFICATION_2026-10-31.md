@@ -7,10 +7,10 @@ change, and no source map or bespoke boss script is silently approximated.
 
 This is the explicitly accepted outcome in
 [ANSWER 6543189919](https://github.com/Oteryn/Oteryn-Game/pull/2769#issuecomment-6543189919)
-when no complete source configuration qualifies. The shared runtime and durable
-handoff implementation is independently exercised by the real activation fixture
-in the PostgreSQL transport test; that fixture is not a claim that the production
-Crystal room is loaded.
+when no complete source configuration qualifies. The PostgreSQL transport test
+contains a real activation fixture for the shared runtime and durable handoff.
+Its actual execution result belongs in the final-head test record; the fixture
+is not a claim that the production Crystal room is loaded.
 
 ## Source and selection evidence
 
@@ -109,8 +109,9 @@ The source capture tool is reproducible from the exact donor bytes and the
 compiled creature-profile document. The content tests assert the exact Faceless
 landing order and defaults, refusal of forged relocated source facts, the
 current map's refusal of every fully literal candidate, and isolation of a
-bounded map view. The shared PostgreSQL transport fixture separately exercises a
-real activated Instance and the domain-99 scope barrier.
+bounded map view. The shared PostgreSQL transport fixture contains separate
+assertions for a real activated Instance and the domain-99 scope barrier. This
+qualification document does not assign a PASS to an unreported final-head run.
 
 Left out of production activation: the exact Crystal room map import and
 qualification, the complete bespoke boss callback closure, and consequently an
@@ -119,9 +120,79 @@ world, select a substitute boss, or claim a playable production Faceless Bane
 encounter. The existing World, Channel and Instance ownership distinctions are
 preserved.
 
+## Player-death Ground scope and separate corpse Left out
+
+[ANSWER 6545069241](https://github.com/Oteryn/Oteryn-Game/pull/2769#issuecomment-6545069241)
+replaces the player-corpse part of ANSWER 6543264466. The implementation keeps the
+existing selected player-loss/AoL TRANSFER/BURN owner and extends its exact scope
+to private Instance Ground. Return, pending respawn and item retirement retain
+their existing owners and Channel behavior. A dropped backpack remains the same
+existing ItemInstance; it is not a separately materialized player corpse.
+
+**Left out:** separate player-corpse materialization, male 4240/female 4247 by sex,
+and the donor's special PvP-zone corpse suppression. Exact Crystal sources at the
+pin above are `src/creatures/players/player.cpp:1299-1304,4399-4405`,
+`src/utils/utils_definitions.hpp:655-656` and
+`src/creatures/creature.cpp:711-721,777-782`. No production bridge from player
+death to the existing item-mint owner or qualified player-corpse content exists;
+this is a separate follow-up mechanic. The existing creature corpse/loot
+materialization and decay paths are distinct and remain preserved.
+
+The corresponding PG case is named
+`activity_player_death_postgres_death_receipt_loss_private_ground_isolation_return_and_retirement`.
+It asserts the actual death receipt, selected existing items on private Ground,
+Channel visibility/take refusal, proven return and retirement. The companion AoL
+and partial-loss recovery cases retain their existing obligations. None claims
+to mint a separate player corpse, and no test-only mint cause supplies production
+authority. These fixture assertions do not qualify a production boss template.
+
+## Ordinary creature-corpse/loot Instance MINT Left out
+
+[ANSWER 6545304220](https://github.com/Oteryn/Oteryn-Game/pull/2769#issuecomment-6545304220)
+defers this separate DUR-03 extension of the existing `item_mint` owner. The
+missing production bridge comprises the tagged Instance death cause,
+reservation, audit and receipt; supporting an Instance Ground location alone
+does not authorize an ordinary creature MINT. No migration here implements that
+deferred bridge, and a Channel id must never stand in for the actual Instance.
+
+Current-branch evidence recorded in QUESTION 6545301650 is
+`crates/gameplay/durability/src/durability/item_mint.rs:72-98,105-149,1595-1687,1729-1740,1853-1867`
+and its sibling `item_mint_audit.rs:313-325,626-651,773-794`. The typed refusal in
+`crates/gameplay/combat/src/combat/death_reward.rs:420-439,455-473` remains.
+Crystal places the ordinary corpse and loot on the actual death tile in
+`src/creatures/creature.cpp:711-721,777-782` at the pinned donor revision.
+
+The required qualification rule is exact: if an encounter needs this unsupported
+descendant, its boss template returns `ContentUnavailable`. This is an additional
+qualification boundary, not permission to omit a required corpse or relocate
+loot into the origin Channel. It remains separate from the sex-dependent player
+corpse deferred in ANSWER 6545069241.
+
+The W02 committed-native-death to after-kill return hook remains required even
+without a personal reward group. W03 personal entitlements use their existing
+reward-claim mint. Their PG cases, ordinary Ground TRANSFER/BURN and retirement
+cannot be cited as proof of the deferred ordinary creature Instance MINT path.
+
 ## Personal reward and physical chest qualification
 
-The unchanged source inputs contain387 profiles with reward_boss=true, but none of their corpse Items is materializable in the pinned loot section. The existing CreatureRewardTable admission returns CorpseItemInadmissible; this task does not loosen that admission. Evidence: content/creatures/definitions/spell-native-profiles.json blob f23e6281c5a5418ca6b2186786834eb200c080d8 and tools/content-schema/native-gameplay/loot-tables.json blob aa55acfd71d1f85cfe02f06d4ccf3c5a65011ed8 at the task baseline.
+The unchanged source inputs contain 387 profiles with `reward_boss=true`.
+Exactly 52 have no `details.corpse_item`, so the existing `CreatureRewardTable`
+returns `CorpseItemMissing`. The remaining 335 name a corpse whose exact pinned
+loot Item facts have `materializable=false`, so they return
+`CorpseItemInadmissible`. No source reward-boss row is admitted; these are two
+specific qualification failures, not 387 instances of the latter error. This
+task does not loosen either admission guard.
+
+Evidence: `content/creatures/definitions/spell-native-profiles.json` blob
+`f23e6281c5a5418ca6b2186786834eb200c080d8` and
+`tools/content-schema/native-gameplay/loot-tables.json` blob
+`aa55acfd71d1f85cfe02f06d4ccf3c5a65011ed8`, unchanged from the task baseline.
+The existing guard order is in
+`crates/gameplay/content/src/content/creature_reward.rs:465-487`.
+`reward_boss_test_fixture_preserves_source_loot_and_production_unavailability`
+checks each policy against its authored profile, asserts the exact typed refusal,
+and pins the `52 + 335 = 387` source histogram. The counts are test evidence,
+not production admission logic.
 
 The exact reward chest Item i19250 resolves in ItemDefinitionIndex, but content/items/definitions/spell-native-profiles.json has no native physical-policy record for it (789-record input; blob 8014ea99827859eb07c8110b00be7cfdaa0d14dd). Crystal 201189f data/items/items.xml:39545-39552 defines the rewardchest as non-movable, non-pickupable with 32 container slots. A complete production activation must qualify its physical policy and placement through the existing content owner.
 
